@@ -1,0 +1,21 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  claudinite-sweeps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Conformance sweep (world scope)
+        run: node .claudinite/shared/engine/checks/check_the_world.mjs
+      - name: Conformance sweep (work scope)
+        run: node .claudinite/shared/engine/checks/ci-work-scope.mjs --branch "${{ github.head_ref || github.ref_name }}"
