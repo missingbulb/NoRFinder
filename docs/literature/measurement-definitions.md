@@ -31,13 +31,42 @@ fraction is tunable (50% or 30%).
 30% of the **left** peak (54), not of each peak (the right peak is 67). See
 [`../project-brief.md`](../project-brief.md) §4.3.
 
-### C. Inner edges of the Caspr-positive regions
+### C. "Gap size", undefined
 
-Node length = the distance between the **inner edges** of the Caspr⁺ paranodal regions enclosing the
-Na<sub>v</sub>1.6⁺ nodal domain — an edge/segmentation definition rather than a profile-threshold one.
+Node length = the gap between the paired Caspr domains, measured by hand in ImageJ. The source
+gives the quantity a name — *"node length (gap size)"* — and **no operational rule**: no threshold,
+no edge criterion, no profile.
 
-*Used in the concussion / traumatic axonal injury literature (Reeves et al., Acta Neuropathologica
-2022 — **abstract and secondary summaries only**, full text not retrieved).*
+*Song et al., Acta Neuropathologica 2022 — see
+[`song-2022-concussion.md`](song-2022-concussion.md).*
+
+> **This entry was wrong in the first pass of this review**, and the correction matters. It
+> previously read *"the distance between the inner edges of the Caspr-positive paranodal
+> regions"*, attributed to this paper and sourced from a web-search summary. **That phrasing is
+> not in the paper.** The summary paraphrased, and in paraphrasing invented a precision the source
+> does not have. Definition C is a *family* of definitions, not a definition — which is exactly
+> why a number measured under it cannot be compared with one measured under A or B.
+>
+> The same first pass also mis-attributed the paper to "Reeves et al."; the authors are Song et al.
+
+### E. Smallest gap between the two Caspr blocks
+
+Node length = *"the smallest gap between two paranodal Caspr-1 blocks"*, measured by hand in FIJI
+as a linear ROI on the Caspr channel.
+
+*Appeltshauser, Linke & Heil et al., medRxiv 2022 — see
+[`appeltshauser-2022-polyneuropathy.md`](appeltshauser-2022-polyneuropathy.md).* This is the
+**clearest operational statement of the gap family** in any source we have, and it is what
+definition C should have said.
+
+It is a **minimum over the pair**, not a distance measured along a fitted axis. On a straight,
+in-plane node the two coincide; on a tilted or curved axon the minimum gap is systematically
+*shorter* than the axial distance, so E under-reports where A and B over-report (via 1/cos θ).
+
+The same source defines two companion quantities on the same staining, worth keeping distinct:
+**nodo-paranodal length** (*"the maximal extension of both Caspr-1 blocks and the nodal gap in
+between"*, 10.0 ± 4.9 µm in human sural nerve) and **paranodal axonal diameter** (*"the maximal
+diameter of paranodal Caspr-1 staining"*, 2.3 ± 0.9 µm).
 
 ### D. Serial-section count (electron microscopy)
 
@@ -64,11 +93,22 @@ which is set by the point spread function and the sampling density — so the 50
 function of the acquisition, not of the biology. Two datasets acquired differently are not
 comparable at a fixed threshold fraction.
 
-**A/B vs C.** Threshold crossings and segmented edges answer different questions. An "inner edge"
-depends on whatever segmentation threshold produced the Caspr mask, which is usually a
-background-relative absolute level rather than a peak-relative one — so C inherits its bias from
-the background estimate, where A inherits its bias from the peak estimate. There is no general
-conversion between them.
+**A/B vs C/E.** Threshold crossings and segmented edges answer different questions. A gap between
+segmented blocks depends on whatever threshold produced the Caspr mask, which is usually a
+background-relative absolute level rather than a peak-relative one — so C and E inherit their bias
+from the **background** estimate, where A and B inherit theirs from the **peak** estimate. Raise the
+background estimate and the blocks shrink and the gap grows; raise the peak and A's crossings move
+the other way. There is no general conversion between them.
+
+**C vs E.** They are the same family and still not the same number: E takes the *minimum* gap
+across the pair, C is unspecified and was measured by a human drawing a line. Two labs both
+reporting "node length from Caspr" can differ systematically without either being wrong.
+
+**E vs everything else, on tilted axons.** E's minimum-gap rule under-reports as the axon tilts out
+of plane; A and B, measured along a line drawn through both paranodes, over-report by 1/cos θ if the
+line is off-axis. **The two families fail in opposite directions on the same defect**, which means a
+disagreement between them is diagnostic of geometry rather than of thresholding — potentially a
+useful internal check for us, since we will have both available.
 
 **All of them vs the PSF.** At 63×/1.4 the lateral PSF is roughly 200 nm FWHM against a node of
 1–2 µm. Every definition here is measured on a blurred image, and none of the sources corrects for
@@ -88,9 +128,25 @@ for that acquisition rather than a guarantee that transfers.
   carry both under one column.
 - **Keep the threshold a parameter, per the overview's §5.3** — but treat *changing* it as changing
   the metric, not as tuning.
-- **Do not compare our numbers to a published value across a definition boundary.** The
-  sanity-check table in [`arancibia-carcamo-2017.md`](arancibia-carcamo-2017.md) is on definition A
-  and is a legitimate target only if we implement A.
+- **Do not compare our numbers to a published value across a definition boundary.** Every published
+  value we have is on a *different* definition from at least one other, as the table below shows.
+
+## Every reference value we have, tagged by definition
+
+The whole point of this file, in one place. Note how tightly the healthy-tissue values cluster
+**despite** spanning three definitions, two nervous systems and three species — reassuring for
+plausibility checking, and no basis at all for a precise comparison.
+
+| Value | Definition | Tissue / species | Source |
+|---|---|---|---|
+| 1.02 ± 0.02 µm (s.d. 0.29, n = 164) | **A** | Rat optic nerve | [Arancibia-Cárcamo 2017](arancibia-carcamo-2017.md) |
+| 1.50 ± 0.05 µm (s.d. 0.58, n = 158, range 0.43–3.72) | **A** | Rat cortex layer V | [Arancibia-Cárcamo 2017](arancibia-carcamo-2017.md) |
+| ~1.05 µm (sham; ~1.5 µm at 72 h post-injury) | **C** | Swine periventricular white matter | [Song 2022](song-2022-concussion.md) |
+| 0.9 ± 0.3 µm (n = 69) | **E** | Human sural nerve (PNS) | [Appeltshauser 2022](appeltshauser-2022-polyneuropathy.md) |
+| ≈ the optic nerve confocal value (p = 0.06) | **D** | Rat optic nerve | [Arancibia-Cárcamo 2017](arancibia-carcamo-2017.md) |
+
+**Closest to the owner's corpus callosum images: Song et al.'s ~1.05 µm** — white matter, and the
+only entry from a tissue adjacent to ours — but on the undefined definition C, in swine.
 
 ## Recommendation
 
@@ -98,10 +154,18 @@ for that acquisition rather than a guarantee that transfers.
 fraction exposed as a parameter and the global-threshold variant B available behind it for
 comparison against the overview's figure.
 
-The case: A is the only definition validated against an independent modality; it is the definition
-behind every number we can use as a sanity check; and its per-peak normalisation removes a
-brightness-asymmetry bias that B carries into the result. The cost is that A is not what the
-overview's figure draws, so the owner should confirm the divergence rather than discover it.
+The case: A is the only definition **operationally specified and validated against an independent
+modality** (EM, p = 0.06); it is the definition behind the only published node-length
+*distributions* rather than group means; and its per-peak normalisation removes a
+brightness-asymmetry bias that B carries into the result. C is not implementable as stated, and E,
+though clearly specified, is a minimum-gap rule that will fight us on tilted axons.
+
+Implementing A does not cost us the others: **E is cheap to compute alongside it** once Caspr blobs
+are segmented, and the disagreement between the two is diagnostic (see "E vs everything else"
+above). Reporting both, clearly labelled, is better than choosing one blind.
+
+The cost is that A is not what the overview's figure draws, so the owner should confirm the
+divergence rather than discover it.
 
 **This is a question for the owner, not a decision to implement quietly.**
 

@@ -1,84 +1,147 @@
-# Prior art — what already exists for automated node detection, and what does not
+# Prior art — what already exists for automated node detection
 
-The point of this file is to establish what baseline the MVP has to beat, and to record a **negative
-result** honestly so no later session re-runs the same search.
+What baseline the MVP has to beat, and what the field has already learned about the parts that
+break.
 
 ---
 
 ## Headline finding
 
-**No published, off-the-shelf tool does the task in the project's §5.1** — detecting
-Caspr–Na<sub>v</sub>1.6–Caspr triplets by their spatial arrangement in two-channel CNS
-immunofluorescence and counting them.
+**No published tool does the task in the project's §5.1** — detecting Caspr–Na<sub>v</sub>1.6–Caspr
+triplets by their spatial arrangement in two-channel CNS immunofluorescence and counting them.
 
-Searches across the tool literature (ImageJ/Fiji plugin ecosystem, deep-learning bioimage
-pipelines, node-of-Ranvier morphometry papers) turned up node-of-Ranvier *measurement* protocols in
-abundance and node-of-Ranvier *detection* tools essentially not at all. The closest published work
-is in a different tissue (PNS), a different modality (EM / serial sections / dSTORM), or a different
-marker (pan-neurofascin, a single-channel target that needs no geometric rule).
+But that statement is now much narrower than it was, and two related things **have** been done:
 
-**Confidence: medium-high on the CNS two-channel case, lower as a universal claim.** These are
-literature searches, not a systematic review, and an unpublished lab macro would never surface. It
-is worth asking the owner whether their lab or collaborators already run something.
+- **Automated node counting exists and has a published accuracy** — Appeltshauser, Linke & Heil et
+  al. 2022, in PNS teased fibres, single-channel: **97 ± 11% on healthy murine nerve**, degrading
+  to a median ~85% with a 15–185% spread on pathological human samples.
+- **Automated node segmentation by deep learning exists** — Linke et al. 2025, same group, same
+  images: **Dice 87.79%, 100% of objects detected**, trained on 10–25 annotated objects.
 
-## What the field actually does today
+> **Correction.** The first pass of this review said the search "turned up node-of-Ranvier
+> detection tools essentially not at all", at "medium-high confidence", pending the papers we
+> could not fetch. Having read them: **that was too strong.** The right statement is that node
+> detection has been automated in an easier regime, by one group, and that the *hard* parts of our
+> problem — dense tissue, a two-channel geometric rule, and length measurement — are where their
+> results stop.
 
-**Manual or semi-manual ImageJ.** The dominant published workflow, and therefore the real baseline:
+## What the field does today
 
-- A human scans the merged image and identifies nodes by eye as Na<sub>v</sub>1.6 clusters flanked
-  by Caspr-labelled paranodes.
-- ImageJ is used to quantify size and density of Na<sub>v</sub>1.6 accumulations, and per-fibre
-  analyses measure the axial length of the nodal gap and the immunofluorescence intensity of each
-  marker.
-- Node length comes from a hand-drawn line profile (see
-  [`measurement-definitions.md`](measurement-definitions.md)).
+**Manual or semi-manual ImageJ/FIJI is still the published standard, including in the papers that
+automated part of it.** A human identifies nodes as Na<sub>v</sub>1.6 clusters flanked by Caspr
+paranodes; ImageJ measures. Both 2022 papers fell back to blinded manual assessment for their
+actual analyses.
 
-**This is the baseline to beat, and it is a strong one on precision and a weak one on throughput.**
-An expert makes very few false positives; what they cannot do is process a full field of hundreds
-of candidates reproducibly, or do it twice the same way. The MVP's honest value proposition is
-throughput and reproducibility, and it should be evaluated on agreement with the expert rather than
-on any absolute notion of truth.
+**This is the baseline to beat, and its true precision is now measurable.** Two blinded
+investigators scoring the same concussion images reached an **ICC of 0.73** (Song et al.). That is
+the human agreement level on this exact task — dense white-matter fields, Caspr + Nav1.6 — and it
+is the number our pipeline should be judged against, rather than against an assumption that a
+manual count is exact.
 
-## Adjacent work, and why each one does not transfer
+## The two results that matter most, and what they warn about
+
+### 1. Automated counting degrades on the tissue the study is about
+
+Appeltshauser et al. segmented pan-neurofascin in Imaris and counted the objects. Healthy murine:
+97 ± 11%, r = 0.77 against manual. Pathological human: median ~85%, spread 15–185%, variance
+significantly increased (F = 0.037, p < 0.0001). They abandoned the automated count for the real
+analysis.
+
+Two lessons:
+
+- **Report precision and recall, not a count ratio.** Their "accuracy" exceeds 100% for many
+  samples, so it is `automated / manual × 100` — a ratio of totals that cannot distinguish a
+  perfect count from one with matched false positives and false negatives.
+- **Validate on pathological fields or say plainly that we did not.** A control-only accuracy is an
+  upper bound with no bearing on the injury condition.
+
+Also worth being honest about: their pipeline set the **intensity threshold by hand per image**
+(500–1400) and **manually discarded** false detections. Our project's value depends on not needing
+that, so 97% is not a like-for-like bar.
+
+### 2. Automated *length* measurement was tried and rejected
+
+> *"Accuracy of automated assessment of nodo-paranodal length using Imaris did not reach as exact
+> results as manual measurement. Therefore, blinded manual assessment was performed on all
+> samples."*
+
+The one group that automated node counting on this kind of data **could not automate node
+morphometry** to a standard they trusted — on sparse teased fibres, at 0.075 µm pixels, in 3D.
+
+**§5.3 is the harder half of this project, not the easier one.** That is not a reason to abandon
+it: they fitted 3D surfaces in Imaris rather than using the plot-profile method, which is a
+different and independently EM-validated technique
+([`arancibia-carcamo-2017.md`](arancibia-carcamo-2017.md) §2). It *is* a reason to expect length to
+be the part that fights back, and to score it against manual measurement before trusting a number.
+
+## The transfer gap
+
+Both automated results are on **PNS teased fibre preparations** — individual axons pulled apart on
+a slide, sparse against near-empty background (node vs background = **1.3% vs 98.7%** by pixel
+count). The owner's corpus callosum field is dense, overlapping and crossing.
+
+| | Appeltshauser / Linke | This project |
+|---|---|---|
+| Preparation | Teased fibres, physically separated | Tissue section, densely packed |
+| System | PNS (sural / sciatic) | CNS (corpus callosum) |
+| Marker | Pan-neurofascin — labels the node **directly** | Caspr + Nav1.6 — node inferred from **geometry** |
+| Detection | Threshold or U-Net on one channel | Two-channel spatial-arrangement rule |
+| Confusables | Schmidt-Lanterman incisures | Neighbouring nodes, crossing axons |
+| Threshold | Hand-set per image | Must be automatic |
+
+A single-channel threshold works for them because a pan-neurofascin blob on an isolated fibre
+essentially *is* a node. We have no such marker — which is the entire reason the project's rules
+are geometric.
+
+## Adjacent work
 
 | Work | What it does | Why it isn't our problem |
 |---|---|---|
-| **Deep-learning segmentation of nodes in teased murine nerve fibres, pan-neurofascin stain** (reported at Dice ≈ 87.8%, within a dSTORM high-content toolkit — [ScienceDirect S2667074725000060](https://www.sciencedirect.com/science/article/pii/S2667074725000060), **not retrieved, publisher 403**) | Semantic segmentation of nodes in a single channel | **Teased PNS fibres**, i.e. physically separated axons on a slide — none of the crossing/density problem of a corpus callosum field. Pan-neurofascin labels the node directly, so no geometric triplet rule is needed. Needs annotated training data we do not have. |
-| **Automated tracing of myelinated axons and node detection in serial images of peripheral nerves** | Traces axons, then finds nodes as gaps in myelinated membrane via connected-component analysis on a 3-class prediction map (myelin / axon interior / background) | Serial **EM**-style volumes of peripheral nerve, not immunofluorescence. The "node as a gap in a traced axon" idea is nonetheless the most transferable concept here — see below. |
-| **Super-resolution (dSTORM/STED) nodal morphometry in polyneuropathy** ([medRxiv 2022.08.05.22278366](https://www.medrxiv.org/content/10.1101/2022.08.05.22278366v1.full), **not retrieved, 403**) | Ultrastructural nodal changes in patient samples | Super-resolution regime; measurement-focused, and a resolution we will not have. |
-| **General Fiji tools** — deepImageJ, ImageSURF, Lusca, SNT, AxonTracer | Pixel classification, morphology, neurite tracing | Generic. None encodes a multi-channel spatial-arrangement rule; any of them would still leave §5.1 to be written. SNT's tracing could matter later if per-axon grouping is ever wanted. |
+| **Linke et al. 2025**, dSTORM toolkit ([notes](linke-2025-dstorm-toolkit.md)) | U-Net segmentation of nodes, Dice 87.79%, 100% object recall, 10–25 training objects | Teased PNS fibres, single channel, 1.3% foreground. No false-positive rate reported. |
+| **Appeltshauser et al. 2022** ([notes](appeltshauser-2022-polyneuropathy.md)) | Imaris threshold segmentation + volume filter; counting accuracy above | PNS teased fibres; hand-set per-image threshold; morphometry abandoned |
+| **Automated tracing of myelinated axons and node detection in serial images of peripheral nerves** | Traces axons, finds nodes as gaps via connected components on a 3-class prediction map | Serial EM-style volumes of peripheral nerve, not immunofluorescence. Still the most transferable *concept* — see below. |
+| **Generic Fiji tools** — deepImageJ, ImageSURF, Lusca, SNT, AxonTracer | Pixel classification, morphology, neurite tracing | None encodes a multi-channel spatial-arrangement rule; §5.1 remains to be written. SNT's tracing could matter if per-axon grouping is ever wanted. |
 
-## The one idea worth stealing
+## The ideas worth stealing
 
-From the peripheral-nerve tracing work: **treat the node as a gap in a traced structure, not as an
-isolated object.** Our analogue is that the Caspr channel implicitly traces the axon — paranodes are
-elongated *along* the axon and their long axis is a free per-blob orientation estimate. A detection
-route built around "pair Caspr blobs that agree on orientation and are collinear with the vector
-between them, then require a Nav blob in the gap" uses the same insight and follows the project's
-rule 3 directly.
+**Treat the node as a gap in a traced structure, not an isolated object.** From the peripheral-nerve
+tracing work. Our analogue: the Caspr channel implicitly traces the axon — paranodes are elongated
+*along* it, so each blob's long axis is a free orientation estimate. Pair Caspr blobs that agree on
+orientation and are collinear with the vector between them, then require a Nav blob in the gap.
+This follows the project's rule 3 directly.
 
-**This is a candidate to prototype, not a design decision.** It should be built as a scratchpad
-prototype and shown against a naive baseline before anything is wired in — and per the research
-playbook, a signal-driven method only earns adoption if it measurably out-scores the simple one.
+**A learned per-channel blob segmenter is cheaper than it looked.** Linke et al. got a working
+segmentation from **10–25 annotated objects** using augmentation. The first pass of this review
+dismissed the learned route partly because it "needs annotated training data we do not have" —
+a 10–25 object budget is a reasonable thing to ask the owner for. The shape that would fit here is
+a learned Caspr/Nav segmenter feeding an **explicit, inspectable** geometric rule, not an
+end-to-end node detector.
+
+**Reuse their quality filter for measurable nodes.** Appeltshauser et al.'s criteria for an "intact
+looking" node: (1) two Caspr blocks, (2) homogeneous staining, (3) rectangular form.
+
+Both remain **candidates to prototype and score against the naive baseline**, not design decisions.
 
 ## Baseline the MVP must beat
 
-Before any sophisticated method is adopted, the naive baseline has to be measured:
+Before anything sophisticated is adopted:
 
 1. Threshold + connected components on each channel independently.
 2. For every Nav blob, look for two Caspr blobs within a radius on roughly opposite sides.
 3. Count.
 
-Recording that baseline's precision/recall against owner-annotated ground truth is the first
-scoring milestone. Nothing more elaborate should be committed until it beats this.
+Record its precision and recall against owner-annotated ground truth, on both healthy and — if
+available — pathological fields. Nothing more elaborate gets committed until it beats this.
 
-## What we do not know
+## What we still do not know
 
-- Whether any **unpublished lab macro** exists for this — worth asking the owner directly.
-- Whether the **deep-learning route is viable at all here**: it needs annotated training data, and
-  the project currently has none. The environment also favours a lightweight dependency set, so a
-  learned method is a gated, opt-in route to justify later, not a starting point.
-- Whether **3D** information is available. If inputs are z-stacks, the reference method's
+- Whether an **unpublished lab macro** exists — worth asking the owner directly; it would not
+  surface in any search.
+- Whether **3D** information is available to us. If inputs are z-stacks, the reference method's
   "all three regions within one 0.8 µm optical slice" criterion becomes available and is a far
-  better horizontality test than any in-plane angle. This is unanswered in the overview
+  better horizontality test than any in-plane angle
   ([`../project-brief.md`](../project-brief.md) §5).
+- Whether anyone has published node detection in **dense CNS tissue** specifically. The searches
+  found nothing, and the four papers read confirm the gap rather than closing it — but a targeted
+  search of the CNS myelin-pathology literature, rather than the tooling literature, has not been
+  done.

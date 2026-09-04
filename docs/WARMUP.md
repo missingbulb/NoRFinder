@@ -22,12 +22,13 @@ Full specification, including the parts the overview leaves unstated:
 
 ## Where things stand — 2026-09-04
 
-**Literature review done. Nothing else exists yet.**
+**Literature review done, six sources read in full. Nothing else exists yet.**
 
 - ✅ Project overview ingested durably ([`project-brief.md`](project-brief.md) +
   [`figures/`](figures/)) — the PDF upload path does not persist, these files are the record.
-- ✅ Initial literature review ([`literature/`](literature/README.md)), issue
-  [#5](https://github.com/missingbulb/NoRFinder/issues/5).
+- ✅ Literature review ([`literature/`](literature/README.md)), issues
+  [#5](https://github.com/missingbulb/NoRFinder/issues/5) and
+  [#8](https://github.com/missingbulb/NoRFinder/issues/8). Nothing is unreachable.
 - ❌ **No sample data.** The images in `figures/` are document illustrations — re-rendered
   screenshots at unknown scale. **No number may be measured off them.**
 - ❌ **No ground truth.** No annotated image, and no stated annotation convention.
@@ -59,6 +60,10 @@ In priority order. The first two block the MVP; the third blocks §5.3 entirely.
   ([`literature/node-biology.md`](literature/node-biology.md) §4.)
 - **What is the cost asymmetry between a false positive and a missed node?** Unstated, and it is
   the trade-off the MVP is tuned against.
+- **Will we get any pathological / injured tissue, or only controls?** It matters more than it
+  sounds: the one published automated node count degraded from 97% to a median 85% with a 15–185%
+  spread on diseased tissue, and a control-only validation would say nothing about the condition
+  the study is about ([`literature/prior-art-detection.md`](literature/prior-art-detection.md)).
 - **Is there an existing lab macro or script for this?** The literature has none; an unpublished one
   would not surface in a search.
 
@@ -89,10 +94,17 @@ pip install pymupdf pillow numpy      # what this session needed
 ```
 
 - **No `pdftoppm` / poppler.** Render PDFs with PyMuPDF in-process, not a system binary — the
-  built-in PDF reader fails on this box for exactly that reason.
+  built-in PDF reader fails on this box for exactly that reason, on every PDF.
+- **Do not trust the harness's reported PDF page count.** It has been wrong on every PDF attached
+  to this project so far, sometimes by a lot (a 4-page overview reported as 26; a 29-page preprint
+  as 201). Open the file with PyMuPDF and read `page_count`; extract all pages in one pass rather
+  than working through the ranges the harness suggests.
 - Outbound HTTPS goes through a proxy. Publisher `403`s are a policy boundary: don't retry, don't
-  try sibling URLs, don't route around it. Record the source as unreachable and ask the owner
-  ([#6](https://github.com/missingbulb/NoRFinder/issues/6) is the standing list).
+  try sibling URLs, don't route around it. Record the source as unreachable and ask the owner —
+  which is what [#6](https://github.com/missingbulb/NoRFinder/issues/6) did, successfully.
+- **A web-search summary is not a source.** Two author attributions and one metric definition taken
+  from search snippets in the first literature pass were all wrong, and only the PDFs caught it.
+  Never write a name, number or definition into the notes from a snippet.
 - Scratchpad, not `/tmp`, for throwaway renders and diagnostics. Only the final artifact and the
   code that regenerates it get committed.
 

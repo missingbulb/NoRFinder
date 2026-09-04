@@ -8,6 +8,14 @@ Maintenance*, Cold Spring Harbor Perspectives in Biology 8:a020495,
 [PMC4772103](https://pmc.ncbi.nlm.nih.gov/articles/PMC4772103/) — full text read. Points sourced
 elsewhere are attributed inline.
 
+The same authors' newer review — **Rasband & Peles 2021**, *Mechanisms of node of Ranvier assembly*,
+Nat Rev Neurosci 22:7–20 — was also read in full and **supersedes nothing here**. It is a mechanism
+review: no node dimensions, no methodology, nothing algorithmically relevant. Its one contribution
+to this file is §4's opening — that node length varies, is predicted to strongly influence
+propagation, and that *"how these morphological properties of nodes are regulated remains
+unknown"*, with perinodal astrocytes a candidate regulator of the distance between flanking
+paranodes. Do not re-read it for this project.
+
 ---
 
 ## 1. The four domains along a myelinated axon
@@ -96,13 +104,32 @@ why the project's triplet rule is the right primitive and a Nav-only blob count 
 - Autoantibodies against nodal adhesion molecules (Guillain–Barré, CIDP, multiple sclerosis) cause
   nodal disorganization, **binary nodes**, **lengthening of the nodal gap**, and reduced conduction.
 - After concussion / traumatic axonal injury: widespread loss of Na<sub>v</sub>1.6, **progressive
-  increases in node length** (significant elevations by 72 h post-injury), appearance of **void
-  nodes and heminodes**, and loss or paranodal diffusion of βIV-spectrin, ankyrin-G and NF186
-  (Reeves et al., *Acta Neuropathologica* 2022, [PMID 36107227](https://pubmed.ncbi.nlm.nih.gov/36107227/) —
-  **abstract and secondary summaries only, full text not retrieved**; see
-  [`README.md`](README.md)).
+  increases in node length**, appearance of **void nodes and heminodes**, and loss or paranodal
+  diffusion of βIV-spectrin, ankyrin-G and NF186 — Song et al., *Acta Neuropathologica* 2022, in
+  swine periventricular white matter, the closest published tissue to the owner's corpus callosum
+  images ([`song-2022-concussion.md`](song-2022-concussion.md)):
 
-Three consequences that bear directly on the algorithm, and that argue against tuning it on healthy
+  | Group | Node length | % void nodes | % heminodes |
+  |---|---|---|---|
+  | Sham | ~1.05 µm | ~0.2 | ~3.2 |
+  | 6 h | ~1.55 µm | ~0.55 | ~7.2 |
+  | 72 h | ~1.5 µm | ~1.4 | ~7.0 |
+  | 2 weeks | ~1.15 µm | ~1.7 | ~6.1 |
+
+  *Read off the paper's scatter plots — it states none of these numerically. Each point is one
+  animal (n = 3–4 per group), and the node-length definition is an undefined "gap size"
+  ([`measurement-definitions.md`](measurement-definitions.md) definition C), so these are
+  plausibility anchors rather than targets. Node length is **not monotonic in time** — it rises by
+  6–72 h and falls back toward baseline at 2 weeks.*
+
+- In human polyneuropathy, paranodal Caspr-1 is **severely elongated** and partly detached from its
+  β2-spectrin anchor: nodo-paranodal length rises from 12.4 µm (chronic axonal) to 15.6 µm (acute
+  axonal, p = 0.002), and to 16.8 µm where axonal loss is histopathologically severe
+  ([`appeltshauser-2022-polyneuropathy.md`](appeltshauser-2022-polyneuropathy.md)). The elongation
+  shows up in the **paranodes**, not only in the gap — so a detector whose Caspr blob model assumes
+  a healthy size or shape range is exposed here too, not just its length filter.
+
+Four consequences that bear directly on the algorithm, and that argue against tuning it on healthy
 tissue alone:
 
 1. **Node elongation is the signal being measured.** A detector whose length filter is tuned to
@@ -115,7 +142,16 @@ tissue alone:
    to tell them apart, and is worth proposing to the owner.
 3. **Heminodes increase after injury**, so the population the rules exclude is itself
    condition-dependent — an excluded category whose size varies with the experimental group is a
-   bias, not a constant offset.
+   bias, not a constant offset. Concretely: ~3.2% of nodes in sham, rising to ~7% after injury, and
+   void nodes rising ~8-fold from ~0.2% to ~1.7%. **Together the excluded categories move by about
+   5 percentage points between conditions** — the same order as many effects a study of this kind
+   is trying to detect.
+4. **A detector tuned on healthy tissue degrades unpredictably on diseased tissue** — measured, not
+   speculated. Appeltshauser et al.'s automated node count ran at 97 ± 11% accuracy on healthy
+   murine nerve and collapsed to a median ~85% with a 15–185% spread on pathologically altered
+   human samples ([`appeltshauser-2022-polyneuropathy.md`](appeltshauser-2022-polyneuropathy.md)
+   §2). Any accuracy we report on control images is an upper bound that says nothing about the
+   injury condition.
 
 ## 5. Terms, quickly
 
