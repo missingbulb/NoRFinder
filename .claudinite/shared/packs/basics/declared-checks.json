@@ -1,0 +1,127 @@
+[
+  {
+    "id": "task-lifecycle",
+    "severity": "blocking",
+    "failureMessage": "every task starts from an issue; the reference is what ties the branch to it",
+    "scope": "work",
+    "checkBranchCommits": [
+      {
+        "someMessageMatches": "/#\\d+/",
+        "unlessOnDefaultBranch": true,
+        "what": "none of the {commits} commit(s) since {base} references an issue (#N)",
+        "fix": "create or locate the GitHub issue for this task and reference it (e.g. \"Refs #N\", \"Closes #N\") in a commit message — amending the latest commit is fine"
+      }
+    ]
+  },
+  {
+    "id": "squash-merge-history",
+    "severity": "blocking",
+    "failureMessage": "the squash-only repo setting can be off or bypassed; a merge commit in the work is the effect that proves it",
+    "scope": "work",
+    "forbidIntroducedMergeCommits": {
+      "what": "merge commit introduced by this change: {subject}",
+      "fix": "rebase to drop the merge commit (git pull --rebase, or git rebase onto the base) so the branch lands squashed"
+    }
+  },
+  {
+    "id": "warning-suppression",
+    "severity": "blocking",
+    "failureMessage": "an unexplained suppression hides the signal instead of recording why the fix was rejected",
+    "fix": "add the reason on the suppression line or in the comment above — or fix the cause; if it genuinely can't be annotated, accept it in .claudinite-settings.json with a reason",
+    "scanFiles": "/^(?!.*\\.md$)/",
+    "excludeFiles": "/^packs\\/|(^|\\/)checks\\/test\\/|^\\.claudinite\\/local(\\/packs|_packs)\\/[^/]+\\/([^/]+\\.mjs|skills\\/[^/]+\\/checks\\.mjs)$/",
+    "matchLines": [
+      {
+        "match": "/eslint-disable(-next-line|-line)?(\\s+[\\w@/-]+(\\s*,\\s*[\\w@/-]+)*)?\\s*(\\*\\/)?\\s*$/",
+        "unlessPreviousLineMatches": "/^(?=\\s*(\\/\\/|#|\\*|\\/\\*|<!--))(?=.*[a-zA-Z])(?!.*(eslint-disable|@ts-ignore|@ts-nocheck|\\bnoqa\\b|pylint:\\s*disable|@SuppressWarnings|#\\s*type:\\s*ignore))/",
+        "what": "carries a warning-suppression marker with no reason at the site: {match}"
+      },
+      {
+        "match": "/@ts-ignore\\s*(\\*\\/)?\\s*$/",
+        "unlessPreviousLineMatches": "/^(?=\\s*(\\/\\/|#|\\*|\\/\\*|<!--))(?=.*[a-zA-Z])(?!.*(eslint-disable|@ts-ignore|@ts-nocheck|\\bnoqa\\b|pylint:\\s*disable|@SuppressWarnings|#\\s*type:\\s*ignore))/",
+        "what": "carries a warning-suppression marker with no reason at the site: {match}"
+      },
+      {
+        "match": "/@ts-nocheck\\s*(\\*\\/)?\\s*$/",
+        "unlessPreviousLineMatches": "/^(?=\\s*(\\/\\/|#|\\*|\\/\\*|<!--))(?=.*[a-zA-Z])(?!.*(eslint-disable|@ts-ignore|@ts-nocheck|\\bnoqa\\b|pylint:\\s*disable|@SuppressWarnings|#\\s*type:\\s*ignore))/",
+        "what": "carries a warning-suppression marker with no reason at the site: {match}"
+      },
+      {
+        "match": "/\\bnoqa(:\\s*[A-Z0-9]+(\\s*,\\s*[A-Z0-9]+)*)?\\s*$/",
+        "unlessPreviousLineMatches": "/^(?=\\s*(\\/\\/|#|\\*|\\/\\*|<!--))(?=.*[a-zA-Z])(?!.*(eslint-disable|@ts-ignore|@ts-nocheck|\\bnoqa\\b|pylint:\\s*disable|@SuppressWarnings|#\\s*type:\\s*ignore))/",
+        "what": "carries a warning-suppression marker with no reason at the site: {match}"
+      },
+      {
+        "match": "/pylint:\\s*disable(-next)?=[\\w-]+(\\s*,\\s*[\\w-]+)*\\s*(\\*\\/)?\\s*$/",
+        "unlessPreviousLineMatches": "/^(?=\\s*(\\/\\/|#|\\*|\\/\\*|<!--))(?=.*[a-zA-Z])(?!.*(eslint-disable|@ts-ignore|@ts-nocheck|\\bnoqa\\b|pylint:\\s*disable|@SuppressWarnings|#\\s*type:\\s*ignore))/",
+        "what": "carries a warning-suppression marker with no reason at the site: {match}"
+      },
+      {
+        "match": "/@SuppressWarnings\\s*\\(\\s*(\\{[^}]*\\}|\"[^\"]*\"|'[^']*')\\s*\\)\\s*$/",
+        "unlessPreviousLineMatches": "/^(?=\\s*(\\/\\/|#|\\*|\\/\\*|<!--))(?=.*[a-zA-Z])(?!.*(eslint-disable|@ts-ignore|@ts-nocheck|\\bnoqa\\b|pylint:\\s*disable|@SuppressWarnings|#\\s*type:\\s*ignore))/",
+        "what": "carries a warning-suppression marker with no reason at the site: {match}"
+      },
+      {
+        "match": "/#\\s*type:\\s*ignore(\\[[\\w,\\s-]+\\])?\\s*$/",
+        "unlessPreviousLineMatches": "/^(?=\\s*(\\/\\/|#|\\*|\\/\\*|<!--))(?=.*[a-zA-Z])(?!.*(eslint-disable|@ts-ignore|@ts-nocheck|\\bnoqa\\b|pylint:\\s*disable|@SuppressWarnings|#\\s*type:\\s*ignore))/",
+        "what": "carries a warning-suppression marker with no reason at the site: {match}"
+      }
+    ]
+  },
+  {
+    "id": "rules-line-length",
+    "severity": "advisory",
+    "failureMessage": "a rule changed one word at a time still shows as a whole-paragraph diff when its bullet is one physical line",
+    "scanFiles": "/(^|\\/)RULES\\.md$/",
+    "maxLineLength": {
+      "bytes": 100,
+      "what": "{count} line(s) over {bytes} bytes, longest {longest}",
+      "fix": "wrap the prose at {bytes} columns — a Markdown bullet continues on an indented line, so the rendering is unchanged"
+    }
+  },
+  {
+    "id": "claude-md-length",
+    "severity": "advisory",
+    "failureMessage": "everything in CLAUDE.md loads every session; past ~200 lines it crowds out the rules that matter",
+    "scanFiles": "CLAUDE.md",
+    "maxLines": {
+      "limit": 200,
+      "what": "{lines} lines (target under {limit})",
+      "fix": "move multi-step procedures to skills and part-of-repo rules to path-scoped packs; keep CLAUDE.md to always-true facts"
+    }
+  },
+  {
+    "id": "generated-merge-driver",
+    "severity": "advisory",
+    "failureMessage": "without merge=ours a conflicting merge on a generated file gets hand-resolved and desyncs from its source",
+    "requireIndexCoverage": [
+      {
+        "eachScannedPathMatching": "/(?<base>[^/]*GENERATED[^/]*)$/",
+        "includeVendored": true,
+        "indexFile": ".gitattributes",
+        "coveredByGlobLinesMatching": "/\\bmerge=ours\\b/",
+        "whenIndexFileAbsent": "flagEveryPath",
+        "anchorFindingsAt": "eachUncoveredPath",
+        "what": "a GENERATED file with no merge=ours .gitattributes entry",
+        "fix": "add `{base} merge=ours` to .gitattributes so a conflicting merge auto-resolves — the session-start hook already sets the `merge.ours.driver` config in the clone"
+      }
+    ]
+  },
+  {
+    "id": "catalog-completeness",
+    "severity": "blocking",
+    "failureMessage": "a hand-maintained catalog that omits a real pack misroutes readers and hides capability; the check keeps the index honest against the tree",
+    "relevantWhen": { "trackedFileMatches": "/^engine\\/pack_loader\\/pack-registry\\.mjs$/" },
+    "requireIndexCoverage": [
+      {
+        "eachTrackedPathMatching": "/^packs\\/(?<name>[^/]+)\\/pack\\.mjs$/",
+        "indexFile": "packs/README.md",
+        "coveredByText": "({name}/",
+        "whenIndexFileAbsent": "assertNothing",
+        "anchorFindingsAt": "indexFile",
+        "what": "the pack \"{name}\" exists on disk but is not listed in packs/README.md",
+        "fix": "add a \"{name}\" entry to packs/README.md (or delete the pack if it is dead)"
+      }
+    ]
+  }
+]
