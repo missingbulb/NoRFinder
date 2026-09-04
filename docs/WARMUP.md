@@ -69,8 +69,8 @@ In priority order. The first two block the MVP; the third blocks §5.3 entirely.
 
 ## How to work here
 
-The [research-project pack](../.claudinite/shared/packs/research-project/RULES.md) governs. The
-parts that bite hardest on this project:
+Claudinite's **research-project** pack governs, and its rules load into every session here, so
+there is nothing to go and read. The parts that bite hardest on this project:
 
 - **Show, don't tell.** Every algorithmic change is presented as a rendered comparison — original |
   result, and against ground truth where scoring applies — inline in the conversation. The picture
