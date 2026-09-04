@@ -47,7 +47,7 @@ Four things the review turned up that were not evident from the overview alone:
 ## Sources we could not reach
 
 Requested from the owner in **[#6](https://github.com/missingbulb/NoRFinder/issues/6)**, with a
-queued follow-up to ingest them once supplied. Nothing in the notes above depends on them; they
+queued follow-up ([#8](https://github.com/missingbulb/NoRFinder/issues/8)) to ingest them once supplied. Nothing in the notes above depends on them; they
 would deepen §4 (pathology) and the prior-art picture, and one of them is the source of a
 definition we currently know only second-hand.
 
