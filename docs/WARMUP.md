@@ -32,9 +32,14 @@ Full specification, including the parts the overview leaves unstated:
 - ❌ **No sample data.** The images in `figures/` are document illustrations — re-rendered
   screenshots at unknown scale. **No number may be measured off them.**
 - ❌ **No ground truth.** No annotated image, and no stated annotation convention.
-- ❌ **No code, no pipeline, no scoring harness.**
+- ✅ **R1 — scale-free baseline detector + transform-invariance harness**
+  ([`results/`](results/README.md), #10). Tier-1 invariance is exact and pinned by
+  `tests/test_invariance.py`; the scale envelope is measured at ~0.85×–2.5×.
+- ❌ **No accuracy metric, and none is possible yet** — no ground truth. The harness measures the
+  detector against *itself*, which says nothing about whether it finds the right nodes.
+- ❌ **No scoring harness** (needs annotations), no z-stack handling, no µm output path.
 
-There is no metric to report yet, because there is nothing to score.
+Run the invariance test: `pip install -r requirements.txt && python3 tests/test_invariance.py`
 
 ## What blocks starting
 
@@ -119,14 +124,16 @@ pip install pymupdf pillow numpy      # what this session needed
 ## Repo map
 
 ```
+src/         nor.py (detector), harness.py (invariance), render.py (overlays)
+tests/       test_invariance.py — the R2 requirement, executable
 docs/
   WARMUP.md                          this file
   requirements.md                    standing constraints on HOW it is built — read with the brief
+  results/                           iteration notes; R1 is the first
   project-brief.md                   the specification, ingested from the owner's PDF
   project-overview-extracted-text.txt  verbatim PDF text, for wording questions
   figures/                           overview figures — ILLUSTRATIONS, not analysis inputs
   literature/                        the review; start at its README
 ```
 
-Nothing else is real yet. When a pipeline exists, this map must say which folder is *the pipeline*
-and which are spikes.
+`src/` is **the pipeline** — there are no spikes yet. When there are, this map says which is which.
