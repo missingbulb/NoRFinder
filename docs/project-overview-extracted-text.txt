@@ -1,0 +1,90 @@
+===== PAGE 1 =====
+Automated  detection of Nodes of Ranvier 
+ 
+1. Background 
+A Node of Ranvier is a short, exposed segment of the axon located between two consecutive myelin 
+segments along a myelinated neuron. This region is densely packed with sodium channels (notably 
+Nav1.6) which generate the action potential and enable saltatory conduction. 
+Proper node structure and length are critical for the speed and fidelity of neuronal conduction. 
+Structural changes in nodes, such as elongation, reduced number of nodes, have been observed in 
+models of myelin injury, and have been linked to impaired axonal conduction. Accurate, automated 
+quantification of node number and length is therefore a central tool in this research. 
+Figure 1: Schematic of the node of Ranvier and its flanking domains. 
+2. How the staining looks like 
+Nodes are visualized using two immunofluorescent stains imaged together, each assigned to a 
+separate color channel: 
+•​
+Caspr -  labels the two paranodal regions flanking the node on either side.  
+•​
+Nav1.6 -  labels the sodium channels clustered inside the node itself, positioned exactly in the 
+gap between the two Caspr blobs. 
+Figure 2: Node-length measurement across brain regions  
+Raw microscope files are multi-channel, typically including a DAPI channel (nuclei) in addition to 
+Caspr and Nav1.6. DAPI is not used for node identification and is discarded during preprocessing. 
+Visual node identification is done by looking at the Caspr and Nav1.6 channels together, as a single 
+merged image. The software is not required to work this way, it can also process the two channels in 
+parallel, for example, detecting Caspr blobs and Nav1.6 blobs independently in each channel and then 
+combining the results, which can be useful for validating detections or as an alternative detection 
+strategy. 
+
+[[2 embedded images]]
+===== PAGE 2 =====
+3. Example Image 
+ 
+ 
+Figure 3: The two individual channels underlying the merged image -  Nav1.6 (red, center), Caspr (green, left), and the merged 
+two-channel image (right).  
+Below is an example full-field image (from the corpus callosum), as acquired by microscopy and used 
+as input for analysis: 
+ 
+Figure 4: Full-field image -  Caspr (green) and Nav1.6 (red) staining. 
+ 
+A close-up on a single node within the image: 
+ 
+Figure 5: Close-up of a single node (circled). Two green Caspr blobs on either side, with a red Nav1.6 blob between them. 
+
+[[5 embedded images]]
+===== PAGE 3 =====
+4. Rules for Identifying a Node 
+A true node is defined by the following spatial structure, not by color alone: 
+1.​
+Two distinct, well-defined Caspr regions, located on either side of the gap. 
+2.​
+A Nav1.6 region located between the two Caspr regions. 
+3.​
+All three regions (Caspr–Nav–Caspr) lie along the same axis, so that together they form one 
+geometric continuation of the same axon. 
+4.​
+The distance between the two Caspr regions falls within a plausible biological node-length range 
+(typically 1-2 µm +- 0.5µm).  
+5. Software requirements 
+5.1 Detection and counting of nodes (MVP) 
+Detect all true nodes in the image according to the rules in Section 4, and count them. Required 
+output: the total number of nodes detected in the image, coordinates/location of each node, 
+visualization for  manual control. 
+5.2 Identification of 'horizontal' nodes for length measurement 
+Among all detected nodes, identify those oriented at an angle that allows reliable length 
+measurement (axons running close to horizontal relative to the measurement axis), and calculate the 
+distance between the two Caspr blobs bounding the node. 
+5.3 Extracting Node Length via the Plot Profile Method 
+Node length is calculated by drawing a straight line along the axon (through the two Caspr blobs and 
+the node between them) and sampling an intensity profile of the Caspr channel along that line. The 
+two peaks corresponding to the Caspr blobs are identified, and a threshold (e.g., 50% or 30% of peak 
+height) defines each peak's entry/exit point.​
+Node length = the distance between the two threshold-crossing points on the X-axis. 
+Software requirement: automate this process for each horizontal node, sample the intensity profile, 
+detect the two peaks, and compute node length using a tunable intensity threshold parameter. 
+ 
+Figure 6: Example intensity profile with 50% and 30% peak-height threshold lines, used to determine node boundaries and length. 
+ 
+ 
+ 
+
+[[1 embedded images]]
+===== PAGE 4 =====
+5.4 Additional measurements (Bonus) 
+Additional measurements will be discussed upon progress. 
+Figure 7: Example of additional measurements 
+ 
+
+[[1 embedded images]]
