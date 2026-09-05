@@ -97,9 +97,10 @@ A true node is defined by **spatial structure, not colour alone**:
 > Rule 4 is stated as a *plausibility filter*, and it is also the quantity §5.3 exists to
 > **measure**. Baking a hard 1–2 µm acceptance window into detection would make the reported
 > length distribution partly an artefact of the filter — the anti-overfitting constraint about
-> not encoding the prior you are trying to measure. How wide that window may safely be, and
-> whether it is applied in µm or in units the image measures for itself, is an open decision
-> (see [`literature/measurement-definitions.md`](literature/measurement-definitions.md)).
+> not encoding the prior you are trying to measure. **Settled:** the window is re-expressed as a
+> ratio to the paranodes flanking that same node, which removes the units and the circular prior
+> together ([`requirements.md`](requirements.md) R1). How wide that ratio window may safely be is
+> still to be measured against data.
 
 ## 4. Software requirements
 

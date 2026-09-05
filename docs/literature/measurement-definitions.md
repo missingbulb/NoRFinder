@@ -167,7 +167,22 @@ above). Reporting both, clearly labelled, is better than choosing one blind.
 The cost is that A is not what the overview's figure draws, so the owner should confirm the
 divergence rather than discover it.
 
-**This is a question for the owner, not a decision to implement quietly.**
+### Settled, 2026-09-04 — the question is dissolved, not answered
+
+The owner declined to choose, on the grounds of not knowing enough to make the call. That is the
+right answer, and it does not block anything: **all the definitions share the pipeline and differ
+only in the final crossing rule**, so we compute them all and report them side by side, each
+labelled. Whichever best reproduces the owner's own hand measurements becomes the project's
+definition, once there are hand measurements to compare against.
+
+See [`../requirements.md`](../requirements.md) R4 for the full reasoning, including why the
+disagreement between definitions is a useful per-node quality flag rather than an embarrassment.
+
+**Do not ask the owner to choose a definition again.** The question they can answer is "show me how
+you'd measure this node", not "which of these five".
+
+The recommendation above stands as the one to *lead with* if a single number is ever needed — but
+that call is deferred, with evidence, not made now.
 
 ---
 

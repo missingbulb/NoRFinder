@@ -32,9 +32,14 @@ Full specification, including the parts the overview leaves unstated:
 - ❌ **No sample data.** The images in `figures/` are document illustrations — re-rendered
   screenshots at unknown scale. **No number may be measured off them.**
 - ❌ **No ground truth.** No annotated image, and no stated annotation convention.
-- ❌ **No code, no pipeline, no scoring harness.**
+- ✅ **R1 — scale-free baseline detector + transform-invariance harness**
+  ([`results/`](results/README.md), #10). Tier-1 invariance is exact and pinned by
+  `tests/test_invariance.py`; the scale envelope is measured at ~0.85×–2.5×.
+- ❌ **No accuracy metric, and none is possible yet** — no ground truth. The harness measures the
+  detector against *itself*, which says nothing about whether it finds the right nodes.
+- ❌ **No scoring harness** (needs annotations), no z-stack handling, no µm output path.
 
-There is no metric to report yet, because there is nothing to score.
+Run the invariance test: `pip install -r requirements.txt && python3 tests/test_invariance.py`
 
 ## What blocks starting
 
@@ -44,26 +49,30 @@ In priority order. The first two block the MVP; the third blocks §5.3 entirely.
 2. **Ground-truth annotations** on at least a few of them, plus the convention used to make them
    (what mark means "node"). Per the research playbook, ground truth is **annotated, never
    invented** — we do not get to label these ourselves.
-3. **µm-per-pixel calibration.** Every length in the spec is in µm; the example images carry no
-   scale bar. This must be read off each input's own acquisition metadata — it is a *measurement of
-   that input*, not a project constant, and it lives in exactly one place in the code once it
-   exists.
+3. **Native multi-channel files, not exports.** Blocks the µm output of §5.3, the z-stack that the
+   reference horizontality criterion needs, and unambiguous channel identity. Not a blocker on
+   detection at all — see [`requirements.md`](requirements.md) R1/R3.
+
+## Settled — do not re-open these
+
+- **The pipeline is scale-free and unit-free; physical units enter once, at output.**
+  [`requirements.md`](requirements.md) R1 and R3.
+- **Detection must be invariant to rescaling, rotation and reflection**, in three tiers — exact for
+  the resampling-free transforms, within tolerance for the rest, and with the working scale range
+  *measured* rather than promised. R2.
+- **The node-length definition is not chosen up front.** All the definitions are computed and
+  reported side by side; the owner's own hand measurements pick the winner later. R4. The owner
+  should not be asked to choose a definition again — only to demonstrate how they measure a node.
+- **The corpus includes pathological tissue, not only controls.** R5.
 
 ## Open questions for the owner
 
-- **Which node-length definition?** The overview's Figure 6 and the paper it reproduces use
-  *different* ones. Recommendation and the full case:
-  [`literature/measurement-definitions.md`](literature/measurement-definitions.md).
 - **Should void nodes (Caspr pair, no Nav) and heminodes be counted and reported separately?** They
   are excluded by the current rules, they are biologically real, and their frequency changes with
-  injury — so excluding them silently biases group comparisons.
-  ([`literature/node-biology.md`](literature/node-biology.md) §4.)
+  injury — so excluding them silently biases group comparisons. More pressing now that pathological
+  tissue is confirmed ([`literature/node-biology.md`](literature/node-biology.md) §4).
 - **What is the cost asymmetry between a false positive and a missed node?** Unstated, and it is
   the trade-off the MVP is tuned against.
-- **Will we get any pathological / injured tissue, or only controls?** It matters more than it
-  sounds: the one published automated node count degraded from 97% to a median 85% with a 15–185%
-  spread on diseased tissue, and a control-only validation would say nothing about the condition
-  the study is about ([`literature/prior-art-detection.md`](literature/prior-art-detection.md)).
 - **Is there an existing lab macro or script for this?** The literature has none; an unpublished one
   would not surface in a search.
 
@@ -78,7 +87,11 @@ there is nothing to go and read. The parts that bite hardest on this project:
 - **Prototype in the scratchpad first.** Tracked code is touched only after the visual result is
   right.
 - **Don't overfit.** No single-image special-casing. And specifically here: **no rule may bake in an
-  assumed node length**, because node length is what the project measures.
+  assumed node length**, because node length is what the project measures — which is also why the
+  spec's 1–2 µm plausibility window becomes a ratio rather than a constant
+  ([`requirements.md`](requirements.md) R1).
+- **No absolute pixel or µm constants anywhere in a decision rule**, and every change is checked
+  against the transform-invariance harness before it is scored for accuracy (R2).
 - **Record each accepted change** as a numbered iteration note (`R1`, `R2`, …) — what was wrong,
   what changed, the metric delta, and *what was tried and rejected*.
 
@@ -111,13 +124,16 @@ pip install pymupdf pillow numpy      # what this session needed
 ## Repo map
 
 ```
+src/         nor.py (detector), harness.py (invariance), render.py (overlays)
+tests/       test_invariance.py — the R2 requirement, executable
 docs/
   WARMUP.md                          this file
+  requirements.md                    standing constraints on HOW it is built — read with the brief
+  results/                           iteration notes; R1 is the first
   project-brief.md                   the specification, ingested from the owner's PDF
   project-overview-extracted-text.txt  verbatim PDF text, for wording questions
   figures/                           overview figures — ILLUSTRATIONS, not analysis inputs
   literature/                        the review; start at its README
 ```
 
-Nothing else is real yet. When a pipeline exists, this map must say which folder is *the pipeline*
-and which are spikes.
+`src/` is **the pipeline** — there are no spikes yet. When there are, this map says which is which.
