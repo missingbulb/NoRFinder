@@ -3,21 +3,14 @@
     "local/no-rfinder",
     {
       "id": "basics",
-      "version": "60903.5"
+      "version": "60904.3",
+      "via": [
+        "claudinite-lifecycle"
+      ]
     },
     {
       "id": "claudinite-lifecycle",
-      "version": "60903.5"
-    },
-    {
-      "id": "barriers",
-      "version": "60823.1",
-      "via": [
-        "claudinite-lifecycle"
-      ],
-      "answers": {
-        "goals": "No separation wanted yet \u2014 the repo has no folder layout to protect, so any edge list now would be invented. Revisit once the pipeline, scratch/spike and ground-truth folders are real."
-      }
+      "version": "60904.1"
     },
     {
       "id": "git-github",
@@ -38,11 +31,11 @@
     },
     {
       "id": "claudinite-growth",
-      "version": "60903.5"
+      "version": "60904.4"
     },
     {
       "id": "claudinite-tasks",
-      "version": "60903.4"
+      "version": "60904.2"
     },
     {
       "id": "tidy-repo",
