@@ -1,0 +1,68 @@
+{
+  "packs": [
+    "local/no-rfinder",
+    {
+      "id": "basics",
+      "version": "60903.5"
+    },
+    {
+      "id": "claudinite-lifecycle",
+      "version": "60903.5"
+    },
+    {
+      "id": "barriers",
+      "version": "60823.1",
+      "via": [
+        "claudinite-lifecycle"
+      ],
+      "answers": {
+        "goals": "No separation wanted yet \u2014 the repo has no folder layout to protect, so any edge list now would be invented. Revisit once the pipeline, scratch/spike and ground-truth folders are real."
+      }
+    },
+    {
+      "id": "git-github",
+      "version": "60903.1",
+      "via": [
+        "basics"
+      ]
+    },
+    {
+      "id": "claude-code-web-users-support",
+      "version": "60902.1",
+      "answers": {
+        "store": "missingbulb/Shepherd"
+      },
+      "config": {
+        "repo": "missingbulb/Shepherd"
+      }
+    },
+    {
+      "id": "claudinite-growth",
+      "version": "60903.5"
+    },
+    {
+      "id": "claudinite-tasks",
+      "version": "60903.4"
+    },
+    {
+      "id": "tidy-repo",
+      "version": "60903.3"
+    },
+    {
+      "id": "research-project",
+      "version": "60902.1"
+    }
+  ],
+  "taskScheduler": {
+    "dailyHour": 4,
+    "weeklyDay": "Sun",
+    "monthlyDay": 1,
+    "agenticTaskInvocationEndpoints": {
+      "default": {
+        "url": "https://api.anthropic.com/v1/claude_code/routines/trig_015wS2eGf4nRRnk6q47jTuQn/fire",
+        "tokenSecret": "CCR_ROUTINE_TOKEN"
+      }
+    }
+  },
+  "engineVersion": "60902.1"
+}
