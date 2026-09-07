@@ -3,7 +3,7 @@
 // No detect — declaration is authoritative. Natural seams for future splitting
 // (session-continuity, reading-source-articles) are noted in RULES.md.
 export default {
-  version: '60902.1',
+  version: '60906.1',
   minEngineVersion: '60822.1',
   ruleRoutingGuidance: {
     belongs: 'methodology for iterating an algorithm over sample inputs against annotated ground truth — scoring, phases, session continuity',

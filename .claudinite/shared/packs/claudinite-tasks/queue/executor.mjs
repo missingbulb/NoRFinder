@@ -17,20 +17,26 @@
 
 import { existsSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { isSuspended, readSuspendedNow, suspendedNotice, SUSPEND_ALL_VAR } from './suspend.mjs';
+import { isSuspended, liveSuspendReader, suspendedNotice, SUSPEND_ALL_VAR } from './suspend.mjs';
 import { HEARTBEAT_MS, heartbeatComment, withHeartbeat } from './heartbeat.mjs';
 import { renderTaskExec } from '../run-record.mjs';
 import { evaluatePreconditions } from '../precondition-policy.mjs';
-import { windowDays } from './signals.mjs';
+import { windowDaysOf } from './signals.mjs';
+import { isScheduledTask } from '../task-contract.mjs';
 import { swapStatus, clearStatus } from './apply-status.mjs';
+import { resolveTarget, closeSuperseded } from './target.mjs';
+import { deliveryFor } from '../land-pr.mjs';
 import {
   BLOCKED, READY, URGENT, EXECUTING, AGENT, requeueHint,
   STATUS_READY, STATUS_RUNNING_EXECUTOR, STATUS_RUNNING_AGENT, isStatus,
   TASK_DONE, TASK_OBSOLETE, QUEUE_LABELS, QUEUED_LABEL, isStandingItem,
   NEEDS_HUMAN_ACTION, NEEDS_HUMAN_APPROVAL, NEEDS_HUMAN_FAILURE,
   CLAIM_MARKER, HANDOFF_MARKER, EPISODE_MARKER,
-  parseWorkItemTitle, isWorkItemTitle, parseWorkItemBody, taskIdFromPath, parseContextLines, mergeContext, withNotBefore, withSection, editItemBody, hasLabel, DELIVERED_HEADING, LEGACY_DELIVERED_HEADINGS,
-  LAST_VERDICT_HEADING, lastVerdictLines } from './work-item.mjs';
+  parseWorkItemTitle, parseWorkItemBody, taskIdFromPath, parseContextLines, mergeContext, withNotBefore, withSection, editItemBody, hasLabel, DELIVERED_HEADING, LEGACY_DELIVERED_HEADINGS,
+  LAST_VERDICT_HEADING, lastVerdictLines,
+  withTarget,
+  itemFacts,
+} from './work-item.mjs';
 
 const titleOf = (item) => (item.title ?? '').trim();
 // An item somebody is executing — the executor holds it, or the agent it handed to
@@ -58,18 +64,19 @@ const taskIdOf = (item, pathTo = () => null) => {
 //  - THE `after` YIELD (S23): skip a scheduled item whose task declares `after:
 //    [T]` while T's standing item is live THIS CYCLE (ready / executing / agent).
 //    A declined upstream holds nothing back — it has no item at all (a no files
-//    only a board row, #1115) — and neither does one sitting `needs-human`: a
-//    broken upstream must not halt its dependents indefinitely.
+//    nothing, DESIGN §5) — and neither does one sitting `needs-human`: a broken
+//    upstream must not halt its dependents indefinitely.
 //
 // `open` is every open work item; `taskAfter(id)` gives a task's declared
-// upstreams as `<pack>/<task>` ids, and `frequencyOf(id)` that task's declared
-// frequency at HEAD — which is half of what says whether an item is a standing
+// upstreams as `<pack>/<task>` ids, and `scheduledOf(id)` whether that task is
+// asked by the scheduler at HEAD (`isScheduledTask`; null where the repo no longer
+// carries it) — which is half of what says whether an item is a standing
 // occurrence or an ad-hoc run (§15.26). `random` is the tie-break draw, injected
 // so a test can pin an order the production call deliberately does not have.
-export function pickOrder(open = [], { taskAfter = () => [], frequencyOf = () => null, random = Math.random, pathTo = () => null } = {}) {
+export function pickOrder(open = [], { taskAfter = () => [], scheduledOf = () => null, random = Math.random, pathTo = () => null } = {}) {
   const idOf = (item) => taskIdOf(item, pathTo);
   const live = (item) => [STATUS_READY, STATUS_RUNNING_EXECUTOR, STATUS_RUNNING_AGENT].some((s) => isStatus(item, s));
-  const standing = (item) => isStandingItem(item, frequencyOf(idOf(item)));
+  const standing = (item) => isStandingItem(item, scheduledOf(idOf(item)));
   const liveUpstream = (upstreamId) => open.some((o) =>
     idOf(o) === upstreamId && standing(o) && live(o));
   // One draw per item, taken once: a comparator that called `random()` per
@@ -127,9 +134,9 @@ export function claimWinner(comments = []) {
 // one item, not one title. If a conflicting item now holds an EARLIER claim
 // (comment id — the same arbiter the lease trusts), this executor reverts its own
 // claim and moves on. Bounded, deterministic, and the earlier claim never notices.
-export function conflictsWithEarlierClaim(item, myClaimId, others, { taskAfter = () => [], frequencyOf = () => null, pathTo = () => null } = {}) {
+export function conflictsWithEarlierClaim(item, myClaimId, others, { taskAfter = () => [], scheduledOf = () => null, pathTo = () => null } = {}) {
   const idOf = (i) => taskIdOf(i, pathTo);
-  const standing = (i) => isStandingItem(i, frequencyOf(idOf(i)));
+  const standing = (i) => isStandingItem(i, scheduledOf(idOf(i)));
   const upstreams = standing(item) ? taskAfter(idOf(item)) : [];
   return others.some((o) => {
     if (o.number === item.number) return false;
@@ -140,12 +147,12 @@ export function conflictsWithEarlierClaim(item, myClaimId, others, { taskAfter =
   });
 }
 
-// The no-go outcome (DESIGN §6.4, as amended by #1115): every decline CLOSES
-// the item with the reason. The roll — `Not-before` stamped, open-blocked,
-// waiting out the period — is gone: "asked and declined" lives on the schedule
-// board, and a scheduled item's next occurrence is the scheduler run's ask at
-// its next anchor (the closed-at half of the occurrence guard keeps this
-// period consumed). `standing` marks whether the close should say so.
+// The no-go outcome (DESIGN §6.4): every decline CLOSES the item with the
+// reason. The roll — `Not-before` stamped, open-blocked, waiting out the period —
+// is gone, and so is the schedule board: a scheduled task's next occurrence is
+// the scheduler run's ask at its next tick, and the closed item is itself the
+// history the task's cadence term reads (a `due:` period this item started in is
+// consumed by it). `standing` marks whether the close should say so.
 // The `(item, task, schedule, now, reason)` signature is kept — callers and
 // fielded tests pass all five, and the standing/ad-hoc distinction still
 // shapes the close's wording.
@@ -155,7 +162,7 @@ export function noGoPlan(item, task, schedule, now, reason) {
     outcome: TASK_OBSOLETE,
     stateReason: 'not_planned',
     reason,
-    standing: isStandingItem(item, task?.decl?.frequency),
+    standing: isStandingItem(item, task?.decl ? isScheduledTask(task.decl) : null),
   };
 }
 
@@ -197,18 +204,28 @@ export async function runExecutor({
   gh, repo, root, config, tasks, executorId, runUrl = null,
   now = () => new Date(), random = Math.random, heartbeatMs = HEARTBEAT_MS,
   collectSignalsFor, runTaskCodeWork, invokeAgent, heldNow = null, log = console.log,
+  resolveTargetFor = null,
 }) {
   const api = await import('../github.mjs');
   const { listOpenWorkItems } = await import('./read.mjs');
   const schedule = config.taskScheduler;
   const byId = new Map(tasks.map((t) => [`${t.pack}/${t.id}`, t]));
   const taskAfter = (id) => byId.get(id)?.decl?.schedule_after ?? [];
-  const frequencyOf = (id) => byId.get(id)?.decl?.frequency ?? null;
+  const scheduledOf = (id) => (byId.has(id) ? isScheduledTask(byId.get(id).decl) : null);
   // A marked issue names its task by worker path, so the run needs the inverse of
   // the id map — built from the same task set, so a path this repo does not carry
   // resolves to nothing and the item is malformed rather than guessed at.
   const byPath = new Map(tasks.map((t) => [t.taskPath, `${t.pack}/${t.id}`]));
   const pathTo = (p) => byPath.get(p) ?? null;
+  // THE TARGET SEAM (DESIGN §6.4b): which branch and pull request a run works on,
+  // resolved from the task's declared outcome against the repo's open pull
+  // requests. The member's delivery preference is what says whether a green
+  // incumbent may be landed on the way; it is read once, from the same config the
+  // hand-off reads.
+  const resolveTargetOf = resolveTargetFor ?? ((task, at) => resolveTarget({
+    gh, repo, taskId: `${task.pack}/${task.id}`, outcome: task.decl.expected_outcome,
+    delivery: deliveryFor(config), now: at, log,
+  }));
   const done = [];
   // Items this run has let go of — a lost race, a reverted claim — and must not
   // pick again. Without it a revert re-picks what it just returned to the queue.
@@ -218,7 +235,7 @@ export async function runExecutor({
     // Read live every time: the settle just made may have readied a dependent,
     // and another executor may have taken what was pickable a moment ago.
     const open = await listOpenWorkItems(gh, repo);
-    const candidate = pickOrder(open, { taskAfter, frequencyOf, random, pathTo })
+    const candidate = pickOrder(open, { taskAfter, scheduledOf, random, pathTo })
       .find((i) => !standDown.has(i.number));
     if (!candidate) break;
 
@@ -246,7 +263,7 @@ export async function runExecutor({
 
     // --- post-claim re-verify (F15) -----------------------------------------
     const others = await withClaimIds(api, gh, repo, await listOpenWorkItems(gh, repo), candidate.number);
-    if (conflictsWithEarlierClaim(candidate, winner.id, others, { taskAfter, frequencyOf, pathTo })) {
+    if (conflictsWithEarlierClaim(candidate, winner.id, others, { taskAfter, scheduledOf, pathTo })) {
       await api.comment(gh, repo, candidate.number,
         `${EPISODE_MARKER}\nReverting this claim: a conflicting item holds an earlier claim this cycle. Returning the item to the queue.`);
       await swapStatus(api, gh, repo, candidate, STATUS_RUNNING_EXECUTOR, READY);
@@ -258,6 +275,7 @@ export async function runExecutor({
     const outcome = await executeItem({
       api, gh, repo, root, config, schedule, byId, pathTo, item: candidate, executorId,
       claim: winner, now, heartbeatMs, collectSignalsFor, runTaskCodeWork, invokeAgent, log,
+      resolveTargetOf,
     });
     done.push({ issue: candidate.number, outcome });
 
@@ -288,7 +306,7 @@ async function withClaimIds(api, gh, repo, items, selfNumber) {
 // One claimed item, from validation through to a terminal state (or a hand-off).
 async function executeItem({
   api, gh, repo, root, config, schedule, byId, pathTo = () => null, item, executorId, claim,
-  now, heartbeatMs, collectSignalsFor, runTaskCodeWork, invokeAgent, log,
+  now, heartbeatMs, collectSignalsFor, runTaskCodeWork, invokeAgent, log, resolveTargetOf,
 }) {
   const parsed = parseWorkItemTitle(item.title);
   const { taskPath } = parseWorkItemBody(item.body);
@@ -348,12 +366,14 @@ async function executeItem({
 
   // --- the single precondition evaluation (DESIGN §6.4) --------------------
   const at = now();
-  const fields = parseWorkItemBody(item.body);
-  // The signals are collected FOR THIS OCCURRENCE, and the precondition judges over
-  // it: a request item's verdict is about the issue it names, which no signal bundle
-  // can single out on its own (DESIGN §16.4).
+  // The item's own facts — its fields, its number, whether somebody woke it — are
+  // what the terms judge over: a request item's verdict is about the issue it
+  // names, which no signal bundle can single out on its own (DESIGN §16.4), and
+  // the cadence terms hold on a woken item (§5). The signals are collected FOR
+  // THIS OCCURRENCE, its own run history excluding it.
+  const fields = itemFacts(item);
   const signals = await collectSignalsFor(task, at, item);
-  const verdict = evaluatePrecondition(task, signals, config.packConfig?.[task.pack] ?? {}, fields, at);
+  const verdict = evaluatePrecondition(task, signals, config.packConfig?.[task.pack] ?? {}, fields, at, schedule);
 
   // A PRECONDITION THAT COULD NOT ANSWER IS A RUN FAILURE, NOT A VERDICT (F27). A
   // decline is a decision about the world; one taken on an API that would not answer
@@ -386,7 +406,7 @@ async function executeItem({
     await close(api, gh, repo, item, STATUS_RUNNING_EXECUTOR, TASK_OBSOLETE, 'not_planned',
       `The precondition declined: ${plan.reason}`
       + (plan.standing
-        ? '\n\nThis task\'s next occurrence is decided at its next anchor; declined occurrences are recorded on the schedule board.'
+        ? '\n\nThis task is asked again at the next scheduler run; a decline is recorded nowhere but here.'
         : ''), 'success');
     return 'obsolete';
   }
@@ -398,11 +418,39 @@ async function executeItem({
   // occurrence's precondition added. Passing only the verdict's half is what made
   // a hand-created item's parameters unreachable (#974).
   const context = mergeContext(parseContextLines(item.body), verdict.context ?? []);
+
+  // --- the target: which pull request this run works on (DESIGN §6.4b) ------
+  // Decided ONCE, here, between the go and the work, and handed to both phases —
+  // code-work as environment, the agent as item fields — so neither phase
+  // discovers, chooses or disposes of a pull request on its own. A read the
+  // resolver could not make is a run failure like an unanswerable precondition
+  // (F27): an unreadable pull request list looks exactly like an empty one, and
+  // "nothing to amend" on that evidence stacks a duplicate.
+  const target = await resolveTargetOf(task, at);
+  if (target.error) {
+    await converge(api, gh, repo, item, STATUS_RUNNING_EXECUTOR, NEEDS_HUMAN_FAILURE, claim,
+      `This run could not be given a target: ${target.error}\n\nNothing ran and nothing was written. Re-queue this item (${requeueHint}) once the cause has cleared.`);
+    log(`! #${item.number} ${id}: the target could not be resolved — ${target.error}`);
+    return 'needs-human';
+  }
+  log(`- #${item.number} ${id}: target — ${target.reason}`);
+  if (target.landed) {
+    // The previous delivery had concluded green and was landed by the resolution.
+    // That IS this occurrence: the tree this run holds predates the merge, so the
+    // work would re-deliver a diff already on the base. The next occurrence
+    // converges from the moved base.
+    await closeSuperseded({ gh, repo, numbers: target.supersedes, successor: target.landed, log });
+    await close(api, gh, repo, item, STATUS_RUNNING_EXECUTOR, TASK_DONE, 'completed',
+      `Landed #${target.landed}, this task's previous delivery, which had concluded green and was never merged. `
+      + 'The checkout this run holds predates that merge, so nothing else ran; the next occurrence converges from the moved base.', 'success');
+    return TASK_DONE;
+  }
+
   if (task.decl.code_work) {
     // The work step may legitimately run for hours (§15.15). While it does, the
     // item's only sign of life is this beat — which is also what the scheduler run's leash
     // measures, so a long run is legal rather than reclaimed underneath itself.
-    const result = await withHeartbeat(() => runTaskCodeWork(task, { item, context }), {
+    const result = await withHeartbeat(() => runTaskCodeWork(task, { item, context, target }), {
       intervalMs: heartbeatMs,
       log,
       beat: (minutes) => api.comment(gh, repo, item.number,
@@ -431,6 +479,16 @@ async function executeItem({
         `This task declares repo Actions secrets that are not configured: ${result.missingSecrets.join(', ')}. Set them in repo settings and re-queue this item (${requeueHint}).`);
       return 'needs-human';
     }
+    // SUPERSEDING, ONCE THE SUCCESSOR EXISTS. The pull request code-work delivered
+    // — open or already merged — is what the task's earlier ones were waiting to be
+    // replaced by; a run that delivered none leaves them where they were (a review
+    // member's pending pull request is never taken away for nothing). Performed
+    // here, the set is cleared before the hand-off so the agent's converge is not
+    // asked to close them a second time.
+    if (target.supersedes?.length && result.deliveredPr) {
+      await closeSuperseded({ gh, repo, numbers: target.supersedes, successor: result.deliveredPr, log });
+      target.supersedes = [];
+    }
     if (!result.agentRequested) {
       // THE WORKER'S REQUEUE ASK (#1530): the run happened, found its subject not
       // yet there, and prescribed its own wake — neither done nor broken. Stamp
@@ -456,9 +514,9 @@ async function executeItem({
       }
       // A run that deliberately left an UNMERGED PR is not finished, it is waiting
       // on a person — so the item stays OPEN at `task:needs-human-approval` rather
-      // than closing as delivered. It does not hold the task's lane while it waits
-      // (`isBlockingPark`): the next occurrence is filed on schedule around it, so
-      // an unreviewed PR delays nobody but its reviewer.
+      // than closing as delivered. A park is not live, so the next occurrence is
+      // filed on schedule around it and an unreviewed PR delays nobody but its
+      // reviewer.
       if (result.openPr) {
         await converge(api, gh, repo, item, STATUS_RUNNING_EXECUTOR, NEEDS_HUMAN_APPROVAL, claim,
           `Code-work did this run's work and opened a PR for you to approve:\n${result.delivered.map((d) => `- ${d}`).join('\n')}`
@@ -471,7 +529,7 @@ async function executeItem({
           : 'Code-work did this run\'s work; no agent was needed.', 'success');
       return TASK_DONE;
     }
-    return handOff({ api, gh, repo, item, task, id, context, result, executorId, claim, invokeAgent, config, log });
+    return handOff({ api, gh, repo, item, task, id, context, result, target, executorId, claim, invokeAgent, config, log });
   }
 
   // An agentless task with no code-work does nothing (the contract forbids it).
@@ -480,7 +538,7 @@ async function executeItem({
       'This task is agentless but declares no code_work, so there is nothing to run — a contract-forbidden shape that reached the queue.', 'invalid');
     return 'needs-human';
   }
-  return handOff({ api, gh, repo, item, task, id, context, result: {}, executorId, claim, invokeAgent, config, log });
+  return handOff({ api, gh, repo, item, task, id, context, result: {}, target, executorId, claim, invokeAgent, config, log });
 }
 
 // Run one task's precondition. THE only place a precondition is ever called, so a
@@ -492,14 +550,18 @@ async function executeItem({
 // is the only gate a task may declare (#1617). It fails LOUD by construction — a
 // term that throws, an unknown name, an unreadable signal all return `{ error }`,
 // a run failure the caller parks rather than a decline taken on a guess.
-export function evaluatePrecondition(task, signals, packConfig = {}, item = null, at = null) {
+export function evaluatePrecondition(task, signals, packConfig = {}, item = null, at = null, schedule = null) {
   return evaluatePreconditions({
     preconditions: task.decl.preconditions,
     signals,
     config: packConfig,
     item,
     terms: task.terms,
-    windowDays: windowDays(task),
+    // The window the signals were collected over, read off the bundle where it
+    // was decided (queue/signals.mjs).
+    windowDays: windowDaysOf(task, signals),
+    // The repo's anchor settings, which a `due:` term resolves its cadence on.
+    schedule,
     // The instant this verdict is for — the same one the signals were collected
     // for, so a clock-reading term and a windowed one cannot disagree about when
     // "now" is.
@@ -532,12 +594,15 @@ export function rollBody(body, until, reason, at) {
 // what lets this be as short as it is. The nonce goes on the item before the call
 // and travels in the payload, so the session can prove the fire it arrived on is
 // the hand-off this item recorded and stop if it is not.
-async function handOff({ api, gh, repo, item, task, id, context, result, executorId, claim, invokeAgent, config, log }) {
+async function handOff({ api, gh, repo, item, task, id, context, result, target = null, executorId, claim, invokeAgent, config, log }) {
   const nonce = `${item.number}-${Math.random().toString(36).slice(2, 10)}`;
   // Every section lands in the machine's half of the body — the whole body for a
   // filed item, the machine block for a marked issue, whose prose is the person's.
   const body = editItemBody(item.body, (machine) => {
     let out = machine;
+    // The target's fields first, under the task path: the branch the session
+    // pushes to, the pull request it amends, the ones its converge supersedes.
+    if (target) out = withTarget(out, target);
     if (context.length) out = withSection(out, 'Context', context);
     if (result.delivered?.length) out = withSection(out, DELIVERED_HEADING, result.delivered, LEGACY_DELIVERED_HEADINGS);
     if (result.reason) out = withSection(out, 'Why the agent is here', [result.reason]);
@@ -643,11 +708,11 @@ async function close(api, gh, repo, item, from, outcome, stateReason, body, stat
   await api.comment(gh, repo, item.number, body + recordFor(item, status));
   await clearStatus(api, gh, repo, item, from);
   await api.addLabel(gh, repo, item.number, outcome);
-  // A REJECTED TERMINAL IS NOT THE RUN'S TO CLOSE A MARKED ISSUE ON (§16.5): the
-  // run's verdict is about the run, not the issue's validity, so the status stands
-  // on the still-open issue and clearing it is the asker's lever. `done` is the
-  // other half and closes either shape (#1489) — nothing is left to act on.
-  if (outcome !== TASK_DONE && !isWorkItemTitle(item.title)) return;
+  // A TERMINAL CLOSES THE ISSUE IT STANDS ON, marked or filed, and both terminals do
+  // (§16.5, owner 2026-09-06). `done` means nothing is left to act on; `rejected`
+  // means nothing will happen. Neither is a question, so neither leaves an open issue
+  // behind asking a person to agree with a verdict already reached — and re-asking is
+  // what it always was, clearing the status.
   await api.closeIssue(gh, repo, item.number, stateReason);
 }
 
@@ -693,7 +758,7 @@ async function main() {
     collectSignalsFor: collectSignalsForTask({ gh, repo, root, config, defaultBranch }),
     runTaskCodeWork: codeWorkRunner({ root, repo, defaultBranch }),
     invokeAgent: agentInvoker({ repo, config }),
-    heldNow: () => readSuspendedNow(gh, repo, { log: console.log }),
+    heldNow: liveSuspendReader(gh, repo, { log: console.log }),
   });
 
   console.log(done.length

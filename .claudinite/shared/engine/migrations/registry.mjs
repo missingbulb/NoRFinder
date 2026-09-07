@@ -5,7 +5,7 @@ import { RENAMED_PACKS } from '../pack_loader/renamed-packs.mjs';
 import { SETTINGS_FILE, SETTINGS_FILES, LEGACY_SETTINGS_FILE } from '../settings-file.mjs';
 import { installedVersions, withInstalledVersions, LEGACY_STAMP_KEY } from '../installed-versions.mjs';
 import { ENDPOINTS_KEY, LEGACY_ENDPOINTS_KEY } from '../checks/helpers/repo-context.mjs';
-import { LOCAL_PACK_ROOT, taskDirsWithModule, convertTaskDeclarations } from './task-declarations-to-json.mjs';
+import { LOCAL_PACK_ROOT, taskDirsWithJson, updateTaskSchedulingFields } from './task-declarations-to-json.mjs';
 
 // <corpus>/engine/migrations/ — records are addressed corpus-relative, because they
 // no longer share one directory with this module: an engine record sits beside it,
@@ -347,7 +347,44 @@ export function mergeDeclarationEntries(survivor, absorbed) {
     // Two scalars that disagree: the survivor's stands. It is the entry the member
     // wrote for the pack that still exists under its own name.
   }
-  return base;
+  // `via` says which packs pulled this one in, and an absorbed pack's `via` can name
+  // the very pack that absorbed it — leaving the survivor claiming it was required by
+  // itself. Drop that, and where nothing but the id survives, write the entry back as
+  // the bare string a member declaring a plain pack has.
+  if (Array.isArray(base.via)) {
+    const via = base.via.filter((v) => v !== base.id);
+    if (via.length) base.via = via; else delete base.via;
+  }
+  return Object.keys(base).length === 1 ? base.id : base;
+}
+
+// An ABSORBED pack's entry, reshaped for the pack that is about to swallow it.
+// Two things a plain id rename cannot get right on its own:
+//
+//   CONFIG COLLIDES. Both entries carry a flat `config`, and the merge below
+//   spreads one over the other — so an absorbed `{ rules: [...] }` would land as
+//   the survivor's own `config.rules`, a key the survivor may already mean
+//   something else by. Nesting it under the absorbed pack's own id keeps the
+//   parameters saying whose they are, which is also what the survivor's code then
+//   reads.
+//   ANSWERS OUTLIVE THEIR QUESTION. An answer is recorded against a question the
+//   absorbed pack declared; the survivor does not declare it, so the answer
+//   becomes an interview-hygiene finding the owner cannot act on. The record names
+//   the ids it drops rather than dropping every answer, because a RENAME (as
+//   opposed to an absorption) keeps asking its questions.
+//
+// Declared per record — `absorbedPackConfig: [{ id, dropAnswers? }]` — never
+// derived from the rename map, which cannot tell an absorption from a rename.
+function reshapeAbsorbed(entry, spec) {
+  if (typeof entry === 'string' || entry === null || typeof entry !== 'object') return entry;
+  const next = { ...entry };
+  if (next.config !== undefined && next.config !== null) next.config = { [spec.id]: next.config };
+  const drop = spec.dropAnswers ?? [];
+  if (drop.length && next.answers && typeof next.answers === 'object') {
+    const kept = Object.fromEntries(Object.entries(next.answers).filter(([k]) => !drop.includes(k)));
+    if (Object.keys(kept).length) next.answers = kept; else delete next.answers;
+  }
+  return next;
 }
 
 export async function applyPackRenames(migration, { read, write }) {
@@ -362,11 +399,14 @@ export async function applyPackRenames(migration, { read, write }) {
   if (!Array.isArray(config.packs)) return [];
 
   const done = [];
-  const renamed = config.packs.map((entry) => {
-    const id = typeof entry === 'string' ? entry : entry?.id;
-    if (typeof id !== 'string' || id.startsWith(LOCAL_DECL) || id.startsWith(LEGACY_LOCAL_DECL)) return entry;
+  const absorbed = new Map((migration.absorbedPackConfig ?? []).map((s) => [s.id, s]));
+  const renamed = config.packs.map((raw) => {
+    const id = typeof raw === 'string' ? raw : raw?.id;
+    if (typeof id !== 'string' || id.startsWith(LOCAL_DECL) || id.startsWith(LEGACY_LOCAL_DECL)) return raw;
     const to = RENAMED_PACKS[id];
-    if (to === undefined) return entry;
+    if (to === undefined) return raw;
+    const spec = absorbed.get(id);
+    const entry = spec ? reshapeAbsorbed(raw, spec) : raw;
     done.push(`${file}: ${id} -> ${to}`);
     return typeof entry === 'string' ? to : { ...entry, id: to };
   });
@@ -478,23 +518,22 @@ export async function applySettingsReshape(migration, { read, write, move, exist
 // go through this, so an op added to the vocabulary cannot reach one and miss the
 // other: that omission is silent (the record simply does nothing on that path) and
 // is exactly what a member would never notice.
-// Write side — "this repo's own task declarations are data": convert every local
-// pack's `tasks/<name>/task.mjs` to `task.json` and delete the module, so a member
-// never converts by hand. A NAMED CODEMOD like the declaration normalization
-// above: the decision needs the repo's own disk (which folders carry a module),
-// and the JSON is the module's evaluated export, which no rewrite can produce.
-// The record declares `taskDeclarationsToJson: true`; the converter ships with the
+
+// Write side — "a task's cadence is one of its own conditions" (tasks-dispatch
+// DESIGN §5, #1725): fold the retired `frequency` of every local pack's task.json
+// into its `preconditions`, as anchored text. A NAMED CODEMOD like the declaration
+// normalization above: which files carry the field is the repo's own disk.
+// The record declares `updateTaskSchedulingFields: true`; the rewrite ships with the
 // engine (task-declarations-to-json.mjs) and is the same one the CLI runs.
 //
-// Needs three capabilities beyond the classic io — a directory listing, a delete
-// and a module import. A caller that lacks them (an older vendored worker running
-// this registry) converts nothing rather than half-converting: the member keeps
-// its modules, which still load, until a worker that can do the whole step runs.
-export async function applyTaskDeclarationConversion(migration, io) {
-  if (!migration.taskDeclarationsToJson) return [];
-  if (['listDir', 'remove', 'importModule'].some((c) => typeof io[c] !== 'function')) return [];
+// Needs the directory listing beyond the classic io; a caller without it rewrites
+// nothing rather than half-rewriting, and both retired shapes keep working at the
+// door until a worker that can do the step runs.
+export async function applyTaskSchedulingFields(migration, io) {
+  if (!migration.updateTaskSchedulingFields) return [];
+  if (typeof io.listDir !== 'function') return [];
   if (migration.appliesTo && !(await migration.appliesTo(io.read))) return [];
-  return convertTaskDeclarations(taskDirsWithModule([LOCAL_PACK_ROOT], io), io);
+  return updateTaskSchedulingFields(taskDirsWithJson([LOCAL_PACK_ROOT], io), io);
 }
 
 export async function applyMigration(migration, io) {
@@ -504,7 +543,7 @@ export async function applyMigration(migration, io) {
   applied.push(...(await applyRewrites(migration, io)));
   applied.push(...(await applyPackDeclarations(migration, io)));
   applied.push(...(await applyLocalDeclarationNormalization(migration, io)));
-  applied.push(...(await applyTaskDeclarationConversion(migration, io)));
+  applied.push(...(await applyTaskSchedulingFields(migration, io)));
   applied.push(...(await applyPackRenames(migration, io)));
   // LAST: every op above writes to whichever name the member still carries, and this
   // is the one that changes which name that is.
@@ -552,7 +591,7 @@ export function assertNoAgenticNote(m) {
 //
 //   - `why` (required, non-empty string) — what the session is for, in the PR and in
 //     the log. The terminal vocabulary insists every non-green end be explainable
-//     (updates/terminals.mjs), and this is the sentence for this one.
+//     (the update flows' terminal vocabulary), and this is the sentence for this one.
 //   - `instructions` (optional string) — appended to the standing brief. The standing
 //     brief is policy that holds for every apply stage; this is what only this record
 //     knows, and without it the declaration would be a bare boolean that tells the
