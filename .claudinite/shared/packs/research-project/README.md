@@ -11,7 +11,7 @@ A project-class pack (prose-only, declared — no fingerprint) for the recurring
 | Say which reported numbers are trustworthy | high | correctness | prose: 112 words |
 | Show the owner pictures, proactively | medium | complexity | prose: 35 words |
 | Leave finished work committed and pushed | medium | complexity | prose: 24 words |
-| The owner's annotations are the ground truth. | high | correctness | prose: 24 words |
+| The owner's annotations are the ground truth. | high | correctness | prose: 36 words |
 | Ground truth is annotated, never fabricated. | critical | correctness | prose: 38 words |
 | Separate source-of-truth from generated artifacts. | high | correctness | prose: 52 words |
 | Make extraction deterministic and self-checking. | high | correctness | prose: 34 words |

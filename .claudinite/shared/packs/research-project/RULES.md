@@ -66,7 +66,8 @@ For every substantive algorithmic change, in this order:
 ## 2. Ground truth — user-provided, annotated, **never invented**
 
 - **The owner's annotations are the ground truth.** Every change is validated by
-  agreement against them, not against your own expectation of the answer.
+  agreement against them, not against your own expectation of the answer — and never
+  against the pipeline's own prior output, which validates nothing.
 - **Ground truth is annotated, never fabricated.** Do not invent labels to make a
   dataset scorable. If a dataset lacks the annotation a given harness needs, it
   does not go into that harness (see §9 on validation tiers).

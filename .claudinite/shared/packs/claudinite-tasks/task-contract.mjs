@@ -4,11 +4,11 @@
 // `validate-dispatch` validate against this one function, so the accepted shape
 // can never drift between the two surfaces.
 
-import { ACCEPTED_FREQUENCIES, normalizeFrequency } from './calendar.mjs';
+import { ACCEPTED_FREQUENCIES, cadenceTermFor, cadenceOf, statesConditions, DUE_TERM } from './calendar.mjs';
 import { MODEL_FAMILIES } from './model-map.mjs';
 import { EXECUTING_LEASH_MS } from './queue/leases.mjs';
 import { normalizePolicy } from './merge-policy.mjs';
-import { validatePreconditions, preconditionSignals } from './precondition-policy.mjs';
+import { validatePreconditions, preconditionSignals, preconditionNeedsItem, NONE } from './precondition-policy.mjs';
 import { applyTaskDefaults } from './task-defaults.mjs';
 
 // A declared timeout is always a whole number of seconds, > 0.
@@ -48,13 +48,27 @@ export const LEGACY_FIELDS = {
 
 // The defaults live in task-defaults.mjs — a module with no imports, so the
 // dashboard's browser bundle can fill them the way the loader does.
-export { DEFAULT_PRECONDITIONS, DEFAULT_AUTOMERGE, DEFAULT_AGENT_MODEL } from './task-defaults.mjs';
+export { DEFAULT_AUTOMERGE, DEFAULT_AGENT_MODEL } from './task-defaults.mjs';
+
+// WHO MINTS AN OCCURRENCE, and WHAT MUST HOLD once one exists (tasks-dispatch
+// DESIGN §5). Two fields, one sentence: `trigger` says whether the scheduler asks
+// this task at every tick, `preconditions` says what has to be true for the run to
+// go ahead — judged identically at a tick and at a pick. A `request` task is asked
+// by nobody and runs from an item somebody created: a marked issue, a wake, a chain
+// link, a fan-out target.
+export const TRIGGER_SCHEDULE = 'schedule';
+export const TRIGGER_REQUEST = 'request';
+export const TRIGGERS = Object.freeze([TRIGGER_SCHEDULE, TRIGGER_REQUEST]);
+
+// The cadence a task keeps, as the term it states — `null` where it states none.
+export const taskCadence = (decl) => cadenceOf(decl?.preconditions);
+export const isScheduledTask = (decl) => decl?.trigger === TRIGGER_SCHEDULE;
 
 // Return the declaration with canonical field names and the defaults filled in.
 // Non-objects pass through untouched so validateTaskDeclaration still reports
 // them. Loaders (discover, resolve-dispatch) normalize once; everything
 // downstream sees only `code_work` and never an absent defaulted field.
-export function normalizeTaskDeclaration(decl) {
+export function normalizeTaskDeclaration(decl, terms = new Map()) {
   if (decl === null || typeof decl !== 'object' || Array.isArray(decl)) return decl;
   const out = { ...decl };
   // The editor's schema pointer, when a caller hands over a parsed task.json whole.
@@ -65,33 +79,104 @@ export function normalizeTaskDeclaration(decl) {
       delete out[legacy];
     }
   }
-  // THE ONE DOOR for the retired frequency spellings (DESIGN §17.1). Here rather than in the
-  // calendar because a frequency is read by more than the calendar — see `normalizeFrequency`.
-  if (out.frequency !== undefined) out.frequency = normalizeFrequency(out.frequency);
+  // THE FREQUENCY DOOR (tasks-dispatch DESIGN §5). `frequency` is retired: a task's
+  // cadence is one of its own preconditions, read off its run history. A declaration
+  // still carrying the field reads exactly as it always did — the field becomes the
+  // cadence term it always meant, first in the expression, and a `none` beside it
+  // (the empty precondition it used to need) drops; `manual` meant no schedule and
+  // adds no term. The field itself does not survive the door: nothing downstream
+  // reads it.
+  //
+  // Scaffolding, not a second vocabulary: `legacy-task-fields` reports the field,
+  // and the nightly update rewrites a member's own task files (the
+  // `task-cadence-terms` record), so the acceptance ends one convergence window
+  // after #1725 ships (#1732).
+  // @legacy-tolerance advisory:legacy-task-fields retire:#1732
+  if (out.frequency !== undefined) {
+    const stated = Array.isArray(out.preconditions) ? out.preconditions.filter((e) => String(e).trim() !== NONE) : [];
+    if (ACCEPTED_FREQUENCIES.includes(out.frequency)) {
+      const term = cadenceTermFor(out.frequency);
+      out.preconditions = term === null || stated.some((e) => String(e).trim() === term) ? stated : [term, ...stated];
+    } else {
+      // An illegal frequency is still reported, as the illegal condition it becomes.
+      out.preconditions = [`${DUE_TERM}:${out.frequency}`, ...stated];
+    }
+    delete out.frequency;
+  }
+  // A declaration stating no conditions carries the empty expression from here on,
+  // so every reader judges one array: at a pick it holds, at a tick it is never asked.
+  if (out.preconditions === undefined) out.preconditions = [];
+  // THE TRIGGER DOOR. A declaration written before the field existed is read the way
+  // the schedule was read then — off the SHAPE of the expression: conditions the
+  // scheduler can judge put the task on the schedule; no conditions, or one that
+  // reads the item itself, keep it off. Derived, never defaulted: the answer that
+  // declaration already gives, so nothing changes behaviour by passing through here.
+  //
+  // Scaffolding, not a second vocabulary: `legacy-task-fields` reports a declaration
+  // stating no trigger, and the nightly update writes the derived value into a
+  // member's own task files (the `task-cadence-terms` record), so the derivation ends
+  // one convergence window after that advisory ships (#1789).
+  // @legacy-tolerance advisory:legacy-task-fields retire:#1789
+  if (out.trigger === undefined) {
+    out.trigger = statesConditions(out.preconditions) && !preconditionNeedsItem(out.preconditions, terms)
+      ? TRIGGER_SCHEDULE
+      : TRIGGER_REQUEST;
+  }
   // The retired outcome ceilings become the outcome/policy pair. An explicit
   // `automerge` beside a legacy spelling wins: a half-migrated declaration
   // keeps the narrower intent it states.
   if (LEGACY_OUTCOMES[out.expected_outcome] !== undefined) {
     if (out.automerge === undefined) out.automerge = LEGACY_OUTCOMES[out.expected_outcome];
-    out.expected_outcome = 'pr';
+    out.expected_outcome = 'fresh_pr';
   }
+  if (LEGACY_CEILINGS[out.expected_outcome] !== undefined) out.expected_outcome = LEGACY_CEILINGS[out.expected_outcome];
   return applyTaskDefaults(out);
 }
 
-// The write ceiling a task declares (DESIGN §1, §4). A declared MAXIMUM, not a
-// promise: `none` may never open a PR; `pr` may open one, and what (if anything)
-// the run may then MERGE is the separate `automerge` policy — 'nothing',
-// 'anything', or a list of diff classes merge-policy.mjs evaluates the actual
-// diff against. "No change" is always legal.
-export const OUTCOMES = ['none', 'pr'];
+// What a task's run does to PULL REQUESTS (tasks-dispatch DESIGN §6.4b, decision
+// §15.32) — the write ceiling and the target in one word, resolved once by the
+// executor before code-work and handed to both phases:
+//   no_code_changes                  — never opens one.
+//   fresh_pr                         — one on a freshly minted branch; the task's
+//                                      earlier pull requests are left as they are.
+//   amend_existing_or_create_new_pr  — pushes onto the task's newest open pull
+//                                      request while it has no conflicts with its
+//                                      base; a fresh branch otherwise.
+//   supersede_existing_pr            — a fresh branch, and once the run's own pull
+//                                      request exists the task's earlier ones close
+//                                      as superseded (a green, unlanded one on an
+//                                      auto-merge repo is landed instead).
+// A declared MAXIMUM, not a promise: "no change" is always legal, and what (if
+// anything) the run may then MERGE is the separate `automerge` policy — 'nothing',
+// 'anything', or a list of diff classes merge-policy.mjs evaluates the actual diff
+// against.
+export const OUTCOMES = ['no_code_changes', 'fresh_pr', 'amend_existing_or_create_new_pr', 'supersede_existing_pr'];
+export const OUTCOME_NO_PR = 'no_code_changes';
+
+// Whether a (canonical) outcome lets the run open a pull request at all — the
+// half of the contract `automerge` hangs off.
+export const opensPullRequest = (outcome) => outcome !== OUTCOME_NO_PR;
 
 // The retired one-word ceilings, each carrying the policy it always meant, and
-// normalizing at the door like the code-work renames above: `open-pr` is a pr task
-// that merges nothing, `merged-pr` a pr task authorized for anything. Accepted on
+// normalizing at the door like the code-work renames above: `open-pr` is a fresh-pr
+// task that merges nothing, `merged-pr` one authorized for anything. Accepted on
 // the same terms as the renames above — one convergence window past the advisory,
 // and no longer (#1642).
 // @legacy-tolerance advisory:legacy-task-fields retire:#1642
 export const LEGACY_OUTCOMES = { 'open-pr': 'nothing', 'merged-pr': 'anything' };
+
+// The retired two-word generation, each the word it became: `none` never opened a
+// pull request, `pr` opened a fresh one and left the task's earlier ones alone.
+// Same terms as the pair above (#1642).
+// @legacy-tolerance advisory:legacy-task-fields retire:#1642
+export const LEGACY_CEILINGS = { none: 'no_code_changes', pr: 'fresh_pr' };
+
+// Today's word for any spelling the door accepts, or null for one it does not.
+export function canonicalOutcome(outcome) {
+  if (LEGACY_OUTCOMES[outcome] !== undefined) return 'fresh_pr';
+  if (LEGACY_CEILINGS[outcome] !== undefined) return LEGACY_CEILINGS[outcome];
+  return OUTCOMES.includes(outcome) ? outcome : null;
+}
 
 
 // The retired scope vocabulary. It routed a slot dispatch to one of two labels, and
@@ -142,9 +227,9 @@ export function descriptionProblem(description) {
 // empty means the declaration is well-formed. Pure: no I/O, no imports of the
 // task itself; the caller supplies the already-loaded default export.
 export function validateTaskDeclaration(raw, terms = new Map()) {
-  const decl = normalizeTaskDeclaration(raw);
+  const decl = normalizeTaskDeclaration(raw, terms);
   if (decl === null || typeof decl !== 'object' || Array.isArray(decl)) {
-    return [{ what: 'task.json is not a declaration object', fix: 'write one JSON object: { "id", "frequency", "preconditions", "expected_outcome", … }' }];
+    return [{ what: 'task.json is not a declaration object', fix: 'write one JSON object: { "id", "description", "expected_outcome", … }' }];
   }
   const problems = [];
   const bad = (what, fix) => problems.push({ what, fix });
@@ -157,14 +242,6 @@ export function validateTaskDeclaration(raw, terms = new Map()) {
   if (decl.description !== undefined) {
     const problem = descriptionProblem(decl.description);
     if (problem) bad(problem.what, problem.fix);
-  }
-  // ACCEPTED, not FREQUENCIES: a member's own task file may still carry a retired spelling and
-  // must keep running, since nothing converges a member's task files. Stopping a NEW declaration
-  // from naming one is the author-time declaration-shape check's job, not this one's — the split
-  // is deliberate, and `FREQUENCIES` beside `ACCEPTED_FREQUENCIES` in calendar.mjs is where it is
-  // spelled out.
-  if (!ACCEPTED_FREQUENCIES.includes(decl.frequency)) {
-    bad(`"frequency" ${JSON.stringify(decl.frequency)} is not a legal frequency`, `set one of: ${ACCEPTED_FREQUENCIES.join(', ')}`);
   }
   // `precondition_signals` is retired with the function form it belonged to
   // (#1617). The union is DERIVED from the expression's terms, each of which
@@ -186,9 +263,9 @@ export function validateTaskDeclaration(raw, terms = new Map()) {
   // rule resolves is the policy engine's question, answered where the diff is
   // judged, and it fails closed there — never at author time, where the rule set
   // depends on which packs are active.
-  if (decl.expected_outcome === 'pr') {
+  if (opensPullRequest(decl.expected_outcome)) {
     if (decl.automerge === undefined) {
-      bad('a "pr" task declares no "automerge"', 'say what may land unreviewed: "nothing", "anything", or a list of diff classes, e.g. ["comment-only-changes", "readme-changes"]');
+      bad(`a "${decl.expected_outcome}" task declares no "automerge"`, 'say what may land unreviewed: "nothing", "anything", or a list of diff classes, e.g. ["comment-only-changes", "readme-changes"]');
     } else {
       const policy = normalizePolicy(decl.automerge);
       if (policy.kind === 'invalid') {
@@ -196,7 +273,7 @@ export function validateTaskDeclaration(raw, terms = new Map()) {
       }
     }
   } else if (decl.automerge !== undefined) {
-    bad('a "none" task declares "automerge"', 'drop it — a task that opens no pull request has nothing to merge; or set expected_outcome: "pr"');
+    bad(`a "${OUTCOME_NO_PR}" task declares "automerge"`, 'drop it — a task that opens no pull request has nothing to merge; or set expected_outcome: "fresh_pr"');
   }
   // agent_instructions — REQUIRED for an agentic task (agent_model !== 'none'):
   // that's the worker file the agent reads, and it has no default. A `none` task
@@ -205,6 +282,13 @@ export function validateTaskDeclaration(raw, terms = new Map()) {
   if (decl.agent_model !== 'none' && (typeof decl.agent_instructions !== 'string' || decl.agent_instructions.trim() === '')) {
     bad('an agentic task (agent_model !== "none") declares no string "agent_instructions"', 'point "agent_instructions" at the worker file beside task.json (e.g. "task.md")');
   }
+  // The trigger is always present by the time anything holds a declaration — stated,
+  // or derived at the door — so what is validated is the value, not its presence.
+  if (!TRIGGERS.includes(decl.trigger)) {
+    bad(`"${decl.trigger}" is not a legal trigger`,
+      `write one of: ${TRIGGERS.map((t) => `"${t}"`).join(', ')} — "${TRIGGER_SCHEDULE}" is asked by the scheduler at every tick, "${TRIGGER_REQUEST}" runs only from an item somebody creates`);
+  }
+
   // ONE MECHANISM (#1617). `preconditions` — a list of named conditions, all of
   // which must hold — is the only gate a task declares. The `precondition`
   // function it replaced is retired rather than tolerated: two forms meant every
@@ -219,9 +303,11 @@ export function validateTaskDeclaration(raw, terms = new Map()) {
   if (decl.precondition !== undefined) {
     bad('the task declares a "precondition" function, which is retired', 'move the gate into "preconditions" — a built-in condition, or a term this task\'s preconditions.mjs exports');
   }
-  if (decl.preconditions === undefined) {
-    bad('the task declares no "preconditions"', 'add "preconditions": a list of named conditions, all of which must hold (e.g. ["substantive-change"], or ["none"] for a task the calendar triggers)');
-  } else {
+  // OPTIONAL (DESIGN §5): a task may require nothing, and then every occurrence of
+  // it runs. What is NOT read off this list is whether the scheduler asks the task —
+  // `trigger` says that. A retired `frequency` arrives here already turned into its
+  // cadence term by the door.
+  if (decl.preconditions !== undefined) {
     for (const problem of validatePreconditions(decl.preconditions, terms)) bad(problem.what, problem.fix);
   }
 

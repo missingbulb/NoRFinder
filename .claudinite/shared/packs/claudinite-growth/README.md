@@ -18,7 +18,7 @@ scheduler (`packs/claudinite-tasks/discover.mjs`) wherever the pack is declared:
 | `growth-extract` ([tasks/growth-extract/task.md](tasks/growth-extract/task.md)) | the project changed in the window | the repo's own local packs, via a PR that auto-merges after CI |
 | `growth-dedup` ([tasks/growth-dedup/task.md](tasks/growth-dedup/task.md)) | weekly, when the canon or the project's local packs moved in the week | the repo's own local packs, via a PR that auto-merges after CI |
 | `prose-to-checks-sweep` ([tasks/prose-to-checks-sweep/task.md](tasks/prose-to-checks-sweep/task.md)) | weekly (no-ops cheaply on a quiet corpus) | a PR converting always-testable pack prose into checks |
-| `rule-revalidation` ([tasks/rule-revalidation/task.md](tasks/rule-revalidation/task.md)) | weekly | a reviewed PR correcting rules whose environment claim no longer probes true |
+| `rule-revalidation` ([tasks/rule-revalidation/task.md](tasks/rule-revalidation/task.md)) | weekly | corrections to rules whose environment claim no longer probes true — auto-merging inside the repo's own local packs, reviewed where they reach a canon pack |
 
 (Plus two agentless tasks over the conversation-logs branch: [usage-fold](../claudinite-tasks/tasks/usage-fold/README.md) hourly,
 described below, and `logs-prune` — retention, [tasks/logs-prune/worker.mjs](tasks/logs-prune/worker.mjs).)
@@ -165,8 +165,9 @@ here: its subject is Claudinite's own surface, not lesson capture.
 
 | Rule | Severity | Reason | Enforcement |
 |---|---|---|---|
-| Recording a local pack change | high | complexity | prose: 66 words |
+| Recording a local pack change | high | complexity | prose: 71 words |
 | Wanting a job to run in Actions | high | complexity | prose: 55 words + check (`scheduler-workflow-shape`) |
+| Describing another pack's artifact | medium | complexity | prose: 37 words |
 
 ## Coded rules
 
@@ -191,10 +192,12 @@ lands as a session spent on a route that closed.
 [rule-revalidation](tasks/rule-revalidation/task.md) is the weekly re-probe. It takes **every**
 environment-dependent claim in the capture surface — the judgment prose that makes up most of a pack
 is out of scope, so that set is far smaller than the corpus — **runs** the smallest read-only thing
-that would distinguish true from false for each, and corrects what the probe contradicts, in a
-reviewed PR whose body carries the probe evidence, since that is the one thing a reviewer cannot
-re-derive from the diff. Its scope is the same `pack_paths` config `prose-to-checks-sweep` reads, so
-a repo names its capture surface once. Covering the whole set every run is what lets the task hold
+that would distinguish true from false for each, and corrects what the probe contradicts, in a PR
+whose body carries the probe evidence, since that is the one thing a reviewer cannot re-derive from
+the diff. Corrections confined to the repo's own local packs land on that evidence alone; a run that
+rewrote a canon pack — rules this repo publishes to every member — parks for the owner, and that is
+the whole PR, since one run delivers one branch. Its scope is the same `pack_paths` config
+`prose-to-checks-sweep` reads, so a repo names its capture surface once. Covering the whole set every run is what lets the task hold
 no state between runs: there is no "what did I probe last time" to remember.
 
 The dangerous verdict is the one it refuses to reach. An executor session carries the reach its
@@ -236,8 +239,9 @@ A local pack keeps no changelog file. It is neither versioned nor distributed �
 its version against another repo's — so `git log` over the pack directory already carries what a
 changelog would, per change, with the diff attached. A file that aggregates unrelated changes into
 one append-at-the-top table is a merge hazard instead: several growth runs a day write local packs,
-and any two in flight collide on the same line. A **canon** pack's `VERSIONS.md` earns that cost,
-because the row is what tells a member what a version bump shipped.
+and any two in flight collide on the same line. A **canon** pack's `VERSIONS.md` is the same
+hazard answered the other way: the canon derives it from git after the fact, and no change writes
+into it (the canon-curation pack's `pack-version-history` task).
 
 So every growth task's record is the PR it opens: the rule added, pruned or corrected, and the
 evidence behind it, written in the body beside the diff it explains. No growth task keeps a standing
@@ -249,7 +253,9 @@ made the change, and is one sweep away from being closed as stale.
 | Check | Severity | Reason | Enforcement |
 |---|---|---|---|
 | `dedup-prune-integrity` | high | correctness | check: blocking |
+| `doc-pointers-resolve` | high | correctness | check: blocking |
 | `growth-write-scope` | high | correctness | check: blocking |
+| `task-worker-restores-main` | high | correctness | check: blocking |
 | `legacy-check-spellings` | low | complexity | check: advisory |
 | `in-session-github-access` | high | correctness | check: blocking |
 | `references-integrity` | high | correctness | check: blocking |
@@ -257,6 +263,7 @@ made the change, and is one sweep away from being closed as stale.
 | `task-declaration-matches-folder` | high | correctness | check: blocking |
 | `task-md-only-when-agentic` | high | correctness | check: blocking |
 | `task-phase-discipline` | medium | complexity | check: advisory |
+| `check-ships-with-test` | high | correctness | check: blocking |
 
 The last five are the **task contract** ([the writing-tasks skill](skills/writing-tasks/SKILL.md)), which
 lives here because it judges whether a task is *written* correctly — authoring, the subject of this

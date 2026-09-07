@@ -23,9 +23,9 @@
 
 - **Acting on a process change** — the owner is changing *how* work is done. Land it as durable
   rules in the project's local scope, its own local packs (in Claudinite itself, its packs), routed
-  through the mechanism promotion ladder (platform setting → hook → check → skill → prose).
-  Promoting a rule into the shared canon is the growth lifecycle's separate call, not the
-  interactive session's.
+  through the mechanism promotion ladder (platform setting → schema → hook → check → skill
+  → prose). Promoting a rule into the shared canon is the growth lifecycle's separate call, not
+  the interactive session's.
 
 - **Choosing what goes on that ladder** — only a rule that constrains *how work is done* and
   outlives any one feature; a checkable signature doesn't earn a rule its place. Reject two shapes
@@ -61,6 +61,11 @@
   [writing-migration-plans](skills/writing-migration-plans/SKILL.md) owns that ordering and the
   chain's mechanics.
 
+- **Filing the issues a multi-step plan or migration decomposes into** — take the owner's
+  approval of the plan first, in one submission carrying a line per step, the graph of which
+  step waits on which, and each link's automerge policy beside the diff it was predicted from.
+  Filed first, the plan is a structure to react to rather than a decision to make. (5)
+
 - **Adding a legacy tolerance** (a dual read, an accepted old spelling, a shim) — it is
   scaffolding, not a feature: ship it with an advisory that fires where the old shape is still in
   use, and with its removal already a link in the migration's chain, due one stated convergence
@@ -79,6 +84,11 @@
   say so, and name the abstraction that would have kept it in one place: the reviewer reads which
   folders moved to judge whether the change made sense, and a wide diff for a small ask is the
   growth lesson review is for, not a defect. (1)
+
+- **Retiring a system by folding its function into another** — audit that the live generator
+  moved, not only its past output: a copied directory of old artifacts hides the generator's
+  absence, and a stateless recompute over inputs kept for a bounded window starts the series
+  shorter than the file it replaced.
 
 - **When verifying now is genuinely impossible** (an external release window, an upstream fix in
   flight, an effect that only appears once the change is deployed, converged or loaded by a later
@@ -105,6 +115,11 @@
 - **Writing anything** — size it to its idea: "open one issue" takes a sentence, not three
   paragraphs.
 
+- **The primary source for a fact about a named, real person is blocked** (a profile behind a
+  `403` or a paywall) — never substitute a data-broker or aggregator listing, and never publish
+  the substitute under a caveat. Ask whoever is present instead: one question costs less than
+  correcting a wrong public claim about someone.
+
 - **Correcting or auditing an artifact against an authoritative source** — derive the corrected
   version from the *source* before reading the existing draft, then diff against the old draft to
   surface what was actually wrong.
@@ -117,40 +132,23 @@
 
 ## Harness-tool contracts
 
-- **Searching for a tool with `ToolSearch`** — a search that finds nothing is evidence about your
-  query, not about the environment. Search the fully-qualified name (`select:mcp__<server>__<tool>`,
-  copied off the deferred-tools listing) and try the tool before telling the owner a step is theirs;
-  the bare short name returns "no matching tools", which reads exactly like absence.
 
-- **Calling `Edit`** — the file must have been read *with the read tool*; `cat`/`grep`/`sed` don't
-  count. The moment shell output tells you which file you're about to change, read that exact path;
-  a narrow offset window satisfies it.
+- **Calling `Edit`** — the file's content must be current in the session, which a read *or* a
+  write in this session gives it. When neither has happened, read that exact path first; a narrow
+  offset window satisfies it. Read it anyway whenever you need to see it — Edit's tracking shows
+  you nothing. (3)
 
-- **Calling `Grep` with a context flag** (`-n`/`-A`/`-B`/`-C`) — it's silently ignored under the
-  default `output_mode: "files_with_matches"`, so the call answers only a match count or file
-  list, never the lines you asked for, with no error to catch it. Pass `output_mode: "content"`
-  in the same call as any context flag.
 
-- **Needing exact text from the web** — a summarizing fetch tool is not a source; when the bytes
-  matter, `curl` into the scratchpad and read from disk. On a `403` don't retry and don't try a
-  sibling URL — attribute the search snippet to the publisher instead of asserting it, and mark it
-  for re-verification.
+- **Polling with an `until` loop** — write a condition that names the state awaited (a file's
+  arrival, a run's status): one already true on its first check is a blind sleep wearing a loop,
+  as a bare `wait` in a later Bash call is — each call is a fresh shell, which is what
+  `bare-wait-in-fresh-shell` refuses.
 
-- **Hitting a sandbox or proxy that denies a fetch** — treat it as a **policy boundary, not an
-  obstacle to route around**: don't reach for an open-network runner, an ad-hoc CI workflow or a
-  push-triggered "probe", to make the request from somewhere the policy doesn't apply. Answer from
-  committed reference material or ask the owner, and say plainly that anything unverifiable is
-  unverified. Recognize a fetch tool's own signal for a domain-wide **egress block** (e.g. an
-  explicit `EGRESS_BLOCKED` error) rather than reading it as an ordinary publisher `403` — a block
-  is domain-wide, so working down a list of alternate sources for the same fact spends the same
-  denial again on each one, where a `403` is at least per-site. And never file the gap as
-  "re-verify next pass": no later agent pass can close a policy-level block either, so mark it as
-  needing a human or an unblocked environment instead.
+- **Handing the owner a command block to paste into their terminal** — carry no trailing
+  `# comment` on any line: interactive zsh treats `#` as a comment only under
+  `interactive_comments`, off by default, so the pasted line fails. Put the explanation in the
+  prose around the block.
 
-- **Scheduling a wake-up with the harness** — pass `prompt`, the instruction the woken turn is to
-  act on, on any call that isn't `stop: true`; a no-op flag and a stated `reason` do not exempt it,
-  and the call is rejected without it. A rejection leaves no fallback armed, which is what the
-  `unattended-agents` skill's re-issue rule is for.
 
 ## Warnings and findings
 
@@ -171,11 +169,14 @@
 
 - **Deferring a warning you can't fix now with a small cause-addressing change** (it waits on an
   upstream release, or the real fix is a larger refactor) — open a dedicated issue unless one is
-  already open, then move on. Search for that open one by the **invariant identifier** the finding
-  names — the symbol, path or id it is *about* — never the sentence it arrived in: every filer
-  paraphrases the message and prefixes its own stage's name, so the wording is the one part that
-  differs across filings, and a new branch, PR number or run is not a new finding. Resolving it, by
-  real fix or a consciously-chosen suppression, happens in that issue's own change.
+  already open, then move on. Resolving it, by real fix or a consciously-chosen suppression,
+  happens in that issue's own change.
+
+- **Searching for the issue a finding was already filed under** — search the **invariant
+  identifier** the finding names, the symbol, path or id it is *about*, never the sentence it
+  arrived in: every filer paraphrases the message and prefixes its own stage's name, so the
+  wording is the one part that differs across filings, and a new branch, PR number or run is not
+  a new finding.
 
 # The task lifecycle
 
@@ -197,18 +198,14 @@ For every new task:
 
 - **Filing anything into the ad-hoc queue** (a deferral, a verification, any marked issue) — it
   asks an unattended session **on this repository** to do the work, so only file what such a
-  session can actually do here. A read of another repository or a console is not work it can
-  do: that item parks minutes after it is picked, and a park is a person's problem filed under
-  a mechanism's name. A public URL is the one exception, and only through the coded
-  verification form (`verify-in-production`'s probes) — never by asking a session to fetch it.
-  Where the work is out of reach, do it now, hand it to a routine that has the reach, or do
-  not file it — and say which.
+  session can actually do here. A read of another repository or a console is not work it can do:
+  that item parks minutes after it is picked, and a park is a person's problem filed under a
+  mechanism's name. A public URL is the one exception, through the coded verification form
+  (`verify-in-production`'s probes) and never by asking a session to fetch it.
 
-- **Filing an issue that belongs under another** — a phase of a plan, a verification of a change,
-  a follow-up its parent tracks — attach it as a **sub-issue** (`mcp__github__sub_issue_write`,
-  method `add`, `sub_issue_id` the **id** the create call returned, not its number), never only a
-  number named in the body. The parent then carries what is still open under it, in the place a
-  reader is already looking.
+- **Finding the queue cannot reach the work you were about to file** — do it now, hand it to a
+  routine that has the reach, or do not file it — and say which of the three you chose.
+
 
 - **Handing over a step only a human can perform** (flipping a repository or console setting,
   granting a permission, adding a secret) — first confirm you genuinely can't do it yourself, then
@@ -226,10 +223,16 @@ For every new task:
 - **Referring to a value from more than one place** — prefer a shared constant or a reference over
   copying it, and generate derived data rather than hand-maintaining it. If you can't, add a drift
   guard: the generic `sharedConstants` check for a plain value, or one that runs the real logic
-  against the copy in both directions when the duplicate mirrors matcher or predicate logic. Keep
-  the guarded literal itself unbroken, since a value split across a line break is invisible to the
-  guard and to a `grep`/`sed` rename alike. Have the guard's own text name the places it watches and
-  why the split is forced, and don't also comment the duplication — the guard covers it.
+  against the copy in both directions when the duplicate mirrors matcher or predicate logic.
+
+- **Writing that drift guard** — keep the guarded literal unbroken, since a value split across a
+  line break is invisible to the guard and to a `grep`/`sed` rename alike. Have the guard's own
+  text name the places it watches and why the split is forced, and don't also comment the
+  duplication — the guard covers it.
+
+- **Guarding two copies written in different languages** — pair them by name, applying the known
+  casing transform to derive one identifier from the other, rather than by literal value: one
+  value can be a numeric substring of another. (4)
 
 - **Writing file A so it depends on file B** — say what A needs from B, or that it delegates, and
   don't re-spell how B does its job. If you're about to paraphrase B's procedure, point at B
@@ -237,16 +240,6 @@ For every new task:
   belongs: if that detail changes, does A actually care? A specific that wouldn't force A to
   change — B's cadence, B's file layout, the reasoning behind how B works — is B's detail, not
   A's, and doesn't belong in A even as color.
-
-- **Committing** — one concern per commit: if two changes could each stand alone, split them, and
-  a message that wants numbered items is the split talking. Once a commit has landed, revise with a
-  new commit, never a rewrite of that one.
-
-- **Working with a file a test or tool generates** — put `GENERATED` in its name, and don't
-  hand-edit it; change the generator. Never resolve its merge conflict by hand: clear the markers
-  with either side, re-run the generator against the merged inputs, and commit that output. Consider
-  automating the clear with a `merge=ours` `.gitattributes` entry, and `git rerere` for a conflict
-  that recurs.
 
 - **Writing code that depends on how a platform or runtime behaves** — verify that behaviour
   against authoritative docs or a real run, not a comment or a prior commit's claim.
@@ -285,6 +278,11 @@ For every new task:
   than one place — grep the whole surface for the standing absolutes it touches ("no tracking",
   "no cookies", "no external assets") and reconcile every hit.
 
+- **Changing an observable behavior your own docs make a claim about** — not only privacy: when
+  a site deploys, a job's cadence, which targets are supported. Grep the doc surface for what the
+  change falsifies and correct it in the same commit, or the doc goes on describing behavior the
+  code no longer has.
+
 - **Driving an external runtime more than once in a session** — a headless browser, a device, a
   REPL, a deploy target — write one parameterised driver into the scratchpad, taking the target,
   the selector and the output path from argv, and re-point it rather than author a throwaway per
@@ -298,16 +296,7 @@ For every new task:
 - **Writing the exit path of a pipeline or CI step** — an expected, handled outcome exits clean
   with a comment. Reserve non-zero for genuine breakage.
 
-- **Piping a long command's output through `tail` (or `head`) to keep it readable** — it discards
-  the pipeline's real exit code (`$?` becomes the trailing command's, not the one you're
-  checking), so a mid-chain failure goes unnoticed, and any earlier summary lines the truncation
-  cut are gone right when you need them. Redirect to a file (or `tee`) instead, read `$?` from
-  that same invocation, and grep the file afterward for whatever slice you actually need — never
-  re-run the whole thing to re-slice its output.
 
-- **Killing a process by pattern** — `pkill -f` matches the invoking shell's own command line too,
-  so never chain it, and bracket one character of the pattern (`[h]ttp.server 8099`) to break the
-  self-match.
 
 - **Working in a fresh checkout or sandbox** — a setup script may start in the repo's parent
   rather than the checkout, so `cd` in before running anything. A `Cannot find module` there is
@@ -327,23 +316,9 @@ For every new task:
   close, and where two fields claim the same fact, let each mean what its own source said and leave
   the call to the consumer.
 
-- **Writing a check that scans the repo** — take the file set from `git ls-files` rather than a
-  filesystem walk with paths to skip, and remember a brand-new file is untracked until you add it,
-  so a green run isn't coverage of it. When scanning for a forbidden token, strip comments first so
-  it matches code, not prose — string-aware, since a `//` inside a URL is not a comment. Reuse
-  `stripComments` from
-  [`engine/checks/helpers/code-scanning.mjs`](../../engine/checks/helpers/code-scanning.mjs); if the
-  scan can't import it, inline the same pass and point a comment back at that source. Strip in
-  **both** directions — a comment that documents or warns about the banned pattern is exactly
-  where a naive check trips over its own reasoning, so a commented-out instance must not count as
-  present either. And prove the check silent against the repo's own **real** sources, not only a
-  synthetic clean fixture — a fixture spelling the same gap the check has just keeps proving the
-  matching, and only a real-tree run can disagree with you.
-
 - **Writing a comment** — carry the why, or a cross-file relationship the code can't state itself;
   if the code plus a known convention already says it, write nothing. Describe the current state,
   never the edit that produced it: don't explain the change you just made, and don't note what was
   removed or renamed. If a comment narrates a past fix, keep only the part still true of the code in
   front of you. When it must name a path, spell that path in one canonical place and point every
   other mention there.
-
