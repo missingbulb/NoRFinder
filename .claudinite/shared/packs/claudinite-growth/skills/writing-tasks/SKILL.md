@@ -554,14 +554,20 @@ closing or running anything.
   (`record-exec.mjs`), so the usage fold counts task statuses out of the captured
   conversation logs deterministically.
 
-## A dormant project runs nothing
+## A dormant scheduler runs nothing
 
-A project nobody is working on declares itself dormant in `.claudinite-settings.json`:
+A project nobody is working on stops its scheduler. It declares that on the pack that
+owns the scheduler, not at the top level of `.claudinite-settings.json` — a repo
+declaring no `claudinite-tasks` has no scheduler for the word to mean anything about:
 
 ```json
-"dormant": true
+{ "id": "claudinite-tasks", "config": { "dormant": true } }
 ```
 
-The scheduler run asks, readies and reclaims nothing, and the executor picks
-nothing up; the fleet sweeps skip it; sessions are unaffected. Delete it to wake — a dormant spell is not replayed, so the repo
+The scheduler run asks, readies and reclaims nothing, and the executor picks nothing up;
+sessions are unaffected. Delete it to wake — a dormant spell is not replayed, so the repo
 simply starts scheduling again from now.
+
+What it does **not** cover matters as much: the repo stays a member, its mount is still
+measured against canon, and one that has fallen behind is still reported as behind. A
+stopped scheduler buys quiet about the scheduler, and nothing else.

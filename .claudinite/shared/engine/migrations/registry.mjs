@@ -433,6 +433,68 @@ export async function applyPackRenames(migration, { read, write }) {
 }
 
 
+// Write side — "this top-level setting belonged to a pack all along": for each declared
+// `{ key, pack }`, lift that key off the top level of the member's declaration and onto
+// that pack's entry `config`.
+//
+// A NAMED OP rather than a `rewrite`, for the reason every declaration op here exists:
+// a rewrite replaces literal text, and the target is a key nested inside an object
+// inside the `packs` ARRAY, which no anchored pattern can reach across — a regex
+// anchored on `"packs": [` cannot cross the first entry object's nested `]`, so every
+// entry after it is invisible. Parsing is what makes the edit reliable, and it keeps
+// key ORDER intact for everything it does not touch, because this is a file people read.
+//
+// THE PACK MUST BE DECLARED for the setting to mean anything. Where it is not, the key
+// is DROPPED rather than moved: a parameter for a pack the repo does not run governed
+// nothing, and inventing an entry to hold it would activate a pack nobody asked for.
+// Where the entry already carries its own value for the key, that value STANDS and the
+// retired one is dropped — the pack entry is the current spelling, so a member that has
+// already answered there is not overruled by a key it forgot to delete.
+//
+// Idempotent by construction: every step is "if the retired key is there", so a second
+// run finds nothing and writes nothing.
+export async function applyPackOwnedSettingMoves(migration, { read, write }) {
+  if (!migration.movePackOwnedSettings?.length) return [];
+  if (migration.appliesTo && !(await migration.appliesTo(read))) return [];
+  const file = await declarationFile(read);
+  if (file == null) return [];
+  const raw = await read(file);
+  let config;
+  try { config = JSON.parse(raw); } catch { return []; }
+  if (config === null || typeof config !== 'object' || Array.isArray(config)) return [];
+
+  const done = [];
+  let next = config;
+  for (const { key, pack } of migration.movePackOwnedSettings) {
+    if (next[key] === undefined) continue;
+    const packs = Array.isArray(next.packs) ? [...next.packs] : [];
+    const at = packs.findIndex((e) => (typeof e === 'string' ? e : e?.id) === pack);
+    if (at === -1) {
+      const dropped = { ...next };
+      delete dropped[key];
+      next = dropped;
+      done.push(`${file}: dropped the retired top-level "${key}" — "${pack}" is not declared here, so it governed nothing`);
+      continue;
+    }
+    const entry = typeof packs[at] === 'string' ? { id: packs[at] } : { ...packs[at] };
+    if (entry.config?.[key] === undefined) {
+      entry.config = { ...entry.config, [key]: next[key] };
+      done.push(`${file}: "${key}" -> the "${pack}" pack entry's config`);
+    } else {
+      done.push(`${file}: dropped the retired top-level "${key}" — the "${pack}" entry already declares it`);
+    }
+    packs[at] = entry;
+    // Assigned rather than re-spread onto a fresh object, so `packs` keeps the position
+    // it already had in the file instead of jumping to the end.
+    const moved = { ...next };
+    moved.packs = packs;
+    delete moved[key];
+    next = moved;
+  }
+  if (done.length) await write(file, `${JSON.stringify(next, null, 2)}\n`);
+  return done;
+}
+
 // Write side — "this member's settings file moves to its new name and its new
 // shape" (#1252). The one op that RENAMES the declaration, which is why it is an op
 // rather than four `rewrite`s: a rewrite replaces literal text, and no two members
@@ -519,8 +581,8 @@ export async function applySettingsReshape(migration, { read, write, move, exist
 // other: that omission is silent (the record simply does nothing on that path) and
 // is exactly what a member would never notice.
 
-// Write side — "a task's cadence is one of its own conditions" (tasks-dispatch
-// DESIGN §5, #1725): fold the retired `frequency` of every local pack's task.json
+// Write side — "a task's cadence is one of its own conditions"
+// (docs/PRINCIPLES.md, #1725): fold the retired `frequency` of every local pack's task.json
 // into its `preconditions`, as anchored text. A NAMED CODEMOD like the declaration
 // normalization above: which files carry the field is the repo's own disk.
 // The record declares `updateTaskSchedulingFields: true`; the rewrite ships with the
@@ -545,6 +607,9 @@ export async function applyMigration(migration, io) {
   applied.push(...(await applyLocalDeclarationNormalization(migration, io)));
   applied.push(...(await applyTaskSchedulingFields(migration, io)));
   applied.push(...(await applyPackRenames(migration, io)));
+  // AFTER the renames: a setting moving onto a pack's entry has to find that entry
+  // under the id the pack carries TODAY, which is what the rename above just settled.
+  applied.push(...(await applyPackOwnedSettingMoves(migration, io)));
   // LAST: every op above writes to whichever name the member still carries, and this
   // is the one that changes which name that is.
   applied.push(...(await applySettingsReshape(migration, io)));
