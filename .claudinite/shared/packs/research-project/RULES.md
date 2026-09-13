@@ -25,24 +25,29 @@ For every substantive algorithmic change, in this order:
    metric delta, and **what you tried and rejected** (§5).
 
 ### Show, don't just tell
+
 - Every algorithmic change is presented as a rendered comparison against the
   original, and against ground truth when scoring is involved. Prefer a clean,
   purpose-built **results figure** over a wall of metrics.
+
 - The presentation render is usually **not** the debug overlay. Favour a thin,
   semi-transparent style that keeps the underlying data readable (thin lines,
   mostly-transparent fills), and give a matched object the **same colour in the
   result and the ground-truth panels** so over-/under-reach is obvious at a
   glance. Tag objects with small ids that key into the metrics table.
+
 - **Never draw an annotation in a colour the underlying signal itself carries.**
   A mark in the signal's own colour disappears exactly on the objects it exists
   to mark, so the figure looks cleanest where the method is least verified. Pick
   the overlay palette against the data's own colours (and keep the choice
   guarded, if the render is scripted), not by aesthetic preference.
+
 - **Show where the method breaks, not only where it works.** The overlay is a QA
   tool before it is a result: point at the misses, the fragmentation, the cases
   handled badly, and make each claim explicit and checkable ("this outline is
   what I'm counting as an object; that one has no outline — it was missed") so
   the owner can disagree with a specific claim rather than a general impression.
+
 - **Say which of the numbers you just reported are trustworthy, where you report
   them.** Every quantity a project reports sits somewhere on a spectrum from
   "measured and validated" to "indicative at best" — a quantity derived from a
@@ -51,13 +56,16 @@ For every substantive algorithmic change, in this order:
   not in a separate caveats section a reader meets after they have already
   written the number down. A number quoted without its caveat is read as
   trustworthy.
+
 - Throwaway renders and diagnostics live in the scratchpad; only the **final
   artifact and the code that regenerates it** get committed.
 
 ### Interaction cadence
+
 - **Keep the owner in the loop with pictures**, proactively, and ask a question only when a
   decision is genuinely theirs or the request is ambiguous — never to confirm work you can
   verify yourself.
+
 - **Finishing a unit of work** — leave it committed and pushed, so it can be reviewed or
   resumed from a fresh session.
 
@@ -68,23 +76,28 @@ For every substantive algorithmic change, in this order:
 - **The owner's annotations are the ground truth.** Every change is validated by
   agreement against them, not against your own expectation of the answer — and never
   against the pipeline's own prior output, which validates nothing.
+
 - **Ground truth is annotated, never fabricated.** Do not invent labels to make a
   dataset scorable. If a dataset lacks the annotation a given harness needs, it
   does not go into that harness (see §9 on validation tiers).
+
 - **Separate source-of-truth from generated artifacts.** The hand-annotation is
   the source; the machine-usable ground-truth (registered masks, parsed labels,
   normalized tables) is **generated from it and regenerated on demand** — never
   hand-edited, because the generator overwrites it. To fix ground truth, **fix
   the source annotation (or the extraction code) and regenerate**, then re-score.
+
 - **Make extraction deterministic and self-checking.** Same annotation → same
   derived ground truth. Pin the things a human counted (number of objects,
   number of regions) as assertions/tests so a silent extraction regression fails
   loudly.
+
 - **Auto-detect annotation conventions from the data**, don't hard-code a
   per-input flag. When the owner uses more than one annotation scheme over time,
   detect which scheme an input uses from the ink/markup itself. Record the
   **conventions** (what each colour / mark / region means) in a durable doc; they
   are requirements, not incidental.
+
 - **Verify the annotation actually parses before trusting a score.** Inspect two
   things: did the markup parse into the labels you expected, and did the derived
   ground truth land correctly on the raw input (registration / alignment)? Keep
@@ -97,13 +110,16 @@ For every substantive algorithmic change, in this order:
 - Projects like this begin with a **small learning set of similarly-formatted
   inputs** (same modality, same acquisition regime, same annotation convention).
   That is a hazard as well as a feature: it is small enough to overfit (§4).
+
 - **State the input format explicitly** (dimensions, modality, contrast
   convention, expected content per input) so a mismatched new input is diagnosed
   fast. Keep a one-line-per-input table.
+
 - **Name the primary target regime and what is out of scope.** A different
   regime (inverted contrast, far denser or sparser content, a different scale)
   is a *transfer* problem, not the main path — treat it as such until explicitly
   in scope.
+
 - **Scale-awareness is a first-class concern.** An algorithm tuned for one
   input scale (e.g. a zoomed view of a few objects) often fails on another
   (a wide field of many). Know which regime you are tuned for, and measure the
@@ -119,23 +135,28 @@ if it improves a metric.
 - **No single-input special-casing.** Every rule must generalise across the set.
   If a fix only helps one input, say so and either generalise it or drop it.
   Never key logic on a specific input's identity/filename.
+
 - **Keep decision rules free of the very prior you are trying to measure.** If
   the project measures quantity *X*, no rule may bake in an assumed value of *X*
   (that turns the measurement into an assumption). Prefer rules expressed in
   terms the input **measures for itself** over fixed constants.
+
 - **Prefer scale-free rules over pixel/absolute constants.** Where a constant is
   unavoidably tied to the current data's scale/resolution, **isolate and label
   it** as scale-dependent so it is the first thing revisited on new-scale data.
+
 - **Name the hard constraint the task cannot trade away**, and tune to it first —
   some projects have a metric whose cost dominates all others; hold it at its
   required level before optimising the softer metrics underneath it. Make it
   explicit so a later tuning pass doesn't quietly trade it away.
+
 - **Keep a registry of domain assumptions, each with a failure mode.** Choices
   that encode a prior about the *subject or the instrument* (not pure
   processing) are named, located in the code with an inline tag, and given an
   explicit "how it fails on mismatched data" note. When a new input looks wrong,
   the first diagnostic is *"which assumption did this input break?"*. Flag the
   thinly-supported ones (e.g. calibrated on a single example) honestly.
+
 - **Guard the wins with regression tests.** An input the owner has blessed as
   "very good" must not silently regress when you tune for another. Pin its score.
 
@@ -148,11 +169,15 @@ tag and stick to it, e.g. `R1, R2, …`) in a running method-narrative doc, so
 **the next session does not re-derive what this one already learned.**
 
 An iteration note captures:
+
 - **What was wrong** (the observed failure, ideally with the diagnostic that
   showed it).
+
 - **What changed** (the rule/parameter and why, in scale-free terms where
   possible).
+
 - **The metric delta** — before/after, per input, on the real scoring harness.
+
 - **What you tried and rejected, and why** — this is what stops the next session
   (or the next model) from walking back into the same dead end.
 
@@ -186,11 +211,16 @@ mark it uncalibrated *with the reason*, report only its scale-free quantities,
 and leave it visible as a known gap.
 
 ### Definition of done for an accepted change
+
 - **Source updated — never the generated artifacts.** (Regenerate them.)
+
 - **Artifacts regenerated** with the committed generators.
+
 - **Tests green**, and the **scoring deltas reported** (per input, per metric).
+
 - **Committed with a clear message and pushed**, so the work is reviewable and
   resumable from a fresh session / another machine.
+
 - **Learnings cached**: the iteration note above, plus a pointer/update in the
   session warm-up doc or the relevant reference doc **if the map or procedure
   changed**.
@@ -203,10 +233,12 @@ and leave it visible as a known gap.
   say which phase a piece of work belongs to. Defer the hard/advanced piece
   explicitly rather than half-building it — e.g. get an intermediate output
   trusted before building the final quantity that depends on it.
+
 - **Distinguish research spikes from the maintained pipeline.** Exploratory
   scripts are worth keeping for reference, but the repo map must make clear what
   "the pipeline" actually is versus what was an older spike, so a new session
   doesn't mistake a dead branch for the main path.
+
 - **Keep a "known open items" / deferred list** so the boundary between "done",
   "deferred by choice", and "not yet attempted" is never ambiguous.
 
@@ -220,21 +252,26 @@ When a paper, tool, or reference method matters to the project:
   Capture everything algorithmically relevant: the exact method/pipeline and its
   parameters, the definitions and formulae, calibration details, and **sanity-check
   values** you can validate your own outputs against.
+
 - **Capture the method that exists only inside a figure.** Part of a source's
   actual procedure is often drawn rather than written — a panel's inset, an
   annotated overlay, a legend. Extract and describe it in the notes; a summary
   built from the prose alone silently omits it, and the omission is invisible
   until someone re-opens the source.
+
 - **Write down what the source *fails* to say**, as an explicit gap list — the
   parameters, thresholds and units it never states. Recording an absence is what
   stops the next reader re-opening the source to hunt for something that was
   never in it. The intake is done when the notes make the original redundant, and
   a stated gap is part of that.
+
 - **Explicitly record where your approach diverges from the reference and why.**
+
 - **State what you deliberately omitted** (material not relevant to the
   algorithm — e.g. procedural/experimental setup detail, incidental statistics,
   acknowledgements) and that you cross-checked against the full text — so a later
   reader trusts the summary is complete for its purpose.
+
 - Note that upload paths for source PDFs are **session-specific and won't
   persist**; the notes file is the durable artifact, not the upload.
 
@@ -245,11 +282,13 @@ When a paper, tool, or reference method matters to the project:
 - **Samples** are inputs you will run the algorithm on; **illustrations** are
   figures that explain a method or a definition. Keep the two roles distinct and
   store extracted figures alongside the notes that reference them.
+
 - **Render documents with a library, not an assumed system binary.** The
   environment often lacks common tools (e.g. a PDF rasterizer such as poppler /
   `pdftoppm`); use an in-process library instead. Locate embedded raster images
   and render just the region you need, at a zoom high enough to read fine
   annotation, with a little padding to catch ink drawn outside the frame.
+
 - **Verify identity when an extracted image should match an existing input**
   (e.g. an annotated crop over an original) by an exact pixel diff — so you know
   an annotation set is a labelling of the *same* data, not a new input.
@@ -261,8 +300,10 @@ When a paper, tool, or reference method matters to the project:
 - **Grow the corpus from public sources that match the input regime.** Curate and
   **rank candidates by fit** = modality match × ground-truth availability × ease
   of access, and record licence and provenance for each.
+
 - **Make ingestion a committed, repeatable fetch script**, not a manual download,
   so anyone can reproduce the corpus.
+
 - **Respect the two validation tiers — and don't mix them:**
   - **Full ground truth** (per-item annotations) → scores the *algorithm's
     detailed output* (overlap / detection) on the real harness.
@@ -272,6 +313,7 @@ When a paper, tool, or reference method matters to the project:
   Wiring an aggregate-only dataset into the detailed-overlap harness would force
   you to **fabricate annotations**, which violates §2. Keep a separate,
   mask-free validation path for those sets.
+
 - **External data is rarely drop-in.** Expect a scale/regime gap (§3) and
   *measure* it with the appropriate tier rather than assuming the corpus is
   covered.
@@ -284,10 +326,12 @@ When a paper, tool, or reference method matters to the project:
   installed each session, and keep the dependency set **small and lightweight** —
   favour a compact set of core libraries over heavy frameworks (e.g. large ML
   stacks) that are slow to install and awkward to run anywhere.
+
 - **When a heavy or learned approach is genuinely the right tool, treat it as a
   gated, isolated route** (documented, opt-in, scoped to the cases that need it)
   rather than a new baseline dependency — and prove the lightweight route is
   exhausted first.
+
 - **Route around missing system binaries with libraries** (see §8). Document the
   exact install lines and any "install ad hoc, not in requirements" tools in the
   warm-up doc.
@@ -303,8 +347,10 @@ first-class experiments:
   "exhausted."** A suggestion may belong to a *different family* than everything
   tried so far, which is exactly when it can break a wall the previous family
   couldn't.
+
 - **Evaluate it the same way as any change**: diagnose the wall it targets, build
   the evidence that the wall is real (or isn't), prototype, and show a comparison.
+
 - **Beat the naive baseline, or drop it.** A more sophisticated or signal-driven
   method is only worth adopting if it *measurably* out-scores the simple/uniform
   baseline — sophistication is not accuracy when the guiding signal is noisy or
@@ -312,10 +358,12 @@ first-class experiments:
   feature that is excellent for *visualising or validating* a structure can be
   wrong for *defining* it — gating the output directly on such a signal can erode
   the very structure you are measuring. (1)
+
 - **Document the outcome fully**, including the routes that hit a wall and *why*
   (name the specific trade-off or signal that defeated them). If the idea needs
   capabilities the environment won't allow (§10), record the concrete route to
   try when that changes, so the thread is resumable rather than lost.
+
 - **Complementary routes are not competitors.** Two methods can attack the same
   problem from different angles; keep both documented and say how they relate.
 
@@ -339,13 +387,16 @@ The owner works across many sessions and machines. Every session should end in a
 
 - **Commit and push** finished units of work; leave the project runnable from a
   clean checkout.
+
 - **Maintain a session warm-up doc** (the "read this first" map): what the project
   is, how to run it, where the tuned parameters and the deep rationale live, and
   the current numbers. It should let a new session skip re-reading the whole
   codebase.
+
 - **Maintain a continuation guide**: where things stand, exact run commands, the
   tuned parameters and *why they exist*, and the open items. Keep the headline
   metrics current in it.
+
 - **When the owner asks for a different way to do something, capture the new way
   durably — don't just do it this once.** A correction to *how* work is done (how
   results are shown, what command to run, a naming/format convention, a step to
@@ -355,6 +406,7 @@ The owner works across many sessions and machines. Every session should end in a
   what's written, replace it and say what changed. The test: *could a fresh
   session, with only the warm-up doc, reproduce this new behaviour?* If not, it
   isn't captured yet.
+
 - Follow the repo's **branch/commit/PR conventions**: develop on the named
   branch, commit with clear messages, push; don't open a PR unless asked.
 
