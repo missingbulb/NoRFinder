@@ -100,11 +100,16 @@ done, it belongs here (or in the doc that owns the topic), not just in the reply
 
 ## Environment
 
-Fresh containers start with nothing installed. Keep the dependency set small.
+Keep the dependency set small.
 
-```
-pip install pymupdf pillow numpy      # what this session needed
-```
+The project's own stack — numpy, scipy, pillow, matplotlib — is declared as an `env` requirement
+on the local pack, so the environment image installs it from `requirements.txt` and a session
+should find it already present. If SessionStart halt-gates saying it is missing, the setup script
+needs re-pasting into the environment's Setup script field; nothing project-specific goes in that
+body.
+
+`pymupdf` is **not** in `requirements.txt` and is installed ad hoc: it is for reading source PDFs,
+which is intake work, not part of the pipeline.
 
 - **No `pdftoppm` / poppler.** Render PDFs with PyMuPDF in-process, not a system binary — the
   built-in PDF reader fails on this box for exactly that reason, on every PDF.
