@@ -3,14 +3,14 @@
     "local/no-rfinder",
     {
       "id": "basics",
-      "version": "60915.4",
+      "version": "60915.8",
       "via": [
         "claudinite-lifecycle"
       ]
     },
     {
       "id": "claudinite-lifecycle",
-      "version": "60915.2"
+      "version": "60915.4"
     },
     {
       "id": "git-github",
@@ -31,11 +31,11 @@
     },
     {
       "id": "claudinite-growth",
-      "version": "60915.4"
+      "version": "60915.5"
     },
     {
       "id": "claudinite-tasks",
-      "version": "60915.8"
+      "version": "60915.11"
     },
     {
       "id": "research-project",
