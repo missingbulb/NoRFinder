@@ -20,7 +20,7 @@ scheduler (`packs/claudinite-tasks/discover.mjs`) wherever the pack is declared:
 | `prose-to-checks-sweep` ([tasks/prose-to-checks-sweep/task.md](tasks/prose-to-checks-sweep/task.md)) | weekly (no-ops cheaply on a quiet corpus) | a PR converting always-testable pack prose into checks |
 | `rule-revalidation` ([tasks/rule-revalidation/task.md](tasks/rule-revalidation/task.md)) | weekly | corrections to rules whose environment claim no longer probes true, in the repo's own local packs |
 
-(Plus `logs-prune`, agentless — retention over the conversation-logs branch,
+(Plus `logs-prune`, agentless and on request only — retention over the conversation-logs branch,
 [tasks/logs-prune/worker.mjs](tasks/logs-prune/worker.mjs). The hourly
 [usage-fold](../claudinite-tasks/tasks/usage-fold/README.md) reads that same branch and is
 described below, but it is the claudinite-tasks pack's task, not this one's.)
@@ -108,7 +108,7 @@ GitHub MCP tools.
    **extraction is the only path to permanence**: a log that yields no rule gets no comment,
    and its conversation is gone once retention deletes it (a deliberate owner call).
 3. **Deletion — the agentless `logs-prune` task**
-   ([tasks/logs-prune/worker.mjs](tasks/logs-prune/worker.mjs)), daily, over the same branch: every
+   ([tasks/logs-prune/worker.mjs](tasks/logs-prune/worker.mjs)), on request only, over the same branch: every
    capture past `config.retention_days` is removed, on the stamp in its filename alone. What makes
    that safe without an agent is the reading window above — the extract run reads from the oldest end
    of the branch on every run, so a capture reaches retention having been read. **An undeclared
@@ -121,8 +121,8 @@ overrides it by setting `config.retention_days`. Absence used to mean "capture-o
 as fail-safe and behaved as an unbounded leak: twelve of fourteen members had never pruned a
 capture, one of them holding 67 MB across 73 logs (#1620). A project that genuinely wants
 capture-only now declares `retention_days: 0`, so the decision is written down rather than
-inferred from a missing key. Nothing else to schedule, since both tasks ride the fleet's one
-daily run like the other growth tasks.
+inferred from a missing key. Nothing else to schedule: the retention window is a config value,
+and the prune that reads it runs only when somebody wakes it.
 
 ## Skill-usage metrics — what the mounted skills actually do
 
@@ -156,9 +156,15 @@ rephrase, the keep-test, and the shrink-only discipline.
 counts as a claim whose truth lives outside the repo, the two probe rules, and the four verdicts a
 run reports.
 [**writing-pack-prose**](skills/writing-pack-prose/SKILL.md) owns how pack prose is *written* —
-the rule format, findability, and the per-pack `references.md` that carries each rule's
-reaffirmable rationale behind an end-of-line `(n)` marker (checks join via `check:<id>` entries);
-`references-integrity` below is its machine half, and `rule-revalidation` its consumer. The pack
+the rule format, findability, and the slug marker that ends every rule and names its provenance
+file; [**changing-pack-elements**](skills/changing-pack-elements/SKILL.md), forced on every pack
+file, says which entry an edit owes and how the pack's `README.md` stays about use;
+[**backfilling-provenance**](skills/backfilling-provenance/SKILL.md) is the method for filling a
+pack's empty files from its history, one pack per pull request. `provenance.mjs` beside this
+README is the one tool all three name - `mark`, `append`, `check`, `convert-references`,
+`reduce`, `history`, and the backfill's `brief` and `apply` - and `provenance-integrity` and
+`provenance-change-recorded` below are the
+convention's machine halves. The pack
 also bundles
 [unattended-agents](skills/unattended-agents/SKILL.md) and
 [**writing-tasks**](skills/writing-tasks/SKILL.md) — the contract a `tasks/<name>/task.json` and
@@ -171,6 +177,13 @@ arrives as one job but is two: teaching a repo a technology nobody there has use
 own. It keeps the portable half separable from the project's own parameters — the egress probe that
 settles whether the vendor was actually read, the split between the technology skill and the task
 beside it, and the three checks that keep such a skill liftable.
+[**extract-from-instructions**](skills/extract-from-instructions/SKILL.md) is the one extraction
+method with no window and no task behind it: the rules are already written, as a repo's
+`CLAUDE.md` or a person's machine-local one, and the work is routing each to its owner - the
+repo's local pack, that person's own pack, or neither - and onto a rung above prose. Reach for it
+when a repo adopting Claudinite already carries a `CLAUDE.md`, or when somebody wants their
+machine-local instructions carried properly; `adopt-claudinite` offers it during the adoption
+interview.
 Adoption itself — `adopt-claudinite`, `adopt-pack` and the `adopt-requested-packs` task — is not
 here: its subject is Claudinite's own surface, not lesson capture.
 
@@ -277,7 +290,8 @@ made the change, and is one sweep away from being closed as stale.
 | `technology-skill-cites-dated-sources` | high | correctness | check: blocking |
 | `technology-skill-links-inside-its-folder` | medium | complexity | check: blocking |
 | `technology-skill-code-imports-inside-its-folder` | medium | complexity | check: blocking |
-| `references-integrity` | high | correctness | check: blocking |
+| `provenance-integrity` | high | correctness | check: blocking |
+| `provenance-change-recorded` | high | correctness | check: blocking |
 | `routine-structure` | medium | complexity | check: blocking |
 | `task-declaration-matches-folder` | high | correctness | check: blocking |
 | `task-md-only-when-agentic` | high | correctness | check: blocking |

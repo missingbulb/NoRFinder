@@ -5,3 +5,4 @@
 @shared/packs/claudinite-lifecycle/RULES.md
 @shared/packs/research-project/RULES.md
 @local/packs/no-rfinder/RULES.md
+@temp/packs/current_user/RULES.md
