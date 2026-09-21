@@ -12,4 +12,4 @@ canon instead, where every repo gets it.
 
 - **Choosing test images for a new detection/invariance harness** — default to real images
   already at hand (the uploaded corpus, literature figures) over a synthetic field; synthesize
-  only once real options are exhausted. (1)
+  only once real options are exhausted. (choosing-test-images)
