@@ -3,25 +3,25 @@
     "local/no-rfinder",
     {
       "id": "basics",
-      "version": "60920.3",
+      "version": "60922.3",
       "via": [
         "claudinite-lifecycle"
       ]
     },
     {
       "id": "claudinite-lifecycle",
-      "version": "60921.2"
+      "version": "60922.5"
     },
     {
       "id": "git-github",
-      "version": "60921.1",
+      "version": "60922.5",
       "via": [
         "basics"
       ]
     },
     {
       "id": "claude-code-web-users-support",
-      "version": "60921.1",
+      "version": "60921.2",
       "answers": {
         "store": "missingbulb/Shepherd"
       },
@@ -31,15 +31,15 @@
     },
     {
       "id": "claudinite-growth",
-      "version": "60921.3"
+      "version": "60922.4"
     },
     {
       "id": "claudinite-tasks",
-      "version": "60920.4"
+      "version": "60922.4"
     },
     {
       "id": "research-project",
-      "version": "60920.1"
+      "version": "60922.2"
     }
   ],
   "taskScheduler": {

@@ -127,6 +127,11 @@ For every substantive algorithmic change, in this order:
   (a wide field of many). Know which regime you are tuned for, and measure the
   gap on the other rather than pretending it's covered. (scale-awareness-first)
 
+- **Choosing test images for a new detection/invariance harness** - default to real images
+  already at hand (the uploaded corpus, literature figures) over a synthetic field; synthesize
+  only once real options are exhausted. A synthetic image is built from the same assumptions the
+  algorithm makes, so it tends to confirm the algorithm rather than test it. (choosing-test-images)
+
 ---
 
 ## 4. Do not overfit the learning set
