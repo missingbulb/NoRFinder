@@ -32,7 +32,7 @@ The baseline pack — the `RULES.md` prose every session loads (injected by the 
 | Auditing an artifact against its source | high | correctness | prose: <50 words |
 | Acting on an approval | high | correctness | prose: <100 words |
 | Calling Edit | low | complexity | prose: <100 words |
-| Polling with an until loop | high | correctness | prose: <100 words + check (`bare-wait-in-fresh-shell`) |
+| Polling with an until loop | high | correctness | prose: <50 words + check (`bare-wait-in-fresh-shell`) |
 | Handing the owner a terminal command | medium | correctness | prose: <50 words |
 | Seeing a build, test or CI warning | medium | correctness | prose: <50 words |
 | Suppressing a warning | medium | complexity | prose: <100 words + check (`warning-suppression`) |
@@ -58,7 +58,7 @@ The baseline pack — the `RULES.md` prose every session loads (injected by the 
 | Documenting a procedure | medium | complexity | prose: <50 words |
 | Writing code that can silently do nothing | high | correctness | prose: <100 words |
 | Persisting anything on a user's machine | medium | correctness | prose: <50 words |
-| Changing what you do with user data | critical | legal | prose: <100 words |
+| Changing what you do with user data | critical | legal | prose: <200 words |
 | Changing a behavior your docs claim | medium | correctness | prose: <100 words |
 | Driving an external runtime repeatedly | low | complexity | prose: <100 words |
 | Automating something that needs live conversation context | medium | complexity | prose: <50 words |
@@ -92,6 +92,7 @@ The working-discipline rules with a deterministic signature. The world rules rea
 | `no-conflict-markers` | high | correctness | check: blocking |
 | `rules-line-length` | low | complexity | check: advisory |
 | `claude-md-length` | medium | performance | check: advisory |
+| `skill-description-length` | medium | performance | check: advisory |
 | `generated-merge-driver` | medium | correctness | check: advisory |
 | `catalog-completeness` | medium | complexity | check: blocking |
 | `comment-classification-form` | medium | complexity | check: advisory |

@@ -3,6 +3,8 @@ name: prose-to-checks
 description: Mine pack prose (RULES.md, SKILL.md) for always-testable rules that were never converted to checks, and convert the strongest ones. Use when auditing packs for convertible rules, when the weekly prose-to-checks sweep runs, or as the upgrade pass over prose a growth-extract run just wrote.
 metadata:
   body: workflow
+  usage:
+    expect: judgment
 ---
 
 # Convert existing prose to checks
@@ -162,7 +164,7 @@ enumerated. Expect a form check to fire on something that breaks the form while 
 that's the rule as written doing its job, not a reason to re-add intent-guessing.
 
 When even a scoped parser can't make detection confident, **leave the prose and log the
-candidate** to a tagged conversion-backlog issue rather than shipping a shaky check.
+candidate** to an issue marked `task:origin:ad-hoc` rather than shipping a shaky check.
 
 ## Coming out: the deletion test
 

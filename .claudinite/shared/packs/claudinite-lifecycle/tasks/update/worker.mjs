@@ -15,19 +15,18 @@
 // every member that could ask it; the `maintenance` block that held it is gone
 // (#1252) and `engine/served-by.mjs` is deprecated with it.
 import { execFileSync } from 'node:child_process';
-import { readFileSync, existsSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { readFileSync, existsSync, mkdtempSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { removeTree } from '../../../../engine/remove-tree.mjs';
 import {
-  deliveryFor, pullCreateError, landDelivery, openDeliveredPull, disposeOpenPull,
+  deliveryFor, pullCreateError, landDelivery,
 } from '../../../claudinite-tasks/public/delivery.mjs';
 import { withTaskTrailer } from '../../../claudinite-tasks/public/work-item-grammar.mjs';
 import { settingsPath, SETTINGS_FILE } from '../../../../engine/settings-file.mjs';
 
 const CANON_URL = 'https://github.com/missingbulb/Claudinite.git'; // public — no token
-const UPDATE_PREFIX = 'claudinite/update';
 // What this worker stamps on everything it commits and merges (task-trailer.mjs).
 const UPDATE_TASK_ID = 'claudinite-lifecycle/update';
 const API = 'https://api.github.com';
@@ -52,12 +51,6 @@ async function gh(token, path, { method = 'GET', body } = {}) {
 }
 
 // --- pure helpers (exported, unit-tested git-free) --------------------------
-
-// One branch per run, dated and seeded like baselining's: two runs on one day must
-// not collide, and a name that carries its date is one a human can read a week later.
-// Minted only under an executor that hands no target in — see the
-// tolerance in `main`, and #1698 for its removal.
-export const updateBranchName = (day, seed) => `${UPDATE_PREFIX}-${day}-${seed}`;
 
 // The line the LIVE CANARY rehearsal greps for. A rehearsal that converges nothing
 // and exits 0 is worse than no gate at all — it reports a qualification that never
@@ -114,20 +107,14 @@ export function updatePullText(terminal, { engine, packs }) {
 
 // --- I/O shell (validated by the live pilot, not unit tests) ----------------
 
-export async function main() {
-  const root = process.env.CLAUDINITE_REPO_ROOT || process.cwd();
-  const repo = process.env.CLAUDINITE_REPO || process.env.GITHUB_REPOSITORY;
-  const base = process.env.CLAUDINITE_DEFAULT_BRANCH || 'main';
-  const token = process.env.GITHUB_TOKEN;
-  const requestFile = process.env.CLAUDINITE_REQUEST_AGENT;
+export async function worker({ root, repo, defaultBranch, token, target }) {
+  const base = defaultBranch ?? 'main';
   // REHEARSAL MODE (the live canary): converge this repo against a NAMED canon ref,
   // report, and restore the working tree — no branch, no commit, no PR, and above
   // all no stamp. A stamped branch head would leave the canary pointing off trunk,
   // which is exactly what the next converge's anti-rewind guard refuses: a rehearsal
   // that wedges its own canary.
   const rehearsalRef = process.env.CLAUDINITE_CANON_REF || null;
-  if (!repo) { console.error('update: no repo (CLAUDINITE_REPO/GITHUB_REPOSITORY)'); process.exit(1); }
-  if (!token) { console.error('update: no GITHUB_TOKEN in env'); process.exit(1); }
 
   // Either settings-file name, in the rename's read order: this worker is VENDORED,
   // so the copy running on a member may predate the record that renamed its own
@@ -141,41 +128,30 @@ export async function main() {
   // left; every other repo — the normal shape, the key absent — has it landed.
   const delivery = deliveryFor(declaration);
 
-  // THE TARGET. Which branch this run pushes to, and which pull request it delivers
-  // on, is the executor's decision: the task declares `supersede_existing_pr`, the
-  // executor resolved it before this subprocess started — this cycle's own fresh
-  // branch, with the last cycle's pull request closed once this one's exists (or
-  // landed first, where it had concluded green) — and handed it in. Nothing here
-  // reads the open pull requests or picks a name.
+  // THE TARGET, AND IT IS REQUIRED. Which branch this run pushes to, and which pull
+  // request it delivers on, is the executor's decision: the task declares
+  // `supersede_existing_pr`, the executor resolved it before this subprocess started
+  // — this cycle's own fresh branch, with the last cycle's pull request closed once
+  // this one's exists (or landed first, where it had concluded green) — and handed
+  // it in. Nothing here reads the open pull requests or picks a name.
   //
   // That disposal is what keeps a member that cannot land from accumulating a line
   // of obsolete pull requests, one a night: the converge is a full recompute from
   // the base, so the one left standing is always this cycle's answer.
-  const targetBranch = process.env.CLAUDINITE_TARGET_BRANCH || null;
-  const targetPr = process.env.CLAUDINITE_TARGET_PR || null;
-  if (!targetBranch) {
-    // AN EXECUTOR THAT PREDATES THE HAND-OFF sets no target, and then the disposal
-    // this worker used to do on its own still has to happen, or incumbents pile up
-    // (#787): a cycle that could not land its PR leaves it open for the next run,
-    // and that disposal must precede the converge, because a cycle with nothing to
-    // do returns early. Held for the convergence window #1698 closes.
-    // @legacy-tolerance advisory:none retire:#1698
-    const open = rehearsalRef ? { json: [] } : await gh(token, `/repos/${repo}/pulls?state=open&per_page=100`);
-    const incumbent = openDeliveredPull(open.json, UPDATE_PREFIX);
-    if (incumbent) {
-      const disposal = await disposeOpenPull({
-        task: UPDATE_TASK_ID,
-        token, repo, pr: incumbent, delivery, log: (s) => console.log(`update: ${s}`),
-      }).catch((e) => { console.log(`update: disposing of PR #${incumbent.number} failed: ${e.message}`); return 'kept'; });
-      if (disposal === 'kept') {
-        console.log(`update: PR #${incumbent.number} still stands — this cycle cannot deliver on top of it`);
-        return;
-      }
-      if (disposal === 'merged') {
-        console.log(`update: landed PR #${incumbent.number}; main has moved past this checkout — next cycle converges from it`);
-        return;
-      }
-    }
+  //
+  // Required, because an outcome that opens a pull request always resolves a branch:
+  // an absent one is an executor that predates the hand-off, whose mount is too far
+  // behind to converge itself, and delivering on a branch nothing is watching is
+  // worse than saying so. The disposal and the minted branch this worker fell back
+  // on are gone with the window they were held for (#1698). A REHEARSAL is exempt —
+  // it restores the tree and delivers nothing, and the canary gate drives this worker
+  // with no executor at all.
+  const branch = target.branch;
+  const targetPr = target.pr;
+  if (!rehearsalRef && !branch) {
+    console.error('claudinite-needs-human: action — this mount is too far behind to converge itself;'
+      + ' re-baseline it against the canon');
+    throw new Error('no CLAUDINITE_TARGET_BRANCH — this repo\'s executor predates the target hand-off (#1695)');
   }
 
   // The flows run from a FRESH CANON CLONE, never from this repo's mount: the mount is
@@ -220,7 +196,8 @@ export async function main() {
       git(['-C', root, 'clean', '-fd']);
       if (terminal.action === 'needs-human') {
         console.error(`update: rehearsing ${rehearsalRef} FAILED — ${terminal.why}`);
-        process.exit(1);
+        process.exitCode = 1;
+        return;
       }
       console.log(`${REHEARSAL_MARKER} ${repo} against ${rehearsalRef} — ${terminal.action}: ${terminal.why}`);
       return;
@@ -239,11 +216,6 @@ export async function main() {
       return;
     }
 
-    const day = new Date().toISOString().slice(0, 10);
-    const seed = Math.random().toString(36).slice(2, 8);
-    // The executor's branch where it handed one in; the runner's own only under an
-    // executor that set none (the tolerance above).
-    const branch = targetBranch ?? updateBranchName(day, seed);
     git(['-C', root, 'checkout', '-B', branch]);
     git(['-C', root, 'add', '-A']);
     const staged = git(['-C', root, 'diff', '--cached', '--name-only']).split('\n').filter(Boolean);
@@ -311,19 +283,17 @@ export async function main() {
       // "reserve non-zero for genuine breakage" rule's genuine breakage: the
       // member is not converging and nothing else will say so.
       process.exitCode = 1;
-    } else if (terminal.action === 'apply-stage' && requestFile) {
-      writeFileSync(requestFile, `${JSON.stringify({
-        marker: 'agent-requested',
-        delivered: { branch, pr: pr.number, merged: false },
-        reason: { code: 'apply-stage', detail: terminal.why },
-      })}\n`);
+    } else if (terminal.action === 'apply-stage') {
       console.log(`update: requested the apply stage — ${terminal.why}`);
+      return {
+        requestAgent: {
+          delivered: { branch, pr: pr.number, merged: false },
+          reason: { code: 'apply-stage', detail: terminal.why },
+        },
+      };
     }
+    return undefined;
   } finally {
     removeTree(tmp);
   }
-}
-
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main().catch((e) => { console.error(`update failed: ${e.message}`); process.exit(1); });
 }
