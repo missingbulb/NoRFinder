@@ -146,9 +146,8 @@
 
 
 - **Polling with an `until` loop** — write a condition that names the state awaited (a file's
-  arrival, a run's status): one already true on its first check is a blind sleep wearing a loop,
-  as a bare `wait` in a later Bash call is — each call is a fresh shell, which is what
-  `bare-wait-in-fresh-shell` refuses. (polling-until-loop)
+  arrival, a run's status); one already true on its first check is a blind sleep wearing a loop.
+  (polling-until-loop)
 
 - **Handing the owner a command block to paste into their terminal** — carry no trailing
   `# comment` on any line: interactive zsh treats `#` as a comment only under
@@ -292,7 +291,9 @@
   new, opening a listener or adding an outbound connection changes the promise rather than adding a
   field: decide it explicitly and rewrite the disclosure before the code. Expect the claim in more
   than one place — grep the whole surface for the standing absolutes it touches ("no tracking",
-  "no cookies", "no external assets") and reconcile every hit. (changing-software-does)
+  "no cookies", "no external assets") and reconcile every hit. Write the reconciled disclosure to
+  lead with what is now actually done, then the narrower true claims still standing - never a
+  blanket denial the new behavior has already made false. (changing-software-does)
 
 - **Changing an observable behavior your own docs make a claim about** — not only privacy: when
   a site deploys, a job's cadence, which targets are supported. Grep the doc surface for what the

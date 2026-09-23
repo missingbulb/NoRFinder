@@ -1,6 +1,6 @@
 # research-project pack
 
-A project-class pack (prose-only, declared — no fingerprint) for the recurring class: run an algorithm over similarly-formatted inputs, score against user ground truth, improve in reviewable iterations. Its 14 sections are all prose (methodology and judgment, no static signatures to check).
+A project-class pack (prose-only, declared - no fingerprint) for the recurring class: run an algorithm over similarly-formatted inputs, score against user ground truth, improve in reviewable iterations.
 
 ## Rules (`RULES.md`)
 
@@ -19,7 +19,8 @@ A project-class pack (prose-only, declared — no fingerprint) for the recurring
 | Verify the annotation parses before scoring | high | correctness | prose: <50 words |
 | State the input format explicitly | medium | complexity | prose: <50 words |
 | Name the target regime and its scope | medium | complexity | prose: <50 words |
-| Scale-awareness is a first-class concern. | medium | correctness | prose: <100 words |
+| Scale-awareness is a first-class concern. | medium | correctness | prose: <50 words |
+| Choosing images for a detection harness | medium | correctness | prose: <100 words |
 | No single-input special-casing. | high | correctness | prose: <50 words |
 | Keep the measured prior out of decisions | high | correctness | prose: <100 words |
 | Prefer scale-free rules over pixel/absolute constants. | medium | correctness | prose: <50 words |
