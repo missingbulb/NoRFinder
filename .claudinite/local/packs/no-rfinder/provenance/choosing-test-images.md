@@ -1,10 +1,12 @@
-## 2026-09-21 · born · converted from references.md (RULES-1), dated by the conversion
-- **Reason:** Building the transform-invariance harness, the agent proposed a synthetic
-  Caspr–Nav–Caspr field as the recommended next step (no real images yet available). The owner
-  overrode it: "Build it now, use images from the uplaoded articles or samples, and if you cant -
-  create fake data." (issue #10, 2026-09-04). Real samples exercise failure modes — saturation,
-  JPEG compression, cross-paper contrast conventions — a synthetic field can't reproduce, so this
-  project defaults to real data first.
-- **Mechanism:** prose
-- **Retire when:** Retire this rule if the corpus stops growing from external sources and every
-  harness build already has a same-regime real sample on hand as a matter of course.
+## 2026-09-15 · born · the owner overrode a synthetic test field for real images (#92)
+- **Source:** issue #10 (2026-09-04), the conversation that built the transform-invariance harness:
+  the agent proposed a synthetic Caspr-Nav-Caspr field, and the owner answered "use images from the
+  uplaoded articles or samples, and if you cant - create fake data".
+- **Reason:** real samples exercise failure modes a synthetic field can't reproduce - saturation,
+  JPEG compression, cross-paper contrast conventions - and the default had been recorded nowhere.
+- **Actor:** the growth-extract task run, merged by @missingbulb (owner).
+- **Mechanism:** a RULES.md rule in this repo's local pack; prose, because it is a judgment default
+  with no static signature to check against (the run's prose-to-checks pass).
+- **Retire when:** the corpus stops growing from external sources and every harness build already
+  has a same-regime real sample on hand as a matter of course.
+- **Landed:** Refs #89 · #92.
