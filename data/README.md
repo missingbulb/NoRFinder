@@ -88,10 +88,21 @@ camera. It names no vendor or software.
   3% after a σ=2 px blur) picked it correctly in 54 of 55 files; it failed on
   `Up Middle- Edited/Slide3 … Slice3_up_middle2.tif`, where a bright tissue edge in another
   channel outscored the nuclei. Check by eye.
-- **Caspr vs Nav1.6 between the other two channels is not yet established.** In the files whose
-  display colours match the brief (Caspr green, Nav1.6 red), a crop shows green–red–green
-  triplets along the fibres, as expected. Whether the green-displayed channel is Caspr in *every*
-  file is an assumption until the owner or the lab confirms the export's channel order.
+- **Caspr is the green-displayed channel in all 55 files; Nav1.6 is the remaining non-DAPI
+  channel** — deduced from the node's geometry, not from the colours. A node is a Nav1.6 spot
+  *between* two Caspr spots, so the Caspr channel is the one whose spots bracket the other's. Test
+  (2026-09-25): take intensity peaks in each non-DAPI channel (difference of Gaussians σ 1.2/6 px,
+  top 0.7%, 5 px local maxima), and count a spot as bracketed when the other channel has two spots
+  on opposite sides (≥150°) within 2.5 µm. In every file one direction wins by 2–8× (typically
+  ~0.15–0.25 of spots bracketed vs ~0.03 the other way; weakest
+  `Up Middle- Edited/Slide3 … Slice3_up_middle2.tif`, 0.05 vs 0.02), and the winner is always
+  the green-LUT channel. Density control: shifting the Caspr channel by ~11 µm drops bracketing to
+  ~0.02 both ways, with similar spot counts in both channels, so the asymmetry is geometry and not
+  spot density. Per group: LUTs B,G,R → Caspr ch2, Nav ch3; R,G,B with DAPI ch1 → Caspr ch2,
+  Nav ch3 (displayed *blue*); R,G,B with DAPI ch3 → Caspr ch2, Nav ch1; G,R,B → Caspr ch1,
+  Nav ch2. So **identify channels by role, never by index**: DAPI by nuclear shape, Caspr by
+  bracketing, Nav1.6 as the rest. The Nav1.6 channel also shows puncta inside some nuclei —
+  non-nodal signal a detector must not pair. The lab can still confirm; nothing here depends on it.
 - **The raw `.sld` holds more than these exports** — the z-stack, channel names and wavelengths
   (none of which the TIFFs carry). Reading `.sld`/`.sldy` needs Bio-Formats (Java) or 3i's own
   tools; ask for it only if a missing piece blocks work.
