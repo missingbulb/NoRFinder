@@ -5,3 +5,6 @@ __pycache__/
 
 # raw microscope data, fetched from Drive (python3 src/fetch_data.py), never committed
 /data/raw/
+
+# per-session copy of the person's own pack (claude-code-web-users-support), never committed
+/.claudinite/temp/
