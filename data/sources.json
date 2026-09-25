@@ -1,11 +1,289 @@
 {
   "sources": [
     {
-      "name": "owner-scans-2026-09",
-      "drive_id": "19dCgoGxGjijfGXcPGj82YZUM2Nij1o-o",
+      "name": "owner-scans",
+      "drive_id": "1WulrO8Qeqx-Qcxi1TQ7DcaVJNqYq2Bxl",
       "kind": "folder",
-      "skip": ["*.zip"],
-      "files": null
+      "skip": [
+        "*.zip"
+      ],
+      "files": [
+        {
+          "path": "Left Up- Edited/Slide1_slice3_up_left2.tif",
+          "drive_id": "1EpruGtwfuJ0QqGMZE-1WPzf9Ib0pxLqK",
+          "sha256": "d11c3cf89c7a9d3616777c73c9ddf7863dbb1fea5e2928a0ece8589635b0d84d"
+        },
+        {
+          "path": "Left Up- Edited/Slide1_slice4_up_left2.tif",
+          "drive_id": "1wBDqYt5Dd_XKNXXoBYf6KZWDQR4t3yAD",
+          "sha256": "982198e714608213b39cde924464051621417d6784ace832e9374705d270a87d"
+        },
+        {
+          "path": "Left Up- Edited/Slide2_4AP_NoR.sld - Slice1_up_left.2tif.tif",
+          "drive_id": "1RZwspmYQEyyNjW4j8SFap_2UaL2qchQr",
+          "sha256": "a991c440492b9ea740d4b782e509799d28077059cfb2ed0e5d5e6f22dacc7bbe"
+        },
+        {
+          "path": "Left Up- Edited/Slide2_4AP_NoR.sld - Slice2_up_left.tif",
+          "drive_id": "123u8fED7ps41AfrzStTK26ZMRBBx1ZgO",
+          "sha256": "14b06f12b0183fc479b7c5d8175409cd71292405ce1a51511bfd7f3b0821fc00"
+        },
+        {
+          "path": "Left Up- Edited/Slide2_4AP_NoR.sld - Slice2_up_left2.tif",
+          "drive_id": "1ZAIwKJRF9ek4Ord3mljnMXS0kNtJvnmv",
+          "sha256": "075b6d0749ea618d9ab742fba62a38f72f857c382302ac3892375573b3a49b6d"
+        },
+        {
+          "path": "Left Up- Edited/Slide3_4AP_NoR.sld - Slice1_up_left2.tif",
+          "drive_id": "1hThyZvIOk-W9FYsHQF1XksRmQYUXXi2X",
+          "sha256": "23fe8696152b3db48a7e823a41e9f8e409d99e5b3638024ec9380f44a88ff5e9"
+        },
+        {
+          "path": "Left Up- Edited/Slide3_4AP_NoR.sld - Slice2_up_left2.tif",
+          "drive_id": "1zn6e599-RnFJ8VErU6f_vkku-G_TFOUF",
+          "sha256": "4d46de5890863bfcd88686d8295aff3ade218a9c17d494e92f80a81940a40e1e"
+        },
+        {
+          "path": "Left Up- Edited/Slide3_4AP_NoR.sld - Slice3_down_left2.tif",
+          "drive_id": "1DnNTOULg00d3xUsaTs4CqezFP79o6GVD",
+          "sha256": "d2018db1057aee4d159138a8adce72fda6e1fb94a239bf8db60fc7f9d9877ff5"
+        },
+        {
+          "path": "Left Up- Edited/Slide3_4AP_NoR.sld - Slice4_up_left2.tif",
+          "drive_id": "1U96Y0zRkTMBDdQTrU3N7rwHAPM7RKTLF",
+          "sha256": "2c96b12484cd9cc3cab845d03eba664ff05e570aa1827405d3f76eb1d0317bc9"
+        },
+        {
+          "path": "Left Up- Edited/Slide4_4AP_NoR.sld - Slice1_up_left2.tif",
+          "drive_id": "1hA_CeyEtd2QNyFeOmE8x8NXqk4NWT477",
+          "sha256": "f0e0ff52fe8fee94b3ba896c7e130530705e6328402c4aa886c6a8e4de167b9c"
+        },
+        {
+          "path": "Left Up- Edited/Slide4_4AP_NoR.sld - Slice3_up_left_not so good2.tif",
+          "drive_id": "1ej8lLAieSKCMaQTnc_J9al_EWe41pggT",
+          "sha256": "f89304294dc79b2ffbe0a82829405a6001300226cd0283b0953e678f548a6537"
+        },
+        {
+          "path": "Left Up- Edited/Slide5_4AP_NoR.sld - Slice1_up_left2.tif",
+          "drive_id": "1NRObE-kEsINGTvFkI-uh3dFjiZgcWMUp",
+          "sha256": "126752b828cf54bfbe8f95b034e1d7a98ba467e732471846d5c506ab34f89f29"
+        },
+        {
+          "path": "Left Up- Edited/Slide5_4AP_NoR.sld - Slice2_up_left2.tif",
+          "drive_id": "1onyIdOffksQkfcg-UMRFoOIcctuRHYIp",
+          "sha256": "f1b80c7128348bb3f95f7b1f8dce276873f96fa092d9ae9237c8573dfa03a227"
+        },
+        {
+          "path": "Left Up- Edited/Slide5_4AP_NoR.sld - Slice3_up_left2.tif",
+          "drive_id": "15490pnxii2N32RVnujn5ZFj0L1_LoQ1Q",
+          "sha256": "402700ae4d0412915007fc32258c335829dd26fe4ab734ef44a2cf30e55df67c"
+        },
+        {
+          "path": "Left Up- Edited/Slide6_4AP_NoR.sld - Slice1_up_left2.tif",
+          "drive_id": "17Am-5RQIqbov8jkBZuWTv4DXHH8vnUZE",
+          "sha256": "69c51d0462c649be661e4f4122f30f4d215912a1fb7c1dd5fc190ec947cc35ab"
+        },
+        {
+          "path": "Left Up- Edited/Slide6_4AP_NoR.sld - Slice2_up_left2.tif",
+          "drive_id": "1GEvayO5CXv27pRNDO63KLO5HGq4fk2iE",
+          "sha256": "60548a93169124595fd47f64ea2a9f417e9b6464b17033814e8c7aa742ddd21a"
+        },
+        {
+          "path": "Left Up- Edited/Slide6_4AP_NoR.sld - Slice3_up_left2.tif",
+          "drive_id": "1lry_UsQMamAEMjQUbjtADsM6a-hTCihr",
+          "sha256": "28198db8e5e4a41fa71e94e8b9cb3ef4e8a8b4f01ebeebee88c9b9077f73102a"
+        },
+        {
+          "path": "Down Middle- Edited/Slide1_4AP_NoR.sld - slice3_down_middle2.tif",
+          "drive_id": "1JaOsvvz8waOQ_3BrnBdG0cDYGo4VwtiI",
+          "sha256": "335835304fbd27162586ee3e00c668ad2e0d2ebfbc2e9399f04c3856ba1db82f"
+        },
+        {
+          "path": "Down Middle- Edited/Slide1_4AP_NoR.sld - slice4_down_middle2.tif",
+          "drive_id": "1AQLcU7iF0K7-2EoklJ_YIClHGFje1Jc7",
+          "sha256": "32b1b5532006f0e2c05e8813b88c93cf4893cabac1cbd5e9a197336216f0a39a"
+        },
+        {
+          "path": "Down Middle- Edited/Slide2_4AP_NoR.sld - slice2_down_middle2.tif",
+          "drive_id": "1BgOOpwCn6oEkKw-o3Fx0slMjvzab9CXb",
+          "sha256": "33d3b2d9f7b0d49cfaac5e4822abe61f301dafdac0ae25ea8b8bead33731f72b"
+        },
+        {
+          "path": "Down Middle- Edited/Slide2_4AP_NoR.sld - slice3_down_middle2.tif",
+          "drive_id": "1ORZZ06CMGEPqpTEU1pC-SQYR4gpS8dqR",
+          "sha256": "003c3088400ca74f56bda45af2f2283a619920575213f6be38ff8e87f7138f9f"
+        },
+        {
+          "path": "Down Middle- Edited/Slide2_4AP_NoR.sld - slice4_down_middle2_opt2.tif",
+          "drive_id": "1j-eDaJ-gfyLlPdAlQ3tYDsKmazs8xI-q",
+          "sha256": "e62c6d91faf3448175f1e57dbd4c34855bde89d4c02be95bfc034bf5ef952bbf"
+        },
+        {
+          "path": "Down Middle- Edited/Slide3_4AP_NoR.sld - Slice1_down_middl2_opt3.tif",
+          "drive_id": "1XgeuMHf9_68FmUrExM1KvYiFwhl0eTk8",
+          "sha256": "3bd074fadd9a72005658a82f9826e241502bda5b10798cfd1ea02a806d2c2729"
+        },
+        {
+          "path": "Down Middle- Edited/Slide3_4AP_NoR.sld - Slice2_down_mddle2_opt2.tif",
+          "drive_id": "132PngCyDPW9QmP9g94m8KCExmw46aLC6",
+          "sha256": "008222fd4041864f5a5ad83c5e2f159ec80ee312da9eb667f95cebe8e91cb56f"
+        },
+        {
+          "path": "Down Middle- Edited/Slide3_4AP_NoR.sld - Slice4_down_middle2.tif",
+          "drive_id": "1OFeftyMYS5ekqwBZtYAUxBKxKgDrx35W",
+          "sha256": "69bcf2543b4f2d7cc3df960813024f381189d3ec05c6431abfeb65b71a3277eb"
+        },
+        {
+          "path": "Down Middle- Edited/Slide4_4AP_NoR.sld - Slice1_down_middle2_opt2.tif",
+          "drive_id": "1rRHXiLy4qyCwsXcJxc7AADkFDZO7P_P7",
+          "sha256": "bbc7e774bc3f2af68a6eb3afbb288971c32eb85c21497d8b8ef9cf50756ab52c"
+        },
+        {
+          "path": "Down Middle- Edited/Slide4_4AP_NoR.sld - Slice2_down_middle2_opt2.tif",
+          "drive_id": "1TaA_bHMH_QpqZgjKpjwmYYZ-S7V7u8hU",
+          "sha256": "3cad37d20b265c8fe10b80c9c4deee7b872a882ab716a017f39e26f2cc66af6d"
+        },
+        {
+          "path": "Down Middle- Edited/Slide4_4AP_NoR.sld - Slice3_down_middle2_opt3.tif",
+          "drive_id": "1jOOqi3LrMytxMLRorC3fG4RJ7SGdeqOu",
+          "sha256": "c04301ce51b0e43afe97beee376929b111ccbdc2cb20f728b1bf96906394f15b"
+        },
+        {
+          "path": "Down Middle- Edited/Slide5_4AP_NoR.sld - Slice1_down_middle2_opt2.tif",
+          "drive_id": "11ZyrnqdF_mX6HOfuJqYSqKUAstN6doDV",
+          "sha256": "ac793d7b9e3915c3f519a8d19541774fffaa065d3d0209d4edf7ef1e4c944f6a"
+        },
+        {
+          "path": "Down Middle- Edited/Slide5_4AP_NoR.sld - Slice2_down_middle2.tif",
+          "drive_id": "1_LmTulkrckSUF_eFx3NApWc95zkLKkgl",
+          "sha256": "dc83e0d430abcb8e03bc3ca08634f0c69196eb41c7d865212b73b30acbaf4b1f"
+        },
+        {
+          "path": "Down Middle- Edited/Slide5_4AP_NoR.sld - Slice3_down_middle2_opt2.tif",
+          "drive_id": "1DUfcsn1EgQzSkEMBFqn0a_ELHapqq0k3",
+          "sha256": "8aef66701dd5491361421e109bc80a4935e299da6af5be93d2ac9a449f853bd6"
+        },
+        {
+          "path": "Down Middle- Edited/Slide6_4AP_NoR.sld - Slice1_down_middle2.tif",
+          "drive_id": "1SNN8P4gHhCmn2dxlAgz6LJaUAvDwA1A0",
+          "sha256": "548d6cbe60b1debed6250d71e8f307b24432285d3ede8193c76862449670eb36"
+        },
+        {
+          "path": "Down Middle- Edited/Slide6_4AP_NoR.sld - Slice1_down_middle2_opt2.tif",
+          "drive_id": "1OIXuOmSWN4A2n3vzK77k6UIjPJNJmcce",
+          "sha256": "41172a5f60ec5fed3f930868623bef8aeba8ee266e7835bb656454104e91c8d7"
+        },
+        {
+          "path": "Down Middle- Edited/Slide6_4AP_NoR.sld - Slice2_down_middle.tif",
+          "drive_id": "1wccS4Pd71_ridTgsZfPvOTVoTO2PT9cs",
+          "sha256": "736ace62cc750b22a901e844fb027cbb38b76f1349a8294ea3f9d2be28fc638f"
+        },
+        {
+          "path": "Down Middle- Edited/Slide6_4AP_NoR.sld - Slice3_down_middle2.tif",
+          "drive_id": "1eRRryRkyUs91pdgbCrrZNsvgpErps_to",
+          "sha256": "449939e72e6daed654720cac88122f60c8198314e0af0eee7173e137827ccc28"
+        },
+        {
+          "path": "Left Up- Edited/Slide2_4AP_NoR.sld - Slice4_up_left2.tif",
+          "drive_id": "1J_rAEjKvIH1FnucfoLiV8hIBdA885K_i",
+          "sha256": "95c8a6166a34fa3aef647ccffe1c378cfad844b59798089e45cc294f745faa91"
+        },
+        {
+          "path": "Left Up- Edited/Slide6_4AP_NoR.sld - Slice3_up_left_option2_2.tif",
+          "drive_id": "1sfuII1R1zBNLAS2EwNRgE_QhnXVWoTcF",
+          "sha256": "7cb38b38bd5f5f5dd78be8dfa85367454f2d7b82e4fb5dd4e78b9d83d3b51c63"
+        },
+        {
+          "path": "Up Middle- Edited/Slide1_slice3_up_middle2.tif",
+          "drive_id": "1u3PbxL6UnZOtkjMQ8P-VRPkt9Y4tZLDh",
+          "sha256": "1425a88195f36ffa8eb63f16580db125e9a980bd30bbe8494beeb8d204d8629c"
+        },
+        {
+          "path": "Up Middle- Edited/Slide1_slice4_up_middle2.tif",
+          "drive_id": "1HuLL74VHyaqIvvWj4QcynjvTg3BN8ayE",
+          "sha256": "e5ce316261bd5461b3358b25877d5e04176ec3116a9e3794e67219c07455bbe7"
+        },
+        {
+          "path": "Up Middle- Edited/Slide2_4AP_NoR.sld - slice1_up_middle2.tif",
+          "drive_id": "1QvOj9MU_pxMs6iFHDgUdw37Virw51EJb",
+          "sha256": "a2801baef5cabaede3844a467b010bff0e8a351caa21089a525eb023c8ddad1b"
+        },
+        {
+          "path": "Up Middle- Edited/Slide2_4AP_NoR.sld - slice2_up_middle2.tif",
+          "drive_id": "1PVjQRxGCZb9NIZPjsmVmyVDBZnOKNORc",
+          "sha256": "3e2c82891cbc499b0d080500ec0382682f6045ec8f804534c3eb3215a8308905"
+        },
+        {
+          "path": "Up Middle- Edited/Slide2_4AP_NoR.sld - slice3_up_middle2.tif",
+          "drive_id": "1ER-wobYp8wN-JzhY0t-1iDABdpW23tIz",
+          "sha256": "cc790fad556f5d07934e00563fe8734ce46ad5aaee73e153246be3f7ccd5fe64"
+        },
+        {
+          "path": "Up Middle- Edited/Slide2_4AP_NoR.sld - slice4_up_middle2.tif",
+          "drive_id": "16NHTeg6Fh4G3gZCJQZDRlVhR2LcbMlIV",
+          "sha256": "10808ed3cf29f22157a042f588a5f3b022ef01730b7f2ecf5ee1595e063a28dc"
+        },
+        {
+          "path": "Up Middle- Edited/Slide3_4AP_NoR.sld - Slice1_up_middle-1_2.tif",
+          "drive_id": "1WaKKctAkn5zvjlB8w7vZXjzWNfs6XxrH",
+          "sha256": "89535473eb207493d20cf356965d6fb3738cf4e674f4b29312beb4dbe9271590"
+        },
+        {
+          "path": "Up Middle- Edited/Slide3_4AP_NoR.sld - Slice2_up_middle2.tif",
+          "drive_id": "1v2xU_1W9m_FIDYXP4w9csm4jEjpJ2ZFc",
+          "sha256": "c6308afbca285269964264f222e89f4002a617c64f3a3f6469decb802dc45419"
+        },
+        {
+          "path": "Up Middle- Edited/Slide3_4AP_NoR.sld - Slice3_up_middle2.tif",
+          "drive_id": "1WR-4SJwqfHsZ_P6bF6bsapeiFJ3kKdc0",
+          "sha256": "657fce5ae5a13e066c0e023b5709ca618697bc7cfa0c11b8c947c3fa52ca6fd9"
+        },
+        {
+          "path": "Up Middle- Edited/Slide3_4AP_NoR.sld - Slice4_up_middle2.tif",
+          "drive_id": "1Z8bxDQywtu66GdgADuWry_gqMk1e1RJH",
+          "sha256": "dc10f2bceca37e3175c2d179ab621d4274a9b5da3947a923702e613a60b72309"
+        },
+        {
+          "path": "Up Middle- Edited/Slide4_4AP_NoR.sld - Slice1_up_middle2.tif",
+          "drive_id": "1AsOro-bto7SgNTrJSwcLLhNtRpWsjUy8",
+          "sha256": "444c2855dac80e854e2e20f73d760413b31cb55f039b0a698f62f7d2c3345da1"
+        },
+        {
+          "path": "Up Middle- Edited/Slide4_4AP_NoR.sld - Slice2_up_middle2.tif",
+          "drive_id": "1qlSzeDNtpJ4RVOtw6txb1YwZoQivpQIt",
+          "sha256": "5db70f234ddc550c3528a95af5e2cf2047b7d1033e8dcd31278578371474532a"
+        },
+        {
+          "path": "Up Middle- Edited/Slide4_4AP_NoR.sld - Slice3_up_middle2.tif",
+          "drive_id": "15Kede3-9X9fJWr_W3XiMmS6Y5IhMu8gt",
+          "sha256": "eed1fbf7fa234e715a5fe2b944a76e7d0c7817c5eb4f78732f0a716d521cf92c"
+        },
+        {
+          "path": "Up Middle- Edited/Slide5_4AP_NoR.sld - Slice1_up_middle2.tif",
+          "drive_id": "1R5_beYAeqfWw2gl3ZAWg6HBjogi7AVOm",
+          "sha256": "dadc9f07d414cc62de3d110d63e29b66da9e6f82ffee2e20d465328c8fe5791d"
+        },
+        {
+          "path": "Up Middle- Edited/Slide5_4AP_NoR.sld - Slice2_up_middle2.tif",
+          "drive_id": "1JWSE-utzPJsb2cD5z8iFl4n4MC4qVFBE",
+          "sha256": "6071f97ff5f2e2366d4991dc661982eb2995aa265146e47ad945f5e5fd406ec9"
+        },
+        {
+          "path": "Up Middle- Edited/Slide6_4AP_NoR.sld - Slice1_up_middle2.tif",
+          "drive_id": "1TxM73odQw8MPr9OY4U-9xSzQXIMqCAQ8",
+          "sha256": "8351474fa3a59e6fc5fd54ca5e7993c8deb940324dec0932ccb57086367c0b38"
+        },
+        {
+          "path": "Up Middle- Edited/Slide6_4AP_NoR.sld - Slice2_up_middle2.tif",
+          "drive_id": "1DkkN5OUhFufJsPiw3n2JPYxmdj3jh8mW",
+          "sha256": "b9c3bec442f5a493ed7ea9607502eafe42fbb6da8cdba6fb18986811fc13485f"
+        },
+        {
+          "path": "Up Middle- Edited/Slide6_4AP_NoR.sld - Slice3_up_middle2.tif",
+          "drive_id": "10jC8411tLLA3QDxjRaLrItSZYPUoh3si",
+          "sha256": "70af9984667093f9b6e9411b4793443c4374d793ac0dfac4f6b0d733c24a214a"
+        }
+      ]
     }
   ]
 }

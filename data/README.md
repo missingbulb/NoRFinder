@@ -19,9 +19,13 @@ optional `skip` globs), run `--pin`, commit.
 
 ## Sources
 
+All under the owner's shared Drive root
+[`NoR-VascularColoring data`](https://drive.google.com/drive/folders/1HfpSQ4ndHfBeUotSv4FXzoTyYDOeia7F),
+whose `NoRFinder/` subfolder is the one source here.
+
 | name | what | status |
 |---|---|---|
-| `owner-scans-2026-09` | Three scans from the owner (2026-09-25). Each subfolder is one scan: many TIFF files, each an **RGB** image. The folder's zip is a duplicate and is skipped. | **Not yet fetchable** — Drive answered 401 / sign-in redirect on 2026-09-25: the folder is not shared "Anyone with the link". Not listed, not pinned, format below unverified. |
+| `owner-scans` | 55 single-plane images (2026-09-25) in three field-position subfolders — `Left Up- Edited` (19), `Down Middle- Edited` (18), `Up Middle- Edited` (18) — over six slides × up to four slices each, `4AP` condition. Names carry the owner's own notes (`_not so good`, `_opt2`, `_option2`): several fields have more than one edited version. 454 MB. | **Pinned** 2026-09-25, 55 files, listing checked against Drive's own folder view. The folder was still being filled while it was pinned: re-run `--pin` after an upload. |
 
 ## Why Drive, and not git
 
@@ -38,44 +42,53 @@ Checked on 2026-09-25, for an owner with no local machine:
 - **Drive:** the files are already there; `drive.google.com` and `drive.usercontent.google.com`
   are reachable from the container, and `gdown` handles Drive's large-file confirmation page.
 
-Gotchas: a Drive link that is shared only with named people redirects to `accounts.google.com`
-(gdown: `status code 401`) — fix the sharing, not the code. gdown's folder listing is documented
-upstream as capped (historically 50 files per folder); if a scan folder holds more, the listing
-will come back short — compare it against the Drive UI on first `--pin`.
+Gotchas:
+
+- A link shared only with named people redirects to `accounts.google.com` (gdown: `status code
+  401`) — fix the sharing, not the code.
+- **gdown's folder listing is not reliable on its own.** On 2026-09-25 it listed 12 of a folder's
+  13 files once and all 13 on the next call. So `--pin` re-lists every time and only *adds*
+  entries (a recorded checksum is never overwritten), and a fresh pin is checked against Drive's
+  own view: `https://drive.google.com/embeddedfolderview?id=<folder id>` lists the same files as
+  `flip-entry-title` entries.
 
 ## The microscope
 
-Per the owner, these scans come from the same instrument as the sibling VascularColoring project:
 Tel Aviv University's **Marianas spinning-disk confocal**
-([facility page](https://en-med.tau.ac.il/marianas-spinning-disk-confocal-sicf)). What the page states:
+([facility page](https://en-med.tau.ac.il/marianas-spinning-disk-confocal-sicf)) — per the owner,
+the same instrument as the sibling VascularColoring project. The page lists lasers 405, 488, 561
+and 640 nm, objectives 20×, 60× oil and 100× oil, SoRa super-resolution, and a 95% quantum-efficiency
+camera. It names no vendor or software.
 
-- Dual Nipkow-disk spinning-disk confocal; **SoRa** super-resolution mode (1.4× resolution,
-  further with deconvolution); light-sheet option; live/fixed multicolour, tile scan, multi-position.
-- Lasers **405, 488, 561, 640 nm**. Objectives **20×, 60× oil, 100× oil**.
-- Camera described as a "CCD" with **95% quantum efficiency**.
+**Measured from the files (2026-09-25):**
 
-What is **inferred, not verified** — check each against the first real file's metadata:
-
-- "Marianas" is Intelligent Imaging Innovations' (3i) system, whose software (SlideBook) writes
-  `.sld`/`.sldy`. The owner's lab offered `.vsi`, which is Olympus cellSens's format — so the
-  exporting software is worth confirming.
-- 95% QE fits a Photometrics Prime 95B sCMOS: 1200×1200 px, 11 µm pixels, 16-bit — about 0.18 µm
-  per pixel at 60× before any SoRa magnifier. The VascularColoring raw stacks (≈170 MB for 60
-  planes ≈ 2.9 MB per plane = 1200×1200×16-bit) are consistent with it.
-- The page lists no UV laser, so DAPI on this scope is excited at 405 nm.
+- The raw acquisition is **3i SlideBook** (`.sld`, named in every file); these TIFFs were saved
+  from it through **ImageJ 1.54p** (Bio-Formats import), which is why they carry ImageJ metadata.
+- Frames are **1200 × 1200, 16-bit** — the geometry of a Photometrics Prime 95B sCMOS
+  (11 µm pixels, 95% QE).
+- Pixel size, as stored: **0.17460 µm/px** in every file (`XResolution` 5.727272 px/µm,
+  unit micron). That is exactly 11 µm ÷ **63**, not ÷ 60 — so a 63× objective, or 60× with a
+  1.05× relay; the facility page's objective list may be out of date. Read the value from each
+  file (requirements R3) rather than this note.
+- The sibling project's 20× stacks store 0.55 µm/px = 11 µm ÷ 20 — the same camera.
 
 ## Handling these files
 
-- **Scale must come from the file** ([`docs/requirements.md`](../docs/requirements.md) R3). The
-  owner's current files are **RGB TIFFs** — the shape of an export, which commonly drops pixel
-  size and z-step and flattens 16-bit data to 8-bit. On the first real file, read its tags
-  (`tifffile`: `ImageDescription`, `XResolution`/`ResolutionUnit`, any OME-XML or ImageJ
-  metadata) before assuming either. If the scale is gone, ask the lab for the native file or an
-  OME-TIFF export.
-- **An RGB channel is not a stain.** Map R/G/B to Caspr / Nav1.6 / DAPI from the lab's colour
-  choice (the brief: Caspr green, Nav1.6 red), and confirm it by looking, not by assumption.
-- **Many TIFFs per scan** is most likely one file per z-plane (or per tile); establish which from
-  the file names and metadata before stacking them.
-- **A `.vsi` is only an index**: the pixels are in a sibling folder of `.ets` files, which must be
-  uploaded with it. Reading VSI needs Bio-Formats (Java) — a heavy route, used only if the TIFFs
-  lack what we need.
+- **Each file is one z-plane, three channels** (`CYX`, uint16, ImageJ "composite"). No z-stack:
+  the "Edited" files are single chosen planes, so the reference method's z-based horizontality
+  criterion has nothing to work on here.
+- **Neither channel position nor display colour says which stain a channel is.** The stored
+  display colours (ImageJ LUTs) come in three arrangements — R,G,B (26 files), B,G,R (28), G,R,B
+  (1) — and the nuclear channel is **ch1 in 50 files and ch3 in 5** (the `Slide1` files and
+  `Slide2 … Slice1_up_left.2tif`), in some files displayed *red*. Identify DAPI by content: it is
+  the channel of large round blobs. A blob-size test (mean connected-component area of the top
+  3% after a σ=2 px blur) picked it correctly in 54 of 55 files; it failed on
+  `Up Middle- Edited/Slide3 … Slice3_up_middle2.tif`, where a bright tissue edge in another
+  channel outscored the nuclei. Check by eye.
+- **Caspr vs Nav1.6 between the other two channels is not yet established.** In the files whose
+  display colours match the brief (Caspr green, Nav1.6 red), a crop shows green–red–green
+  triplets along the fibres, as expected. Whether the green-displayed channel is Caspr in *every*
+  file is an assumption until the owner or the lab confirms the export's channel order.
+- **The raw `.sld` holds more than these exports** — the z-stack, channel names and wavelengths
+  (none of which the TIFFs carry). Reading `.sld`/`.sldy` needs Bio-Formats (Java) or 3i's own
+  tools; ask for it only if a missing piece blocks work.
