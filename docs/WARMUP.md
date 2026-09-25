@@ -29,8 +29,11 @@ Full specification, including the parts the overview leaves unstated:
 - ✅ Literature review ([`literature/`](literature/README.md)), issues
   [#5](https://github.com/missingbulb/NoRFinder/issues/5) and
   [#8](https://github.com/missingbulb/NoRFinder/issues/8). Nothing is unreachable.
-- ❌ **No sample data.** The images in `figures/` are document illustrations — re-rendered
-  screenshots at unknown scale. **No number may be measured off them.**
+- ✅ **Real sample data: 55 owner images**, fetched from Drive by `src/fetch_data.py` and pinned by
+  checksum in [`../data/sources.json`](../data/sources.json) — never committed (R6). Single-plane,
+  3-channel, 16-bit, 0.1746 µm/px read from the files. **Channel order varies between files** —
+  read [`../data/README.md`](../data/README.md) before touching them. The images in `figures/`
+  remain document illustrations — **no number may be measured off them.**
 - ❌ **No ground truth.** No annotated image, and no stated annotation convention.
 - ✅ **R1 — scale-free baseline detector + transform-invariance harness**
   ([`results/`](results/README.md), #10). Tier-1 invariance is exact and pinned by
@@ -39,19 +42,23 @@ Full specification, including the parts the overview leaves unstated:
   detector against *itself*, which says nothing about whether it finds the right nodes.
 - ❌ **No scoring harness** (needs annotations), no z-stack handling, no µm output path.
 
-Run the invariance test: `pip install -r requirements.txt && python3 tests/test_invariance.py`
+Run the tests: `pip install -r requirements.txt && python3 tests/test_invariance.py && python3 tests/test_fetch_data.py`
+Fetch the raw data: `python3 src/fetch_data.py`
 
 ## What blocks starting
 
 In priority order. The first two block the MVP; the third blocks §5.3 entirely.
 
-1. **Real sample images** — the multi-channel microscope files, in their native format.
+1. ~~**Real sample images**~~ — arrived 2026-09-25: 55 single-plane, 3-channel TIFFs with pixel size
+   in their metadata ([`../data/README.md`](../data/README.md)). Still no z-stack.
 2. **Ground-truth annotations** on at least a few of them, plus the convention used to make them
    (what mark means "node"). Per the research playbook, ground truth is **annotated, never
    invented** — we do not get to label these ourselves.
 3. **Native multi-channel files, not exports.** Blocks the µm output of §5.3, the z-stack that the
    reference horizontality criterion needs, and unambiguous channel identity. Not a blocker on
    detection at all — see [`requirements.md`](requirements.md) R1/R3.
+   The 2026-09-25 files carry µm per pixel, so the µm output is unblocked; the z-stack and a
+   recorded channel identity are still missing (the raw `.sld` has both).
 
 ## Settled — do not re-open these
 

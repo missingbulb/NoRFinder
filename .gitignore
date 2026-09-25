@@ -2,3 +2,6 @@
 /.claudinite-hooks.log.tmp
 __pycache__/
 *.pyc
+
+# raw microscope data, fetched from Drive (python3 src/fetch_data.py), never committed
+/data/raw/
