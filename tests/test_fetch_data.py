@@ -97,9 +97,36 @@ def test_second_fetch_downloads_nothing_and_catches_a_changed_file():
             raise AssertionError('a file changed on Drive was accepted')
 
 
+def test_repin_adds_files_uploaded_since_and_keeps_existing_pins():
+    with tempfile.TemporaryDirectory() as d:
+        manifest = write_manifest(d, [
+            {'name': 'acme-scan', 'drive_id': 'FOLDER', 'kind': 'folder', 'skip': ['*.zip'],
+             'files': [{'path': 'acme-scan/z01.tif', 'drive_id': 'F1', 'sha256': 'f' * 64}]}])
+        raw = os.path.join(d, 'raw')
+        drive = FakeDrive()
+        drive.download('F1', os.path.join(raw, 'acme-scan', 'z01.tif'))
+        drive.downloads.clear()
+        try:
+            fetch_data.fetch_all(manifest, raw, pin=True, transport=drive)
+        except fetch_data.ChecksumMismatch:
+            pass
+        else:
+            raise AssertionError('re-pinning overwrote a recorded checksum')
+
+        pinned = fetch_data.sha256_of(os.path.join(raw, 'acme-scan', 'z01.tif'))
+        write_manifest(d, [
+            {'name': 'acme-scan', 'drive_id': 'FOLDER', 'kind': 'folder', 'skip': ['*.zip'],
+             'files': [{'path': 'acme-scan/z01.tif', 'drive_id': 'F1', 'sha256': pinned}]}])
+        fetch_data.fetch_all(manifest, raw, pin=True, transport=drive)
+        files = {f['path']: f for f in fetch_data.load_manifest(manifest)[0]['files']}
+        assert sorted(files) == ['acme-scan/z01.tif', 'acme-scan/z02.tif']
+        assert files['acme-scan/z01.tif']['sha256'] == pinned
+        assert drive.downloads == ['F2']
+
+
 if __name__ == '__main__':
     tests = [fn for name, fn in list(globals().items()) if name.startswith('test_')]
-    assert len(tests) == 3
+    assert len(tests) == 4
     for fn in tests:
         fn()
         print('ok', fn.__name__)

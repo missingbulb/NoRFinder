@@ -90,11 +90,16 @@ def fetch_all(manifest, raw, pin=False, only=None, transport=None):
                 s['sha256'] = digest
             continue
         files = s['files']
-        if files is None:
+        if files is None or pin:
+            # Re-listing only ever adds: a recorded entry keeps its checksum, so a file replaced
+            # on Drive still fails verification instead of being silently re-pinned.
+            files = list(files or [])
+            known = {f['path'] for f in files}
             skip = s.get('skip', [])
-            files = [{'path': p, 'drive_id': i, 'sha256': None}
-                     for p, i in transport.list_folder(s['drive_id'])
-                     if not any(fnmatch.fnmatch(os.path.basename(p), g) for g in skip)]
+            files += [{'path': p, 'drive_id': i, 'sha256': None}
+                      for p, i in sorted(transport.list_folder(s['drive_id']))
+                      if p not in known
+                      and not any(fnmatch.fnmatch(os.path.basename(p), g) for g in skip)]
         for f in files:
             digest = _fetch_one(f['drive_id'], os.path.join(raw, f['path']), f['sha256'], transport)
             if pin:
