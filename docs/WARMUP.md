@@ -29,8 +29,11 @@ Full specification, including the parts the overview leaves unstated:
 - ✅ Literature review ([`literature/`](literature/README.md)), issues
   [#5](https://github.com/missingbulb/NoRFinder/issues/5) and
   [#8](https://github.com/missingbulb/NoRFinder/issues/8). Nothing is unreachable.
-- ❌ **No sample data.** The images in `figures/` are document illustrations — re-rendered
-  screenshots at unknown scale. **No number may be measured off them.**
+- ⏳ **Sample data referenced, not yet fetchable.** Three owner scans (RGB TIFFs, many per scan)
+  are named in [`../data/sources.json`](../data/sources.json) and fetched from Drive by
+  `src/fetch_data.py` — never committed ([`../data/README.md`](../data/README.md), R6). The Drive
+  folder is not yet shared "Anyone with the link". The images in `figures/` remain document
+  illustrations at unknown scale — **no number may be measured off them.**
 - ❌ **No ground truth.** No annotated image, and no stated annotation convention.
 - ✅ **R1 — scale-free baseline detector + transform-invariance harness**
   ([`results/`](results/README.md), #10). Tier-1 invariance is exact and pinned by
@@ -39,7 +42,8 @@ Full specification, including the parts the overview leaves unstated:
   detector against *itself*, which says nothing about whether it finds the right nodes.
 - ❌ **No scoring harness** (needs annotations), no z-stack handling, no µm output path.
 
-Run the invariance test: `pip install -r requirements.txt && python3 tests/test_invariance.py`
+Run the tests: `pip install -r requirements.txt && python3 tests/test_invariance.py && python3 tests/test_fetch_data.py`
+Fetch the raw data: `python3 src/fetch_data.py`
 
 ## What blocks starting
 

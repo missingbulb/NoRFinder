@@ -1,0 +1,11 @@
+{
+  "sources": [
+    {
+      "name": "owner-scans-2026-09",
+      "drive_id": "19dCgoGxGjijfGXcPGj82YZUM2Nij1o-o",
+      "kind": "folder",
+      "skip": ["*.zip"],
+      "files": null
+    }
+  ]
+}

@@ -178,3 +178,14 @@ it for their real analysis. Concretely, for us:
 - **Report precision and recall against matched per-node ground truth**, never a count ratio. The
   published metric above exceeds 100% because it is `automated / manual`, which cannot distinguish
   a correct count from one with matched false positives and false negatives.
+
+## R6 — Raw data lives on Drive, never in git, and is trusted only by checksum
+
+The owner's microscope files sit in Google Drive; the repository carries only
+[`data/sources.json`](../data/sources.json), naming each one by Drive id with its SHA-256.
+[`src/fetch_data.py`](../src/fetch_data.py) downloads what is missing into the git-ignored
+`data/raw/` and **refuses a file whose checksum differs from the manifest** — a scan silently
+replaced on Drive would otherwise change every downstream number with nothing in the repo
+recording why. A checksum is `null` until the first fetch pins it (`--pin`); unknown is never
+written as a placeholder value. Why Drive rather than git, LFS or a Release:
+[`data/README.md`](../data/README.md). Test: `tests/test_fetch_data.py`.
