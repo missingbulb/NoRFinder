@@ -8,6 +8,7 @@ means "never fetched yet", and `--pin` writes what was fetched back into the man
     python3 src/fetch_data.py            # fetch everything missing, verify everything
     python3 src/fetch_data.py --pin      # also record checksums / folder listings still null
     python3 src/fetch_data.py NAME ...   # only these sources
+    python3 src/fetch_data.py -m 'Left Up*/Slide2*'   # only files whose path matches a glob
 """
 import argparse
 import fnmatch
@@ -78,13 +79,20 @@ def _fetch_one(drive_id, out, expected, transport):
     return sha256_of(out) if status == 'unpinned' else expected
 
 
-def fetch_all(manifest, raw, pin=False, only=None, transport=None):
+def _wanted(path, match):
+    return not match or any(fnmatch.fnmatch(path, g) for g in match)
+
+
+def fetch_all(manifest, raw, pin=False, only=None, match=None, transport=None):
+    """`match`: globs over each file's path under raw/; a file matching none is left untouched."""
     transport = transport or GoogleDrive()
     sources = load_manifest(manifest)
     for s in sources:
         if only and s['name'] not in only:
             continue
         if s['kind'] == 'file':
+            if not _wanted(s['name'], match):
+                continue
             digest = _fetch_one(s['drive_id'], os.path.join(raw, s['name']), s['sha256'], transport)
             if pin:
                 s['sha256'] = digest
@@ -101,6 +109,8 @@ def fetch_all(manifest, raw, pin=False, only=None, transport=None):
                       if p not in known
                       and not any(fnmatch.fnmatch(os.path.basename(p), g) for g in skip)]
         for f in files:
+            if not _wanted(f['path'], match):
+                continue
             digest = _fetch_one(f['drive_id'], os.path.join(raw, f['path']), f['sha256'], transport)
             if pin:
                 f['sha256'] = digest
@@ -115,9 +125,11 @@ def main():
     ap.add_argument('names', nargs='*', help='only these sources (default: all)')
     ap.add_argument('--pin', action='store_true',
                     help='write checksums and folder listings that are still null')
+    ap.add_argument('-m', '--match', action='append', metavar='GLOB',
+                    help='only files whose path under data/raw/ matches (repeatable)')
     args = ap.parse_args()
     try:
-        fetch_all(MANIFEST, RAW, pin=args.pin, only=set(args.names) or None)
+        fetch_all(MANIFEST, RAW, pin=args.pin, only=set(args.names) or None, match=args.match)
     except ChecksumMismatch as e:
         sys.exit(f'CHECKSUM MISMATCH — the file on Drive is not the one recorded.\n{e}')
 
