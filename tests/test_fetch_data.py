@@ -124,9 +124,26 @@ def test_repin_adds_files_uploaded_since_and_keeps_existing_pins():
         assert drive.downloads == ['F2']
 
 
+def test_match_fetches_only_the_named_subset():
+    with tempfile.TemporaryDirectory() as d:
+        manifest = write_manifest(d, [
+            {'name': 'a.tif', 'drive_id': 'A', 'kind': 'file', 'sha256': None},
+            {'name': 'acme-scan', 'drive_id': 'FOLDER', 'kind': 'folder', 'skip': ['*.zip'],
+             'files': [{'path': 'acme-scan/z01.tif', 'drive_id': 'F1', 'sha256': None},
+                       {'path': 'acme-scan/z02.tif', 'drive_id': 'F2', 'sha256': None}]}])
+        raw = os.path.join(d, 'raw')
+        drive = FakeDrive()
+        fetch_data.fetch_all(manifest, raw, match=['*z02*'], transport=drive)
+        assert drive.downloads == ['F2']
+        assert not os.path.exists(os.path.join(raw, 'acme-scan', 'z01.tif'))
+
+        fetch_data.fetch_all(manifest, raw, match=['*z02*', 'a.tif'], transport=drive)
+        assert drive.downloads == ['F2', 'A']
+
+
 if __name__ == '__main__':
     tests = [fn for name, fn in list(globals().items()) if name.startswith('test_')]
-    assert len(tests) == 4
+    assert len(tests) == 5
     for fn in tests:
         fn()
         print('ok', fn.__name__)

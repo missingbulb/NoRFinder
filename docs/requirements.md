@@ -187,5 +187,7 @@ The owner's microscope files sit in Google Drive; the repository carries only
 `data/raw/` and **refuses a file whose checksum differs from the manifest** — a scan silently
 replaced on Drive would otherwise change every downstream number with nothing in the repo
 recording why. A checksum is `null` until the first fetch pins it (`--pin`); unknown is never
-written as a placeholder value. Why Drive rather than git, LFS or a Release:
+written as a placeholder value. **A fetch can be limited to a subset** (`--match GLOB` over the file's path under `data/raw/`):
+the folder is hundreds of MB, and most work needs only a few planes, so pulling everything each
+session wastes minutes and disk. Why Drive rather than git, LFS or a Release:
 [`data/README.md`](../data/README.md). Test: `tests/test_fetch_data.py`.
