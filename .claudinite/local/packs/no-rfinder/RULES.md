@@ -9,7 +9,3 @@ procedure with a nameable trigger in its own `skills/<name>/SKILL.md`.
 
 A lesson that would hold in another repo does not belong here — propose it to the Claudinite
 canon instead, where every repo gets it.
-
-- **Choosing test images for a new detection/invariance harness** — default to real images
-  already at hand (the uploaded corpus, literature figures) over a synthetic field; synthesize
-  only once real options are exhausted. (choosing-test-images)
