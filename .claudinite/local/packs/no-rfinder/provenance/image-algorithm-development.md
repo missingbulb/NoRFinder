@@ -28,3 +28,9 @@
   stress test it by rotating the image. If the image came from a camera - any projection can happen
   to the object, attempt to find it after skewing the image."
 - **Actor:** @missingbulb (owner).
+
+## 2026-09-27 · strengthened · added the divide-and-conquer decision for many-object images
+- **Source:** the owner: "a very important strategy could be divide and conquer, if the items are
+  indeed discreet... Get the human/model to approve a few subimages... ask the user if they see a
+  visual interaction betwen objects".
+- **Actor:** @missingbulb (owner).

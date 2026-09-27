@@ -80,6 +80,27 @@ list columns change only when the owner asks. If you think a change would make r
 propose it with a before/after on the same sample and wait for approval; until then every
 version renders the approved way, even when a new filter or output needs a place in it.
 
+## Many objects in one image - decide on divide and conquer
+
+When the task detects many objects per image, settle this before State 3, because it decides
+what the ground truth and the inner loop work on. If the objects are discrete and do not
+affect one another visually, pursue divide and conquer: propose candidate sub-images (crops,
+each around one object with a margin) with a cheap generic step, and develop, label and score
+the detector on those sub-images. Crops are faster to label, cheaper to iterate on, and easy
+to review as contact sheets.
+
+- Show the owner (or have a capable model pre-screen, then the owner confirm) a sheet of a few
+  sub-images, and ask two questions: "Is each crop one independent object of the kind we want?"
+  and "Do you see visual interaction between neighbouring objects - touching, overlapping,
+  shared signal, one object's glow or shadow on the next?"
+- **No interaction:** work on sub-images from here on, with the crop step as its own scored
+  stage, since an object never proposed is lost for good.
+- **Interaction:** a tight crop throws away information. Try a wider crop that includes the
+  neighbours as context while labelling only the centre object, and show the owner that sheet.
+  If wider crops still lose what matters, work on the whole image.
+
+Record the decision and its reason in the ledger.
+
 ## State 3 - no ground truth
 
 Done when a few inputs carry labels the owner verified in the State 2 render, stored as data
@@ -198,6 +219,7 @@ Go when one of these holds; otherwise keep running the inner loop alone:
 - two iterations without a gain
 - a fix would add a criterion for what the object *is* - only the owner adds domain rules
 - a filter's threshold is in doubt - show the objects only that filter rejects
+- the objects look separable: approve sample sub-images and say whether neighbours interact
 - a version is about to be called final or run on new inputs
 
 **How to ask:** one checkpoint, one render per question, one concrete question per render
