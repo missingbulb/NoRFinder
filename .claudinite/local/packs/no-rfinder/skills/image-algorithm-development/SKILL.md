@@ -1,147 +1,175 @@
 ---
 name: image-algorithm-development
-description: How to set up and run the development cycle for a new image-processing algorithm - inputs and caching, a human-verifiable output, ground truth, self-improvement loops and performance passes. Use when starting or iterating on any image detection or segmentation algorithm.
+description: The state-by-state procedure for developing an image detection or segmentation algorithm - which of the loader, the approved render, the ground truth and the scoring loop exists yet, what to build next, what to ask the owner and when to stop. Use when starting, resuming or iterating on any such algorithm.
 metadata:
   body: workflow
   usage:
     expect: judgment
 ---
 
-# Developing an image-processing algorithm
+# Developing an image detection or segmentation algorithm
 
-The research-project pack's rules (ground truth, anti-overfitting, iteration notes, showing
-results) apply throughout. This skill is the order of work that builds the cycle they run in.
+research-project's `RULES.md` holds the standing rules - ground truth is annotated and never
+invented, every change is shown as a picture, no overfitting to the learning set, numbered
+iteration notes. This skill is the procedure they run inside: which state the project is in,
+what to do there, and when to leave it.
 
-The cycle is three nested loops:
+The work is three nested loops. The **outer loop** is the owner judging a render and answering
+one question. The **inner loop** is you scoring a version against ground truth and keeping or
+dropping it, with no owner. The **innermost loop** is build-until-working: run a change and fix
+it until the render shows what you intended, before it is scored. The states below build the
+loops from the outside in, because each loop needs the artifact of the one outside it.
 
-- **The outer loop is the human-feedback loop.** The owner looks at the human-verifiable
-  output (step 2) and gives judgment: what the object is, what is wrong, where to go next.
-- **The inner loop is the self-improvement loop.** It needs no human: the algorithm is scored
-  against ground truth (step 3), and each iteration keeps or drops a change on the score.
-- **The innermost loop is build-until-working.** Inside one iteration you run the code, look at
-  the output, and fix it until it does what the iteration intended, before the change is scored.
+## Find the state
 
-Set up steps 1-3 once per project, in order. Steps 4-6 are the loops that follow.
+Check the gates in order; the first that fails is your state. Do not skip ahead - a scoring
+loop without approved ground truth measures nothing, and a render nobody approved cannot be
+scored against.
 
-## 1. Inputs: fetch, store, load, cache
+| Gate | Test | If it fails |
+|---|---|---|
+| Inputs | one committed script fetches and verifies the inputs, and one loader returns channels with their physical scale | State 1 |
+| Render | one render function exists and the owner has said they can judge results from it | State 2 |
+| Ground truth | labels the owner corrected in that render exist as data, with a held-out subset | State 3 |
+| Loop | one command runs a version end to end and writes the score, the renders and the diff against the previous version | State 4, opening step |
+| all pass | | State 4, iterate |
 
-- Fetch inputs with a committed script (never a manual download), verify a checksum, and store
-  them outside git in a shared or cached location, so a new session can get the same bytes.
-- Write one loader that returns the channels as arrays with their physical scale (µm/px read
-  from the file's metadata) and use it everywhere.
-- For large images:
-  - read only the region you need (tiled or memory-mapped reads)
-  - develop on a representative crop, then confirm on the full image
-  - never load the whole image into a chat context; render a downscaled or cropped PNG instead
-- Cache every expensive intermediate that does not depend on what you are tuning (decoded
-  channels, background masks, candidate lists), keyed by the input and the parameters that
-  produced it, so a change to a late stage does not recompute the early ones.
+Resuming a session: read the state off the repo (the loader, the render function, the labels
+file, the run command), never off memory of where things stood.
 
-## 2. The human-verifiable output format - built on one sample
+## State 1 - no inputs you can reproduce
 
-Before improving the algorithm, build the output the owner will judge, on one sample input.
-The owner knows what the right answer looks like, so this output is the interface of the
-outer loop.
+Done when a fresh session runs one command and holds the same bytes, and every script calls
+the one loader.
 
-- Draw the result as a mask or outline over the original input, not on a blank canvas.
-- Outlines hug the detected shape. They are thin and semi-transparent, and never cover
-  the signal.
-- Pick outline colours that do not appear in the data.
-- Number each object in reading order, and give a side list or CSV with the same numbers and
-  its measurements.
-- Show rejects as well as passes, each tagged with the rule that removed it, so the owner can
-  judge each filter.
-- Add a zoom of a dense region and contact sheets of cropped objects; the full overlay alone is
+- Fetch by committed script with a checksum; store outside git in a shared or cached location.
+- One loader, used everywhere: channels as arrays plus the scale (µm/px) read from the file's
+  own metadata, never from a stated setting.
+- Large images: read regions (tiled or memory-mapped), develop on a representative crop and
+  confirm on the full image, and put a downscaled or cropped PNG in the chat rather than the
+  image itself.
+- Cache each expensive intermediate that does not depend on what you tune (decoded channels,
+  background, candidate lists), keyed by the input and the parameters that produced it, so a
+  change to a late stage never recomputes the early ones.
+
+No owner question here: choose defaults and state them.
+
+## State 2 - no approved render
+
+Done when the owner says, of one sample, that they can judge the result from it, and the
+render is one function every later version calls.
+
+Build it on one sample input, not the corpus, and before any algorithm work: the owner knows
+what the right output looks like, and this render is the interface they judge through.
+
+- Draw the result over the input as a mask or thin semi-transparent outline (research-project
+  §1 owns the style and colour rules).
+- Number the objects in reading order; give a side list or CSV keyed by the same numbers with
+  each object's measurements.
+- Show rejects as well as passes, each tagged with the rule that removed it, so a filter can be
+  judged and not only the result.
+- Add a zoom of a dense region and a contact sheet of object crops; the full overlay alone is
   too small to judge.
-- Iterate on the format with the owner until they say they can judge the result from it, then
-  freeze it as a render function that every version uses.
 
-## 3. Ground truth - the prerequisite for the inner loop
+Ask the owner one question with the render: "Can you tell from this which objects are right
+and which are wrong - and what is missing to decide?" Iterate on the format until the answer is
+yes, then freeze it.
 
-The inner loop runs only against ground truth the owner has verified in the step 2 format.
+## State 3 - no ground truth
 
-1. **If the owner has annotations,** use them (and the research-project rules on parsing and
-   regenerating them).
-2. **If not, draft them with a model.** Give a capable model the input images and the owner's
-   stated requirements, and have it produce labels (objects and their outlines) on a few
-   inputs. Render the draft in the step 2 format and have the owner correct it. Only the
-   corrected set is ground truth; an uncorrected draft is not.
-3. **If no model produces a draft the owner can fix quickly,** the owner labels a few inputs by
-   hand. That work is a prerequisite: do not start the inner loop without it.
+Done when a few inputs carry labels the owner verified in the State 2 render, stored as data
+(a labels file: position, outline, real / not real / unsure) beside the approved render, with a
+few inputs held out of tuning.
 
-- Store the ground truth as data (for example `labels.json`: position, outline, real / not real /
-  unsure) together with the render that the owner approved.
-- Keep a few inputs out of tuning as a held-out check.
-- Until ground truth exists, every count you report is a proxy; say so beside the number.
+Take the first branch that applies:
 
-## 4. The inner loop: self-improvement against ground truth
+1. **The owner has annotations** - parse and register them (research-project §2 owns parsing,
+   regeneration and self-checks).
+2. **No annotations** - draft them with a capable model: give it the inputs and the owner's
+   stated requirements, have it produce objects and outlines on a few inputs, render the draft
+   in the State 2 format and ask the owner to correct it. Only the corrected set is ground
+   truth. Leave this branch when the owner corrects more than they keep.
+3. **No model drafts something the owner can fix quickly** - the owner labels a few inputs by
+   hand. Ask for exactly that, with the render tool ready for them, and do not start State 4
+   until it exists.
 
-Run each iteration as:
+Ask the owner with the draft or parsed labels in the render: "Per numbered object, which are
+wrong, and how?" Until they have answered, every count you report is a proxy - say so beside
+the number.
 
-1. **Score** the current version: precision, recall and F1 against ground truth. Give counts
-   per rejection reason, and which rule removed each real object that was missed.
-2. **Diagnose** the largest error class. Separate errors in *candidate generation* (the object
-   was never proposed correctly, for example parts not separated) from errors in *filtering*
-   (a good candidate was rejected). A reject reason that means "the candidate was malformed"
-   measures the generator; when it dominates, rebuild the generator rather than tuning filters.
-3. **Change one thing,** in a new version with its own output folder. For a generator
-   rebuild, write how you would explain finding the object to a child, in steps concrete
-   enough to draw, and implement that. If it does not work, explain it in a completely
-   different way rather than patching the old explanation.
-4. **Build until working** (the innermost loop): run it, look at the step 2 render on the
-   sample, and fix it until it does what you intended.
-5. **Keep or drop** it on the score. Look at the objects that were gained and lost against
-   the previous version, not at the whole output again.
-6. **Rescue false negatives:** find a few clear real objects that were rejected. Find which
-   rule removed each one, adjust that rule, and rescore. Repeat for a few cycles.
-7. **Measure each filter on its own:** how many it rejects alone, and how many it is the only
-   reason for. Put the strictest first, and flag any filter that is almost never the only
-   reason as redundant.
+## State 4 - ground truth exists: run the inner loop
 
-Keep going without the owner while the score improves. After two iterations without a gain,
-go back to the outer loop.
+Opening step, if the Loop gate failed: write the one command that runs a version end to end and
+writes the score (precision, recall, F1), reject counts per reason, which rule removed each
+missed real object, the renders, and the objects gained and lost against the previous version.
+Each version gets its own output folder.
 
-## 5. Legitimate and illegitimate assumptions
+Each iteration:
 
-An assumption is **legitimate** when it comes from:
-- the research literature on the object (its size, shape or structure, with the source)
-- the real data, measured and stated (for example a distribution or a histogram dip)
-- statistics the image derives for itself, such as a noise level, a local background,
-  a median object size, or a fraction of a local peak
+1. **Score**, reading the score and the gained/lost sheets rather than full renders - that is
+   what keeps an iteration cheap in tokens.
+2. **Diagnose the largest error class and locate it**: *generation* (the object was never
+   proposed whole - parts not separated, merged with a neighbour) or *filtering* (a good
+   candidate was rejected). A reject reason that means "the candidate was malformed" measures
+   the generator, not the filter: when it dominates, rebuild the generator - tuning the filter
+   that catches it only hides the fault.
+3. **Change one thing**, in a new version. For a generator rebuild, first write how you would
+   explain finding the object to a child, in steps concrete enough to draw, and implement
+   that; if it fails, write a completely different explanation rather than patch the old one.
+4. **Build until working** on the sample render before scoring.
+5. **Keep or drop on the score**, reviewing the gained and lost objects, not the whole output,
+   and write the iteration note (research-project §5).
 
-It is **illegitimate** when it is a constant tuned to the current images, such as a pixel count,
-a pixel distance or an absolute intensity. Express sizes in units the image measures (µm from
-its metadata, or multiples of a measured object size), and cut-offs as noise multiples or
-fractions of local intensity.
+Two cheap moves between iterations:
 
-**When stuck,** read published research on the object's characteristics (its typical
-dimensions, shape and marker arrangement). Turn what you find into legitimate assumptions, with
-the source cited in the code.
+- **Rescue false negatives** - pick a few clear real objects that were lost, find the rule that
+  killed each, adjust that rule, rescore. Repeat while it keeps paying.
+- **Measure each filter alone** - how many it rejects on its own and how many it is the *only*
+  reason for. Order the strictest first; a filter that is almost never the only reason is
+  redundant - drop it, or show the owner the objects only it rejects.
 
-## 6. Keep the cycle short and cheap
+**Every change passes the assumption test before it is kept.** Legitimate: a size, shape or
+arrangement from the research literature, source cited in the code; a distribution measured on
+the real data and stated; a statistic the image derives for itself (noise level, local
+background, median object size, fraction of a local peak). Illegitimate: a constant tuned to
+the current images - a pixel count, a pixel distance, an absolute intensity. Express sizes in
+µm from the metadata or in multiples of a measured object size, and cut-offs as noise multiples
+or fractions of local intensity. A change that only scores better with an illegitimate constant
+is dropped (research-project §4).
 
-Every iteration of both loops pays in time, tokens, CPU and RAM, so the cycle is kept cheap.
-Do this work separately from quality work, and after it: never change a result in a
-performance pass.
+**Stuck** - no error class you can name, or every fix trades one error for another: read the
+published research on the object (its dimensions, shape, marker arrangement) and turn what you
+find into legitimate assumptions before trying another parameter.
 
-- Periodically, and at the end of a long stretch of algorithm work (never while the owner waits
-  on a result), profile the current version, fix the top hotspot, and check the output is
-  identical. Report the time before and after.
-- One command runs a version end to end and writes the score, the step 2 renders, and the
-  comparison with the previous version.
-- Read the score and the gained/lost sheets rather than full images, to save tokens.
-- Save the owner's time by grouping questions into one checkpoint, each with the picture that
-  answers it.
+**Stop iterating after two consecutive iterations without a gain** and go to the owner.
 
-## The outer loop: when to go to the owner
+## Between stretches - make the cycle cheaper
 
-Stop and show the step 2 output, with one concrete question, when:
+Every iteration of both loops pays in time, tokens, CPU and RAM. Quality comes first; a
+performance pass is its own step, after a stretch of quality work and never while the owner
+waits on a result.
 
-- the output format or the ground truth needs approval (steps 2-3)
-- the inner loop has stalled for two iterations
-- a new criterion about what the object is would be added (only the owner adds domain rules)
-- a filter's threshold is in doubt: show the objects that only that filter rejects
+- Profile the current version, fix the top hotspot, and prove the output identical by hashing
+  both; a pass that changes a result is a quality change and is scored as one. Report the time
+  before and after.
+- Restore the token budget the same way: if you have been reading full renders, fix the run
+  command's summary until the score and the gained/lost sheets are enough.
+
+## Going to the owner
+
+Go when one of these holds; otherwise keep running the inner loop alone:
+
+- the render (State 2) or the ground truth (State 3) needs approval
+- two iterations without a gain
+- a fix would add a criterion for what the object *is* - only the owner adds domain rules
+- a filter's threshold is in doubt - show the objects only that filter rejects
 - a version is about to be called final or run on new inputs
 
-The owner's answers are usually rules, not labels. Encode each one as a check or a ground-truth
-correction, so the inner loop can run on it without the owner.
+**How to ask:** one checkpoint, one render per question, one concrete question per render
+("objects 4, 9 and 12 are rejected only by the elongation filter - are they real?"). Batch
+the questions rather than interrupt per finding.
+
+**How to take the answer:** the owner tends to answer with a rule ("anything touching the
+edge is not real") rather than with labels. Encode each rule as a check in the pipeline or as a
+correction to the ground truth, so the inner loop runs on it without the owner, then return to
+State 4.
