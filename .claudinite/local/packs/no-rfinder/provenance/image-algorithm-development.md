@@ -22,3 +22,9 @@
   us and where they failed" and "The definitions of how the human want to review the images are like
   API - don't change unless they say so".
 - **Actor:** @missingbulb (owner).
+
+## 2026-09-27 · strengthened · added the rotation and skew invariance stress test
+- **Source:** the owner: "Don't assume what you're looking for is aligned to the image grid...
+  stress test it by rotating the image. If the image came from a camera - any projection can happen
+  to the object, attempt to find it after skewing the image."
+- **Actor:** @missingbulb (owner).

@@ -143,6 +143,17 @@ the current images - a pixel count, a pixel distance, an absolute intensity. Exp
 or fractions of local intensity. A change that only scores better with an illegitimate constant
 is dropped (research-project §4).
 
+**Every kept version passes the invariance stress test.** Never assume the object is aligned
+to the pixel grid. Run the version on transformed copies of an input and map the detections back
+to the original frame: rotations (including non-right angles, e.g. 15°, 30°, 45°) and flips
+for any image. For a camera or microscope image, where any projection of the object can occur,
+also apply shear, anisotropic scaling and perspective skew. The detections should match the
+untransformed run. This test needs no ground truth: it checks the algorithm against itself, so a
+detector that finds nothing passes it, and it never replaces the score. A version whose recall
+drops under rotation or skew is encoding an orientation or shape assumption - find it and remove
+it, as with an illegitimate constant. Make the test a committed, executable test with explicit
+bounds per transform (this repo's `tests/test_invariance.py` is one).
+
 **Stuck** - no error class you can name, or every fix trades one error for another: read the
 published research on the object (its dimensions, shape, marker arrangement) and turn what you
 find into legitimate assumptions before trying another parameter.
