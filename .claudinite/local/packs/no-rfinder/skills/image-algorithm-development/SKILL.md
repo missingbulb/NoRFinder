@@ -75,6 +75,11 @@ Ask the owner one question with the render: "Can you tell from this which object
 and which are wrong - and what is missing to decide?" Iterate on the format until the answer is
 yes, then freeze it.
 
+**The frozen render is an API with the owner.** Its colours, outlines, numbering, panels and
+list columns change only when the owner asks. If you think a change would make review easier,
+propose it with a before/after on the same sample and wait for approval; until then every
+version renders the approved way, even when a new filter or output needs a place in it.
+
 ## State 3 - no ground truth
 
 Done when a few inputs carry labels the owner verified in the State 2 render, stored as data
@@ -118,7 +123,8 @@ Each iteration:
    that; if it fails, write a completely different explanation rather than patch the old one.
 4. **Build until working** on the sample render before scoring.
 5. **Keep or drop on the score**, reviewing the gained and lost objects, not the whole output,
-   and write the iteration note (research-project §5).
+   and write the iteration note (research-project §5). Record the attempt in the ledger (below)
+   whether it was kept or dropped.
 
 Two cheap moves between iterations:
 
@@ -143,6 +149,24 @@ find into legitimate assumptions before trying another parameter.
 
 **Stop iterating after two consecutive iterations without a gain** and go to the owner.
 
+## The ledger - every direction tried, and why it won or lost
+
+Keep one ledger file in the repo, appended every time an algorithmic direction, a performance
+attempt or an owner-pitched idea is tried or set aside. It is what lets a later session, or a
+changed problem, reuse an idea instead of rediscovering it, so each entry is specific enough to
+act on without the code:
+
+- **The idea**, in one line, and its **source** (your diagnosis, the literature, or the owner).
+- **The mechanism**: what it computes, with its parameters, in scale-free terms.
+- **The result**: the score change, and what it fixed.
+- **Where it failed**: the error class or image condition that beat it, with object numbers or
+  a sheet path.
+- **When to revisit**: the change in the problem, data or constraints that would make it worth
+  trying again.
+
+Before starting a new direction, search the ledger for it and for its failure conditions. An
+owner-pitched idea gets an entry even when you did not try it, stating why.
+
 ## Between stretches - make the cycle cheaper
 
 Every iteration of both loops pays in time, tokens, CPU and RAM. Quality comes first; a
@@ -151,7 +175,7 @@ waits on a result.
 
 - Profile the current version, fix the top hotspot, and prove the output identical by hashing
   both; a pass that changes a result is a quality change and is scored as one. Report the time
-  before and after.
+  before and after, and log the attempt in the ledger, including one that was reverted.
 - Restore the token budget the same way: if you have been reading full renders, fix the run
   command's summary until the score and the gained/lost sheets are enough.
 

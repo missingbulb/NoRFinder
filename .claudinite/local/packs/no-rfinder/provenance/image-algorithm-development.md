@@ -16,3 +16,9 @@
   skill is picked when resuming as well as starting.
 - **Actor:** @missingbulb (owner).
 - **Mechanism:** the same workflow skill, still triggered by its description alone.
+
+## 2026-09-27 · strengthened · added the directions ledger and the render-as-API rule
+- **Source:** the owner: "keep track of the algorithmic directions we attempted, how they benefited
+  us and where they failed" and "The definitions of how the human want to review the images are like
+  API - don't change unless they say so".
+- **Actor:** @missingbulb (owner).
