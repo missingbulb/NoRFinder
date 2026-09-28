@@ -222,3 +222,31 @@ removed it.
 
 The thresholds are the owner's or were chosen from data with the owner's consent; changing one is
 a question for the owner, shown with the objects that only that check rejects.
+
+## R8 — The NoR Finder page: detect once, filter live, in the browser
+
+Set by the owner on 2026-09-28. The page is [`web/`](../web/), served from GitHub Pages with no
+backend. Its engine is [`detection/interactive.py`](../detection/interactive.py), tested by
+[`tests/test_interactive.py`](../tests/test_interactive.py).
+
+- **One image, one slow step.** Opening an image loads it and runs a finder once. Everything else
+  (filters, forced markings, the list, the summary) redraws from the stored candidates without
+  finding again.
+- **Filters are live dials.** Every check in `nor3.CHECKS`, the nucleus rule (N) and
+  one-pixel-per-NoR (J) is a control that can be switched off. Each of its parameters is a dial, and
+  every marking on the image follows it at once. A check added to `CHECKS` becomes a control with
+  no page change.
+- **Detection settings are dials too.** They re-run the finder, and the page says that this takes
+  time.
+- **All finders are offered.** Traffic light is the default.
+- **The blue mask is only a filter.** No finder on the page blanks nuclei before finding.
+- **The list and the summary.** Every passing NoR is shown cropped, with its measurements, and
+  the measurements are summarised below the list. A starred candidate stays in the list whatever
+  the filters say.
+- **Remembered settings.** Filter settings persist in the browser across images, visits and
+  days, and one button restores the defaults.
+- **Only our code is fetched fresh.** Third-party code (Pyodide, its packages, vendored wheels)
+  is cached in the browser for 30 days.
+- **The page runs the lab's code.** The Python it runs is the repo's `detection/` and `src/` as
+  they are, so the finder stays malleable. At our settings, the page passes what the lab passes
+  with the blue mask applied after finding.

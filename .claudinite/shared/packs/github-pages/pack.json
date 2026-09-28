@@ -1,0 +1,35 @@
+{
+  "version": "60928.1",
+  "minEngineVersion": "60928.1",
+  "ruleRoutingGuidance": {
+    "belongs": "serving a site from GitHub Pages: the nightly release, the vendored deploy workflow, site.config, the serving subpath",
+    "excludes": "the version scheme and the page stamp — public-website; markup — html"
+  },
+  "pitch": "A GitHub Pages site breaks in production when a root-relative link works locally and 404s under the repo path, or when a second workflow publishes behind everyone's back. This pack makes deployment a single scheduled release task that deploys the default branch, stamps the version and stops where a person must act. A couple of rules and a few checks keep the site config and the one deploy workflow honest, and the pipeline skill explains how to set it up, force a release, or roll one back.",
+  "relevanceDetector": {
+    "about": ".github/site.config, or the vendored .github/workflows/github-pages-deploy.yml",
+    "paths": "^(\\.github/site\\.config|\\.github/workflows/github-pages-deploy\\.yml)$"
+  },
+  "requires": [
+    "claudinite-tasks"
+  ],
+  "questions": [
+    {
+      "id": "publish_set",
+      "prompt": "Which files and folders make up the published site — the exact list, and the directory it is rooted at? The artifact is built from this list and nothing else, so name the pages, assets and data the site actually serves (not \"everything except the tooling\").",
+      "distill": "written into the repo's own .github/site.config as publish_root + publish_paths (with build_command), which is where the deploy's build step and the gp/site-config check both read it"
+    }
+  ],
+  "adoptionHandover": [
+    {
+      "step": "Settings → Pages → Build and deployment → Source = \"GitHub Actions\" (not \"Deploy from a branch\").",
+      "breaks": "actions/deploy-pages fails and nothing is ever served.",
+      "done": "the first site-release run deploys successfully."
+    },
+    {
+      "step": "Settings → Environments → github-pages → deployment branches must allow the default branch.",
+      "breaks": "the deploy job is refused by the environment after the version is already cut.",
+      "done": "the deploy job runs rather than waiting on an environment rule."
+    }
+  ]
+}

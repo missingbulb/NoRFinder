@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NoR Finder</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>NoR Finder</h1>
+  <label class="file">Open image<input id="file" type="file" accept=".tif,.tiff,.png"></label>
+  <label>Finder <select id="finder" disabled></select></label>
+  <span id="status">Starting…</span>
+</header>
+
+<main>
+  <aside id="controls">
+    <section>
+      <div class="sec-head"><h2>Filters</h2><button id="reset-filters" disabled>Restore filter defaults</button></div>
+      <p class="hint">Instant, and remembered in this browser across images and visits. Untick a filter to switch it off. Click a marking on the image to add or remove it by hand. Starred (★) NoRs stay in the list whatever the filters say.</p>
+      <div id="filters"></div>
+    </section>
+    <section>
+      <div class="sec-head"><h2>Detection</h2><button id="reset-detect" disabled>Reset</button></div>
+      <p class="hint slow">Changing these re-runs detection, which takes about 10–30 seconds.</p>
+      <div id="detect-params"></div>
+      <button id="redetect" class="primary" disabled>Re-detect</button>
+    </section>
+  </aside>
+
+  <div id="view">
+    <div class="toolbar">
+      <button id="zoom-out" title="Zoom out">−</button><span id="zoom-label">2×</span><button id="zoom-in" title="Zoom in">+</button>
+      <label><input type="checkbox" id="show-fails" checked> rejected (blue)</label>
+      <label><input type="checkbox" id="show-labels" checked> numbers and letters</label>
+      <label><input type="checkbox" id="show-lines" checked> measuring lines</label>
+      <label><input type="checkbox" id="show-dapi"> DAPI</label>
+      <label><input type="checkbox" id="show-mask"> blue mask</label>
+      <span id="counts"></span>
+    </div>
+    <div id="scroller">
+      <div id="empty">Open a three-channel ImageJ TIFF (Caspr green, Nav red, DAPI) or an RGB PNG.<br>
+        The first visit downloads Python and its libraries (about 50 MB); later visits reuse them for 30 days.</div>
+      <div id="stage" hidden><canvas id="base"></canvas><svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    </div>
+  </div>
+</main>
+
+<section id="list-sec">
+  <div class="sec-head"><h2>Passing NoRs <span id="n-pass"></span></h2><button id="csv" disabled>Download CSV</button></div>
+  <div id="list"></div>
+</section>
+
+<section id="summary-sec">
+  <h2>Summary</h2>
+  <div id="summary"></div>
+</section>
+
+<div id="tip" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
