@@ -15,7 +15,10 @@
 <header>
   <img id="logo" src="logo.svg" alt="Sagol School of Neuroscience, Tel Aviv University">
   <h1>NoR Finder</h1>
-  <button id="theme" title="Switch between dark and light">◐ <span id="theme-name"></span></button>
+  <button id="theme" class="icon" title="Switch between dark and light" aria-label="Switch between dark and light">
+    <svg class="sun" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
+    <svg class="moon" viewBox="0 0 24 24" width="18" height="18"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+  </button>
 </header>
 
 <div id="layout">
@@ -56,14 +59,19 @@
 
   <main id="view">
     <div class="toolbar">
-      <span class="group"><button id="zoom-out" title="Zoom out">−</button><span id="zoom-label">2×</span><button id="zoom-in" title="Zoom in">+</button></span>
-      <span class="group">
-        <label><input type="checkbox" id="show-fails" checked> rejected</label>
-        <label><input type="checkbox" id="show-labels" checked> numbers</label>
-        <label><input type="checkbox" id="show-lines" checked> measuring lines</label>
-        <label><input type="checkbox" id="show-mask"> nucleus mask</label>
-      </span>
-      <button id="switch" class="big" disabled>View individual items</button>
+      <div class="zoom" role="group" aria-label="Zoom">
+        <button id="zoom-out" title="Zoom out" aria-label="Zoom out">−</button><span id="zoom-label">2×</span><button id="zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
+      </div>
+      <details class="menu" id="show-menu">
+        <summary>Show</summary>
+        <div class="pop">
+          <label><input type="checkbox" id="show-fails" checked> rejected</label>
+          <label><input type="checkbox" id="show-labels" checked> numbers</label>
+          <label><input type="checkbox" id="show-lines" checked> measuring lines</label>
+          <label><input type="checkbox" id="show-mask"> nucleus mask</label>
+        </div>
+      </details>
+      <button id="switch" class="big" disabled>Item View</button>
     </div>
     <div id="busy" hidden><span class="spin big"></span><div id="busy-text"></div><div id="busy-time"></div></div>
 
@@ -73,7 +81,6 @@
           The first visit downloads Python and its libraries (about 50 MB); later visits reuse them for 30 days.</div>
         <div id="stage" hidden><canvas id="base"></canvas><svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg></div>
       </div>
-      <p class="hint legend">Click a marking to change it: a finalist becomes rejected, a rejected one becomes a finalist (★), and a marked one goes back to what the filters say.</p>
     </div>
 
     <div id="items-view" hidden>
@@ -92,12 +99,12 @@
 </div>
 
 <footer id="statusbar">
-  <span class="spin" id="spin"></span>
-  <span id="sb-file">No image</span>
-  <span id="sb-counts"></span>
-  <span id="sb-times"></span>
-  <span id="status">Starting…</span>
-  <span id="sb-version" title="version 1.10928.1"></span>
+  <span id="sb-file" class="seg">No image</span>
+  <span id="sb-counts" class="seg"></span>
+  <span id="sb-times" class="seg"></span>
+  <span class="grow"></span>
+  <span class="spin" id="spin"></span><span id="status">Starting…</span>
+  <span id="sb-version" title="version 0.10928.1"></span>
 </footer>
 
 <div id="tip" hidden></div>

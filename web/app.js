@@ -359,7 +359,7 @@ function render() {
     else { const R = reasonOf(r); let_.textContent = R.letter; let_.setAttribute("fill", `rgb(${R.color})`); }
   }
   document.querySelectorAll(".filter").forEach((el) => { el.querySelector(".n").textContent = `${counts[el.dataset.key] || 0} rejected`; });
-  $("#sb-counts").textContent = `${st.numbers.size} candidates · ${passes.length} finalists`;
+  $("#sb-counts").innerHTML = `<b>${st.numbers.size}</b> candidates · <b>${passes.length}</b> finalists`;
   // removed by the user: still listed, greyed, where the filters alone would have listed them; never counted
   const removed = shown.filter((c) => st.forced.get(c.i) === "out" && st.fails[c.i] === null);
   renderList([...passes, ...removed].sort((a, b) => st.numbers.get(a.i) - st.numbers.get(b.i)), passes.length);
@@ -513,7 +513,7 @@ for (const id of ["show-r", "show-g", "show-b", "show-mask"]) $("#" + id).onchan
 function showView(v) {
   st.view = v; $("#tip").hidden = true;
   $("#image-view").hidden = v !== "image"; $("#items-view").hidden = v !== "items";
-  $("#switch").textContent = v === "image" ? "View individual items" : "View image";
+  $("#switch").textContent = v === "image" ? "Item View" : "Image View";
 }
 $("#switch").onclick = () => showView(st.view === "image" ? "items" : "image");
 
@@ -525,9 +525,9 @@ $("#theme").onclick = () => {
   const t = theme() === "dark" ? "light" : "dark";
   document.documentElement.dataset.theme = t;
   try { localStorage.setItem(THEME, t); } catch { /* private mode: lasts for this page only */ }
-  $("#theme-name").textContent = t === "dark" ? "Light" : "Dark";
 };
-$("#theme-name").textContent = theme() === "dark" ? "Light" : "Dark";
+// the Show menu closes when the user clicks anywhere else
+document.addEventListener("click", (e) => { const m = $("#show-menu"); if (m.open && !m.contains(e.target)) m.open = false; });
 showView("image");
 // the release writes the version into the element's title; show it as text
 $("#sb-version").textContent = "v" + $("#sb-version").title.replace(/^version /, "");
