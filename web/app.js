@@ -156,6 +156,10 @@ function onDetected(meta, seg) {
     }
     return { ...c, blk, bb: [c.x0 + tx0, c.y0 + ty0, c.x0 + tx1 + 1, c.y0 + ty1 + 1] };
   });
+  // one number per candidate for as long as this detection lasts, top to bottom, whatever the filters do
+  const numbered = st.cands.filter((c) => c.bb[2] > c.bb[0] && (c.fail0 === null || meta.reasons[c.fail0]))
+    .sort((a, b) => a.cy - b.cy || a.cx - b.cx);
+  st.numbers = new Map(numbered.map((c, k) => [c.i, k + 1]));
   buildOverlay(); buildFilters(); buildDetect();
   $("#reset-filters").disabled = false; $("#csv").disabled = false;
   refilter();
@@ -181,7 +185,9 @@ function buildOverlay() {
       g.append(L);
     }
     const t = document.createElementNS(SVGNS, "text"); t.setAttribute("x", c.bb[2] + 0.5); t.setAttribute("y", c.bb[1]);
-    g.append(t);
+    const num = document.createElementNS(SVGNS, "tspan"), let_ = document.createElementNS(SVGNS, "tspan");
+    num.textContent = st.numbers.get(c.i) ?? ""; let_.setAttribute("font-weight", "bold");
+    t.append(num, let_); g.append(t);
     const hit = document.createElementNS(SVGNS, "rect"); hit.setAttribute("class", "hit");
     const [a, b, cc, d] = c.bb; Object.entries({ x: a, y: b, width: cc - a, height: d - b }).forEach(([k, v]) => hit.setAttribute(k, v));
     g.append(hit);
@@ -278,12 +284,12 @@ function render() {
     shown.push(c);
     if (r === null) passes.push(c); else counts[r] = (counts[r] || 0) + 1;
   }
-  passes.sort((a, b) => a.cy - b.cy || a.cx - b.cx);
-  st.numbers = new Map(passes.map((c, k) => [c.i, k + 1]));
+  passes.sort((a, b) => st.numbers.get(a.i) - st.numbers.get(b.i));
   for (const c of shown) {
-    const r = result(c.i);
-    if (r === null) { c.text.textContent = st.numbers.get(c.i); c.text.setAttribute("fill", "var(--pink)"); }
-    else { const R = reasonOf(r); c.text.textContent = R.letter; c.text.setAttribute("fill", `rgb(${R.color})`); }
+    const r = result(c.i), [num, let_] = c.text.children;
+    num.setAttribute("fill", r === null ? "var(--pink)" : "var(--blue)");
+    if (r === null) let_.textContent = "";
+    else { const R = reasonOf(r); let_.textContent = R.letter; let_.setAttribute("fill", `rgb(${R.color})`); }
   }
   document.querySelectorAll(".filter").forEach((el) => { el.querySelector(".n").textContent = `${counts[el.dataset.key] || 0} rejected`; });
   $("#counts").textContent = `${passes.length} pass · ${shown.length - passes.length} rejected · filters took ${$("#counts").dataset.ms || "–"} ms`;
@@ -398,7 +404,7 @@ function tip(e) {
   const c = candAt(e), t = $("#tip");
   if (!c) { t.hidden = true; return; }
   const r = result(c.i);
-  let s = r === null ? `#${st.numbers.get(c.i)} passes` : `${reasonOf(r).letter}: ${reasonOf(r).text}`;
+  let s = `#${st.numbers.get(c.i)} ` + (r === null ? "passes" : `${reasonOf(r).letter}: ${reasonOf(r).text}`);
   if (st.forced.has(c.i)) s += st.forced.get(c.i) === "in" ? " (★ keeper; click to undo)" : " (removed by you; click to undo)";
   else s += r === null ? "\nClick to remove it." : "\nClick to keep it (★) whatever the filters say.";
   if (c.m) s += "\n" + measures(c).map(([l, v]) => `${l}: ${fmt(v)}`).join("\n");
