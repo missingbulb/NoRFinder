@@ -3,3 +3,5 @@ scipy
 pillow
 matplotlib
 gdown
+scikit-image
+tifffile

@@ -42,6 +42,7 @@ and an edit made another way is caught at Stop.
 | `improve-comments` | basics | Improve a repo's own comments as a pass of their own: delete, correct, add the why. Never as a side effect of another change. |
 | `learning-a-technology` | claudinite-growth | Teach a repo a technology nobody there has used yet. Use when asked to host, send or publish through something new, or to research it and create a skill. |
 | `merge-to-main` | git-github | Merge the change in front of the owner into main. Use when the owner approves the current branch or PR, or asks to merge or land it into main. |
+| `nor-detection-iteration` | nor-finder | Procedure, checkpoints and tools for improving the NoR (green-red-green node) detector in detection/. Use when starting, resuming or iterating on it. |
 | `production-retrospective` | basics | Design and file the review that comes back once a larger element has lived in production. Use when designing such an element, or when its merge completes it. |
 | `prose-to-checks` | claudinite-growth | Mine pack prose for always-testable rules never converted to checks, and convert the strongest. Use when auditing packs for convertible rules, or over prose a growth run just wrote. |
 | `repo-text-sweeps` | basics | Mechanics for grep/sed sweeps, renames, and path relocations across a repo. Use before a bulk find-replace, a rename, or moving files — and after one, to catch silently broken references. |
