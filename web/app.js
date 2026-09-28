@@ -5,6 +5,7 @@
 const $ = (s) => document.querySelector(s);
 const SVGNS = "http://www.w3.org/2000/svg";
 const STORE = "nor-filter-settings-v1"; // {values: {param: number}, off: [filter key]}; only what the user changed
+const MARKS = "nor-marks-v1:"; // + file name + "|" + finder: {"x,y": "in" | "out"}, the user's keepers and removals
 const MEASURES = [
   ["length", "length", true], ["red_length", "red length", true], ["width", "width", true],
   ["red_over_length", "red / length", false], ["length_over_width", "length / width", false],
@@ -27,8 +28,37 @@ function save() {
   try { localStorage.setItem(STORE, JSON.stringify({ values, off: [...st.off] })); } catch { /* private mode: settings last for this page only */ }
 }
 
+// ---------- the user's marks: saved per file and finder, tied to each candidate's position ----------
+const posKey = (c) => `${Math.round(c.cx)},${Math.round(c.cy)}`;
+const marksKey = () => MARKS + st.fileName + "|" + st.meta.finder;
+function loadMarks() {
+  st.forced = new Map();
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(marksKey())) || {}; } catch { /* none saved */ }
+  for (const c of st.cands) { const m = saved[posKey(c)]; if (m) st.forced.set(c.i, m); }
+}
+function mark(i, m) {
+  m ? st.forced.set(i, m) : st.forced.delete(i);
+  const out = {};
+  for (const [j, v] of st.forced) out[posKey(st.cands[j])] = v;
+  try { localStorage.setItem(marksKey(), JSON.stringify(out)); } catch { /* private mode: marks last for this page only */ }
+  render();
+}
+
 // ---------- status ----------
-function status(text, err) { const s = $("#status"); s.textContent = text; s.classList.toggle("err", !!err); }
+function status(text, err) {
+  const s = $("#status"); s.textContent = text; s.classList.toggle("err", !!err);
+  if (st.busySince) $("#busy-text").textContent = text;
+  if (err) busy(false);
+}
+// the spinner and elapsed time shown while Python loads or a finder runs
+function busy(on, text) {
+  clearInterval(st.busyTimer); st.busySince = on ? st.busySince || Date.now() : 0;
+  $("#spin").classList.toggle("on", on); $("#busy").hidden = !on;
+  if (!on) return;
+  $("#busy-text").textContent = text || $("#status").textContent; $("#busy-time").textContent = "";
+  st.busyTimer = setInterval(() => { $("#busy-time").textContent = ((Date.now() - st.busySince) / 1000).toFixed(0) + " s"; }, 500);
+}
 const fmt = (v, d = 2) => (v == null || !isFinite(v) ? "–" : Number(v).toFixed(d));
 
 // ---------- worker ----------
@@ -44,6 +74,7 @@ async function start() {
       }
     } catch (e) { console.warn("no cache for third-party files:", e); }
   }
+  busy(true, "Loading Python…");
   st.worker = new Worker("worker.js", { type: "module" });
   st.worker.onmessage = (e) => onWorker(e.data);
 }
@@ -54,7 +85,7 @@ function onWorker(m) {
   else if (m.type === "ready") {
     const sel = $("#finder");
     sel.innerHTML = Object.entries(m.finders).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
-    sel.disabled = false;
+    sel.disabled = false; busy(false);
     status(`Ready (${m.secs.toFixed(0)} s to load). Open an image.`);
   } else if (m.type === "opened") {
     st.H = m.H; st.W = m.W; st.um = m.um; const n = m.H * m.W;
@@ -62,6 +93,7 @@ function onWorker(m) {
     drawBase(); $("#empty").hidden = true; $("#stage").hidden = false; setZoom(st.zoom);
     detect({});
   } else if (m.type === "detected") {
+    busy(false);
     onDetected(m.meta, m.seg);
     status(`${m.meta.cands.length} candidates found in ${m.secs.toFixed(1)} s.` +
       (m.meta.exact_refilter ? "" : " This finder picks between alternatives using the filters, so after a filter change press Re-detect for its exact result."));
@@ -73,7 +105,7 @@ function onWorker(m) {
 }
 
 function detect(overrides) {
-  $("#redetect").disabled = true;
+  $("#redetect").disabled = true; busy(true, "Finding candidates…");
   st.worker.postMessage({ type: "detect", finder: $("#finder").value, overrides });
 }
 
@@ -138,7 +170,7 @@ function outline(c, blk, val) {
 }
 
 function onDetected(meta, seg) {
-  st.meta = meta; st.seg = seg; st.forced.clear(); st.cards = new Map();
+  st.meta = meta; st.seg = seg; st.cards = new Map();
   // filter values: our numbers, overlaid with what this browser saved
   const saved = loadSaved();
   st.defaults = {}; st.values = {};
@@ -160,6 +192,7 @@ function onDetected(meta, seg) {
   const numbered = st.cands.filter((c) => c.bb[2] > c.bb[0] && (c.fail0 === null || meta.reasons[c.fail0]))
     .sort((a, b) => a.cy - b.cy || a.cx - b.cx);
   st.numbers = new Map(numbered.map((c, k) => [c.i, k + 1]));
+  loadMarks();
   buildOverlay(); buildFilters(); buildDetect();
   $("#reset-filters").disabled = false; $("#csv").disabled = false;
   refilter();
@@ -293,7 +326,9 @@ function render() {
   }
   document.querySelectorAll(".filter").forEach((el) => { el.querySelector(".n").textContent = `${counts[el.dataset.key] || 0} rejected`; });
   $("#counts").textContent = `${passes.length} pass · ${shown.length - passes.length} rejected · filters took ${$("#counts").dataset.ms || "–"} ms`;
-  renderList(passes);
+  // removed by the user: still listed, greyed, where the filters alone would have listed them; never counted
+  const removed = shown.filter((c) => st.forced.get(c.i) === "out" && st.fails[c.i] === null);
+  renderList([...passes, ...removed].sort((a, b) => st.numbers.get(a.i) - st.numbers.get(b.i)), passes.length);
   renderSummary(passes, counts);
 }
 
@@ -323,28 +358,31 @@ function card(c) {
     }
   }
   ctx.restore();
-  el.innerHTML = `<div class="head"><span class="num"></span><button class="star" title="Keeper: stays in the list whatever the filters say">☆</button><button class="rm" title="Remove from the list">remove</button></div>`;
+  el.innerHTML = `<div class="head"><span class="num"></span><button class="star" title="Keeper: stays in the list whatever the filters say">☆</button><button class="rm"></button></div>`;
   el.prepend(cv);
   cv.onclick = () => focusOn(c);
-  el.querySelector(".rm").onclick = () => { st.forced.set(c.i, "out"); render(); };
-  el.querySelector(".star").onclick = () => { st.forced.get(c.i) === "in" ? st.forced.delete(c.i) : st.forced.set(c.i, "in"); render(); };
+  el.querySelector(".rm").onclick = () => mark(c.i, st.forced.get(c.i) === "out" ? null : "out");
+  el.querySelector(".star").onclick = () => mark(c.i, st.forced.get(c.i) === "in" ? null : "in");
   const t = document.createElement("table");
   t.innerHTML = measures(c).map(([l, v]) => `<tr><td>${l}</td><td>${fmt(v)}</td></tr>`).join("");
   el.append(t);
   st.cards.set(c.i, el); return el;
 }
 
-function renderList(passes) {
+function renderList(items, nPass) {
   const frag = document.createDocumentFragment();
-  for (const c of passes) {
-    const el = card(c);
+  for (const c of items) {
+    const el = card(c), f = st.forced.get(c.i);
     el.querySelector(".num").textContent = "#" + st.numbers.get(c.i);
-    const kept = st.forced.get(c.i) === "in";
-    el.querySelector(".star").textContent = kept ? "★" : "☆"; el.classList.toggle("kept", kept);
+    el.querySelector(".star").textContent = f === "in" ? "★" : "☆";
+    el.classList.toggle("kept", f === "in"); el.classList.toggle("removed", f === "out");
+    const rm = el.querySelector(".rm");
+    rm.textContent = f === "out" ? "restore" : "remove";
+    rm.title = f === "out" ? "Count it again" : "Grey it out and leave it out of the totals";
     frag.append(el);
   }
   $("#list").replaceChildren(frag);
-  $("#n-pass").textContent = `(${passes.length})`;
+  $("#n-pass").textContent = `(${nPass} counted${items.length > nPass ? `, ${items.length - nPass} removed` : ""})`;
 }
 
 function stats(xs) {
@@ -395,9 +433,8 @@ function candAt(e) {
 
 $("#overlay").addEventListener("click", (e) => {
   const c = candAt(e); if (!c) return;
-  if (st.forced.has(c.i)) st.forced.delete(c.i);
-  else st.forced.set(c.i, st.fails[c.i] === null ? "out" : "in");
-  render(); tip(e);
+  mark(c.i, st.forced.has(c.i) ? null : st.fails[c.i] === null ? "out" : "in");
+  tip(e);
 });
 
 function tip(e) {
@@ -419,6 +456,7 @@ $("#file").onchange = async (e) => {
   const f = e.target.files[0]; if (!f || !st.worker) return;
   st.fileName = f.name; st.meta = null;
   const bytes = await f.arrayBuffer();
+  busy(true, "Reading the image…");
   st.worker.postMessage({ type: "open", name: f.name, bytes }, [bytes]);
 };
 $("#finder").onchange = () => { st.detectDefaults = {}; if (st.img) detect({}); };

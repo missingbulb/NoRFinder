@@ -242,7 +242,14 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
 - **The blue mask is only a filter.** No finder on the page blanks nuclei before finding.
 - **The list and the summary.** Every passing NoR is shown cropped, with its measurements, and
   the measurements are summarised below the list. A starred candidate stays in the list whatever
-  the filters say.
+  the filters say. A candidate the user removes stays in the list, greyed out, and is left out of
+  the totals.
+- **Fixed numbers.** Each candidate keeps one number, top to bottom, for as long as a detection
+  lasts. Filters never renumber candidates.
+- **Remembered marks.** Stars and removals are saved in the browser per file name and finder, tied
+  to each candidate's position.
+- **Visible waiting.** While Python loads and while a finder runs, the page shows a spinner and
+  the elapsed time.
 - **Remembered settings.** Filter settings persist in the browser across images, visits and
   days, and one button restores the defaults.
 - **Only our code is fetched fresh.** Third-party code (Pyodide, its packages, vendored wheels)

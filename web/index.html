@@ -12,14 +12,14 @@
   <h1>NoR Finder</h1>
   <label class="file">Open image<input id="file" type="file" accept=".tif,.tiff,.png"></label>
   <label>Finder <select id="finder" disabled></select></label>
-  <span id="status">Starting…</span>
+  <span class="spin" id="spin"></span><span id="status">Starting…</span>
 </header>
 
 <main>
   <aside id="controls">
     <section>
       <div class="sec-head"><h2>Filters</h2><button id="reset-filters" disabled>Restore filter defaults</button></div>
-      <p class="hint">Instant, and remembered in this browser across images and visits. Untick a filter to switch it off. Click a marking on the image to add or remove it by hand. Starred (★) NoRs stay in the list whatever the filters say.</p>
+      <p class="hint">Instant, and remembered in this browser across images and visits. Untick a filter to switch it off. Click a marking on the image to add or remove it by hand. Starred (★) NoRs stay in the list whatever the filters say; removed ones stay greyed and are left out of the totals. Stars and removals are remembered per file and finder.</p>
       <div id="filters"></div>
     </section>
     <section>
@@ -40,6 +40,7 @@
       <label><input type="checkbox" id="show-mask"> blue mask</label>
       <span id="counts"></span>
     </div>
+    <div id="busy" hidden><span class="spin big"></span><div id="busy-text"></div><div id="busy-time"></div></div>
     <div id="scroller">
       <div id="empty">Open a three-channel ImageJ TIFF (Caspr green, Nav red, DAPI) or an RGB PNG.<br>
         The first visit downloads Python and its libraries (about 50 MB); later visits reuse them for 30 days.</div>
