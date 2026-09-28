@@ -1,6 +1,6 @@
 """Regenerates web/logo.svg from logo_source.png: the three marks at the top of the Sagol School
 of Neuroscience logo, traced to curves and coloured red, green and blue left to right. The white
-inside each mark (the emblem, the brain's circles) is drawn white, so it reads on a dark header too.
+inside each mark (the emblem, the brain's circles) is left transparent.
 
   python3 -m pip install potracer
   python3 web/logo_trace.py
@@ -8,7 +8,6 @@ inside each mark (the emblem, the brain's circles) is drawn white, so it reads o
 import os
 import numpy as np
 import potrace
-from scipy.ndimage import binary_fill_holes
 from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -36,6 +35,6 @@ def path(mask, fill):
 paths = []
 for a, b, colour in MARKS:
     m = np.zeros_like(ink); m[:, a * S:b * S] = ink[:, a * S:b * S]
-    paths += [path(binary_fill_holes(m), '#fff'), path(m, colour)]
+    paths.append(path(m, colour))
 with open(os.path.join(HERE, 'logo.svg'), 'w') as f:
     f.write(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {(x1 - x0) / S:.0f} {(y1 - y0) / S:.0f}">' + ''.join(paths) + '</svg>\n')
