@@ -4,9 +4,7 @@
     {
       "id": "basics",
       "version": "60928.1",
-      "via": [
-        "claudinite-lifecycle"
-      ]
+      "via": []
     },
     {
       "id": "claudinite-lifecycle",
@@ -40,6 +38,13 @@
     {
       "id": "research-project",
       "version": "60928.1"
+    },
+    {
+      "id": "github-pages",
+      "version": "60928.1",
+      "answers": {
+        "publish_set": "Ariel asked for the NoR Finder page to be served from GitHub Pages with no backend (2026-09-28). The page is web/ and runs the Python in detection/ and src/ as it sits in the repo, with a root index.html that forwards to web/: publish_root ., publish_paths index.html web detection src, build_command python3 web/build.py (fetches the tifffile wheel into web/vendor/)."
+      }
     }
   ],
   "taskScheduler": {

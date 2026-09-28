@@ -17,10 +17,10 @@ mounts the repo and runs `nor_lab.py cmp tl rf` with no code changes.
 Scores and reason counts match line for line, so the browser build would be the same algorithm,
 not a copy of it.
 
-Gaps before it is a page: reading the `.tif` (tifffile is pure Python, install it with
-`micropip`, or decode in JS), building the blue mask on first load (runs in `nor_lab.load`
-natively, not yet timed under Pyodide), running in a Web Worker so the page stays responsive,
-and drawing the review render (`render_std.py` uses Pillow, which Pyodide has).
+The page is built: [`web/`](../../web/), requirement R8. It reads the `.tif` with a tifffile wheel
+the build vendors, runs Python in a Web Worker, and draws in the page itself rather than through
+`render_std.py`. In Chromium, loading the slide, finding with traffic light and the first filter
+pass take about 16 s. After that a filter change takes 20-50 ms.
 
 The download can shrink: scikit-image (~10 MB, and it pulls in matplotlib ~7 MB) is used only
 for `h_maxima`, `watershed`, `perimeter` and `threshold_otsu`, which could be replaced with

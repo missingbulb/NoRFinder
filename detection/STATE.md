@@ -26,8 +26,10 @@ _Last updated 2026-09-28._
   35 unsure), **not by Ariel**. A pass within 5 px of a spot counts as that spot. With 72 real
   spots, a difference of 1-2 is noise.
 - **Only one image has been processed.**
-- **Browser:** the unchanged finders run under Pyodide with identical scores, about 2x slower
-  (`browser/README.md`). No browser page exists yet.
+- **Browser page** (`web/`, requirement R8): open an image, detect once, then tune every filter
+  live. It runs `interactive.py` over the unchanged finders under Pyodide. It deploys to GitHub
+  Pages through the github-pages pack. Preview it locally with `python3 web/build.py` and then
+  `python3 -m http.server` from the repo root, opening `/web/`.
 
 ## Owner preferences that are fixed (Ariel)
 - **The review render is an API.** `render_std.py SPEC OUTDIR` draws every candidate with a
@@ -60,5 +62,6 @@ _Last updated 2026-09-28._
 | render_std.py | the standard review render for any spec |
 | perf.py | snapshot / profile / check for speed-ups |
 | lab/ | labels, the pool used to draw them (mkpool.py, pool.json), ledger.md |
+| interactive.py | the page's engine: detect once, refilter on stored measurements (R8) |
 | browser/ | runs the finders in a browser runtime (Pyodide): measured parity, recommendation |
 | history.md | how the algorithm got here (stages S0-S10, who drove what) |
