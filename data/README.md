@@ -86,8 +86,9 @@ camera. It names no vendor or software.
   `Slide2 … Slice1_up_left.2tif`), in some files displayed *red*. Identify DAPI by content: it is
   the channel of large round blobs. A blob-size test (mean connected-component area of the top
   3% after a σ=2 px blur) picked it correctly in 54 of 55 files; it failed on
-  `Up Middle- Edited/Slide3 … Slice3_up_middle2.tif`, where a bright tissue edge in another
-  channel outscored the nuclei. Check by eye.
+  `Up Middle- Edited/Slide3 … Slice3_up_middle2.tif`, where a bright tissue edge in the Caspr
+  channel outscored the nuclei. `naive_nor.load` therefore compares only the two non-green
+  channels, which gets that file right too (`tests/test_load_channels.py`).
 - **Caspr is the green-displayed channel in all 55 files; Nav1.6 is the remaining non-DAPI
   channel** — deduced from the node's geometry, not from the colours. A node is a Nav1.6 spot
   *between* two Caspr spots, so the Caspr channel is the one whose spots bracket the other's. Test
