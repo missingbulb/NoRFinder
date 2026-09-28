@@ -1,6 +1,6 @@
-// tasks-usage-fold's own precondition term.
+// The machinery half's precondition term.
 //
-// The fold's trigger is MOVEMENT IN THE MACHINERY — a scheduler tick or an executor
+// That half's trigger is MOVEMENT IN THE MACHINERY — a scheduler tick or an executor
 // run that this file has not counted yet — and no built-in term can say that: every
 // movement condition reads the project's commits, issues, pull requests and
 // captures, and a repo whose only activity is its own queue is silent by all four.

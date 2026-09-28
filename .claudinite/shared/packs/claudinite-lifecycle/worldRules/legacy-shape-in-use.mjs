@@ -15,6 +15,10 @@ import * as findings from '../../../engine/checks/helpers/findings.mjs';
 
 // A declared-checks file the member wrote: its own local packs', a skill's included.
 const LOCAL_DECLARED = /^\.claudinite\/local\/packs\/.*declared-checks\.json$/;
+// A manifest the member wrote: its own local packs'.
+const LOCAL_MANIFEST = /^\.claudinite\/local\/packs\/[^/]+\/pack\.(?:json|mjs)$/;
+const RETIRED_FINGERPRINT = /^[ \t]*"?(detect|marker)"?[ \t]*:/m;
+const RETIRED_CONTRIBUTION = /^[ \t]*"?(contributes|contributedRules)"?[ \t]*:/m;
 
 // THE ADVISORY HALF OF EVERY DECLARATION-SHAPE TOLERANCE the engine still
 // carries. Each of those tolerances lets a member's own file be read in a shape
@@ -148,6 +152,34 @@ const rule = {
             fix: `replace severity: '${coded.severity}' with on_fail: '${onFailOf(coded) ?? 'block'}' in its rule object`,
           }));
         }
+      }
+    }
+
+    // The fingerprint fields `relevanceDetector` replaced (#2374). A local pack is declared by hand and
+    // never fingerprinted, so its lines say nothing; the manifest spec tolerates them
+    // only until no member still carries them.
+    for (const path of (ctx.files ?? []).filter((f) => LOCAL_MANIFEST.test(f))) {
+      const text = ctx.read(path) ?? '';
+      const line = (hit) => text.slice(0, hit.index).split('\n').length;
+      const fingerprint = RETIRED_FINGERPRINT.exec(text);
+      if (fingerprint) {
+        out.push(finding(rule, {
+          file: path,
+          line: line(fingerprint),
+          what: `the local pack manifest declares "${fingerprint[1]}", a retired fingerprint field nothing reads`,
+          fix: 'delete its detect and marker lines: a local pack is declared by hand, never fingerprinted',
+        }));
+      }
+      // Pack contributions are retired (#2395): nothing reads either field, so a barrier
+      // one still carries enforces nothing.
+      const contribution = RETIRED_CONTRIBUTION.exec(text);
+      if (contribution) {
+        out.push(finding(rule, {
+          file: path,
+          line: line(contribution),
+          what: `the local pack manifest declares "${contribution[1]}", a retired contribution field nothing reads`,
+          fix: 'delete the field; a barrier it carried becomes a rule in `config.barriers.rules` on the basics entry of .claudinite-settings.json, which the basics barrier rule reads',
+        }));
       }
     }
 

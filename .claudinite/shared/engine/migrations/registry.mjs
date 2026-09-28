@@ -5,6 +5,8 @@ import { RENAMED_PACKS } from '../pack_loader/renamed-packs.mjs';
 import { SETTINGS_FILE } from '../settings-file.mjs';
 import { LOCAL_PACK_ROOT, taskDirsWithJson, updateTaskSchedulingFields } from './task-declarations-to-json.mjs';
 import { markPack, convertReferences } from '../checks/helpers/provenance.mjs';
+import { MANIFEST_JSON, MANIFEST_MODULE, manifestFileIn } from '../pack_loader/pack-conventions.mjs';
+import { manifestsToJson } from './manifests-to-json.mjs';
 
 // <corpus>/engine/migrations/ — records are addressed corpus-relative, because they
 // no longer share one directory with this module: an engine record sits beside it,
@@ -262,7 +264,7 @@ export async function applyLocalDeclarationNormalization(migration, { read, writ
     const id = typeof entry === 'string' ? entry : entry?.id;
     if (typeof id !== 'string' || id.startsWith(LOCAL_DECL)) { packs.push(entry); continue; }
     // A bare id: local only if this repo actually carries that pack.
-    if (!(await exists(`.claudinite/local/packs/${id}/pack.mjs`))) { packs.push(entry); continue; }
+    if (!(await exists(`.claudinite/local/packs/${id}/${MANIFEST_JSON}`)) && !(await exists(`.claudinite/local/packs/${id}/${MANIFEST_MODULE}`))) { packs.push(entry); continue; }
     const token = `${LOCAL_DECL}${id}`;
     packs.push(typeof entry === 'string' ? token : { ...entry, id: token });
     done.push(`${file}: ${id} -> ${token}`);
@@ -555,7 +557,7 @@ export async function applyProvenanceMarking(migration, io) {
   const applied = [];
   for (const pack of (io.listDir(LOCAL_PACK_ROOT) ?? []).sort()) {
     const dir = `${LOCAL_PACK_ROOT}/${pack}`;
-    if (!io.exists(`${dir}/pack.mjs`)) continue;
+    if (!manifestFileIn((f) => io.exists(`${dir}/${f}`))) continue;
     applied.push(...convertReferences(dir, io));
     applied.push(...markPack(dir, io));
   }
@@ -630,6 +632,20 @@ export async function applyOnFailRename(migration, io) {
   return applied;
 }
 
+// Write side - "a pack's manifest is data": every local pack's `pack.mjs` becomes the
+// `pack.json` the loader prefers. A NAMED CODEMOD like the ones above, the conversion
+// shipping with the engine (manifests-to-json.mjs, the same one its CLI runs): which
+// packs carry a module manifest is the repo's own disk, so it needs `listDir`, and it
+// needs `remove` for the module it replaces - an io without either converts nothing
+// rather than leaving two manifests. A manifest JSON cannot carry stays a module, which
+// the loader still reads, and the line says why.
+export async function applyManifestsToJson(migration, io) {
+  if (!migration.manifestsToJson) return [];
+  if (typeof io.listDir !== 'function' || typeof io.remove !== 'function') return [];
+  if (migration.appliesTo && !(await migration.appliesTo(io.read))) return [];
+  return manifestsToJson(LOCAL_PACK_ROOT, io);
+}
+
 export async function applyMigration(migration, io) {
   const applied = [];
   applied.push(...(await applyFileAliases(migration, io)));
@@ -640,6 +656,7 @@ export async function applyMigration(migration, io) {
   applied.push(...(await applyTaskSchedulingFields(migration, io)));
   applied.push(...(await applyProvenanceMarking(migration, io)));
   applied.push(...(await applyOnFailRename(migration, io)));
+  applied.push(...(await applyManifestsToJson(migration, io)));
   applied.push(...(await applyPackRenames(migration, io)));
   // AFTER the renames: a setting moving onto a pack's entry has to find that entry
   // under the id the pack carries TODAY, which is what the rename above just settled.

@@ -61,7 +61,7 @@ export const canonicalPackId = (id) => RENAMED_PACKS[id] ?? id;
 // The id a CANON pack DIRECTORY contributes, given every raw id the same tree
 // carries. The map cannot tell its two shapes apart, but the tree can:
 //
-//   RENAME    — one directory, whose `pack.mjs` may still carry the old id until
+//   RENAME    - one directory, whose manifest may still carry the old id until
 //               the mount is rewritten. Nothing else claims the new id, so the id
 //               maps forward and the pack stays live.
 //   ABSORPTION — the absorbed directory sits BESIDE its survivor's until a

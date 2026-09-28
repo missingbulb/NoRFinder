@@ -62,15 +62,29 @@ const USAGE = `usage: provenance.mjs <command> …
 
 // --- packs and roots ---------------------------------------------------------------
 
+// The manifest spellings this engine reads - an older one reads the module alone - and
+// the one a pack directory carries, or null.
+const MANIFEST_FILES = conventions.MANIFEST_FILES ?? ['pack.mjs'];
+const manifestOf = (io, dir) => MANIFEST_FILES.find((f) => io.exists(`${dir}/${f}`)) ?? null;
+
+// A pack's manifest text as it stood at a commit, whichever spelling it had there.
+function manifestTextAt(root, sha, pack) {
+  for (const f of MANIFEST_FILES) {
+    const text = git(root, 'show', `${sha}:${pack}/${f}`);
+    if (text) return text;
+  }
+  return '';
+}
+
 export function resolvePack(root, id, io = checkoutIo(root)) {
-  if (id.includes('/')) return io.exists(`${id}/pack.mjs`) ? id.replace(/\/+$/, '') : null;
-  for (const r of PACK_ROOTS) if (io.exists(`${r}/${id}/pack.mjs`)) return `${r}/${id}`;
+  if (id.includes('/')) return manifestOf(io, id.replace(/\/+$/, '')) ? id.replace(/\/+$/, '') : null;
+  for (const r of PACK_ROOTS) if (manifestOf(io, `${r}/${id}`)) return `${r}/${id}`;
   return null;
 }
 
 export function allPacks(io) {
   const out = [];
-  for (const r of PACK_ROOTS) for (const name of (io.listDir(r) ?? []).sort()) if (io.exists(`${r}/${name}/pack.mjs`)) out.push(`${r}/${name}`);
+  for (const r of PACK_ROOTS) for (const name of (io.listDir(r) ?? []).sort()) if (manifestOf(io, `${r}/${name}`)) out.push(`${r}/${name}`);
   return out;
 }
 
@@ -194,7 +208,7 @@ export function changedElements(root, pack) {
   for (const s of now.skills) if (s.present && changed.has(s.file)) out.add(s.name);
   for (const c of now.checks) if (changed.has(c.file)) out.add(elementIdOf(c.id));
   for (const t of now.tasks) if ([...changed].some((f) => f.startsWith(`${t.dir}/`))) out.add(t.id);
-  if (now.manifest && changed.has(`${pack}/pack.mjs`)) out.add(PACK_ELEMENT);
+  if (now.manifest && MANIFEST_FILES.some((f) => changed.has(`${pack}/${f}`))) out.add(PACK_ELEMENT);
   return [...out].sort();
 }
 
@@ -238,7 +252,7 @@ export function history(root, pack, element) {
   for (const s of c.skills) if (s.name === element) files.add(s.file);
   for (const x of c.checks) if (elementIdOf(x.id) === element) files.add(x.file);
   for (const t of c.tasks) if (t.id === element) files.add(t.dir);
-  if (element === PACK_ELEMENT) files.add(`${pack}/pack.mjs`);
+  if (element === PACK_ELEMENT) for (const f of MANIFEST_FILES) files.add(`${pack}/${f}`);
   const lines = [`# ${pack} · ${element}`];
   if (!files.size) { lines.push('named by no carrier of this pack'); return lines; }
   const prs = new Set();
@@ -500,7 +514,7 @@ function fileEvents(root, path, { follow = true } = {}) {
   if (!commits.length) return [];
   const bump = (c) => {
     const changed = git(root, 'show', '--format=', c.sha, '--', c.path).split('\n').filter((l) => /^[-+](?![-+])/.test(l));
-    return changed.length > 0 && changed.every((l) => /^[-+]\s*version:\s*['"]?[\d.]+['"]?,?\s*$/.test(l));
+    return changed.length > 0 && changed.every((l) => /^[-+]\s*"?version"?:\s*['"]?[\d.]+['"]?,?\s*$/.test(l));
   };
   return [...commits.slice(0, -1).filter((c) => !bump(c)).map((c) => ({ kind: 'reworded', sha: c.sha })), { kind: 'born', sha: commits[commits.length - 1].sha }];
 }
@@ -519,7 +533,7 @@ function versionRows(io, pack) {
 function versionReader(root, pack) {
   const at = new Map();
   const versionAt = (sha) => {
-    if (!at.has(sha)) at.set(sha, /\bversion:\s*['"]?([\d.]+)/.exec(git(root, 'show', `${sha}:${pack}/pack.mjs`))?.[1] ?? null);
+    if (!at.has(sha)) at.set(sha, /(?:^|[\s{,])"?version"?:\s*['"]?([\d.]+)/m.exec(manifestTextAt(root, sha, pack))?.[1] ?? null);
     return at.get(sha);
   };
   return (info) => {
@@ -536,7 +550,7 @@ function versionReader(root, pack) {
 export function packPaths(root, pack, io) {
   const out = [pack];
   const c = packCarriers(pack, io);
-  const anchors = [`${pack}/pack.mjs`, `${pack}/RULES.md`, `${pack}/README.md`,
+  const anchors = [...MANIFEST_FILES.map((f) => `${pack}/${f}`), `${pack}/RULES.md`, `${pack}/README.md`,
     ...c.skills.filter((s) => s.present).map((s) => s.file), ...c.tasks.map((t) => t.file)];
   for (const anchor of anchors) {
     if (!io.exists(anchor)) continue;
@@ -791,7 +805,7 @@ function packElements(root, pack, io, wanted, { paths = [pack], position = posit
       // `_pack` records decisions about the pack's shape - what its header comment
       // carries - never every commit in its scope, so only its birth is drafted and
       // the manifest's later commits are listed for the session to judge.
-      const events = fileEvents(root, `${pack}/pack.mjs`);
+      const events = MANIFEST_FILES.flatMap((f) => fileEvents(root, `${pack}/${f}`));
       out.push({ id, mechanism: 'the pack manifest.', events: events.filter((e) => e.kind === 'born'), later: events.filter((e) => e.kind !== 'born') });
     } else out.push({ id, mechanism: null, events: [] });
   }
@@ -802,7 +816,7 @@ function packElements(root, pack, io, wanted, { paths = [pack], position = posit
 // reader of the code finds them, and the `_pack` entries' evidence.
 function manifestHeader(io, pack) {
   const lines = [];
-  for (const l of (io.read(`${pack}/pack.mjs`) ?? '').split('\n')) {
+  for (const l of (io.read(`${pack}/${manifestOf(io, pack) ?? MANIFEST_FILES[0]}`) ?? '').split('\n')) {
     if (/^\s*\/\//.test(l)) { lines.push(l.replace(/^\s*\/\/ ?/, '')); continue; }
     if (l.trim() === '' && !lines.length) continue;
     if (l.trim() === '') { lines.push(''); continue; }
@@ -937,7 +951,7 @@ export function brief(root, pack, wanted = []) {
   }
   const manifest = elements.find((el) => el.id === PACK_ELEMENT);
   if (manifest) {
-    lines.push('', `## the manifest, ${pack}/pack.mjs`, 'its header comment is the pack-level record the _pack entries are written from, and is trimmed like the README once they are; a _pack entry is a decision about the pack\'s shape, never every change in its scope, so the manifest\'s later commits are listed here and not drafted');
+    lines.push('', `## the manifest, ${pack}/${manifestOf(io, pack) ?? MANIFEST_FILES[0]}`, 'its header comment is the pack-level record the _pack entries are written from, and is trimmed like the README once they are; a _pack entry is a decision about the pack\'s shape, never every change in its scope, so the manifest\'s later commits are listed here and not drafted');
     const header = manifestHeader(io, pack);
     lines.push(...(header.length ? header.map((l) => (l ? `> ${l}` : '>')) : ['(no header comment)']));
     for (const ev of manifest.later) { const i = commitInfo(root, ev.sha, cache); lines.push(`- ${i.pr ? `#${i.pr}` : i.short} ${i.date} ${i.title}${i.sweep ? ' (sweep)' : ''}`); }

@@ -1,0 +1,9 @@
+{
+  "version": "60928.1",
+  "minEngineVersion": "60928.1",
+  "ruleRoutingGuidance": {
+    "belongs": "methodology for iterating an algorithm over sample inputs against annotated ground truth — scoring, phases, session continuity",
+    "excludes": "shipping an end-user product against a spec — that is spec-driven-product; market research is product-wiki"
+  },
+  "pitch": "Suits a project that runs an algorithm over a set of similar inputs, scores it against the owner's hand-made ground truth and improves it in reviewable steps. Dozens of rules keep Claude Code sessions honest: ground truth is annotated and never invented, no special case for a single input, scale-free rules over magic pixel constants, wins guarded by regression tests, and results shown with pictures and failure cases. Each iteration reports what was wrong, what changed and the metric delta, so progress stays measurable rather than anecdotal."
+}

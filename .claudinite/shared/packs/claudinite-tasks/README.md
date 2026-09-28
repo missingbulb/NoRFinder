@@ -32,7 +32,7 @@ and `tasks-world-edges-live-in-world` checks are what hold the shape.
 | `queue/` | `tasks/implement-request/`, the engine's own built-in task; the spec is `public/implement-request.md` |
 | `stubs/` | the two workflow files an adopting repo receives |
 | `public/` | **everything outside this pack may reference** — the vocabulary and grammar `src/` builds on, the import surface, and the documents a routine reads. See below |
-| `tasks/` | this pack's own tasks: `usage-fold` (it folds this mechanism's run records and outcome labels), `tasks-usage-fold` (what the machinery itself cost - runs, billed minutes, API calls, outcomes, parks, latencies) and `verify-production` (coded production validations - URL probes judged as code-work) |
+| `tasks/` | this pack's own tasks: `usage-fold` (what the repo's sessions did, and what the machinery itself cost - runs, billed minutes, API calls, outcomes, parks, latencies) and `verify-production` (coded production validations - URL probes judged as code-work) |
 | `worldRules/` | the task-declaration checks |
 | `workRules/` | the armed-auto-merge gate (`automerge-policy-scope`) |
 | `declared-checks.json` | `tasks-pack-read-through-its-surface` — the guard over this pack's published surface, which runs wherever the pack is declared |

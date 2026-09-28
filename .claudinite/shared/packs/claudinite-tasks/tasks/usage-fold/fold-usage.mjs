@@ -366,7 +366,7 @@ export const emptyTaskExec = () => Object.fromEntries(TASK_EXEC_STATUSES.map((s)
 // @deprecated The `taskExec` rows have a successor: the `queue` rows of
 // `.claudinite/usage/task-runs-and-costs.json`, which read what each occurrence
 // came to off the item itself rather than off whether its session happened to
-// capture (`packs/claudinite-tasks/tasks/tasks-usage-fold/README.md`). Still
+// capture (the README's "The machinery half"). Still
 // written, and still a sample of the sessions that captured; retiring it is a later
 // plan of its own.
 export function countTaskExecs(entries) {
@@ -504,7 +504,7 @@ export const TASK_COST_UNRESOLVED = '(unresolved)';
 // @deprecated The `taskCost` rows have a successor for the cost half of the
 // question: `.claudinite/usage/task-runs-and-costs.json` carries what each run of
 // the machinery was billed and what it spent in API calls, per workflow and per run
-// (`packs/claudinite-tasks/tasks/tasks-usage-fold/README.md`). The TOKEN share these
+// (the README's "The machinery half"). The TOKEN share these
 // rows carry has no successor there and is not meant to gain one — that is what the
 // sessions spent, which is the session fold's subject. Still written; retiring it is
 // a later plan of its own.
@@ -774,7 +774,7 @@ export function foldDayFields(days, bySource = {}) {
 // @deprecated The `queue` and `parks` rows have a successor:
 // `.claudinite/usage/task-runs-and-costs.json`, which counts the same outcomes and
 // the same parks beside the latencies and costs they belong with
-// (`packs/claudinite-tasks/tasks/tasks-usage-fold/README.md`). This writer keeps
+// (the README's "The machinery half"). This writer keeps
 // running — the rows it has already written are real and its readers still read them
 // — and retiring it is a later plan of its own rather than a window this one closes.
 export function foldQueueOutcomes(days, priorDays = {}, records = [], today) {

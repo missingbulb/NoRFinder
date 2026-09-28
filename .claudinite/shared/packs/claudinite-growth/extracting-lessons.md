@@ -75,7 +75,7 @@ pack's stated territory is merely too narrow, propose widening it rather than ro
    `on_fail: 'block'` and `since: '<today>'`: the engine holds a check to advisory for its first two
    weeks, so a check may land against a tree that still violates it and the backlog it surfaces is somebody
    else's next change, not this run's.
-3. **A custom code rule** — a `<rule>.mjs` exporting `run(ctx)`, listed on the pack's `pack.mjs` — only
+3. **A custom code rule** - a `<rule>.mjs` exporting `run(ctx)`, under the pack's `worldRules/` or `workRules/` - only
    when the check needs what patterns can't say: real parsing, structured-data field logic, git/diff or
    conversation state, a derived comparison. Reaching for code where a declaration would do costs a module
    to read and maintain for nothing. An **unattended** run ships one `advisory`: hand-written logic has

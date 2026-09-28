@@ -27,6 +27,7 @@ import { writeSkillsIndex, SKILLS_INDEX_FILE } from './pack_loader/generate-skil
 import { writeFlatDeclarations } from './pack_loader/generate-flat-declarations.mjs';
 import { FLAT_DIR, RETIRED_INDEX_FILES, RETIRED_RULES_INDEX_IMPORT } from './pack_loader/flat-dir.mjs';
 import { LOCAL_PACKS_SUBDIR, LOCAL_DECL_PREFIX, SHARED_SUBDIR, TEMP_PACKS_SUBDIR } from './pack_loader/pack-registry.mjs';
+import { MANIFEST_JSON } from './pack_loader/pack-conventions.mjs';
 
 // The mount's two halves as git wants them spelled: '/' separators, and the shared
 // subtree's own name for a pattern written from inside the mount root. SHARED_SUBDIR
@@ -299,25 +300,13 @@ export const packIdForRepo = (fullName) => (fullName ?? '').split('/').pop()
   .toLowerCase()
   .replace(/^-+|-+$/g, '');
 
-const SEED_MANIFEST = (id) => `// ${id} — this repo's own pack: everything local, and portable nowhere. Its rules,
-// and the checks, skills and tasks that carry them, all live here.
-// Seeded empty at adoption; everything in it is this repo's to write. A lesson that
-// would hold in another repo belongs in a canon pack instead — propose it upstream.
-//
-// The id is this directory's name and the prose is the RULES.md beside this file —
-// both by convention (engine/pack_loader/pack-conventions.mjs), so neither is
-// declared here.
-export default {
+const SEED_MANIFEST = `${JSON.stringify({
   version: 1,
   ruleRoutingGuidance: {
     belongs: 'everything specific to this repository and portable nowhere else: its working rules, and the checks, skills and tasks carrying them',
     excludes: 'anything true beyond this repo — that belongs in a canon pack, proposed upstream',
   },
-  detect: null,
-  marker: null,
-  worldRules: [],
-};
-`;
+}, null, 2)}\n`;
 
 const SEED_PROSE = (id) => `# ${id} — this repo's own pack
 
@@ -351,7 +340,7 @@ export function seedRepoLocalPack(root, fullName) {
   if (declared.some((p) => String(typeof p === 'string' ? p : p?.id).startsWith('local'))) return null;
 
   mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, 'pack.mjs'), SEED_MANIFEST(id));
+  writeFileSync(join(dir, MANIFEST_JSON), SEED_MANIFEST);
   writeFileSync(join(dir, 'RULES.md'), SEED_PROSE(id));
 
   // Declared as text, never a JSON round-trip: re-serializing rewrites what it was not

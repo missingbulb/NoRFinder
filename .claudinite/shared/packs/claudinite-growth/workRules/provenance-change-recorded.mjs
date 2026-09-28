@@ -1,5 +1,6 @@
 import { finding } from '../../../engine/checks/helpers/findings.mjs';
 import { commentOnly } from '../../../engine/checks/helpers/code-scanning.mjs';
+import * as conventions from '../../../engine/pack_loader/pack-conventions.mjs';
 // A namespace import, guarded in `run`: the pack and engine lanes deliver on separate
 // cadences, and a member whose engine predates the helper must load this pack rather
 // than fault on a missing named export.
@@ -51,7 +52,14 @@ const rule = {
     // changed set alone, which would read every untouched carrier as deleted.
     const headFiles = [...work.tracked, ...work.untracked];
     const head = { exists: (p) => work.exists(p), read: (p) => work.read(p), listDir: (p) => listFrom(headFiles, p) };
-    const baseFiles = [...new Set([...work.tracked, ...deleted])].filter((p) => work.readBase(p) !== null);
+    // Only the changed packs' own trees are ever listed. The base tree comes in one
+    // listing where the engine offers it; an older engine's is probed file by file,
+    // one git subprocess each, so that probe stays inside those trees.
+    const inChangedPack = (p) => packs.some((dir) => p.startsWith(`${dir}/`));
+    const listed = typeof work.listBase === 'function' ? work.listBase() : null;
+    const atBase = listed ? ((set) => (p) => set.has(p))(new Set(listed)) : (p) => work.readBase(p) !== null;
+    const baseFiles = [...new Set([...work.tracked, ...deleted])].filter((p) => inChangedPack(p) && atBase(p));
+    if (typeof work.prefetchBase === 'function') work.prefetchBase(baseFiles);
     const base = { exists: (p) => work.readBase(p) !== null, read: (p) => work.readBase(p), listDir: (p) => listFrom(baseFiles, p) };
     const out = [];
     const touched = (p) => changed.includes(p);
@@ -119,9 +127,12 @@ const rule = {
         if (files.every((f) => f.endsWith('.mjs') && base.read(f) !== null && commentOnly(f, base.read(f), head.read(f)))) continue;
         owes(t.id, files[0], null, `task ${t.id} changed`);
       }
-      if (now.manifest && touched(`${dir}/pack.mjs`)) {
-        const b = base.read(`${dir}/pack.mjs`);
-        if (!(b !== null && commentOnly(`${dir}/pack.mjs`, b, head.read(`${dir}/pack.mjs`)))) owes(PACK_ELEMENT, `${dir}/pack.mjs`, null, 'the manifest changed');
+      for (const file of (conventions.MANIFEST_FILES ?? ['pack.mjs']).map((f) => `${dir}/${f}`)) {
+        if (!now.manifest || !touched(file)) continue;
+        const b = base.read(file);
+        if (b !== null && (file.endsWith('.json') ? sameJson(b, head.read(file)) : commentOnly(file, b, head.read(file)))) continue;
+        owes(PACK_ELEMENT, file, null, 'the manifest changed');
+        break;
       }
 
       // A provenance file is meant to grow - advised, never refused.
@@ -220,5 +231,10 @@ function listFrom(files, p) {
   }
   return names.size ? [...names] : null;
 }
+
+// Two JSON texts that parse to the same value: a re-indented manifest decided nothing.
+const sameJson = (a, b) => {
+  try { return JSON.stringify(JSON.parse(a)) === JSON.stringify(JSON.parse(b ?? '')); } catch { return false; }
+};
 
 export default rule;

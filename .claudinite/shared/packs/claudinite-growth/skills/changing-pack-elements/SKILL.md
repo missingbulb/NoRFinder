@@ -12,6 +12,7 @@ metadata:
     - "**/packs/*/workRules/**"
     - "**/packs/*/declared-checks.json"
     - "**/packs/*/tasks/**"
+    - "**/packs/*/pack.json"
     - "**/packs/*/pack.mjs"
     - "**/packs/*/README.md"
     - "**/packs/*/provenance/**"
