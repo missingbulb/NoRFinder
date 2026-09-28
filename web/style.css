@@ -52,6 +52,7 @@ aside section + section { margin-top: 18px; }
 #overlay .hidden, #overlay.no-fails .fail, #overlay.no-labels text, #overlay.no-lines .lines { display: none; }
 #overlay .lines { display: none; }
 #overlay .pass .lines { display: inline; }
+#overlay.no-lines .pass .lines { display: none; }
 #overlay .lines line { stroke: #fff; vector-effect: non-scaling-stroke; stroke-width: 1; }
 #overlay .lines line.r { stroke-width: 2; }
 #overlay text { paint-order: stroke; stroke: #000; stroke-width: 2px; stroke-opacity: .6; font-family: system-ui, sans-serif; }
