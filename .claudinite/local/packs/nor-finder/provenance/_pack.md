@@ -8,3 +8,11 @@
 - **Mechanism:** the pack manifest, no detect and no marker - a local pack is declared by existing,
   not fingerprinted.
 - **Landed:** Closes #1 · #2 · pack version 1.
+
+## 2026-09-28 · moved · renamed from no-rfinder, a mis-split of the repo name
+- **Reason:** the bootstrap derived the id from `NoRFinder` as `no-rfinder`; the name reads as
+  NoR-Finder.
+- **Actor:** @missingbulb (owner).
+- **Model:** Claude, per the commit trailer.
+- **Mechanism:** the directory name, which is the pack id by convention, and its `local/`
+  declaration.

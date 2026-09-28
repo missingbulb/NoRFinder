@@ -1,4 +1,4 @@
-# no-rfinder — this repo's own pack
+# nor-finder — this repo's own pack
 
 The home for everything **specific to this repository**: the rules below, and beside them the
 checks, skills and tasks that carry them. Nothing local needs a home invented for it — this is

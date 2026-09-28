@@ -1,6 +1,6 @@
 {
   "packs": [
-    "local/no-rfinder",
+    "local/nor-finder",
     {
       "id": "basics",
       "version": "60924.1",

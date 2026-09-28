@@ -1,4 +1,4 @@
-// no-rfinder — this repo's own pack: everything local, and portable nowhere. Its rules,
+// nor-finder — this repo's own pack: everything local, and portable nowhere. Its rules,
 // and the checks, skills and tasks that carry them, all live here.
 // A lesson that would hold in another repo belongs in a canon pack instead — propose it
 // upstream.
