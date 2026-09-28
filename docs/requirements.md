@@ -191,3 +191,34 @@ written as a placeholder value. **A fetch can be limited to a subset** (`--match
 the folder is hundreds of MB, and most work needs only a few planes, so pulling everything each
 session wastes minutes and disk. Why Drive rather than git, LFS or a Release:
 [`data/README.md`](../data/README.md). Test: `tests/test_fetch_data.py`.
+
+## R7 — What counts as a NoR: the owner's validation criteria
+
+Set by the owner (2026-09-25 to 09-27) while reviewing renders; each is a named check in
+[`detection/nor3.py`](../detection/nor3.py) (`CHECKS`, letters A-J, plus K and N in
+[`detection/nor_rf.py`](../detection/nor_rf.py)), so every rejected candidate says which rule
+removed it.
+
+- **Shape of the object.** A green-red-green triplet between nuclei: a short, thick stick
+  ("wand"), the red Nav node between two green Caspr paranodes. It is not round, so outlines
+  follow its pixels, never an ellipse.
+- **Structure.** Exactly three segments in the order green, red, green; the two greens do not
+  touch; the three lie roughly on a line (A, B, C).
+- **Colour purity.** At most 20% of a segment's core pixels may be lit in the other colour (the
+  owner first said 10%, then relaxed it). The 1-px rim where colours meet is left out, because
+  optical blur makes it yellow (D, E).
+- **Symmetry.** The two greens are similar in area and in total brightness; the smaller is at
+  least a fraction of the larger (currently 1/4) (F, H).
+- **Stick.** Length along the green-to-green axis over mean width is at least 3, with no gap along
+  its length (G; mostly redundant with the others).
+- **Bright, not mushy.** The weakest segment is at least 3.5 robust noise units (1.4826·MAD) above
+  the local background median. 3.5 sits at a dip in the score histogram; the textbook 5 drops
+  good nodes (I).
+- **One pixel belongs to at most one NoR.** Overlaps are resolved strongest first (J).
+- **Nuclei are not NoRs.** Blue (DAPI) mask: blur σ=2, above 0.45× Otsu (to catch the dim rim),
+  drop blobs under 30 px, fill holes, dilate 2 px. The owner approved it on Slide5 (it covers about
+  14% of the image). Since 2026-09-27 it is applied after finding: a candidate fails when at
+  least 80% of its red lies on the mask (N).
+
+The thresholds are the owner's or were chosen from data with the owner's consent; changing one is
+a question for the owner, shown with the objects that only that check rejects.

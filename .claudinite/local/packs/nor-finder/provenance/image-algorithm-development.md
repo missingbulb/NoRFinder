@@ -18,3 +18,19 @@
   rather than repeating them.
 - **Retire when:** the research-project canon pack carries the same cycle.
 - **Landed:** #212.
+
+## 2026-09-28 · merged · the NoR work's keep/drop, lost-list and perf learnings folded in (#221)
+- **Source:** the owner, on #221: "Is nor-detection-iteration needed with the existence of
+  image-algorithm-development? Shouldn't your specific learnings be added to the existing skill?"
+  The NoR-specific skill written in the project was dropped; its generic lessons land here and its
+  NoR facts in docs/requirements.md R7.
+- **Reason:** the 2026-09-27 round showed what the skill lacked: a stated keep/drop rule (paired
+  bootstrap, P(better) 0.8/0.2), every change landed as a switch and ablated alone (the owner's
+  rectangle rule lost on data), the lost-list method, hashing real outputs with min-of-runs timing
+  (a float32 speed-up changed ties), and the render function as the only definition of the format (a
+  stale note once changed it).
+- **Actor:** @missingbulb (owner).
+- **Model:** Claude, per the commit trailer.
+- **Mechanism:** additions to the existing workflow skill's State 4, render and performance
+  sections, and to its resume line: a committed state file, never a project side folder.
+- **Landed:** #221.

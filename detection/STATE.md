@@ -1,9 +1,9 @@
 # NoR detection: current state
 
-Read this first, then `lab/ledger.md` (everything tried, with verdicts). The procedure is the
-`nor-detection-iteration` skill (this repo's local pack), and the generic
-method is the `image-algorithm-development` skill beside it. Update this file in the PR that
-changes the state.
+Read this first, then `lab/ledger.md` (everything tried, with verdicts). The method is the
+`image-algorithm-development` skill in this repo's local pack; what counts as a NoR is
+[`docs/requirements.md`](../docs/requirements.md) R7. Update this file in the PR that changes the
+state.
 
 _Last updated 2026-09-28._
 

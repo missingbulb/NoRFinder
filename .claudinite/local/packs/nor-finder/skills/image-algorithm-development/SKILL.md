@@ -57,7 +57,8 @@ against.
 | all pass | | State 4, iterate |
 
 Resuming a session: read the state off the repo (the loader, the render function, the key file,
-the run command), never off memory of where things stood.
+the run command, and a committed state file saying where things stand and what is next), never
+off memory of where things stood or off a project's side folder.
 
 ## State 1 - no inputs you can reproduce
 
@@ -121,7 +122,9 @@ then freeze it.
 **The frozen render is an API with the owner.** Its colours, outlines, numbering, panels and list
 columns change only when the owner asks; propose a change with a before/after on the same sample
 and wait, and until then every version renders the approved way, even when a new filter or
-output needs a place in it. The one change that needs no asking: when the owner corrects a
+output needs a place in it. The committed render function is the only definition of the format:
+render every version through it, never from a note describing the style, because notes go stale
+when the owner changes the format. The one change that needs no asking: when the owner corrects a
 geometric assumption, the next render draws the corrected geometry.
 
 ## Many objects in one image - decide on divide and conquer
@@ -211,6 +214,11 @@ timings, the renders, and the objects gained and lost against the previous versi
   over all samples, never one item or one sample; on a few dozen graded items a gain of one or
   two is noise - find a change that moves five, or get more samples. Mark every number cached,
   fresh or synthetic.
+- **Decide keep or drop by a stated rule, not by eye.** Compare a variant with the current version
+  by a paired bootstrap over the keyed items (resample items, score both on each draw) and read
+  P(variant better): keep at ≥ 0.8, drop at ≤ 0.2, and in between call it no evidence and keep
+  the simpler option or the incumbent. Print the verdict beside the tp/fp counts, one line per
+  variant, from one command.
 - **Naive first.** Before adding a stage, score the simplest whole-image approach; add the stage
   only when the naive run fails on the metric, and cite that run in the ledger.
 
@@ -232,11 +240,20 @@ Each iteration:
 4. **Build until working** on the sample render before scoring.
 5. **Keep or drop on the score**, reviewing the gained and lost objects, and write the iteration
    note (research-project §5). Record the attempt in the ledger whether kept or dropped.
+   **Land every change as a switch** in the version's parameters, the old behaviour one value
+   away, and test each switch alone against the current version, owner-pitched ideas included.
+   When a change is several ideas at once (a new generator with a new shape rule and a new
+   pairing rule), ablate each part; a pitched part that loses on the data is turned off and
+   reported with its numbers, not quietly kept or removed.
 
 Cheap moves between iterations:
 
 - **Rescue false negatives** - pick a few clear real objects that were lost, find the rule that
   killed each, adjust that rule, rescore. Repeat while it keeps paying.
+- **Work the lost list after a new version.** Take the objects the previous version passed and
+  this one does not, rank them (keyed-real first, then the largest reject class among the rest),
+  look at a paired sheet (old outline beside new) for the largest class, write the fix as
+  pseudocode that names the mechanism, implement it as a switch, and ablate it.
 - **Measure each filter alone** - how many it rejects on its own and how many it is the *only*
   reason for. Order the strictest first; a filter that is almost never the only reason is
   redundant - drop it, or show the owner the objects only it rejects.
@@ -309,7 +326,11 @@ warning.
 
 - Profile the current version, fix the top hotspot, and prove the output identical by hashing
   both; a pass that changes a result is a quality change and is scored as one. Report the time
-  before and after, and log the attempt in the ledger, including one that was reverted.
+  before and after, and log the attempt in the ledger, including one that was reverted. Hash the
+  outputs themselves (positions, verdicts, segment pixels), not a summary count. Time the
+  minimum of a few runs: run-to-run noise on a shared machine can reach ±15%, so a small gain is
+  re-checked before it is claimed. A lower-precision type is a classic trap: faster, but it
+  changes ties, so the hash catches it.
 - Restore the token budget the same way: if you have been reading full renders, fix the run
   command's summary until the score and the gained/lost sheets are enough.
 - **Deployment is not quality work**: memory limits, instance sizes, job APIs and device ports are
