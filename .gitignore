@@ -1,5 +1,6 @@
 /.claudinite-hooks.log
 /.claudinite-hooks.log.tmp
+/.claudinite/temp/
 __pycache__/
 *.pyc
 

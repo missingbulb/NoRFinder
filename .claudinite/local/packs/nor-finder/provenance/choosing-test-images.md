@@ -10,3 +10,13 @@
 - **Retire when:** the corpus stops growing from external sources and every harness build already
   has a same-regime real sample on hand as a matter of course.
 - **Landed:** Refs #89 · #92.
+
+## 2026-09-27 · retired · superseded by the canon's own rule (#201)
+- **Source:** growth-dedup run against the mounted canon.
+- **Reason:** `.claudinite/shared/packs/research-project/RULES.md` now carries the identical rule
+  verbatim, plus the "why" clause this local copy lacked ("A synthetic image is built from the same
+  assumptions the algorithm makes, so it tends to confirm the algorithm rather than test it.") —
+  the local copy only restated the canon in this repo's own names.
+- **Actor:** the growth-dedup task run.
+- **Model:** Sonnet 5, per the session's model identity.
+- **Landed:** Refs #201.
