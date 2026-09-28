@@ -18,22 +18,26 @@ def load(path):
         t = tifffile.TiffFile(path)
         a = t.asarray().astype(np.float64)          # C,Y,X
         luts = (t.imagej_metadata or {}).get('LUTs')
+        if not luts or a.ndim != 3 or len(a) != 3:
+            raise ValueError('expected a 3-channel ImageJ TIFF with display colours (LUTs)')
         cols = []
         for l in luts:
             l = np.asarray(l); cols.append('rgb'[int(np.argmax(l[:, -1]))])
-        # DAPI = channel of large blobs (data/README.md): mean area of top-3% components after blur
-        from scipy import ndimage as ndi
-        def blobby(c):
-            b = ndi.gaussian_filter(c, 2); m = b > np.quantile(b, .97)
-            lab, n = ndi.label(m); return m.sum() / max(n, 1)
-        dapi = int(np.argmax([blobby(c) for c in a]))
-        g = cols.index('g'); r = cols.index('r')
-        print('display colours', cols, 'dapi ch', dapi, '-> caspr(green) ch', g, 'nav(red) ch', r)
-        assert dapi not in (g, r), 'DAPI detected on a green/red channel; check by eye'
+        # by role, never by display colour (data/README.md): Caspr is the green-displayed channel,
+        # DAPI the other channel of large blobs, Nav the rest
+        g = cols.index('g')
+        dapi = max((k for k in range(3) if k != g), key=lambda k: blob_area(a[k]))
+        r = 3 - g - dapi
+        print('display colours', cols, 'dapi ch', dapi, '-> caspr(green) ch', g, 'nav ch', r)
         um = 1 / t.pages[0].tags['XResolution'].value[0] * t.pages[0].tags['XResolution'].value[1]
         return a[g], a[r], um, a[dapi]
     im = np.asarray(Image.open(path).convert('RGB')).astype(np.float64)
     return im[..., 1], im[..., 0], None, im[..., 2]
+
+def blob_area(c):
+    """Mean area of the brightest 3% after a sigma-2 blur, in connected pieces: large for nuclei."""
+    b = ndi.gaussian_filter(c, 2); m = b > np.quantile(b, .97)
+    lab, n = ndi.label(m); return m.sum() / max(n, 1)
 
 def to8(c):
     lo, hi = np.quantile(c, 0.005), np.quantile(c, 0.998)

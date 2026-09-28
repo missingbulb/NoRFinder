@@ -58,6 +58,37 @@ def _num(v):
     return round(v, 6) if math.isfinite(v) else None
 
 
+def filters(P):
+    """The controls for a finder's parameters P: one per check in judging order, then the nucleus
+    rule and one-pixel-per-NoR."""
+    cp = check_params(); out = []
+    for k in ORDER + [c for c in CHECKS if c not in ORDER] + list(POST):
+        ps = cp[k] if k in CHECKS else {POST[k][0]: POST[k][1]}
+        vals = {n: P.get(n, d) for n, d in ps.items()}
+        out.append(dict(key=k, letter=REASONS.get(k, ('?',))[0], text=REASON_TEXT.get(k, k),
+                        params={n: v for n, v in vals.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}))
+    return out
+
+
+def detection_params(P):
+    """Every other scalar parameter of the finder: changing one means detecting again."""
+    used = {n for f in filters(P) for n in f['params']}
+    return {k: v for k, v in P.items() if k not in used and isinstance(v, (int, float, str, bool, tuple, list))}
+
+
+def describe(finder):
+    """What the page shows for a finder before it runs: its filters, its detection parameters, and
+    the few of those it names as the ones worth turning first (the finder function's MAIN)."""
+    fn, P = nor_lab.finders()[finder]
+    dp = detection_params(P)
+    return dict(filters=filters(P), detection_params=dp, main_params=[k for k in getattr(fn, 'MAIN', ()) if k in dp],
+                exact_refilter=finder in EXACT_REFILTER, reasons=reasons())
+
+
+def reasons():
+    return {k: dict(letter=v[0], color=v[1], text=REASON_TEXT.get(k, k)) for k, v in REASONS.items()}
+
+
 class Session:
     def __init__(self, path):
         self.caspr, self.nav, self.um, dapi = nn_.load(path)
@@ -106,24 +137,15 @@ class Session:
             rows.append(row)
         meta = dict(finder=finder, exact_refilter=finder in EXACT_REFILTER, H=H, W=W, um=self.um, unit=_num(info['unit']),
                     filters=self.filters(), detection_params=self.detection_params(),
-                    reasons={k: dict(letter=v[0], color=v[1], text=REASON_TEXT.get(k, k)) for k, v in REASONS.items()},
+                    reasons=reasons(),
                     pink=nor3.PINK, blue=nor3.BLUE, cands=rows)
         return json.dumps(meta), b''.join(blocks)
 
     def filters(self):
-        """The controls: one per check in judging order, then the nucleus rule and one-pixel-per-NoR."""
-        cp = check_params(); out = []
-        for k in ORDER + [c for c in CHECKS if c not in ORDER] + list(POST):
-            ps = cp[k] if k in CHECKS else {POST[k][0]: POST[k][1]}
-            vals = {n: self.P.get(n, d) for n, d in ps.items()}
-            out.append(dict(key=k, letter=REASONS.get(k, ('?',))[0], text=REASON_TEXT.get(k, k),
-                            params={n: v for n, v in vals.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}))
-        return out
+        return filters(self.P)
 
     def detection_params(self):
-        """Every other scalar parameter of the finder: changing one means detecting again."""
-        used = {n for f in self.filters() for n in f['params']}
-        return {k: v for k, v in self.P.items() if k not in used and isinstance(v, (int, float, str, bool, tuple, list))}
+        return detection_params(self.P)
 
     def refilter(self, spec):
         """spec: {'values': {param: value}, 'off': [filter keys]}. Returns each candidate's result:

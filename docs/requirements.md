@@ -229,20 +229,37 @@ Set by the owner on 2026-09-28. The page is [`web/`](../web/), served from GitHu
 backend. Its engine is [`detection/interactive.py`](../detection/interactive.py), tested by
 [`tests/test_interactive.py`](../tests/test_interactive.py).
 
-- **One image, one slow step.** Opening an image loads it and runs a finder once. Everything else
-  (filters, forced markings, the list, the summary) redraws from the stored candidates without
-  finding again.
+- **One image, one slow step.** Loading an image only reads it. The finder runs when the user
+  presses Find Candidates, and that button shines while the finder or its settings differ from the
+  last run. Everything else (filters, forced markings, the list, the summary) redraws from the
+  stored candidates without finding again.
+- **Layout.** A header with the logo, the title and a dark/light switch (remembered). The left bar
+  holds the image (load, its name, a checkbox per colour layer with blue off at first), the
+  candidates finder and the filters. The main area has a toolbar (zoom, overlay options, and a big
+  button that switches views) over two views: the image and the individual items. The right bar
+  holds the summary. A status bar shows the image name, the candidate and finalist counts, and how
+  long each step took.
+- **Clicking a marking on the image** flips it: a finalist becomes rejected, a rejected candidate
+  becomes a finalist (starred), and a marked candidate goes back to what the filters say.
 - **Filters are live dials.** Every check in `nor3.CHECKS`, the nucleus rule (N) and
   one-pixel-per-NoR (J) is a control that can be switched off. Each of its parameters is a dial, and
   every marking on the image follows it at once. A check added to `CHECKS` becomes a control with
   no page change.
 - **Detection settings are dials too.** They re-run the finder, and the page says that this takes
-  time.
+  time. Each finder names its main settings (its function's `MAIN`), shown first; every setting is
+  under a collapsed Advanced box.
 - **All finders are offered.** Traffic light is the default.
 - **The blue mask is only a filter.** No finder on the page blanks nuclei before finding.
 - **The list and the summary.** Every passing NoR is shown cropped, with its measurements, and
   the measurements are summarised below the list. A starred candidate stays in the list whatever
-  the filters say.
+  the filters say. A candidate the user removes stays in the list, greyed out, and is left out of
+  the totals.
+- **Fixed numbers.** Each candidate keeps one number, top to bottom, for as long as a detection
+  lasts. Filters never renumber candidates.
+- **Remembered marks.** Stars and removals are saved in the browser per file name and finder, tied
+  to each candidate's position.
+- **Visible waiting.** While Python loads and while a finder runs, the page shows a spinner and
+  the elapsed time.
 - **Remembered settings.** Filter settings persist in the browser across images, visits and
   days, and one button restores the defaults.
 - **Only our code is fetched fresh.** Third-party code (Pyodide, its packages, vendored wheels)

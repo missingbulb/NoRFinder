@@ -116,6 +116,10 @@ def segment(caspr, nav, bm, p=P):
     return cands, dict(unit=unit, n_red=nr)
 
 
+# the settings the page shows first for this finder; the rest sit under Advanced
+segment.MAIN = ('green_frac', 'red_frac', 'touch', 'reach_u')
+
+
 # Checks that need two greens; each returns True when the candidate FAILS it.
 CHECKS = {
     'not in a line':  lambda c, p: (c['opp_deg'] < p['min_opposite']
@@ -393,6 +397,9 @@ def segment_walk(caspr, nav, bm, p=P2):
     return cands, dict(unit=unit, n_red=len(sy))
 
 
+segment_walk.MAIN = ('green_frac', 'red_frac', 'seed_smooth', 'strip', 'bend', 'max_green_u')
+
+
 # ---------------------------------------------------------------- "walk, land, colour in" candidates
 # Every size here is in units of the image's own green length (`unit`), never in pixels.
 P3 = dict(P, smooth_u=0.25, nms_u=1.7, strip_u=0.5, touch_u=2.0, reach_u=7.0,
@@ -560,6 +567,9 @@ def segment_fill(caspr, nav, bm, p=P3):
         cands.append(c)
     resolve_overlaps(cands, cn.shape)
     return cands, dict(unit=unit, n_red=len(sy))
+
+
+segment_fill.MAIN = ('green_frac', 'red_frac', 'smooth_u', 'half', 'bend', 'reach_u')
 
 
 PINK, BLUE = (255, 105, 200), (0, 140, 255)
