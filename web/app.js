@@ -96,7 +96,7 @@ function onWorker(m) {
     const sel = $("#finder");
     sel.innerHTML = Object.entries(m.finders).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
     sel.disabled = false; busy(false);
-    st.about = m.about; st.times.load = m.secs;
+    st.about = m.about; st.times.load = m.secs; st.help = Object.values(m.about)[0].help;
     $("#file").disabled = false; $("#file-label").classList.remove("disabled");
     buildDetect(); useFilters(sel.value); statusBar();
     status("Ready. Load an image.");
@@ -249,6 +249,12 @@ function result(i) {
 const reasonOf = (k) => (k === "removed by you" ? { letter: "X", color: [255, 255, 255], text: "removed by you" } : st.reasons[k]);
 
 // ---------- controls ----------
+const esc = (t) => String(t).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+// a small ? beside a setting; hovering or focusing it shows what the setting does
+const helpIcon = (name) => {
+  const t = st.help && st.help[name];
+  return t ? `<span class="help" tabindex="0" role="note" aria-label="${esc(t)}" data-help="${esc(t)}">?</span>` : "";
+};
 function paramRange(name, v) {
   if (/opposite|axis_dev|deg/.test(name)) return [0, 180, 1];
   if (v <= 1) return [0, 1, 0.01];
@@ -280,7 +286,7 @@ function buildFilters() {
     for (const name of Object.keys(f.params)) {
       const [lo, hi, step] = paramRange(name, st.defaults[name]);
       const p = document.createElement("div"); p.className = "param";
-      p.innerHTML = `<span class="name">${name} <span class="def">(ours: ${st.defaults[name]})</span></span>
+      p.innerHTML = `<span class="name">${name} ${helpIcon(name)} <span class="def">(ours: ${st.defaults[name]})</span></span>
         <input type="range" min="${lo}" max="${hi}" step="${step}" data-p="${name}"><input type="number" step="any" data-p="${name}">`;
       el.append(p);
     }
@@ -301,11 +307,11 @@ function buildFilters() {
 function buildDetect() {
   const finder = $("#finder").value, about = st.about[finder];
   const defs = about.detection_params, vals = (st.detectValues[finder] ||= { ...defs });
-  $("#finder-note").textContent = about.exact_refilter ? "" : "Picks between alternatives using the filters: after a filter change, find again for its exact result.";
+  $("#finder-note").textContent = about.about + (about.exact_refilter ? "" : " It picks between alternatives using the filters, so after a filter change, find again for its exact result.");
   const row = (k) => {
     const def = defs[k], el = document.createElement("label"); el.className = "dparam"; el.dataset.k = k;
     const kind = typeof def === "boolean" ? "checkbox" : typeof def === "number" ? "number" : "text";
-    el.innerHTML = `<span class="name">${k}</span><input type="${kind}" ${kind === "number" ? 'step="any"' : ""} data-k="${k}">`;
+    el.innerHTML = `<span class="name">${k} ${helpIcon(k)}</span><input type="${kind}" ${kind === "number" ? 'step="any"' : ""} data-k="${k}">`;
     const inp = el.querySelector("input");
     if (kind === "checkbox") inp.checked = vals[k]; else inp.value = kind === "text" ? JSON.stringify(vals[k]) : vals[k];
     inp.oninput = inp.onchange = () => {
@@ -484,6 +490,16 @@ function tip(e) {
   t.style.left = Math.min(e.clientX + 14, innerWidth - 330) + "px"; t.style.top = e.clientY + 14 + "px";
 }
 $("#overlay").addEventListener("mousemove", tip);
+function helpTip(e) {
+  const h = e.target.closest && e.target.closest(".help"), t = $("#tip");
+  if (!h) return;
+  const r = h.getBoundingClientRect();
+  t.textContent = h.dataset.help; t.hidden = false;
+  t.style.left = Math.min(r.right + 8, innerWidth - 330) + "px"; t.style.top = r.top + "px";
+}
+const hideHelp = (e) => { if (e.target.closest && e.target.closest(".help")) $("#tip").hidden = true; };
+document.addEventListener("mouseover", helpTip); document.addEventListener("focusin", helpTip);
+document.addEventListener("mouseout", hideHelp); document.addEventListener("focusout", hideHelp);
 $("#overlay").addEventListener("mouseleave", () => ($("#tip").hidden = true));
 
 $("#file").onchange = async (e) => {

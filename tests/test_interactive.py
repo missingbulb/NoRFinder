@@ -47,8 +47,19 @@ def test_each_finder_names_its_main_settings():
         assert fn.MAIN and list(fn.MAIN) == d['main_params'], (f, fn.MAIN, d['main_params'])
 
 
+def test_every_finder_and_setting_is_explained():
+    # the page shows a finder's ABOUT under the picker and a ? with HELP beside every setting
+    for f in interactive.FINDERS:
+        d = interactive.describe(f)
+        assert d['about'], f
+        shown = set(d['detection_params']) | {n for fl in d['filters'] for n in fl['params']}
+        missing = shown - set(d['help'])
+        assert not missing, (f, sorted(missing))
+
+
 def main():
     test_every_parameter_a_check_reads_is_a_control()
+    test_every_finder_and_setting_is_explained()
     test_each_finder_names_its_main_settings()
     if not os.path.exists(TIF):
         print('reference slide missing: only the static test ran'); return
