@@ -16,3 +16,6 @@ __pycache__/
 # browser check (detection/browser), npm install output
 /detection/browser/node_modules/
 /detection/browser/package*.json
+# the page's vendored wheels (python3 web/build.py) and the Pages deploy's assembled site
+/web/vendor/
+/_site/
