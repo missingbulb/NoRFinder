@@ -247,7 +247,9 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   no page change.
 - **Detection settings are dials too.** They re-run the finder, and the page says that this takes
   time. Each finder names its main settings (its function's `MAIN`), shown first; every setting is
-  under a collapsed Advanced box.
+  under a collapsed Advanced box. Each finder shows a few sentences on how it works, and every setting and
+  filter value has a ? that says what it does (`detection/finder_help.py`; the test fails when one
+  is missing).
 - **All finders are offered.** Traffic light is the default.
 - **The blue mask is only a filter.** No finder on the page blanks nuclei before finding.
 - **The list and the summary.** Every passing NoR is shown cropped, with its measurements, and

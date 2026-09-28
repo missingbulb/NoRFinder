@@ -19,7 +19,7 @@ own values it returns the finder's own result.
 """
 import ast, inspect, json, math
 import numpy as np
-import nor3, naive_nor as nn_, nor_lab
+import nor3, naive_nor as nn_, nor_lab, finder_help
 from nor3 import CHECKS, ORDER, REASONS, REASON_TEXT, judge, resolve_overlaps
 
 # the finders the page offers, first = default
@@ -82,7 +82,8 @@ def describe(finder):
     fn, P = nor_lab.finders()[finder]
     dp = detection_params(P)
     return dict(filters=filters(P), detection_params=dp, main_params=[k for k in getattr(fn, 'MAIN', ()) if k in dp],
-                exact_refilter=finder in EXACT_REFILTER, reasons=reasons())
+                exact_refilter=finder in EXACT_REFILTER, reasons=reasons(),
+                about=finder_help.ABOUT.get(finder, ''), help=finder_help.HELP)
 
 
 def reasons():
