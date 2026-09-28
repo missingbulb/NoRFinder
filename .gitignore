@@ -12,3 +12,7 @@ __pycache__/
 
 # detection processing artifacts (image cache, perf timings), never committed
 /detection/.cache/
+
+# browser check (detection/browser), npm install output
+/detection/browser/node_modules/
+/detection/browser/package*.json
