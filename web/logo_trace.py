@@ -37,4 +37,4 @@ for a, b, colour in MARKS:
     m = np.zeros_like(ink); m[:, a * S:b * S] = ink[:, a * S:b * S]
     paths.append(path(m, colour))
 with open(os.path.join(HERE, 'logo.svg'), 'w') as f:
-    f.write(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {(x1 - x0) / S:.0f} {(y1 - y0) / S:.0f}">' + ''.join(paths) + '</svg>\n')
+    f.write(f'<svg xmlns="http://www.w3.org/2000/svg" width="{(x1 - x0) / S:.0f}" height="{(y1 - y0) / S:.0f}" viewBox="0 0 {(x1 - x0) / S:.0f} {(y1 - y0) / S:.0f}">' + ''.join(paths) + '</svg>\n')

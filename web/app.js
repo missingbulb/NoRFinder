@@ -449,7 +449,7 @@ function renderSummary(passes, counts) {
   const reasons = Object.entries(counts).sort((a, b) => b[1] - a[1])
     .map(([k, n]) => `<span style="color:rgb(${reasonOf(k).color})">${reasonOf(k).letter}</span> ${reasonOf(k).text}: ${n}`).join(" · ");
   const scale = st.um ? `Scale from the file: ${st.um.toFixed(4)} µm per pixel.` : "No scale in the file, so lengths are in pixels.";
-  $("#summary").innerHTML = `<div>${passes.length} passing NoRs. ${scale}</div>${tbl}
+  $("#summary").innerHTML = `<div>${passes.length} passing NoRs. ${scale}</div><div class="tbl">${tbl}</div>
     <div class="hists">${rows.map(([l, s]) => hist(l, s)).join("")}</div><div class="reasons">Rejected: ${reasons || "none"}</div>`;
 }
 
@@ -529,6 +529,8 @@ $("#theme").onclick = () => {
 };
 $("#theme-name").textContent = theme() === "dark" ? "Light" : "Dark";
 showView("image");
+// the release writes the version into the element's title; show it as text
+$("#sb-version").textContent = "v" + $("#sb-version").title.replace(/^version /, "");
 
 $("#csv").onclick = () => {
   const passes = st.cands.filter((c) => c.el && result(c.i) === null).sort((a, b) => st.numbers.get(a.i) - st.numbers.get(b.i));

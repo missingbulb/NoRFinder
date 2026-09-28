@@ -13,8 +13,10 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   const u = new URL(req.url);
   const own = u.origin === self.location.origin && !u.pathname.includes("/vendor/");
-  if (req.method !== "GET" || own) return;
-  e.respondWith(cached(req));
+  if (req.method !== "GET") return;
+  // own files are revalidated on every load: from the browser's plain HTTP cache a fresh page could
+  // arrive with the previous release's stylesheet or scripts
+  e.respondWith(own ? fetch(req, { cache: "no-cache" }) : cached(req));
 });
 
 async function cached(req) {

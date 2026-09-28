@@ -3,6 +3,8 @@
 @../shared/packs/claudinite-growth/RULES.md
 @../shared/packs/claudinite-lifecycle/RULES.md
 @../shared/packs/github-pages/RULES.md
+@../shared/packs/html/RULES.md
+@../shared/packs/public-website/RULES.md
 @../shared/packs/research-project/RULES.md
 @../local/packs/nor-finder/RULES.md
 @../temp/packs/current_user/RULES.md

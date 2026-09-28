@@ -237,8 +237,8 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   holds the image (load, its name, a checkbox per colour layer with blue off at first), the
   candidates finder and the filters. The main area has a toolbar (zoom, overlay options, and a big
   button that switches views) over two views: the image and the individual items. The right bar
-  holds the summary. A status bar shows the image name, the candidate and finalist counts, and how
-  long each step took.
+  holds the summary. A status bar shows the image name, the candidate and finalist counts, how
+  long each step took, and the site's version (stamped by each release).
 - **Clicking a marking on the image** flips it: a finalist becomes rejected, a rejected candidate
   becomes a finalist (starred), and a marked candidate goes back to what the filters say.
 - **Filters are live dials.** Every check in `nor3.CHECKS`, the nucleus rule (N) and
