@@ -18,7 +18,7 @@
 // fit the diff that arrived.
 //
 // THE VOCABULARY IS EXTENSIBLE AS DATA. Built-in diff classes live here; a pack
-// adds its own by shipping a `merge-rules.json` beside its `pack.mjs` — named
+// adds its own by shipping a `merge-rules.json` beside its manifest - named
 // path/kind/edit-shape matchers, validated at load, colliding loudly. A policy
 // then names any rule, built-in or declared, plus the inline `under:<dir>` scope
 // that carries its own argument, and an unknown name FAILS CLOSED: a policy this

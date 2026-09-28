@@ -129,26 +129,6 @@ On a whole-repo sweep with a clean config, an exception that matched **nothing**
 
 (The runner's generic top-level `accept` — `{ "rule": "barrier", "path": "...", "reason": "..." }` — still works too, retiring *every* barrier finding in a file. Prefer a rule's own `except`: it is pinned per target and staleness-audited, where the generic accept is a silent whole-file waiver.)
 
-## Composing a barrier from another pack
-
-A pack ships a *fixed* barrier — no project config needed — by **declaring** the basics pack and **contributing** the barrier as data on its manifest, never by importing its code (`pack-independence`): name `basics` in the pack's `requires` and carry the barrier under `contributes`:
-
-```js
-// packs/<somepack>/pack.mjs
-export default {
-  id: 'somepack',
-  requires: ['basics'],
-  contributes: {
-    barriers: [{
-      id: 'requirements-isolation',
-      edges: [{ from: 'dev/requirements', to: '*', reason: 'requirements is a pure sink' }],
-    }],
-  },
-};
-```
-
-Each contribution becomes a **first-class rule under its own id** - per-rule overrides (`rules: { "requirements-isolation": "off" }`) and acceptances address it directly, and `description`/`why`/`doc`/`on_fail`/`crossingRemedy`/`crossingExcuse` ride the contribution. The two `crossing*` fields own the halves of a crossing finding's `fix`: `crossingRemedy` replaces the default "route shared code through …" opener where relocating the dependency isn't the way out (a one-sided isolation edge has no shared folder to route through), and `crossingExcuse` names the excusal lever that actually works for a pack-shipped edge. Write the remedy into one of these, not into `description` - a rendered finding carries `what`/`why`/`fix`/`doc` and never the rule's description. `gateDir` is the one declarative gate: the rule stays inert until that directory exists in the repo under test (how the baseline's consumer-isolation wall stays quiet pre-flip). The runner hands the baseline pack the active-pack list (`contributedRules` on its manifest, the generic core seam), and [barriers.mjs](barriers.mjs) builds the rules - an undeclared pack contributes nothing, exactly as its own rules would not run. A consumer's local pack contributes the same way. A helper a pack needs beside a barrier (path containment, say) lives in the engine lib (`engine/checks/helpers/path-containment.mjs`), never in the baseline pack's modules.
-
 ## The check
 
 | Check | Severity | Reason | Enforcement |

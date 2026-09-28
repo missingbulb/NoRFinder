@@ -20,7 +20,7 @@ import { localSignalContext } from '../world/git.mjs';
 // The collectors and the ctx builder, loaded on the first collection and shared by
 // every one after it. Lazy rather than a static or top-level-awaited import because
 // a module under `packs/` may do no work while it is being evaluated: discovery
-// imports every `pack.mjs` before activation is consulted.
+// imports every module manifest before activation is consulted.
 let modulesPromise = null;
 function signalModules() {
   modulesPromise ??= Promise.all([import('./index.mjs'), import('./context.mjs')]);

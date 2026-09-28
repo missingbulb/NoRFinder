@@ -2,7 +2,7 @@
 // Adoption interviews — the mandatory questions a pack asks when a project
 // adopts it. A pack that needs the project's INTENT before it can provide value
 // (a research wiki with no subject is a silent no-op) declares its questions in an
-// optional `questions` field on its pack.mjs:
+// optional `questions` field on its manifest:
 //
 //   questions: [{ id: 'goals', prompt: '…', distill: '…' }]
 //

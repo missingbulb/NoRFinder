@@ -90,7 +90,7 @@ session and CI pass. Consult the machine-readable rule catalog
 doc pointer — it lists the active local packs' own checks too) alongside the prose corpus, and
 when a check covers the item, **quote the rule id** where you'd otherwise quote a canon line.
 This cuts both ways: a **local pack's own check** is redundant once a canon check enforces the
-same rule — prune the local `.mjs` (and drop it from `pack.mjs` + its fixture) exactly as you'd
+same rule - prune the local `.mjs` (and its fixture) exactly as you'd
 prune a duplicated prose line. The keep-test above is unchanged.
 
 ## Discipline

@@ -30,7 +30,7 @@ The session-start note names the login used and the directory copied, or why not
 
 ## The pack a person brings
 
-`<path>/<login>/` in the store is an ordinary pack directory - `RULES.md`, optional `pack.mjs`,
+`<path>/<login>/` in the store is an ordinary pack directory - `RULES.md`, optional `pack.json`,
 `skills/<name>/SKILL.md`, `worldRules/`, `declared-checks.json`, `provenance/`. At session start
 [`copy_user_pack_to_repo.mjs`](copy_user_pack_to_repo.mjs) copies it into
 `.claudinite/temp/packs/current_user/`, the engine's session pack root, where the same loader that

@@ -767,7 +767,7 @@ function validateEntryShapes(spec, where) {
       }
     }
     if (a.requirePathExists !== undefined && typeof a.requirePathExists !== 'string') {
-      throw new Error(`${where}: "requirePathExists" is a path template such as "packs/{value}/pack.mjs"`);
+      throw new Error(`${where}: "requirePathExists" is a path template such as "packs/{value}/pack.json"`);
     }
     if (a.requireTrackedPathMatching !== undefined &&
         (typeof a.requireTrackedPathMatching !== 'string' || !RE_FORM.test(a.requireTrackedPathMatching))) {
@@ -1785,14 +1785,25 @@ function visit(ctx, subs, path, text, roles = null) {
   }
 }
 
-function results(ctx) {
+// One rule's findings out of the shared sweep. The sweep serves the rules the runner
+// planned (`ctx.plannedRules`, matched by spec, since a pack may hold a copy of the
+// compiled rule), or every compiled rule where no runner planned; a rule outside the
+// plan is swept on its own when asked.
+function results(ctx, rule) {
   let res = scans.get(ctx);
-  if (res) return res;
-  res = new Map();
-  scans.set(ctx, res);
+  if (!res) {
+    res = new Map();
+    scans.set(ctx, res);
+    const planned = ctx.plannedRules && new Set([...ctx.plannedRules].map((r) => r.spec).filter(Boolean));
+    sweep(ctx, planned ? REGISTRY.filter((r) => planned.has(r.spec)) : REGISTRY, res);
+  }
+  if (!res.has(rule)) sweep(ctx, [rule], res);
+  return res.get(rule);
+}
 
+function sweep(ctx, rules, res) {
   const jobs = [];
-  for (const rule of REGISTRY) {
+  for (const rule of rules) {
     const out = [];
     res.set(rule, out);
     if (!relevant(ctx, rule.spec.relevantWhen)) continue;
@@ -1873,7 +1884,6 @@ function results(ctx) {
       j.out.length = 0;
     }
   }
-  return res;
 }
 
 // Where a declaration says RegExp: keys reading `/body/flags` strings. The two
@@ -2030,7 +2040,7 @@ export function patternRule(declaration, { selfExclude = null } = {}) {
       if (spec.scope === 'action') return actionFindings(rule, input);
       const work = spec.scope === 'work' ? input : null;
       if (work && spec.whenReplyClassIncludes !== undefined && !replyGateOpen(work, spec.whenReplyClassIncludes)) return [];
-      const scanned = results(work ? work.ctx : input).get(rule);
+      const scanned = results(work ? work.ctx : input, rule);
       return work ? [...scanned, ...workFindings(rule, work)] : scanned;
     },
   };

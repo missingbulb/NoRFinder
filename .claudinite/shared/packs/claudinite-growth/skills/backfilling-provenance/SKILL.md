@@ -18,7 +18,7 @@ so the sections it prints without a draft under them are the run's work, not its
 ## The run, per pack
 
 0. **Load [changing-pack-elements](../changing-pack-elements/SKILL.md) first.** The run edits
-   `provenance/`, `README.md` and `pack.mjs`, each of which forces it - but `apply` writes
+   `provenance/`, `README.md` and the manifest, each of which forces it - but `apply` writes
    through the tool rather than `Edit`, and the pre-edit guard reads only `Edit`/`Write`, so
    nothing holds the run until the Stop hook, with every file already written.
 1. **Take one pack** and list what is owed: `node packs/claudinite-growth/provenance.mjs
@@ -119,7 +119,7 @@ so the sections it prints without a draft under them are the run's work, not its
    left behind. The list counts each section's tables separately, and a table is weighed
    like any other prose rather than skipped: a table of evidence or of per-member findings
    is history and moves onto the entries it evidences, while a catalog of what the pack
-   carries stays. In one pack the single largest piece of history was a table. The header comment of `pack.mjs` is the pack-level
+   carries stays. In one pack the single largest piece of history was a table. The header comment of a `pack.mjs` manifest is the pack-level
    record `_pack.md` is written from - why the pack exists, why it fingerprints as it does
    or not at all, what it carries and why - so its decisions become `_pack` entries and the
    header keeps what a reader of the code needs: what the pack is, in a few lines. Report
@@ -134,7 +134,7 @@ so the sections it prints without a draft under them are the run's work, not its
     the tracking issue. One pack per pull request is the default, and a pack whose elements
     arrived across several pull requests stays one; what a run costs is the reading, so
     packs whose history is one pull request apiece batch into one. Predict the automerge
-    policy as each pack's `provenance/`, `README.md` and `pack.mjs` - the manifest trim is
+    policy as each pack's `provenance/`, `README.md` and manifest - the manifest trim is
     part of the method - and name the packs rather than reaching for a `packs/**` wildcard,
     which stops the policy being a prediction of the diff.
 

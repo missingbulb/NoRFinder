@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // World-scope conformance runner (see DESIGN.md): the rules that audit repo
 // state as it exists now, plus the pack-agnostic settings/load integrity
-// diagnostics (malformed config, an unknown pack, a broken pack.mjs). Rules that
+// diagnostics (malformed config, an unknown pack, a broken pack manifest). Rules that
 // judge the current change (`scope: 'work'`) run in check_the_work.mjs, which
 // this file shares no code with — only the scope-blind mechanism helpers
 // (run-active-pack-rules.mjs, report-findings.mjs). It names NO pack: adoption
@@ -37,7 +37,7 @@ const value = (flag) => (args.includes(flag) ? args[args.indexOf(flag) + 1] : nu
 // this way; this closes the disagreement for every caller, not just that one.
 const root = value('--root') || process.env.CLAUDE_PROJECT_DIR || process.cwd();
 
-// A pack that fails to load — a pack.mjs whose import throws, a rule module that
+// A pack that fails to load - a manifest that will not read, a rule module that
 // won't load, an unparseable declared-checks.json — is absent from `packs`, with
 // the reason on `errors`. So a caller reading one without the other cannot tell a
 // pack that was never there from one that did not load: it emits a short answer
@@ -108,7 +108,7 @@ async function sweep() {
   // Settings validity is checked at load: malformed JSON, an unknown
   // property, and a wrong pack name are all equally settings errors. loadConfig
   // reports the first two; the runner adds unknown pack names (only it holds the
-  // registry) and broken/duplicate local pack.mjs faults.
+  // registry) and broken/duplicate local pack manifest faults.
   const findings = [];
   for (const e of ctx.config.errors) findings.push(configError(e.what, e.fix));
   for (const e of packErrors) findings.push(configError(e.what, e.fix));
@@ -126,12 +126,9 @@ async function sweep() {
   // other active-pack rules; a malformed `questions` field arrives as a load fault
   // in packErrors above. Neither names a pack here.)
 
-  // The world rules: everything not scoped to the work. A broken contributedRules
-  // seam is a config-level fault surfaced here (the world runner owns diagnostics).
+  // The world rules: everything not scoped to the work.
   findings.push(...runActivePackRules(ctx, packs, {
     includeRule: (rule) => rule.scope !== 'work' && rule.scope !== 'action',
-    onContributeError: (pack, e) => findings.push(configError(
-      `the "${pack.id}" pack's contributedRules failed: ${e.message}`, 'fix the pack manifest, or the contribution it interprets')),
   }));
   // No timing record here: a clean world run prints nothing and exits 0, which is
   // the contract its callers read silence against. The Stop hook's own sweep

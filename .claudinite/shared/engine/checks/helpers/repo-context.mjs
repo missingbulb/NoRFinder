@@ -45,10 +45,9 @@ const FETCH_WINDOW_MS = 5 * 60_000;
 // A remote-tracking base ref is only as fresh as the last fetch, and a cloud session's
 // clone freezes it at container-creation time — so every commit the base branch gained
 // since lands inside `mergeBase..HEAD` and gets billed to the work. That is a wrong
-// verdict, not a stale one: the delta rules (squash-merge-history above all, a *blocking*
-// rule) report other people's commits as introduced by this change, and `--changed`
-// widens to files the change never touched. Refreshing the ref once per run is what makes
-// "the work" mean the work.
+// verdict, not a stale one: the delta rules report other people's commits as introduced by
+// this change, and `--changed` widens to files the change never touched. Refreshing the
+// ref once per run is what makes "the work" mean the work.
 //
 // Best-effort by construction — no network, no remote, a lock held, a slow server: the
 // fetch fails or times out and the run continues against the ref as it stands, exactly as
@@ -254,7 +253,7 @@ export const DISPATCH_MODES = ['queue'];
 
 // The properties a `packs` entry object may carry: the pack's parameters
 // (`config`), its adoption-interview answers (`answers` — the owner's verbatim
-// responses to the questions the pack declares on its pack.mjs, keyed by
+// responses to the questions the pack declares on its manifest, keyed by
 // question id; read by the adoption skill's interview machinery), and the rule overrides / acceptances that
 // exist BECAUSE this pack is declared (`rules`, `accept` — they may name any
 // rule; the entry is their provenance). `via` is written by
@@ -624,6 +623,7 @@ export function buildContext({ root, mode = 'changed', baseOverride = null, tran
   // and each readBase is otherwise a git subprocess.
   const readCache = new Map();
   const readBaseCache = new Map();
+  const baseTree = once(() => (mergeBase() ? lines(gitTry(root, 'ls-tree', '-r', '--name-only', mergeBase())) : []));
 
   // The work-scoping fields are accessors over the memos above; `root`, `mode`,
   // `baseRef`, `tracked`, `untracked` and `config` stay plain values, being either
@@ -670,6 +670,35 @@ export function buildContext({ root, mode = 'changed', baseOverride = null, tran
       if (!mergeBase()) return null;
       if (!readBaseCache.has(path)) readBaseCache.set(path, gitTry(root, 'show', `${mergeBase()}:${path}`));
       return readBaseCache.get(path);
+    },
+
+    // Every path at the scoping base, in one subprocess where asking readBase path by
+    // path costs one each; empty if no base resolves.
+    listBase() { return baseTree(); },
+
+    // Fill readBase's cache for many paths in one subprocess. A caller about to read
+    // a whole tree at the base pays one `cat-file --batch` instead of a `show` per file.
+    prefetchBase(paths) {
+      if (!mergeBase()) return;
+      const want = [...new Set(paths)].filter((p) => !readBaseCache.has(p) && !p.includes('\n'));
+      if (!want.length) return;
+      const r = spawnSync('git', ['cat-file', '--batch'], {
+        cwd: root, input: want.map((p) => `${mergeBase()}:${p}\n`).join(''), maxBuffer: 1024 * 1024 * 1024,
+      });
+      if (r.status !== 0) return;
+      const out = r.stdout;
+      let at = 0;
+      for (const path of want) {
+        const eol = out.indexOf(10, at);
+        if (eol < 0) return;
+        const header = out.toString('utf8', at, eol);
+        at = eol + 1;
+        const m = /^[0-9a-f]+ (\w+) (\d+)$/.exec(header);
+        if (!m) { if (header.endsWith(' missing')) readBaseCache.set(path, null); continue; }
+        const size = Number(m[2]);
+        if (m[1] === 'blob') readBaseCache.set(path, out.toString('utf8', at, at + size));
+        at += size + 1;
+      }
     },
 
     // Added lines of one file relative to the scoping base (untracked file = every line).

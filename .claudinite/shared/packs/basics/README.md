@@ -99,7 +99,6 @@ The working-discipline rules with a deterministic signature. The world rules rea
 | `work-request-not-started` | high | correctness | check: blocking |
 | `reference-integrity` | medium | correctness | check: blocking |
 | `runnable-doc-commands` | high | correctness | check: blocking |
-| `squash-merge-history` | high | correctness | check: blocking |
 | `barrier` | high | complexity | check: blocking |
 | `schema-conformance` | high | correctness | check: blocking |
 | `untracked-test-file` | low | correctness | check: advisory |

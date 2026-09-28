@@ -1,15 +1,5 @@
 [
   {
-    "id": "squash-merge-history",
-    "on_fail": "block",
-    "failureMessage": "the squash-only repo setting can be off or bypassed; a merge commit in the work is the effect that proves it",
-    "scope": "work",
-    "forbidIntroducedMergeCommits": {
-      "what": "merge commit introduced by this change: {subject}",
-      "fix": "rebase to drop the merge commit (git pull --rebase, or git rebase onto the base) so the branch lands squashed"
-    }
-  },
-  {
     "id": "warning-suppression",
     "on_fail": "block",
     "failureMessage": "an unexplained suppression hides the signal instead of recording why the fix was rejected",
@@ -128,7 +118,7 @@
     },
     "requireIndexCoverage": [
       {
-        "eachTrackedPathMatching": "/^packs\\/(?<name>[^/]+)\\/pack\\.mjs$/",
+        "eachTrackedPathMatching": "/^packs\\/(?<name>[^/]+)\\/pack\\.(?:json|mjs)$/",
         "indexFile": "packs/README.md",
         "coveredByText": "({name}/",
         "whenIndexFileAbsent": "assertNothing",

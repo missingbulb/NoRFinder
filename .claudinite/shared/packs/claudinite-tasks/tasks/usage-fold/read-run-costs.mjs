@@ -31,7 +31,7 @@
 // read costs that run its minutes and nothing else, and a log that cannot be read
 // costs that tick its cost record. Neither takes the run counts down with it.
 
-import { makeReader as makeJsonReader, readRuns, WATCHED_WORKFLOWS } from '../usage-fold/read-runs.mjs';
+import { makeReader as makeJsonReader, readRuns, WATCHED_WORKFLOWS } from './read-runs.mjs';
 import { parseRunCosts } from '../../src/items/run-record.mjs';
 
 const API = process.env.GITHUB_API_URL || 'https://api.github.com';
@@ -55,7 +55,7 @@ export function makeReader({ token = process.env.GITHUB_TOKEN, api = API, fetchI
   const headers = {
     accept: 'application/vnd.github+json',
     'x-github-api-version': '2022-11-28',
-    'user-agent': 'claudinite-tasks-usage-fold',
+    'user-agent': 'claudinite-usage-fold',
     ...(token ? { authorization: `Bearer ${token}` } : {}),
   };
   const { json } = makeJsonReader({ token, api, fetchImpl });

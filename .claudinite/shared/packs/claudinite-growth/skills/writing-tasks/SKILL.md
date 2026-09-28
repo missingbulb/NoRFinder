@@ -131,7 +131,7 @@ outage self-heals by looking at the queue rather than by replaying a ledger.
   and the test beside it, where intersecting a code class would park the run the
   moment its own test file joined the diff. Reach for a bare kind class only
   where the task genuinely writes repo-wide, as a comment sweep does. A pack
-  declares its own class (a `merge-rules.json` beside its `pack.mjs`) only when a
+  declares its own class (a `merge-rules.json` beside its manifest) only when a
   task knows a finer boundary than a class or a folder can state — a file-name
   matcher, or a grant like the mount rewrite's. A `none` task runs no agent, so
   `agent_instructions` is not applicable and is omitted. The
