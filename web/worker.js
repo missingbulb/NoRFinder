@@ -1,6 +1,6 @@
 // Runs the repo's Python finders (detection/interactive.py) under Pyodide, off the page's thread.
 // Messages in: open {name, bytes}, detect {finder, overrides}, refilter {spec, seq}.
-// Messages out: progress {text}, ready, opened {H, W, images}, detected {meta, seg}, filtered {fails, seq}, error {text}.
+// Messages out: progress {text}, ready {finders, about}, opened {H, W, images}, detected {meta, seg}, filtered {fails, seq}, error {text}.
 // A module worker: its imports are fetched with CORS, so the service worker can cache them.
 const PYODIDE = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/";
 
@@ -42,7 +42,8 @@ os.environ['NORFINDER_SRC'] = '/py'
 import interactive, json
 `);
   const finders = JSON.parse(py.runPython("json.dumps(interactive.FINDERS)"));
-  postMessage({ type: "ready", finders, secs: (performance.now() - t0) / 1000 });
+  const about = JSON.parse(py.runPython("json.dumps({f: interactive.describe(f) for f in interactive.FINDERS})"));
+  postMessage({ type: "ready", finders, about, secs: (performance.now() - t0) / 1000 });
 }
 
 const booted = boot().catch((e) => postMessage({ type: "error", text: String(e) }));

@@ -30,6 +30,8 @@ _Last updated 2026-09-28._
   live. It runs `interactive.py` over the unchanged finders under Pyodide. It deploys to GitHub
   Pages through the github-pages pack. Preview it locally with `python3 web/build.py` and then
   `python3 -m http.server` from the repo root, opening `/web/`.
+  A finder's `MAIN` tuple names the settings the page shows first; adding a finder to
+  `interactive.FINDERS` with a `MAIN` is all the page needs.
 
 ## Owner preferences that are fixed (Ariel)
 - **The review render is an API.** `render_std.py SPEC OUTDIR` draws every candidate with a

@@ -39,8 +39,17 @@ def test_every_parameter_a_check_reads_is_a_control():
         assert p.read == set(cp[k]), (k, p.read, cp[k])
 
 
+def test_each_finder_names_its_main_settings():
+    # the page shows these first; each must be a real detection parameter of that finder
+    for f in interactive.FINDERS:
+        fn, P = nor_lab.finders()[f]
+        d = interactive.describe(f)
+        assert fn.MAIN and list(fn.MAIN) == d['main_params'], (f, fn.MAIN, d['main_params'])
+
+
 def main():
     test_every_parameter_a_check_reads_is_a_control()
+    test_each_finder_names_its_main_settings()
     if not os.path.exists(TIF):
         print('reference slide missing: only the static test ran'); return
     s = interactive.Session(TIF)

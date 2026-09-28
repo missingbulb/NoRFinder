@@ -5,6 +5,7 @@
 const $ = (s) => document.querySelector(s);
 const SVGNS = "http://www.w3.org/2000/svg";
 const STORE = "nor-filter-settings-v1"; // {values: {param: number}, off: [filter key]}; only what the user changed
+const THEME = "nor-theme"; // "dark" | "light"; absent = follow the system
 const MARKS = "nor-marks-v1:"; // + file name + "|" + finder: {"x,y": "in" | "out"}, the user's keepers and removals
 const MEASURES = [
   ["length", "length", true], ["red_length", "red length", true], ["width", "width", true],
@@ -14,8 +15,8 @@ const MEASURES = [
 const st = {
   worker: null, H: 0, W: 0, um: null, img: null, meta: null, seg: null, cands: [],
   fails: [], forced: new Map(), defaults: {}, values: {}, off: new Set(),
-  detectDefaults: {}, detectValues: {}, seq: 0, inflight: false, pending: false,
-  zoom: 2, fileName: "", numbers: new Map(),
+  about: {}, detectValues: {}, lastRun: null, filtersFor: null, seq: 0, inflight: false, pending: false,
+  zoom: 2, fileName: "", numbers: new Map(), times: {},
 };
 
 // ---------- saved filter settings ----------
@@ -59,6 +60,15 @@ function busy(on, text) {
   $("#busy-text").textContent = text || $("#status").textContent; $("#busy-time").textContent = "";
   st.busyTimer = setInterval(() => { $("#busy-time").textContent = ((Date.now() - st.busySince) / 1000).toFixed(0) + " s"; }, 500);
 }
+function statusBar() {
+  const t = st.times, parts = [];
+  if (t.load != null) parts.push(`Python ${t.load.toFixed(0)} s`);
+  if (t.open != null) parts.push(`image ${t.open.toFixed(1)} s`);
+  if (t.detect != null) parts.push(`finding ${t.detect.toFixed(1)} s`);
+  if (t.filter != null) parts.push(`filters ${t.filter.toFixed(0)} ms`);
+  $("#sb-times").textContent = parts.join(" · ");
+  $("#sb-file").textContent = st.fileName || "No image";
+}
 const fmt = (v, d = 2) => (v == null || !isFinite(v) ? "–" : Number(v).toFixed(d));
 
 // ---------- worker ----------
@@ -86,27 +96,34 @@ function onWorker(m) {
     const sel = $("#finder");
     sel.innerHTML = Object.entries(m.finders).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
     sel.disabled = false; busy(false);
-    status(`Ready (${m.secs.toFixed(0)} s to load). Open an image.`);
+    st.about = m.about; st.times.load = m.secs;
+    $("#file").disabled = false; $("#file-label").classList.remove("disabled");
+    buildDetect(); useFilters(sel.value); statusBar();
+    status("Ready. Load an image.");
   } else if (m.type === "opened") {
     st.H = m.H; st.W = m.W; st.um = m.um; const n = m.H * m.W;
     st.img = { r: m.images.subarray(0, n), g: m.images.subarray(n, 2 * n), b: m.images.subarray(2 * n, 3 * n), mask: m.images.subarray(3 * n, 4 * n) };
     drawBase(); $("#empty").hidden = true; $("#stage").hidden = false; setZoom(st.zoom);
-    detect({});
+    busy(false); st.times.open = m.secs; st.times.detect = st.times.filter = null; statusBar();
+    showView("image"); updateFind();
+    status("Image loaded. Press Find Candidates.");
   } else if (m.type === "detected") {
     busy(false);
-    onDetected(m.meta, m.seg);
-    status(`${m.meta.cands.length} candidates found in ${m.secs.toFixed(1)} s.` +
-      (m.meta.exact_refilter ? "" : " This finder picks between alternatives using the filters, so after a filter change press Re-detect for its exact result."));
+    st.times.detect = m.secs; st.lastRun = st.running; st.running = null;
+    onDetected(m.meta, m.seg); statusBar(); updateFind();
+    status(m.meta.exact_refilter ? "Done." : "This finder picks between alternatives using the filters, so after a filter change press Find Candidates again for its exact result.");
   } else if (m.type === "filtered") {
     st.inflight = false;
-    if (m.seq === st.seq) { st.fails = m.fails; $("#counts").dataset.ms = m.ms.toFixed(0); render(); }
+    if (m.seq === st.seq) { st.fails = m.fails; st.times.filter = m.ms; statusBar(); render(); }
     if (st.pending) { st.pending = false; refilter(); }
   }
 }
 
-function detect(overrides) {
-  $("#redetect").disabled = true; busy(true, "Finding candidates…");
-  st.worker.postMessage({ type: "detect", finder: $("#finder").value, overrides });
+function detect() {
+  const finder = $("#finder").value, overrides = detectOverrides(finder);
+  st.running = runKey(); $("#find").disabled = true; $("#find").classList.remove("shine");
+  busy(true, "Finding candidates…");
+  st.worker.postMessage({ type: "detect", finder, overrides });
 }
 
 function refilter() {
@@ -120,9 +137,10 @@ function refilter() {
 function drawBase() {
   const c = $("#base"); c.width = st.W; c.height = st.H;
   const ctx = c.getContext("2d"), im = ctx.createImageData(st.W, st.H), d = im.data;
-  const dapi = $("#show-dapi").checked, mask = $("#show-mask").checked, { r, g, b } = st.img, mk = st.img.mask;
+  const R = $("#show-r").checked, G = $("#show-g").checked, B = $("#show-b").checked;
+  const mask = $("#show-mask").checked, { r, g, b } = st.img, mk = st.img.mask;
   for (let i = 0, j = 0; i < r.length; i++, j += 4) {
-    d[j] = r[i]; d[j + 1] = g[i]; d[j + 2] = dapi ? b[i] : 0; d[j + 3] = 255;
+    d[j] = R ? r[i] : 0; d[j + 1] = G ? g[i] : 0; d[j + 2] = B ? b[i] : 0; d[j + 3] = 255;
     if (mask && mk[i]) { d[j] = d[j] * 0.6; d[j + 1] = d[j + 1] * 0.6; d[j + 2] = Math.max(d[j + 2], 150); }
   }
   ctx.putImageData(im, 0, 0);
@@ -171,15 +189,7 @@ function outline(c, blk, val) {
 
 function onDetected(meta, seg) {
   st.meta = meta; st.seg = seg; st.cards = new Map();
-  // filter values: our numbers, overlaid with what this browser saved
-  const saved = loadSaved();
-  st.defaults = {}; st.values = {};
-  for (const f of meta.filters) for (const [k, v] of Object.entries(f.params)) st.defaults[k] = v;
-  for (const k in st.defaults) st.values[k] = k in saved.values ? saved.values[k] : st.defaults[k];
-  st.off = new Set(saved.off.filter((k) => meta.filters.some((f) => f.key === k)));
-  if (!Object.keys(st.detectDefaults).length || st.detectFinder !== meta.finder) {
-    st.detectDefaults = meta.detection_params; st.detectValues = { ...meta.detection_params }; st.detectFinder = meta.finder;
-  }
+  if (st.filtersFor !== meta.finder) useFilters(meta.finder);
   st.cands = meta.cands.map((c) => {
     const blk = seg.subarray(c.off, c.off + c.h * c.w);
     let ty0 = c.h, tx0 = c.w, ty1 = -1, tx1 = -1;
@@ -189,12 +199,12 @@ function onDetected(meta, seg) {
     return { ...c, blk, bb: [c.x0 + tx0, c.y0 + ty0, c.x0 + tx1 + 1, c.y0 + ty1 + 1] };
   });
   // one number per candidate for as long as this detection lasts, top to bottom, whatever the filters do
-  const numbered = st.cands.filter((c) => c.bb[2] > c.bb[0] && (c.fail0 === null || meta.reasons[c.fail0]))
+  const numbered = st.cands.filter((c) => c.bb[2] > c.bb[0] && (c.fail0 === null || st.reasons[c.fail0]))
     .sort((a, b) => a.cy - b.cy || a.cx - b.cx);
   st.numbers = new Map(numbered.map((c, k) => [c.i, k + 1]));
   loadMarks();
-  buildOverlay(); buildFilters(); buildDetect();
-  $("#reset-filters").disabled = false; $("#csv").disabled = false;
+  buildOverlay();
+  $("#csv").disabled = false; $("#switch").disabled = false;
   refilter();
 }
 
@@ -236,7 +246,7 @@ function result(i) {
   if (f === "out") return "removed by you";
   return st.fails[i];
 }
-const reasonOf = (k) => (k === "removed by you" ? { letter: "X", color: [255, 255, 255], text: "removed by you" } : st.meta.reasons[k]);
+const reasonOf = (k) => (k === "removed by you" ? { letter: "X", color: [255, 255, 255], text: "removed by you" } : st.reasons[k]);
 
 // ---------- controls ----------
 function paramRange(name, v) {
@@ -245,11 +255,22 @@ function paramRange(name, v) {
   const max = Math.ceil(v * 3); return [0, max, max / 300];
 }
 
+// the filters and their values for a finder: our numbers, overlaid with what this browser saved
+function useFilters(finder) {
+  const about = st.about[finder], saved = loadSaved();
+  st.filtersFor = finder; st.filters = about.filters; st.reasons = about.reasons;
+  st.defaults = {}; st.values = {};
+  for (const f of about.filters) for (const [k, v] of Object.entries(f.params)) st.defaults[k] = v;
+  for (const k in st.defaults) st.values[k] = k in saved.values ? saved.values[k] : st.defaults[k];
+  st.off = new Set(saved.off.filter((k) => about.filters.some((f) => f.key === k)));
+  buildFilters(); $("#reset-filters").disabled = false;
+}
+
 function buildFilters() {
   const box = $("#filters"); box.innerHTML = "";
-  for (const f of st.meta.filters) {
+  for (const f of st.filters) {
     const el = document.createElement("div"); el.className = "filter"; el.dataset.key = f.key;
-    const col = `rgb(${st.meta.reasons[f.key]?.color || [200, 200, 200]})`;
+    const col = `rgb(${st.reasons[f.key]?.color || [200, 200, 200]})`;
     el.innerHTML = `<div class="top"><input type="checkbox" ${st.off.has(f.key) ? "" : "checked"}>
       <span class="letter" style="color:${col}">${f.letter}</span><span class="text">${f.text}</span><span class="n"></span></div>`;
     el.querySelector("input").onchange = (e) => {
@@ -276,33 +297,46 @@ function buildFilters() {
   });
 }
 
+// the finder's settings: its main ones on show, every one under Advanced; both edit the same values
 function buildDetect() {
-  const box = $("#detect-params"); box.innerHTML = "";
-  for (const [k, def] of Object.entries(st.detectDefaults)) {
-    const v = st.detectValues[k], row = document.createElement("label"); row.className = "dparam";
+  const finder = $("#finder").value, about = st.about[finder];
+  const defs = about.detection_params, vals = (st.detectValues[finder] ||= { ...defs });
+  $("#finder-note").textContent = about.exact_refilter ? "" : "Picks between alternatives using the filters: after a filter change, find again for its exact result.";
+  const row = (k) => {
+    const def = defs[k], el = document.createElement("label"); el.className = "dparam"; el.dataset.k = k;
     const kind = typeof def === "boolean" ? "checkbox" : typeof def === "number" ? "number" : "text";
-    row.innerHTML = `<span class="name">${k}</span><input type="${kind}" ${kind === "number" ? 'step="any"' : ""}>`;
-    const inp = row.querySelector("input");
-    if (kind === "checkbox") inp.checked = v; else inp.value = kind === "text" ? JSON.stringify(v) : v;
+    el.innerHTML = `<span class="name">${k}</span><input type="${kind}" ${kind === "number" ? 'step="any"' : ""} data-k="${k}">`;
+    const inp = el.querySelector("input");
+    if (kind === "checkbox") inp.checked = vals[k]; else inp.value = kind === "text" ? JSON.stringify(vals[k]) : vals[k];
     inp.oninput = inp.onchange = () => {
       let nv;
       try { nv = kind === "checkbox" ? inp.checked : kind === "number" ? parseFloat(inp.value) : JSON.parse(inp.value); } catch { return; }
-      st.detectValues[k] = nv; markDetect();
+      if (kind === "number" && !isFinite(nv)) return;
+      vals[k] = nv;
+      document.querySelectorAll(`input[data-k="${k}"]`).forEach((o) => { if (o !== inp) kind === "checkbox" ? (o.checked = nv) : (o.value = inp.value); });
+      updateFind();
     };
-    row.dataset.k = k; box.append(row);
-  }
-  markDetect();
+    return el;
+  };
+  $("#main-params").replaceChildren(...about.main_params.map(row));
+  $("#detect-params").replaceChildren(...Object.keys(defs).map(row));
+  updateFind();
 }
 
-function detectOverrides() {
-  const o = {};
-  for (const [k, v] of Object.entries(st.detectValues)) if (JSON.stringify(v) !== JSON.stringify(st.detectDefaults[k])) o[k] = v;
+function detectOverrides(finder) {
+  const o = {}, defs = st.about[finder].detection_params;
+  for (const [k, v] of Object.entries(st.detectValues[finder] || {})) if (JSON.stringify(v) !== JSON.stringify(defs[k])) o[k] = v;
   return o;
 }
-function markDetect() {
-  const o = detectOverrides();
+const runKey = () => JSON.stringify([$("#finder").value, detectOverrides($("#finder").value)]);
+// Find Candidates shines while the finder or its settings differ from what the image was last searched with
+function updateFind() {
+  const finder = $("#finder").value; if (!st.about[finder]) return;
+  const o = detectOverrides(finder), f = $("#find");
   document.querySelectorAll(".dparam").forEach((r) => r.classList.toggle("changed", r.dataset.k in o));
-  $("#redetect").disabled = !st.meta; $("#reset-detect").disabled = !Object.keys(o).length;
+  $("#reset-detect").disabled = !Object.keys(o).length;
+  f.disabled = !st.img || !!st.running;
+  f.classList.toggle("shine", !f.disabled && runKey() !== st.lastRun);
 }
 
 // ---------- drawing ----------
@@ -325,7 +359,7 @@ function render() {
     else { const R = reasonOf(r); let_.textContent = R.letter; let_.setAttribute("fill", `rgb(${R.color})`); }
   }
   document.querySelectorAll(".filter").forEach((el) => { el.querySelector(".n").textContent = `${counts[el.dataset.key] || 0} rejected`; });
-  $("#counts").textContent = `${passes.length} pass · ${shown.length - passes.length} rejected · filters took ${$("#counts").dataset.ms || "–"} ms`;
+  $("#sb-counts").textContent = `${st.numbers.size} candidates · ${passes.length} finalists`;
   // removed by the user: still listed, greyed, where the filters alone would have listed them; never counted
   const removed = shown.filter((c) => st.forced.get(c.i) === "out" && st.fails[c.i] === null);
   renderList([...passes, ...removed].sort((a, b) => st.numbers.get(a.i) - st.numbers.get(b.i)), passes.length);
@@ -360,7 +394,7 @@ function card(c) {
   ctx.restore();
   el.innerHTML = `<div class="head"><span class="num"></span><button class="star" title="Keeper: stays in the list whatever the filters say">☆</button><button class="rm"></button></div>`;
   el.prepend(cv);
-  cv.onclick = () => focusOn(c);
+  cv.onclick = () => { showView("image"); focusOn(c); };
   el.querySelector(".rm").onclick = () => mark(c.i, st.forced.get(c.i) === "out" ? null : "out");
   el.querySelector(".star").onclick = () => mark(c.i, st.forced.get(c.i) === "in" ? null : "in");
   const t = document.createElement("table");
@@ -454,14 +488,17 @@ $("#overlay").addEventListener("mouseleave", () => ($("#tip").hidden = true));
 
 $("#file").onchange = async (e) => {
   const f = e.target.files[0]; if (!f || !st.worker) return;
-  st.fileName = f.name; st.meta = null;
+  st.fileName = f.name; st.meta = null; st.lastRun = null; st.cands = [];
+  $("#file-name").textContent = f.name; $("#file-name").classList.remove("dim"); statusBar();
+  $("#overlay").innerHTML = ""; $("#list").replaceChildren(); $("#summary").textContent = "No candidates yet.";
+  $("#switch").disabled = true; $("#csv").disabled = true; $("#sb-counts").textContent = "";
   const bytes = await f.arrayBuffer();
   busy(true, "Reading the image…");
   st.worker.postMessage({ type: "open", name: f.name, bytes }, [bytes]);
 };
-$("#finder").onchange = () => { st.detectDefaults = {}; if (st.img) detect({}); };
-$("#redetect").onclick = () => detect(detectOverrides());
-$("#reset-detect").onclick = () => { st.detectValues = { ...st.detectDefaults }; buildDetect(); };
+$("#finder").onchange = () => { buildDetect(); if (!st.meta) useFilters($("#finder").value); };
+$("#find").onclick = detect;
+$("#reset-detect").onclick = () => { const f = $("#finder").value; st.detectValues[f] = { ...st.about[f].detection_params }; buildDetect(); };
 $("#reset-filters").onclick = () => {
   try { localStorage.removeItem(STORE); } catch { /* nothing saved */ }
   st.values = { ...st.defaults }; st.off.clear(); buildFilters(); refilter();
@@ -470,7 +507,28 @@ $("#zoom-in").onclick = () => setZoom(st.zoom * 2);
 $("#zoom-out").onclick = () => setZoom(st.zoom / 2);
 for (const [id, cls] of [["show-fails", "no-fails"], ["show-labels", "no-labels"], ["show-lines", "no-lines"]])
   $("#" + id).onchange = (e) => $("#overlay").classList.toggle(cls, !e.target.checked);
-$("#show-dapi").onchange = $("#show-mask").onchange = () => st.img && drawBase();
+for (const id of ["show-r", "show-g", "show-b", "show-mask"]) $("#" + id).onchange = () => st.img && drawBase();
+
+// ---------- views and theme ----------
+function showView(v) {
+  st.view = v; $("#tip").hidden = true;
+  $("#image-view").hidden = v !== "image"; $("#items-view").hidden = v !== "items";
+  $("#switch").textContent = v === "image" ? "View individual items" : "View image";
+}
+$("#switch").onclick = () => showView(st.view === "image" ? "items" : "image");
+
+function theme() {
+  const set = document.documentElement.dataset.theme;
+  return set || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+}
+$("#theme").onclick = () => {
+  const t = theme() === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem(THEME, t); } catch { /* private mode: lasts for this page only */ }
+  $("#theme-name").textContent = t === "dark" ? "Light" : "Dark";
+};
+$("#theme-name").textContent = theme() === "dark" ? "Light" : "Dark";
+showView("image");
 
 $("#csv").onclick = () => {
   const passes = st.cands.filter((c) => c.el && result(c.i) === null).sort((a, b) => st.numbers.get(a.i) - st.numbers.get(b.i));

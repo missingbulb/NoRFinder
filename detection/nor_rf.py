@@ -268,6 +268,10 @@ def segment_rf(caspr, nav, bm, p=PR):
     return cands, dict(unit=unit, n_red=len(blobs), n_alts=sum(len(a) for a in blobs))
 
 
+# the settings the page shows first for this finder; the rest sit under Advanced
+segment_rf.MAIN = ('green_frac', 'red_frac', 'red_steps', 'touch_u', 'g_reach_u', 'far_u')
+
+
 
 if __name__ == '__main__':
     # review outputs in Ariel's standard format (render_std.py), plus lab sheets

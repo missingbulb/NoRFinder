@@ -6,58 +6,98 @@
 <title>NoR Finder</title>
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="style.css">
+<script>
+  // before the first paint, so a light-mode user never sees a dark flash
+  try { const t = localStorage.getItem("nor-theme"); if (t) document.documentElement.dataset.theme = t; } catch { /* no storage */ }
+</script>
 </head>
 <body>
 <header>
+  <img id="logo" src="logo.svg" alt="Tel Aviv University">
   <h1>NoR Finder</h1>
-  <label class="file">Open image<input id="file" type="file" accept=".tif,.tiff,.png"></label>
-  <label>Finder <select id="finder" disabled></select></label>
-  <span class="spin" id="spin"></span><span id="status">Starting…</span>
+  <button id="theme" title="Switch between dark and light">◐ <span id="theme-name"></span></button>
 </header>
 
-<main>
-  <aside id="controls">
-    <section>
-      <div class="sec-head"><h2>Filters</h2><button id="reset-filters" disabled>Restore filter defaults</button></div>
-      <p class="hint">Instant, and remembered in this browser across images and visits. Untick a filter to switch it off. Click a marking on the image to add or remove it by hand. Starred (★) NoRs stay in the list whatever the filters say; removed ones stay greyed and are left out of the totals. Stars and removals are remembered per file and finder.</p>
-      <div id="filters"></div>
+<div id="layout">
+  <aside id="left">
+    <section class="box">
+      <h2>Image</h2>
+      <label class="file" id="file-label">Load image<input id="file" type="file" accept=".tif,.tiff,.png" disabled></label>
+      <div id="file-name" class="dim">No image loaded</div>
+      <div class="layers">
+        <label><input type="checkbox" id="show-r" checked> <span class="sw r"></span>red</label>
+        <label><input type="checkbox" id="show-g" checked> <span class="sw g"></span>green</label>
+        <label><input type="checkbox" id="show-b"> <span class="sw b"></span>blue</label>
+      </div>
     </section>
-    <section>
-      <div class="sec-head"><h2>Detection</h2><button id="reset-detect" disabled>Reset</button></div>
-      <p class="hint slow">Changing these re-runs detection, which takes about 10–30 seconds.</p>
-      <div id="detect-params"></div>
-      <button id="redetect" class="primary" disabled>Re-detect</button>
+
+    <section class="box">
+      <h2>Candidates finder</h2>
+      <select id="finder" disabled></select>
+      <p id="finder-note" class="hint"></p>
+      <div id="main-params"></div>
+      <details id="advanced">
+        <summary>Advanced <span class="dim">(every setting)</span></summary>
+        <div id="detect-params"></div>
+      </details>
+      <div class="row">
+        <button id="reset-detect" disabled>Reset</button>
+        <button id="find" class="primary" disabled>Find Candidates</button>
+      </div>
+      <p class="hint slow">Finding takes about 10–30 seconds.</p>
+    </section>
+
+    <section class="box">
+      <div class="sec-head"><h2>Filters</h2><button id="reset-filters" disabled>Restore filter defaults</button></div>
+      <p class="hint">Instant, and remembered in this browser across images and visits. Untick a filter to switch it off.</p>
+      <div id="filters"></div>
     </section>
   </aside>
 
-  <div id="view">
+  <main id="view">
     <div class="toolbar">
-      <button id="zoom-out" title="Zoom out">−</button><span id="zoom-label">2×</span><button id="zoom-in" title="Zoom in">+</button>
-      <label><input type="checkbox" id="show-fails" checked> rejected (blue)</label>
-      <label><input type="checkbox" id="show-labels" checked> numbers and letters</label>
-      <label><input type="checkbox" id="show-lines" checked> measuring lines</label>
-      <label><input type="checkbox" id="show-dapi"> DAPI</label>
-      <label><input type="checkbox" id="show-mask"> blue mask</label>
-      <span id="counts"></span>
+      <span class="group"><button id="zoom-out" title="Zoom out">−</button><span id="zoom-label">2×</span><button id="zoom-in" title="Zoom in">+</button></span>
+      <span class="group">
+        <label><input type="checkbox" id="show-fails" checked> rejected</label>
+        <label><input type="checkbox" id="show-labels" checked> numbers</label>
+        <label><input type="checkbox" id="show-lines" checked> measuring lines</label>
+        <label><input type="checkbox" id="show-mask"> nucleus mask</label>
+      </span>
+      <button id="switch" class="big" disabled>View individual items</button>
     </div>
     <div id="busy" hidden><span class="spin big"></span><div id="busy-text"></div><div id="busy-time"></div></div>
-    <div id="scroller">
-      <div id="empty">Open a three-channel ImageJ TIFF (Caspr green, Nav red, DAPI) or an RGB PNG.<br>
-        The first visit downloads Python and its libraries (about 50 MB); later visits reuse them for 30 days.</div>
-      <div id="stage" hidden><canvas id="base"></canvas><svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg></div>
+
+    <div id="image-view">
+      <div id="scroller">
+        <div id="empty">Load a three-channel ImageJ TIFF (Caspr green, Nav red, DAPI) or an RGB PNG, then press Find Candidates.<br>
+          The first visit downloads Python and its libraries (about 50 MB); later visits reuse them for 30 days.</div>
+        <div id="stage" hidden><canvas id="base"></canvas><svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg></div>
+      </div>
+      <p class="hint legend">Click a marking to change it: a finalist becomes rejected, a rejected one becomes a finalist (★), and a marked one goes back to what the filters say.</p>
     </div>
-  </div>
-</main>
 
-<section id="list-sec">
-  <div class="sec-head"><h2>Passing NoRs <span id="n-pass"></span></h2><button id="csv" disabled>Download CSV</button></div>
-  <div id="list"></div>
-</section>
+    <div id="items-view" hidden>
+      <div class="sec-head"><h2>Finalists <span id="n-pass"></span></h2><button id="csv" disabled>Download CSV</button></div>
+      <p class="hint">Starred (★) NoRs stay whatever the filters say; removed ones stay greyed and are left out of the totals. Both are remembered per file and finder. Click a crop to see it on the image.</p>
+      <div id="list"></div>
+    </div>
+  </main>
 
-<section id="summary-sec">
-  <h2>Summary</h2>
-  <div id="summary"></div>
-</section>
+  <aside id="right">
+    <section class="box">
+      <h2>Summary</h2>
+      <div id="summary" class="dim">No candidates yet.</div>
+    </section>
+  </aside>
+</div>
+
+<footer id="statusbar">
+  <span class="spin" id="spin"></span>
+  <span id="sb-file">No image</span>
+  <span id="sb-counts"></span>
+  <span id="sb-times"></span>
+  <span id="status">Starting…</span>
+</footer>
 
 <div id="tip" hidden></div>
 <script src="app.js"></script>
