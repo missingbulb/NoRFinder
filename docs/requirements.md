@@ -249,16 +249,20 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   and the candidate numbers, the rejection letters and the measuring lines (remembered).
 - **One selected candidate.** Clicking a candidate selects it (a thin white ring) and clicking it
   again deselects it. Its card sits in the right bar with buttons to the previous and next
-  candidate by number. Decisions are made on cards, not by clicking the image, with two buttons at
-  the card's top: Approve (a real NoR, with the lengths shown) and Reject (not one), each saying
-  what it does in its tooltip. Approved and rejected-by-user cards have their own border colours,
-  and a candidate the user rejected offers Un-reject.
+  candidate by number. Decisions are made on cards, not by clicking the image, with a thumbs up (a
+  real NoR, with the lengths shown) and a thumbs down (not one) at the card's top, each saying what
+  it does in its tooltip; pressing the chosen one again undoes it and lets the filters decide.
+  Pressing either also selects that candidate. Cards the user voted up or down have their own
+  border colours. In the item views the selected candidate's card is outlined, clicking a card
+  selects it, and switching to the item views opens the tab that lists the selected candidate and
+  scrolls its card into sight; the previous and next buttons step through that tab's cards.
 - **Filters are live dials.** Every check in `nor3.CHECKS`, the nucleus rule (N) and
   one-pixel-per-NoR (O) is a control that can be switched off. Each shows a letter, a one- or
   two-word title and a line saying what it means (the page's own names, from
   `detection/finder_help.py`; the lab's review sheets keep theirs), and two counts: how many
   candidates it rejects, whatever the other filters do, and how many only it rejects among the
-  filters switched on (what switching it off would let through). Each of its parameters is a
+  filters switched on (what switching it off would let through), as one box reading "Rejected: X (Y)"
+  whose tooltip explains that X is the second and Y the first. Each of its parameters is a
   dial, and every marking on the image follows it at once. A dial moved off our value is marked,
   with our value as a tick on its slider that puts it back. Finder and filter settings use this
   one control, so tweaking looks and works the same in both. A check added to `CHECKS` becomes a control with
@@ -273,10 +277,13 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
 - **The item views.** Two views: the finalists and the rejected, each candidate cropped on a card:
   its number, state and decision buttons on top, the crop below (with a faint go-to button in its
   corner that shows it on the image), then "Lengths adjusted" with a reset, and the rest.
-  A rejected card names every filter that rejects it by itself, or says the user rejected it. An
-  Options menu (remembered) sets the crop's context padding, turns each crop so the NoR lies level
-  (on at first), and shows or hides the NoR borders, the measurement bars, the lengths on the crop,
-  the lengths on the card (off at first) and the length adjusters (on at first). The adjusters drag the ends of
+  A rejected card names every filter that rejects it by itself, or says the user rejected it. Each
+  view has its own Options menu (remembered per view) that sets the crop's context padding, turns
+  each crop so the NoR lies level, and shows or hides the NoR borders, the measurement bars, the
+  lengths on the crop, the lengths on the card and the length adjusters. The finalists open with a
+  4 px padding and everything on but the lengths on the card; the rejected open with a 10 px
+  padding and only the NoR borders on. The selected card in the right bar uses the options of the
+  view that lists it. The adjusters drag the ends of
   the green-to-green length and the red length; the new lengths show on the image, the card, the
   summary and the downloads. The measurements of the finalists are summarised in the right bar.
 - **Downloads.** The candidates as CSV (every candidate, its status, its reasons, the user's
