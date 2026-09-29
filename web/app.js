@@ -9,7 +9,7 @@ const THEME = "nor-theme"; // "dark" | "light"; absent = follow the system
 const MARKS = "nor-marks-v1:"; // + file name + "|" + finder: {"x,y": "in" | "out"}, the user's keepers and removals
 const EDITS = "nor-edits-v1:"; // + file name + "|" + finder: {"x,y": {length, red, approved}}, the user's measurements
 const SHOW = "nor-show-v1"; // the image view's Show menu
-const CARDS = "nor-cards-v1"; // the item views' Options menu
+const CARDS = "nor-cards-v2"; // the item views' Options menu: only what the user changed
 const BARS = "nor-bars-v1"; // {left, right}: side bar widths in pixels
 const SOURCE = "nor-load-source"; // "local" | "drive": where Load reads from
 const DRIVE_LINK = "nor-drive-link"; // the last Google Drive link pasted
@@ -19,7 +19,7 @@ const MEASURES = [
 ];
 const BY_YOU = "rejected by you";
 const SHOW_DEFAULTS = { pass: true, fails: true, nums: true, letters: true, lines: true, passW: 1, passC: "#ff69c8", failW: 1, failC: "#008cff" };
-const CARD_DEFAULTS = { pad: null, align: true, borders: true, bars: true, lenImg: false, lenCard: true, adjust: true };
+const CARD_DEFAULTS = { pad: null, align: true, borders: true, bars: true, lenImg: false, lenCard: false, adjust: true };
 
 const st = {
   worker: null, H: 0, W: 0, um: null, img: null, meta: null, seg: null, cands: [],
@@ -61,9 +61,13 @@ function saveMap(prefix, map) {
   for (const [j, v] of map) out[posKey(st.cands[j])] = v;
   writeJSON(prefix + fileKey(), out);
 }
-function mark(i, m) {
-  m ? st.forced.set(i, m) : st.forced.delete(i);
-  saveMap(MARKS, st.forced); render();
+// the user's word on a candidate: "approve" (a NoR, with the lengths shown), "reject" (not one), or null (the filters decide)
+function decide(i, d) {
+  d ? st.forced.set(i, d === "approve" ? "in" : "out") : st.forced.delete(i);
+  const e = { ...(st.edits.get(i) || {}) };
+  d === "approve" ? (e.approved = true) : delete e.approved;
+  Object.keys(e).length ? st.edits.set(i, e) : st.edits.delete(i);
+  saveMap(MARKS, st.forced); saveMap(EDITS, st.edits); render();
 }
 function edit(i, change) {
   const e = { ...(st.edits.get(i) || {}), ...change };
@@ -110,7 +114,7 @@ async function start() {
       }
     } catch (e) { console.warn("no cache for third-party files:", e); }
   }
-  busy(true, "Loading Python…");
+  status("Loading Python in the background…"); $("#spin").classList.add("on");
   st.worker = new Worker("worker.js", { type: "module" });
   st.worker.onmessage = (e) => onWorker(e.data);
 }
@@ -121,18 +125,18 @@ function onWorker(m) {
   else if (m.type === "ready") {
     const sel = $("#finder");
     sel.innerHTML = Object.entries(m.finders).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
-    sel.disabled = false; busy(false);
+    sel.disabled = false; st.ready = true; $("#spin").classList.remove("on");
     st.about = m.about; st.times.load = m.secs; st.help = Object.values(m.about)[0].help;
-    $("#load-main").disabled = false;
     buildDetect(); useFilters(sel.value); statusBar();
     status("Ready. Load an image.");
+    if (st.queued) { const q = st.queued; st.queued = null; send(q.name, q.bytes); }
   } else if (m.type === "opened") {
     st.H = m.H; st.W = m.W; st.um = m.um; const n = m.H * m.W;
     st.img = { r: m.images.subarray(0, n), g: m.images.subarray(n, 2 * n), b: m.images.subarray(2 * n, 3 * n) };
     st.plain = null; drawBase(); $("#empty").hidden = true; $("#stage").hidden = false; $("#thumb-wrap").hidden = false;
     setZoom(st.zoom);
     busy(false); st.times.open = m.secs; st.times.detect = st.times.filter = null; statusBar();
-    showView("image"); updateFind();
+    showView("image"); updateFind(); fold(true); loadShine();
     status("Image loaded. Press Find Candidates.");
   } else if (m.type === "detected") {
     busy(false);
@@ -167,11 +171,18 @@ async function openBytes(name, bytes) {
   $("#file-name").textContent = name; $("#file-name").classList.remove("dim"); statusBar();
   $("#overlay").innerHTML = ""; $("#list").replaceChildren(); $("#summary").textContent = "No candidates yet.";
   $("#switch").disabled = true; $("#sb-counts").textContent = ""; downloads(false); renderSelected();
+  if (st.ready) return send(name, bytes);
+  // Python is still loading: the image opens the moment it is ready
+  st.queued = { name, bytes }; busy(true, "Python is still loading; your image opens as soon as it is ready…"); loadShine();
+}
+function send(name, bytes) {
   busy(true, "Reading the image…");
   st.worker.postMessage({ type: "open", name, bytes }, [bytes]);
 }
+// Load shimmers until there is an image to work on
+const loadShine = () => $("#load-main").classList.toggle("shine", !st.img && !st.queued);
 $("#file").onchange = async (e) => {
-  const f = e.target.files[0]; if (!f || !st.worker) return;
+  const f = e.target.files[0]; if (!f) return;
   openBytes(f.name, await f.arrayBuffer()); e.target.value = "";
 };
 function load(src) {
@@ -602,33 +613,37 @@ function cropMarks(c, L, g) {
 }
 const autoPad = () => Math.max(4, Math.round((st.meta && st.meta.unit) || 4));
 
+const GOTO = `<svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2" class="dot"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></svg>`;
 function card(c, where) {
-  const r = result(c.i), f = st.forced.get(c.i), e = st.edits.get(c.i) || {}, d = document.createElement("div");
-  d.className = "card " + (r === null ? "pass" : "fail") + (f === "in" ? " kept" : "");
-  d.append(crop(c, where === "selected" ? 320 : 170));
-  const why = r === null ? "" : `<div class="why">${whyAll(c).map((k) => `<span><b class="lt" style="--c:${colour(k)}">${reasonOf(k).letter}</b> ${esc(reasonOf(k).title)}</span>`).join("")}</div>`;
-  const state = r === null ? (f === "in" ? "Always accepted" : "Finalist") : "Rejected";
-  const m = measured(c);
-  d.insertAdjacentHTML("beforeend", `<div class="head"><span class="num">#${st.numbers.get(c.i)}</span><span class="state">${state}</span>
-    ${where === "list" ? `<button class="goto" title="Select it and show it on the image">on image</button>` : ""}</div>
-    ${m ? `<div class="tag">${m === "adjusted" ? "Lengths adjusted by you" : "Lengths approved by you"}</div>` : ""}${why}`);
+  const r = result(c.i), f = st.forced.get(c.i), d = document.createElement("div");
+  d.className = "card " + (r === null ? "pass" : "fail") + (f === "in" ? " approved" : f === "out" ? " byyou" : "");
+  const state = f === "in" ? "Approved" : f === "out" ? "Rejected by you" : r === null ? "Finalist" : "Rejected";
+  d.innerHTML = `<div class="head"><span class="num">#${st.numbers.get(c.i)}</span><span class="state">${state}</span><span class="acts"></span></div>`;
+  const acts = d.querySelector(".acts");
+  const btn = (label, title, on, fn, cls = "") => {
+    const b = document.createElement("button"); b.textContent = label; b.title = title; b.className = cls + (on ? " on" : "");
+    b.setAttribute("aria-pressed", on); b.onclick = fn; acts.append(b);
+  };
+  btn("✅", f === "in" ? "Approved: click to undo" : "Approve: a real NoR, with the lengths shown (saved as ground truth)", f === "in",
+    () => decide(c.i, f === "in" ? null : "approve"), "emoji");
+  if (f === "out") btn("Un-reject", "Let the filters decide again", false, () => decide(c.i, null), "text");
+  else btn("❌", "Reject: not a NoR (saved as ground truth)", false, () => decide(c.i, "reject"), "emoji");
+  const wrap = document.createElement("div"); wrap.className = "crop-wrap";
+  wrap.append(crop(c, where === "selected" ? 320 : 170));
+  wrap.insertAdjacentHTML("beforeend", `<button class="goto" title="Show it on the image" aria-label="Show it on the image">${GOTO}</button>`);
+  wrap.querySelector(".goto").onclick = () => { select(c.i); showView("image"); focusOn(c); };
+  d.append(wrap);
+  const e = st.edits.get(c.i) || {};
+  if (e.length || e.red) {
+    d.insertAdjacentHTML("beforeend", `<div class="tag">Lengths adjusted <button class="link">reset</button></div>`);
+    d.querySelector(".tag button").onclick = () => edit(c.i, { length: null, red: null });
+  }
+  if (r !== null) d.insertAdjacentHTML("beforeend", `<div class="why">${whyAll(c).map((k) => `<span><b class="lt" style="--c:${colour(k)}">${reasonOf(k).letter}</b> ${esc(reasonOf(k).title)}</span>`).join("")}</div>`);
   if (st.opt.lenCard && c.m) {
     const t = document.createElement("table");
     t.innerHTML = measures(c).map(([l, v]) => `<tr><td>${l}</td><td>${fmt(v)}</td></tr>`).join("");
     d.append(t);
   }
-  const acts = document.createElement("div"); acts.className = "acts";
-  const btn = (label, fn, cls = "", title = "") => { const b = document.createElement("button"); b.textContent = label; b.className = cls; b.title = title; b.onclick = fn; acts.append(b); };
-  if (r === null) {
-    btn("Reject", () => mark(c.i, "out"), "", "Leave it out of the finalists and the totals");
-    btn(f === "in" ? "★ Always accepted" : "☆ Always accept", () => mark(c.i, f === "in" ? null : "in"), f === "in" ? "on" : "", "Keep it whatever the filters say");
-    if (c.m) btn(e.approved || e.length || e.red ? "✓ Lengths approved" : "Approve lengths", () => edit(c.i, { approved: !e.approved }),
-      e.approved || e.length || e.red ? "on" : "", "The lengths are right: saved as ground truth");
-    if (e.length || e.red) btn("Reset lengths", () => edit(c.i, { length: null, red: null }), "link");
-  } else if (f === "out") btn("Restore", () => mark(c.i, null), "", "Let the filters decide again");
-  else btn("Accept", () => mark(c.i, "in"), "", "Make it a finalist whatever the filters say");
-  d.append(acts);
-  const go = d.querySelector(".goto"); if (go) go.onclick = () => { select(c.i); showView("image"); focusOn(c); };
   return d;
 }
 
@@ -720,7 +735,7 @@ $("#dl-cands").onclick = () => {
   const rows = st.order.map((c) => {
     const r = result(c.i), f = st.forced.get(c.i);
     return [st.numbers.get(c.i), fmt(c.cx, 1), fmt(c.cy, 1), r === null ? "finalist" : "rejected", r === null ? "" : reasonOf(r).title,
-      whyAll(c).map((k) => reasonOf(k).letter).join(" "), { in: "always accepted", out: "rejected by you" }[f] || "", measured(c) || "",
+      whyAll(c).map((k) => reasonOf(k).letter).join(" "), { in: "approved", out: "rejected by you" }[f] || "", measured(c) || "",
       ...measures(c).map(([, v]) => fmt(v, 3))];
   });
   save_(base() + "_candidates.csv", csv([head, ...rows]), "text/csv");
@@ -739,7 +754,7 @@ $("#dl-truth").onclick = () => {
     const r = result(c.i), f = st.forced.get(c.i), m = measured(c), L = linesOf(c), px = measuresPx(c);
     if (r !== null && !f) continue;
     labels.push({ id: st.numbers.get(c.i), x: c.cx, y: c.cy, label: r === null ? 1 : 0,
-      source: f || m ? "user" : "finder", decision: { in: "always accepted", out: "rejected by you" }[f] || "accepted",
+      source: f || m ? "user" : "finder", decision: { in: "approved", out: "rejected by you" }[f] || "accepted",
       measured: r === null ? m : null, length_px: px.length ?? null, red_length_px: px.red_length ?? null, width_px: px.width ?? null,
       lines: L ? { length: L.length, red: L.red } : null });
   }
@@ -839,7 +854,7 @@ function applyShow() {
   }
   applyShow();
   const opts = { "opt-align": "align", "opt-borders": "borders", "opt-bars": "bars", "opt-len-img": "lenImg", "opt-len-card": "lenCard", "opt-adjust": "adjust" };
-  const changed = () => { writeJSON(CARDS, st.opt); if (st.meta) { if (st.view === "items") renderList(); renderSelected(); } };
+  const changed = () => { writeJSON(CARDS, Object.fromEntries(Object.entries(st.opt).filter(([k, v]) => v !== CARD_DEFAULTS[k]))); if (st.meta) { if (st.view === "items") renderList(); renderSelected(); } };
   for (const [id, k] of Object.entries(opts)) { const inp = $("#" + id); inp.checked = st.opt[k]; inp.onchange = () => { st.opt[k] = inp.checked; changed(); }; }
   const pad = $("#opt-pad"); pad.value = st.opt.pad ?? "";
   pad.oninput = () => { const v = parseInt(pad.value, 10); st.opt.pad = isFinite(v) && v >= 0 ? v : null; changed(); };
@@ -847,6 +862,15 @@ function applyShow() {
 for (const [id, t] of [["#tab-pass", "pass"], ["#tab-fail", "fail"]]) $(id).onclick = () => {
   st.tab = t; $("#tab-pass").classList.toggle("on", t === "pass"); $("#tab-fail").classList.toggle("on", t === "fail"); renderList();
 };
+
+// ---------- boxes that fold: the finder and the filters, folded until there is an image ----------
+function fold(open) { document.querySelectorAll(".box.foldable").forEach((b) => b.classList.toggle("folded", !open)); }
+document.querySelectorAll(".box.foldable > .sec-head h2, .box.foldable > h2").forEach((h) => {
+  h.tabIndex = 0; h.setAttribute("role", "button");
+  const flip = () => h.closest(".box").classList.toggle("folded");
+  h.onclick = flip; h.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } };
+});
+fold(false); loadShine();
 
 // ---------- views, side bars and theme ----------
 function showView(v) {

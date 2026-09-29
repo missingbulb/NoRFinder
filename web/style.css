@@ -78,8 +78,9 @@ input.ch.r { accent-color: #f33; } input.ch.g { accent-color: #2fb344; } input.c
 .row { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; }
 #find { flex: 1; font-weight: 600; }
 /* settings changed since the last run: a light sweeps across the button */
-#find.shine { position: relative; overflow: hidden; box-shadow: 0 0 10px var(--accent); }
-#find.shine::after { content: ""; position: absolute; inset: 0; width: 40%;
+/* Find Candidates and Load shine while they are the next thing to press */
+.shine { position: relative; overflow: hidden; box-shadow: 0 0 10px var(--accent); }
+.shine::after { pointer-events: none; content: ""; position: absolute; inset: 0; width: 40%;
   background: linear-gradient(100deg, transparent, #ffffff90, transparent); animation: shine 1.8s ease-in-out infinite; }
 @keyframes shine { from { transform: translateX(-120%); } to { transform: translateX(320%); } }
 /* folding parts of a box */
@@ -132,7 +133,8 @@ button.link:disabled { color: var(--dim); }
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-panel); overflow: hidden; }
 .toolbar { display: flex; gap: 10px; align-items: center; height: 52px; padding: 0 var(--pad); border-bottom: 1px solid var(--line); font-size: 13px; }
 .toolbar .group { display: flex; gap: 10px; align-items: center; }
-button.big { margin-left: auto; padding: 6px 18px; font-size: 14px; font-weight: 600; background: var(--accent); border-color: var(--accent); color: #fff; }
+.toolbar .grow { flex: 1; }
+button.big { padding: 6px 18px; font-size: 14px; font-weight: 600; background: var(--accent); border-color: var(--accent); color: #fff; }
 #image-view, #items-view { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 #image-view[hidden], #items-view[hidden] { display: none; }
 #items-view { overflow-y: auto; padding: var(--pad); }
@@ -208,16 +210,30 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 .card .marks text.r { fill: #ffb3b3; }
 .card .marks .handle { fill: #fff; stroke: #000; cursor: ew-resize; }
 .card .marks .handle.r { fill: #ff6b6b; }
-.card .head { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
+.card .head { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+.card .head .acts { margin-left: auto; display: flex; gap: 4px; }
+.card .head .acts button { padding: 1px 6px; font-size: 13px; line-height: 1.3; background: var(--panel); }
+.card .head .acts button.emoji { filter: grayscale(1); opacity: .7; }
+.card .head .acts button.emoji:hover, .card .head .acts button.emoji.on { filter: none; opacity: 1; }
+.card .head .acts button.on { border-color: #2fb344; }
+.card .head .acts button.text { font-size: 11px; }
+/* the go-to button sits on the crop, faint until the pointer is over it */
+.card .crop-wrap { position: relative; width: max-content; max-width: 100%; margin: 0 auto 8px; }
+.card .crop-wrap .crop { margin: 0; }
+.card .goto { position: absolute; top: 5px; right: 5px; width: 26px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; border: 1px solid #ffffff60; background: #000000a0; color: #fff; opacity: .3; transition: opacity .15s; }
+.card .crop-wrap:hover .goto, .card .goto:focus-visible { opacity: 1; }
+.card .goto:hover { background: var(--accent); border-color: var(--accent); }
+.card .goto svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.card .goto svg .dot { fill: currentColor; stroke: none; }
 .card .num { font-weight: 700; }
 .card.pass .num { color: var(--pink); } .card.fail .num { color: var(--blue); }
 .card .state { color: var(--dim); }
 .card .tag { color: var(--warn); margin: -2px 0 4px; }
-.card .goto { margin-left: auto; }
 .card .why { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 2px 0 6px; }
-.card .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.card .acts button.on { border-color: var(--warn); color: var(--warn); }
-.card.kept { border-color: var(--warn); }
+.card.approved { border-color: #2fb344; }
+.card.byyou { border-color: var(--warn); }
+.card .tag button { font-size: 12px; margin-left: 6px; }
 .card button { padding: 2px 8px; font-size: 11px; border-radius: var(--r-chip); }
 .card table { width: 100%; border-collapse: collapse; }
 .card td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
@@ -285,3 +301,10 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #drive-list .item:hover { background: var(--bg); }
 #drive-list .item.folder::before { content: "📁 "; }
 #drive-msg.err { color: var(--err); }
+
+/* a box that folds: its title opens and closes it */
+.box.foldable > .sec-head h2, .box.foldable > h2 { cursor: pointer; user-select: none; }
+.box.foldable > .sec-head h2::before { content: "▾"; display: inline-block; width: 16px; color: var(--dim); transition: transform .15s; }
+.box.foldable.folded > .sec-head h2::before { transform: rotate(-90deg); }
+.box.foldable.folded > :not(.sec-head) { display: none; }
+.box.foldable.folded > .sec-head button { display: none; }
