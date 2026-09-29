@@ -14,7 +14,6 @@ All sizes are in units (median half-length of a green blob)."""
 import math, numpy as np
 from scipy import ndimage as ndi
 from skimage.segmentation import watershed
-from skimage.morphology import h_maxima
 from skimage.measure import perimeter
 import nor3
 from nor3 import classify, finish, EIGHT
@@ -106,11 +105,11 @@ def segment_rf(caspr, nav, bm, p=PR):
     unit = float(np.median(lens)); H, W = cn.shape
     cs_ = ndi.gaussian_filter(cn, p['smooth_u'] * unit); rs_ = ndi.gaussian_filter(rn, p['smooth_u'] * unit)
     # 1. red only: peaks and the hills around them
-    rpk = h_maxima(rs_, p['valley_depth'] * tr).astype(bool) & (rs_ > tr)
+    rpk = nor3.hmax_above(rs_, p['valley_depth'] * tr, tr)
     rbasin = watershed(-rs_, ndi.label(rpk)[0], mask=rs_ > p['fg'] * tr)
     # greens may be fainter than the usual green level (g_low of it); a pair still needs one
     # green at full level, and the brightness checks judge the rest
-    gpk = h_maxima(cs_, p['valley_depth'] * tg).astype(bool) & (cs_ > p['g_low'] * tg)
+    gpk = nor3.hmax_above(cs_, p['valley_depth'] * tg, p['g_low'] * tg)
     gbasin = watershed(-cs_, ndi.label(gpk)[0], mask=cs_ > p['g_low'] * tg)
     gy_, gx_ = np.gradient(ndi.gaussian_filter(cs_ + rs_, p['smooth_u'] * unit)); w_ = p['comb_u'] * unit
     Jxx, Jyy, Jxy = (ndi.gaussian_filter(v, w_) for v in (gx_ * gx_, gy_ * gy_, gx_ * gy_))

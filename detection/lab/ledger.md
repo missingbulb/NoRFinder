@@ -67,4 +67,39 @@ run to run (same code measured 5.70 s and 4.81 s), so judge by min-of-3 and re-c
 | 09-27 | rf | box_shape: second moments by hand instead of np.cov, perimeter on a crop, skip blobs under min size | 6.3 → 4.3 s | identical | kept |
 | 09-27 | rf | skip the shape test entirely while the rectangle rule is off | 6.2 → 5.3 s | identical | kept |
 | 09-27 | rf | h_maxima on float32 instead of float64 | 5.7 → 4.7 s | **changed** (peaks differ at ties) | reverted. Revisit if the peak finder is replaced |
-| — | all | open: h_maxima/reconstruction (~2.5 s of ~5 s) and nor3.finish (~1.4 s) are the next hotspots | | | |
+| 09-29 | tl, tl_post | score only where the red window reaches `s_min` (s ≤ rwin, so nowhere else can peak), sampling with `map_coordinates` there instead of 160 whole-image `ndi.shift`s | 15.9 → 6.7 s | identical | kept |
+| 09-29 | walk, fill | `_bilinear` on every strip offset, angle and bend at once instead of one call per offset/angle/bend (elementwise, so the same values) | walk 21.6 → 5.6 s, fill 12.5 → 5.9 s | identical | kept |
+| 09-29 | tl, rf, fill | `nor3.hmax_above`: h-maxima above a level T reconstructed piece by piece over the parts of the image above T - h, whole image when that is over half of it (flat reconstruction commutes with max(., L)); fuzzed against skimage in tests/test_speedups.py | tl → 3.9 s, rf 10.3 → 7.0 s, fill → 5.9 s | identical | kept |
+| 09-29 | tl | custom slicing bilinear shift instead of `ndi.shift` | 61 → 135 ms per shift | differs by 1e-14 | dropped: slower, and not exact |
+| — | all | open: `nor3.finish` (1-2.5 s per finder: two background medians and two dilations per candidate), the shared gaussians (~1 s), per-candidate colouring. See the proposals below | | | |
+
+### Profile of every finder, 2026-09-29 (Ariel: "performance analysis of all candidate finders")
+The page's path on the reference slide: open, blue mask, detect, first refilter. Native = `bench.py`
+(this 4-core container is noisy, about ±15%); Pyodide = `browser/bench_pyodide.mjs` (Node, wasm heap
+peak); Chromium = `browser/bench_live.mjs` on the deployed page (before) and a local preview of this
+change (after), detect time and peak resident memory of all Chromium processes. Pass counts are the
+same before and after for every finder.
+
+| finder | native detect | Pyodide detect | Chromium detect | native RSS peak | wasm heap peak | Chromium memory peak |
+|---|---|---|---|---|---|---|
+| tl | 19.8 → 4.7 s | 24.6 → 7.0 s | 22.1 → 7.0 s | 560 → 387 MB | 668 → 464 MB | 1349 → 1181 MB |
+| rf | 9.7 → 7.0 s | 15.1 → 11.6 s | 17.5 → 12.4 s | 391 → 318 MB | 464 → 387 MB | 1189 → 1104 MB |
+| fill | 16.5 → 6.6 s | 24.6 → 10.4 s | 25.0 → 11.4 s | 455 → 325 MB | 557 → 387 MB | 1248 → 1112 MB |
+| walk | 27.6 → 6.1 s | 46.2 → 12.0 s | 42.7 → 12.3 s | 219 MB | 269 MB | 1013 → 1019 MB |
+| blobs | 3.9 → 3.5 s | 6.1 → 6.7 s | 5.7 → 5.7 s | 218 MB | 269 MB | 1000 MB |
+
+Opening the slide takes 2-3 s in the browser, a refilter 0.2-0.3 s, and a cold start (Pyodide plus
+packages, nothing cached) 25-30 s. About 1 GB of Chromium memory is there before any finder runs
+(blobs, whose detect allocates 55 MB, peaks at 1000 MB); the finders add up to ~180 MB on top.
+
+Proposed next (not done):
+1. **nor3.finish** (every finder, 1-2.5 s native): the background median and MAD per candidate on
+   the whole window, and two dilations. Skip it for candidates the finder already rejected, or take
+   one median per window with `np.partition`. Must stay identical (perf.py check).
+2. **Share the preprocessing across finders in a page session** (classify, the smoothed channels,
+   h-maxima, watershed basins): switching finder on the page then costs only the finder's own
+   search, 1-3 s less. Identical by construction.
+3. **float32 working images**: about half the finders' memory and faster filters, but the output
+   changes at ties (ledger row of 09-27), so it needs `nor_lab.py ablate`, not perf.py.
+4. **Cold start**: scikit-image is now needed only for `reconstruction` and `watershed`; replacing
+   those would drop ~17 MB (skimage plus matplotlib) from the first download.

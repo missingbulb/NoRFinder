@@ -5,7 +5,7 @@ Read this first, then `lab/ledger.md` (everything tried, with verdicts). The met
 [`docs/requirements.md`](../docs/requirements.md) R7. Update this file in the PR that changes the
 state.
 
-_Last updated 2026-09-28._
+_Last updated 2026-09-29._
 
 ## Setup
 1. `python3 -m pip install -r requirements.txt`
@@ -51,7 +51,9 @@ _Last updated 2026-09-28._
 2. Retry C10 (node = red outshining green) once there are more labels.
 3. Ask Ariel to correct the Claude labels (checkpoint H5), so decisions stop resting on
    Claude's own eye.
-4. Next performance hotspots: h_maxima/reconstruction (~2.5 s of ~5 s) and nor3.finish.
+4. Performance: every finder was profiled on 2026-09-29 (ledger §4). In the browser tl now takes
+   7 s, rf 12 s, fill 11 s, walk 12 s, blobs 6 s. Next hotspot: `nor3.finish`; the other proposals
+   are listed under that profile.
 
 ## Files
 | file | what |
@@ -63,6 +65,7 @@ _Last updated 2026-09-28._
 | nor_lab.py | `cmp`, `run --sheets`, `diff`, `ablate` against the labels |
 | render_std.py | the standard review render for any spec |
 | perf.py | snapshot / profile / check for speed-ups |
+| bench.py | time and peak memory of every finder along the page's path (browser/ runs it under Pyodide and on the live page) |
 | lab/ | labels, the pool used to draw them (mkpool.py, pool.json), ledger.md |
 | interactive.py | the page's engine: detect once, refilter on stored measurements (R8) |
 | browser/ | runs the finders in a browser runtime (Pyodide): measured parity, recommendation |
