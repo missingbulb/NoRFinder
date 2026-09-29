@@ -268,3 +268,20 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #busy { position: absolute; inset: 52px 0 0 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: var(--shade); color: var(--text); }
 #busy[hidden] { display: none; }
 #busy-time { color: var(--dim); font-variant-numeric: tabular-nums; }
+
+/* the Google Drive dialog */
+#drive-dlg { width: min(520px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
+  border: 1px solid var(--line); border-radius: var(--r-panel); box-shadow: 0 12px 40px #0006; }
+#drive-dlg::backdrop { background: #0007; }
+.drive-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+.drive-row.end { justify-content: space-between; }
+#drive-link { flex: 1; min-width: 0; }
+#drive-path { margin-top: 10px; font-size: 13px; }
+#drive-path:empty, #drive-list:empty { display: none; }
+#drive-list { display: flex; flex-direction: column; max-height: 300px; overflow-y: auto; margin-top: 6px;
+  border: 1px solid var(--line); border-radius: var(--r-ctl); }
+#drive-list .item { text-align: left; border: 0; border-radius: 0; background: none; padding: 6px 10px; }
+#drive-list .item + .item { border-top: 1px solid var(--line); }
+#drive-list .item:hover { background: var(--bg); }
+#drive-list .item.folder::before { content: "📁 "; }
+#drive-msg.err { color: var(--err); }

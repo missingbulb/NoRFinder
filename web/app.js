@@ -12,6 +12,7 @@ const SHOW = "nor-show-v1"; // the image view's Show menu
 const CARDS = "nor-cards-v1"; // the item views' Options menu
 const BARS = "nor-bars-v1"; // {left, right}: side bar widths in pixels
 const SOURCE = "nor-load-source"; // "local" | "drive": where Load reads from
+const DRIVE_LINK = "nor-drive-link"; // the last Google Drive link pasted
 const MEASURES = [
   ["length", "length", true], ["red_length", "red length", true], ["width", "width", true],
   ["red_over_length", "red / length", false], ["length_over_width", "length / width", false],
@@ -173,18 +174,56 @@ $("#file").onchange = async (e) => {
   const f = e.target.files[0]; if (!f || !st.worker) return;
   openBytes(f.name, await f.arrayBuffer()); e.target.value = "";
 };
-async function load(src) {
+function load(src) {
   writeJSON(SOURCE, src); $("#load-menu").open = false;
   if (src === "local") return $("#file").click();
-  try {
-    const f = await NorDrive.pick(status); if (f) openBytes(f.name, f.bytes);
-  } catch (err) { status("Google Drive: " + (err.message || err), true); }
+  $("#drive-link").value = readJSON(DRIVE_LINK, ""); $("#drive-dlg").showModal(); $("#drive-link").select();
 }
-$("#load-main").onclick = () => load(readJSON(SOURCE, "local") === "drive" && NorDrive.configured() ? "drive" : "local");
+$("#load-main").onclick = () => load(readJSON(SOURCE, "local"));
 document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => load(b.dataset.src)));
+
+// the Drive dialog: a pasted file link loads at once; a folder link lists its images and subfolders
 {
-  const d = document.querySelector('#load-menu .item[data-src="drive"]');
-  if (!NorDrive.configured()) { d.disabled = true; d.title = "Not set up on this site yet"; }
+  const msg = (t, err) => { $("#drive-msg").textContent = t; $("#drive-msg").classList.toggle("err", !!err); };
+  let trail = [];
+  const take = async (id, name) => {
+    msg("Downloading " + (name || "the image") + "…");
+    try {
+      const f = await NorDrive.file(id, name);
+      if (f.folder) { trail = [f]; return show(); }
+      $("#drive-dlg").close(); msg(""); openBytes(f.name, f.bytes);
+    } catch (err) { msg(err.message || String(err), true); }
+  };
+  const show = async () => {
+    const at = trail[trail.length - 1];
+    $("#drive-path").innerHTML = trail.map((t, k) => `<button type="button" class="link" data-k="${k}">${esc(t.name)}</button>`).join(" / ");
+    $("#drive-path").querySelectorAll("button").forEach((b) => (b.onclick = () => { trail = trail.slice(0, +b.dataset.k + 1); show(); }));
+    $("#drive-list").replaceChildren(); msg("Reading the folder…");
+    try {
+      const items = await NorDrive.list(at.id);
+      msg(items.length ? "" : "No TIFF or PNG images here.");
+      for (const f of items) {
+        const b = document.createElement("button"); b.type = "button"; b.className = "item" + (f.folder ? " folder" : "");
+        b.textContent = f.name;
+        b.onclick = () => (f.folder ? (trail.push(f), show()) : take(f.id, f.name));
+        $("#drive-list").append(b);
+      }
+    } catch (err) { msg(err.message || String(err), true); }
+  };
+  if (!NorDrive.ready) {
+    const d = document.querySelector('#load-menu .item[data-src="drive"]');
+    d.disabled = true; d.title = "Needs this site's Google API key (issue #234)";
+  }
+  const open = () => {
+    const link = $("#drive-link").value, ref = NorDrive.parse(link);
+    $("#drive-list").replaceChildren(); $("#drive-path").replaceChildren();
+    if (!ref) return msg("That does not look like a Google Drive link.", true);
+    writeJSON(DRIVE_LINK, link);
+    if (ref.kind === "file") return take(ref.id);
+    trail = [{ id: ref.id, name: "Folder" }]; show();
+  };
+  $("#drive-go").onclick = open;
+  $("#drive-link").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); open(); } });
 }
 
 // ---------- image ----------

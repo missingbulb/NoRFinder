@@ -283,9 +283,10 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   lasts. Filters never renumber candidates.
 - **Remembered marks.** Decisions and adjusted or approved lengths are saved in the browser per
   file name and finder, tied to each candidate's position.
-- **Google Drive.** An image picked in Google's own picker is read by the browser straight from
-  Drive, with access only to the picked file, and is never cached. The option is off until the
-  site has a Google Cloud project (`web/config.js`).
+- **Google Drive.** The user pastes the link of an image or a folder shared as "Anyone with the
+  link", with no sign-in. An image loads at once; a folder lists its images and subfolders to pick
+  from. It needs the site's Google API key (`web/config.js`); without one the option is off.
+  Nothing read from Drive is cached.
 - **Visible waiting.** While Python loads and while a finder runs, the page shows a spinner and
   the elapsed time.
 - **Remembered settings.** Filter settings persist in the browser across images, visits and

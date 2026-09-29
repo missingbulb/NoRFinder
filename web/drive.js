@@ -1,48 +1,52 @@
-// "Load from Google Drive": the user signs in with Google, picks one image in Google's own file
-// picker, and the browser reads that file straight from Drive. Nothing is kept: the file goes to
-// the finder like one loaded from the computer. The access asked for (drive.file) covers only the
-// files the user picks. Needs NOR_CONFIG.google (config.js).
+// "Load from Google Drive": the user pastes the link of an image or a folder shared as "Anyone
+// with the link", with no sign-in. Google answers a page on another site only through the Drive
+// API with an API key (NOR_CONFIG.google.apiKey, config.js): its plain download link refuses any
+// request a browser marks cross-site. Nothing is kept: the file goes to the finder like one loaded
+// from the computer.
 "use strict";
 window.NorDrive = (() => {
-  const cfg = (window.NOR_CONFIG && window.NOR_CONFIG.google) || {};
-  const configured = () => !!(cfg.apiKey && cfg.clientId && cfg.appId);
-  let token = null, ready = null;
+  const key = ((window.NOR_CONFIG && window.NOR_CONFIG.google) || {}).apiKey || "";
+  const API = "https://www.googleapis.com/drive/v3/files";
 
-  const script = (src) => new Promise((ok, fail) => {
-    const s = document.createElement("script"); s.src = src; s.async = true;
-    s.onload = ok; s.onerror = () => fail(new Error("could not reach Google (" + new URL(src).host + ")"));
-    document.head.append(s);
-  });
-  const boot = () => (ready ||= Promise.all([script("https://apis.google.com/js/api.js"), script("https://accounts.google.com/gsi/client")])
-    .then(() => new Promise((ok) => gapi.load("picker", ok))));
-
-  const signIn = () => new Promise((ok, fail) => {
-    const client = google.accounts.oauth2.initTokenClient({
-      client_id: cfg.clientId, scope: "https://www.googleapis.com/auth/drive.file",
-      callback: (r) => (r.error ? fail(new Error(r.error_description || r.error)) : ok((token = r.access_token))),
-      error_callback: (e) => fail(new Error(e.message || e.type || "sign-in was closed")),
-    });
-    client.requestAccessToken({ prompt: token ? "" : "consent" });
-  });
-
-  const choose = () => new Promise((ok) => {
-    const view = new google.picker.DocsView(google.picker.ViewId.DOCS).setMimeTypes("image/tiff,image/png").setIncludeFolders(true);
-    new google.picker.PickerBuilder().addView(view).setOAuthToken(token).setDeveloperKey(cfg.apiKey).setAppId(cfg.appId)
-      .setCallback((d) => {
-        if (d.action === google.picker.Action.PICKED) ok(d.docs[0]);
-        else if (d.action === google.picker.Action.CANCEL) ok(null);
-      }).build().setVisible(true);
-  });
-
-  // resolves {name, bytes} for the picked file, or null when the user closes the picker
-  async function pick(say) {
-    if (!configured()) throw new Error("not set up on this site");
-    say("Opening Google Drive…"); await boot(); await signIn();
-    const doc = await choose(); if (!doc) { say("Ready."); return null; }
-    say("Downloading " + doc.name + " from Google Drive…");
-    const r = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(doc.id)}?alt=media`, { headers: { Authorization: "Bearer " + token } });
-    if (!r.ok) throw new Error(`download failed (${r.status})`);
-    return { name: doc.name, bytes: await r.arrayBuffer() };
+  // {kind: "file" | "folder", id} from any Drive link; a bare id is looked up
+  function parse(link) {
+    const s = link.trim();
+    let m = s.match(/\/folders\/([\w-]{10,})/);
+    if (m) return { kind: "folder", id: m[1] };
+    m = s.match(/\/file\/d\/([\w-]{10,})/) || s.match(/[?&]id=([\w-]{10,})/) || s.match(/^([\w-]{20,})$/);
+    return m ? { kind: "file", id: m[1] } : null;
   }
-  return { configured, pick };
+
+  const need = () => { if (!key) throw new Error("this site has no Google API key yet (issue #234)"); };
+  const refused = (r, what) => new Error(r.status === 400
+    ? `Google refused this site's API key (${r.status})`
+    : `Drive refused the ${what} (${r.status}): is it shared as "Anyone with the link"?`);
+
+  async function file(id, name) {
+    need();
+    const at = `${API}/${encodeURIComponent(id)}`;
+    if (!name) {
+      const r = await fetch(`${at}?fields=name,mimeType&key=${key}`);
+      if (!r.ok) throw refused(r, "file");
+      const f = await r.json();
+      if (f.mimeType === "application/vnd.google-apps.folder") return { folder: true, id, name: f.name };
+      name = f.name;
+    }
+    const r = await fetch(`${at}?alt=media&key=${key}`);
+    if (!r.ok) throw refused(r, "file");
+    return { name, bytes: await r.arrayBuffer() };
+  }
+
+  // [{id, name, folder}] in a public folder: its subfolders and its TIFF and PNG images
+  async function list(id) {
+    need();
+    const q = encodeURIComponent(`'${id}' in parents and trashed = false`);
+    const r = await fetch(`${API}?q=${q}&fields=files(id,name,mimeType)&pageSize=1000&orderBy=folder,name&key=${key}`);
+    if (!r.ok) throw refused(r, "folder");
+    return (await r.json()).files
+      .map((f) => ({ id: f.id, name: f.name, folder: f.mimeType === "application/vnd.google-apps.folder" }))
+      .filter((f) => f.folder || /\.(tiff?|png)$/i.test(f.name));
+  }
+
+  return { parse, file, list, ready: !!key };
 })();
