@@ -423,11 +423,43 @@ const helpIcon = (name) => {
   return t ? `<span class="help" tabindex="0" role="note" aria-label="${esc(t)}" data-help="${esc(t)}">?</span>` : "";
 };
 function paramRange(name, v) {
-  if (/opposite|axis_dev|deg/.test(name)) return [0, 180, 1];
-  if (v <= 1) return [0, 1, 0.01];
-  const max = Math.ceil(v * 3); return [0, max, max / 300];
+  if (/opposite|axis_dev|deg|cone/.test(name)) return [0, 180, 1];
+  if (v < 1) return [0, 1, 0.01];
+  const max = Math.ceil(v * 3); return [0, max, Number.isInteger(v) ? 1 : max / 300];
 }
-
+// one setting's control, the same for the finder and the filters: its name, and for a number a slider
+// and a box; away from our value it is marked, with our value as a tick on the slider that puts it back
+function dial(name, def, value, onset) {
+  const kind = typeof def === "boolean" ? "bool" : typeof def === "number" ? "number" : "text";
+  const p = document.createElement("div"); p.className = "param " + kind; p.dataset.name = name;
+  let slider = "";
+  if (kind === "number") {
+    const [lo, hi, step] = paramRange(name, def), at = Math.min(1, Math.max(0, (def - lo) / (hi - lo)));
+    slider = `<div class="slide"><input type="range" min="${lo}" max="${hi}" step="${step}"><button type="button" class="ours" style="--at:${at}"
+      title="Ours: ${def}. Click to go back to it" aria-label="Back to ours, ${def}"></button></div>`;
+  }
+  const box = kind === "bool" ? '<input type="checkbox">' : kind === "number" ? '<input type="number" step="any" class="box">' : '<input type="text" class="box">';
+  p.innerHTML = `<span class="name">${name} ${helpIcon(name)}</span>${slider}${box}`;
+  const range = p.querySelector('input[type="range"]'), inp = p.querySelector(".box, input[type=checkbox]");
+  p.set = (v) => {
+    if (kind === "bool") inp.checked = v; else inp.value = kind === "text" ? JSON.stringify(v) : v;
+    if (range) range.value = v;
+    p.classList.toggle("changed", JSON.stringify(v) !== JSON.stringify(def));
+  };
+  const take = (raw) => {
+    let v;
+    try { v = kind === "bool" ? raw : kind === "number" ? parseFloat(raw) : JSON.parse(raw); } catch { return; }
+    if (kind === "number" && !isFinite(v)) return;
+    if (range) range.value = v; if (kind === "number" && document.activeElement !== inp) inp.value = v;
+    p.classList.toggle("changed", JSON.stringify(v) !== JSON.stringify(def));
+    onset(v);
+  };
+  inp.oninput = inp.onchange = () => take(kind === "bool" ? inp.checked : inp.value);
+  if (range) range.oninput = () => { inp.value = range.value; take(range.value); };
+  if (range) p.querySelector(".ours").onclick = () => { p.set(def); onset(def); };
+  p.set(value);
+  return p;
+}
 // the filters and their values for a finder: our numbers, overlaid with what this browser saved
 function useFilters(finder) {
   const about = st.about[finder], saved = loadSaved();
@@ -451,32 +483,14 @@ function buildFilters() {
     };
     d.classList.toggle("off", st.off.has(f.key));
     for (const name of Object.keys(f.params)) {
-      const [lo, hi, step] = paramRange(name, st.defaults[name]);
-      const p = document.createElement("div"); p.className = "param";
-      const at = Math.min(1, Math.max(0, (st.defaults[name] - lo) / (hi - lo)));
-      p.dataset.p = name;
-      p.innerHTML = `<span class="name">${name} ${helpIcon(name)}</span>
-        <div class="slide"><input type="range" min="${lo}" max="${hi}" step="${step}" data-p="${name}"><button type="button" class="ours" style="--at:${at}"
-          title="Ours: ${st.defaults[name]}. Click to go back to it" aria-label="Back to ours, ${st.defaults[name]}"></button></div><input type="number" step="any" data-p="${name}">`;
-      p.querySelector(".ours").onclick = () => { const n = p.querySelector('input[type="number"]'); n.value = st.defaults[name]; n.oninput(); };
-      d.append(p);
+      d.append(dial(name, st.defaults[name], st.values[name], (v) => {
+        st.values[name] = v;
+        document.querySelectorAll(`#filters .param[data-name="${name}"]`).forEach((o) => { if (!o.contains(document.activeElement)) o.set(v); });
+        save(); refilter();
+      }));
     }
     box.append(d);
   }
-  box.querySelectorAll("input[data-p]").forEach((inp) => {
-    inp.value = st.values[inp.dataset.p];
-    inp.oninput = () => {
-      const v = parseFloat(inp.value); if (!isFinite(v)) return;
-      st.values[inp.dataset.p] = v;
-      box.querySelectorAll(`input[data-p="${inp.dataset.p}"]`).forEach((o) => { if (o !== inp) o.value = v; });
-      markParams(); save(); refilter();
-    };
-  });
-  markParams();
-}
-// a filter setting away from our value is marked like a changed finder setting, with our value as a tick on its slider
-function markParams() {
-  document.querySelectorAll(".param").forEach((p) => p.classList.toggle("changed", st.values[p.dataset.p] !== st.defaults[p.dataset.p]));
 }
 
 // the finder's settings: its main ones on show, every one under Advanced; both edit the same values
@@ -484,22 +498,11 @@ function buildDetect() {
   const finder = $("#finder").value, about = st.about[finder];
   const defs = about.detection_params, vals = (st.detectValues[finder] ||= { ...defs });
   $("#finder-note").textContent = about.about + (about.exact_refilter ? "" : " It picks between alternatives using the filters, so after a filter change, find again for its exact result.");
-  const row = (k) => {
-    const def = defs[k], d = document.createElement("label"); d.className = "dparam"; d.dataset.k = k;
-    const kind = typeof def === "boolean" ? "checkbox" : typeof def === "number" ? "number" : "text";
-    d.innerHTML = `<span class="name">${k} ${helpIcon(k)}</span><input type="${kind}" ${kind === "number" ? 'step="any"' : ""} data-k="${k}">`;
-    const inp = d.querySelector("input");
-    if (kind === "checkbox") inp.checked = vals[k]; else inp.value = kind === "text" ? JSON.stringify(vals[k]) : vals[k];
-    inp.oninput = inp.onchange = () => {
-      let nv;
-      try { nv = kind === "checkbox" ? inp.checked : kind === "number" ? parseFloat(inp.value) : JSON.parse(inp.value); } catch { return; }
-      if (kind === "number" && !isFinite(nv)) return;
-      vals[k] = nv;
-      document.querySelectorAll(`input[data-k="${k}"]`).forEach((o) => { if (o !== inp) kind === "checkbox" ? (o.checked = nv) : (o.value = inp.value); });
-      updateFind();
-    };
-    return d;
-  };
+  const row = (k) => dial(k, defs[k], vals[k], (v) => {
+    vals[k] = v;
+    document.querySelectorAll(`#main-params .param[data-name="${k}"], #detect-params .param[data-name="${k}"]`).forEach((o) => { if (!o.contains(document.activeElement)) o.set(v); });
+    updateFind();
+  });
   $("#main-params").replaceChildren(...about.main_params.map(row));
   $("#detect-params").replaceChildren(...Object.keys(defs).map(row));
   updateFind();
@@ -515,7 +518,6 @@ const runKey = () => JSON.stringify([$("#finder").value, detectOverrides($("#fin
 function updateFind() {
   const finder = $("#finder").value; if (!st.about[finder]) return;
   const o = detectOverrides(finder), f = $("#find");
-  document.querySelectorAll(".dparam").forEach((r) => r.classList.toggle("changed", r.dataset.k in o));
   $("#reset-detect").disabled = !Object.keys(o).length;
   f.disabled = !st.img || !!st.running;
   f.classList.toggle("shine", !f.disabled && runKey() !== st.lastRun);

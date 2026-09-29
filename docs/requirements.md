@@ -259,8 +259,9 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   `detection/finder_help.py`; the lab's review sheets keep theirs), and two counts: how many
   candidates it rejects, whatever the other filters do, and how many only it rejects among the
   filters switched on (what switching it off would let through). Each of its parameters is a
-  dial, and every marking on the image follows it at once. A dial moved off our value is marked
-  like a changed finder setting, with our value as a tick on its slider that puts it back. A check added to `CHECKS` becomes a control with
+  dial, and every marking on the image follows it at once. A dial moved off our value is marked,
+  with our value as a tick on its slider that puts it back. Finder and filter settings use this
+  one control, so tweaking looks and works the same in both. A check added to `CHECKS` becomes a control with
   no page change.
 - **Detection settings are dials too.** They re-run the finder, and the page says that this takes
   time. Each finder names its main settings (its function's `MAIN`), shown first; every setting is
