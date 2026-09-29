@@ -289,7 +289,8 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   file name and finder, tied to each candidate's position.
 - **Google Drive.** The user pastes the link of an image or a folder shared as "Anyone with the
   link", with no sign-in. An image loads at once; a folder lists its images and subfolders to pick
-  from. It needs the site's Google API key (`web/config.js`); without one the option is off.
+  from. It needs the site's Google API key, kept in the repository variable `GOOGLE_API_KEY`
+  and written into `web/config.js` at deploy; without one the option is off.
   Nothing read from Drive is cached.
 - **No waiting to start.** Python loads in the background while the user picks an image, which
   opens as soon as Python is ready. Until an image is loaded, Load shines, and the finder and
