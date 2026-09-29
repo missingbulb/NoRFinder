@@ -304,6 +304,9 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   and the elapsed time.
 - **Remembered settings.** Filter settings persist in the browser across images, visits and
   days, and one button restores the defaults.
+- **An open page knows when it is out of date.** Every 5 minutes it compares its version with the
+  published one; when a newer one is out, the version box in the status bar lights up and
+  refreshes the page when clicked.
 - **Only our code is fetched fresh.** Third-party code (Pyodide, its packages, vendored wheels)
   is cached in the browser for 30 days.
 - **The page runs the lab's code.** The Python it runs is the repo's `detection/` and `src/` as

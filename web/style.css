@@ -275,6 +275,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #statusbar .spin { width: 12px; height: 12px; display: none; }
 #statusbar .spin.on { display: inline-block; }
 #sb-version { padding: 1px 8px; border: 1px solid var(--line); border-radius: var(--r-chip); font-variant-numeric: tabular-nums; }
+#sb-version.stale { cursor: pointer; color: var(--bg); background: var(--warn); border-color: var(--warn); font-weight: 600; }
 
 #tip { position: fixed; pointer-events: none; background: var(--tipbg); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 8px 10px; font-size: 12px; max-width: 320px; z-index: 10; white-space: pre-line; }
 
