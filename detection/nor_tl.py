@@ -32,29 +32,33 @@ def segment_tl(caspr, nav, bm, p=PT):
     cw = ndi.gaussian_filter(cn, p['win_u'] * unit) / tg; rw = ndi.gaussian_filter(rn, p['win_u'] * unit) / tr
     gwin = np.where(cw * tg >= rw * tr, cw, 0); rwin = np.where(rw * tr > cw * tg, rw, 0)
     gwin[bm] = 0; rwin[bm] = 0
-    best = np.zeros((H, W)); bang = np.zeros((H, W)); bd = np.zeros((H, W))
+    # s <= rwin, so only pixels whose red window reaches s_min can become a peak: score only those.
+    # The rest keep best = 0, which changes no peak since their true score is below s_min anyway.
+    sup = rwin >= p['s_min'] if p['s_min'] > 0 else np.ones((H, W), bool)
+    sy_, sx_ = np.nonzero(sup); rs1 = rwin[sy_, sx_]; n1 = len(sy_)
+    best1 = np.zeros(n1); bang1 = np.zeros(n1); bd1 = np.zeros(n1)
+    at = lambda img, oy, ox: ndi.map_coordinates(img, [sy_ + oy, sx_ + ox], order=1, cval=0)
     for a in np.arange(p['n_ang']) * np.pi / p['n_ang']:
         for du in p['d_u']:
             d = du * unit; dy, dx = d * np.sin(a), d * np.cos(a)
-            gA = ndi.shift(gwin, (-dy, -dx), order=1, cval=0)    # green seen at p + d
-            gB = ndi.shift(gwin, (dy, dx), order=1, cval=0)      # green seen at p - d
+            gA = at(gwin, dy, dx)       # green seen at p + d
+            gB = at(gwin, -dy, -dx)     # green seen at p - d
             # the weaker green window may be dimmer than the others (g_weak of the threshold)
-            s = np.minimum(np.minimum(np.maximum(gA, gB), np.minimum(gA, gB) / p['g_weak']), rwin)
+            s = np.minimum(np.minimum(np.maximum(gA, gB), np.minimum(gA, gB) / p['g_weak']), rs1)
             if p['dip']:
                 # between node and paranode there must be no dark gap: mid-points still lit
-                mA = ndi.shift(gwin + rwin, (-dy / 2, -dx / 2), order=1); mB = ndi.shift(gwin + rwin, (dy / 2, dx / 2), order=1)
+                mA = at(gwin + rwin, dy / 2, dx / 2); mB = at(gwin + rwin, -dy / 2, -dx / 2)
                 s = np.minimum(s, np.minimum(mA, mB) / p['dip'])
-            up = s > best; best[up] = s[up]; bang[up] = a; bd[up] = d
+            up = s > best1; best1[up] = s[up]; bang1[up] = a; bd1[up] = d
+    best = np.zeros((H, W)); bang = np.zeros((H, W)); bd = np.zeros((H, W))
+    best[sy_, sx_] = best1; bang[sy_, sx_] = bang1; bd[sy_, sx_] = bd1
     nms = max(3, 2 * int(round(p['nms_u'] * unit / 2)) + 1)
     peak = (best == ndi.maximum_filter(best, size=nms)) & (best >= p['s_min']) & valid_
     sy, sx = np.nonzero(peak); order = np.argsort(-best[sy, sx])
     # fibre direction from the structure tensor, only for the 'along the fibre' check
-    gy_, gx_ = np.gradient(ndi.gaussian_filter(cs_ + rs_, p['smooth_u'] * unit)); w = p['comb_u'] * unit
-    Jxx, Jyy, Jxy = (ndi.gaussian_filter(v, w) for v in (gx_ * gx_, gy_ * gy_, gx_ * gy_))
-    comb = 0.5 * np.arctan2(2 * Jxy, Jxx - Jyy) + np.pi / 2
+    comb = nor3.FibreAngle(ndi.gaussian_filter(cs_ + rs_, p['smooth_u'] * unit), p['comb_u'] * unit)
     from skimage.segmentation import watershed
-    from skimage.morphology import h_maxima
-    gpk = h_maxima(cs_, p['valley_depth'] * tg).astype(bool) & (cs_ > tg) & valid_
+    gpk = nor3.hmax_above(cs_, p['valley_depth'] * tg, tg) & valid_
     gbasin = watershed(-cs_, ndi.label(gpk)[0], mask=(cs_ > p['fg'] * tg) & valid_)
     used = np.zeros((H, W), bool); cands = []
     snap = max(1.0, p['snap_u'] * unit)

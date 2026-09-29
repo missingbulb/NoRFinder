@@ -5,7 +5,7 @@ Read this first, then `lab/ledger.md` (everything tried, with verdicts). The met
 [`docs/requirements.md`](../docs/requirements.md) R7. Update this file in the PR that changes the
 state.
 
-_Last updated 2026-09-28._
+_Last updated 2026-09-29._
 
 ## Setup
 1. `python3 -m pip install -r requirements.txt`
@@ -42,6 +42,9 @@ _Last updated 2026-09-28._
   failures included, in `lab/ledger.md`.
 - **Performance pass** at the end of long algorithmic tasks, never on quick fixes where Ariel is
   waiting: `perf.py` (the output must stay identical). See the skill.
+- **Algorithmic and performance work runs the raw Python finders** (`nor_lab.py`, `perf.py`,
+  `bench.py`), never through the web page (2026-09-29). The browser tools in `browser/` only check
+  the page's own runtime.
 - **Scale-free:** sizes in image units (median green half-length), never absolute pixels.
 - **One pixel belongs to at most one NoR.**
 
@@ -51,7 +54,9 @@ _Last updated 2026-09-28._
 2. Retry C10 (node = red outshining green) once there are more labels.
 3. Ask Ariel to correct the Claude labels (checkpoint H5), so decisions stop resting on
    Claude's own eye.
-4. Next performance hotspots: h_maxima/reconstruction (~2.5 s of ~5 s) and nor3.finish.
+4. Performance: every finder was profiled and sped up on 2026-09-29 with identical output (ledger
+   §4). Raw Python: tl 3.2 s, rf 6 s, fill 5 s, walk 4.6 s, blobs 2.4 s. A speed-up must never
+   change the output (Ariel: no quality loss for performance).
 
 ## Files
 | file | what |
@@ -63,6 +68,7 @@ _Last updated 2026-09-28._
 | nor_lab.py | `cmp`, `run --sheets`, `diff`, `ablate` against the labels |
 | render_std.py | the standard review render for any spec |
 | perf.py | snapshot / profile / check for speed-ups |
+| bench.py | time and peak memory of every finder along the page's path (browser/ runs it under Pyodide and on the live page) |
 | lab/ | labels, the pool used to draw them (mkpool.py, pool.json), ledger.md |
 | interactive.py | the page's engine: detect once, refilter on stored measurements (R8) |
 | browser/ | runs the finders in a browser runtime (Pyodide): measured parity, recommendation |
