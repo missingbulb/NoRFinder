@@ -37,3 +37,7 @@ every change the lab makes, and the lab loop (`nor_lab.py ablate`, labels, ledge
 ## Recommendation
 Pyodide while the algorithm is still changing: zero drift, measured parity, about 2x slower.
 Consider a JS port only once a finder is frozen and load time or speed is a real complaint.
+
+## Memory
+[`MEMORY.md`](MEMORY.md): where the page's memory goes, stage by stage (`mem_live.mjs` in
+Chromium, `mem_breakdown.mjs` in Node), and the options to reduce it with identical output.

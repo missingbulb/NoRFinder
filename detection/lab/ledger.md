@@ -68,3 +68,12 @@ run to run (same code measured 5.70 s and 4.81 s), so judge by min-of-3 and re-c
 | 09-27 | rf | skip the shape test entirely while the rectangle rule is off | 6.2 → 5.3 s | identical | kept |
 | 09-27 | rf | h_maxima on float32 instead of float64 | 5.7 → 4.7 s | **changed** (peaks differ at ties) | reverted. Revisit if the peak finder is replaced |
 | — | all | open: h_maxima/reconstruction (~2.5 s of ~5 s) and nor3.finish (~1.4 s) are the next hotspots | | | |
+
+### Browser memory, 2026-09-29 (Ariel: "memory breakdown for the Pyodide and libraries")
+Full notes in `detection/browser/MEMORY.md`. Chromium PSS for tl is 955 MB: Chromium 167, Pyodide
+95, packages 357 (109 of files in memory, ~170 for the 194 native modules `loadPackage` loads, of
+which the finders import 64), slide 128, tl detect 208 (its temporaries; wasm memory never shrinks).
+
+| date | change | Chromium memory | output | verdict |
+|---|---|---|---|---|
+| 09-29 | install with `unpackArchive` (only the imported wheels, native modules loaded on import) instead of `loadPackage` | tl 955 → 852 MB, rf 962 → 845 MB; ready 20 → 15 s | identical, all five finders (`mem_breakdown.mjs` hash) | proposed, waiting on Ariel |
