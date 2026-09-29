@@ -53,14 +53,16 @@ window.NorDrive = (() => {
     return { name, bytes: got === buf.byteLength ? buf : buf.slice(0, got) };
   }
 
-  // [{id, name, folder}] in a public folder: its subfolders and its TIFF and PNG images
+  // [{id, name, folder, size, created}] in a public folder: its subfolders and its TIFF and PNG images;
+  // size in bytes (null for a folder), created a Date
   async function list(id) {
     need();
     const q = encodeURIComponent(`'${id}' in parents and trashed = false`);
-    const r = await fetch(`${API}?q=${q}&fields=files(id,name,mimeType)&pageSize=1000&orderBy=folder,name&key=${key}`);
+    const r = await fetch(`${API}?q=${q}&fields=files(id,name,mimeType,size,createdTime)&pageSize=1000&orderBy=folder,name&key=${key}`);
     if (!r.ok) throw refused(r, "folder");
     return (await r.json()).files
-      .map((f) => ({ id: f.id, name: f.name, folder: f.mimeType === "application/vnd.google-apps.folder" }))
+      .map((f) => ({ id: f.id, name: f.name, folder: f.mimeType === "application/vnd.google-apps.folder",
+        size: f.size == null ? null : +f.size, created: f.createdTime ? new Date(f.createdTime) : null }))
       .filter((f) => f.folder || /\.(tiff?|png)$/i.test(f.name));
   }
 
