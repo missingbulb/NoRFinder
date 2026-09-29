@@ -22,7 +22,7 @@ import tifffile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'detection'))
-import interactive  # noqa: E402
+import interactive
 
 TIF = os.path.join(HERE, '..', 'data', 'raw', 'Left Up- Edited', 'Slide5_4AP_NoR.sld - Slice1_up_left2.tif')
 # a 200-pixel square of the slide that holds candidates, passing and failing, for every finder
