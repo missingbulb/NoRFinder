@@ -9,7 +9,7 @@ const THEME = "nor-theme"; // "dark" | "light"; absent = follow the system
 const MARKS = "nor-marks-v1:"; // + file name + "|" + finder: {"x,y": "in" | "out"}, the user's keepers and removals
 const EDITS = "nor-edits-v1:"; // + file name + "|" + finder: {"x,y": {length, red, approved}}, the user's measurements
 const SHOW = "nor-show-v1"; // the image view's Show menu
-const CARDS = "nor-cards-v2"; // the item views' Options menu: only what the user changed
+const CARDS = "nor-cards-v3"; // the item views' Options menu, one per view: {pass: {...}, fail: {...}}, only what the user changed
 const BARS = "nor-bars-v1"; // {left, right}: side bar widths in pixels
 const SOURCE = "nor-load-source"; // "local" | "drive": where Load reads from
 const DRIVE_LINK = "nor-drive-link"; // the last Google Drive link pasted
@@ -19,19 +19,30 @@ const MEASURES = [
 ];
 const BY_YOU = "rejected by you";
 const SHOW_DEFAULTS = { pass: true, fails: true, nums: true, letters: true, lines: true, passW: 1, passC: "#ff69c8", failW: 1, failC: "#008cff" };
-const CARD_DEFAULTS = { pad: null, align: true, borders: true, bars: true, lenImg: false, lenCard: false, adjust: true };
+// each item view opens with its own options: the finalists with everything needed to check and adjust
+// lengths, the rejected with just the NoR's borders and more context around it
+const CARD_DEFAULTS = {
+  pass: { pad: 4, align: true, borders: true, bars: true, lenImg: true, lenCard: false, adjust: true },
+  fail: { pad: 10, align: false, borders: true, bars: false, lenImg: false, lenCard: false, adjust: false },
+};
 
 const st = {
   worker: null, H: 0, W: 0, um: null, img: null, meta: null, seg: null, cands: [],
   fails: [], alone: null, forced: new Map(), edits: new Map(), defaults: {}, values: {}, off: new Set(),
   about: {}, detectValues: {}, lastRun: null, filtersFor: null, seq: 0, inflight: false, pending: false,
   zoom: 2, fileName: "", sha: "", numbers: new Map(), order: [], times: {}, sel: null, tab: "pass",
-  show: { ...SHOW_DEFAULTS, ...readJSON(SHOW) }, opt: { ...CARD_DEFAULTS, ...readJSON(CARDS) }, crops: new Map(),
+  show: { ...SHOW_DEFAULTS, ...readJSON(SHOW) }, opt: readOpts(), crops: new Map(),
 };
 
 function readJSON(key, fallback = {}) {
   try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
 }
+function readOpts() {
+  const saved = readJSON(CARDS);
+  return { pass: { ...CARD_DEFAULTS.pass, ...saved.pass }, fail: { ...CARD_DEFAULTS.fail, ...saved.fail } };
+}
+// the options a candidate's card is drawn with: those of the view it is listed in
+const optsOf = (c) => st.opt[result(c.i) === null ? "pass" : "fail"];
 function writeJSON(key, v) {
   try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* private mode: lasts for this page only */ }
 }
@@ -361,7 +372,7 @@ function onDetected(meta, seg) {
     .sort((a, b) => a.cy - b.cy || a.cx - b.cx);
   st.numbers = new Map(st.order.map((c, k) => [c.i, k + 1]));
   loadMarks();
-  buildOverlay(); $("#opt-pad").placeholder = autoPad();
+  buildOverlay();
   $("#switch").disabled = false;
   refilter();
 }
@@ -505,7 +516,7 @@ function buildFilters() {
     const d = document.createElement("div"); d.className = "filter"; d.dataset.key = f.key;
     d.innerHTML = `<label class="top"><input type="checkbox" ${st.off.has(f.key) ? "" : "checked"}>
       <span class="badge" style="--c:${colour(f.key)}">${f.letter}</span><span class="title">${esc(f.title)}</span>
-      <span class="n" title="Rejected by this filter, whatever the others do"></span><span class="n only" title="Rejected by this filter and by no other filter that is on: switching it off lets these through"></span></label><div class="desc">${esc(f.text)}</div>`;
+      <span class="n" title="X (Y): what this filter rejects&#10;X: candidates that pass every other filter that is on and fail only this one, so switching it off lets them through.&#10;Y: every candidate that fails this filter, whatever the others say."></span></label><div class="desc">${esc(f.text)}</div>`;
     d.querySelector("input").onchange = (e) => {
       e.target.checked ? st.off.delete(f.key) : st.off.add(f.key); d.classList.toggle("off", !e.target.checked); save(); refilter();
     };
@@ -563,8 +574,8 @@ function render() {
   }
   st.passes = passes; st.rejects = rejects;
   document.querySelectorAll(".filter").forEach((d) => {
-    d.querySelector(".n").textContent = st.alone ? st.alone.counts[d.dataset.key] ?? 0 : "";
-    d.querySelector(".n.only").textContent = st.alone ? st.alone.only[d.dataset.key] ?? 0 : "";
+    const k = d.dataset.key;
+    d.querySelector(".n").innerHTML = st.alone ? `${THUMB} ${st.alone.only[k] ?? 0} (${st.alone.counts[k] ?? 0})` : "";
   });
   $("#sb-counts").innerHTML = `<b>${st.order.length}</b> candidates · <b>${passes.length}</b> finalists`;
   $("#n-pass").textContent = passes.length; $("#n-fail").textContent = rejects.length;
@@ -576,11 +587,10 @@ function render() {
 // The crop, turned so the NoR lies level when "align to horizon" is on, with its outlines, bars and
 // length handles drawn over it. Cached until the options or the candidate's lengths change.
 function crop(c, size) {
-  const key = JSON.stringify([size, st.opt, st.edits.get(c.i) || null, st.show.passC, st.show.failC, result(c.i) === null]);
+  const o = optsOf(c), key = JSON.stringify([size, o, st.edits.get(c.i) || null, st.show.passC, st.show.failC, result(c.i) === null]);
   const hit = st.crops.get(c.i + "|" + size);
   if (hit && hit.key === key) return hit.node;
-  const L = linesOf(c), o = st.opt;
-  const pad = o.pad ?? autoPad();
+  const L = linesOf(c), pad = o.pad;
   let th = 0, cx = (c.bb[0] + c.bb[2]) / 2, cy = (c.bb[1] + c.bb[3]) / 2;
   if (L) {
     const [[a, b], [p, q]] = L.length; cx = (a + p) / 2; cy = (b + q) / 2;
@@ -617,7 +627,7 @@ function crop(c, size) {
 
 // bars, length labels and draggable ends over a crop, in its own turned coordinates
 function cropMarks(c, L, g) {
-  const o = st.opt, f = st.um || 1, svg = el("svg", { class: "marks", viewBox: `${g.u0} ${g.v0} ${g.uw} ${g.vw}`, width: g.uw * g.s, height: g.vw * g.s });
+  const o = optsOf(c), f = st.um || 1, svg = el("svg", { class: "marks", viewBox: `${g.u0} ${g.v0} ${g.uw} ${g.vw}`, width: g.uw * g.s, height: g.vw * g.s });
   const px = 1 / g.s, line = (k, cls) => { const [[a, b], [p, q]] = L[k].map(g.toUV); return el("line", { x1: a, y1: b, x2: p, y2: q, class: cls }); };
   const draw = () => {
     svg.replaceChildren();
@@ -655,23 +665,29 @@ function cropMarks(c, L, g) {
   });
   return svg;
 }
-const autoPad = () => Math.max(4, Math.round((st.meta && st.meta.unit) || 4));
 
+// thumbs up and down (paths from Lucide, ISC licence): the user's own verdict on a candidate
+const THUMB = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>`;
 const GOTO = `<svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2" class="dot"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></svg>`;
 function card(c, where) {
   const r = result(c.i), f = st.forced.get(c.i), d = document.createElement("div");
-  d.className = "card " + (r === null ? "pass" : "fail") + (f === "in" ? " approved" : f === "out" ? " byyou" : "");
-  const state = f === "in" ? "Approved" : f === "out" ? "Rejected by you" : r === null ? "Finalist" : "Rejected";
-  d.innerHTML = `<div class="head"><span class="num">#${st.numbers.get(c.i)}</span><span class="state">${state}</span><span class="acts"></span></div>`;
-  const acts = d.querySelector(".acts");
-  const btn = (label, title, on, fn, cls = "") => {
-    const b = document.createElement("button"); b.textContent = label; b.title = title; b.className = cls + (on ? " on" : "");
-    b.setAttribute("aria-pressed", on); b.onclick = fn; acts.append(b);
+  d.className = "card " + (r === null ? "pass" : "fail") + (f === "in" ? " approved" : f === "out" ? " byyou" : "") +
+    (where === "list" && c.i === st.sel ? " selected" : "");
+  d.dataset.i = c.i;
+  const state = r === null ? "Finalist" : "Rejected";
+  d.innerHTML = `<div class="head"><span class="num">#${st.numbers.get(c.i)}</span><span class="state">${state}</span>
+    <span class="verdict" role="group" aria-label="Your verdict"></span></div>`;
+  const acts = d.querySelector(".verdict");
+  const btn = (cls, on, title, fn) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = cls + (on ? " on" : ""); b.innerHTML = THUMB;
+    b.title = title; b.setAttribute("aria-label", title); b.setAttribute("aria-pressed", on);
+    b.onclick = (e) => { e.stopPropagation(); st.sel = c.i; fn(); }; acts.append(b);
   };
-  btn("✅", f === "in" ? "Approved: click to undo" : "Approve: a real NoR, with the lengths shown (saved as ground truth)", f === "in",
-    () => decide(c.i, f === "in" ? null : "approve"), "emoji");
-  if (f === "out") btn("Un-reject", "Let the filters decide again", false, () => decide(c.i, null), "text");
-  else btn("❌", "Reject: not a NoR (saved as ground truth)", false, () => decide(c.i, "reject"), "emoji");
+  btn("up", f === "in", f === "in" ? "You said this is a NoR. Click to undo" : "A NoR: keep it, with its lengths as shown (saved as ground truth)",
+    () => decide(c.i, f === "in" ? null : "approve"));
+  btn("down", f === "out", f === "out" ? "You said this is not a NoR. Click to let the filters decide again" : "Not a NoR: reject it (saved as ground truth)",
+    () => decide(c.i, f === "out" ? null : "reject"));
+  if (where === "list") d.onclick = () => select(c.i);
   const wrap = document.createElement("div"); wrap.className = "crop-wrap";
   wrap.append(crop(c, where === "selected" ? 320 : 170));
   wrap.insertAdjacentHTML("beforeend", `<button class="goto" title="Show it on the image" aria-label="Show it on the image">${GOTO}</button>`);
@@ -683,7 +699,7 @@ function card(c, where) {
     d.querySelector(".tag button").onclick = () => edit(c.i, { length: null, red: null });
   }
   if (r !== null) d.insertAdjacentHTML("beforeend", `<div class="why">${whyAll(c).map((k) => `<span><b class="lt" style="--c:${colour(k)}">${reasonOf(k).letter}</b> ${esc(reasonOf(k).title)}</span>`).join("")}</div>`);
-  if (st.opt.lenCard && c.m) {
+  if (optsOf(c).lenCard && c.m) {
     const t = document.createElement("table");
     t.innerHTML = measures(c).map(([l, v]) => `<tr><td>${l}</td><td>${fmt(v)}</td></tr>`).join("");
     d.append(t);
@@ -700,6 +716,15 @@ function renderList() {
 // ---------- selection ----------
 function select(i) {
   st.sel = i; renderSelected(); placeRing();
+  document.querySelectorAll("#list .card").forEach((d) => d.classList.toggle("selected", +d.dataset.i === i));
+}
+// in the item views, the selected candidate's card is brought into sight, on the tab that lists it
+function revealSelected(block) {
+  if (st.sel == null || !st.meta) return;
+  const t = result(st.sel) === null ? "pass" : "fail";
+  if (t !== st.tab) { setTab(t); renderList(); }
+  const d = $(`#list .card[data-i="${st.sel}"]`);
+  if (d) d.scrollIntoView({ block, behavior: block === "center" ? "auto" : "smooth" });
 }
 function renderSelected() {
   const c = st.sel == null ? null : st.cands[st.sel];
@@ -717,12 +742,14 @@ function placeRing() {
   st.ring.setAttribute("r", Math.hypot(cc - a, d - b) / 2 + 4 / st.zoom);
 }
 // the next candidate by number among those on show
+// (in the item views: among the cards on show)
 function step(dir) {
-  const list = st.order.filter((c) => (result(c.i) === null ? st.show.pass : st.show.fails));
+  const list = st.view === "items" ? (st.tab === "pass" ? st.passes : st.rejects) || []
+    : st.order.filter((c) => (result(c.i) === null ? st.show.pass : st.show.fails));
   if (!list.length) return;
   const k = list.findIndex((c) => c.i === st.sel);
   const c = list[k < 0 ? (dir > 0 ? 0 : list.length - 1) : (k + dir + list.length) % list.length];
-  select(c.i); if (st.view === "image") focusOn(c);
+  select(c.i); if (st.view === "image") focusOn(c); else revealSelected("nearest");
 }
 $("#sel-prev").onclick = () => step(-1);
 $("#sel-next").onclick = () => step(1);
@@ -898,14 +925,30 @@ function applyShow() {
   }
   applyShow();
   const opts = { "opt-align": "align", "opt-borders": "borders", "opt-bars": "bars", "opt-len-img": "lenImg", "opt-len-card": "lenCard", "opt-adjust": "adjust" };
-  const changed = () => { writeJSON(CARDS, Object.fromEntries(Object.entries(st.opt).filter(([k, v]) => v !== CARD_DEFAULTS[k]))); if (st.meta) { if (st.view === "items") renderList(); renderSelected(); } };
-  for (const [id, k] of Object.entries(opts)) { const inp = $("#" + id); inp.checked = st.opt[k]; inp.onchange = () => { st.opt[k] = inp.checked; changed(); }; }
-  const pad = $("#opt-pad"); pad.value = st.opt.pad ?? "";
-  pad.oninput = () => { const v = parseInt(pad.value, 10); st.opt.pad = isFinite(v) && v >= 0 ? v : null; changed(); };
+  const changed = () => {
+    const diff = (t) => Object.fromEntries(Object.entries(st.opt[t]).filter(([k, v]) => v !== CARD_DEFAULTS[t][k]));
+    writeJSON(CARDS, { pass: diff("pass"), fail: diff("fail") });
+    if (st.meta) { if (st.view === "items") renderList(); renderSelected(); }
+  };
+  for (const [id, k] of Object.entries(opts)) { const inp = $("#" + id); inp.onchange = () => { st.opt[st.tab][k] = inp.checked; changed(); }; }
+  // an empty box puts the view's own padding back
+  const pad = $("#opt-pad");
+  pad.oninput = () => { const v = parseInt(pad.value, 10); st.opt[st.tab].pad = isFinite(v) && v >= 0 ? v : CARD_DEFAULTS[st.tab].pad; changed(); };
+  // the menu shows the options of the view on show
+  st.showOpts = () => {
+    for (const [id, k] of Object.entries(opts)) $("#" + id).checked = st.opt[st.tab][k];
+    if (document.activeElement !== pad) pad.value = st.opt[st.tab].pad;
+    pad.placeholder = CARD_DEFAULTS[st.tab].pad;
+    $("#card-menu summary").textContent = (st.tab === "pass" ? "Finalist" : "Rejected") + " options";
+  };
+  st.showOpts();
 }
 for (const [id, t] of [["#tab-pass", "pass"], ["#tab-fail", "fail"]]) $(id).onclick = () => {
-  st.tab = t; $("#tab-pass").classList.toggle("on", t === "pass"); $("#tab-fail").classList.toggle("on", t === "fail"); renderList();
+  if (st.tab !== t) setTab(t); renderList();
 };
+function setTab(t) {
+  st.tab = t; $("#tab-pass").classList.toggle("on", t === "pass"); $("#tab-fail").classList.toggle("on", t === "fail"); st.showOpts();
+}
 
 // ---------- boxes that fold: the finder and the filters, folded until there is an image ----------
 function fold(open) { document.querySelectorAll(".box.foldable").forEach((b) => b.classList.toggle("folded", !open)); }
@@ -922,7 +965,7 @@ function showView(v) {
   $("#image-view").hidden = v !== "image"; $("#items-view").hidden = v !== "items";
   $("#view").dataset.view = v;
   $("#switch").textContent = v === "image" ? "Item View" : "Image View";
-  if (v === "items" && st.meta) renderList();
+  if (v === "items" && st.meta) { renderList(); revealSelected("center"); }
   if (v === "image") thumbView();
 }
 $("#switch").onclick = () => showView(st.view === "image" ? "items" : "image");

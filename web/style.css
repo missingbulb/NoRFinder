@@ -1,7 +1,7 @@
 /* dark by default when the system says so; the header button overrides and is remembered */
 :root, :root[data-theme=dark] {
   --bg: #16181c; --panel: #1f2227; --line: #33373e; --text: #e6e6e6; --dim: #9aa0a8; --shade: #16181cb0; --tipbg: #000d;
-  --pink: rgb(255, 105, 200); --blue: rgb(0, 140, 255); --accent: #4c8dff; --warn: #ffc864; --err: #ff7b7b;
+  --pink: rgb(255, 105, 200); --blue: rgb(0, 140, 255); --accent: #4c8dff; --yes: #2fb344; --no: #e5484d; --warn: #ffc864; --err: #ff7b7b;
   color-scheme: dark;
 }
 :root[data-theme=light] {
@@ -53,7 +53,8 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 /* three columns of panels; the gutters between them are the handles that resize the side bars */
 #layout { --lw: 320px; --rw: 400px; display: grid; grid-template-columns: var(--lw) var(--pad) minmax(0, 1fr) var(--pad) var(--rw);
   grid-template-rows: minmax(0, 1fr); min-height: 0; }
-aside { overflow-y: auto; padding: var(--pad); }
+/* the scrollbar's room is kept even when nothing scrolls, so folding a box never changes the bar's width */
+aside { overflow-y: auto; scrollbar-gutter: stable; scrollbar-width: thin; padding: var(--pad); }
 #left { padding-right: 0; }
 #right { padding-left: 0; }
 .gutter { cursor: col-resize; position: relative; }
@@ -85,17 +86,19 @@ input.ch.r { accent-color: #f33; } input.ch.g { accent-color: #2fb344; } input.c
 @keyframes shine { from { transform: translateX(-120%); } to { transform: translateX(320%); } }
 /* folding parts of a box */
 details.fold { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
-details.fold > summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--dim); list-style: none; }
+details.fold > summary { display: flex; align-items: center; gap: 7px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--dim); list-style: none; }
 details.fold > summary::-webkit-details-marker { display: none; }
-details.fold > summary::before { content: "▸"; display: inline-block; width: 14px; transition: transform .15s; }
-details.fold[open] > summary::before { transform: rotate(90deg); }
+/* every fold's arrow: a small triangle pointing right when folded and down when open, centred on its text */
+details.fold > summary::before, .box.foldable > .sec-head h2::before { content: ""; flex: none; width: 0; height: 0;
+  border-style: solid; border-width: 5px 0 5px 7px; border-color: transparent transparent transparent var(--dim); transition: transform .15s; }
+details.fold[open] > summary::before, .box.foldable:not(.folded) > .sec-head h2::before { transform: rotate(90deg); }
 #main-params { margin-top: 6px; }
 #advanced { margin-top: 10px; font-size: 13px; }
 #advanced[open] #detect-params { margin-top: 6px; }
 #advanced summary { cursor: pointer; }
 #main-params:empty { display: none; }
 .sec-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.sec-head h2 { margin: 0; }
+.sec-head h2, .sec-head button { margin: 0; white-space: nowrap; }
 .sec-head button { padding: 3px 10px; font-size: 12px; }
 button.link { border: 0; background: none; padding: 0; color: var(--accent); font-size: 12px; }
 button.link:not(:disabled):hover { text-decoration: underline; }
@@ -111,10 +114,9 @@ button.link:disabled { color: var(--dim); }
 .filter .badge { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: var(--r-chip);
   font-weight: 700; font-size: 12px; border: 1px solid color-mix(in srgb, var(--c), #000 var(--ink-amt)); background: color-mix(in srgb, var(--c) 14%, transparent); }
 .filter .title { flex: 1; font-weight: 600; font-size: 13px; }
-.filter .n { min-width: 34px; padding: 1px 8px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line);
-  text-align: center; font-size: 12px; font-variant-numeric: tabular-nums; }
+.filter .n { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; cursor: help; font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.filter .n svg { width: 13px; height: 13px; }
 .filter .n:empty { display: none; }
-.filter .n.only { border-style: dashed; color: var(--dim); }
 .filter .desc { color: var(--dim); font-size: 12px; margin: 6px 0 0; }
 .param { display: grid; grid-template-columns: 1fr 76px; gap: 2px 8px; align-items: center; margin-top: 6px; font-size: 12px; }
 .param .name { grid-column: 1 / 3; color: var(--dim); }
@@ -216,12 +218,19 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 .card .marks .handle { fill: #fff; stroke: #000; cursor: ew-resize; }
 .card .marks .handle.r { fill: #ff6b6b; }
 .card .head { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
-.card .head .acts { margin-left: auto; display: flex; gap: 4px; }
-.card .head .acts button { padding: 1px 6px; font-size: 13px; line-height: 1.3; background: var(--panel); }
-.card .head .acts button.emoji { filter: grayscale(1); opacity: .7; }
-.card .head .acts button.emoji:hover, .card .head .acts button.emoji.on { filter: none; opacity: 1; }
-.card .head .acts button.on { border-color: #2fb344; }
-.card .head .acts button.text { font-size: 11px; }
+/* the user's verdict: a thumbs up and a thumbs down side by side, quiet until pointed at or chosen */
+.card .verdict { margin-left: auto; display: inline-flex; flex: none; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--panel); }
+.card .verdict button { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 26px; padding: 0;
+  border: 0; border-radius: 0; background: transparent; color: var(--dim); transition: background .12s, color .12s; }
+.card .verdict button + button { border-left: 1px solid var(--line); }
+/* the thumb icon, on the cards and beside each filter's count; the filters' is a thumbs down */
+.card .verdict svg, .filter .n svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.card .verdict .down svg, .filter .n svg { transform: rotate(180deg) scaleX(-1); }
+.card .verdict .up:hover { color: var(--yes); background: color-mix(in srgb, var(--yes) 14%, transparent); }
+.card .verdict .down:hover { color: var(--no); background: color-mix(in srgb, var(--no) 14%, transparent); }
+.card .verdict .up.on { color: #fff; background: var(--yes); }
+.card .verdict .down.on { color: #fff; background: var(--no); }
+.card .verdict button.on svg { fill: #ffffff40; }
 /* the go-to button sits on the crop, faint until the pointer is over it */
 .card .crop-wrap { position: relative; width: max-content; max-width: 100%; margin: 0 auto 8px; }
 .card .crop-wrap .crop { margin: 0; }
@@ -233,11 +242,15 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 .card .goto svg .dot { fill: currentColor; stroke: none; }
 .card .num { font-weight: 700; }
 .card.pass .num { color: var(--pink); } .card.fail .num { color: var(--blue); }
-.card .state { color: var(--dim); }
+.card .state { color: var(--dim); min-width: 0; }
+/* the selected candidate's card in the item views */
+.card { cursor: pointer; scroll-margin: var(--pad); }
+#selected .card { cursor: default; }
+.card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), 0 0 14px color-mix(in srgb, var(--accent) 45%, transparent); }
 .card .tag { color: var(--warn); margin: -2px 0 4px; }
 .card .why { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 2px 0 6px; }
-.card.approved { border-color: #2fb344; }
-.card.byyou { border-color: var(--warn); }
+.card.approved { border-color: var(--yes); }
+.card.byyou { border-color: var(--no); }
 .card .tag button { font-size: 12px; margin-left: 6px; }
 .card button { padding: 2px 8px; font-size: 11px; border-radius: var(--r-chip); }
 .card table { width: 100%; border-collapse: collapse; }
@@ -327,7 +340,5 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 
 /* a box that folds: its title opens and closes it */
 .box.foldable > .sec-head h2 { display: flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }
-.box.foldable > .sec-head h2::before { content: ""; border: 5px solid transparent; border-top: 6px solid var(--dim); border-bottom: 0; transition: transform .15s; }
-.box.foldable.folded > .sec-head h2::before { transform: rotate(-90deg); }
 .box.foldable.folded > :not(.sec-head) { display: none; }
 .box.foldable.folded > .sec-head button { display: none; }
