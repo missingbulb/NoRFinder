@@ -1,6 +1,6 @@
 // "Load from Google Drive": the user pastes the link of an image or a folder shared as "Anyone
 // with the link", with no sign-in. Google answers a page on another site only through the Drive
-// API with an API key (NOR_CONFIG.google.apiKey, config.js): its plain download link refuses any
+// API with an API key (NOR_CONFIG.google.apiKey, written into config.js at deploy): its plain download link refuses any
 // request a browser marks cross-site. Nothing is kept: the file goes to the finder like one loaded
 // from the computer.
 "use strict";

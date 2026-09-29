@@ -1,6 +1,6 @@
-// Settings that belong to where the site is deployed, not to its code.
-// google.apiKey: lets "Load from Google Drive" read files and folders shared as "Anyone with the
-// link". It is public by design (Google restricts it to this site's address); empty, the option is off.
+// Settings that belong to where the site is deployed, not to its code. The deploy overwrites this
+// file (web/build.py) with the repository variable GOOGLE_API_KEY, which lets "Load from Google
+// Drive" read files and folders shared as "Anyone with the link"; empty, the option is off.
 window.NOR_CONFIG = {
   google: { apiKey: "" },
 };
