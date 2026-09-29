@@ -290,13 +290,14 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #busy { position: absolute; inset: 52px 0 0 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: var(--shade); color: var(--text); }
 #busy[hidden] { display: none; }
 #busy-time { color: var(--dim); font-variant-numeric: tabular-nums; }
-/* Find Candidates: a copier's light bar sweeps back and forth over the image, the text in a pill below */
+/* over an image (Find Candidates, or one painting as it downloads) the text sits in a pill below it, and
+   Find Candidates sweeps a copier's light bar back and forth over the image */
 #scan-light { display: none; }
-#busy.scan { background: none; justify-content: flex-end; padding-bottom: 28px; pointer-events: none; overflow: hidden; }
-#busy.scan .spin.big { display: none; }
-#busy.scan #busy-text, #busy.scan #busy-time { position: relative; z-index: 1; }
-#busy.scan #busy-text { padding: 5px 14px; border-radius: 999px; background: var(--shade); font-weight: 600; }
-#busy.scan #busy-time { margin-top: -6px; padding: 1px 10px; border-radius: 999px; background: var(--shade); color: var(--text); }
+#busy.scan, #busy.peek { background: none; justify-content: flex-end; padding-bottom: 28px; pointer-events: none; overflow: hidden; }
+#busy.scan .spin.big, #busy.peek .spin.big { display: none; }
+#busy.scan #busy-text, #busy.scan #busy-time, #busy.peek #busy-text, #busy.peek #busy-time { position: relative; z-index: 1; }
+#busy.scan #busy-text, #busy.peek #busy-text { padding: 5px 14px; border-radius: 999px; background: var(--shade); font-weight: 600; font-variant-numeric: tabular-nums; }
+#busy.scan #busy-time, #busy.peek #busy-time { margin-top: -6px; padding: 1px 10px; border-radius: 999px; background: var(--shade); color: var(--text); }
 #busy.scan #scan-light { display: block; position: absolute; top: 0; bottom: 0; left: -90px; width: 90px; mix-blend-mode: screen;
   background: linear-gradient(90deg, transparent, rgba(150, 255, 190, .10) 30%, rgba(235, 255, 245, .75) 50%, rgba(150, 255, 190, .10) 70%, transparent);
   box-shadow: 0 0 60px 20px rgba(120, 255, 170, .18); animation: copier 2.4s ease-in-out infinite alternate; }

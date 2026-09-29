@@ -82,11 +82,13 @@ function status(text, err) {
   if (st.busySince) $("#busy-text").textContent = text;
   if (err) busy(false);
 }
-// the spinner and elapsed time shown while Python loads or a finder runs; a finder running over an image
-// shows a photocopier's light sweeping across it instead of the spinner
-function busy(on, text, scan) {
+// the spinner and elapsed time shown while Python loads or a finder runs. look "scan": a finder running over
+// an image shows a photocopier's light sweeping across it instead of the spinner; "peek": the image painting
+// as it arrives stays in view, the text in a pill below it
+function busy(on, text, look) {
   clearInterval(st.busyTimer); st.busySince = on ? st.busySince || Date.now() : 0;
-  $("#spin").classList.toggle("on", on); $("#busy").hidden = !on; $("#busy").classList.toggle("scan", !!(on && scan));
+  $("#spin").classList.toggle("on", on); $("#busy").hidden = !on;
+  $("#busy").classList.toggle("scan", on && look === "scan"); $("#busy").classList.toggle("peek", on && look === "peek");
   if (!on) return;
   $("#busy-text").textContent = text || $("#status").textContent; $("#busy-time").textContent = "";
   st.busyTimer = setInterval(() => { $("#busy-time").textContent = ((Date.now() - st.busySince) / 1000).toFixed(0) + " s"; }, 500);
@@ -134,7 +136,7 @@ function onWorker(m) {
   } else if (m.type === "opened") {
     st.H = m.H; st.W = m.W; st.um = m.um; const n = m.H * m.W;
     st.img = { r: m.images.subarray(0, n), g: m.images.subarray(n, 2 * n), b: m.images.subarray(2 * n, 3 * n) };
-    st.plain = null; drawBase(); $("#empty").hidden = true; $("#stage").hidden = false; $("#thumb-wrap").hidden = false;
+    st.plain = null; st.peeked = false; drawBase(); $("#empty").hidden = true; $("#stage").hidden = false; $("#thumb-wrap").hidden = false;
     setZoom(st.zoom);
     busy(false); st.times.open = m.secs; st.times.detect = st.times.filter = null; statusBar();
     showView("image"); updateFind(); fold(true); loadShine();
@@ -154,7 +156,7 @@ function onWorker(m) {
 function detect() {
   const finder = $("#finder").value, overrides = detectOverrides(finder);
   st.running = runKey(); st.runOverrides = overrides; $("#find").disabled = true; $("#find").classList.remove("shine");
-  busy(true, "Finding candidates…", true);
+  busy(true, "Finding candidates…", "scan");
   st.worker.postMessage({ type: "detect", finder, overrides });
 }
 
@@ -174,17 +176,28 @@ async function openBytes(name, bytes) {
   $("#switch").disabled = true; $("#sb-counts").textContent = ""; downloads(false); renderSelected();
   if (st.ready) return send(name, bytes);
   // Python is still loading: the image opens the moment it is ready
-  st.queued = { name, bytes }; busy(true, "Python is still loading; your image opens as soon as it is ready…"); loadShine();
+  st.queued = { name, bytes }; busy(true, "Python is still loading; your image opens as soon as it is ready…", st.peeked && "peek"); loadShine();
 }
 function send(name, bytes) {
-  busy(true, "Reading the image…");
+  busy(true, "Reading the image…", st.peeked && "peek");
   st.worker.postMessage({ type: "open", name, bytes }, [bytes]);
+}
+// a painter for the image's bytes as they arrive (peek.js), shown until Python's own drawing replaces it
+function peek() {
+  st.peeked = false;
+  const shown = () => ["show-r", "show-g", "show-b"].map((id) => $("#" + id).checked);
+  return (st.peek = NorPeek.painter($("#base"), shown, (W, H) => {
+    st.img = null; st.plain = null; st.W = W; st.H = H; st.peeked = true;
+    $("#overlay").innerHTML = ""; $("#empty").hidden = true; $("#stage").hidden = false; $("#thumb-wrap").hidden = true;
+    setZoom(st.zoom); updateFind();
+  }));
 }
 // Load shimmers until there is an image to work on
 const loadShine = () => $("#load-main").classList.toggle("shine", !st.img && !st.queued);
 $("#file").onchange = async (e) => {
   const f = e.target.files[0]; if (!f) return;
-  openBytes(f.name, await f.arrayBuffer()); e.target.value = "";
+  const bytes = await f.arrayBuffer(); peek()(bytes, bytes.byteLength);
+  openBytes(f.name, bytes); e.target.value = "";
 };
 function load(src) {
   writeJSON(SOURCE, src); $("#load-menu").open = false;
@@ -202,11 +215,21 @@ document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => 
   let trail = [];
   const take = async (id, name) => {
     msg("Downloading " + (name || "the image") + "…");
+    const mb = (n) => (n / 1048576).toFixed(1);
+    let push, what;
     try {
-      const f = await NorDrive.file(id, name);
+      const f = await NorDrive.file(id, name, (n) => {
+        what = n; $("#drive-dlg").close(); msg(""); push = peek(); busy(true, `Downloading ${n}…`, "peek");
+      }, (buf, got, total) => {
+        push(buf, got);
+        $("#busy-text").textContent = `Downloading ${what} · ${mb(got)}${total ? " of " + mb(total) : ""} MB`;
+      });
       if (f.folder) { trail = [f]; return show(); }
-      $("#drive-dlg").close(); msg(""); openBytes(f.name, f.bytes);
-    } catch (err) { msg(err.message || String(err), true); }
+      openBytes(f.name, f.bytes);
+    } catch (err) {
+      busy(false); if (!$("#drive-dlg").open) $("#drive-dlg").showModal();
+      msg(err.message || String(err), true);
+    }
   };
   const show = async () => {
     const at = trail[trail.length - 1];
@@ -851,7 +874,7 @@ $("#reset-filters").onclick = () => {
 };
 $("#zoom-in").onclick = () => setZoom(st.zoom * 1.25);
 $("#zoom-out").onclick = () => setZoom(st.zoom / 1.25);
-for (const id of ["show-r", "show-g", "show-b"]) $("#" + id).onchange = () => st.img && drawBase();
+for (const id of ["show-r", "show-g", "show-b"]) $("#" + id).onchange = () => (st.img ? drawBase() : st.peeked && st.peek.redraw());
 
 // ---------- the Show and Options menus, remembered in this browser ----------
 function applyShow() {
