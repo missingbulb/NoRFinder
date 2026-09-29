@@ -13,9 +13,15 @@ async function boot() {
   const { loadPyodide } = await import(PYODIDE + "pyodide.mjs");
   py = await loadPyodide({ indexURL: PYODIDE });
   say("Loading numpy, scipy, scikit-image…");
-  await py.loadPackage(["numpy", "scipy", "scikit-image", "pillow", "micropip"]);
-  const wheels = await (await fetch("vendor/wheels.json")).json();
-  await py.pyimport("micropip").install(wheels.map((w) => new URL("vendor/" + w, self.location.href).href));
+  // Only the packages the finders import are unpacked, and each native module loads the first time
+  // Python imports it: loadPackage would load every module of every package and of its dependencies
+  // up front, about 100 MB more memory. A package missing here fails loudly as an ImportError.
+  const lock = (await (await fetch(PYODIDE + "pyodide-lock.json")).json()).packages;
+  const vendored = (await (await fetch("vendor/wheels.json")).json()).map((w) => ({ url: new URL("vendor/" + w, self.location.href).href }));
+  const wheels = ["numpy", "scipy", "scikit-image", "lazy-loader", "packaging", "pillow"]
+    .map((n) => ({ url: PYODIDE + lock[n].file_name, sha256: lock[n].sha256 })).concat(vendored);
+  const site = py.runPython("import sysconfig; sysconfig.get_path('purelib')");
+  for (const buf of await Promise.all(wheels.map(fetchWheel))) py.unpackArchive(buf, "wheel", { extractDir: site });
   say("Loading the finders…");
   // Python modules are read straight from the repo's layout as they are imported: a new finder
   // file in detection/ ships with no list to update.
@@ -44,6 +50,17 @@ import interactive, json
   const finders = JSON.parse(py.runPython("json.dumps(interactive.FINDERS)"));
   const about = JSON.parse(py.runPython("json.dumps({f: interactive.describe(f) for f in interactive.FINDERS})"));
   postMessage({ type: "ready", finders, about, secs: (performance.now() - t0) / 1000 });
+}
+
+async function fetchWheel({ url, sha256 }) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
+  const buf = await r.arrayBuffer();
+  if (sha256) {
+    const got = [...new Uint8Array(await crypto.subtle.digest("SHA-256", buf))].map((b) => b.toString(16).padStart(2, "0")).join("");
+    if (got !== sha256) throw new Error(`${url}: checksum mismatch`);
+  }
+  return buf;
 }
 
 const booted = boot().catch((e) => postMessage({ type: "error", text: String(e) }));

@@ -44,7 +44,7 @@ the largest peak seen so far.
 
 ## Options that keep the output identical
 
-1. **Install lazily** (measured). Unpack only the wheels the finders import (numpy, scipy,
+1. **Install lazily** (measured; the page does this since 2026-09-29). Unpack only the wheels the finders import (numpy, scipy,
    scikit-image, lazy_loader, packaging, pillow, tifffile) with `pyodide.unpackArchive` instead
    of `loadPackage`, and let Python load a native module the first time it is imported. Same
    wheel files, same binaries, same Python code. About 20 lines in `web/worker.js`, including
@@ -93,6 +93,5 @@ or Pyodide's 95 MB.
 
 ## Recommendation
 
-Stay on Pyodide and Python. Take option 1 now: it is small, mechanical, and proven identical on
-every finder. Then work on option 2 inside the perf loop, starting with tl, since the finders'
+Stay on Pyodide and Python. Option 1 is done. Next, work on option 2 inside the perf loop, starting with tl, since the finders'
 peaks are the largest part left that is ours to change.
