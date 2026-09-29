@@ -936,5 +936,21 @@ document.addEventListener("click", (e) => { document.querySelectorAll("details.m
 showView("image");
 // the release writes the version into the element's title; show it as text
 $("#sb-version").textContent = "v" + $("#sb-version").title.replace(/^version /, "");
+// every 5 minutes, compare this page's version with the one now published; a newer one lights up the
+// version box, which then reloads the page when clicked
+{
+  const mine = $("#sb-version").title, v = $("#sb-version");
+  const check = async () => {
+    try {
+      const html = await (await fetch(location.pathname, { cache: "no-store" })).text();
+      const live = (html.match(/id="sb-version" title="([^"]*)"/) || [])[1];
+      if (!live || live === mine || v.classList.contains("stale")) return;
+      v.classList.add("stale"); v.textContent = "Refresh for " + live.replace(/^version /, "v");
+      v.title = `This page is ${mine}; ${live} is out. Click to refresh.`; v.setAttribute("role", "button"); v.tabIndex = 0;
+      v.onclick = v.onkeydown = (e) => { if (e.type === "click" || e.key === "Enter") location.reload(); };
+    } catch { /* offline: try again next time */ }
+  };
+  setInterval(check, 5 * 60 * 1000);
+}
 
 start();
