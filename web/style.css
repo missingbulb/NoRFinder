@@ -303,8 +303,8 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #drive-msg.err { color: var(--err); }
 
 /* a box that folds: its title opens and closes it */
-.box.foldable > .sec-head h2, .box.foldable > h2 { cursor: pointer; user-select: none; }
-.box.foldable > .sec-head h2::before { content: "▾"; display: inline-block; width: 16px; color: var(--dim); transition: transform .15s; }
+.box.foldable > .sec-head h2 { display: flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }
+.box.foldable > .sec-head h2::before { content: ""; border: 5px solid transparent; border-top: 6px solid var(--dim); border-bottom: 0; transition: transform .15s; }
 .box.foldable.folded > .sec-head h2::before { transform: rotate(-90deg); }
 .box.foldable.folded > :not(.sec-head) { display: none; }
 .box.foldable.folded > .sec-head button { display: none; }
