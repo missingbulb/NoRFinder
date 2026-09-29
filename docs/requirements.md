@@ -319,4 +319,4 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   with the blue mask applied after finding.
 - **Memory does not grow with use.** Opening image after image, running the finders again and
   moving filters leaves the page, its worker and the Python inside holding no more than the last
-  time it did the same thing (`tests/test_page_memory.mjs`, in headless Chromium).
+  time it did the same thing (`tests/test_memory.py`).
