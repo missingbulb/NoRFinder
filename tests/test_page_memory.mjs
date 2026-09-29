@@ -29,6 +29,10 @@ const opt = (name, def) => { const i = process.argv.indexOf("--" + name); return
 const ROUNDS = +opt("rounds", 2), MOVES = 12;
 let FINDERS = opt("finders", "").split(",").filter(Boolean);   // all the page offers, unless named
 const MB = 1024 * 1024;
+// every wait is bounded, and the whole run too, so a message that never comes fails instead of hanging
+const STEP_MS = 180000;
+setTimeout(() => { console.error("gave up: the run took over 20 minutes"); process.exit(1); }, 20 * 60000).unref();
+const bounded = (p, what) => Promise.race([p, new Promise((_, bad) => setTimeout(() => bad(new Error(`no ${what} within ${STEP_MS / 1000} s`)), STEP_MS).unref())]);
 // What a round may leave behind, beyond the warm-up. Python and the page must come back to where they
 // were; the V8 heaps get a little slack for code caches and inline caches that settle over the first rounds.
 const LIMITS = { pyUsedAfterGc: 1 * MB, pyObjects: 500, pageHeap: 1 * MB, workerHeap: 1 * MB, pageBuffers: 1 * MB, workerBuffers: 1 * MB, nodes: 0, listeners: 0 };
@@ -78,22 +82,22 @@ cdp.on("Target.receivedMessageFromTarget", (e) => {
   const m = JSON.parse(e.message); const p = pending.get(m.id);
   if (p) { pending.delete(m.id); m.error ? p.bad(new Error(m.error.message)) : p.ok(m.result); }
 });
-const inWorker = (method, params = {}) => new Promise((ok, bad) => {
+const inWorker = (method, params = {}) => bounded(new Promise((ok, bad) => {
   const id = nextId++; pending.set(id, { ok, bad });
   cdp.send("Target.sendMessageToTarget", { sessionId: workerSession, message: JSON.stringify({ id, method, params }) });
-});
+}), method);
 await cdp.send("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: false, flatten: false });
 await cdp.send("Performance.enable");
 
 // resolves with the worker's next message of this type (the page's own handler still gets it)
-const next = (type) => page.evaluate((type) => new Promise((ok, bad) => {
+const next = (type) => bounded(page.evaluate((type) => new Promise((ok, bad) => {
   const h = (e) => {
     if (e.data.type === type) { st.worker.removeEventListener("message", h); ok(e.data.type === "memory" ? e.data : null); }
     else if (e.data.type === "error") { st.worker.removeEventListener("message", h); bad(new Error(e.data.text)); }
   };
   st.worker.addEventListener("message", h);
-}), type);
-const settled = () => page.waitForFunction(() => !st.inflight && !st.pending && $("#busy").hidden);
+}), type), type);
+const settled = () => page.waitForFunction(() => !st.inflight && !st.pending && $("#busy").hidden, null, { timeout: STEP_MS });
 
 // the slide under a new name each time, as when someone goes through a folder of images
 let opened = 0;
@@ -111,6 +115,7 @@ async function find() { for (const f of FINDERS) await findWith(f); }
 // moves each numeric filter in turn away from its value and back, in both views, as someone tuning would
 async function tune() {
   const n = await page.evaluate(() => document.querySelectorAll("#filters .param.number").length);
+  assert.ok(n >= 6, `only ${n} filter dials to move`);
   for (let k = 0; k < MOVES; k++) {
     const done = next("filtered");
     await page.evaluate(([k, n]) => {
@@ -159,6 +164,7 @@ clearInterval(ticker);
 if (!(await page.evaluate(() => st.ready))) throw new Error(await page.evaluate(() => $("#status").textContent));
 console.log(`python ready in ${((Date.now() - t0) / 1000).toFixed(0)} s`);
 if (!FINDERS.length) FINDERS = await page.evaluate(() => [...$("#finder").options].map((o) => o.value));
+assert.ok(FINDERS.length >= 1, "the page offers no finder");
 
 // each action on its own, so a leak is pinned to the action that makes it
 const actions = { open, find, tune };
