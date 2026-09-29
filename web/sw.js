@@ -1,4 +1,4 @@
-// Keeps everything that is not this site's own code (Pyodide and its packages from the CDN, and the
+// Keeps the third-party code the page runs (Pyodide and its packages from the CDN, and the
 // wheels the build vendors under vendor/) in Cache Storage for 30 days, so a return visit starts
 // without downloading ~50 MB again. The site's own files always come from the network, so a
 // deploy is picked up on the next load.
@@ -13,7 +13,9 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   const u = new URL(req.url);
   const own = u.origin === self.location.origin && !u.pathname.includes("/vendor/");
-  if (req.method !== "GET") return;
+  // only the code the page runs is kept: never a user's own files, such as one read from Google Drive
+  const code = !own && (u.origin === self.location.origin || u.hostname === "cdn.jsdelivr.net");
+  if (req.method !== "GET" || !(own || code)) return;
   // own files are revalidated on every load: from the browser's plain HTTP cache a fresh page could
   // arrive with the previous release's stylesheet or scripts
   e.respondWith(own ? fetch(req, { cache: "no-cache" }) : cached(req));

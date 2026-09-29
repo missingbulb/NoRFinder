@@ -1,6 +1,6 @@
 // Runs the repo's Python finders (detection/interactive.py) under Pyodide, off the page's thread.
 // Messages in: open {name, bytes}, detect {finder, overrides}, refilter {spec, seq}.
-// Messages out: progress {text}, ready {finders, about}, opened {H, W, images}, detected {meta, seg}, filtered {fails, seq}, error {text}.
+// Messages out: progress {text}, ready {finders, about}, opened {H, W, images}, detected {meta, seg}, filtered {fails, alone, seq}, error {text}.
 // A module worker: its imports are fetched with CORS, so the service worker can cache them.
 const PYODIDE = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/";
 
@@ -70,8 +70,8 @@ async function handle(m) {
     postMessage({ type: "detected", meta, seg, secs: (performance.now() - t0) / 1000 }, [seg.buffer]);
   } else if (m.type === "refilter") {
     py.globals.set("spec", JSON.stringify(m.spec));
-    const fails = JSON.parse(py.runPython("json.dumps(S.refilter(json.loads(spec)))"));
-    postMessage({ type: "filtered", fails, seq: m.seq, ms: performance.now() - t0 });
+    const { fails, alone } = JSON.parse(py.runPython("sp = json.loads(spec); json.dumps(dict(fails=S.refilter(sp), alone=S.alone(sp)))"));
+    postMessage({ type: "filtered", fails, alone, seq: m.seq, ms: performance.now() - t0 });
   }
 }
 

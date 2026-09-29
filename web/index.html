@@ -23,25 +23,42 @@
 
 <div id="layout">
   <aside id="left">
-    <section class="box">
-      <h2>Image</h2>
-      <label class="file" id="file-label">Load image<input id="file" type="file" accept=".tif,.tiff,.png" disabled></label>
+    <section class="box" id="image-box">
+      <div class="sec-head">
+        <h2>Image</h2>
+        <div class="split" id="load">
+          <button id="load-main" class="primary" disabled>Load</button><details class="menu" id="load-menu"><summary class="primary" aria-label="Where to load from"></summary>
+            <div class="pop right">
+              <button class="item" data-src="local">From this computer</button>
+              <button class="item" data-src="drive">From Google Drive</button>
+            </div>
+          </details>
+        </div>
+        <input id="file" type="file" accept=".tif,.tiff,.png" hidden>
+      </div>
+      <div id="thumb-wrap" hidden><canvas id="thumb"></canvas><div id="thumb-view"></div></div>
       <div id="file-name" class="dim">No image loaded</div>
       <div class="layers">
-        <label title="Nav1.6: sodium channels at the node (shown red)"><input type="checkbox" id="show-r" checked> <span class="sw r"></span>Nav1.6</label>
-        <label title="Caspr: the paranodes either side of the node (shown green)"><input type="checkbox" id="show-g" checked> <span class="sw g"></span>Caspr</label>
-        <label title="DAPI: cell nuclei (shown blue)"><input type="checkbox" id="show-b"> <span class="sw b"></span>DAPI</label>
+        <label title="Nav1.6: sodium channels at the node (shown red)"><input type="checkbox" id="show-r" class="ch r" checked>Nav1.6</label>
+        <label title="Caspr: the paranodes either side of the node (shown green)"><input type="checkbox" id="show-g" class="ch g" checked>Caspr</label>
+        <label title="DAPI: cell nuclei (shown blue)"><input type="checkbox" id="show-b" class="ch b">DAPI</label>
       </div>
     </section>
 
     <section class="box">
       <h2>Candidates finder</h2>
       <select id="finder" disabled></select>
-      <p id="finder-note" class="hint"></p>
-      <div id="main-params"></div>
-      <details id="advanced">
-        <summary>Advanced <span class="dim">(every setting)</span></summary>
-        <div id="detect-params"></div>
+      <details id="about-box" class="fold">
+        <summary>How it works</summary>
+        <p id="finder-note" class="hint"></p>
+      </details>
+      <details id="settings-box" class="fold" open>
+        <summary>Settings</summary>
+        <div id="main-params"></div>
+        <details id="advanced">
+          <summary>Advanced <span class="dim">(every setting)</span></summary>
+          <div id="detect-params"></div>
+        </details>
       </details>
       <div class="row">
         <button id="reset-detect" disabled>Reset</button>
@@ -51,23 +68,42 @@
 
     <section class="box">
       <div class="sec-head"><h2>Filters</h2><button id="reset-filters" class="link" disabled>restore defaults</button></div>
-      <p class="hint">Instant, and remembered in this browser across images and visits. Untick a filter to switch it off.</p>
+      <p class="hint">Each count is what that filter rejects by itself, whatever the others do.</p>
       <div id="filters"></div>
     </section>
   </aside>
+  <div class="gutter" id="gutter-left" title="Drag to resize"></div>
 
   <main id="view">
     <div class="toolbar">
-      <div class="zoom" role="group" aria-label="Zoom">
-        <button id="zoom-out" title="Zoom out" aria-label="Zoom out">−</button><span id="zoom-label">2×</span><button id="zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
+      <div class="for-image zoom" role="group" aria-label="Zoom">
+        <button id="zoom-out" title="Zoom out" aria-label="Zoom out">−</button><span id="zoom-label">100%</span><button id="zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
       </div>
-      <details class="menu" id="show-menu">
+      <details class="menu for-image" id="show-menu">
         <summary>Show</summary>
         <div class="pop">
-          <label><input type="checkbox" id="show-fails" checked> rejected</label>
-          <label><input type="checkbox" id="show-labels" checked> numbers</label>
+          <div class="opt"><label><input type="checkbox" id="show-pass" checked> accepted</label>
+            <input type="range" id="pass-w" min="0.5" max="4" step="0.5" title="Line width"><input type="color" id="pass-c" title="Colour"></div>
+          <div class="opt"><label><input type="checkbox" id="show-fails" checked> rejected</label>
+            <input type="range" id="fail-w" min="0.5" max="4" step="0.5" title="Line width"><input type="color" id="fail-c" title="Colour"></div>
+          <label><input type="checkbox" id="show-nums" checked> candidate numbers</label>
+          <label><input type="checkbox" id="show-letters" checked> rejection reasons</label>
           <label><input type="checkbox" id="show-lines" checked> measuring lines</label>
-          <label><input type="checkbox" id="show-mask"> nucleus mask</label>
+        </div>
+      </details>
+      <div class="for-items tabs" role="tablist">
+        <button id="tab-pass" role="tab" class="on">Finalists <span id="n-pass"></span></button><button id="tab-fail" role="tab">Rejected <span id="n-fail"></span></button>
+      </div>
+      <details class="menu for-items" id="card-menu">
+        <summary>Options</summary>
+        <div class="pop">
+          <label class="num">context padding <input type="number" id="opt-pad" placeholder="auto" min="0" max="60" step="1"> px</label>
+          <label><input type="checkbox" id="opt-align"> align to horizon</label>
+          <label><input type="checkbox" id="opt-borders"> NoR borders</label>
+          <label><input type="checkbox" id="opt-bars"> measurement bars</label>
+          <label><input type="checkbox" id="opt-len-img"> lengths on the image</label>
+          <label><input type="checkbox" id="opt-len-card"> lengths on the card</label>
+          <label><input type="checkbox" id="opt-adjust"> length adjusters</label>
         </div>
       </details>
       <button id="switch" class="big" disabled>Item View</button>
@@ -83,16 +119,27 @@
     </div>
 
     <div id="items-view" hidden>
-      <div class="sec-head"><h2>Finalists <span id="n-pass"></span></h2><button id="csv" disabled>Download CSV</button></div>
-      <p class="hint">Starred (★) NoRs stay whatever the filters say; removed ones stay greyed and are left out of the totals. Both are remembered per file and finder. Click a crop to see it on the image.</p>
       <div id="list"></div>
     </div>
   </main>
+  <div class="gutter" id="gutter-right" title="Drag to resize"></div>
 
   <aside id="right">
+    <section class="box" id="selected-box">
+      <div class="sec-head"><h2>Selected</h2>
+        <div class="stepper"><button id="sel-prev" title="Previous candidate" aria-label="Previous candidate" disabled>‹</button><button id="sel-next" title="Next candidate" aria-label="Next candidate" disabled>›</button></div>
+      </div>
+      <div id="selected" class="dim">Click a candidate on the image.</div>
+    </section>
     <section class="box">
       <h2>Summary</h2>
       <div id="summary" class="dim">No candidates yet.</div>
+    </section>
+    <section class="box" id="downloads">
+      <h2>Downloads</h2>
+      <button id="dl-cands" disabled>Candidates CSV</button>
+      <button id="dl-summary" disabled>Summary CSV</button>
+      <button id="dl-truth" disabled title="Your decisions and measurements, for scoring the finders in the lab">Ground truth</button>
     </section>
   </aside>
 </div>
@@ -107,6 +154,8 @@
 </footer>
 
 <div id="tip" hidden></div>
+<script src="config.js"></script>
+<script src="drive.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
