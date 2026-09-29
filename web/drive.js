@@ -22,7 +22,9 @@ window.NorDrive = (() => {
     ? `Google refused this site's API key (${r.status})`
     : `Drive refused the ${what} (${r.status}): is it shared as "Anyone with the link"?`);
 
-  async function file(id, name) {
+  // onStart(name) runs once the download begins and onChunk(buffer, got, total) as each piece arrives,
+  // the bytes so far at the start of buffer; total is null when Drive does not say
+  async function file(id, name, onStart, onChunk) {
     need();
     const at = `${API}/${encodeURIComponent(id)}`;
     if (!name) {
@@ -34,7 +36,21 @@ window.NorDrive = (() => {
     }
     const r = await fetch(`${at}?alt=media&key=${key}`);
     if (!r.ok) throw refused(r, "file");
-    return { name, bytes: await r.arrayBuffer() };
+    if (onStart) onStart(name);
+    const total = +r.headers.get("content-length") || null;
+    if (!onChunk || !r.body) return { name, bytes: await r.arrayBuffer() };
+    let buf = new ArrayBuffer(total || 1 << 20), got = 0;
+    for (const reader = r.body.getReader(); ; ) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (got + value.length > buf.byteLength) {
+        const more = new ArrayBuffer(Math.max(2 * buf.byteLength, got + value.length));
+        new Uint8Array(more).set(new Uint8Array(buf, 0, got)); buf = more;
+      }
+      new Uint8Array(buf, got).set(value); got += value.length;
+      onChunk(buf, got, total);
+    }
+    return { name, bytes: got === buf.byteLength ? buf : buf.slice(0, got) };
   }
 
   // [{id, name, folder}] in a public folder: its subfolders and its TIFF and PNG images

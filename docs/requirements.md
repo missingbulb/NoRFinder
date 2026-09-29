@@ -300,8 +300,13 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
 - **No waiting to start.** Python loads in the background while the user picks an image, which
   opens as soon as Python is ready. Until an image is loaded, Load shines, and the finder and
   filter boxes are folded (their titles open them).
-- **Visible waiting.** While a finder runs, or an image waits for Python, the page shows a spinner
-  and the elapsed time.
+- **Visible waiting.** While an image waits for Python, the page shows a spinner and the elapsed
+  time; while a finder runs, a photocopier's light sweeps back and forth over the image, with what
+  it is doing and the elapsed time below.
+- **An image shows while it downloads.** An uncompressed TIFF like the lab's paints onto the page
+  from its bytes as they arrive from Google Drive, one channel after another in its own colour,
+  with the megabytes so far and the elapsed time below; a file from the computer shows at once.
+  Python's own drawing replaces it once the image is read. Any other image shows the byte count.
 - **Remembered settings.** Filter settings persist in the browser across images, visits and
   days, and one button restores the defaults.
 - **An open page knows when it is out of date.** Every 5 minutes it compares its version with the

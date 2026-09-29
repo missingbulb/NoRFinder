@@ -26,6 +26,19 @@ The download can shrink: scikit-image (~10 MB, and it pulls in matplotlib ~7 MB)
 for `h_maxima`, `watershed`, `perimeter` and `threshold_otsu`, which could be replaced with
 scipy/numpy versions.
 
+## Measuring speed and memory
+Three tools, all running the page's path (open the slide, blue mask, detect, first refilter):
+- `python3 ../bench.py [FINDER ...]` natively: min-of-3 time per stage, peak RSS per finder
+  (each in its own process) and the peak of Python/numpy allocations during detect.
+- `node bench_pyodide.mjs FINDER` runs `bench.py` under Pyodide in Node and adds the WebAssembly
+  heap's peak (it never shrinks, so a tab keeps its peak). Set `NOR_REPO` to measure another
+  checkout, e.g. a worktree of `main` for a before/after.
+- `node bench_live.mjs [URL] [FINDER ...]` drives the page's own `worker.js` in headless Chromium,
+  the deployed site by default or a local preview URL, and samples Chromium's resident memory.
+
+Install Pyodide for the first two with `npm i --prefix . pyodide@314.0.7` here (`--prefix`, or npm
+installs into the repo root's package.json). Results are in `../lab/ledger.md` §4.
+
 ## Not measured: porting to JavaScript
 A JS port means rewriting every finder and the `scipy.ndimage` / scikit-image calls it relies on
 (`label` 23 uses, `gaussian_filter` 20, binary dilation/erosion/fill/closing, `find_objects`,

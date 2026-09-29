@@ -42,6 +42,38 @@ P = dict(
 EIGHT = np.ones((3, 3), bool)
 
 
+def hmax_above(img, h, T):
+    """skimage h_maxima(img, h) & (img > T), bit for bit, but reconstructing only the pieces of
+    img that rise above T - h. Pixels below that level cannot carry a reconstruction value up to
+    a pixel above T (flat reconstruction commutes with max(., L)), so each piece is independent."""
+    from skimage.morphology import h_maxima
+    from skimage.morphology.grayreconstruct import reconstruction
+    if h > np.ptp(img):
+        return np.zeros(img.shape, bool)
+    L = T - h - 1e-6 * max(1.0, float(img.max()), -float(img.min()))
+    if (img > L).mean() > 0.5:      # most of the image: nothing to save
+        return h_maxima(img, h).astype(bool) & (img > T)
+    lab, n = ndi.label(img > L, EIGHT); out = np.zeros(img.shape, bool)
+    if n == 0:
+        return out
+    sls = ndi.find_objects(lab); keep = np.unique(lab[img > T])      # the pieces reaching above T
+    # pieces are independent, so several can share one reconstruction call (the others held at L):
+    # group them by the tile their box starts in, which saves the per-call cost of tiny pieces
+    groups = {}
+    for i in keep:
+        sl = sls[i - 1]; groups.setdefault((sl[0].start // 128, sl[1].start // 128), []).append(i)
+    for ids in groups.values():
+        y0 = min(sls[i - 1][0].start for i in ids); y1 = max(sls[i - 1][0].stop for i in ids)
+        x0 = min(sls[i - 1][1].start for i in ids); x1 = max(sls[i - 1][1].stop for i in ids)
+        sl = (slice(y0, y1), slice(x0, x1))
+        inside = np.isin(lab[sl], ids); top = inside & (img[sl] > T)
+        ms = np.where(inside, img[sl], L)
+        shifted = img[sl] - h - 2 * np.finfo(img.dtype).resolution * np.abs(img[sl])   # as h_maxima does
+        rec = reconstruction(np.where(inside, shifted, L), ms, method='dilation')
+        out[sl] |= top & (ms - rec >= h)
+    return out
+
+
 def classify(caspr, nav, bm, p):
     valid = ~bm
     cn = ndi.gaussian_filter(nor.norm(caspr, valid), p['smooth'])
@@ -148,6 +180,38 @@ def judge(c, p, order=None):
             return
 
 
+class FibreAngle:
+    """The along-fibre angle from the structure tensor of S (gradients of S averaged over w),
+    indexed like the image: comb[y, x]. The finders read it at a few hundred points, so the second
+    pass of the smoothing runs per row on demand; each row is exactly that row of the whole map."""
+    def __init__(self, S, w):
+        gy_, gx_ = np.gradient(S); self.w = w; self.rows = {}
+        self.half = [ndi.gaussian_filter1d(v, w, axis=0) for v in (gx_ * gx_, gy_ * gy_, gx_ * gy_)]
+
+    def __getitem__(self, yx):
+        y, x = yx
+        if y not in self.rows:
+            Jxx, Jyy, Jxy = (ndi.gaussian_filter1d(v[y], self.w) for v in self.half)
+            self.rows[y] = 0.5 * np.arctan2(2 * Jxy, Jxx - Jyy) + np.pi / 2
+        return self.rows[y][x]
+
+
+def median(b):
+    """np.median of a 1-D float array, same value, without its per-call overhead (called per candidate)."""
+    n = b.size; k = n // 2
+    part = np.partition(b, [k - 1, k, -1] if n % 2 == 0 else [k, -1])
+    if np.isnan(part[-1]):
+        return np.float64(np.nan)
+    return part[k] if n % 2 else (part[k - 1] + part[k]) / 2
+
+
+def grow(m, r):
+    """r rounds of 8-neighbour dilation: one pass with a (2r+1)-square is the same set."""
+    if r >= 1:
+        return ndi.binary_dilation(m, np.ones((2 * r + 1, 2 * r + 1), bool))
+    return ndi.binary_dilation(m, EIGHT, iterations=r)
+
+
 def finish(c, F, p):
     """All per-candidate measurements, then the checks. F holds the image-wide maps."""
     cn, rn, green, red, tg, tr, valid_ = F
@@ -157,8 +221,8 @@ def finish(c, F, p):
     allg = np.zeros_like(rs)
     for m in c['greens']:
         allg |= m
-    rc = rs & ~ndi.binary_dilation(allg, EIGHT, iterations=p["rim"])
-    gcs = [m & ~ndi.binary_dilation(rs, EIGHT, iterations=p["rim"]) for m in c["greens"]]
+    rc = rs & ~grow(allg, p["rim"])
+    rgrow = grow(rs, p["rim"]); gcs = [m & ~rgrow for m in c["greens"]]
     c['red_purity'] = float((sub_c[rc] > tg).mean()) if rc.any() else 1.0
     c['green_purity'] = [float((sub_r[m] > tr).mean()) if m.any() else 1.0 for m in gcs]
     c['red_mean'] = float(sub_r[rs].mean())
@@ -174,7 +238,7 @@ def finish(c, F, p):
         b = img_[bgpix]
         if b.size < 20:
             snr.append(0.0); continue
-        med = np.median(b); sd = 1.4826 * np.median(np.abs(b - med)) + 1e-6
+        med = median(b); sd = 1.4826 * median(np.abs(b - med)) + 1e-6
         snr += [float((img_[m].mean() - med) / sd) for m in segs_]
     c['snr'] = min(snr)
     if len(c['greens']) == 2:
@@ -314,22 +378,25 @@ def segment_walk(caspr, nav, bm, p=P2):
             continue
         # 1. fibre direction: the angle whose weaker side still has the most green
         best = None
-        for a in angs:
-            dy, dx = np.sin(a), np.cos(a)
-            sides = [nor._bilinear(cs_, cy + sg * dy * ts, cx + sg * dx * ts).max() for sg in (1, -1)]
-            if best is None or min(sides) > best[0]:
-                best = (min(sides), a)
-        a = best[1]; dy, dx = np.sin(a), np.cos(a)
+        # every angle and both sides in one call (same values as one call each); first best wins
+        sg_dy = np.array([[sg * np.sin(a)] for sg in (1, -1) for a in angs])
+        sg_dx = np.array([[sg * np.cos(a)] for sg in (1, -1) for a in angs])
+        sides = nor._bilinear(cs_, cy + sg_dy * ts, cx + sg_dx * ts).max(1).reshape(2, -1)
+        a = angs[int(np.argmax(sides.min(0)))]; dy, dx = np.sin(a), np.cos(a)
         # 2. walk out each way from the red dot. Each side may bend a little (axons curve), so
         # each side tries a few directions near the axis and keeps the one that reaches green.
         tt = np.arange(0.0, reach + 0.25, 0.5)
         offs = np.arange(-p['strip'], p['strip'] + 0.01, 0.5)
         bends = np.radians([0] + [b for d in range(10, p['bend'] + 1, 10) for b in (d, -d)])
-        def walk(ang):
-            ddy, ddx = np.sin(ang), np.cos(ang)
+        # the green strip and red line profiles of every walk (both sides, every bend) in one call
+        angs_w = [base + b for base in (a, a + np.pi) for b in bends]
+        wdy = np.array([np.sin(g) for g in angs_w])[:, None, None]; wdx = np.array([np.cos(g) for g in angs_w])[:, None, None]
+        GP = nor._bilinear(cs_, cy + wdy * tt - wdx * offs[:, None], cx + wdx * tt + wdy * offs[:, None]).max(1)
+        RP = nor._bilinear(rs_, cy + wdy[:, 0] * tt, cx + wdx[:, 0] * tt)
+
+        def walk(k):
             # a strip, not a hairline: the strongest green across the fibre's width at each step
-            gp = np.max([nor._bilinear(cs_, cy + ddy * tt - ddx * o, cx + ddx * tt + ddy * o) for o in offs], 0)
-            rp = nor._bilinear(rs_, cy + ddy * tt, cx + ddx * tt)
+            gp, rp = GP[k], RP[k]
             i = 0
             while i + 1 < len(tt) and rp[i + 1] > p['hyst'] * tr and rp[i + 1] >= gp[i + 1]:
                 i += 1
@@ -346,10 +413,10 @@ def segment_walk(caspr, nav, bm, p=P2):
                 e += 1
             return red_end, (tt[found], tt[e]), float(gp[found:e + 1].sum())
         sides = []
-        for base in (a, a + np.pi):
+        for si, base in enumerate((a, a + np.pi)):
             best_s = None
-            for bnd in bends:
-                red_end, gint, score = walk(base + bnd)
+            for bi, bnd in enumerate(bends):
+                red_end, gint, score = walk(si * len(bends) + bi)
                 if best_s is None or score > best_s[3] + 1e-9:
                     best_s = (base + bnd, red_end, gint, score)
             sides.append(best_s)
@@ -434,17 +501,13 @@ def segment_fill(caspr, nav, bm, p=P3):
     # the way the fibres are combed around each point: structure tensor of green+red,
     # averaged over `comb_u` units; fibres run along the tensor's weak direction
     S = cs_ + rs_
-    gy_, gx_ = np.gradient(ndi.gaussian_filter(S, p['smooth_u'] * unit))
-    w = p['comb_u'] * unit
-    Jxx, Jyy, Jxy = (ndi.gaussian_filter(v, w) for v in (gx_ * gx_, gy_ * gy_, gx_ * gy_))
-    comb = 0.5 * np.arctan2(2 * Jxy, Jxx - Jyy) + np.pi / 2      # along-fibre angle
+    comb = FibreAngle(ndi.gaussian_filter(S, p['smooth_u'] * unit), p['comb_u'] * unit)   # along-fibre angle
     # hills of green: each green peak owns the pixels that run downhill to it, so colouring in
     # stops in the valley where one green piece ends and the next begins
     from skimage.segmentation import watershed
     # a valley only counts if it dips at least `valley_depth` x the foreground level below
     # both hills; shallower dips inside one paranode do not split it
-    from skimage.morphology import h_maxima
-    gpk = h_maxima(cs_, p['valley_depth'] * tg).astype(bool) & (cs_ > tg) & valid_
+    gpk = hmax_above(cs_, p['valley_depth'] * tg, tg) & valid_
     gmk, _ = ndi.label(gpk)
     gbasin = watershed(-cs_, gmk, mask=(cs_ > p['fg'] * tg) & valid_) if p['valleys'] else None
     peak = (rs_ == ndi.maximum_filter(rs_, size=nms)) & (rs_ > tr) & (rs_ > cs_) & valid_
@@ -468,18 +531,22 @@ def segment_fill(caspr, nav, bm, p=P3):
         c0 = comb[int(cy), int(cx)]
         cand_angs = angs if p['comb_window'] >= 90 else c0 + np.radians(
             np.arange(-p['comb_window'], p['comb_window'] + 0.1, p['angle_step']))
-        for a in cand_angs:
-            dy, dx = np.sin(a), np.cos(a)
-            sides = [nor._bilinear(cs_, cy + sg * dy * tt, cx + sg * dx * tt).max() for sg in (1, -1)]
-            if best is None or min(sides) > best[0]:
-                best = (min(sides), a)
-        a = best[1]
+        # every angle and both sides in one call (same values as one call each); first best wins
+        sg_dy = np.array([[sg * np.sin(a)] for sg in (1, -1) for a in cand_angs])
+        sg_dx = np.array([[sg * np.cos(a)] for sg in (1, -1) for a in cand_angs])
+        sides = nor._bilinear(cs_, cy + sg_dy * tt, cx + sg_dx * tt).max(1).reshape(2, -1)
+        a = cand_angs[int(np.argmax(sides.min(0)))]
 
         # 3. walk out: leave the red, step onto green, keep going until green halves; land at its peak
-        def walk(ang):
-            ddy, ddx = np.sin(ang), np.cos(ang)
-            gp = np.max([nor._bilinear(cs_, cy + ddy * tt - ddx * o, cx + ddx * tt + ddy * o) for o in offs], 0)
-            rp = nor._bilinear(rs_, cy + ddy * tt, cx + ddx * tt)
+        # the green strip and red line profiles of every walk (both sides, every bend) in one call
+        angs_w = [base + b for base in (a, a + np.pi) for b in bends]
+        wdy = np.array([np.sin(g) for g in angs_w])[:, None, None]; wdx = np.array([np.cos(g) for g in angs_w])[:, None, None]
+        GP = nor._bilinear(cs_, cy + wdy * tt - wdx * offs[:, None], cx + wdx * tt + wdy * offs[:, None]).max(1)
+        RP = nor._bilinear(rs_, cy + wdy[:, 0] * tt, cx + wdx[:, 0] * tt)
+
+        def walk(k):
+            ang = angs_w[k]; ddy, ddx = np.sin(ang), np.cos(ang)
+            gp, rp = GP[k], RP[k]
             i = 0
             while i + 1 < len(tt) and rp[i + 1] >= p['half'] * r0 and rp[i + 1] >= gp[i + 1]:
                 i += 1
@@ -496,12 +563,11 @@ def segment_fill(caspr, nav, bm, p=P3):
                 if gp[e] > gp[top]:
                     top = e
             # landing spot: the brightest green pixel across the strip at the peak step
-            o = offs[int(np.argmax([nor._bilinear(cs_, np.array([cy + ddy * tt[top] - ddx * o]),
-                                                  np.array([cx + ddx * tt[top] + ddy * o]))[0] for o in offs]))]
+            o = offs[int(np.argmax(nor._bilinear(cs_, cy + ddy * tt[top] - ddx * offs, cx + ddx * tt[top] + ddy * offs)))]
             return (cy + ddy * tt[top] - ddx * o, cx + ddx * tt[top] + ddy * o, float(gp[top]), ang)
         lands = []
-        for base in (a, a + np.pi):
-            hits = [h for h in (walk(base + b) for b in bends) if h is not None]
+        for si in range(2):
+            hits = [h for h in (walk(si * len(bends) + bi) for bi in range(len(bends))) if h is not None]
             lands.append(max(hits, key=lambda h: h[2]) if hits else None)
 
         # 4. colour in each blob from its starting spot, down to half its own brightness
