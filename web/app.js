@@ -188,7 +188,9 @@ $("#file").onchange = async (e) => {
 function load(src) {
   writeJSON(SOURCE, src); $("#load-menu").open = false;
   if (src === "local") return $("#file").click();
-  $("#drive-link").value = readJSON(DRIVE_LINK, ""); $("#drive-dlg").showModal(); $("#drive-link").select();
+  const home = ((window.NOR_CONFIG || {}).drive || {}).defaultLink || "";
+  $("#drive-link").value = readJSON(DRIVE_LINK, "") || home; $("#drive-dlg").showModal(); $("#drive-link").select();
+  if (NorDrive.parse($("#drive-link").value)?.kind === "folder") $("#drive-go").click();
 }
 $("#load-main").onclick = () => load(readJSON(SOURCE, "local"));
 document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => load(b.dataset.src)));
