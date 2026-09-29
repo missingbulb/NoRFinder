@@ -1,6 +1,7 @@
 // Runs the repo's Python finders (detection/interactive.py) under Pyodide, off the page's thread.
-// Messages in: open {name, bytes}, detect {finder, overrides}, refilter {spec, seq}.
-// Messages out: progress {text}, ready {finders, about}, opened {H, W, images}, detected {meta, seg}, filtered {fails, alone, seq}, error {text}.
+// Messages in: open {name, bytes}, detect {finder, overrides}, refilter {spec, seq}, memory.
+// Messages out: progress {text}, ready {finders, about}, opened {H, W, images}, detected {meta, seg}, filtered {fails, alone, seq},
+// memory {used, heap, objects}, error {text}.
 // A module worker: its imports are fetched with CORS, so the service worker can cache them.
 const PYODIDE = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/";
 
@@ -73,22 +74,37 @@ async function handle(m) {
     const path = "/tmp/" + m.name.replace(/[^\w.\-]/g, "_");
     py.FS.writeFile(path, new Uint8Array(m.bytes));
     py.globals.set("path", path);
-    py.runPython("S = interactive.Session(path); H, W = S.caspr.shape; um = S.um");
-    const images = py.runPython("S.images()").toJs();
+    // the file is read once; kept, every image opened would stay in the worker's memory
+    try { py.runPython("S = interactive.Session(path); H, W = S.caspr.shape; um = S.um"); } finally { py.FS.unlink(path); }
+    // a handle to a Python object keeps it alive until it is destroyed, whatever JavaScript collects
+    const im = py.runPython("S.images()"), images = im.toJs(); im.destroy();
     postMessage({ type: "opened", H: py.globals.get("H"), W: py.globals.get("W"), um: py.globals.get("um"),
                   images, secs: (performance.now() - t0) / 1000 }, [images.buffer]);
   } else if (m.type === "detect") {
     say("Finding candidates (the slow part)…");
     py.globals.set("finder", m.finder);
     py.globals.set("overrides", JSON.stringify(m.overrides || {}));
-    py.runPython("meta, seg = S.detect(finder, json.loads(overrides))");
-    const meta = JSON.parse(py.globals.get("meta"));
-    const seg = py.globals.get("seg").toJs();
+    const r = py.runPython("S.detect(finder, json.loads(overrides))"), s = r.get(1);
+    const meta = JSON.parse(r.get(0)), seg = s.toJs(); s.destroy(); r.destroy();
     postMessage({ type: "detected", meta, seg, secs: (performance.now() - t0) / 1000 }, [seg.buffer]);
   } else if (m.type === "refilter") {
     py.globals.set("spec", JSON.stringify(m.spec));
     const { fails, alone } = JSON.parse(py.runPython("sp = json.loads(spec); json.dumps(dict(fails=S.refilter(sp), alone=S.alone(sp)))"));
     postMessage({ type: "filtered", fails, alone, seq: m.seq, ms: performance.now() - t0 });
+  } else if (m.type === "memory") {
+    // what Python holds after a collection: bytes in use by malloc, and live objects the collector
+    // tracks; heap is the WebAssembly memory, which only ever grows to the high-water mark
+    if (!py.globals.has("memory_use")) py.runPython(`
+import ctypes, gc
+class MallInfo(ctypes.Structure):
+    _fields_ = [(n, ctypes.c_size_t) for n in 'arena ordblks smblks hblks hblkhd usmblks fsmblks uordblks fordblks keepcost'.split()]
+libc = ctypes.CDLL(None); libc.mallinfo.restype = MallInfo
+def memory_use():
+    gc.collect()
+    return json.dumps([libc.mallinfo().uordblks, len(gc.get_objects())])
+`);
+    const [used, objects] = JSON.parse(py.runPython("memory_use()"));
+    postMessage({ type: "memory", used, objects, heap: py._module.HEAPU8.byteLength });
   }
 }
 
