@@ -120,4 +120,4 @@ which the finders import 64), slide 128, tl detect 208 (its temporaries; wasm me
 
 | date | change | Chromium memory | output | verdict |
 |---|---|---|---|---|
-| 09-29 | install with `unpackArchive` (only the imported wheels, native modules loaded on import) instead of `loadPackage` | tl 955 → 852 MB, rf 962 → 845 MB; ready 20 → 15 s | identical, all five finders (`mem_breakdown.mjs` hash) | proposed, waiting on Ariel |
+| 09-29 | install with `unpackArchive` (only the imported wheels, native modules loaded on import) instead of `loadPackage` | tl 955 → 852 MB, rf 962 → 845 MB; ready 20 → 15 s | identical, all five finders (`mem_breakdown.mjs` hash; same passes in Chromium) | kept (Ariel 09-29) |
