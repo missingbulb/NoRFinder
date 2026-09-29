@@ -15,9 +15,10 @@ import nor
 def load(path):
     if path.lower().endswith(('.tif', '.tiff')):
         import tifffile
-        t = tifffile.TiffFile(path)
-        a = t.asarray().astype(np.float64)          # C,Y,X
-        luts = (t.imagej_metadata or {}).get('LUTs')
+        with tifffile.TiffFile(path) as t:
+            a = t.asarray().astype(np.float64)          # C,Y,X
+            luts = (t.imagej_metadata or {}).get('LUTs')
+            res = t.pages[0].tags['XResolution'].value
         if not luts or a.ndim != 3 or len(a) != 3:
             raise ValueError('expected a 3-channel ImageJ TIFF with display colours (LUTs)')
         cols = []
@@ -29,9 +30,10 @@ def load(path):
         dapi = max((k for k in range(3) if k != g), key=lambda k: blob_area(a[k]))
         r = 3 - g - dapi
         print('display colours', cols, 'dapi ch', dapi, '-> caspr(green) ch', g, 'nav ch', r)
-        um = 1 / t.pages[0].tags['XResolution'].value[0] * t.pages[0].tags['XResolution'].value[1]
+        um = 1 / res[0] * res[1]
         return a[g], a[r], um, a[dapi]
-    im = np.asarray(Image.open(path).convert('RGB')).astype(np.float64)
+    with Image.open(path) as f:
+        im = np.asarray(f.convert('RGB')).astype(np.float64)
     return im[..., 1], im[..., 0], None, im[..., 2]
 
 def blob_area(c):

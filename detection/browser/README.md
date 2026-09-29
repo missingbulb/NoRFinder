@@ -54,3 +54,6 @@ Consider a JS port only once a finder is frozen and load time or speed is a real
 ## Memory
 [`MEMORY.md`](MEMORY.md): where the page's memory goes, stage by stage (`mem_live.mjs` in
 Chromium, `mem_breakdown.mjs` in Node), and the options to reduce it with identical output.
+
+Growth with use (repeated image loads, finder runs, filter changes) is a test,
+[`tests/test_page_memory.mjs`](../../tests/test_page_memory.mjs): about 2.5 minutes with all five finders.
