@@ -261,8 +261,8 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   two-word title and a line saying what it means (the page's own names, from
   `detection/finder_help.py`; the lab's review sheets keep theirs), and two counts: how many
   candidates it rejects, whatever the other filters do, and how many only it rejects among the
-  filters switched on (what switching it off would let through), as one box reading "Rejected: X (Y)"
-  whose tooltip explains that X is the second and Y the first. Each of its parameters is a
+  filters switched on (what switching it off would let through), as plain text reading "X (Y)" after the cards' thumbs-down icon, whose
+  tooltip explains that X is the second and Y the first. Each of its parameters is a
   dial, and every marking on the image follows it at once. A dial moved off our value is marked,
   with our value as a tick on its slider that puts it back. Finder and filter settings use this
   one control, so tweaking looks and works the same in both. A check added to `CHECKS` becomes a control with
