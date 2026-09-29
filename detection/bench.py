@@ -1,12 +1,13 @@
-"""Time and memory of every finder along the web page's path (interactive.Session), natively.
+"""Time and memory of every finder, run as raw Python (the finder function nor_lab.run calls).
 
   python3 bench.py [FINDER ...] [--reps N] [--json OUT]
 
-Each finder runs in its own subprocess so peak RSS is its own. Stages, as the page runs them:
-load (read the .tif) -> blue mask -> detect (finder + packing segments) -> first refilter.
+Algorithm and performance work is measured here, never through the web page (Ariel, 2026-09-29).
+Each finder runs in its own subprocess so peak RSS is its own. Stages: load (read the .tif) ->
+blue mask -> the finder -> the checks re-run on its candidates (what a filter change costs).
 Reports min-of-N wall time per stage, peak RSS of the process, and the peak of Python/numpy
-allocations during detect alone (tracemalloc, a separate run because it slows things down).
-The same script runs under Pyodide via browser/bench_pyodide.mjs (RSS is then not available).
+allocations during the finder alone (tracemalloc, a separate run because it slows things down).
+browser/bench_pyodide.mjs runs the same script under Pyodide, only to check the page's runtime.
 """
 import os, sys, json, time, subprocess, tracemalloc
 try:
@@ -24,26 +25,27 @@ def rss_mb():
 
 
 def one(finder, reps, tif):
-    import interactive, naive_nor as nn_
+    import nor3, nor_lab, naive_nor as nn_
     out = dict(finder=finder)
     t = time.time(); c, n, um, d = nn_.load(tif); out['load'] = time.time() - t
     t = time.time(); bm = nn_.blue_mask(d); out['blue_mask'] = time.time() - t
     out['rss_after_load_mb'] = rss_mb()
-    S = interactive.Session.__new__(interactive.Session)
-    S.caspr, S.nav, S.um, S.dapi, S.bm = c, n, um, d, bm
-    S.cands, S.P, S.finder = [], {}, None
+    fn, P = nor_lab.finders()[finder]
     det, ref = [], []
     for _ in range(reps):
-        t = time.time(); meta, seg = S.detect(finder); det.append(time.time() - t)
-        t = time.time(); S.refilter({'values': {}, 'off': []}); ref.append(time.time() - t)
+        t = time.time(); cands, info = fn(c, n, bm, dict(P)); det.append(time.time() - t)
+        t = time.time()
+        for x in cands:
+            if x['fail'] in nor3.CHECKS:
+                x['fail'] = None; nor3.judge(x, P)
+        ref.append(time.time() - t)
     out['detect'], out['refilter'] = min(det), min(ref)
-    out['cands'] = len(S.cands); out['passes'] = sum(c['fail'] is None for c in S.cands)
-    out['meta_mb'], out['seg_mb'] = len(meta) / 2**20, len(seg) / 2**20
+    out['cands'] = len(cands); out['passes'] = sum(x['fail'] is None for x in cands)
     out['rss_peak_mb'] = rss_mb()
-    del meta, seg
-    tracemalloc.start(); S.detect(finder); cur, peak = tracemalloc.get_traced_memory(); tracemalloc.stop()
+    del cands
+    tracemalloc.start(); kept = fn(c, n, bm, dict(P)); cur, peak = tracemalloc.get_traced_memory(); tracemalloc.stop()
     out['detect_alloc_peak_mb'] = peak / 2**20
-    out['held_cands_mb'] = cur / 2**20   # what stays allocated after detect: the candidate list
+    out['held_cands_mb'] = cur / 2**20   # what stays allocated after the finder: the candidate list
     return out
 
 

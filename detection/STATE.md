@@ -42,6 +42,9 @@ _Last updated 2026-09-29._
   failures included, in `lab/ledger.md`.
 - **Performance pass** at the end of long algorithmic tasks, never on quick fixes where Ariel is
   waiting: `perf.py` (the output must stay identical). See the skill.
+- **Algorithmic and performance work runs the raw Python finders** (`nor_lab.py`, `perf.py`,
+  `bench.py`), never through the web page (2026-09-29). The browser tools in `browser/` only check
+  the page's own runtime.
 - **Scale-free:** sizes in image units (median green half-length), never absolute pixels.
 - **One pixel belongs to at most one NoR.**
 

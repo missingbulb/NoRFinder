@@ -74,7 +74,11 @@ run to run (same code measured 5.70 s and 4.81 s), so judge by min-of-3 and re-c
 | — | all | open: `nor3.finish` (1-2.5 s per finder: two background medians and two dilations per candidate), the shared gaussians (~1 s), per-candidate colouring. See the proposals below | | | |
 
 ### Profile of every finder, 2026-09-29 (Ariel: "performance analysis of all candidate finders")
-The page's path on the reference slide: open, blue mask, detect, first refilter. Native = `bench.py`
+Raw Python, which is where algorithmic work is measured (`bench.py`, min of 2, after this change):
+tl 3.9 s (229/463 pass), rf 6.6 s (265/1263), fill 5.3 s (213/909), walk 5.1 s (249/1382),
+blobs 2.8 s (244/1649); peak RSS 180-380 MB. Re-running the checks on the candidates takes ~2 ms.
+
+For reference only, the web page's path on the reference slide: open, blue mask, detect, first refilter. Native = `bench.py`
 (this 4-core container is noisy, about ±15%); Pyodide = `browser/bench_pyodide.mjs` (Node, wasm heap
 peak); Chromium = `browser/bench_live.mjs` on the deployed page (before) and a local preview of this
 change (after), detect time and peak resident memory of all Chromium processes. Pass counts are the
