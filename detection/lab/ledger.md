@@ -112,3 +112,12 @@ Proposed next (not done):
    allows no change in quality for a performance optimisation.
 4. **Cold start**: scikit-image is now needed only for `reconstruction` and `watershed`; replacing
    those would drop ~17 MB (skimage plus matplotlib) from the first download.
+
+### Browser memory, 2026-09-29 (Ariel: "memory breakdown for the Pyodide and libraries")
+Full notes in `detection/browser/MEMORY.md`. Chromium PSS for tl is 955 MB: Chromium 167, Pyodide
+95, packages 357 (109 of files in memory, ~170 for the 194 native modules `loadPackage` loads, of
+which the finders import 64), slide 128, tl detect 208 (its temporaries; wasm memory never shrinks).
+
+| date | change | Chromium memory | output | verdict |
+|---|---|---|---|---|
+| 09-29 | install with `unpackArchive` (only the imported wheels, native modules loaded on import) instead of `loadPackage` | tl 955 → 852 MB, rf 962 → 845 MB; ready 20 → 15 s | identical, all five finders (`mem_breakdown.mjs` hash) | proposed, waiting on Ariel |
