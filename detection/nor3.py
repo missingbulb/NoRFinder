@@ -142,7 +142,7 @@ def judge(c, p, order=None):
     if c['fail'] is not None or len(c['greens']) != 2:
         return
     c['fails_all'] = [k for k in CHECKS if CHECKS[k](c, p)]
-    for k in (order or ORDER):
+    for k in (ORDER if order is None else order):
         if k in c['fails_all']:
             c['fail'] = k
             return

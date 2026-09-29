@@ -234,15 +234,28 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   last run. Everything else (filters, forced markings, the list, the summary) redraws from the
   stored candidates without finding again.
 - **Layout.** A header with the logo, the title and a dark/light switch (remembered). The left bar
-  holds the image (load, its name, a checkbox per colour layer with blue off at first), the
-  candidates finder and the filters. The main area has a toolbar (zoom, overlay options, and a big
-  button that switches views) over two views: the image and the individual items. The right bar
-  holds the summary. A status bar shows the image name, the candidate and finalist counts, how
+  holds the image (Load, with a dropdown for where from: this computer or Google Drive; a
+  thumbnail showing the part in view, which moves the view when clicked; its name; a checkbox per
+  colour layer, in that layer's colour when on, blue off at first), the candidates finder (its
+  "how it works" and its settings fold away) and the filters. The main area has a toolbar over two
+  views: the image and the individual items. The right bar holds the selected candidate, the
+  summary and the downloads. Both side bars can be dragged wider or narrower (remembered; a double
+  click restores one). A status bar shows the image name, the candidate and finalist counts, how
   long each step took, and the site's version (stamped by each release).
-- **Clicking a marking on the image** flips it: a finalist becomes rejected, a rejected candidate
-  becomes a finalist (starred), and a marked candidate goes back to what the filters say.
+- **Moving around the image.** Dragging moves the image; scrolling up and down zooms around the
+  pointer in small steps; scrolling sideways steps to the previous or next candidate. The Show
+  menu switches accepted and rejected markings on and off, each with its own line width and colour,
+  and the candidate numbers, the rejection letters and the measuring lines (remembered).
+- **One selected candidate.** Clicking a candidate selects it (a thin white ring) and clicking it
+  again deselects it. Its card sits in the right bar with buttons to the previous and next
+  candidate by number. Decisions are made on cards, not by clicking the image: a finalist can be
+  rejected, always accepted, or have its lengths approved; a rejected one can be accepted, and one
+  rejected by the user restored.
 - **Filters are live dials.** Every check in `nor3.CHECKS`, the nucleus rule (N) and
-  one-pixel-per-NoR (J) is a control that can be switched off. Each of its parameters is a dial, and
+  one-pixel-per-NoR (O) is a control that can be switched off. Each shows a letter, a one- or
+  two-word title and a line saying what it means (the page's own names, from
+  `detection/finder_help.py`; the lab's review sheets keep theirs), and how many candidates it
+  rejects by itself, whatever the other filters do. Each of its parameters is a dial, and
   every marking on the image follows it at once. A check added to `CHECKS` becomes a control with
   no page change.
 - **Detection settings are dials too.** They re-run the finder, and the page says that this takes
@@ -252,14 +265,27 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   is missing).
 - **All finders are offered.** Traffic light is the default.
 - **The blue mask is only a filter.** No finder on the page blanks nuclei before finding.
-- **The list and the summary.** Every passing NoR is shown cropped, with its measurements, and
-  the measurements are summarised below the list. A starred candidate stays in the list whatever
-  the filters say. A candidate the user removes stays in the list, greyed out, and is left out of
-  the totals.
+- **The item views.** Two views: the finalists and the rejected, each candidate cropped on a card.
+  A rejected card names every filter that rejects it by itself, or says the user rejected it. An
+  Options menu (remembered) sets the crop's context padding, turns each crop so the NoR lies level
+  (on at first), and shows or hides the NoR borders, the measurement bars, the lengths on the crop,
+  the lengths on the card and the length adjusters (on at first). The adjusters drag the ends of
+  the green-to-green length and the red length; the new lengths show on the image, the card, the
+  summary and the downloads. The measurements of the finalists are summarised in the right bar.
+- **Downloads.** The candidates as CSV (every candidate, its status, its reasons, the user's
+  decision and its measurements), the summary as CSV, and the ground truth: a JSON file naming the
+  image (with its SHA-256) that lists every finalist and every candidate the user decided on, with
+  its position, its label (1 = NoR, 0 = not), who decided (the user or the finder), and its
+  lengths and length lines, marked as adjusted or approved when the user checked them. The lab's
+  `nor_lab.py --labels` reads it: the labels score detection and the checked lengths score
+  measurement (`tests/test_ground_truth.py`).
 - **Fixed numbers.** Each candidate keeps one number, top to bottom, for as long as a detection
   lasts. Filters never renumber candidates.
-- **Remembered marks.** Stars and removals are saved in the browser per file name and finder, tied
-  to each candidate's position.
+- **Remembered marks.** Decisions and adjusted or approved lengths are saved in the browser per
+  file name and finder, tied to each candidate's position.
+- **Google Drive.** An image picked in Google's own picker is read by the browser straight from
+  Drive, with access only to the picked file, and is never cached. The option is off until the
+  site has a Google Cloud project (`web/config.js`).
 - **Visible waiting.** While Python loads and while a finder runs, the page shows a spinner and
   the elapsed time.
 - **Remembered settings.** Filter settings persist in the browser across images, visits and

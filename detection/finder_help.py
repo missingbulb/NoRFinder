@@ -1,5 +1,5 @@
 """What the page says about each finder and each setting: a few sentences per finder (ABOUT) and
-one line per parameter (HELP). tests/test_interactive.py fails when a finder or a parameter the
+one line per parameter (HELP), and each reason a candidate is rejected for (REASONS). tests/test_interactive.py fails when a finder or a parameter the
 page shows has no entry here, so a new setting arrives with its explanation.
 
 "unit" is the image's own scale: the median half-length of a green blob, so sizes follow the image
@@ -92,4 +92,22 @@ HELP = {
     'min_solid': "Share of the line along the NoR that must be covered by the NoR itself (1 = no gaps).",
     'nucleus_frac': "A NoR is rejected when at least this share of its red lies on a nucleus (the blue mask).",
     'max_shared': "A NoR is rejected as a duplicate when a stronger NoR already owns its red, or more than this share of either green.",
+}
+
+# The page's own name for each rejection reason: one letter (the letter's word starts the title),
+# a one- or two-word title, and a line saying what it means. The lab's review sheets keep their
+# own letters (nor3.REASONS). X is the page's "rejected by you".
+REASONS = {
+    'greens unequal brightness': ('B', 'Brightness gap', "The two greens differ too much in total brightness."),
+    'greens unequal':            ('L', 'Lopsided', "One green is much smaller than the other."),
+    'dim':                       ('D', 'Dim', "A segment barely stands out from its surroundings."),
+    'red impure':                ('R', 'Red impure', "Too much green inside the red."),
+    'green impure':              ('G', 'Green impure', "Too much red inside a green."),
+    'not in a line':             ('M', 'Misaligned', "Bent, red off the line between the greens, or across the fibre."),
+    'not stick-like':            ('S', 'Stubby', "Too short for its width, or with gaps along its length."),
+    'in nucleus':                ('N', 'In nucleus', "The red lies mostly on a cell nucleus (DAPI)."),
+    'shares a segment':          ('O', 'Overlap', "Shares its red, or much of a green, with a stronger NoR."),
+    'one green':                 ('U', 'Unpaired', "Only one green touches the red."),
+    'greens joined':             ('J', 'Joined greens', "The two greens touch and form one blob."),
+    'red not rectangular':       ('C', 'Crooked red', "The red is not a compact bar."),
 }

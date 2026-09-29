@@ -65,6 +65,24 @@ def score(cands, labels):
         elif hit: fp += 1
     return dict(tp=tp, fp=fp, fn=fn, prec=tp / max(1, tp + fp), rec=tp / max(1, tp + fn)), missed
 
+def read_labels(path):
+    """Reference labels: the lab's own list, or the ground truth the page saves (its 'labels')."""
+    L = json.load(open(path))
+    return L['labels'] if isinstance(L, dict) else L
+
+def measure_error(cands, labels):
+    """How far the passing candidates' lengths are from the ones a person adjusted or approved on the
+    page (mean absolute error, pixels). A finder's own numbers that nobody checked are not used."""
+    ps = [k for k in cands if k['fail'] is None and 'length_px' in k]
+    dl, dr = [], []
+    for L in labels:
+        if L.get('label') != 1 or L.get('measured') not in ('adjusted', 'approved') or not ps:
+            continue
+        k = min(ps, key=lambda k: np.hypot(k['cx'] - L['x'], k['cy'] - L['y']))
+        if np.hypot(k['cx'] - L['x'], k['cy'] - L['y']) <= MATCH_PX:
+            dl.append(abs(k['length_px'] - L['length_px'])); dr.append(abs(k['red_len_px'] - L['red_length_px']))
+    return dict(n=len(dl), length_mae=float(np.mean(dl)) if dl else None, red_mae=float(np.mean(dr)) if dr else None)
+
 def summary(spec, cands, info, sc, missed):
     from collections import Counter
     fails = Counter(k['fail'] or 'pass' for k in cands)
@@ -128,7 +146,7 @@ def sheets(out, cands, missed, data, per=48):
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('cmd'); ap.add_argument('specs', nargs='*')
     ap.add_argument('--sheets'); ap.add_argument('--labels', default=LABELS); a = ap.parse_args()
-    labels = json.load(open(a.labels)); data = load()
+    labels = read_labels(a.labels); data = load()
     if a.cmd == 'diff':
         # only look at what a change changed: passes gained and passes lost, as two small sheets
         (ca, _), (cb, _) = run(a.specs[0], data), run(a.specs[1], data)
@@ -168,6 +186,9 @@ def main():
     for spec in (a.specs or ['fill']):
         cands, info = run(spec, data); sc, missed = score(cands, labels)
         print(summary(spec, cands, info, sc, missed), flush=True)
+        me = measure_error(cands, labels)
+        if me['n']:
+            print(f"{'':34s} lengths vs {me['n']} checked by hand: length off {me['length_mae']:.2f} px, red off {me['red_mae']:.2f} px")
         if a.sheets: sheets(a.sheets if len(a.specs) <= 1 else os.path.join(a.sheets, spec.replace(':', '_')), cands, missed, data)
 
 if __name__ == '__main__':

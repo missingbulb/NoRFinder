@@ -10,7 +10,7 @@ The blue (DAPI) mask is only ever a filter here ('in nucleus'), never applied be
 
 The filters are not listed here. They are read from nor3.CHECKS, so a check added there, with its
 parameters read through `p[...]` or `p.get(...)`, shows up on the page as a control by itself; its
-letter and text come from nor3.REASONS and nor3.REASON_TEXT.
+letter, title and text come from finder_help.REASONS and its colour from nor3.REASONS.
 
 Refiltering reproduces a finder's own result exactly when the finder judges each candidate on its
 own (tl, fill, walk, blobs). rf chooses between alternative greens using the checks, so after a
@@ -65,7 +65,8 @@ def filters(P):
     for k in ORDER + [c for c in CHECKS if c not in ORDER] + list(POST):
         ps = cp[k] if k in CHECKS else {POST[k][0]: POST[k][1]}
         vals = {n: P.get(n, d) for n, d in ps.items()}
-        out.append(dict(key=k, letter=REASONS.get(k, ('?',))[0], text=REASON_TEXT.get(k, k),
+        r = reason(k)
+        out.append(dict(key=k, letter=r['letter'], title=r['title'], text=r['text'],
                         params={n: v for n, v in vals.items() if isinstance(v, (int, float)) and not isinstance(v, bool)}))
     return out
 
@@ -86,8 +87,13 @@ def describe(finder):
                 about=finder_help.ABOUT.get(finder, ''), help=finder_help.HELP)
 
 
+def reason(k):
+    letter, title, text = finder_help.REASONS.get(k, (REASONS.get(k, ('?',))[0], k, REASON_TEXT.get(k, k)))
+    return dict(letter=letter, title=title, text=text, color=REASONS.get(k, (0, (200, 200, 200)))[1])
+
+
 def reasons():
-    return {k: dict(letter=v[0], color=v[1], text=REASON_TEXT.get(k, k)) for k, v in REASONS.items()}
+    return {k: reason(k) for k in REASONS}
 
 
 class Session:
@@ -167,3 +173,22 @@ class Session:
         if SHARED not in off:
             resolve_overlaps(self.cands, self.caspr.shape, p.get('max_shared', POST[SHARED][1]))
         return [c['fail'] for c in self.cands]
+
+    def alone(self, spec):
+        """What each filter rejects with every other filter off, at the values in spec (whether or
+        not it is switched off): {'counts': {filter: n}, 'fails': per candidate, the filters that
+        reject it}. Candidates the finder already rejected are not counted."""
+        p = dict(self.P, **spec.get('values', {})); keys = [f['key'] for f in self.filters()]
+        frac = p.get('nucleus_frac', POST[NUCLEUS][1])
+        fails = [[] for _ in self.cands]; open_ = []
+        for i, c in enumerate(self.cands):
+            if c['fail0'] is not None or len(c['greens']) != 2:
+                continue
+            fails[i] = [k for k in keys if k in CHECKS and CHECKS[k](c, p)] + ([NUCLEUS] if c['red_on_blue'] >= frac else [])
+            open_.append((i, dict(c, fail=None)))
+        # one-pixel-per-NoR among every candidate the finder kept, the strongest first
+        resolve_overlaps([c for _, c in open_], self.caspr.shape, p.get('max_shared', POST[SHARED][1]))
+        for i, c in open_:
+            if c['fail'] == SHARED:
+                fails[i].append(SHARED)
+        return dict(counts={k: sum(k in f for f in fails) for k in keys}, fails=fails)
