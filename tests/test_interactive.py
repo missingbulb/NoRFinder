@@ -57,10 +57,26 @@ def test_every_finder_and_setting_is_explained():
         assert not missing, (f, sorted(missing))
 
 
+def test_every_reason_has_its_own_letter_and_title():
+    # the page tells reasons apart by one letter each, with a short title and a line saying what it means
+    seen = 0
+    for f in interactive.FINDERS:
+        d = interactive.describe(f)
+        letters = [r['letter'] for r in d['reasons'].values()]
+        assert len(set(letters)) == len(letters), (f, sorted(letters))
+        for k, r in d['reasons'].items():
+            assert len(r['letter']) == 1 and r['letter'] != 'X' and r['title'] and r['text'], (f, k, r)
+            seen += 1
+        for fl in d['filters']:
+            assert (fl['letter'], fl['title']) == (d['reasons'][fl['key']]['letter'], d['reasons'][fl['key']]['title'])
+    assert seen >= 5 * 11
+
+
 def main():
     test_every_parameter_a_check_reads_is_a_control()
     test_every_finder_and_setting_is_explained()
     test_each_finder_names_its_main_settings()
+    test_every_reason_has_its_own_letter_and_title()
     if not os.path.exists(TIF):
         print('reference slide missing: only the static test ran'); return
     s = interactive.Session(TIF)
@@ -82,6 +98,15 @@ def main():
     # a stricter value only removes passes
     strict = {i for i, f in enumerate(s.refilter({'values': {'min_snr': 6}, 'off': ['shares a segment']})) if f is None}
     assert strict < base
+    # each filter's count is what it rejects with every other filter off
+    spec = {'values': {'min_snr': 4}}
+    alone = s.alone(spec)
+    keys = [f['key'] for f in s.filters()]
+    assert len(keys) == 9 and all(alone['counts'][k] for k in keys), alone['counts']
+    for k in keys:
+        fails = s.refilter(dict(spec, off=[o for o in keys if o != k]))
+        assert sum(f == k for f in fails) == alone['counts'][k], k
+        assert sum(k in a for a in alone['fails']) == alone['counts'][k], k
     print('ok')
 
 
