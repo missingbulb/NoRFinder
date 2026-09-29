@@ -1,21 +1,21 @@
 {
-  "generated": "2026-09-28T00:00:00Z",
+  "generated": "2026-09-29T00:00:00Z",
   "window": {
-    "from": "2026-08-31",
-    "to": "2026-09-27",
+    "from": "2026-09-01",
+    "to": "2026-09-28",
     "daysCovered": 28,
     "previous": {
-      "from": "2026-08-03",
-      "to": "2026-08-30",
-      "daysCovered": 2
+      "from": "2026-08-04",
+      "to": "2026-08-31",
+      "daysCovered": 1
     },
-    "foldedThrough": "2026-09-26",
+    "foldedThrough": "2026-09-28",
     "subjects": {
-      "skills": 36,
-      "checks": 71,
+      "skills": 37,
+      "checks": 74,
       "guards": 17
     },
-    "twinless": 71
+    "twinless": 74
   },
   "findings": [
     {
@@ -38,22 +38,23 @@
       "lasting": false
     },
     {
-      "rule": "skill-forced-only-small",
-      "subject": "committing",
+      "rule": "skill-always-loaded",
+      "subject": "searching-for-a-tool",
       "pack": "basics",
       "cause": "known",
       "causes": [
-        "the guard does the loading and the description never triggers a voluntary load - the one cause; the question is only whether the lines are worth a block"
+        "its body is guidance every session needs - discriminator: most loads are voluntary (`skillLoadsBy`)",
+        "a force-load pattern matches most edits or calls - discriminator: most loads are blocked"
       ],
       "open": false,
-      "finding": "it is only ever loaded because a guard held a call for it, and each block is a tool call spent to read a few lines",
-      "recommendation": "carry the lines in context or in the guard's own block text",
+      "finding": "loads in three of every four sessions - it is context wearing a skill's clothes",
+      "recommendation": "move its body to the owning pack's RULES.md; the cost either way is stated: tokens × sessions loaded against tokens × all sessions",
       "figures": {
-        "skillBlocks": 13,
-        "skillLoads": 14,
-        "tokens": 128
+        "skillSessions": 35,
+        "sessions": 38,
+        "activity": 63.633568000000004
       },
-      "since": "2026-09-26",
+      "since": "2026-09-29",
       "lasting": false
     },
     {
@@ -68,8 +69,8 @@
       "finding": "it is only ever loaded because a guard held a call for it, and each block is a tool call spent to read a few lines",
       "recommendation": "carry the lines in context or in the guard's own block text",
       "figures": {
-        "skillBlocks": 30,
-        "skillLoads": 26,
+        "skillBlocks": 40,
+        "skillLoads": 36,
         "tokens": 193
       },
       "since": "2026-09-24",
@@ -89,8 +90,8 @@
       "finding": "its declared moments occurred and the skill was not loaded for most of them",
       "recommendation": "the trigger is mechanical, so this is a fault in the declaration or the hook: reproduce one moment against the guard",
       "figures": {
-        "skillLoads": 3,
-        "moments": 6
+        "skillLoads": 5,
+        "moments": 18
       },
       "since": "2026-09-26",
       "lasting": false
@@ -109,8 +110,8 @@
       "finding": "its declared moments occurred and the skill was not loaded for most of them",
       "recommendation": "the trigger is mechanical, so this is a fault in the declaration or the hook: reproduce one moment against the guard",
       "figures": {
-        "skillLoads": 14,
-        "moments": 48
+        "skillLoads": 19,
+        "moments": 82
       },
       "since": "2026-09-24",
       "lasting": false
@@ -129,8 +130,8 @@
       "finding": "its declared moments occurred and the skill was not loaded for most of them",
       "recommendation": "the trigger is mechanical, so this is a fault in the declaration or the hook: reproduce one moment against the guard",
       "figures": {
-        "skillLoads": 3,
-        "moments": 17
+        "skillLoads": 4,
+        "moments": 28
       },
       "since": "2026-09-24",
       "lasting": false
@@ -149,8 +150,8 @@
       "finding": "its declared moments occurred and the skill was not loaded for most of them",
       "recommendation": "the trigger is mechanical, so this is a fault in the declaration or the hook: reproduce one moment against the guard",
       "figures": {
-        "skillLoads": 17,
-        "moments": 42
+        "skillLoads": 22,
+        "moments": 54
       },
       "since": "2026-09-24",
       "lasting": false
@@ -169,10 +170,50 @@
       "finding": "its declared moments occurred and the skill was not loaded for most of them",
       "recommendation": "the trigger is mechanical, so this is a fault in the declaration or the hook: reproduce one moment against the guard",
       "figures": {
-        "skillLoads": 26,
-        "moments": 123
+        "skillLoads": 36,
+        "moments": 186
       },
       "since": "2026-09-24",
+      "lasting": false
+    },
+    {
+      "rule": "skill-triggered-missing-moments",
+      "subject": "writing-pack-prose",
+      "pack": "claudinite-growth",
+      "cause": "known",
+      "causes": [
+        "the trigger pattern does not match the real call or path shape - the moments counted by the hook resolver differ from the declaration's intent",
+        "the hook failed or timed out - `deadline` or `hook-failed` lines in the window",
+        "once-per-session semantics: the skill loaded once and later moments in the session are counted unloaded - a counting artifact, discriminator: `skillSessions` near the sessions with moments"
+      ],
+      "open": false,
+      "finding": "its declared moments occurred and the skill was not loaded for most of them",
+      "recommendation": "the trigger is mechanical, so this is a fault in the declaration or the hook: reproduce one moment against the guard",
+      "figures": {
+        "skillLoads": 3,
+        "moments": 8
+      },
+      "since": "2026-09-29",
+      "lasting": false
+    },
+    {
+      "rule": "skill-triggered-missing-moments",
+      "subject": "writing-repo-scanning-checks",
+      "pack": "basics",
+      "cause": "known",
+      "causes": [
+        "the trigger pattern does not match the real call or path shape - the moments counted by the hook resolver differ from the declaration's intent",
+        "the hook failed or timed out - `deadline` or `hook-failed` lines in the window",
+        "once-per-session semantics: the skill loaded once and later moments in the session are counted unloaded - a counting artifact, discriminator: `skillSessions` near the sessions with moments"
+      ],
+      "open": false,
+      "finding": "its declared moments occurred and the skill was not loaded for most of them",
+      "recommendation": "the trigger is mechanical, so this is a fault in the declaration or the hook: reproduce one moment against the guard",
+      "figures": {
+        "skillLoads": 2,
+        "moments": 6
+      },
+      "since": "2026-09-29",
       "lasting": false
     },
     {
@@ -189,8 +230,8 @@
       "finding": "its declared moments occurred and the skill was not loaded for most of them",
       "recommendation": "the trigger is mechanical, so this is a fault in the declaration or the hook: reproduce one moment against the guard",
       "figures": {
-        "skillLoads": 4,
-        "moments": 26
+        "skillLoads": 5,
+        "moments": 30
       },
       "since": "2026-09-24",
       "lasting": false
@@ -323,7 +364,7 @@
       "pack": "claudinite-growth",
       "name": "advisory",
       "need": 10,
-      "have": null
+      "have": 0
     },
     {
       "rule": "advisory-ignored",
@@ -339,7 +380,7 @@
       "pack": "claudinite-lifecycle",
       "name": "advisory",
       "need": 10,
-      "have": null
+      "have": 0
     },
     {
       "rule": "advisory-ignored",
@@ -423,6 +464,22 @@
     },
     {
       "rule": "advisory-ignored",
+      "subject": "gp/deploy-workflow",
+      "pack": "github-pages",
+      "name": "advisory",
+      "need": 10,
+      "have": null
+    },
+    {
+      "rule": "advisory-ignored",
+      "subject": "gp/site-config",
+      "pack": "github-pages",
+      "name": "advisory",
+      "need": 10,
+      "have": null
+    },
+    {
+      "rule": "advisory-ignored",
       "subject": "growth-write-scope",
       "pack": "claudinite-growth",
       "name": "advisory",
@@ -467,7 +524,7 @@
       "pack": "claudinite-lifecycle",
       "name": "advisory",
       "need": 10,
-      "have": null
+      "have": 4
     },
     {
       "rule": "advisory-ignored",
@@ -523,7 +580,7 @@
       "pack": "claudinite-growth",
       "name": "advisory",
       "need": 10,
-      "have": 3
+      "have": 4
     },
     {
       "rule": "advisory-ignored",
@@ -535,6 +592,22 @@
     },
     {
       "rule": "advisory-ignored",
+      "subject": "provenance-once-per-pr",
+      "pack": "nor-finder",
+      "name": "advisory",
+      "need": 10,
+      "have": null
+    },
+    {
+      "rule": "advisory-ignored",
+      "subject": "public-website/version-stamp-matches-package",
+      "pack": "public-website",
+      "name": "advisory",
+      "need": 10,
+      "have": null
+    },
+    {
+      "rule": "advisory-ignored",
       "subject": "queue-mark-named-literally",
       "pack": "claudinite-tasks",
       "name": "advisory",
@@ -571,7 +644,7 @@
       "pack": "claudinite-lifecycle",
       "name": "advisory",
       "need": 10,
-      "have": null
+      "have": 0
     },
     {
       "rule": "advisory-ignored",
@@ -631,14 +704,6 @@
     },
     {
       "rule": "advisory-ignored",
-      "subject": "skill-description-length",
-      "pack": "basics",
-      "name": "advisory",
-      "need": 10,
-      "have": null
-    },
-    {
-      "rule": "advisory-ignored",
       "subject": "skill-loaded-before-editing",
       "pack": "claudinite-lifecycle",
       "name": "advisory",
@@ -651,15 +716,7 @@
       "pack": "claudinite-lifecycle",
       "name": "advisory",
       "need": 10,
-      "have": null
-    },
-    {
-      "rule": "advisory-ignored",
-      "subject": "squash-merge-history",
-      "pack": "basics",
-      "name": "advisory",
-      "need": 10,
-      "have": null
+      "have": 0
     },
     {
       "rule": "advisory-ignored",
@@ -747,7 +804,7 @@
       "pack": "basics",
       "name": "advisory",
       "need": 10,
-      "have": 2
+      "have": 3
     },
     {
       "rule": "advisory-ignored",
@@ -771,7 +828,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -779,7 +836,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -787,7 +844,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -795,7 +852,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -803,7 +860,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -811,7 +868,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -819,7 +876,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -827,7 +884,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -835,7 +892,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -843,7 +900,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -851,7 +908,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -859,7 +916,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -867,7 +924,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -875,7 +932,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -883,7 +940,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -891,7 +948,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -899,7 +956,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -907,7 +964,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -915,7 +972,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -923,7 +980,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -931,7 +988,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -939,7 +996,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -947,7 +1004,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -955,7 +1012,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -963,7 +1020,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -971,7 +1028,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -979,7 +1036,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -987,7 +1044,23 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
+    },
+    {
+      "rule": "check-fires-most-sessions",
+      "subject": "gp/deploy-workflow",
+      "pack": "github-pages",
+      "name": "activity",
+      "need": 120,
+      "have": 63.633568000000004
+    },
+    {
+      "rule": "check-fires-most-sessions",
+      "subject": "gp/site-config",
+      "pack": "github-pages",
+      "name": "activity",
+      "need": 120,
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -995,7 +1068,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1003,7 +1076,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1011,7 +1084,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1019,7 +1092,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1027,7 +1100,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1035,7 +1108,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1043,7 +1116,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1051,7 +1124,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1059,7 +1132,7 @@
       "pack": "claude-code-web-users-support",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1067,7 +1140,7 @@
       "pack": "claude-code-web-users-support",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1075,7 +1148,7 @@
       "pack": "claude-code-web-users-support",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1083,7 +1156,7 @@
       "pack": "claude-code-web-users-support",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1091,7 +1164,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1099,7 +1172,23 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
+    },
+    {
+      "rule": "check-fires-most-sessions",
+      "subject": "provenance-once-per-pr",
+      "pack": "nor-finder",
+      "name": "activity",
+      "need": 120,
+      "have": 63.633568000000004
+    },
+    {
+      "rule": "check-fires-most-sessions",
+      "subject": "public-website/version-stamp-matches-package",
+      "pack": "public-website",
+      "name": "activity",
+      "need": 120,
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1107,7 +1196,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1115,7 +1204,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1123,7 +1212,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1131,7 +1220,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1139,7 +1228,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1147,7 +1236,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1155,7 +1244,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1163,7 +1252,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1171,7 +1260,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1179,7 +1268,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1187,7 +1276,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1195,7 +1284,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1203,7 +1292,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1211,7 +1300,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1219,15 +1308,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "check-fires-most-sessions",
-      "subject": "squash-merge-history",
-      "pack": "basics",
-      "name": "activity",
-      "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1235,7 +1316,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1243,7 +1324,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1251,7 +1332,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1259,7 +1340,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1267,7 +1348,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1275,7 +1356,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1283,7 +1364,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1291,7 +1372,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1299,7 +1380,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1307,7 +1388,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1315,7 +1396,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1323,7 +1404,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-fires-most-sessions",
@@ -1331,7 +1412,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1339,7 +1420,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1347,7 +1428,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1355,7 +1436,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1363,7 +1444,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1371,7 +1452,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1379,7 +1460,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1387,7 +1468,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1395,7 +1476,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1403,7 +1484,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1411,7 +1492,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1419,7 +1500,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1427,7 +1508,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1435,7 +1516,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1443,7 +1524,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1451,7 +1532,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1459,7 +1540,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1467,7 +1548,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1475,7 +1556,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1483,7 +1564,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1491,7 +1572,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1499,7 +1580,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1507,7 +1588,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1515,7 +1596,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1523,7 +1604,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1531,7 +1612,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1539,7 +1620,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1547,7 +1628,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1555,7 +1636,23 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
+    },
+    {
+      "rule": "check-never-fires",
+      "subject": "gp/deploy-workflow",
+      "pack": "github-pages",
+      "name": "activity",
+      "need": 120,
+      "have": 63.633568000000004
+    },
+    {
+      "rule": "check-never-fires",
+      "subject": "gp/site-config",
+      "pack": "github-pages",
+      "name": "activity",
+      "need": 120,
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1563,7 +1660,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1571,7 +1668,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1579,7 +1676,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1587,7 +1684,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1595,7 +1692,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1603,7 +1700,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1611,7 +1708,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1619,7 +1716,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1627,7 +1724,7 @@
       "pack": "claude-code-web-users-support",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1635,7 +1732,7 @@
       "pack": "claude-code-web-users-support",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1643,7 +1740,7 @@
       "pack": "claude-code-web-users-support",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1651,7 +1748,7 @@
       "pack": "claude-code-web-users-support",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1659,7 +1756,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1667,7 +1764,23 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
+    },
+    {
+      "rule": "check-never-fires",
+      "subject": "provenance-once-per-pr",
+      "pack": "nor-finder",
+      "name": "activity",
+      "need": 120,
+      "have": 63.633568000000004
+    },
+    {
+      "rule": "check-never-fires",
+      "subject": "public-website/version-stamp-matches-package",
+      "pack": "public-website",
+      "name": "activity",
+      "need": 120,
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1675,7 +1788,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1683,7 +1796,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1691,7 +1804,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1699,7 +1812,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1707,7 +1820,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1715,7 +1828,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1723,7 +1836,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1731,7 +1844,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1739,7 +1852,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1747,7 +1860,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1755,7 +1868,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1763,7 +1876,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1771,7 +1884,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1779,7 +1892,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1787,15 +1900,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "check-never-fires",
-      "subject": "squash-merge-history",
-      "pack": "basics",
-      "name": "activity",
-      "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1803,7 +1908,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1811,7 +1916,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1819,7 +1924,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1827,7 +1932,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1835,7 +1940,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1843,7 +1948,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1851,7 +1956,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1859,7 +1964,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1867,7 +1972,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1875,7 +1980,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1883,7 +1988,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1891,7 +1996,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires",
@@ -1899,7 +2004,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -1907,7 +2012,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -1915,7 +2020,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -1923,7 +2028,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -1931,7 +2036,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -1939,7 +2044,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -1947,7 +2052,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -1955,7 +2060,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -1963,7 +2068,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -1971,7 +2076,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -1979,7 +2084,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -1987,7 +2092,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -1995,7 +2100,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2003,7 +2108,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2011,7 +2116,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2019,7 +2124,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2027,7 +2132,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2035,7 +2140,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2043,7 +2148,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2051,7 +2156,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2059,7 +2164,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2067,7 +2172,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2075,7 +2180,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2083,7 +2188,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2091,7 +2196,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2099,7 +2204,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2107,7 +2212,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2115,7 +2220,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2123,7 +2228,23 @@
       "pack": "git-github",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
+    },
+    {
+      "rule": "check-never-fires-with-prose-twin",
+      "subject": "gp/deploy-workflow",
+      "pack": "github-pages",
+      "name": "activity",
+      "need": 120,
+      "have": 63.633568000000004
+    },
+    {
+      "rule": "check-never-fires-with-prose-twin",
+      "subject": "gp/site-config",
+      "pack": "github-pages",
+      "name": "activity",
+      "need": 120,
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2131,7 +2252,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2139,7 +2260,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2147,7 +2268,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2155,7 +2276,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2163,7 +2284,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2171,7 +2292,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2179,7 +2300,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2187,7 +2308,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2195,7 +2316,7 @@
       "pack": "claude-code-web-users-support",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2203,7 +2324,7 @@
       "pack": "claude-code-web-users-support",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2211,7 +2332,7 @@
       "pack": "claude-code-web-users-support",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2219,7 +2340,7 @@
       "pack": "claude-code-web-users-support",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2227,7 +2348,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2235,7 +2356,23 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
+    },
+    {
+      "rule": "check-never-fires-with-prose-twin",
+      "subject": "provenance-once-per-pr",
+      "pack": "nor-finder",
+      "name": "activity",
+      "need": 120,
+      "have": 63.633568000000004
+    },
+    {
+      "rule": "check-never-fires-with-prose-twin",
+      "subject": "public-website/version-stamp-matches-package",
+      "pack": "public-website",
+      "name": "activity",
+      "need": 120,
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2243,7 +2380,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2251,7 +2388,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2259,7 +2396,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2267,7 +2404,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2275,7 +2412,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2283,7 +2420,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2291,7 +2428,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2299,7 +2436,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2307,7 +2444,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2315,7 +2452,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2323,7 +2460,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2331,7 +2468,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2339,7 +2476,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2347,7 +2484,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2355,15 +2492,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "check-never-fires-with-prose-twin",
-      "subject": "squash-merge-history",
-      "pack": "basics",
-      "name": "activity",
-      "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2371,7 +2500,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2379,7 +2508,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2387,7 +2516,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2395,7 +2524,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2403,7 +2532,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2411,7 +2540,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2419,7 +2548,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2427,7 +2556,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2435,7 +2564,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2443,7 +2572,7 @@
       "pack": "claudinite-growth",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2451,7 +2580,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2459,7 +2588,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-never-fires-with-prose-twin",
@@ -2467,7 +2596,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "check-unsatisfiable",
@@ -2567,24 +2696,8 @@
     },
     {
       "rule": "check-unsatisfiable",
-      "subject": "doc-pointers-resolve",
-      "pack": "claudinite-growth",
-      "name": "relent >= 1",
-      "need": null,
-      "have": null
-    },
-    {
-      "rule": "check-unsatisfiable",
       "subject": "executor-workflow-secrets",
       "pack": "claudinite-tasks",
-      "name": "relent >= 1",
-      "need": null,
-      "have": null
-    },
-    {
-      "rule": "check-unsatisfiable",
-      "subject": "flat-declarations-current",
-      "pack": "claudinite-lifecycle",
       "name": "relent >= 1",
       "need": null,
       "have": null
@@ -2663,6 +2776,22 @@
     },
     {
       "rule": "check-unsatisfiable",
+      "subject": "gp/deploy-workflow",
+      "pack": "github-pages",
+      "name": "relent >= 1",
+      "need": null,
+      "have": null
+    },
+    {
+      "rule": "check-unsatisfiable",
+      "subject": "gp/site-config",
+      "pack": "github-pages",
+      "name": "relent >= 1",
+      "need": null,
+      "have": null
+    },
+    {
+      "rule": "check-unsatisfiable",
       "subject": "improve-comments-scope",
       "pack": "basics",
       "name": "relent >= 1",
@@ -2689,14 +2818,6 @@
       "rule": "check-unsatisfiable",
       "subject": "legacy-check-spellings",
       "pack": "claudinite-growth",
-      "name": "relent >= 1",
-      "need": null,
-      "have": null
-    },
-    {
-      "rule": "check-unsatisfiable",
-      "subject": "legacy-shape-in-use",
-      "pack": "claudinite-lifecycle",
       "name": "relent >= 1",
       "need": null,
       "have": null
@@ -2751,6 +2872,22 @@
     },
     {
       "rule": "check-unsatisfiable",
+      "subject": "provenance-once-per-pr",
+      "pack": "nor-finder",
+      "name": "relent >= 1",
+      "need": null,
+      "have": null
+    },
+    {
+      "rule": "check-unsatisfiable",
+      "subject": "public-website/version-stamp-matches-package",
+      "pack": "public-website",
+      "name": "relent >= 1",
+      "need": null,
+      "have": null
+    },
+    {
+      "rule": "check-unsatisfiable",
       "subject": "queue-mark-named-literally",
       "pack": "claudinite-tasks",
       "name": "relent >= 1",
@@ -2769,14 +2906,6 @@
       "rule": "check-unsatisfiable",
       "subject": "routine-structure",
       "pack": "claudinite-growth",
-      "name": "relent >= 1",
-      "need": null,
-      "have": null
-    },
-    {
-      "rule": "check-unsatisfiable",
-      "subject": "rules-index-current",
-      "pack": "claudinite-lifecycle",
       "name": "relent >= 1",
       "need": null,
       "have": null
@@ -2808,30 +2937,6 @@
     {
       "rule": "check-unsatisfiable",
       "subject": "shared-constants",
-      "pack": "basics",
-      "name": "relent >= 1",
-      "need": null,
-      "have": null
-    },
-    {
-      "rule": "check-unsatisfiable",
-      "subject": "skill-description-length",
-      "pack": "basics",
-      "name": "relent >= 1",
-      "need": null,
-      "have": null
-    },
-    {
-      "rule": "check-unsatisfiable",
-      "subject": "skills-index-current",
-      "pack": "claudinite-lifecycle",
-      "name": "relent >= 1",
-      "need": null,
-      "have": null
-    },
-    {
-      "rule": "check-unsatisfiable",
-      "subject": "squash-merge-history",
       "pack": "basics",
       "name": "relent >= 1",
       "need": null,
@@ -2923,7 +3028,7 @@
       "pack": null,
       "name": "activity",
       "need": 120,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "guard-overruled",
@@ -2931,7 +3036,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 90,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "guard-overruled",
@@ -2939,7 +3044,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 90,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "guard-overruled",
@@ -2947,7 +3052,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 90,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "guard-overruled",
@@ -2955,7 +3060,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 90,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "guard-overruled",
@@ -2963,7 +3068,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 90,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "guard-overruled",
@@ -2971,7 +3076,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 90,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "guard-overruled",
@@ -2979,7 +3084,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 90,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "guard-overruled",
@@ -2987,7 +3092,7 @@
       "pack": "claudinite-tasks",
       "name": "activity",
       "need": 90,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "guard-overruled",
@@ -2995,7 +3100,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 90,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "guard-overruled",
@@ -3003,7 +3108,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 90,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "guard-overruled",
@@ -3011,7 +3116,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 90,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "guard-overruled",
@@ -3019,7 +3124,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 90,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "guard-overruled",
@@ -3027,7 +3132,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 90,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "guard-overruled",
@@ -3035,7 +3140,7 @@
       "pack": "git-github",
       "name": "activity",
       "need": 90,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "guard-overruled",
@@ -3043,7 +3148,7 @@
       "pack": "claudinite-lifecycle",
       "name": "activity",
       "need": 90,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "guard-overruled",
@@ -3051,7 +3156,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 90,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "guard-overruled",
@@ -3059,7 +3164,7 @@
       "pack": "basics",
       "name": "activity",
       "need": 90,
-      "have": 46.86045200000001
+      "have": 63.633568000000004
     },
     {
       "rule": "result-trigger-follows-every-call",
@@ -3191,6 +3296,14 @@
     },
     {
       "rule": "result-trigger-follows-every-call",
+      "subject": "github-pages-pipeline",
+      "pack": "github-pages",
+      "name": "toolCalls",
+      "need": 10,
+      "have": null
+    },
+    {
+      "rule": "result-trigger-follows-every-call",
       "subject": "growth-dedup",
       "pack": "claudinite-growth",
       "name": "toolCalls",
@@ -3350,294 +3463,6 @@
       "have": null
     },
     {
-      "rule": "skill-always-loaded",
-      "subject": "adopt-claudinite",
-      "pack": "claudinite-lifecycle",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "adopt-pack",
-      "pack": "claudinite-lifecycle",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "authoring-agent-docs",
-      "pack": "basics",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "backfilling-provenance",
-      "pack": "claudinite-growth",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "bug-investigation",
-      "pack": "basics",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "changing-pack-elements",
-      "pack": "claudinite-growth",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "ci-performance-evaluation",
-      "pack": "basics",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "committing",
-      "pack": "basics",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "do-later",
-      "pack": "basics",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "extract-from-activity",
-      "pack": "claudinite-growth",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "extract-from-conversations",
-      "pack": "claudinite-growth",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "extract-from-instructions",
-      "pack": "claudinite-growth",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "fetching-from-the-web",
-      "pack": "basics",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "file-placement",
-      "pack": "basics",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "git-github-advanced",
-      "pack": "git-github",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "github-actions-scheduling",
-      "pack": "git-github",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "growth-dedup",
-      "pack": "claudinite-growth",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "image-algorithm-development",
-      "pack": "nor-finder",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "improve-comments",
-      "pack": "basics",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "learning-a-technology",
-      "pack": "claudinite-growth",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "merge-to-main",
-      "pack": "git-github",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "production-retrospective",
-      "pack": "basics",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "prose-to-checks",
-      "pack": "claudinite-growth",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "repo-text-sweeps",
-      "pack": "basics",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "revalidating-rules",
-      "pack": "claudinite-growth",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "searching-for-a-tool",
-      "pack": "basics",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "triaging-usage-findings",
-      "pack": "claudinite-growth",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "unattended-agents",
-      "pack": "claudinite-growth",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "verify-in-production",
-      "pack": "basics",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "working-with-generated-files",
-      "pack": "basics",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "writing-handover-issues",
-      "pack": "basics",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "writing-migration-plans",
-      "pack": "basics",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "writing-pack-prose",
-      "pack": "claudinite-growth",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "writing-repo-scanning-checks",
-      "pack": "basics",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "writing-tasks",
-      "pack": "claudinite-growth",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
-      "rule": "skill-always-loaded",
-      "subject": "writing-tests",
-      "pack": "basics",
-      "name": "activity",
-      "need": 60,
-      "have": 46.86045200000001
-    },
-    {
       "rule": "skill-forced-only-small",
       "subject": "adopt-claudinite",
       "pack": "claudinite-lifecycle",
@@ -3659,7 +3484,7 @@
       "pack": "basics",
       "name": "skillLoads",
       "need": 5,
-      "have": 0
+      "have": 1
     },
     {
       "rule": "skill-forced-only-small",
@@ -3676,14 +3501,6 @@
       "name": "skillLoads",
       "need": 5,
       "have": 0
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "changing-pack-elements",
-      "pack": "claudinite-growth",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 3
     },
     {
       "rule": "skill-forced-only-small",
@@ -3728,178 +3545,170 @@
     {
       "rule": "skill-forced-only-small",
       "subject": "fetching-from-the-web",
-      "pack": "basics",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 3
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "file-placement",
-      "pack": "basics",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 0
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "git-github-advanced",
-      "pack": "git-github",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 0
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "github-actions-scheduling",
-      "pack": "git-github",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 0
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "growth-dedup",
-      "pack": "claudinite-growth",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 2
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "image-algorithm-development",
-      "pack": "nor-finder",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 0
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "improve-comments",
-      "pack": "basics",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 2
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "learning-a-technology",
-      "pack": "claudinite-growth",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 0
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "production-retrospective",
-      "pack": "basics",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 0
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "prose-to-checks",
-      "pack": "claudinite-growth",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 2
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "repo-text-sweeps",
-      "pack": "basics",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 0
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "revalidating-rules",
-      "pack": "claudinite-growth",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 1
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "triaging-usage-findings",
-      "pack": "claudinite-growth",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 0
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "unattended-agents",
-      "pack": "claudinite-growth",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 0
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "working-with-generated-files",
-      "pack": "basics",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 2
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "writing-handover-issues",
-      "pack": "basics",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 1
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "writing-migration-plans",
-      "pack": "basics",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 1
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "writing-pack-prose",
-      "pack": "claudinite-growth",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 1
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "writing-repo-scanning-checks",
-      "pack": "basics",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 1
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "writing-tasks",
-      "pack": "claudinite-growth",
-      "name": "skillLoads",
-      "need": 5,
-      "have": 2
-    },
-    {
-      "rule": "skill-forced-only-small",
-      "subject": "writing-tests",
       "pack": "basics",
       "name": "skillLoads",
       "need": 5,
       "have": 4
     },
     {
+      "rule": "skill-forced-only-small",
+      "subject": "file-placement",
+      "pack": "basics",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 0
+    },
+    {
+      "rule": "skill-forced-only-small",
+      "subject": "git-github-advanced",
+      "pack": "git-github",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 0
+    },
+    {
+      "rule": "skill-forced-only-small",
+      "subject": "github-actions-scheduling",
+      "pack": "git-github",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 0
+    },
+    {
+      "rule": "skill-forced-only-small",
+      "subject": "github-pages-pipeline",
+      "pack": "github-pages",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 0
+    },
+    {
+      "rule": "skill-forced-only-small",
+      "subject": "growth-dedup",
+      "pack": "claudinite-growth",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 3
+    },
+    {
+      "rule": "skill-forced-only-small",
+      "subject": "image-algorithm-development",
+      "pack": "nor-finder",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 0
+    },
+    {
+      "rule": "skill-forced-only-small",
+      "subject": "improve-comments",
+      "pack": "basics",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 3
+    },
+    {
+      "rule": "skill-forced-only-small",
+      "subject": "learning-a-technology",
+      "pack": "claudinite-growth",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 0
+    },
+    {
+      "rule": "skill-forced-only-small",
+      "subject": "production-retrospective",
+      "pack": "basics",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 0
+    },
+    {
+      "rule": "skill-forced-only-small",
+      "subject": "prose-to-checks",
+      "pack": "claudinite-growth",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 3
+    },
+    {
+      "rule": "skill-forced-only-small",
+      "subject": "repo-text-sweeps",
+      "pack": "basics",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 0
+    },
+    {
+      "rule": "skill-forced-only-small",
+      "subject": "revalidating-rules",
+      "pack": "claudinite-growth",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 2
+    },
+    {
+      "rule": "skill-forced-only-small",
+      "subject": "triaging-usage-findings",
+      "pack": "claudinite-growth",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 0
+    },
+    {
+      "rule": "skill-forced-only-small",
+      "subject": "unattended-agents",
+      "pack": "claudinite-growth",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 0
+    },
+    {
+      "rule": "skill-forced-only-small",
+      "subject": "writing-handover-issues",
+      "pack": "basics",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 1
+    },
+    {
+      "rule": "skill-forced-only-small",
+      "subject": "writing-migration-plans",
+      "pack": "basics",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 1
+    },
+    {
+      "rule": "skill-forced-only-small",
+      "subject": "writing-pack-prose",
+      "pack": "claudinite-growth",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 3
+    },
+    {
+      "rule": "skill-forced-only-small",
+      "subject": "writing-repo-scanning-checks",
+      "pack": "basics",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 2
+    },
+    {
+      "rule": "skill-forced-only-small",
+      "subject": "writing-tasks",
+      "pack": "claudinite-growth",
+      "name": "skillLoads",
+      "need": 5,
+      "have": 2
+    },
+    {
       "rule": "skill-loaded-still-caught",
       "subject": "adopt-claudinite",
       "pack": "claudinite-lifecycle",
       "name": "skillSessions",
       "need": 5,
-      "have": 0
+      "have": 1
     },
     {
       "rule": "skill-loaded-still-caught",
@@ -3907,7 +3716,7 @@
       "pack": "claudinite-lifecycle",
       "name": "skillSessions",
       "need": 5,
-      "have": 0
+      "have": 1
     },
     {
       "rule": "skill-loaded-still-caught",
@@ -3915,7 +3724,7 @@
       "pack": "basics",
       "name": "skillSessions",
       "need": 5,
-      "have": 0
+      "have": 1
     },
     {
       "rule": "skill-loaded-still-caught",
@@ -3923,7 +3732,7 @@
       "pack": "claudinite-growth",
       "name": "skillSessions",
       "need": 5,
-      "have": 1
+      "have": 2
     },
     {
       "rule": "skill-loaded-still-caught",
@@ -3937,9 +3746,9 @@
       "rule": "skill-loaded-still-caught",
       "subject": "changing-pack-elements",
       "pack": "claudinite-growth",
-      "name": "skillSessions",
-      "need": 5,
-      "have": 3
+      "name": "skillCaught / skillSessions >= 0.3",
+      "need": null,
+      "have": null
     },
     {
       "rule": "skill-loaded-still-caught",
@@ -3971,7 +3780,7 @@
       "pack": "claudinite-growth",
       "name": "skillSessions",
       "need": 5,
-      "have": 3
+      "have": 4
     },
     {
       "rule": "skill-loaded-still-caught",
@@ -3979,7 +3788,7 @@
       "pack": "claudinite-growth",
       "name": "skillSessions",
       "need": 5,
-      "have": 3
+      "have": 4
     },
     {
       "rule": "skill-loaded-still-caught",
@@ -3993,9 +3802,9 @@
       "rule": "skill-loaded-still-caught",
       "subject": "fetching-from-the-web",
       "pack": "basics",
-      "name": "skillSessions",
-      "need": 5,
-      "have": 4
+      "name": "skillCaught / skillSessions >= 0.3",
+      "need": null,
+      "have": null
     },
     {
       "rule": "skill-loaded-still-caught",
@@ -4023,11 +3832,19 @@
     },
     {
       "rule": "skill-loaded-still-caught",
+      "subject": "github-pages-pipeline",
+      "pack": "github-pages",
+      "name": "skillSessions",
+      "need": 5,
+      "have": 0
+    },
+    {
+      "rule": "skill-loaded-still-caught",
       "subject": "growth-dedup",
       "pack": "claudinite-growth",
       "name": "skillSessions",
       "need": 5,
-      "have": 3
+      "have": 4
     },
     {
       "rule": "skill-loaded-still-caught",
@@ -4035,7 +3852,7 @@
       "pack": "nor-finder",
       "name": "skillSessions",
       "need": 5,
-      "have": 0
+      "have": 1
     },
     {
       "rule": "skill-loaded-still-caught",
@@ -4043,7 +3860,7 @@
       "pack": "basics",
       "name": "skillSessions",
       "need": 5,
-      "have": 2
+      "have": 3
     },
     {
       "rule": "skill-loaded-still-caught",
@@ -4073,9 +3890,9 @@
       "rule": "skill-loaded-still-caught",
       "subject": "prose-to-checks",
       "pack": "claudinite-growth",
-      "name": "skillSessions",
-      "need": 5,
-      "have": 3
+      "name": "skillCaught / skillSessions >= 0.3",
+      "need": null,
+      "have": null
     },
     {
       "rule": "skill-loaded-still-caught",
@@ -4091,7 +3908,7 @@
       "pack": "claudinite-growth",
       "name": "skillSessions",
       "need": 5,
-      "have": 1
+      "have": 2
     },
     {
       "rule": "skill-loaded-still-caught",
@@ -4129,9 +3946,9 @@
       "rule": "skill-loaded-still-caught",
       "subject": "working-with-generated-files",
       "pack": "basics",
-      "name": "skillSessions",
-      "need": 5,
-      "have": 2
+      "name": "skillCaught / skillSessions >= 0.3",
+      "need": null,
+      "have": null
     },
     {
       "rule": "skill-loaded-still-caught",
@@ -4153,9 +3970,9 @@
       "rule": "skill-loaded-still-caught",
       "subject": "writing-pack-prose",
       "pack": "claudinite-growth",
-      "name": "skillSessions",
-      "need": 5,
-      "have": 2
+      "name": "skillCaught / skillSessions >= 0.3",
+      "need": null,
+      "have": null
     },
     {
       "rule": "skill-loaded-still-caught",
@@ -4163,7 +3980,7 @@
       "pack": "basics",
       "name": "skillSessions",
       "need": 5,
-      "have": 1
+      "have": 2
     },
     {
       "rule": "skill-loaded-still-caught",
@@ -4177,9 +3994,9 @@
       "rule": "skill-loaded-still-caught",
       "subject": "writing-tests",
       "pack": "basics",
-      "name": "skillSessions",
-      "need": 5,
-      "have": 4
+      "name": "skillCaught / skillSessions >= 0.3",
+      "need": null,
+      "have": null
     },
     {
       "rule": "skill-triggered-missing-moments",
@@ -4199,11 +4016,19 @@
     },
     {
       "rule": "skill-triggered-missing-moments",
+      "subject": "github-pages-pipeline",
+      "pack": "github-pages",
+      "name": "moments",
+      "need": 5,
+      "have": 0
+    },
+    {
+      "rule": "skill-triggered-missing-moments",
       "subject": "learning-a-technology",
       "pack": "claudinite-growth",
       "name": "moments",
       "need": 5,
-      "have": 0
+      "have": 1
     },
     {
       "rule": "skill-triggered-missing-moments",
@@ -4219,27 +4044,11 @@
       "pack": "basics",
       "name": "moments",
       "need": 5,
-      "have": 2
+      "have": 3
     },
     {
       "rule": "skill-triggered-missing-moments",
       "subject": "writing-migration-plans",
-      "pack": "basics",
-      "name": "moments",
-      "need": 5,
-      "have": 0
-    },
-    {
-      "rule": "skill-triggered-missing-moments",
-      "subject": "writing-pack-prose",
-      "pack": "claudinite-growth",
-      "name": "moments",
-      "need": 5,
-      "have": 1
-    },
-    {
-      "rule": "skill-triggered-missing-moments",
-      "subject": "writing-repo-scanning-checks",
       "pack": "basics",
       "name": "moments",
       "need": 5,
@@ -4377,6 +4186,14 @@
       "rule": "trigger-fires-unfollowed",
       "subject": "github-actions-scheduling",
       "pack": "git-github",
+      "name": "triggerFired",
+      "need": 5,
+      "have": null
+    },
+    {
+      "rule": "trigger-fires-unfollowed",
+      "subject": "github-pages-pipeline",
+      "pack": "github-pages",
       "name": "triggerFired",
       "need": 5,
       "have": null
