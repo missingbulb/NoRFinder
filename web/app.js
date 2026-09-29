@@ -451,8 +451,12 @@ function buildFilters() {
     for (const name of Object.keys(f.params)) {
       const [lo, hi, step] = paramRange(name, st.defaults[name]);
       const p = document.createElement("div"); p.className = "param";
-      p.innerHTML = `<span class="name">${name} ${helpIcon(name)} <span class="def">(ours: ${st.defaults[name]})</span></span>
-        <input type="range" min="${lo}" max="${hi}" step="${step}" data-p="${name}"><input type="number" step="any" data-p="${name}">`;
+      const at = Math.min(1, Math.max(0, (st.defaults[name] - lo) / (hi - lo)));
+      p.dataset.p = name;
+      p.innerHTML = `<span class="name">${name} ${helpIcon(name)}</span>
+        <div class="slide"><input type="range" min="${lo}" max="${hi}" step="${step}" data-p="${name}"><button type="button" class="ours" style="--at:${at}"
+          title="Ours: ${st.defaults[name]}. Click to go back to it" aria-label="Back to ours, ${st.defaults[name]}"></button></div><input type="number" step="any" data-p="${name}">`;
+      p.querySelector(".ours").onclick = () => { const n = p.querySelector('input[type="number"]'); n.value = st.defaults[name]; n.oninput(); };
       d.append(p);
     }
     box.append(d);
@@ -463,9 +467,14 @@ function buildFilters() {
       const v = parseFloat(inp.value); if (!isFinite(v)) return;
       st.values[inp.dataset.p] = v;
       box.querySelectorAll(`input[data-p="${inp.dataset.p}"]`).forEach((o) => { if (o !== inp) o.value = v; });
-      save(); refilter();
+      markParams(); save(); refilter();
     };
   });
+  markParams();
+}
+// a filter setting away from our value is marked like a changed finder setting, with our value as a tick on its slider
+function markParams() {
+  document.querySelectorAll(".param").forEach((p) => p.classList.toggle("changed", st.values[p.dataset.p] !== st.defaults[p.dataset.p]));
 }
 
 // the finder's settings: its main ones on show, every one under Advanced; both edit the same values
