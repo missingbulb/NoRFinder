@@ -238,7 +238,8 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   thumbnail showing the part in view, which moves the view when clicked; its name; a checkbox per
   colour layer, in that layer's colour when on, blue off at first), the candidates finder (its
   "how it works" and its settings fold away) and the filters. The main area has a toolbar over two
-  views: the image and the individual items. The right bar holds the selected candidate, the
+  views: the image and the individual items, with the button that switches between them at its
+  left and the zoom at its right. The right bar holds the selected candidate, the
   summary and the downloads. Both side bars can be dragged wider or narrower (remembered; a double
   click restores one). A status bar shows the image name, the candidate and finalist counts, how
   long each step took, and the site's version (stamped by each release).
@@ -248,9 +249,10 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   and the candidate numbers, the rejection letters and the measuring lines (remembered).
 - **One selected candidate.** Clicking a candidate selects it (a thin white ring) and clicking it
   again deselects it. Its card sits in the right bar with buttons to the previous and next
-  candidate by number. Decisions are made on cards, not by clicking the image: a finalist can be
-  rejected, always accepted, or have its lengths approved; a rejected one can be accepted, and one
-  rejected by the user restored.
+  candidate by number. Decisions are made on cards, not by clicking the image, with two buttons at
+  the card's top: Approve (a real NoR, with the lengths shown) and Reject (not one), each saying
+  what it does in its tooltip. Approved and rejected-by-user cards have their own border colours,
+  and a candidate the user rejected offers Un-reject.
 - **Filters are live dials.** Every check in `nor3.CHECKS`, the nucleus rule (N) and
   one-pixel-per-NoR (O) is a control that can be switched off. Each shows a letter, a one- or
   two-word title and a line saying what it means (the page's own names, from
@@ -265,11 +267,13 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   is missing).
 - **All finders are offered.** Traffic light is the default.
 - **The blue mask is only a filter.** No finder on the page blanks nuclei before finding.
-- **The item views.** Two views: the finalists and the rejected, each candidate cropped on a card.
+- **The item views.** Two views: the finalists and the rejected, each candidate cropped on a card:
+  its number, state and decision buttons on top, the crop below (with a faint go-to button in its
+  corner that shows it on the image), then "Lengths adjusted" with a reset, and the rest.
   A rejected card names every filter that rejects it by itself, or says the user rejected it. An
   Options menu (remembered) sets the crop's context padding, turns each crop so the NoR lies level
   (on at first), and shows or hides the NoR borders, the measurement bars, the lengths on the crop,
-  the lengths on the card and the length adjusters (on at first). The adjusters drag the ends of
+  the lengths on the card (off at first) and the length adjusters (on at first). The adjusters drag the ends of
   the green-to-green length and the red length; the new lengths show on the image, the card, the
   summary and the downloads. The measurements of the finalists are summarised in the right bar.
 - **Downloads.** The candidates as CSV (every candidate, its status, its reasons, the user's
@@ -287,8 +291,11 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   link", with no sign-in. An image loads at once; a folder lists its images and subfolders to pick
   from. It needs the site's Google API key (`web/config.js`); without one the option is off.
   Nothing read from Drive is cached.
-- **Visible waiting.** While Python loads and while a finder runs, the page shows a spinner and
-  the elapsed time.
+- **No waiting to start.** Python loads in the background while the user picks an image, which
+  opens as soon as Python is ready. Until an image is loaded, Load shines, and the finder and
+  filter boxes are folded (their titles open them).
+- **Visible waiting.** While a finder runs, or an image waits for Python, the page shows a spinner
+  and the elapsed time.
 - **Remembered settings.** Filter settings persist in the browser across images, visits and
   days, and one button restores the defaults.
 - **Only our code is fetched fresh.** Third-party code (Pyodide, its packages, vendored wheels)

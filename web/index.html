@@ -27,7 +27,7 @@
       <div class="sec-head">
         <h2>Image</h2>
         <div class="split" id="load">
-          <button id="load-main" class="primary" disabled>Load</button><details class="menu" id="load-menu"><summary class="primary" aria-label="Where to load from"></summary>
+          <button id="load-main" class="primary">Load</button><details class="menu" id="load-menu"><summary class="primary" aria-label="Where to load from"></summary>
             <div class="pop right">
               <button class="item" data-src="local">From this computer</button>
               <button class="item" data-src="drive">From Google Drive</button>
@@ -45,8 +45,8 @@
       </div>
     </section>
 
-    <section class="box">
-      <h2>Candidates finder</h2>
+    <section class="box foldable">
+      <div class="sec-head"><h2>Candidates finder</h2><button id="reset-detect" class="link" disabled>restore defaults</button></div>
       <select id="finder" disabled></select>
       <details id="about-box" class="fold">
         <summary>How it works</summary>
@@ -61,12 +61,11 @@
         </details>
       </details>
       <div class="row">
-        <button id="reset-detect" disabled>Reset</button>
         <button id="find" class="primary" disabled>Find Candidates</button>
       </div>
     </section>
 
-    <section class="box">
+    <section class="box foldable">
       <div class="sec-head"><h2>Filters</h2><button id="reset-filters" class="link" disabled>restore defaults</button></div>
       <p class="hint">Each count is what that filter rejects by itself, whatever the others do.</p>
       <div id="filters"></div>
@@ -76,9 +75,7 @@
 
   <main id="view">
     <div class="toolbar">
-      <div class="for-image zoom" role="group" aria-label="Zoom">
-        <button id="zoom-out" title="Zoom out" aria-label="Zoom out">−</button><span id="zoom-label">100%</span><button id="zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
-      </div>
+      <button id="switch" class="big" disabled>Item View</button>
       <details class="menu for-image" id="show-menu">
         <summary>Show</summary>
         <div class="pop">
@@ -106,14 +103,17 @@
           <label><input type="checkbox" id="opt-adjust"> length adjusters</label>
         </div>
       </details>
-      <button id="switch" class="big" disabled>Item View</button>
+      <span class="grow"></span>
+      <div class="for-image zoom" role="group" aria-label="Zoom">
+        <button id="zoom-out" title="Zoom out" aria-label="Zoom out">−</button><span id="zoom-label">100%</span><button id="zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
+      </div>
     </div>
     <div id="busy" hidden><span class="spin big"></span><div id="busy-text"></div><div id="busy-time"></div></div>
 
     <div id="image-view">
       <div id="scroller">
         <div id="empty">Load a three-channel ImageJ TIFF (Caspr green, Nav red, DAPI) or an RGB PNG, then press Find Candidates.<br>
-          The first visit downloads Python and its libraries (about 50 MB); later visits reuse them for 30 days.</div>
+          Python, which runs the finders, loads in the background meanwhile: about 50 MB on the first visit, then from this browser's cache for 30 days.</div>
         <div id="stage" hidden><canvas id="base"></canvas><svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg></div>
       </div>
     </div>
