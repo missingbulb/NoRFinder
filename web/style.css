@@ -85,10 +85,12 @@ input.ch.r { accent-color: #f33; } input.ch.g { accent-color: #2fb344; } input.c
 @keyframes shine { from { transform: translateX(-120%); } to { transform: translateX(320%); } }
 /* folding parts of a box */
 details.fold { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
-details.fold > summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--dim); list-style: none; }
+details.fold > summary { display: flex; align-items: center; gap: 7px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--dim); list-style: none; }
 details.fold > summary::-webkit-details-marker { display: none; }
-details.fold > summary::before { content: "▸"; display: inline-block; width: 14px; transition: transform .15s; }
-details.fold[open] > summary::before { transform: rotate(90deg); }
+/* every fold's arrow: a small triangle pointing right when folded and down when open, centred on its text */
+details.fold > summary::before, .box.foldable > .sec-head h2::before { content: ""; flex: none; width: 0; height: 0;
+  border-style: solid; border-width: 5px 0 5px 7px; border-color: transparent transparent transparent var(--dim); transition: transform .15s; }
+details.fold[open] > summary::before, .box.foldable:not(.folded) > .sec-head h2::before { transform: rotate(90deg); }
 #main-params { margin-top: 6px; }
 #advanced { margin-top: 10px; font-size: 13px; }
 #advanced[open] #detect-params { margin-top: 6px; }
@@ -337,7 +339,5 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 
 /* a box that folds: its title opens and closes it */
 .box.foldable > .sec-head h2 { display: flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }
-.box.foldable > .sec-head h2::before { content: ""; border: 5px solid transparent; border-top: 6px solid var(--dim); border-bottom: 0; transition: transform .15s; }
-.box.foldable.folded > .sec-head h2::before { transform: rotate(-90deg); }
 .box.foldable.folded > :not(.sec-head) { display: none; }
 .box.foldable.folded > .sec-head button { display: none; }
