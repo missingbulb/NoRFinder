@@ -71,12 +71,18 @@ run to run (same code measured 5.70 s and 4.81 s), so judge by min-of-3 and re-c
 | 09-29 | walk, fill | `_bilinear` on every strip offset, angle and bend at once instead of one call per offset/angle/bend (elementwise, so the same values) | walk 21.6 → 5.6 s, fill 12.5 → 5.9 s | identical | kept |
 | 09-29 | tl, rf, fill | `nor3.hmax_above`: h-maxima above a level T reconstructed piece by piece over the parts of the image above T - h, whole image when that is over half of it (flat reconstruction commutes with max(., L)); fuzzed against skimage in tests/test_speedups.py | tl → 3.9 s, rf 10.3 → 7.0 s, fill → 5.9 s | identical | kept |
 | 09-29 | tl | custom slicing bilinear shift instead of `ndi.shift` | 61 → 135 ms per shift | differs by 1e-14 | dropped: slower, and not exact |
-| — | all | open: `nor3.finish` (1-2.5 s per finder: two background medians and two dilations per candidate), the shared gaussians (~1 s), per-candidate colouring. See the proposals below | | | |
+| 09-29 | tl, rf, fill | hmax_above: pieces grouped by 128-px tile into one reconstruction each (200 calls instead of 4278 in rf), pieces found by `np.unique` instead of `ndi.maximum`, h_maxima's shifted image computed per crop | rf hmax 2.7 → ~1.5 s | identical | kept |
+| 09-29 | all | finish: the red's rim dilation done once, not once per green; `grow` = one (2r+1)-square dilation instead of r rounds; `nor3.median` = np.median's own partition without its per-call overhead | finish ~2.6 → ~2.0 s in rf | identical | kept |
+| 09-29 | tl, rf, fill | `FibreAngle`: the structure tensor's second smoothing pass only on the rows a candidate reads (each row equals the whole map's row) | ~0.4 s per finder | identical | kept |
+| 09-29 | all | perf.py's signature now also hashes every measurement (snr, purity, lengths, lines, comb...), not only verdicts and pixels; all six specs re-checked against main | | identical | tooling |
+| — | all | open: rf still ~5.7 s (finish on both alternatives per red ~2 s, per-candidate labelling ~0.7 s, classify ~0.6 s) | | | |
 
 ### Profile of every finder, 2026-09-29 (Ariel: "performance analysis of all candidate finders")
-Raw Python, which is where algorithmic work is measured (`bench.py`, min of 2, after this change):
-tl 3.9 s (229/463 pass), rf 6.6 s (265/1263), fill 5.3 s (213/909), walk 5.1 s (249/1382),
-blobs 2.8 s (244/1649); peak RSS 180-380 MB. Re-running the checks on the candidates takes ~2 ms.
+Raw Python, which is where algorithmic work is measured (`bench.py`, min of 3, after both rounds):
+tl 3.2 s (229/463 pass), rf 6.1 s (265/1263), fill 4.9 s (213/909), walk 4.6 s (249/1382),
+blobs 2.4 s (244/1649); peak RSS 190-370 MB. Re-running the checks on the candidates takes ~2 ms.
+`perf.py check` against main's code, min of 3: tl 15.0 → 3.2 s, rf 9.6 → 5.7 s, fill 11.7 → 4.8 s,
+walk 21.6 → 4.5 s, blobs 2.7 → 2.4 s.
 
 For reference only, the web page's path on the reference slide: open, blue mask, detect, first refilter. Native = `bench.py`
 (this 4-core container is noisy, about ±15%); Pyodide = `browser/bench_pyodide.mjs` (Node, wasm heap
@@ -97,13 +103,12 @@ packages, nothing cached) 25-30 s. About 1 GB of Chromium memory is there before
 (blobs, whose detect allocates 55 MB, peaks at 1000 MB); the finders add up to ~180 MB on top.
 
 Proposed next (not done):
-1. **nor3.finish** (every finder, 1-2.5 s native): the background median and MAD per candidate on
-   the whole window, and two dilations. Skip it for candidates the finder already rejected, or take
-   one median per window with `np.partition`. Must stay identical (perf.py check).
+1. **nor3.finish**: partly done (see the rows above). What is left is per-candidate numpy overhead;
+   rf runs it on both alternatives of every red.
 2. **Share the preprocessing across finders in a page session** (classify, the smoothed channels,
    h-maxima, watershed basins): switching finder on the page then costs only the finder's own
    search, 1-3 s less. Identical by construction.
-3. **float32 working images**: about half the finders' memory and faster filters, but the output
-   changes at ties (ledger row of 09-27), so it needs `nor_lab.py ablate`, not perf.py.
+3. **float32 working images**: ruled out. It changes the output at ties, and Ariel (2026-09-29)
+   allows no change in quality for a performance optimisation.
 4. **Cold start**: scikit-image is now needed only for `reconstruction` and `watershed`; replacing
    those would drop ~17 MB (skimage plus matplotlib) from the first download.

@@ -50,17 +50,26 @@ def hmax_above(img, h, T):
     from skimage.morphology.grayreconstruct import reconstruction
     if h > np.ptp(img):
         return np.zeros(img.shape, bool)
-    L = T - h - 1e-6 * max(1.0, float(np.abs(img).max()))
+    L = T - h - 1e-6 * max(1.0, float(img.max()), -float(img.min()))
     if (img > L).mean() > 0.5:      # most of the image: nothing to save
         return h_maxima(img, h).astype(bool) & (img > T)
-    shifted = img - h - 2 * np.finfo(img.dtype).resolution * np.abs(img)   # as h_maxima does
-    lab, _ = ndi.label(img > L, EIGHT); out = np.zeros(img.shape, bool)
-    for i, sl in enumerate(ndi.find_objects(lab)):
-        inside = lab[sl] == i + 1; top = inside & (img[sl] > T)
-        if not top.any():
-            continue
+    lab, n = ndi.label(img > L, EIGHT); out = np.zeros(img.shape, bool)
+    if n == 0:
+        return out
+    sls = ndi.find_objects(lab); keep = np.unique(lab[img > T])      # the pieces reaching above T
+    # pieces are independent, so several can share one reconstruction call (the others held at L):
+    # group them by the tile their box starts in, which saves the per-call cost of tiny pieces
+    groups = {}
+    for i in keep:
+        sl = sls[i - 1]; groups.setdefault((sl[0].start // 128, sl[1].start // 128), []).append(i)
+    for ids in groups.values():
+        y0 = min(sls[i - 1][0].start for i in ids); y1 = max(sls[i - 1][0].stop for i in ids)
+        x0 = min(sls[i - 1][1].start for i in ids); x1 = max(sls[i - 1][1].stop for i in ids)
+        sl = (slice(y0, y1), slice(x0, x1))
+        inside = np.isin(lab[sl], ids); top = inside & (img[sl] > T)
         ms = np.where(inside, img[sl], L)
-        rec = reconstruction(np.where(inside, shifted[sl], L), ms, method='dilation')
+        shifted = img[sl] - h - 2 * np.finfo(img.dtype).resolution * np.abs(img[sl])   # as h_maxima does
+        rec = reconstruction(np.where(inside, shifted, L), ms, method='dilation')
         out[sl] |= top & (ms - rec >= h)
     return out
 
@@ -171,6 +180,38 @@ def judge(c, p, order=None):
             return
 
 
+class FibreAngle:
+    """The along-fibre angle from the structure tensor of S (gradients of S averaged over w),
+    indexed like the image: comb[y, x]. The finders read it at a few hundred points, so the second
+    pass of the smoothing runs per row on demand; each row is exactly that row of the whole map."""
+    def __init__(self, S, w):
+        gy_, gx_ = np.gradient(S); self.w = w; self.rows = {}
+        self.half = [ndi.gaussian_filter1d(v, w, axis=0) for v in (gx_ * gx_, gy_ * gy_, gx_ * gy_)]
+
+    def __getitem__(self, yx):
+        y, x = yx
+        if y not in self.rows:
+            Jxx, Jyy, Jxy = (ndi.gaussian_filter1d(v[y], self.w) for v in self.half)
+            self.rows[y] = 0.5 * np.arctan2(2 * Jxy, Jxx - Jyy) + np.pi / 2
+        return self.rows[y][x]
+
+
+def median(b):
+    """np.median of a 1-D float array, same value, without its per-call overhead (called per candidate)."""
+    n = b.size; k = n // 2
+    part = np.partition(b, [k - 1, k, -1] if n % 2 == 0 else [k, -1])
+    if np.isnan(part[-1]):
+        return np.float64(np.nan)
+    return part[k] if n % 2 else (part[k - 1] + part[k]) / 2
+
+
+def grow(m, r):
+    """r rounds of 8-neighbour dilation: one pass with a (2r+1)-square is the same set."""
+    if r >= 1:
+        return ndi.binary_dilation(m, np.ones((2 * r + 1, 2 * r + 1), bool))
+    return ndi.binary_dilation(m, EIGHT, iterations=r)
+
+
 def finish(c, F, p):
     """All per-candidate measurements, then the checks. F holds the image-wide maps."""
     cn, rn, green, red, tg, tr, valid_ = F
@@ -180,8 +221,8 @@ def finish(c, F, p):
     allg = np.zeros_like(rs)
     for m in c['greens']:
         allg |= m
-    rc = rs & ~ndi.binary_dilation(allg, EIGHT, iterations=p["rim"])
-    gcs = [m & ~ndi.binary_dilation(rs, EIGHT, iterations=p["rim"]) for m in c["greens"]]
+    rc = rs & ~grow(allg, p["rim"])
+    rgrow = grow(rs, p["rim"]); gcs = [m & ~rgrow for m in c["greens"]]
     c['red_purity'] = float((sub_c[rc] > tg).mean()) if rc.any() else 1.0
     c['green_purity'] = [float((sub_r[m] > tr).mean()) if m.any() else 1.0 for m in gcs]
     c['red_mean'] = float(sub_r[rs].mean())
@@ -197,7 +238,7 @@ def finish(c, F, p):
         b = img_[bgpix]
         if b.size < 20:
             snr.append(0.0); continue
-        med = np.median(b); sd = 1.4826 * np.median(np.abs(b - med)) + 1e-6
+        med = median(b); sd = 1.4826 * median(np.abs(b - med)) + 1e-6
         snr += [float((img_[m].mean() - med) / sd) for m in segs_]
     c['snr'] = min(snr)
     if len(c['greens']) == 2:
@@ -460,10 +501,7 @@ def segment_fill(caspr, nav, bm, p=P3):
     # the way the fibres are combed around each point: structure tensor of green+red,
     # averaged over `comb_u` units; fibres run along the tensor's weak direction
     S = cs_ + rs_
-    gy_, gx_ = np.gradient(ndi.gaussian_filter(S, p['smooth_u'] * unit))
-    w = p['comb_u'] * unit
-    Jxx, Jyy, Jxy = (ndi.gaussian_filter(v, w) for v in (gx_ * gx_, gy_ * gy_, gx_ * gy_))
-    comb = 0.5 * np.arctan2(2 * Jxy, Jxx - Jyy) + np.pi / 2      # along-fibre angle
+    comb = FibreAngle(ndi.gaussian_filter(S, p['smooth_u'] * unit), p['comb_u'] * unit)   # along-fibre angle
     # hills of green: each green peak owns the pixels that run downhill to it, so colouring in
     # stops in the valley where one green piece ends and the next begins
     from skimage.segmentation import watershed

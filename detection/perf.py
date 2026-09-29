@@ -22,6 +22,11 @@ def signature(cands):
         h.update(f"{c['cy']:.3f},{c['cx']:.3f},{c['fail']},{c['box']}".encode())
         for m in [c['red']] + list(c.get('greens', [])):
             h.update(np.packbits(m).tobytes()); h.update(str(m.shape).encode())
+        # every measurement the checks and the page read, to the last bit
+        for k in sorted(k for k in c if k not in ('red', 'greens', 'lines', 'axis')):
+            h.update(f"{k}={c[k]!r};".encode())
+        if 'lines' in c:
+            h.update(repr(c['lines']).encode())
     return h.hexdigest()
 
 

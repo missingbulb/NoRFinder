@@ -111,9 +111,7 @@ def segment_rf(caspr, nav, bm, p=PR):
     # green at full level, and the brightness checks judge the rest
     gpk = nor3.hmax_above(cs_, p['valley_depth'] * tg, p['g_low'] * tg)
     gbasin = watershed(-cs_, ndi.label(gpk)[0], mask=cs_ > p['g_low'] * tg)
-    gy_, gx_ = np.gradient(ndi.gaussian_filter(cs_ + rs_, p['smooth_u'] * unit)); w_ = p['comb_u'] * unit
-    Jxx, Jyy, Jxy = (ndi.gaussian_filter(v, w_) for v in (gx_ * gx_, gy_ * gy_, gx_ * gy_))
-    comb = 0.5 * np.arctan2(2 * Jxy, Jxx - Jyy) + np.pi / 2
+    comb = nor3.FibreAngle(ndi.gaussian_filter(cs_ + rs_, p['smooth_u'] * unit), p['comb_u'] * unit)
     touch = max(1, int(round(p['touch_u'] * unit))); reach = p['g_reach_u'] * unit
     pad = int(math.ceil(touch + reach + 2 * unit)) + 2
     min_red = p['min_area_u2'] * unit ** 2; min_g = p['min_green_u2'] * unit ** 2

@@ -54,9 +54,9 @@ _Last updated 2026-09-29._
 2. Retry C10 (node = red outshining green) once there are more labels.
 3. Ask Ariel to correct the Claude labels (checkpoint H5), so decisions stop resting on
    Claude's own eye.
-4. Performance: every finder was profiled on 2026-09-29 (ledger §4). In the browser tl now takes
-   7 s, rf 12 s, fill 11 s, walk 12 s, blobs 6 s. Next hotspot: `nor3.finish`; the other proposals
-   are listed under that profile.
+4. Performance: every finder was profiled and sped up on 2026-09-29 with identical output (ledger
+   §4). Raw Python: tl 3.2 s, rf 6 s, fill 5 s, walk 4.6 s, blobs 2.4 s. A speed-up must never
+   change the output (Ariel: no quality loss for performance).
 
 ## Files
 | file | what |

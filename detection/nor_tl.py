@@ -56,9 +56,7 @@ def segment_tl(caspr, nav, bm, p=PT):
     peak = (best == ndi.maximum_filter(best, size=nms)) & (best >= p['s_min']) & valid_
     sy, sx = np.nonzero(peak); order = np.argsort(-best[sy, sx])
     # fibre direction from the structure tensor, only for the 'along the fibre' check
-    gy_, gx_ = np.gradient(ndi.gaussian_filter(cs_ + rs_, p['smooth_u'] * unit)); w = p['comb_u'] * unit
-    Jxx, Jyy, Jxy = (ndi.gaussian_filter(v, w) for v in (gx_ * gx_, gy_ * gy_, gx_ * gy_))
-    comb = 0.5 * np.arctan2(2 * Jxy, Jxx - Jyy) + np.pi / 2
+    comb = nor3.FibreAngle(ndi.gaussian_filter(cs_ + rs_, p['smooth_u'] * unit), p['comb_u'] * unit)
     from skimage.segmentation import watershed
     gpk = nor3.hmax_above(cs_, p['valley_depth'] * tg, tg) & valid_
     gbasin = watershed(-cs_, ndi.label(gpk)[0], mask=(cs_ > p['fg'] * tg) & valid_)
