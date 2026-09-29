@@ -1,11 +1,12 @@
-// R8: the page holds no more memory after an action than it did the last time it did the same thing.
-// Drives the real page (web/) in headless Chromium: opens the reference slide, finds candidates and
-// moves filters, first once to warm up and then over and over, and after each round measures what the
-// page, its worker and the Python inside the worker still hold once garbage is collected.
+// The whole page's memory growth, Pyodide and the real finders included (tests/test_memory.py checks
+// each layer on its own in seconds). Drives the real page (web/) in headless Chromium: opens the
+// reference slide, finds candidates and moves filters, first once to warm up and then over and over,
+// and after each round measures what the page, its worker and the Python inside the worker still
+// hold once garbage is collected.
 //
 //   python3 web/build.py            once, for the page's vendored wheels
 //   python3 src/fetch_data.py -m '*Slide5*Slice1_up_left2*'
-//   node tests/test_page_memory.mjs [--rounds N] [--finders tl,rf,...]
+//   node detection/browser/mem_growth_live.mjs [--rounds N] [--finders tl,rf,...]   (about 2.5 minutes)
 //
 // Needs Playwright (npm i -g playwright). Remote files (Pyodide and its packages) are fetched with
 // curl when HTTPS_PROXY is set, since headless Chromium does not trust a proxy's own CA.
@@ -23,7 +24,7 @@ const require = createRequire(import.meta.url);
 let pw;
 try { pw = require("playwright"); } catch { pw = require(path.join(execSync("npm root -g").toString().trim(), "playwright")); }
 
-const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const TIF = path.join(repo, "data", "raw", "Left Up- Edited", "Slide5_4AP_NoR.sld - Slice1_up_left2.tif");
 const opt = (name, def) => { const i = process.argv.indexOf("--" + name); return i > 0 ? process.argv[i + 1] : def; };
 const ROUNDS = +opt("rounds", 2), MOVES = 12;

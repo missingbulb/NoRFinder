@@ -1,5 +1,6 @@
 {
   "name": "norfinder",
   "private": true,
+  "type": "module",
   "version": "0.10929.6"
 }
