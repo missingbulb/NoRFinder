@@ -107,6 +107,16 @@ def main():
         fails = s.refilter(dict(spec, off=[o for o in keys if o != k]))
         assert sum(f == k for f in fails) == alone['counts'][k], k
         assert sum(k in a for a in alone['fails']) == alone['counts'][k], k
+    # a filter's "only" count is what switching it off lets through, and never more than its count
+    spec = {'values': {'min_snr': 4}, 'off': [interactive.SHARED]}
+    alone = s.alone(spec)
+    passing = lambda sp: {i for i, f in enumerate(s.refilter(sp)) if f is None}
+    base = passing(spec)
+    assert sum(alone['only'].values()) > 0, alone['only']
+    for k in keys:
+        if k != interactive.SHARED:
+            assert len(passing(dict(spec, off=spec['off'] + [k])) - base) == alone['only'][k], k
+        assert alone['only'][k] <= alone['counts'][k], k
     print('ok')
 
 

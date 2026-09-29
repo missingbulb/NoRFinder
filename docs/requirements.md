@@ -256,8 +256,9 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
 - **Filters are live dials.** Every check in `nor3.CHECKS`, the nucleus rule (N) and
   one-pixel-per-NoR (O) is a control that can be switched off. Each shows a letter, a one- or
   two-word title and a line saying what it means (the page's own names, from
-  `detection/finder_help.py`; the lab's review sheets keep theirs), and how many candidates it
-  rejects by itself, whatever the other filters do. Each of its parameters is a dial, and
+  `detection/finder_help.py`; the lab's review sheets keep theirs), and two counts: how many
+  candidates it rejects, whatever the other filters do, and how many only it rejects among the
+  filters switched on (what switching it off would let through). Each of its parameters is a dial, and
   every marking on the image follows it at once. A check added to `CHECKS` becomes a control with
   no page change.
 - **Detection settings are dials too.** They re-run the finder, and the page says that this takes

@@ -443,7 +443,7 @@ function buildFilters() {
     const d = document.createElement("div"); d.className = "filter"; d.dataset.key = f.key;
     d.innerHTML = `<label class="top"><input type="checkbox" ${st.off.has(f.key) ? "" : "checked"}>
       <span class="badge" style="--c:${colour(f.key)}">${f.letter}</span><span class="title">${esc(f.title)}</span>
-      <span class="n" title="Rejected by this filter by itself"></span></label><div class="desc">${esc(f.text)}</div>`;
+      <span class="n" title="Rejected by this filter, whatever the others do"></span><span class="n only" title="Rejected by this filter and by no other filter that is on: switching it off lets these through"></span></label><div class="desc">${esc(f.text)}</div>`;
     d.querySelector("input").onchange = (e) => {
       e.target.checked ? st.off.delete(f.key) : st.off.add(f.key); d.classList.toggle("off", !e.target.checked); save(); refilter();
     };
@@ -521,7 +521,10 @@ function render() {
     else { const R = reasonOf(r); let_.textContent = R.letter; let_.setAttribute("fill", `rgb(${R.color})`); rejects.push(c); counts[r] = (counts[r] || 0) + 1; }
   }
   st.passes = passes; st.rejects = rejects;
-  document.querySelectorAll(".filter").forEach((d) => { d.querySelector(".n").textContent = st.alone ? st.alone.counts[d.dataset.key] ?? 0 : ""; });
+  document.querySelectorAll(".filter").forEach((d) => {
+    d.querySelector(".n").textContent = st.alone ? st.alone.counts[d.dataset.key] ?? 0 : "";
+    d.querySelector(".n.only").textContent = st.alone ? st.alone.only[d.dataset.key] ?? 0 : "";
+  });
   $("#sb-counts").innerHTML = `<b>${st.order.length}</b> candidates · <b>${passes.length}</b> finalists`;
   $("#n-pass").textContent = passes.length; $("#n-fail").textContent = rejects.length;
   if (st.view === "items") renderList();
