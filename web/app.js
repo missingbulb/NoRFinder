@@ -82,10 +82,11 @@ function status(text, err) {
   if (st.busySince) $("#busy-text").textContent = text;
   if (err) busy(false);
 }
-// the spinner and elapsed time shown while Python loads or a finder runs
-function busy(on, text) {
+// the spinner and elapsed time shown while Python loads or a finder runs; a finder running over an image
+// shows a photocopier's light sweeping across it instead of the spinner
+function busy(on, text, scan) {
   clearInterval(st.busyTimer); st.busySince = on ? st.busySince || Date.now() : 0;
-  $("#spin").classList.toggle("on", on); $("#busy").hidden = !on;
+  $("#spin").classList.toggle("on", on); $("#busy").hidden = !on; $("#busy").classList.toggle("scan", !!(on && scan));
   if (!on) return;
   $("#busy-text").textContent = text || $("#status").textContent; $("#busy-time").textContent = "";
   st.busyTimer = setInterval(() => { $("#busy-time").textContent = ((Date.now() - st.busySince) / 1000).toFixed(0) + " s"; }, 500);
@@ -153,7 +154,7 @@ function onWorker(m) {
 function detect() {
   const finder = $("#finder").value, overrides = detectOverrides(finder);
   st.running = runKey(); st.runOverrides = overrides; $("#find").disabled = true; $("#find").classList.remove("shine");
-  busy(true, "Finding candidates…");
+  busy(true, "Finding candidates…", true);
   st.worker.postMessage({ type: "detect", finder, overrides });
 }
 
