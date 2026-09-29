@@ -177,7 +177,8 @@ class Session:
     def alone(self, spec):
         """What each filter rejects with every other filter off, at the values in spec (whether or
         not it is switched off): {'counts': {filter: n}, 'fails': per candidate, the filters that
-        reject it}. Candidates the finder already rejected are not counted."""
+        reject it, 'only': {filter: n} rejected by that filter and by no other switched on}.
+        Candidates the finder already rejected are not counted."""
         p = dict(self.P, **spec.get('values', {})); keys = [f['key'] for f in self.filters()]
         frac = p.get('nucleus_frac', POST[NUCLEUS][1])
         fails = [[] for _ in self.cands]; open_ = []
@@ -191,4 +192,6 @@ class Session:
         for i, c in open_:
             if c['fail'] == SHARED:
                 fails[i].append(SHARED)
-        return dict(counts={k: sum(k in f for f in fails) for k in keys}, fails=fails)
+        off = set(spec.get('off', []))
+        only = {k: sum(k in f and all(o == k or o in off for o in f) for f in fails) for k in keys}
+        return dict(counts={k: sum(k in f for f in fails) for k in keys}, only=only, fails=fails)

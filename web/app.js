@@ -445,7 +445,7 @@ function buildFilters() {
     const d = document.createElement("div"); d.className = "filter"; d.dataset.key = f.key;
     d.innerHTML = `<label class="top"><input type="checkbox" ${st.off.has(f.key) ? "" : "checked"}>
       <span class="badge" style="--c:${colour(f.key)}">${f.letter}</span><span class="title">${esc(f.title)}</span>
-      <span class="n" title="Rejected by this filter by itself"></span></label><div class="desc">${esc(f.text)}</div>`;
+      <span class="n" title="Rejected by this filter, whatever the others do"></span><span class="n only" title="Rejected by this filter and by no other filter that is on: switching it off lets these through"></span></label><div class="desc">${esc(f.text)}</div>`;
     d.querySelector("input").onchange = (e) => {
       e.target.checked ? st.off.delete(f.key) : st.off.add(f.key); d.classList.toggle("off", !e.target.checked); save(); refilter();
     };
@@ -453,8 +453,12 @@ function buildFilters() {
     for (const name of Object.keys(f.params)) {
       const [lo, hi, step] = paramRange(name, st.defaults[name]);
       const p = document.createElement("div"); p.className = "param";
-      p.innerHTML = `<span class="name">${name} ${helpIcon(name)} <span class="def">(ours: ${st.defaults[name]})</span></span>
-        <input type="range" min="${lo}" max="${hi}" step="${step}" data-p="${name}"><input type="number" step="any" data-p="${name}">`;
+      const at = Math.min(1, Math.max(0, (st.defaults[name] - lo) / (hi - lo)));
+      p.dataset.p = name;
+      p.innerHTML = `<span class="name">${name} ${helpIcon(name)}</span>
+        <div class="slide"><input type="range" min="${lo}" max="${hi}" step="${step}" data-p="${name}"><button type="button" class="ours" style="--at:${at}"
+          title="Ours: ${st.defaults[name]}. Click to go back to it" aria-label="Back to ours, ${st.defaults[name]}"></button></div><input type="number" step="any" data-p="${name}">`;
+      p.querySelector(".ours").onclick = () => { const n = p.querySelector('input[type="number"]'); n.value = st.defaults[name]; n.oninput(); };
       d.append(p);
     }
     box.append(d);
@@ -465,9 +469,14 @@ function buildFilters() {
       const v = parseFloat(inp.value); if (!isFinite(v)) return;
       st.values[inp.dataset.p] = v;
       box.querySelectorAll(`input[data-p="${inp.dataset.p}"]`).forEach((o) => { if (o !== inp) o.value = v; });
-      save(); refilter();
+      markParams(); save(); refilter();
     };
   });
+  markParams();
+}
+// a filter setting away from our value is marked like a changed finder setting, with our value as a tick on its slider
+function markParams() {
+  document.querySelectorAll(".param").forEach((p) => p.classList.toggle("changed", st.values[p.dataset.p] !== st.defaults[p.dataset.p]));
 }
 
 // the finder's settings: its main ones on show, every one under Advanced; both edit the same values
@@ -523,7 +532,10 @@ function render() {
     else { const R = reasonOf(r); let_.textContent = R.letter; let_.setAttribute("fill", `rgb(${R.color})`); rejects.push(c); counts[r] = (counts[r] || 0) + 1; }
   }
   st.passes = passes; st.rejects = rejects;
-  document.querySelectorAll(".filter").forEach((d) => { d.querySelector(".n").textContent = st.alone ? st.alone.counts[d.dataset.key] ?? 0 : ""; });
+  document.querySelectorAll(".filter").forEach((d) => {
+    d.querySelector(".n").textContent = st.alone ? st.alone.counts[d.dataset.key] ?? 0 : "";
+    d.querySelector(".n.only").textContent = st.alone ? st.alone.only[d.dataset.key] ?? 0 : "";
+  });
   $("#sb-counts").innerHTML = `<b>${st.order.length}</b> candidates · <b>${passes.length}</b> finalists`;
   $("#n-pass").textContent = passes.length; $("#n-fail").textContent = rejects.length;
   if (st.view === "items") renderList();
