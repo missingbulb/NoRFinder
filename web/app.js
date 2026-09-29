@@ -211,7 +211,8 @@ document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => 
 
 // the Drive dialog: a pasted file link loads at once; a folder link lists its images and subfolders
 {
-  const msg = (t, err) => { $("#drive-msg").textContent = t; $("#drive-msg").classList.toggle("err", !!err); };
+  const msg = (t, err) => { const m = $("#drive-msg"); m.textContent = m.title = t; m.classList.toggle("err", !!err); };
+  const sizeText = (n) => (n < 1048576 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1048576).toFixed(1)} MB`);
   let trail = [];
   const take = async (id, name) => {
     msg("Downloading " + (name || "the image") + "…");
@@ -235,13 +236,16 @@ document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => 
     const at = trail[trail.length - 1];
     $("#drive-path").innerHTML = trail.map((t, k) => `<button type="button" class="link" data-k="${k}">${esc(t.name)}</button>`).join(" / ");
     $("#drive-path").querySelectorAll("button").forEach((b) => (b.onclick = () => { trail = trail.slice(0, +b.dataset.k + 1); show(); }));
+    $("#drive-path").scrollLeft = $("#drive-path").scrollWidth;
     $("#drive-list").replaceChildren(); msg("Reading the folder…");
     try {
       const items = await NorDrive.list(at.id);
       msg(items.length ? "" : "No TIFF or PNG images here.");
       for (const f of items) {
         const b = document.createElement("button"); b.type = "button"; b.className = "item" + (f.folder ? " folder" : "");
-        b.textContent = f.name;
+        const meta = [f.size == null ? "" : sizeText(f.size),
+          f.created ? f.created.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : ""].filter(Boolean).join(" · ");
+        b.innerHTML = `<span class="name">${esc(f.name)}</span><span class="meta">${esc(meta)}</span>`;
         b.onclick = () => (f.folder ? (trail.push(f), show()) : take(f.id, f.name));
         $("#drive-list").append(b);
       }

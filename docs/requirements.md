@@ -292,7 +292,8 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   file name and finder, tied to each candidate's position.
 - **Google Drive.** The user pastes the link of an image or a folder shared as "Anyone with the
   link", with no sign-in. An image loads at once; a folder lists its images and subfolders to pick
-  from. It needs the site's Google API key, kept in the repository variable `GOOGLE_API_KEY`
+  from, each image with its size and the date it was added to Drive; the dialog keeps one size
+  while the user moves between folders. It needs the site's Google API key, kept in the repository variable `GOOGLE_API_KEY`
   and written into `web/config.js` at deploy; without one the option is off. The dialog opens on
   the last link pasted, or else on the lab's folder (the repository variable
   `DRIVE_DEFAULT_FOLDER`), and lists a folder link at once.

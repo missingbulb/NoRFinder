@@ -306,20 +306,23 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 @media (prefers-reduced-motion: reduce) { #busy.scan #scan-light { animation-duration: 8s; } }
 
 /* the Google Drive dialog */
-#drive-dlg { width: min(520px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
+#drive-dlg { width: min(640px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
   border: 1px solid var(--line); border-radius: var(--r-panel); box-shadow: 0 12px 40px #0006; }
 #drive-dlg::backdrop { background: #0007; }
 .drive-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
 .drive-row.end { justify-content: space-between; }
 #drive-link { flex: 1; min-width: 0; }
-#drive-path { margin-top: 10px; font-size: 13px; }
-#drive-path:empty, #drive-list:empty { display: none; }
-#drive-list { display: flex; flex-direction: column; max-height: 300px; overflow-y: auto; margin-top: 6px;
+/* every part keeps its size whatever the folder holds, so the dialog stays still while browsing */
+#drive-path { margin-top: 10px; font-size: 13px; height: 1.5em; line-height: 1.5em; white-space: nowrap; overflow-x: auto; overflow-y: hidden; }
+#drive-list { display: flex; flex-direction: column; height: 300px; overflow-y: auto; margin-top: 6px;
   border: 1px solid var(--line); border-radius: var(--r-ctl); }
-#drive-list .item { text-align: left; border: 0; border-radius: 0; background: none; padding: 6px 10px; }
+#drive-list .item { display: flex; gap: 12px; align-items: baseline; flex: none; text-align: left; border: 0; border-radius: 0; background: none; padding: 6px 10px; }
+#drive-list .item .name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+#drive-list .item .meta { color: var(--dim); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+#drive-msg { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #drive-list .item + .item { border-top: 1px solid var(--line); }
 #drive-list .item:hover { background: var(--bg); }
-#drive-list .item.folder::before { content: "📁 "; }
+#drive-list .item.folder .name::before { content: "📁 "; }
 #drive-msg.err { color: var(--err); }
 
 /* a box that folds: its title opens and closes it */
