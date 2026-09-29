@@ -53,7 +53,8 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 /* three columns of panels; the gutters between them are the handles that resize the side bars */
 #layout { --lw: 320px; --rw: 400px; display: grid; grid-template-columns: var(--lw) var(--pad) minmax(0, 1fr) var(--pad) var(--rw);
   grid-template-rows: minmax(0, 1fr); min-height: 0; }
-aside { overflow-y: auto; padding: var(--pad); }
+/* the scrollbar's room is kept even when nothing scrolls, so folding a box never changes the bar's width */
+aside { overflow-y: auto; scrollbar-gutter: stable; scrollbar-width: thin; padding: var(--pad); }
 #left { padding-right: 0; }
 #right { padding-left: 0; }
 .gutter { cursor: col-resize; position: relative; }
@@ -97,7 +98,7 @@ details.fold[open] > summary::before, .box.foldable:not(.folded) > .sec-head h2:
 #advanced summary { cursor: pointer; }
 #main-params:empty { display: none; }
 .sec-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.sec-head h2 { margin: 0; }
+.sec-head h2, .sec-head button { margin: 0; white-space: nowrap; }
 .sec-head button { padding: 3px 10px; font-size: 12px; }
 button.link { border: 0; background: none; padding: 0; color: var(--accent); font-size: 12px; }
 button.link:not(:disabled):hover { text-decoration: underline; }
