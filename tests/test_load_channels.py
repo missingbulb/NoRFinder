@@ -11,12 +11,13 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'detection'))
 import naive_nor
+import pytest
 
 
-def main():
+def test_every_fetched_slide_loads():
     files = sorted(glob.glob(os.path.join(HERE, '..', 'data', 'raw', '*', '*.tif')))
     if not files:
-        print('no slides fetched: nothing to check'); return
+        pytest.skip('no slides fetched: nothing to check')
     bad = []
     for f in files:
         try:
@@ -32,4 +33,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    test_every_fetched_slide_loads()

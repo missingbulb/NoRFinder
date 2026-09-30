@@ -63,5 +63,9 @@ def main():
     return 0
 
 
+def test_detection_is_transform_invariant():
+    assert main() == 0
+
+
 if __name__ == '__main__':
     sys.exit(main())
