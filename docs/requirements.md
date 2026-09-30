@@ -240,7 +240,8 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   "how it works" and its settings fold away) and the filters. The main area has a toolbar over two
   views: the image and the individual items, with the button that switches between them at its
   left and the zoom at its right. The right bar holds the selected candidate, the
-  summary and the downloads. Folding or unfolding a box never changes a bar's width. Both side bars can be dragged wider or narrower (remembered; a double
+  summary and the downloads. Folding or unfolding a box never changes a bar's width. No image is ever drawn out of its proportions: a crop
+  or picture narrower than its box shrinks as a whole (`tests/test_page_layout.py`). Both side bars can be dragged wider or narrower (remembered; a double
   click restores one). A status bar shows the image name, the candidate and finalist counts, how
   long each step took, and the site's version (stamped by each release).
 - **Moving around the image.** Dragging moves the image; scrolling up and down zooms around the
