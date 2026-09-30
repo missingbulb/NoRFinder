@@ -16,3 +16,11 @@
 - **Model:** Claude, per the commit trailer.
 - **Mechanism:** the directory name, which is the pack id by convention, and its `local/`
   declaration.
+
+## 2026-09-30 · reworded · dropped the retired detect and marker fields
+- **Reason:** nothing reads them and the legacy-shape advisory fired; a local pack is declared by
+  hand.
+- **Actor:** Claudinite update task, work item #272.
+- **Model:** Claude, per the commit trailer.
+- **Mechanism:** deleted the two null lines from the pack manifest.
+- **Landed:** PR #275.
