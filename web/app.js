@@ -607,7 +607,7 @@ function crop(c, size) {
   u0 -= pad; u1 += pad; v0 -= pad; v1 += pad;
   const uw = u1 - u0, vw = v1 - v0, s = Math.max(2, Math.min(size / 10, size / Math.max(uw, vw))), dpr = devicePixelRatio || 1;
   const cv = document.createElement("canvas"); cv.width = Math.round(uw * s * dpr); cv.height = Math.round(vw * s * dpr);
-  cv.style.width = uw * s + "px"; cv.style.height = vw * s + "px";
+  cv.style.width = uw * s + "px";
   const ctx = cv.getContext("2d"); ctx.imageSmoothingEnabled = false;
   ctx.fillStyle = "#000"; ctx.fillRect(0, 0, cv.width, cv.height);
   ctx.setTransform(s * dpr, 0, 0, s * dpr, 0, 0); ctx.translate(-u0, -v0);
