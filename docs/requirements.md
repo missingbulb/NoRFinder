@@ -329,3 +329,16 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
 - **Memory does not grow with use.** Opening image after image, running the finders again and
   moving filters leaves the page, its worker and the Python inside holding no more than the last
   time it did the same thing (`tests/test_memory.py`).
+
+## R9 — No finder change loses quality unless the owner accepts it
+
+Set by the owner on 2026-09-30. Every finder the page offers is scored on the reference slide
+against the lab's labels, spot by spot, and
+[`detection/lab/quality_baseline.json`](../detection/lab/quality_baseline.json) records which real
+NoRs each one finds and which not-NoR spots it passes. A change that loses a real NoR or passes a
+new not-NoR fails the tests; a loss the owner agreed to is recorded with
+`python3 tests/test_quality.py --accept`, so the PR's diff names every spot that moved. Gains are
+written into the baseline by a local test run and locked from then on
+(`tests/test_quality.py`). The labels are still Claude's, not the owner's (`detection/STATE.md`),
+so the lock is only as right as they are. Every test runs in CI on each PR
+(`.github/workflows/tests.yml`), and a test that would skip there fails instead.

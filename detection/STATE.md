@@ -5,7 +5,7 @@ Read this first, then `lab/ledger.md` (everything tried, with verdicts). The met
 [`docs/requirements.md`](../docs/requirements.md) R7. Update this file in the PR that changes the
 state.
 
-_Last updated 2026-09-29._
+_Last updated 2026-09-30._
 
 ## Setup
 1. `python3 -m pip install -r requirements.txt`
@@ -38,6 +38,10 @@ _Last updated 2026-09-29._
   pink (pass) or blue (fail) 1-px outline around each segment at 3×, a reason letter, numbers
   running top to bottom, white measuring lines, and a legend and list panel. The zoom is always
   x 900-2100, y 1200-2400. Don't change it unless Ariel asks; propose changes for approval.
+- **Quality is locked (R9, 2026-09-30).** `tests/test_quality.py` fails when a finder loses a
+  labelled real NoR or passes a new not-NoR; CI runs it with every test on each PR. A loss goes
+  in only with Ariel's agreement (`python3 tests/test_quality.py --accept`); a local test run
+  records gains in `lab/quality_baseline.json`, which the PR must carry.
 - **Keep or drop every change by data:** `nor_lab.py ablate BASE VARIANT...`. Log every attempt,
   failures included, in `lab/ledger.md`.
 - **Performance pass** at the end of long algorithmic tasks, never on quick fixes where Ariel is
