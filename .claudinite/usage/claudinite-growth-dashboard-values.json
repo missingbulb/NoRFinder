@@ -1,11 +1,17 @@
 {
   "usage-findings": {
-    "value": 11,
-    "previous": 9,
-    "note": "2026-09-01 to 2026-09-28"
+    "value": 12,
+    "previous": 11,
+    "note": "2026-09-02 to 2026-09-29"
   },
   "usage-newest": {
     "rows": [
+      {
+        "subject": "committing",
+        "rule": "skill-forced-only-small",
+        "cause": "known",
+        "since": "2026-09-30"
+      },
       {
         "subject": "searching-for-a-tool",
         "rule": "skill-always-loaded",
@@ -57,12 +63,6 @@
       {
         "subject": "searching-for-a-tool",
         "rule": "skill-forced-only-small",
-        "cause": "known",
-        "since": "2026-09-24"
-      },
-      {
-        "subject": "searching-for-a-tool",
-        "rule": "skill-triggered-missing-moments",
         "cause": "known",
         "since": "2026-09-24"
       }
