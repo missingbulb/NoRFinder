@@ -41,6 +41,7 @@ and an edit made another way is caught at Stop.
 | `growth-dedup` | claudinite-growth | Prune a repo's local packs of items the mounted canon now covers. Use when asked to reconcile or dedup local packs against the canon. |
 | `image-algorithm-development` | nor-finder | State-by-state procedure for developing an image detection, segmentation or reading algorithm with an owner validating - which of the inputs, the approved render, the answer key and the grader exists yet, what to build next, what to ask and when to stop. Use when starting, resuming or iterating on any such algorithm, from microscope channels to phone photos. |
 | `improve-comments` | basics | Improve a repo's own comments as a pass of their own: delete, correct, add the why. Never as a side effect of another change. |
+| `improve-on-ground-truth` | nor-finder | Improving the NoR finders when new ground truth joins detection/lab/ground_truth/, or when asked to improve them on the ground truth. |
 | `learning-a-technology` | claudinite-growth | Teach a repo a technology nobody there has used yet. Use when asked to host, send or publish through something new, or to research it and create a skill. |
 | `merge-to-main` | git-github | Merge the change in front of the owner into main. Use when the owner approves the current branch or PR, or asks to merge or land it into main. |
 | `production-retrospective` | basics | Design and file the review that comes back once a larger element has lived in production. Use when designing such an element, or when its merge completes it. |

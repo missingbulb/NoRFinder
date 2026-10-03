@@ -343,3 +343,20 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 .box.foldable > .sec-head h2 { display: flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }
 .box.foldable.folded > :not(.sec-head) { display: none; }
 .box.foldable.folded > .sec-head button { display: none; }
+
+/* missing candidates: the user's marks where the finder proposed nothing, in a colour the image never has */
+#overlay .missing-marks { --miss: #ffd400; pointer-events: none; }
+#overlay .missing-marks circle { fill: none; stroke: var(--miss); stroke-width: 1.5; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+#overlay .missing-marks text { fill: var(--miss); }
+.card.missing { border-color: #ffd40080; }
+.card .verdict .remove { font-size: 18px; line-height: 1; color: var(--dim); }
+.card .verdict .remove:hover { color: var(--no); background: color-mix(in srgb, var(--no) 14%, transparent); }
+#ctx { position: fixed; z-index: 30; display: flex; flex-direction: column; padding: 4px 8px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px #0006; }
+#ctx .item { text-align: left; border: 0; background: none; padding: 6px 4px; white-space: nowrap; }
+#ctx .item:hover, #ctx .item:focus-visible { color: var(--accent); }
+#notice { position: fixed; z-index: 40; max-width: min(360px, calc(100vw - 16px)); background: var(--panel); color: var(--text); border: 1px solid var(--accent);
+  border-radius: var(--r-ctl); padding: 12px 14px; box-shadow: 0 8px 24px #0007; display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
+#notice[hidden] { display: none; }
+#notice p { margin: 0; }
+#notice button { align-self: flex-end; }
+#ctx[hidden], #card-menu[hidden] { display: none; }

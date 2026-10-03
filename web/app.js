@@ -13,6 +13,13 @@ const CARDS = "nor-cards-v3"; // the item views' Options menu, one per view: {pa
 const BARS = "nor-bars-v1"; // {left, right}: side bar widths in pixels
 const SOURCE = "nor-load-source"; // "local" | "drive": where Load reads from
 const DRIVE_LINK = "nor-drive-link"; // the last Google Drive link pasted
+const MISSING = "nor-missing-v1:"; // + file name: [[x, y]], the NoRs the user marked as missed by the finder
+// a missing mark counts as found when a candidate lies within this distance: about half a NoR's
+// length on the lab's slide (median 26 px), so the mark need not be placed on the NoR's centre
+const MISSING_RADIUS = 12;
+const MISSING_COLOUR = "#ffd400"; // yellow: none of the image's own colours
+// where ground truth is submitted: an issue with this label, which the repo's daily intake reads
+const REPO = "missingbulb/NoRFinder", GT_LABEL = "new-ground-truth";
 const MEASURES = [
   ["length", "length", true], ["red_length", "red length", true], ["width", "width", true],
   ["red_over_length", "red / length", false], ["length_over_width", "length / width", false],
@@ -30,7 +37,7 @@ const st = {
   worker: null, H: 0, W: 0, um: null, img: null, meta: null, seg: null, cands: [],
   fails: [], alone: null, forced: new Map(), edits: new Map(), defaults: {}, values: {}, off: new Set(),
   about: {}, detectValues: {}, lastRun: null, filtersFor: null, seq: 0, inflight: false, pending: false,
-  zoom: 2, fileName: "", sha: "", numbers: new Map(), order: [], times: {}, sel: null, tab: "pass",
+  zoom: 2, fileName: "", sha: "", source: null, missing: [], numbers: new Map(), order: [], times: {}, sel: null, tab: "pass",
   show: { ...SHOW_DEFAULTS, ...readJSON(SHOW) }, opt: readOpts(), crops: new Map(),
 };
 
@@ -150,8 +157,9 @@ function onWorker(m) {
     st.plain = null; st.peeked = false; drawBase(); $("#empty").hidden = true; $("#stage").hidden = false; $("#thumb-wrap").hidden = false;
     setZoom(st.zoom);
     busy(false); st.times.open = m.secs; st.times.detect = st.times.filter = null; statusBar();
-    showView("image"); updateFind(); fold(true); loadShine();
+    showView("image"); updateFind(); fold(true); loadShine(); drawMissing();
     status("Image loaded. Press Find Candidates.");
+    if (st.source && st.source.kind === "local") notice(LOCAL_GT);
   } else if (m.type === "detected") {
     busy(false);
     st.times.detect = m.secs; st.lastRun = st.running; st.running = null;
@@ -179,8 +187,9 @@ function refilter() {
 }
 
 // ---------- loading ----------
-async function openBytes(name, bytes) {
-  st.fileName = name; st.meta = null; st.lastRun = null; st.cands = []; st.order = []; st.sel = null; st.ring = null; st.crops = new Map();
+// source: where the image came from, {kind: "local"} or {kind: "drive", id}
+async function openBytes(name, bytes, source) {
+  st.fileName = name; st.source = source; st.missing = readJSON(MISSING + name, []).map(([x, y]) => ({ x, y })); st.meta = null; st.lastRun = null; st.cands = []; st.order = []; st.sel = null; st.ring = null; st.crops = new Map();
   st.sha = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map((b) => b.toString(16).padStart(2, "0")).join("");
   $("#file-name").textContent = name; $("#file-name").classList.remove("dim"); statusBar();
   $("#overlay").innerHTML = ""; $("#list").replaceChildren(); $("#summary").textContent = "No candidates yet.";
@@ -208,7 +217,7 @@ const loadShine = () => $("#load-main").classList.toggle("shine", !st.img && !st
 $("#file").onchange = async (e) => {
   const f = e.target.files[0]; if (!f) return;
   const bytes = await f.arrayBuffer(); peek()(bytes, bytes.byteLength);
-  openBytes(f.name, bytes); e.target.value = "";
+  openBytes(f.name, bytes, { kind: "local" }); e.target.value = "";
 };
 function load(src) {
   writeJSON(SOURCE, src); $("#load-menu").open = false;
@@ -237,7 +246,7 @@ document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => 
         $("#busy-text").textContent = `Downloading ${what} · ${mb(got)}${total ? " of " + mb(total) : ""} MB`;
       });
       if (f.folder) { trail = [f]; return show(); }
-      openBytes(f.name, f.bytes);
+      openBytes(f.name, f.bytes, { kind: "drive", id });
     } catch (err) {
       busy(false); if (!$("#drive-dlg").open) $("#drive-dlg").showModal();
       msg(err.message || String(err), true);
@@ -372,7 +381,7 @@ function onDetected(meta, seg) {
     .sort((a, b) => a.cy - b.cy || a.cx - b.cx);
   st.numbers = new Map(st.order.map((c, k) => [c.i, k + 1]));
   loadMarks();
-  buildOverlay();
+  buildOverlay(); drawMissing();
   $("#switch").disabled = false;
   refilter();
 }
@@ -415,6 +424,72 @@ function drawLines(c) {
     const [[x1, y1], [x2, y2]] = L[k];
     c.lineEl.append(el("line", { x1, y1, x2, y2, ...(cls ? { class: cls } : {}) }));
   }
+}
+
+// ---------- missing candidates: NoRs the user marked because the finder proposed nothing there ----------
+function saveMissing() { writeJSON(MISSING + st.fileName, st.missing.map((m) => [m.x, m.y])); }
+function addMissing(x, y) { st.missing.push({ x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 }); saveMissing(); drawMissing(); }
+function removeMissing(k) { st.missing.splice(k, 1); saveMissing(); drawMissing(); }
+// the marks on the image, each a dashed circle of the radius it is scored within
+function drawMissing() {
+  const svg = $("#overlay"); svg.querySelector(".missing-marks")?.remove();
+  $("#n-miss").textContent = st.missing.length;
+  $("#dl-truth").disabled = !st.img;
+  if (!st.W) return;
+  svg.setAttribute("viewBox", `0 0 ${st.W} ${st.H}`);
+  const g = el("g", { class: "missing-marks" });
+  st.missing.forEach((m, k) => {
+    const t = el("text", { x: m.x + MISSING_RADIUS + 1, y: m.y - MISSING_RADIUS });
+    t.textContent = "M" + (k + 1);
+    g.append(el("circle", { cx: m.x, cy: m.y, r: MISSING_RADIUS }), t);
+  });
+  svg.append(g);
+  if (st.view === "items" && st.tab === "missing") renderList();
+}
+// right-clicking the image offers to mark a missing candidate there, or to remove the mark under the pointer
+{
+  const menu = $("#ctx");
+  const close = () => { menu.hidden = true; };
+  $("#scroller").addEventListener("contextmenu", (e) => {
+    if (!st.img) return;
+    const r = $("#base").getBoundingClientRect(), x = (e.clientX - r.left) / st.zoom, y = (e.clientY - r.top) / st.zoom;
+    if (x < 0 || y < 0 || x > st.W || y > st.H) return;
+    e.preventDefault();
+    const k = st.missing.findIndex((m) => Math.hypot(m.x - x, m.y - y) <= MISSING_RADIUS);
+    const b = menu.querySelector("button");
+    b.textContent = k < 0 ? "Mark Missing Candidate" : `Remove Missing Mark M${k + 1}`;
+    b.onclick = () => { close(); k < 0 ? addMissing(x, y) : removeMissing(k); };
+    menu.hidden = false;
+    menu.style.left = Math.min(e.clientX, innerWidth - menu.offsetWidth - 4) + "px";
+    menu.style.top = Math.min(e.clientY, innerHeight - menu.offsetHeight - 4) + "px";
+    b.focus();
+  });
+  document.addEventListener("pointerdown", (e) => { if (!menu.contains(e.target)) close(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+  $("#scroller").addEventListener("scroll", close);
+}
+// a missing mark's card: the image around it, with the circle it is scored within
+function missingCard(m, k) {
+  const d = document.createElement("div"); d.className = "card missing";
+  d.innerHTML = `<div class="head"><span class="num">M${k + 1}</span><span class="state">Missing candidate</span>
+    <span class="verdict"><button type="button" class="remove" title="Remove this mark" aria-label="Remove this mark">×</button></span></div>`;
+  d.querySelector(".remove").onclick = () => removeMissing(k);
+  const half = MISSING_RADIUS + 8, side = 2 * half, s = Math.max(2, Math.floor(170 / side)), dpr = devicePixelRatio || 1;
+  const cv = document.createElement("canvas"); cv.width = side * s * dpr; cv.height = side * s * dpr; cv.style.width = side * s + "px";
+  const ctx = cv.getContext("2d"); ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.setTransform(s * dpr, 0, 0, s * dpr, 0, 0); ctx.translate(half - m.x, half - m.y);
+  const sx = Math.max(0, Math.floor(m.x - half)), sy = Math.max(0, Math.floor(m.y - half));
+  const sw = Math.min(st.W, Math.ceil(m.x + half)) - sx, sh = Math.min(st.H, Math.ceil(m.y + half)) - sy;
+  ctx.drawImage(st.plain, sx, sy, sw, sh, sx, sy, sw, sh);
+  ctx.lineWidth = 1 / s; ctx.setLineDash([3 / s, 2 / s]); ctx.strokeStyle = MISSING_COLOUR;
+  ctx.beginPath(); ctx.arc(m.x, m.y, MISSING_RADIUS, 0, 2 * Math.PI); ctx.stroke();
+  const wrap = document.createElement("div"); wrap.className = "crop-wrap";
+  const node = document.createElement("div"); node.className = "crop"; node.append(cv); wrap.append(node);
+  wrap.insertAdjacentHTML("beforeend", `<button class="goto" title="Show it on the image" aria-label="Show it on the image">${GOTO}</button>`);
+  wrap.querySelector(".goto").onclick = () => { showView("image"); focusOn({ cx: m.x, cy: m.y }); };
+  d.append(wrap);
+  return d;
 }
 
 // the result shown for candidate i: null = pass, else a failure reason
@@ -708,6 +783,11 @@ function card(c, where) {
 }
 
 function renderList() {
+  if (st.tab === "missing") {
+    $("#list").replaceChildren(...st.missing.map(missingCard));
+    if (!st.missing.length) $("#list").innerHTML = `<p class="dim">No missing candidates. Right-click the image where the finder missed a NoR to mark one.</p>`;
+    return;
+  }
   const items = st.tab === "pass" ? st.passes || [] : st.rejects || [];
   $("#list").replaceChildren(...items.map((c) => card(c, "list")));
   if (!items.length) $("#list").innerHTML = `<p class="dim">${st.tab === "pass" ? "No finalists." : "Nothing rejected."}</p>`;
@@ -744,7 +824,7 @@ function placeRing() {
 // the next candidate by number among those on show
 // (in the item views: among the cards on show)
 function step(dir) {
-  const list = st.view === "items" ? (st.tab === "pass" ? st.passes : st.rejects) || []
+  const list = st.view === "items" ? (st.tab === "pass" ? st.passes : st.tab === "fail" ? st.rejects : []) || []
     : st.order.filter((c) => (result(c.i) === null ? st.show.pass : st.show.fails));
   if (!list.length) return;
   const k = list.findIndex((c) => c.i === st.sel);
@@ -791,7 +871,10 @@ function renderSummary(passes, counts) {
 }
 
 // ---------- downloads ----------
-function downloads(on) { for (const id of ["#dl-cands", "#dl-summary", "#dl-truth"]) $(id).disabled = !on || !st.meta; }
+function downloads(on) {
+  for (const id of ["#dl-cands", "#dl-summary"]) $(id).disabled = !on || !st.meta;
+  $("#dl-truth").disabled = !st.img;
+}
 const base = () => st.fileName.replace(/\.[^.]+$/, "") || "nors";
 function save_(name, text, type) {
   const a = document.createElement("a");
@@ -817,23 +900,64 @@ $("#dl-summary").onclick = () => {
     [], ["rejected", "count"], ...Object.entries(st.counts).map(([k, n]) => [`${reasonOf(k).letter} ${reasonOf(k).title}`, n])];
   save_(base() + "_summary.csv", csv(rows), "text/csv");
 };
-// What a person decided on this image, for scoring finders in the lab (detection/nor_lab.py reads
-// it with --labels): every finalist and every candidate the user decided on, with its lengths.
-$("#dl-truth").onclick = () => {
+// What a person decided on this image, for scoring finders in the lab (detection/nor_lab.py reads it
+// with --labels) and for the repo's ground truth (detection/ground_truth.py): only what the user marked.
+// A candidate nobody voted on is ambiguous, so it is left out.
+function truth() {
   const labels = [];
   for (const c of st.order) {
-    const r = result(c.i), f = st.forced.get(c.i), m = measured(c), L = linesOf(c), px = measuresPx(c);
-    if (r !== null && !f) continue;
-    labels.push({ id: st.numbers.get(c.i), x: c.cx, y: c.cy, label: r === null ? 1 : 0,
-      source: f || m ? "user" : "finder", decision: { in: "approved", out: "rejected by you" }[f] || "accepted",
-      measured: r === null ? m : null, length_px: px.length ?? null, red_length_px: px.red_length ?? null, width_px: px.width ?? null,
+    const f = st.forced.get(c.i); if (!f) continue;
+    const L = linesOf(c), px = measuresPx(c);
+    labels.push({ id: st.numbers.get(c.i), x: c.cx, y: c.cy, label: f === "in" ? 1 : 0, source: "user",
+      decision: f === "in" ? "approved" : "rejected", measured: f === "in" ? measured(c) : null,
+      length_px: px.length ?? null, red_length_px: px.red_length ?? null, width_px: px.width ?? null,
       lines: L ? { length: L.length, red: L.red } : null });
   }
-  const out = { format: "norfinder-ground-truth/1", exported: new Date().toISOString(),
-    image: { name: st.fileName, sha256: st.sha, width: st.W, height: st.H, um_per_px: st.um || null },
-    finder: st.meta.finder, finder_settings: st.runOverrides || {}, filters: { values: st.values, off: [...st.off] }, labels };
-  save_(base() + "_ground_truth.json", JSON.stringify(out, null, 1), "application/json");
+  st.missing.forEach((m, k) => labels.push({ id: "M" + (k + 1), kind: "missing", x: m.x, y: m.y, label: 1, source: "user", radius_px: MISSING_RADIUS }));
+  const src = st.source || { kind: "local" };
+  const location = src.kind === "drive" ? { source: "drive", drive_id: src.id, url: `https://drive.google.com/file/d/${src.id}/view` } : { source: "local" };
+  return { format: "norfinder-ground-truth/2", exported: new Date().toISOString(),
+    image: { name: st.fileName, sha256: st.sha, width: st.W, height: st.H, um_per_px: st.um || null, location },
+    finder: st.meta ? st.meta.finder : null, finder_settings: st.runOverrides || {}, filters: { values: st.values, off: [...st.off] }, labels };
+}
+// a new issue, labelled for the daily intake, naming the image; the user attaches the downloaded file to it
+function issueUrl(gt, file) {
+  const n = (p) => gt.labels.filter(p).length;
+  const body = [`Ground truth marked on the NoR Finder page.`, ``,
+    `- Image: ${gt.image.name}`, `- SHA-256: ${gt.image.sha256}`, `- Google Drive: ${gt.image.location.url}`,
+    `- Finder: ${gt.finder || "none run"}`,
+    `- Marked: ${n((L) => !L.kind && L.label === 1)} NoRs, ${n((L) => L.label === 0)} not NoRs, ${n((L) => L.kind === "missing")} missing candidates`,
+    ``, `**Attach ${file} below before submitting** (drag it into this box).`].join("\n");
+  const q = new URLSearchParams({ labels: GT_LABEL, title: `Ground truth: ${gt.image.name}`, body });
+  return `https://github.com/${REPO}/issues/new?${q}`;
+}
+$("#dl-truth").onclick = () => {
+  const gt = truth(), btn = $("#dl-truth");
+  if (!gt.labels.length) return notice("Nothing marked yet: vote on candidates with the thumbs, or right-click the image to mark a missing one.", btn);
+  const file = base() + "_ground_truth.json";
+  save_(file, JSON.stringify(gt, null, 1), "application/json");
+  if (gt.image.location.source !== "drive") return notice(LOCAL_GT, btn);
+  window.open(issueUrl(gt, file), "_blank", "noopener");
+  notice(`Downloaded ${file}. Attach it to the GitHub issue that just opened, then submit. ` +
+    "Only the candidates you marked (thumbs up or down) and your missing candidates are sent.", btn);
 };
+
+// ---------- notices: a short message, at the top of the view or under the button it is about ----------
+const LOCAL_GT = "Ground truth cannot be sent from local files, only from Google Drive.";
+function notice(text, anchor) {
+  const n = $("#notice");
+  $("#notice-text").textContent = text; n.hidden = false; n.classList.toggle("anchored", !!anchor);
+  if (anchor) {
+    const r = anchor.getBoundingClientRect();
+    const top = r.bottom + 8 + n.offsetHeight > innerHeight ? r.top - 8 - n.offsetHeight : r.bottom + 8;
+    Object.assign(n.style, { left: Math.max(8, Math.min(r.left, innerWidth - n.offsetWidth - 8)) + "px", top: top + "px" });
+  } else {
+    const r = $("#view").getBoundingClientRect();
+    Object.assign(n.style, { left: r.left + (r.width - n.offsetWidth) / 2 + "px", top: r.top + 56 + "px" });
+  }
+  $("#notice-ok").focus();
+}
+$("#notice-ok").onclick = () => { $("#notice").hidden = true; };
 
 // ---------- the image view: drag to move, scroll up and down to zoom, sideways to step ----------
 function focusOn(c) {
@@ -936,6 +1060,8 @@ function applyShow() {
   pad.oninput = () => { const v = parseInt(pad.value, 10); st.opt[st.tab].pad = isFinite(v) && v >= 0 ? v : CARD_DEFAULTS[st.tab].pad; changed(); };
   // the menu shows the options of the view on show
   st.showOpts = () => {
+    $("#card-menu").hidden = st.tab === "missing";
+    if (st.tab === "missing") return;
     for (const [id, k] of Object.entries(opts)) $("#" + id).checked = st.opt[st.tab][k];
     if (document.activeElement !== pad) pad.value = st.opt[st.tab].pad;
     pad.placeholder = CARD_DEFAULTS[st.tab].pad;
@@ -943,11 +1069,12 @@ function applyShow() {
   };
   st.showOpts();
 }
-for (const [id, t] of [["#tab-pass", "pass"], ["#tab-fail", "fail"]]) $(id).onclick = () => {
+for (const [id, t] of [["#tab-pass", "pass"], ["#tab-fail", "fail"], ["#tab-miss", "missing"]]) $(id).onclick = () => {
   if (st.tab !== t) setTab(t); renderList();
 };
 function setTab(t) {
-  st.tab = t; $("#tab-pass").classList.toggle("on", t === "pass"); $("#tab-fail").classList.toggle("on", t === "fail"); st.showOpts();
+  st.tab = t; $("#tab-pass").classList.toggle("on", t === "pass"); $("#tab-fail").classList.toggle("on", t === "fail");
+  $("#tab-miss").classList.toggle("on", t === "missing"); st.showOpts();
 }
 
 // ---------- boxes that fold: the finder and the filters, folded until there is an image ----------

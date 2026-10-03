@@ -42,7 +42,7 @@ Full specification, including the parts the overview leaves unstated:
   detector against *itself*, which says nothing about whether it finds the right nodes.
 - ❌ **No scoring harness** (needs annotations), no z-stack handling, no µm output path.
 
-Run the tests: `pip install -r requirements.txt && python3 src/fetch_data.py -m '*Slide5*Slice1_up_left2*' && python3 -m pytest tests` (the page tests also need `npm i --prefix detection/browser pyodide@314.0.7` and Playwright's Chromium). CI runs them all on every PR (`.github/workflows/tests.yml`).
+Run the tests: `pip install -r requirements.txt && python3 detection/ground_truth.py fetch && python3 -m pytest tests` (the page tests also need `npm i --prefix detection/browser pyodide@314.0.7` and Playwright's Chromium). CI runs them all on every PR (`.github/workflows/tests.yml`).
 Fetch the raw data: `python3 src/fetch_data.py`
 
 ## What blocks starting

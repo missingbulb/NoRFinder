@@ -5,12 +5,13 @@ Read this first, then `lab/ledger.md` (everything tried, with verdicts). The met
 [`docs/requirements.md`](../docs/requirements.md) R7. Update this file in the PR that changes the
 state.
 
-_Last updated 2026-09-30._
+_Last updated 2026-10-03._
 
 ## Setup
 1. `python3 -m pip install -r requirements.txt`
-2. `python3 src/fetch_data.py -m '*up_left2*'`: fetches the reference slide
-   (`Slide5_4AP_NoR.sld - Slice1_up_left2.tif`) into `data/raw/`, which is never committed.
+2. `python3 detection/ground_truth.py fetch`: fetches the reference slide
+   (`Slide5_4AP_NoR.sld - Slice1_up_left2.tif`) and every image submitted ground truth was marked on
+   into `data/raw/`, which is never committed.
 3. `cd detection && python3 nor_lab.py cmp tl rf`. The first run builds `.cache/` (image plus blue
    mask, never committed); after that a run takes about 5-10 s.
 
@@ -25,6 +26,12 @@ _Last updated 2026-09-30._
 - **Labels:** `lab/labels_claude_v1.json`, 200 spots labelled by Claude's eye (72 real, 93 not,
   35 unsure), **not by Ariel**. A pass within 5 px of a spot counts as that spot. With 72 real
   spots, a difference of 1-2 is noise.
+- **Submitted ground truth** (R10, 2026-10-03): people mark candidates (thumbs up/down) and missed
+  NoRs (right-click, Mark Missing Candidate) on the page and submit them as GitHub issues; the
+  nor-finder pack's `ground-truth-intake` task adds them daily to `lab/ground_truth/` and then runs
+  the `improve-on-ground-truth` skill on opus. Submissions outrank the Claude labels wherever both
+  mark a spot, and `ground_truth.py score` / the quality lock score every finder on every image.
+  None has arrived yet.
 - **Only one image has been processed.**
 - **Browser page** (`web/`, requirement R8): open an image, detect once, then tune every filter
   live. It runs `interactive.py` over the unchanged finders under Pyodide. It deploys to GitHub
@@ -56,8 +63,8 @@ _Last updated 2026-09-30._
 1. The 20 labelled real NoRs that both finders miss (ledger §2 and v10 REPORT): mostly faint
    one-sided paranodes and "not found" spots.
 2. Retry C10 (node = red outshining green) once there are more labels.
-3. Ask Ariel to correct the Claude labels (checkpoint H5), so decisions stop resting on
-   Claude's own eye.
+3. Ariel's submissions from the page (R10) replace the Claude labels spot by spot as they
+   arrive (checkpoint H5), so decisions stop resting on Claude's own eye.
 4. Performance: every finder was profiled and sped up on 2026-09-29 with identical output (ledger
    §4). Raw Python: tl 3.2 s, rf 6 s, fill 5 s, walk 4.6 s, blobs 2.4 s. A speed-up must never
    change the output (Ariel: no quality loss for performance).
@@ -73,7 +80,8 @@ _Last updated 2026-09-30._
 | render_std.py | the standard review render for any spec |
 | perf.py | snapshot / profile / check for speed-ups |
 | bench.py | time and peak memory of every finder along the page's path (browser/ runs it under Pyodide and on the live page) |
-| lab/ | labels, the pool used to draw them (mkpool.py, pool.json), ledger.md |
+| lab/ | labels, the pool used to draw them (mkpool.py, pool.json), ledger.md, the submitted ground truth (ground_truth/) |
+| ground_truth.py | the ground-truth data set: the merged reference per image, `fetch`, `score`, and the daily `ingest` |
 | interactive.py | the page's engine: detect once, refilter on stored measurements (R8) |
 | browser/ | runs the finders in a browser runtime (Pyodide): measured parity, recommendation |
 | history.md | how the algorithm got here (stages S0-S10, who drove what) |

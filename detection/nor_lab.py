@@ -12,16 +12,20 @@ import nor3, naive_nor as nn_
 from PIL import Image, ImageDraw, ImageFont
 
 TIF = os.environ.get('NOR_TIF', os.path.join(HERE, '..', 'data', 'raw', 'Left Up- Edited', 'Slide5_4AP_NoR.sld - Slice1_up_left2.tif'))
-# processing artifact, never committed (detection/.cache/ is gitignored); NOR_CACHE_DIR can point elsewhere
-CACHE = os.path.join(os.environ.get('NOR_CACHE_DIR', os.path.join(HERE, '.cache')), 'cache_' + os.path.basename(TIF).replace(' ', '_') + '.npz')
-LABELS = os.path.join(HERE, 'lab', 'labels_claude_v1.json') if os.path.exists(os.path.join(HERE, 'lab')) else os.path.join(HERE, 'labels_claude_v1.json')
-MATCH_PX = 5          # a pass within this distance of a labelled spot counts as that spot
+MATCH_PX = 5          # a pass within this distance of a labelled spot counts as that spot (a missing-candidate mark carries its own radius_px)
 
-def load():
-    if os.path.exists(CACHE):
-        z = np.load(CACHE); return z['c'], z['n'], float(z['um']), z['bm']
-    c, n, um, d = nn_.load(TIF); bm = nn_.blue_mask(d); os.makedirs(os.path.dirname(CACHE), exist_ok=True)
-    np.savez_compressed(CACHE, c=c, n=n, um=um or 0.0, bm=bm); return c, n, um, bm
+def cache_path(tif):
+    # processing artifact, never committed (detection/.cache/ is gitignored); NOR_CACHE_DIR can point elsewhere
+    return os.path.join(os.environ.get('NOR_CACHE_DIR', os.path.join(HERE, '.cache')), 'cache_' + os.path.basename(tif).replace(' ', '_') + '.npz')
+
+LABELS = os.path.join(HERE, 'lab', 'labels_claude_v1.json') if os.path.exists(os.path.join(HERE, 'lab')) else os.path.join(HERE, 'labels_claude_v1.json')
+
+def load(tif=TIF):
+    cache = cache_path(tif)
+    if os.path.exists(cache):
+        z = np.load(cache); return z['c'], z['n'], float(z['um']), z['bm']
+    c, n, um, d = nn_.load(tif); bm = nn_.blue_mask(d); os.makedirs(os.path.dirname(cache), exist_ok=True)
+    np.savez_compressed(cache, c=c, n=n, um=um or 0.0, bm=bm); return c, n, um, bm
 
 def finders():
     f = {'fill': (nor3.segment_fill, nor3.P3), 'walk': (nor3.segment_walk, nor3.P2), 'blobs': (nor3.segment, nor3.P)}
@@ -48,27 +52,38 @@ def run(spec, data=None):
     t = time.time(); cands, info = fn(c, n, bm, dict(P, **ov)); info['secs'] = time.time() - t
     return cands, info
 
+def radius(L):
+    return L.get('radius_px') or MATCH_PX
+
 def score(cands, labels):
     ps = np.array([(k['cx'], k['cy']) for k in cands if k['fail'] is None]).reshape(-1, 2)
     al = np.array([(k['cx'], k['cy']) for k in cands]).reshape(-1, 2)
     tp = fp = fn = 0; missed = []
     for L in labels:
         if L['label'] is None: continue
-        hit = len(ps) and np.hypot(*(ps - (L['x'], L['y'])).T).min() <= MATCH_PX
+        hit = len(ps) and np.hypot(*(ps - (L['x'], L['y'])).T).min() <= radius(L)
         if L['label'] == 1:
             if hit: tp += 1
             else:
                 fn += 1
                 dd = np.hypot(*(al - (L['x'], L['y'])).T) if len(al) else np.array([1e9])
-                j = int(dd.argmin()); why = cands[j]['fail'] if dd[j] <= MATCH_PX else 'not found'
-                missed.append((L, why, j if dd[j] <= MATCH_PX else None))
+                j = int(dd.argmin()); why = cands[j]['fail'] if dd[j] <= radius(L) else 'not found'
+                missed.append((L, why, j if dd[j] <= radius(L) else None))
         elif hit: fp += 1
     return dict(tp=tp, fp=fp, fn=fn, prec=tp / max(1, tp + fp), rec=tp / max(1, tp + fn)), missed
 
 def read_labels(path):
-    """Reference labels: the lab's own list, or the ground truth the page saves (its 'labels')."""
+    """Reference labels: the lab's own list, or the ground truth the page saves (its 'labels'; a
+    missing-candidate mark is a real NoR with its own radius_px)."""
     L = json.load(open(path))
     return L['labels'] if isinstance(L, dict) else L
+
+def missing_found(cands, labels):
+    """The missing-candidate marks some candidate now lies on, passed or not: whether the finder
+    proposes the NoR a person said it overlooked, before any filter judges it."""
+    al = np.array([(k['cx'], k['cy']) for k in cands]).reshape(-1, 2)
+    return [L for L in labels if L.get('kind') == 'missing' and len(al)
+            and np.hypot(*(al - (L['x'], L['y'])).T).min() <= radius(L)]
 
 def measure_error(cands, labels):
     """How far the passing candidates' lengths are from the ones a person adjusted or approved on the
@@ -169,7 +184,7 @@ def main():
         def hits(spec):
             cands, info = run(spec, data)
             ps = np.array([(k['cx'], k['cy']) for k in cands if k['fail'] is None]).reshape(-1, 2)
-            h = np.array([len(ps) > 0 and np.hypot(*(ps - (L['x'], L['y'])).T).min() <= MATCH_PX for L in Ls])
+            h = np.array([len(ps) > 0 and np.hypot(*(ps - (L['x'], L['y'])).T).min() <= radius(L) for L in Ls])
             return h, sum(k['fail'] is None for k in cands), info['secs']
         def f1(h, yy):
             tp = (h & (yy == 1)).sum(-1); fp = (h & (yy == 0)).sum(-1); fn = (~h & (yy == 1)).sum(-1)
