@@ -1,0 +1,15 @@
+{
+ "format": "norfinder-ground-truth-dataset/1",
+ "files": [
+  {
+   "file": "issue-304.json",
+   "issue": 304,
+   "added": "2026-10-03",
+   "image": "Slide2_4AP_NoR.sld - slice4_up_middle2.tif",
+   "sha256": "10808ed3cf29f22157a042f588a5f3b022ef01730b7f2ecf5ee1595e063a28dc",
+   "drive_id": "16NHTeg6Fh4G3gZCJQZDRlVhR2LcbMlIV",
+   "labels": 10,
+   "missing": 2
+  }
+ ]
+}
