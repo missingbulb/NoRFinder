@@ -60,6 +60,7 @@ HELP = {
     'dip': "If above 0, the midpoints between the red and each green window must be lit too (no dark gap). 0 = off.",
     'g_reach_u': "A paranode stops this far (units) from where it meets the red.",
     'g_weak': "Below 1, the fainter green window may be dimmer than the other two and still match fully.",
+    'blue_edge_u': "How far (units) into each nucleus the stencil may still look, when nuclei are blanked before finding. The page never blanks them, so it has no effect here.",
     # red-first
     'red_steps': "Brightness levels (fractions of the red peak) the red is grown down to, one by one.",
     'min_rect': "How rectangular the red must stay while growing. 0 = off.",

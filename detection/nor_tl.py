@@ -15,17 +15,26 @@ from scipy import ndimage as ndi
 import nor3
 from nor3 import classify, finish, resolve_overlaps, EIGHT
 
-PT = dict(nor3.P3, min_green_balance=0.25, rim=2, win_u=0.5, d_u=(1.25, 1.75, 2.25, 2.75, 3.25), n_ang=16, s_min=1.0, nms_u=1.5,
-          dip=0.0, g_reach_u=2.0, g_weak=1.0)
+PT = dict(nor3.P3, min_green_balance=0.25, rim=2, win_u=0.5, d_u=(1.25, 1.75, 2.25, 2.75, 3.25), n_ang=16, s_min=0.8, nms_u=1.5,
+          dip=0.0, g_reach_u=2.0, g_weak=1.0, blue_edge_u=1.0)
 
 
 def segment_tl(caspr, nav, bm, p=PT):
     cn, rn, green, red, tg, tr = classify(caspr, nav, bm, p)
-    valid_ = ~bm; F = (cn, rn, green, red, tg, tr, valid_)
     glab, _ = ndi.label(green, EIGHT); gsz = np.bincount(glab.ravel())
     lens = [max(sl[0].stop - sl[0].start, sl[1].stop - sl[1].start) / 2
             for i, sl in enumerate(ndi.find_objects(glab)) if sl is not None and gsz[i + 1] >= p['min_green']]
     unit = float(np.median(lens)); H, W = cn.shape
+    bm_full = bm
+    if p.get('blue_edge_u'):
+        # a nucleus's rim is not blanked: the levels still come from the whole mask, but the stamp
+        # sees blue_edge_u units into each nucleus; a red mostly on the mask is failed at the end
+        bm = ndi.binary_erosion(bm, iterations=max(1, int(round(p['blue_edge_u'] * unit))))
+        valid = ~bm_full
+        cn = ndi.gaussian_filter(nor3.nor.norm(caspr, valid), p['smooth']); rn = ndi.gaussian_filter(nor3.nor.norm(nav, valid), p['smooth'])
+        cn[bm] = 0; rn[bm] = 0
+        green = (cn > tg) & (cn >= rn) & ~bm; red = (rn > tr) & (rn > cn) & ~bm
+    valid_ = ~bm; F = (cn, rn, green, red, tg, tr, valid_)
     cs_ = ndi.gaussian_filter(cn, p['smooth_u'] * unit); rs_ = ndi.gaussian_filter(rn, p['smooth_u'] * unit)
     # what each window sees: colour averaged over a small patch, in units of its own threshold,
     # and only if that colour wins there
@@ -123,6 +132,9 @@ def segment_tl(caspr, nav, bm, p=PT):
             c['opp_deg'] = float(np.degrees(abs((ang[0] - ang[1] + np.pi) % (2 * np.pi) - np.pi)))
         finish(c, F, p)
         cands.append(c)
+    if p.get('blue_edge_u'):
+        import nor_rf
+        nor_rf.posthoc_blue(cands, bm_full, p)
     resolve_overlaps(cands, cn.shape)
     return cands, dict(unit=unit, n_red=len(sy))
 

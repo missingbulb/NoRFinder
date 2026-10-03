@@ -121,3 +121,28 @@ which the finders import 64), slide 128, tl detect 208 (its temporaries; wasm me
 | date | change | Chromium memory | output | verdict |
 |---|---|---|---|---|
 | 09-29 | install with `unpackArchive` (only the imported wheels, native modules loaded on import) instead of `loadPackage` | tl 955 → 852 MB, rf 962 → 845 MB; ready 20 → 15 s | identical, all five finders (`mem_breakdown.mjs` hash; same passes in Chromium) | kept (Ariel 09-29) |
+
+## 5. Ground truth from #304 (2026-10-03, improve-on-ground-truth)
+
+The first submitted ground truth: `Slide2_4AP_NoR.sld - slice4_up_middle2.tif`, marked by Ariel on the
+page with tl (5 real, 3 not, 2 missing marks M1 x=558 y=610 and M2 x=278 y=883). Verdicts pool both
+images (the Slide5 lab labels plus the submission) in one paired bootstrap; the per-image numbers are
+real found / not-NoRs passed / missing marks proposed.
+
+Diagnosis: tl proposed nothing at either mark. M2's best stamp score is 0.90, under `s_min` 1.0. M1 is
+a faint NoR on a nucleus edge (54% of a 12 px disc on the blue mask, node 3.6 px deep); tl blanks the
+mask before finding, so its stamp never saw it (best score 0.39 with the mask, 0.98 without).
+
+| id | change (by) | variant | Slide5 | Slide2 | dF1 | P(better) | verdict |
+|---|---|---|---|---|---|---|---|
+| C11 | Lower the stamp threshold (Claude, for M2) | tl s_min 1.0 → 0.8 | 47/7 → 48/7 | 4/3, marks 0 → 1 | +0.009 | 0.82 | **keep**. 0.6-0.85 score the same, 0.9-0.95 lose M2 or the Slide5 gain; 0.8 keeps M2 off the edge (0.85 is not bit-identical: fewer failing candidates). tl 2.3 → 2.9 s on Slide5 |
+| C12 | Let tl look into each nucleus's rim (Claude, for M1): levels still from the whole mask, the stamp sees `blue_edge_u` units into the mask, then the post-hoc red-on-nucleus rule (≥0.8) | blue_edge_u=1 (with C11) | 48/7 → 50/7 | 4/3, marks 1 | +0.018 | 0.98 vs C11 | **keep**. Gains (566,670), (1155,257), (189,641). 0.5: 49/7; 0.75: 49/7; 1.25-1.5: same as 1; ≥2: 48/7 |
+| C12d | Same, deeper (M1 itself) | blue_edge_u=4..10 | 48/7 | 4/3, **marks 2/2** | -0.018 vs C12 | 0.07 | **not adopted, owner's call**: proposes M1 but finds 2 fewer Slide5 NoRs than C12 ((988,776) shares a segment, (189,641) not found): green windows inside nuclei now win the stamp's angle at those spots. Still +1 over the old tl |
+| C12b | With C12d: peaks on a nucleus claim pixels after every peak off it | blue_last order | 48/7 | marks 2/2 | 0 vs C12d | 0.50 | **drop** (no effect; code removed) |
+| C12c | With C12d: a peak on a nucleus never suppresses one off it in NMS | blue_last NMS | 48/7 | marks 2/2 | 0 vs C12d | 0.50 | **drop** (no effect; code removed) |
+| C13 | Re-check of C1 on both images | tl_post vs tl | 47/7 | 4/3, marks 0 | 0 | 0.50 | no evidence; tl_post:s_min=0.85 proposes both marks but 47/9 (2 real lost, 3 new false) |
+| C14 | Pass the approved NoR at (911,43) that fails dim (snr 3.46) | tl min_snr 3.5 → 3.4 (3.3 the same) | 50/7 | **5**/3 | +0.009 | 0.81 | **not adopted**: one spot 0.04 under the line, while Slide2's passes rise 133 → 147, all outside the area Ariel labelled. Revisit when more of Slide2 is labelled |
+| Q1 | Overall quality: the 3 not-NoRs tl passes on Slide2 (172,283), (131,298), (991,804) | measured features | | | | | nothing kept: no single measure separates them from Slide2's real NoRs (brightness, snr, balance, aspect, axis all overlap). Slide5's not-NoRs are dimmer than its reals, Slide2's are not, so a brightness rule would be image-specific |
+
+Other finders on the new image (unchanged): rf proposes both marks, fill, walk and blobs propose M2 only
+(M1 is under their pre-hoc blue mask, as in tl).

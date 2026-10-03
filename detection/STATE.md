@@ -16,8 +16,9 @@ _Last updated 2026-10-03._
    mask, never committed); after that a run takes about 5-10 s.
 
 ## Where things stand
-- **Default finder: traffic light** (`nor_tl.py`, spec `tl`). 229 passes from 463 candidates.
-  On the labels: 47 real found, 7 false (P 0.87, R 0.65).
+- **Default finder: traffic light** (`nor_tl.py`, spec `tl`). On the Slide5 labels: 50 real found,
+  7 false (P 0.88, R 0.69), up from 47/7 after the first submitted ground truth (ledger §5: stamp
+  threshold 0.8, and the stamp now sees one unit into each nucleus's rim).
 - **Red-first finder** (`nor_rf.py`, spec `rf`), built on 2026-09-27 from Ariel's idea, with
   the verdicts in ledger §2 applied. 48 real found, 9 false. That ties tl (P(better) 0.48), so
   tl stays the default.
@@ -31,8 +32,10 @@ _Last updated 2026-10-03._
   nor-finder pack's `ground-truth-intake` task adds them daily to `lab/ground_truth/` and then runs
   the `improve-on-ground-truth` skill on opus. Submissions outrank the Claude labels wherever both
   mark a spot, and `ground_truth.py score` / the quality lock score every finder on every image.
-  None has arrived yet.
-- **Only one image has been processed.**
+  One has arrived (#304, Slide2 slice4_up_middle2: 5 real, 3 not, 2 missing marks, only its top edge
+  labelled). tl finds 4 of its 7 real NoRs and proposes one of the two missing marks; the other (M1)
+  sits on a nucleus edge, and reaching it costs 2 Slide5 NoRs (ledger C12d, Ariel's call).
+- **Two images have ground truth** (the Slide5 reference slide and #304's Slide2 image).
 - **Browser page** (`web/`, requirement R8): open an image, detect once, then tune every filter
   live. It runs `interactive.py` over the unchanged finders under Pyodide. It deploys to GitHub
   Pages through the github-pages pack. Preview it locally with `python3 web/build.py` and then
