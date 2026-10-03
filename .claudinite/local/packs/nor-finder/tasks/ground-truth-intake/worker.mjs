@@ -1,12 +1,15 @@
 // The intake, by code: every open issue labelled new-ground-truth has its attached file added to the
 // ground-truth data set (detection/ground_truth.py ingest), the quality baseline is re-recorded against the
-// new reference, and the result is delivered as this run's pull request, which closes the issues it took
-// when merged. A submission that cannot be used gets a comment saying why and loses the label, so it waits
+// new reference, and the result is opened as this run's pull request, which closes the issues it took
+// when merged. The pull request is left open whatever the repo's delivery setting: the agent works on it
+// next, and only a person merges it. A submission that cannot be used gets a comment saying why and loses the label, so it waits
 // for its author instead of being retried every day. The agent is asked for only when something was added.
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { baseTip, landDelivery, pullCreateError, pushGenerated, remoteUrl } from '../../../../../shared/packs/claudinite-tasks/public/delivery.mjs';
+import { withTaskTrailer } from '../../../../../shared/packs/claudinite-tasks/public/work-item-grammar.mjs';
 import { LABEL } from './label.mjs';
 
 const MARK = '<!-- ground-truth-intake -->';
@@ -21,7 +24,21 @@ async function paged(gh, path) {
   }
 }
 
-export async function worker({ gh, log, deliver, root, repo, defaultBranch, token }) {
+// The executor's generated-file delivery lands its pull request wherever the repo allows auto-merge, which
+// would merge this one before the agent starts. This opens it the same way and asks the landing lane for
+// a review delivery, which starts the pull request's checks and merges nothing.
+async function openForAgent({ gh, log, root, repo, base, token, branch, taskId, files, title, body, message }) {
+  const remote = remoteUrl(repo, token);
+  const commit = pushGenerated(root, { remote, baseSha: baseTip(root, remote, base), branch, files, message: withTaskTrailer(message, taskId) });
+  const created = await gh(`/repos/${repo}/pulls`, { method: 'POST', body: { head: branch, base, title, body } });
+  const failure = pullCreateError(created.status, created.json);
+  if (failure) throw new Error(`opening the pull request for ${branch}: ${failure}`);
+  const pr = created.json;
+  await landDelivery({ token, repo, base, delivery: 'review', log, task: taskId, pr: { ...pr, head: { ...pr.head, ref: branch, sha: commit } } });
+  return { branch, number: pr.number };
+}
+
+export async function worker({ gh, log, root, repo, defaultBranch, token, target, pack, task }) {
   const open = (await paged(gh, `/repos/${repo}/issues?state=open&labels=${LABEL}`)).filter((i) => !i.pull_request);
   const issues = [];
   for (const i of open) {
@@ -70,9 +87,9 @@ export async function worker({ gh, log, deliver, root, repo, defaultBranch, toke
       scores.trim(),
       '```',
     ].join('\n');
-    const d = await deliver({ files, title: `Ground truth: add ${added.map((n) => `#${n}`).join(', ')}`, body,
+    const d = await openForAgent({ gh, log, root, repo, base: defaultBranch ?? 'main', token, branch: target.branch, taskId: `${pack}/${task}`, files, title: `Ground truth: add ${added.map((n) => `#${n}`).join(', ')}`, body,
       message: `Add ground truth from ${added.map((n) => `#${n}`).join(', ')}` });
-    log(`delivered on ${d.branch} as #${d.number}`);
+    log(`opened #${d.number} on ${d.branch}, left open for the agent`);
     return { requestAgent: { delivered: { pr: d.number, branch: d.branch }, reason: { code: 'ground-truth-added', detail: `${added.length} submission(s) added` } } };
   } finally {
     try { git('worktree', 'remove', '--force', wt); } catch { /* the scratch tree goes with tmp */ }

@@ -10,3 +10,15 @@
 - **Mechanism:** a scheduled task in the local pack: its own precondition term (an open issue wears
   the label), code-work that ingests and re-records the baseline, and an opus agent phase following
   the improve-on-ground-truth skill.
+
+## 2026-10-03 · policy-changed · the intake's pull request stays open for the agent
+- **Source:** the owner, in the project thread on the intake run: "The PR closes before the agent
+  works and that breaks the agentic flow that expects an open PR (fix the coded part to not merge
+  the PR)."
+- **Reason:** the executor's generated-file delivery lands a pull request wherever the repo allows
+  auto-merge, whatever the task's own `automerge`, so #306 merged before the agent started and the
+  agent had nothing to push onto.
+- **Actor:** @missingbulb (owner).
+- **Model:** Claude, per the commit trailer.
+- **Mechanism:** the worker opens the pull request itself and hands it to the landing lane as a
+  review delivery, which starts its checks and merges nothing.

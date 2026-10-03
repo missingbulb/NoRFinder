@@ -1,45 +1,5 @@
 {
  "blobs": {
-  "Slide2_4AP_NoR.sld - slice4_up_middle2.tif": {
-   "false": [
-    [
-     131,
-     298
-    ],
-    [
-     172,
-     283
-    ],
-    [
-     991,
-     804
-    ]
-   ],
-   "found": [
-    [
-     911,
-     43
-    ],
-    [
-     1044,
-     28
-    ],
-    [
-     1055,
-     67
-    ],
-    [
-     1143,
-     11
-    ]
-   ],
-   "missing": [
-    [
-     278.5,
-     883
-    ]
-   ]
-  },
   "Slide5_4AP_NoR.sld - Slice1_up_left2.tif": {
    "false": [
     [
@@ -237,42 +197,6 @@
   }
  },
  "fill": {
-  "Slide2_4AP_NoR.sld - slice4_up_middle2.tif": {
-   "false": [
-    [
-     172,
-     283
-    ],
-    [
-     991,
-     804
-    ]
-   ],
-   "found": [
-    [
-     909,
-     9
-    ],
-    [
-     1044,
-     28
-    ],
-    [
-     1055,
-     67
-    ],
-    [
-     1143,
-     11
-    ]
-   ],
-   "missing": [
-    [
-     278.5,
-     883
-    ]
-   ]
-  },
   "Slide5_4AP_NoR.sld - Slice1_up_left2.tif": {
    "false": [
     [
@@ -486,46 +410,6 @@
   }
  },
  "rf": {
-  "Slide2_4AP_NoR.sld - slice4_up_middle2.tif": {
-   "false": [
-    [
-     131,
-     298
-    ],
-    [
-     172,
-     283
-    ]
-   ],
-   "found": [
-    [
-     909,
-     9
-    ],
-    [
-     1044,
-     28
-    ],
-    [
-     1055,
-     67
-    ],
-    [
-     1143,
-     11
-    ]
-   ],
-   "missing": [
-    [
-     278.5,
-     883
-    ],
-    [
-     558.5,
-     610
-    ]
-   ]
-  },
   "Slide5_4AP_NoR.sld - Slice1_up_left2.tif": {
    "false": [
     [
@@ -763,41 +647,6 @@
   }
  },
  "tl": {
-  "Slide2_4AP_NoR.sld - slice4_up_middle2.tif": {
-   "false": [
-    [
-     131,
-     298
-    ],
-    [
-     172,
-     283
-    ],
-    [
-     991,
-     804
-    ]
-   ],
-   "found": [
-    [
-     909,
-     9
-    ],
-    [
-     1044,
-     28
-    ],
-    [
-     1055,
-     67
-    ],
-    [
-     1143,
-     11
-    ]
-   ],
-   "missing": []
-  },
   "Slide5_4AP_NoR.sld - Slice1_up_left2.tif": {
    "false": [
     [
@@ -1023,42 +872,6 @@
   }
  },
  "walk": {
-  "Slide2_4AP_NoR.sld - slice4_up_middle2.tif": {
-   "false": [
-    [
-     131,
-     298
-    ],
-    [
-     172,
-     283
-    ],
-    [
-     991,
-     804
-    ]
-   ],
-   "found": [
-    [
-     1044,
-     28
-    ],
-    [
-     1055,
-     67
-    ],
-    [
-     1143,
-     11
-    ]
-   ],
-   "missing": [
-    [
-     278.5,
-     883
-    ]
-   ]
-  },
   "Slide5_4AP_NoR.sld - Slice1_up_left2.tif": {
    "false": [
     [
