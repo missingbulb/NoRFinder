@@ -275,6 +275,11 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   is missing).
 - **All finders are offered.** Traffic light is the default.
 - **The blue mask is only a filter.** No finder on the page blanks nuclei before finding.
+- **Missing candidates.** Right-clicking the image offers "Mark Missing Candidate": a NoR the finder
+  proposed nothing for. The mark shows on the image as a dashed yellow circle of the radius it is
+  scored within (12 px, about half a NoR's length on the lab's slide), and as a card in its own
+  Missing item view, where it can be removed (as it can by right-clicking it). Marks are remembered
+  in the browser per file name, whatever the finder.
 - **The item views.** Two views: the finalists and the rejected, each candidate cropped on a card:
   its number, state and decision buttons on top, the crop below (with a faint go-to button in its
   corner that shows it on the image), then "Lengths adjusted" with a reset, and the rest.
@@ -288,16 +293,24 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   the green-to-green length and the red length; the new lengths show on the image, the card, the
   summary and the downloads. The measurements of the finalists are summarised in the right bar.
 - **Downloads.** The candidates as CSV (every candidate, its status, its reasons, the user's
-  decision and its measurements), the summary as CSV, and the ground truth: a JSON file naming the
-  image (with its SHA-256) that lists every finalist and every candidate the user decided on, with
-  its position, its label (1 = NoR, 0 = not), who decided (the user or the finder), and its
-  lengths and length lines, marked as adjusted or approved when the user checked them. The lab's
-  `nor_lab.py --labels` reads it: the labels score detection and the checked lengths score
-  measurement (`tests/test_ground_truth.py`).
+  decision and its measurements), the summary as CSV, and the ground truth
+  (`norfinder-ground-truth/2`): a JSON file naming the image (its SHA-256, and where it was loaded
+  from: its Google Drive id and link, or "local") that lists only what the user marked: every
+  candidate voted up (label 1, with its lengths and length lines, marked adjusted or approved) or
+  down (label 0), and every missing candidate (label 1, with its radius). A candidate nobody voted
+  on is ambiguous and left out. The lab's `nor_lab.py --labels` reads it: the labels score
+  detection and the checked lengths score measurement (`tests/test_ground_truth.py`).
+- **Submitting ground truth.** For an image from Google Drive, the Ground truth button downloads the
+  file and opens a new GitHub issue on the repo, labelled `new-ground-truth` and naming the image
+  (name, SHA-256, Drive link, finder, what was marked); a note at the button says to attach the
+  file to that issue and that only explicitly marked candidates are sent. An image from the
+  computer cannot be submitted: right after it loads, the page says so in one line (at most 15
+  words), and the button only downloads. With nothing marked the button says how to mark
+  (`tests/test_ground_truth_page.py`). What happens to a submission is R10.
 - **Fixed numbers.** Each candidate keeps one number, top to bottom, for as long as a detection
   lasts. Filters never renumber candidates.
 - **Remembered marks.** Decisions and adjusted or approved lengths are saved in the browser per
-  file name and finder, tied to each candidate's position.
+  file name and finder, tied to each candidate's position; missing candidates per file name.
 - **Google Drive.** The user pastes the link of an image or a folder shared as "Anyone with the
   link", with no sign-in. An image loads at once; a folder lists its images and subfolders to pick
   from, each image with its size and the date it was added to Drive; the dialog keeps one size
@@ -332,13 +345,41 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
 
 ## R9 — No finder change loses quality unless the owner accepts it
 
-Set by the owner on 2026-09-30. Every finder the page offers is scored on the reference slide
-against the lab's labels, spot by spot, and
-[`detection/lab/quality_baseline.json`](../detection/lab/quality_baseline.json) records which real
-NoRs each one finds and which not-NoR spots it passes. A change that loses a real NoR or passes a
-new not-NoR fails the tests; a loss the owner agreed to is recorded with
+Set by the owner on 2026-09-30. Every finder the page offers is scored on every ground-truth image
+(R10) spot by spot, and
+[`detection/lab/quality_baseline.json`](../detection/lab/quality_baseline.json) records, per finder
+and image, which real NoRs each one finds, which not-NoR spots it passes and which missing-candidate
+marks it proposes a candidate on. A change that loses a real NoR, passes a new not-NoR or stops
+proposing a candidate at a missing mark fails the tests; a loss the owner agreed to is recorded with
 `python3 tests/test_quality.py --accept`, so the PR's diff names every spot that moved. Gains are
 written into the baseline by a local test run and locked from then on
-(`tests/test_quality.py`). The labels are still Claude's, not the owner's (`detection/STATE.md`),
-so the lock is only as right as they are. Every test runs in CI on each PR
+(`tests/test_quality.py`). Until submissions cover it, the reference slide is scored on Claude's
+labels, not the owner's (`detection/STATE.md`), so the lock is only as right as they are. Every test runs in CI on each PR
 (`.github/workflows/tests.yml`), and a test that would skip there fails instead.
+
+## R10 — Submitted ground truth joins the data set by code, and outranks older labels
+
+Set by the owner on 2026-10-03.
+
+- **A daily intake, in code.** Every day an open issue labelled `new-ground-truth` exists, the
+  nor-finder pack's `ground-truth-intake` task takes every such issue's newest attached `.json`,
+  checks it (`norfinder-ground-truth/2`, an image from Google Drive with its SHA-256, at least one
+  mark inside the image), and adds it to
+  [`detection/lab/ground_truth/`](../detection/lab/ground_truth/) with an entry in its
+  `dataset.json`. It re-records the quality baseline (R9) against the new reference and opens one
+  pull request that closes the issues it took when merged. A file it cannot use gets a comment on
+  its issue saying why, and the label comes off until its author fixes it
+  (`detection/ground_truth.py`, `tests/test_ground_truth.py`).
+- **Then an agent improves the finders**, on the same pull request, at the opus model, following
+  the pack's `improve-on-ground-truth` skill: every finder re-scored on every ground-truth image
+  against the last recorded results, candidate detection first for the newly marked missing
+  candidates, then overall quality. Losses stay the owner's to accept (R9).
+- **Images stay on Drive.** A ground-truth file names its image by Drive id and SHA-256;
+  `python3 detection/ground_truth.py fetch` downloads every one into `data/raw/` and checks it
+  (R6). No image enters git.
+- **Newer and human beats older and Claude's.** For one image, a newer submission's label wins over
+  an older one's at the same spot, and every submission wins over the lab's own labels; every
+  quality assessment (the lock, `ground_truth.py score`) scores against that merged reference
+  (`ground_truth.corpus()`).
+- **A missing mark is a real NoR** found when a pass lies within its radius, and proposed when any
+  candidate does.

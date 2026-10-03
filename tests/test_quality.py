@@ -1,18 +1,21 @@
-"""R9: no finder change loses quality on the labelled spots unless the owner accepts the loss.
+"""R9, R10: no finder change loses quality on the ground truth unless the owner accepts the loss.
 
-Every finder the page offers runs on the reference slide and is scored against the lab's labels
-(detection/lab/labels_claude_v1.json, labelled by Claude's eye, not yet by the owner). The committed
-detection/lab/quality_baseline.json records, per finder, which real spots it finds and which
-not-NoR spots it lets through. The test fails when a finder stops finding a real spot it found, or
-passes a not-NoR spot it didn't. A gain is recorded rather than enforced: run outside CI, the test
-rewrites the baseline so the gain lands in the same PR and is locked from then on; in CI a baseline
-behind the finders fails, since a gain nobody recorded could later be lost silently.
+Every finder the page offers runs on every image of the ground truth (detection/ground_truth.py: the
+reference slide, scored against the submitted labels over the lab's own, and every image a submission
+was marked on) and is scored spot by spot. The committed detection/lab/quality_baseline.json records,
+per finder and image, which real spots it finds, which not-NoR spots it lets through, and which
+missing-candidate marks it now proposes a candidate on. The test fails when a finder stops finding a
+real spot it found, passes a not-NoR spot it didn't, or stops proposing a candidate at a missing mark.
+A gain is recorded rather than enforced: run outside CI, the test rewrites the baseline so the gain
+lands in the same PR and is locked from then on; in CI a baseline behind the finders fails, since a
+gain nobody recorded could later be lost silently.
 
     python3 -m pytest tests/test_quality.py            # check, and record gains
     python3 tests/test_quality.py --accept             # record the current results, losses included
 
---accept is for a loss the owner agreed to; the baseline's diff in the PR shows exactly which
-spots moved. Needs the reference slide (python3 src/fetch_data.py -m '*Slide5*Slice1_up_left2*').
+--accept is for a loss the owner agreed to, and for a new reference (the intake records the
+submissions it adds); the baseline's diff in the PR shows exactly which spots moved. Needs the
+images: python3 detection/ground_truth.py fetch.
 """
 import json
 import os
@@ -22,32 +25,16 @@ import pytest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'detection'))
+import ground_truth
 import interactive
 import nor_lab
 
-BASELINE = os.path.join(HERE, '..', 'detection', 'lab', 'quality_baseline.json')
+BASELINE = ground_truth.BASELINE
 IN_CI = bool(os.environ.get('CI'))
 
-needs_slide = pytest.mark.skipif(not os.path.exists(nor_lab.TIF), reason='reference slide missing (src/fetch_data.py)')
-
-
-def spot(L):
-    return [round(L['x'], 1), round(L['y'], 1)]
-
-
-def result(name, data):
-    """The labelled spots the finder passes: {'found': real ones, 'false': not-NoR ones}."""
-    cands, _ = nor_lab.run(name, data)
-    labels = [L for L in nor_lab.read_labels(nor_lab.LABELS) if L['label'] is not None]
-    assert len(labels) >= 150, f'only {len(labels)} decided labels: the lock covers too little'
-    hit = {'found': [], 'false': []}
-    for L in labels:
-        sc, _ = nor_lab.score(cands, [L])
-        if sc['tp']:
-            hit['found'].append(spot(L))
-        elif sc['fp']:
-            hit['false'].append(spot(L))
-    return {k: sorted(v) for k, v in hit.items()}
+CORPUS = ground_truth.corpus()
+needs_images = pytest.mark.skipif(not all(os.path.exists(im['path']) for im in CORPUS),
+                                  reason='ground-truth images missing (src/fetch_data.py, detection/ground_truth.py fetch)')
 
 
 def read_baseline():
@@ -61,52 +48,60 @@ def write_baseline(base):
         f.write('\n')
 
 
-def compare(old, new):
-    """(losses, gains), one line per spot that moved."""
-    was_found, now_found = {tuple(s) for s in old['found']}, {tuple(s) for s in new['found']}
-    was_false, now_false = {tuple(s) for s in old['false']}, {tuple(s) for s in new['false']}
-    losses = [f'no longer finds the real NoR at x={x} y={y}' for x, y in sorted(was_found - now_found)]
-    losses += [f'now passes the not-NoR at x={x} y={y}' for x, y in sorted(now_false - was_false)]
-    gains = [f'now finds the real NoR at x={x} y={y}' for x, y in sorted(now_found - was_found)]
-    gains += [f'no longer passes the not-NoR at x={x} y={y}' for x, y in sorted(was_false - now_false)]
-    return losses, gains
-
-
 @pytest.fixture(scope='module')
-def data():
-    return nor_lab.load()
+def images():
+    return [dict(im, data=nor_lab.load(im['path'])) for im in CORPUS]
 
 
-def test_every_finder_is_locked():
+def test_every_finder_and_image_is_locked():
     assert len(interactive.FINDERS) >= 5
-    assert sorted(read_baseline()) == sorted(interactive.FINDERS), \
+    base = read_baseline()
+    assert sorted(base) == sorted(interactive.FINDERS), \
         'the baseline and the page offer different finders: run python3 tests/test_quality.py --accept'
+    for name in base:
+        assert sorted(base[name]) == sorted(im['name'] for im in CORPUS), \
+            'the baseline and the ground truth name different images: run python3 tests/test_quality.py --accept'
 
 
-@needs_slide
+def test_the_reference_covers_enough():
+    assert len(CORPUS[0]['labels']) >= 150, f'only {len(CORPUS[0]["labels"])} decided labels on the reference slide'
+
+
+@needs_images
 @pytest.mark.parametrize('name', sorted(interactive.FINDERS))
-def test_finder_keeps_its_quality(name, data):
-    old = read_baseline()[name]
-    new = result(name, data)
-    losses, gains = compare(old, new)
-    assert not losses, (f'{name} lost quality: {len(new["found"])} real found and {len(new["false"])} false, '
-                        f'was {len(old["found"])} and {len(old["false"])}.\n  ' + '\n  '.join(losses)
+def test_finder_keeps_its_quality(name, images):
+    record = read_baseline()[name]
+    report, gained = [], {}
+    for im in images:
+        old, new = record.get(im['name'], {}), ground_truth.result(name, im['data'], im['labels'])
+        losses, gains = ground_truth.compare(old, new)
+        if losses:
+            report.append(f'{im["name"]}: {len(new["found"])} real found and {len(new["false"])} false, '
+                          f'was {len(old.get("found", []))} and {len(old.get("false", []))}.\n  ' + '\n  '.join(losses))
+        if gains:
+            gained[im['name']] = (new, gains)
+    assert not report, (f'{name} lost quality.\n' + '\n'.join(report)
                         + '\nIf the owner accepts this, run python3 tests/test_quality.py --accept')
-    if gains and not IN_CI:
+    if gained and not IN_CI:
         base = read_baseline()
-        base[name] = new
+        for image, (new, _) in gained.items():
+            base[name][image] = new
         write_baseline(base)
-    assert not (gains and IN_CI), (f'{name} improved but the baseline was not updated; run '
-                                   f'python3 -m pytest tests/test_quality.py and commit the baseline.\n  '
-                                   + '\n  '.join(gains))
+    assert not (gained and IN_CI), (f'{name} improved but the baseline was not updated; run '
+                                    f'python3 -m pytest tests/test_quality.py and commit the baseline.\n  '
+                                    + '\n  '.join(g for _, gs in gained.values() for g in gs))
 
 
 def accept():
-    data = nor_lab.load()
-    base = {name: result(name, data) for name in sorted(interactive.FINDERS)}
+    base = {name: {} for name in sorted(interactive.FINDERS)}
+    for im in CORPUS:
+        data = nor_lab.load(im['path'])
+        for name in base:
+            base[name][im['name']] = ground_truth.result(name, data, im['labels'])
     write_baseline(base)
-    for name, r in base.items():
-        print(f'{name:6s} {len(r["found"]):3d} real found, {len(r["false"]):3d} false')
+    for name, per in base.items():
+        for image, r in per.items():
+            print(f'{name:6s} {image}: {len(r["found"]):3d} real found, {len(r["false"]):3d} false, {len(r["missing"])} missing marks proposed')
 
 
 if __name__ == '__main__':

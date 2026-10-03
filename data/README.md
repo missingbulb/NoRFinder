@@ -30,6 +30,10 @@ whose `NoRFinder/` subfolder is the one source here.
 |---|---|---|
 | `owner-scans` | 55 single-plane images (2026-09-25) in three field-position subfolders — `Left Up- Edited` (19), `Down Middle- Edited` (18), `Up Middle- Edited` (18) — over six slides × up to four slices each, `4AP` condition. Names carry the owner's own notes (`_not so good`, `_opt2`, `_option2`): several fields have more than one edited version. 454 MB. | **Pinned** 2026-09-25, 55 files, listing checked against Drive's own folder view. The folder was still being filled while it was pinned: re-run `--pin` after an upload. |
 
+Ground truth submitted from the NoR Finder page names its image by Google Drive id and SHA-256
+instead of an entry here; `python3 detection/ground_truth.py fetch` downloads those images into
+`data/raw/ground-truth/`, checked the same way (requirements R10).
+
 ## Why Drive, and not git
 
 Checked on 2026-09-25, for an owner with no local machine:
