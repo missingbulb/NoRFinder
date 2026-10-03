@@ -56,6 +56,10 @@
       "via": [
         "public-website"
       ]
+    },
+    {
+      "id": "numpy-image-processing",
+      "version": "60928.1"
     }
   ],
   "taskScheduler": {
