@@ -60,6 +60,10 @@
     {
       "id": "numpy-image-processing",
       "version": "60928.1"
+    },
+    {
+      "id": "node",
+      "version": "60928.1"
     }
   ],
   "taskScheduler": {
