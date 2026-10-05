@@ -1,8 +1,8 @@
 {
   "usage-findings": {
-    "value": 12,
+    "value": 11,
     "previous": 12,
-    "note": "2026-09-06 to 2026-10-03"
+    "note": "2026-09-07 to 2026-10-04"
   },
   "usage-newest": {
     "rows": [
@@ -11,12 +11,6 @@
         "rule": "skill-forced-only-small",
         "cause": "known",
         "since": "2026-09-30"
-      },
-      {
-        "subject": "searching-for-a-tool",
-        "rule": "skill-always-loaded",
-        "cause": "known",
-        "since": "2026-09-29"
       },
       {
         "subject": "writing-pack-prose",
@@ -63,6 +57,12 @@
       {
         "subject": "searching-for-a-tool",
         "rule": "skill-forced-only-small",
+        "cause": "known",
+        "since": "2026-09-24"
+      },
+      {
+        "subject": "searching-for-a-tool",
+        "rule": "skill-triggered-missing-moments",
         "cause": "known",
         "since": "2026-09-24"
       }
