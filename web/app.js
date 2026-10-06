@@ -69,7 +69,7 @@ const quality = fetch("../detection/lab/finder_metrics.json").then((r) => (r.ok 
 const two = (x) => x.toFixed(2).replace(/^0/, "");
 const pr = (r) => `P ${two(r.precision)} · R ${two(r.recall)}`;
 async function buildPresets() {
-  const q = await quality, box = $("#presets"), per = q && q.finders[st.filtersFor];
+  const q = await quality, box = $("#presets"), per = q && q.finders[st.filtersFor] && q.finders[st.filtersFor].filtered;
   box.hidden = !per; if (!per) return;
   const real = q.images.reduce((a, im) => a + im.real, 0), not = q.images.reduce((a, im) => a + im.not_nor, 0);
   box.title = `After the filters: precision (P) and recall (R) on ${real} real and ${not} not-NoR marked spots in ${q.images.length} image${q.images.length > 1 ? "s" : ""}`;
