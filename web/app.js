@@ -415,7 +415,7 @@ function buildOverlay() {
 function linesOf(c) {
   if (!c.lines) return null;
   const e = st.edits.get(c.i) || {};
-  return { ...c.lines, length: e.length || c.lines.length, red: e.red || c.lines.red };
+  return { ...c.lines, length: e.length || c.lines.length, red: e.red || c.lines.red, width: e.width || c.lines.width };
 }
 function drawLines(c) {
   const L = linesOf(c); c.lineEl.replaceChildren();
@@ -520,14 +520,15 @@ function measuresPx(c) {
   const e = st.edits.get(c.i) || {}, m = { ...c.m };
   if (e.length) m.length = dist(e.length);
   if (e.red) m.red_length = dist(e.red);
-  if (e.length || e.red) { m.red_over_length = m.red_length / m.length; m.length_over_width = m.length / m.width; }
+  if (e.width) m.width = dist(e.width);
+  if (e.length || e.red || e.width) { m.red_over_length = m.red_length / m.length; m.length_over_width = m.length / m.width; }
   return m;
 }
 function measures(c) {
   const f = st.um || 1, m = measuresPx(c);
   return MEASURES.map(([k, label, scaled]) => [label + (scaled ? ` (${unitName()})` : ""), m[k] == null ? null : scaled ? m[k] * f : m[k]]);
 }
-const measured = (c) => { const e = st.edits.get(c.i) || {}; return e.length || e.red ? "adjusted" : e.approved ? "approved" : null; };
+const measured = (c) => { const e = st.edits.get(c.i) || {}; return e.length || e.red || e.width ? "adjusted" : e.approved ? "approved" : null; };
 
 // ---------- controls ----------
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -678,7 +679,7 @@ function crop(c, size) {
   let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
   const take = (p) => { const [u, v] = toUV(p); u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v); };
   for (let y = 0; y < c.h; y++) for (let x = 0; x < c.w; x++) if (c.blk[y * c.w + x]) for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) take([c.x0 + x + dx, c.y0 + y + dy]);
-  if (L) for (const k of ["length", "red"]) L[k].forEach(take);
+  if (L) for (const k of ["length", "red", "width"]) L[k].forEach(take);
   u0 -= pad; u1 += pad; v0 -= pad; v1 += pad;
   const uw = u1 - u0, vw = v1 - v0, s = Math.max(2, Math.min(size / 10, size / Math.max(uw, vw))), dpr = devicePixelRatio || 1;
   const cv = document.createElement("canvas"); cv.width = Math.round(uw * s * dpr); cv.height = Math.round(vw * s * dpr);
@@ -700,6 +701,36 @@ function crop(c, size) {
   st.crops.set(c.i + "|" + size, { key, node }); return node;
 }
 
+// The measuring lines after a handle (line k, end j) is dragged to P. The two green ends and the two red
+// ends stay on one straight axis: dragging one of them turns the axis about the green end on the far side,
+// through P, and every other point keeps its distance from that end, in order and at least a pixel apart.
+// A width end sets where along the axis the width is measured and, mirrored across the axis, how wide.
+function dragLines(L, k, j, P) {
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1]], dot = (a, b) => a[0] * b[0] + a[1] * b[1];
+  const at = (o, u, s) => [o[0] + s * u[0], o[1] + s * u[1]], unit = (a) => { const n = Math.hypot(...a) || 1; return [a[0] / n, a[1] / n]; };
+  const mid = ([a, b]) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const [A, B] = L.length, u = unit(sub(B, A)), n = [-u[1], u[0]], len = Math.hypot(...sub(B, A));
+  const wc = mid(L.width), hw = Math.hypot(...sub(L.width[1], L.width[0])) / 2, side = Math.sign(dot(sub(L.width[0], wc), n)) || 1;
+  if (k === "width") {
+    const s = Math.max(0, Math.min(len, dot(sub(P, A), u))), off = dot(sub(P, A), n), c = at(A, u, s);
+    const w = Math.max(0.5, Math.abs(off)), sg = Math.sign(off) || 1, out = [at(c, n, sg * w), at(c, n, -sg * w)];
+    return { ...L, width: j === 0 ? out : [out[1], out[0]] };
+  }
+  // the turning end, and the distance of each point from it along the axis
+  const piv = k === "length" ? 1 - j : dot(sub(L.red[j], A), u) < len / 2 ? 1 : 0;
+  const O = L.length[piv], v = unit(sub(L.length[1 - piv], O)), d = (p) => dot(sub(p, O), v);
+  const pts = [["length", 1 - piv, len], ["red", 0, d(L.red[0])], ["red", 1, d(L.red[1])]].sort((a, b) => a[2] - b[2]);
+  const me = pts.findIndex(([kk, jj]) => kk === k && jj === j);
+  const lo = me > 0 ? pts[me - 1][2] + 1 : 1, hi = me < pts.length - 1 ? pts[me + 1][2] - 1 : Infinity;
+  const nv = unit(sub(P, O)), nn = [-nv[1] * Math.sign(dot(n, [-v[1], v[0]])), nv[0] * Math.sign(dot(n, [-v[1], v[0]]))];
+  pts[me][2] = Math.max(lo, Math.min(hi, Math.hypot(...sub(P, O))));
+  const out = { length: [[...A], [...B]], red: [[...L.red[0]], [...L.red[1]]] };
+  for (const [kk, jj, s] of pts) out[kk][jj] = at(O, nv, s);
+  out.length[piv] = [...O];
+  const far = pts.find(([kk]) => kk === "length")[2], ws = Math.max(0, Math.min(far, d(wc))), c = at(O, nv, ws);
+  return { ...L, ...out, width: [at(c, nn, side * hw), at(c, nn, -side * hw)] };
+}
+
 // bars, length labels and draggable ends over a crop, in its own turned coordinates
 function cropMarks(c, L, g) {
   const o = optsOf(c), f = st.um || 1, svg = el("svg", { class: "marks", viewBox: `${g.u0} ${g.v0} ${g.uw} ${g.vw}`, width: g.uw * g.s, height: g.vw * g.s });
@@ -713,28 +744,27 @@ function cropMarks(c, L, g) {
         t.textContent = fmt(dist(L[k]) * f, 1); svg.append(t);
       }
     }
-    if (o.adjust && result(c.i) === null) for (const k of ["length", "red"]) L[k].forEach((p, j) => {
-      const [u, v] = g.toUV(p), h = el("circle", { cx: u, cy: v, r: 4 * px, class: "handle" + (k === "red" ? " r" : ""), "stroke-width": px });
+    if (o.adjust && result(c.i) === null) for (const k of ["length", "red", "width"]) L[k].forEach((p, j) => {
+      const [u, v] = g.toUV(p), h = el("circle", { cx: u, cy: v, r: 4 * px, class: "handle" + (k === "red" ? " r" : k === "width" ? " w" : ""), "stroke-width": px });
       h.dataset.k = k; h.dataset.j = j; svg.append(h);
     });
   };
   draw();
-  // an end slides along its own line; the result is kept in image coordinates
+  // a handle goes wherever it is dragged; the result is kept in image coordinates
   svg.addEventListener("pointerdown", (e) => {
     const h = e.target.closest(".handle"); if (!h) return;
     e.preventDefault(); e.stopPropagation(); svg.setPointerCapture(e.pointerId);
-    const k = h.dataset.k, j = +h.dataset.j, [A, B] = L[k], d = [B[0] - A[0], B[1] - A[1]], n = Math.hypot(...d), dir = [d[0] / n, d[1] / n];
-    L = { ...L, [k]: [[...A], [...B]] };
+    const k = h.dataset.k, j = +h.dataset.j, from = L;
     const move = (ev) => {
       const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
-      const q = pt.matrixTransform(svg.getScreenCTM().inverse()), P = g.toXY([q.x, q.y]);
-      let t = (P[0] - A[0]) * dir[0] + (P[1] - A[1]) * dir[1];
-      t = j === 0 ? Math.min(t, n - 1) : Math.max(t, 1);
-      L[k][j] = [A[0] + t * dir[0], A[1] + t * dir[1]]; draw();
+      const q = pt.matrixTransform(svg.getScreenCTM().inverse());
+      L = dragLines(from, k, j, g.toXY([q.x, q.y])); draw();
     };
     const up = () => {
       svg.removeEventListener("pointermove", move); svg.removeEventListener("pointerup", up);
-      edit(c.i, { [k]: L[k].map((p) => p.map((v) => Math.round(v * 100) / 100)) });
+      if (L === from) return;
+      const r2 = (seg) => seg.map((p) => p.map((v) => Math.round(v * 100) / 100));
+      edit(c.i, { length: r2(L.length), red: r2(L.red), width: r2(L.width) });
     };
     svg.addEventListener("pointermove", move); svg.addEventListener("pointerup", up);
   });
@@ -769,9 +799,9 @@ function card(c, where) {
   wrap.querySelector(".goto").onclick = () => { select(c.i); showView("image"); focusOn(c); };
   d.append(wrap);
   const e = st.edits.get(c.i) || {};
-  if (e.length || e.red) {
+  if (e.length || e.red || e.width) {
     d.insertAdjacentHTML("beforeend", `<div class="tag">Lengths adjusted <button class="link">reset</button></div>`);
-    d.querySelector(".tag button").onclick = () => edit(c.i, { length: null, red: null });
+    d.querySelector(".tag button").onclick = () => edit(c.i, { length: null, red: null, width: null });
   }
   if (r !== null) d.insertAdjacentHTML("beforeend", `<div class="why">${whyAll(c).map((k) => `<span><b class="lt" style="--c:${colour(k)}">${reasonOf(k).letter}</b> ${esc(reasonOf(k).title)}</span>`).join("")}</div>`);
   if (optsOf(c).lenCard && c.m) {
@@ -911,7 +941,7 @@ function truth() {
     labels.push({ id: st.numbers.get(c.i), x: c.cx, y: c.cy, label: f === "in" ? 1 : 0, source: "user",
       decision: f === "in" ? "approved" : "rejected", measured: f === "in" ? measured(c) : null,
       length_px: px.length ?? null, red_length_px: px.red_length ?? null, width_px: px.width ?? null,
-      lines: L ? { length: L.length, red: L.red } : null });
+      lines: L ? { length: L.length, red: L.red, width: L.width } : null });
   }
   st.missing.forEach((m, k) => labels.push({ id: "M" + (k + 1), kind: "missing", x: m.x, y: m.y, label: 1, source: "user", radius_px: MISSING_RADIUS }));
   const src = st.source || { kind: "local" };

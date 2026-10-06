@@ -216,7 +216,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 .card .marks line.r { stroke-width: 2.5; }
 .card .marks text { fill: #fff; text-anchor: middle; paint-order: stroke; stroke: #000; font-family: system-ui, sans-serif; }
 .card .marks text.r { fill: #ffb3b3; }
-.card .marks .handle { fill: #fff; stroke: #000; cursor: ew-resize; }
+.card .marks .handle { fill: #fff; stroke: #000; cursor: move; touch-action: none; }
 .card .marks .handle.r { fill: #ff6b6b; }
 .card .head { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
 /* the user's verdict: a thumbs up and a thumbs down side by side, quiet until pointed at or chosen */
