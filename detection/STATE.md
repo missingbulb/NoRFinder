@@ -5,7 +5,7 @@ Read this first, then `lab/ledger.md` (everything tried, with verdicts). The met
 [`docs/requirements.md`](../docs/requirements.md) R7. Update this file in the PR that changes the
 state.
 
-_Last updated 2026-10-03._
+_Last updated 2026-10-06._
 
 ## Setup
 1. `python3 -m pip install -r requirements.txt`
@@ -32,6 +32,13 @@ _Last updated 2026-10-03._
   the `improve-on-ground-truth` skill on opus. Submissions outrank the Claude labels wherever both
   mark a spot, and `ground_truth.py score` / the quality lock score every finder on every image.
   None has arrived yet.
+- **Precision and recall per finder and filter preset** (R11, 2026-10-06):
+  `lab/finder_metrics.json`, written by `finder_metrics.py` (and by every baseline rewrite).
+  Presets: precise / balanced (the finder's own) / sensitive, every filter 40% towards a fixed
+  strict or loose end. Fitting filter values to the labels does not survive held-out labels
+  (ledger §5), so don't tune filters per finder on these labels.
+- **Filters are not finder-specific** (ledger §5): tl's filter values score as well as or better
+  than each finder's own on all five finders. Each finder still opens on its own values.
 - **Only one image has been processed.**
 - **Browser page** (`web/`, requirement R8): open an image, detect once, then tune every filter
   live. It runs `interactive.py` over the unchanged finders under Pyodide. It deploys to GitHub
@@ -81,6 +88,7 @@ _Last updated 2026-10-03._
 | perf.py | snapshot / profile / check for speed-ups |
 | bench.py | time and peak memory of every finder along the page's path (browser/ runs it under Pyodide and on the live page) |
 | lab/ | labels, the pool used to draw them (mkpool.py, pool.json), ledger.md, the submitted ground truth (ground_truth/) |
+| finder_metrics.py | precision and recall per finder and filter preset (`lab/finder_metrics.json`); `transfer`: every finder with every finder's filter values |
 | ground_truth.py | the ground-truth data set: the merged reference per image, `fetch`, `score`, and the daily `ingest` |
 | interactive.py | the page's engine: detect once, refilter on stored measurements (R8) |
 | browser/ | runs the finders in a browser runtime (Pyodide): measured parity, recommendation |

@@ -1,0 +1,313 @@
+{
+ "baseline_sha256": "aba93e2a8c1101c8d34695979d43ed61867f0bc61244a425dca83f601a5c5af9",
+ "finders": {
+  "blobs": {
+   "balanced": {
+    "fn": 36,
+    "fp": 9,
+    "precision": 0.8,
+    "recall": 0.5,
+    "tp": 36,
+    "values": {
+     "max_axis_dev": 180,
+     "max_off_u": 99,
+     "max_shared": 0.3,
+     "min_aspect": 3.0,
+     "min_green_balance": 0.33,
+     "min_opposite": 100.0,
+     "min_snr": 3.5,
+     "min_solid": 0,
+     "nucleus_frac": 0.8,
+     "purity": 0.2
+    }
+   },
+   "precise": {
+    "fn": 44,
+    "fp": 8,
+    "precision": 0.7778,
+    "recall": 0.3889,
+    "tp": 28,
+    "values": {
+     "max_axis_dev": 180,
+     "max_off_u": 99,
+     "max_shared": 0.22,
+     "min_aspect": 3.6,
+     "min_green_balance": 0.398,
+     "min_opposite": 116.0,
+     "min_snr": 4.1,
+     "min_solid": 0,
+     "nucleus_frac": 0.68,
+     "purity": 0.16
+    }
+   },
+   "sensitive": {
+    "fn": 30,
+    "fp": 13,
+    "precision": 0.7636,
+    "recall": 0.5833,
+    "tp": 42,
+    "values": {
+     "max_axis_dev": 180,
+     "max_off_u": 99,
+     "max_shared": 0.42,
+     "min_aspect": 2.6,
+     "min_green_balance": 0.238,
+     "min_opposite": 92.0,
+     "min_snr": 2.9,
+     "min_solid": 0,
+     "nucleus_frac": 0.88,
+     "purity": 0.28
+    }
+   }
+  },
+  "fill": {
+   "balanced": {
+    "fn": 29,
+    "fp": 5,
+    "precision": 0.8958,
+    "recall": 0.5972,
+    "tp": 43,
+    "values": {
+     "max_axis_dev": 25.0,
+     "max_off_u": 1.0,
+     "max_shared": 0.3,
+     "min_aspect": 3.0,
+     "min_green_balance": 0.33,
+     "min_opposite": 100.0,
+     "min_snr": 3.5,
+     "min_solid": 0.8,
+     "nucleus_frac": 0.8,
+     "purity": 0.2
+    }
+   },
+   "precise": {
+    "fn": 40,
+    "fp": 3,
+    "precision": 0.9143,
+    "recall": 0.4444,
+    "tp": 32,
+    "values": {
+     "max_axis_dev": 19.0,
+     "max_off_u": 0.8,
+     "max_shared": 0.22,
+     "min_aspect": 3.6,
+     "min_green_balance": 0.398,
+     "min_opposite": 116.0,
+     "min_snr": 4.1,
+     "min_solid": 0.86,
+     "nucleus_frac": 0.68,
+     "purity": 0.16
+    }
+   },
+   "sensitive": {
+    "fn": 24,
+    "fp": 8,
+    "precision": 0.8571,
+    "recall": 0.6667,
+    "tp": 48,
+    "values": {
+     "max_axis_dev": 33.0,
+     "max_off_u": 1.4,
+     "max_shared": 0.42,
+     "min_aspect": 2.6,
+     "min_green_balance": 0.238,
+     "min_opposite": 92.0,
+     "min_snr": 2.9,
+     "min_solid": 0.68,
+     "nucleus_frac": 0.88,
+     "purity": 0.28
+    }
+   }
+  },
+  "rf": {
+   "balanced": {
+    "fn": 24,
+    "fp": 9,
+    "precision": 0.8421,
+    "recall": 0.6667,
+    "tp": 48,
+    "values": {
+     "max_axis_dev": 25.0,
+     "max_off_u": 1.0,
+     "max_shared": 0.3,
+     "min_aspect": 3.0,
+     "min_green_balance": 0.25,
+     "min_opposite": 110.0,
+     "min_snr": 3.5,
+     "min_solid": 0.8,
+     "nucleus_frac": 0.8,
+     "purity": 0.2
+    }
+   },
+   "precise": {
+    "fn": 37,
+    "fp": 4,
+    "precision": 0.8974,
+    "recall": 0.4861,
+    "tp": 35,
+    "values": {
+     "max_axis_dev": 19.0,
+     "max_off_u": 0.8,
+     "max_shared": 0.22,
+     "min_aspect": 3.6,
+     "min_green_balance": 0.35,
+     "min_opposite": 122.0,
+     "min_snr": 4.1,
+     "min_solid": 0.86,
+     "nucleus_frac": 0.68,
+     "purity": 0.16
+    }
+   },
+   "sensitive": {
+    "fn": 20,
+    "fp": 10,
+    "precision": 0.8387,
+    "recall": 0.7222,
+    "tp": 52,
+    "values": {
+     "max_axis_dev": 33.0,
+     "max_off_u": 1.4,
+     "max_shared": 0.42,
+     "min_aspect": 2.6,
+     "min_green_balance": 0.19,
+     "min_opposite": 98.0,
+     "min_snr": 2.9,
+     "min_solid": 0.68,
+     "nucleus_frac": 0.88,
+     "purity": 0.28
+    }
+   }
+  },
+  "tl": {
+   "balanced": {
+    "fn": 25,
+    "fp": 7,
+    "precision": 0.8704,
+    "recall": 0.6528,
+    "tp": 47,
+    "values": {
+     "max_axis_dev": 25.0,
+     "max_off_u": 1.0,
+     "max_shared": 0.3,
+     "min_aspect": 3.0,
+     "min_green_balance": 0.25,
+     "min_opposite": 100.0,
+     "min_snr": 3.5,
+     "min_solid": 0.8,
+     "nucleus_frac": 0.8,
+     "purity": 0.2
+    }
+   },
+   "precise": {
+    "fn": 37,
+    "fp": 3,
+    "precision": 0.9211,
+    "recall": 0.4861,
+    "tp": 35,
+    "values": {
+     "max_axis_dev": 19.0,
+     "max_off_u": 0.8,
+     "max_shared": 0.22,
+     "min_aspect": 3.6,
+     "min_green_balance": 0.35,
+     "min_opposite": 116.0,
+     "min_snr": 4.1,
+     "min_solid": 0.86,
+     "nucleus_frac": 0.68,
+     "purity": 0.16
+    }
+   },
+   "sensitive": {
+    "fn": 22,
+    "fp": 9,
+    "precision": 0.8475,
+    "recall": 0.6944,
+    "tp": 50,
+    "values": {
+     "max_axis_dev": 33.0,
+     "max_off_u": 1.4,
+     "max_shared": 0.42,
+     "min_aspect": 2.6,
+     "min_green_balance": 0.19,
+     "min_opposite": 92.0,
+     "min_snr": 2.9,
+     "min_solid": 0.68,
+     "nucleus_frac": 0.88,
+     "purity": 0.28
+    }
+   }
+  },
+  "walk": {
+   "balanced": {
+    "fn": 35,
+    "fp": 6,
+    "precision": 0.8605,
+    "recall": 0.5139,
+    "tp": 37,
+    "values": {
+     "max_axis_dev": 180,
+     "max_off_u": 99,
+     "max_shared": 0.3,
+     "min_aspect": 3.0,
+     "min_green_balance": 0.33,
+     "min_opposite": 100.0,
+     "min_snr": 3.5,
+     "min_solid": 0,
+     "nucleus_frac": 0.8,
+     "purity": 0.2
+    }
+   },
+   "precise": {
+    "fn": 41,
+    "fp": 4,
+    "precision": 0.8857,
+    "recall": 0.4306,
+    "tp": 31,
+    "values": {
+     "max_axis_dev": 180,
+     "max_off_u": 99,
+     "max_shared": 0.22,
+     "min_aspect": 3.6,
+     "min_green_balance": 0.398,
+     "min_opposite": 116.0,
+     "min_snr": 4.1,
+     "min_solid": 0,
+     "nucleus_frac": 0.68,
+     "purity": 0.16
+    }
+   },
+   "sensitive": {
+    "fn": 29,
+    "fp": 11,
+    "precision": 0.7963,
+    "recall": 0.5972,
+    "tp": 43,
+    "values": {
+     "max_axis_dev": 180,
+     "max_off_u": 99,
+     "max_shared": 0.42,
+     "min_aspect": 2.6,
+     "min_green_balance": 0.238,
+     "min_opposite": 92.0,
+     "min_snr": 2.9,
+     "min_solid": 0,
+     "nucleus_frac": 0.88,
+     "purity": 0.28
+    }
+   }
+  }
+ },
+ "format": "norfinder-finder-metrics/1",
+ "images": [
+  {
+   "name": "Slide5_4AP_NoR.sld - Slice1_up_left2.tif",
+   "not_nor": 93,
+   "real": 72
+  }
+ ],
+ "presets": {
+  "balanced": 0.0,
+  "precise": 0.4,
+  "sensitive": -0.4
+ }
+}

@@ -103,6 +103,14 @@ class Session:
         self.dapi = dapi
         self.cands, self.P, self.finder = [], {}, None
 
+    @classmethod
+    def of(cls, caspr, nav, um, bm):
+        """A session on channels already loaded (nor_lab.load), for the lab; it has no blue image to show."""
+        s = cls.__new__(cls)
+        s.caspr, s.nav, s.um, s.bm, s.dapi = caspr, nav, um, bm, None
+        s.cands, s.P, s.finder = [], {}, None
+        return s
+
     def images(self):
         """red, green, blue (8-bit display stretch) and the blue mask, H*W bytes each, in that order."""
         return b''.join([nn_.to8(self.nav).tobytes(), nn_.to8(self.caspr).tobytes(), nn_.to8(self.dapi).tobytes(),
