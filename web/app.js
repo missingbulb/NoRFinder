@@ -187,7 +187,7 @@ function memoryTip(ranOut) {
   $("#memory-never").hidden = !!ranOut; $("#memory-off").checked = false;
   if (!$("#memory-dlg").open) $("#memory-dlg").showModal();
 }
-$("#memory-dlg").addEventListener("close", () => { if ($("#memory-off").checked) writeJSON(MEMORY_TIP, true); });
+$("#memory-off").onchange = () => writeJSON(MEMORY_TIP, $("#memory-off").checked);
 
 function onWorker(m) {
   handle(m); settle(m);
