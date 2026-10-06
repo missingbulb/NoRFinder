@@ -53,18 +53,27 @@ window.NorDrive = (() => {
     return { name, bytes: got === buf.byteLength ? buf : buf.slice(0, got) };
   }
 
-  // [{id, name, folder, size, created}] in a public folder: its subfolders and its TIFF and PNG images;
-  // size in bytes (null for a folder), created a Date
+  // bytes start..end (inclusive) of a file, without the rest
+  async function range(id, start, end, signal) {
+    const r = await fetch(`${API}/${encodeURIComponent(id)}?alt=media&key=${key}`, { headers: { Range: `bytes=${start}-${end}` }, signal });
+    if (!r.ok) throw refused(r, "file");
+    return r.arrayBuffer();
+  }
+
+  // [{id, name, folder, size, created, preview}] in a public folder: its subfolders and its TIFF and PNG
+  // images; size in bytes (null for a folder), created a Date, preview the link of Drive's own small
+  // picture of the file or null (Drive draws a multi-channel TIFF grey, so it serves only a PNG)
   async function list(id) {
     need();
     const q = encodeURIComponent(`'${id}' in parents and trashed = false`);
-    const r = await fetch(`${API}?q=${q}&fields=files(id,name,mimeType,size,createdTime)&pageSize=1000&orderBy=folder,name&key=${key}`);
+    const r = await fetch(`${API}?q=${q}&fields=files(id,name,mimeType,size,createdTime,thumbnailLink)&pageSize=1000&orderBy=folder,name&key=${key}`);
     if (!r.ok) throw refused(r, "folder");
     return (await r.json()).files
       .map((f) => ({ id: f.id, name: f.name, folder: f.mimeType === "application/vnd.google-apps.folder",
-        size: f.size == null ? null : +f.size, created: f.createdTime ? new Date(f.createdTime) : null }))
+        size: f.size == null ? null : +f.size, created: f.createdTime ? new Date(f.createdTime) : null,
+        preview: f.thumbnailLink && /\.png$/i.test(f.name) ? f.thumbnailLink : null }))
       .filter((f) => f.folder || /\.(tiff?|png)$/i.test(f.name));
   }
 
-  return { parse, file, list, ready: !!key };
+  return { parse, file, list, range, ready: !!key };
 })();

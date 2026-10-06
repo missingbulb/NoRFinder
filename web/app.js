@@ -229,11 +229,12 @@ function load(src) {
 $("#load-main").onclick = () => load(readJSON(SOURCE, "local"));
 document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => load(b.dataset.src)));
 
-// the Drive dialog: a pasted file link loads at once; a folder link lists its images and subfolders
+// the Drive dialog: a pasted file link loads at once; a folder link lists its images and subfolders, where a
+// click selects and Open (or a double click) opens the selection
 {
   const msg = (t, err) => { const m = $("#drive-msg"); m.textContent = m.title = t; m.classList.toggle("err", !!err); };
   const sizeText = (n) => (n < 1048576 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1048576).toFixed(1)} MB`);
-  let trail = [];
+  let trail = [], chosen = null;
   const take = async (id, name) => {
     msg("Downloading " + (name || "the image") + "…");
     const mb = (n) => (n / 1048576).toFixed(1);
@@ -252,32 +253,81 @@ document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => 
       msg(err.message || String(err), true);
     }
   };
+  const choose = (f, b) => {
+    chosen = f; $("#drive-open").disabled = !f;
+    $("#drive-list").querySelectorAll(".item").forEach((e) => e.setAttribute("aria-selected", e === b));
+  };
+  const enter = (f) => (f.folder ? (trail.push(f), show()) : take(f.id, f.name));
   const show = async () => {
     const at = trail[trail.length - 1];
     $("#drive-path").innerHTML = trail.map((t, k) => `<button type="button" class="link" data-k="${k}">${esc(t.name)}</button>`).join(" / ");
     $("#drive-path").querySelectorAll("button").forEach((b) => (b.onclick = () => { trail = trail.slice(0, +b.dataset.k + 1); show(); }));
     $("#drive-path").scrollLeft = $("#drive-path").scrollWidth;
-    $("#drive-list").replaceChildren(); msg("Reading the folder…");
+    $("#drive-list").replaceChildren(); choose(null); thumbs.reset(); msg("Reading the folder…");
     try {
       const items = await NorDrive.list(at.id);
       msg(items.length ? "" : "No TIFF or PNG images here.");
       for (const f of items) {
         const b = document.createElement("button"); b.type = "button"; b.className = "item" + (f.folder ? " folder" : "");
+        b.setAttribute("aria-selected", "false");
         const meta = [f.size == null ? "" : sizeText(f.size),
           f.created ? f.created.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : ""].filter(Boolean).join(" · ");
-        b.innerHTML = `<span class="name">${esc(f.name)}</span><span class="meta">${esc(meta)}</span>`;
-        b.onclick = () => (f.folder ? (trail.push(f), show()) : take(f.id, f.name));
+        b.innerHTML = `<span class="pic"></span><span class="name">${esc(f.name)}</span><span class="meta">${esc(meta)}</span>`;
+        b.onclick = () => choose(f, b);
+        b.ondblclick = () => enter(f);
+        b.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); enter(f); } };
         $("#drive-list").append(b);
+        if (!f.folder) thumbs.watch(b.querySelector(".pic"), f);
       }
     } catch (err) { msg(err.message || String(err), true); }
   };
+  // each image's thumbnail, drawn once its row scrolls into view and kept while the page is open
+  const thumbs = (() => {
+    const made = new Map(), waiting = [], ROWS = 48, AT_ONCE = 2;
+    let ctl = new AbortController(), running = 0, seen;
+    const put = (pic, url) => { const i = new Image(); i.alt = ""; i.src = url; pic.replaceChildren(i); };
+    const make = async (f, signal) => {
+      if (f.preview) return f.preview;
+      const t = await NorPeek.thumb((s, e) => NorDrive.range(f.id, s, e, signal), ROWS);
+      if (!t) return null;
+      const c = document.createElement("canvas"); c.width = t.W; c.height = t.H;
+      c.getContext("2d").putImageData(new ImageData(t.data, t.W, t.H), 0, 0);
+      return c.toDataURL();
+    };
+    const next = () => {
+      while (running < AT_ONCE && waiting.length) {
+        const [pic, f] = waiting.shift(), signal = ctl.signal;
+        running++;
+        (made.has(f.id) ? Promise.resolve(made.get(f.id)) : make(f, signal))
+          .then((url) => { made.set(f.id, url); if (url && !signal.aborted) put(pic, url); })
+          .catch(() => {})
+          .finally(() => { running--; if (!signal.aborted) next(); });
+      }
+    };
+    const reset = () => {
+      ctl.abort(); ctl = new AbortController(); running = 0; waiting.length = 0;
+      if (seen) seen.disconnect();
+      seen = new IntersectionObserver((es) => es.forEach((e) => {
+        if (!e.isIntersecting) return;
+        seen.unobserve(e.target); waiting.push([e.target, e.target.file]); next();
+      }), { root: $("#drive-list") });
+    };
+    const watch = (pic, f) => {
+      if (made.get(f.id)) return put(pic, made.get(f.id));
+      if (made.has(f.id)) return;
+      pic.file = f; seen.observe(pic);
+    };
+    return { reset, watch, stop: () => ctl.abort() };
+  })();
+  $("#drive-open").onclick = () => chosen && enter(chosen);
+  $("#drive-dlg").addEventListener("close", () => thumbs.stop());
   if (!NorDrive.ready) {
     const d = document.querySelector('#load-menu .item[data-src="drive"]');
     d.disabled = true; d.title = "Needs this site's Google API key (issue #234)";
   }
   const open = () => {
     const link = $("#drive-link").value, ref = NorDrive.parse(link);
-    $("#drive-list").replaceChildren(); $("#drive-path").replaceChildren();
+    $("#drive-list").replaceChildren(); $("#drive-path").replaceChildren(); choose(null);
     if (!ref) return msg("That does not look like a Google Drive link.", true);
     writeJSON(DRIVE_LINK, link);
     if (ref.kind === "file") return take(ref.id);

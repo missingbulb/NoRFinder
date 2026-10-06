@@ -156,10 +156,10 @@
   <form method="dialog">
     <h2>Load from Google Drive</h2>
     <p class="hint">Paste the link of an image or a folder shared as "Anyone with the link".</p>
-    <div class="drive-row"><input id="drive-link" type="text" placeholder="https://drive.google.com/…" autocomplete="off"><button id="drive-go" class="primary" type="button">Open</button></div>
+    <div class="drive-row"><input id="drive-link" type="text" placeholder="https://drive.google.com/…" autocomplete="off"><button id="drive-go" type="button">Go</button></div>
     <div id="drive-path"></div>
     <div id="drive-list"></div>
-    <div class="drive-row end"><span id="drive-msg" class="hint"></span><button value="close">Close</button></div>
+    <div class="drive-row end"><span id="drive-msg" class="hint"></span><button id="drive-open" class="primary" type="button" disabled>Open</button><button value="close">Close</button></div>
   </form>
 </dialog>
 <div id="tip" hidden></div>

@@ -55,6 +55,27 @@ def test_paints_each_channel_in_the_colour_of_its_role_early_and_the_same_in_pie
 
 
 @pytest.mark.skipif(not NODE or not TIFS, reason='needs node and the lab images')
+def test_thumbnail_reads_a_few_rows_and_draws_each_channel_in_the_colour_of_its_role():
+    d = tempfile.mkdtemp()
+    copies = [shutil.copy(p, os.path.join(d, f'{k}.tif')) for k, p in enumerate(TIFS)]
+    r = subprocess.run([NODE, os.path.join(HERE, 'peek_thumb_driver.mjs'), '48', *copies], capture_output=True, text=True, check=True)
+    for path, line, c in zip(TIFS, r.stdout.splitlines(), copies):
+        info = json.loads(line)
+        a, roles = python_roles(path)
+        C, H, W = a.shape
+        w, h = info['size']
+        assert h == 48 and w == round(48 * W / H), path
+        assert info['read'] < info['total'] / 10, path
+        rgba = np.fromfile(c + '.thumb', np.uint8).reshape(h, w, 4)
+        # each channel shrunk to the thumbnail's size, box by box
+        small = a[:, :h * (H // h), :w * (W // w)].reshape(C, h, H // h, w, W // w).mean(axis=(2, 4))
+        for k, colour in roles.items():
+            follows = [np.corrcoef(rgba[..., colour].astype(float).ravel(), s.ravel())[0, 1] for s in small]
+            assert int(np.argmax(follows)) == k, (path, k, follows)
+    shutil.rmtree(d)
+
+
+@pytest.mark.skipif(not NODE or not TIFS, reason='needs node and the lab images')
 def test_leaves_a_compressed_tiff_alone():
     path = tempfile.mktemp(suffix='.tif')
     tifffile.imwrite(path, tifffile.imread(TIFS[0]), compression='zlib', photometric='minisblack', imagej=False)
