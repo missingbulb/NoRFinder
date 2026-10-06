@@ -72,7 +72,7 @@ async function buildPresets() {
   const q = await quality, box = $("#presets"), per = q && q.finders[st.filtersFor];
   box.hidden = !per; if (!per) return;
   const real = q.images.reduce((a, im) => a + im.real, 0), not = q.images.reduce((a, im) => a + im.not_nor, 0);
-  box.title = `Precision (P) and recall (R) on ${real} real and ${not} not-NoR marked spots in ${q.images.length} image${q.images.length > 1 ? "s" : ""}`;
+  box.title = `After the filters: precision (P) and recall (R) on ${real} real and ${not} not-NoR marked spots in ${q.images.length} image${q.images.length > 1 ? "s" : ""}`;
   box.replaceChildren(...Object.entries(PRESETS).filter(([k]) => per[k]).map(([k, name]) => {
     const b = document.createElement("button"); b.type = "button"; b.dataset.preset = k;
     b.innerHTML = `${name}<small>${pr(per[k])}</small>`;
@@ -84,7 +84,7 @@ async function buildPresets() {
 // a preset is lit while the filters hold exactly its values
 function markPreset() {
   quality.then((q) => {
-    const per = q && q.finders[st.filtersFor];
+    const per = q && q.finders[st.filtersFor] && q.finders[st.filtersFor].filtered;
     if (!per) return;
     for (const b of $("#presets").children) {
       const v = per[b.dataset.preset].values;
@@ -177,7 +177,10 @@ function onWorker(m) {
   else if (m.type === "ready") {
     const sel = $("#finder");
     sel.innerHTML = Object.entries(m.finders).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
-    quality.then((q) => { for (const o of sel.options) if (q && q.finders[o.value]) o.textContent += ` (${pr(q.finders[o.value].balanced)})`; });
+    quality.then((q) => {
+      if (q) sel.title = "Each finder's own precision (P) and recall (R): its candidates before any filter";
+      for (const o of sel.options) if (q && q.finders[o.value]) o.textContent += ` (${pr(q.finders[o.value].finder)})`;
+    });
     sel.disabled = false; st.ready = true; $("#spin").classList.remove("on");
     st.about = m.about; st.times.load = m.secs; st.help = Object.values(m.about)[0].help;
     buildDetect(); useFilters(sel.value); statusBar();

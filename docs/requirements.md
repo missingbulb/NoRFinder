@@ -399,6 +399,6 @@ quality baseline (R9) is, and `tests/test_finder_metrics.py` fails when it was m
 another baseline, another ground truth or other presets. The numbers are only as right as the labels
 behind them (R9).
 
-On the page (R8), the finder list shows each finder's balanced precision and recall, and the Filters
-box opens with the three presets, each with its own; choosing one sets every filter to its values, and
+On the page (R8), the finder list shows each finder's own precision and recall (before filters), and the
+Filters box opens with the three presets, each with its precision and recall after the filters; choosing one sets every filter to its values, and
 it stays lit while the filters hold them.
