@@ -1,8 +1,9 @@
 // Drives the Google Drive dialog (web/) in headless Chromium against a stand-in Drive API that serves
 // IMAGE... from a folder (with one subfolder holding the first of them again): a click only selects a row,
 // Open loads the selection, a double click enters a folder, and each image's thumbnail is drawn from a few of
-// its rows without downloading the rest. Prints what it measured; exits 1 when something is wrong, 2 when it
-// cannot run. With SHOT, also saves a screenshot of the dialog there.
+// its rows without downloading the rest, unless the remembered "Avoid downloading thumbnails" is ticked.
+// Prints what it measured; exits 1 when something is wrong, 2 when it cannot run. With SHOT, also saves a
+// screenshot of the dialog there.
 //   node tests/drive_dialog_driver.mjs SHOT|- IMAGE...
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
@@ -113,4 +114,21 @@ for (let t = 0; t < 50 && !asked[files[0].id].whole; t++) await new Promise((ok)
 if (!asked[files[0].id].whole) await done(1, "Open did not load the image");
 if (asked[files[0].id].reads !== reads) await done(1, "the thumbnail was read again");
 console.log("select, double click and Open all work");
+
+// "Avoid downloading thumbnails" is off at first, and once ticked it is remembered and no row is read
+const fresh = await ctx.newPage();
+fresh.on("pageerror", (e) => done(1, "page error: " + e.message));
+await fresh.goto(origin + "/web/index.html");
+await fresh.click("#load-main");
+await fresh.waitForSelector("#drive-list .item");
+if (await fresh.$eval("#drive-no-thumbs", (c) => c.checked)) await done(1, "Avoid downloading thumbnails starts ticked");
+await fresh.check("#drive-no-thumbs");
+await fresh.reload();
+const before = files.map((f) => asked[f.id].reads);
+await fresh.click("#load-main");
+await fresh.waitForSelector("#drive-list .item");
+if (!(await fresh.$eval("#drive-no-thumbs", (c) => c.checked))) await done(1, "Avoid downloading thumbnails was not remembered");
+await new Promise((ok) => setTimeout(ok, 1000));
+if (files.some((f, k) => asked[f.id].reads !== before[k]) || (await fresh.$$("#drive-list .item .pic img")).length) await done(1, "a thumbnail was downloaded while avoided");
+console.log("avoiding thumbnails is remembered and downloads none");
 await done(0);
