@@ -28,15 +28,15 @@ def test_metrics_are_current():
     assert d['presets'] == fm.PRESETS, f'the presets changed: {REGENERATE}'
     assert sorted(d['finders']) == sorted(interactive.FINDERS), f'the page offers other finders: {REGENERATE}'
     for f, per in d['finders'].items():
-        assert sorted(per) == sorted(fm.PRESETS)
-        for p, r in per.items():
+        assert sorted(per['filtered']) == sorted(fm.PRESETS)
+        for p, r in per['filtered'].items():
             assert r['values'] == fm.preset_values(f, p), f'{f} {p}: the filter values changed: {REGENERATE}'
 
 
 def test_counts_cover_the_labels():
     d = doc(); real = sum(im['real'] for im in d['images'])
     for per in d['finders'].values():
-        for r in per.values():
+        for r in [per['finder'], *per['filtered'].values()]:
             assert r['tp'] + r['fn'] == real
             assert r['precision'] == round(r['tp'] / max(1, r['tp'] + r['fp']), 4)
             assert r['recall'] == round(r['tp'] / real, 4)
@@ -59,5 +59,12 @@ def test_precise_is_stricter_and_sensitive_looser_in_every_filter():
 
 
 def test_recall_falls_from_sensitive_to_precise():
-    for f, per in doc()['finders'].items():
+    for f, d in doc()['finders'].items():
+        per = d['filtered']
         assert per['sensitive']['recall'] >= per['balanced']['recall'] >= per['precise']['recall'], f
+
+
+def test_filters_only_remove():
+    """A filter can only reject what the finder proposed, so no preset finds a real spot the finder did not."""
+    for f, d in doc()['finders'].items():
+        assert all(r['tp'] <= d['finder']['tp'] for r in d['filtered'].values()), f
