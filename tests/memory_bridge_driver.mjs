@@ -27,7 +27,7 @@ class Session:
     def __init__(self, path):
         with open(path, 'rb') as f:
             self.size = len(f.read())
-        self.caspr, self.um = Channel(), 0.17
+        self.caspr, self.um, self.info = Channel(), 0.17, [["Pixel", "0.17 µm"]]
     def images(self):
         return bytes(4 * N * N)
     def detect(self, finder, overrides):

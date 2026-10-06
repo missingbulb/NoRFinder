@@ -152,7 +152,7 @@ function onWorker(m) {
     status("Ready. Load an image.");
     if (st.queued) { const q = st.queued; st.queued = null; send(q.name, q.bytes); }
   } else if (m.type === "opened") {
-    st.H = m.H; st.W = m.W; st.um = m.um; const n = m.H * m.W;
+    st.H = m.H; st.W = m.W; st.um = m.um; fileInfo(m.info); const n = m.H * m.W;
     st.img = { r: m.images.subarray(0, n), g: m.images.subarray(n, 2 * n), b: m.images.subarray(2 * n, 3 * n) };
     st.plain = null; st.peeked = false; drawBase(); $("#empty").hidden = true; $("#stage").hidden = false; $("#thumb-wrap").hidden = false;
     setZoom(st.zoom);
@@ -187,11 +187,19 @@ function refilter() {
 }
 
 // ---------- loading ----------
+// what the file says about the image ([label, text] rows from naive_nor.file_info); null clears it
+function fileInfo(rows) {
+  const box = $("#file-info"), item = (tag, text, cls) => Object.assign(document.createElement(tag), { textContent: text, className: cls || "" });
+  box.replaceChildren(...(rows || []).flatMap(([k, v]) => [item("dt", k), item("dd", v)]));
+  if (rows && !rows.some(([k]) => k === "Microscope")) box.append(item("dd", "No microscope or acquisition details in the file.", "dim none"));
+  box.hidden = !rows;
+}
+
 // source: where the image came from, {kind: "local"} or {kind: "drive", id}
 async function openBytes(name, bytes, source) {
   st.fileName = name; st.source = source; st.missing = readJSON(MISSING + name, []).map(([x, y]) => ({ x, y })); st.meta = null; st.lastRun = null; st.cands = []; st.order = []; st.sel = null; st.ring = null; st.crops = new Map();
   st.sha = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map((b) => b.toString(16).padStart(2, "0")).join("");
-  $("#file-name").textContent = name; $("#file-name").classList.remove("dim"); statusBar();
+  $("#file-name").textContent = name; $("#file-name").classList.remove("dim"); fileInfo(null); statusBar();
   $("#overlay").innerHTML = ""; $("#list").replaceChildren(); $("#summary").textContent = "No candidates yet.";
   $("#switch").disabled = true; $("#sb-counts").textContent = ""; downloads(false); renderSelected();
   if (st.ready) return send(name, bytes);

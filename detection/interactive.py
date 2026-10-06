@@ -99,6 +99,7 @@ def reasons():
 class Session:
     def __init__(self, path):
         self.caspr, self.nav, self.um, dapi = nn_.load(path)
+        self.info = nn_.file_info(path)
         self.bm = nn_.blue_mask(dapi)
         self.dapi = dapi
         self.cands, self.P, self.finder = [], {}, None
