@@ -25,6 +25,7 @@ import pytest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'detection'))
+import finder_metrics
 import ground_truth
 import interactive
 import nor_lab
@@ -46,6 +47,7 @@ def write_baseline(base):
     with open(BASELINE, 'w') as f:
         json.dump(base, f, indent=1, sort_keys=True)
         f.write('\n')
+    finder_metrics.write()   # measured against this baseline (R11)
 
 
 @pytest.fixture(scope='module')
