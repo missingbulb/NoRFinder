@@ -385,3 +385,15 @@ Set by the owner on 2026-10-03.
   (`ground_truth.corpus()`).
 - **A missing mark is a real NoR** found when a pass lies within its radius, and proposed when any
   candidate does.
+
+## R11 — Every finder's precision and recall are on record, per filter preset
+
+Set by the owner on 2026-10-06. [`detection/lab/finder_metrics.json`](../detection/lab/finder_metrics.json)
+holds, for every finder the page offers and three filter presets (precise, balanced = the finder's
+own values, sensitive), the precision and recall summed over every ground-truth image (R10), run the
+way the page runs it. Precision counts labelled spots only: real spots passed over labelled spots
+passed. A preset moves every filter the same share of the way towards a fixed strict or loose end
+(`detection/finder_metrics.py`), the same for every finder. The file is rewritten whenever the
+quality baseline (R9) is, and `tests/test_finder_metrics.py` fails when it was measured against
+another baseline, another ground truth or other presets. The numbers are only as right as the labels
+behind them (R9).

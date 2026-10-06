@@ -122,3 +122,28 @@ which the finders import 64), slide 128, tl detect 208 (its temporaries; wasm me
 |---|---|---|---|---|
 | 09-29 | install with `unpackArchive` (only the imported wheels, native modules loaded on import) instead of `loadPackage` | tl 955 → 852 MB, rf 962 → 845 MB; ready 20 → 15 s | identical, all five finders (`mem_breakdown.mjs` hash; same passes in Chromium) | kept (Ariel 09-29) |
 | 10-06 | download the packages while Python downloads and starts, at low fetch priority so Python comes first (`boot_live.mjs`, fair-shared simulated link) | unchanged; ready 26.8 → 24.5 s at 20 Mbit, 16.4 → 15.5 s at 50 Mbit, ~11 → ~10.5 s from cache | identical (same wheel bytes, same checksums) | kept |
+
+## 5. Filters across finders, and filter presets (2026-10-06, Ariel: items 11 and 12)
+
+Question (Ariel): are the filter values optimized per finder, or one suggested set? Every finder uses
+the same filters (`nor3.CHECKS`, the nucleus rule, one pixel per NoR); the values come from one base
+set (`nor3.P`/`P3`) with small per-finder edits, none from a per-finder search: tl and rf take green
+balance 0.25 (others 0.33), rf takes min_opposite 110, and walk and blobs predate the three line and
+solidity limits (max_off_u, max_axis_dev, min_solid), so those are off for them. Measured the way the
+page runs (`finder_metrics.py transfer`; F1, tp/fp on the 72 real / 93 not labels):
+
+| filter values of ↓ / finder → | tl | rf | fill | walk | blobs |
+|---|---|---|---|---|---|
+| tl's | **0.746** 47/7 | 0.754 49/9 | 0.752 47/6 | 0.655 39/8 | 0.628 38/11 |
+| own | 0.746 47/7 | 0.744 48/9 | 0.717 43/5 | 0.643 37/6 | 0.615 36/9 |
+
+Verdict: **the filter values are not finder-specific.** tl's set is as good as or better than each
+finder's own on every finder (differences of 1-4 spots, within noise), so one set serves all five.
+The page still opens each finder on its own values; making tl's the common default is an R9 change
+(it moves spots) left for Ariel.
+
+| id | attempt | result | verdict |
+|---|---|---|---|
+| T1 | Fit every filter value per finder by coordinate search on F1 over the labels | in sample +0.06..0.10 F1 (tl 0.746 → 0.806, all moving the same way: green balance 0.1, min_snr 2-3, min_solid 0.9) | **dropped**: on 2-fold held-out labels (12 folds) the gain vanishes for tl (-0.018) and rf (+0.011); only walk gains reliably (+0.061, 12/12 folds), from the line and solidity limits it lacks. 72 real spots are too few to fit 10 values |
+| T2 | One shared set per goal, fitted on mean F0.5 (precise) and F2 (sensitive) over all finders | in sample P up and R up together | **dropped**: held out, "precise" raised precision in 40% of folds and cost 0.056 recall; "sensitive" +0.011 recall. Fitting on ~7 false passes says nothing |
+| T3 | Presets by hand: every filter 40% of the way from the finder's own value towards a fixed strict (or loose) end, same share for all finders | a clean trade-off on every finder: tl P 0.92 R 0.49 / 0.87 0.65 / 0.85 0.69; recall falls monotonically with strictness by construction | **kept** as the R11 presets (`finder_metrics.py`). Precision rests on 3-13 false passes, so a 0.03 difference is noise |
