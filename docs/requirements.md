@@ -320,6 +320,10 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   borders show as a pulsing dashed line, and its inside is tinted a very transparent white only when
   areas overlap or nest. Clear mask, shown while a mask is on, removes it. The mask is remembered in
   the browser per file name (`tests/test_ground_truth_page.py`).
+- **NoR density** (set by the owner on 2026-10-06). The summary and the Summary CSV give the
+  finalists' density over the area counted (the mask, else the whole image) in NoRs per mm², from
+  the scale in the file, or per million square pixels when the file has none
+  (`tests/test_ground_truth_page.py`).
 - **Fixed numbers.** Each candidate keeps one number, top to bottom, for as long as a detection
   lasts. Filters never renumber candidates.
 - **Remembered marks.** Decisions and adjusted or approved lengths are saved in the browser per

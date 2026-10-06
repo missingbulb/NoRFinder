@@ -162,6 +162,12 @@ async function mask(page) {
   await check(await page.$$eval("#overlay .mask-marks .edge:not(.under)", (e) => e.length) === 1 && !(await page.$("#overlay .mask-marks .fill")),
     "one area is drawn as its border only");
   await check((await csvRows(page, "#dl-cands")).length === want.length, "the Candidates CSV holds only the candidates inside the mask");
+  // density: the finalists inside over the lassoed square's area, a quarter of the image, per mm²
+  const n = want.filter(([, p]) => p).length, sq = await page.evaluate(() => 0.25 * st.W * st.H * st.um * st.um * 1e-6);
+  const dens = (await csvRows(page, "#dl-summary")).find((r) => r.startsWith("finalists_per_mm2,"));
+  const got = dens && parseFloat(dens.split(",")[1]);
+  await check(got && Math.abs(got / (n / sq) - 1) < 0.05, `the Summary CSV gives the finalists' density inside the mask (${got} vs ${(n / sq).toFixed(0)} per mm²)`);
+  await check((await page.textContent("#summary .density")).includes(Math.round(got).toString()), `the summary shows the density: "${await page.textContent("#summary .density")}"`);
   // a second lasso inside the first cuts a hole
   await lasso(page, [[0.4, 0.4], [0.6, 0.4], [0.6, 0.6], [0.4, 0.6]]);
   want = await inside(page);

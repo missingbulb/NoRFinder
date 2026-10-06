@@ -873,8 +873,10 @@ function renderSummary() {
   const reasons = Object.entries(counts).sort((a, b) => b[1] - a[1])
     .map(([k, n]) => `<b class="lt" style="--c:${colour(k)}">${reasonOf(k).letter}</b> ${esc(reasonOf(k).title)}: ${n}`).join(" · ");
   const scale = st.um ? `Scale from the file: ${st.um.toFixed(4)} µm per pixel.` : "No scale in the file, so lengths are in pixels.";
+  const D = density(passes.length);
   $("#summary").classList.remove("dim");
-  $("#summary").innerHTML = `<div>${passes.length} passing NoRs${st.mask.length ? " inside the mask" : ""}. ${scale}</div><div class="tbl">${tbl}</div>
+  $("#summary").innerHTML = `<div>${passes.length} passing NoRs${st.mask.length ? " inside the mask" : ""}. ${scale}</div>
+    <div class="density">Density: <b>${fmt(D.value, 0)}</b> ${D.unit} (${passes.length} in ${fmt(D.area, 4)} ${D.areaUnit})</div><div class="tbl">${tbl}</div>
     <div class="hists">${rows.map(([l, s]) => hist(l, s)).join("")}</div><div class="reasons">Rejected: ${reasons || "none"}</div>`;
 }
 
@@ -903,8 +905,10 @@ $("#dl-cands").onclick = () => {
   save_(base() + "_candidates.csv", csv([head, ...rows]), "text/csv");
 };
 $("#dl-summary").onclick = () => {
+  const { passes } = counted(), D = density(passes.length), u = D.unit.replace("per ", "").replace("mm²", "mm2").replace(" px²", "_px2").replace(/ /g, "_");
   const rows = [["measurement", "n", "mean", "sd", "median", "min", "max"],
-    ...summaryRows(counted().passes).map(([l, s]) => [l, s.n, fmt(s.mean, 3), fmt(s.sd, 3), fmt(s.med, 3), fmt(s.min, 3), fmt(s.max, 3)]),
+    ...summaryRows(passes).map(([l, s]) => [l, s.n, fmt(s.mean, 3), fmt(s.sd, 3), fmt(s.med, 3), fmt(s.min, 3), fmt(s.max, 3)]),
+    [], ["density", "value"], [`finalists_per_${u}`, fmt(D.value, 3)], [`area_${u}`, fmt(D.area, 6)], ["finalists", passes.length],
     [], ["rejected", "count"], ...Object.entries(st.counts).map(([k, n]) => [`${reasonOf(k).letter} ${reasonOf(k).title}`, n]),
     ...(st.mask.length ? [[], ["counted", `inside a mask of ${st.mask.length} lassoed areas`]] : [])];
   save_(base() + "_summary.csv", csv(rows), "text/csv");
@@ -1013,6 +1017,26 @@ function drawMask() {
   if (complexMask()) g.append(el("path", { class: "fill", d: st.mask.map(d).join(""), "fill-rule": "evenodd" }));
   for (const p of st.mask) g.append(el("path", { class: "edge under", d: d(p) }), el("path", { class: "edge", d: d(p) }));
   svg.append(g);
+}
+// the area the summary counts over, in pixels: the whole image, or the mask's pixels (filled by exclusive or,
+// as inMask tests a point), counted once per mask
+function countedArea() {
+  if (!st.mask.length) return st.W * st.H;
+  const key = JSON.stringify(st.mask);
+  if (st.maskArea && st.maskArea.key === key) return st.maskArea.px;
+  const cv = new OffscreenCanvas(st.W, st.H), ctx = cv.getContext("2d"), path = new Path2D();
+  for (const p of st.mask) { path.moveTo(...p[0]); for (const q of p.slice(1)) path.lineTo(...q); path.closePath(); }
+  ctx.fill(path, "evenodd");
+  const a = ctx.getImageData(0, 0, st.W, st.H).data; let px = 0;
+  for (let i = 3; i < a.length; i += 4) if (a[i] >= 128) px++;
+  st.maskArea = { key, px };
+  return px;
+}
+// finalists per square millimetre (the unit the literature counts nodes in); per million pixels without a scale
+function density(n) {
+  const px = countedArea();
+  return st.um ? { value: px ? n / (px * st.um * st.um * 1e-6) : null, unit: "per mm²", area: px * st.um * st.um * 1e-6, areaUnit: "mm²" }
+    : { value: px ? n / (px * 1e-6) : null, unit: "per million px²", area: px * 1e-6, areaUnit: "million px²" };
 }
 function setMask(mask) {
   st.mask = mask; writeJSON(MASK + st.fileName, mask); drawMask(); renderSummary();
