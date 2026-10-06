@@ -360,3 +360,32 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #notice p { margin: 0; }
 #notice button { align-self: flex-end; }
 #ctx[hidden], #card-menu[hidden] { display: none; }
+
+/* the Ground truth button's colour: how finished the user's verdicts are */
+#dl-truth[data-state=done] { background: var(--yes); border-color: var(--yes); color: #fff; }
+#dl-truth[data-state=part] { background: var(--gt-part); border-color: var(--gt-part); color: #fff; }
+#dl-truth[data-state=todo] { background: var(--no); border-color: var(--no); color: #fff; }
+:root { --gt-part: #e8890c; }
+#gt-dlg { width: min(460px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
+  border: 1px solid var(--line); border-radius: var(--r-panel); box-shadow: 0 12px 40px #0006; }
+#gt-dlg::backdrop { background: #0007; }
+#gt-problems p { margin: 0 0 6px; }
+#gt-msg:empty { display: none; }
+#gt-dlg .grow { flex: 1; }
+
+/* the summary mask: its borders as a pulsing dashed line; its inside tinted only when areas overlap or nest */
+#summary-box .sec-head { margin-bottom: 10px; }
+.mask-btns { display: inline-flex; gap: 6px; }
+.mask-btns button[hidden] { display: none; }
+#overlay .mask-marks { pointer-events: none; }
+#overlay .mask-marks .edge { fill: none; stroke: #fff; stroke-width: 1.5; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke;
+  animation: mask-pulse 1.6s ease-in-out infinite alternate; }
+#overlay .mask-marks .edge.under { stroke: #000; stroke-dasharray: none; stroke-width: 2.5; stroke-opacity: .5; animation: none; }
+#overlay .mask-marks .fill { fill: #fff; fill-opacity: .07; stroke: none; }
+@keyframes mask-pulse { from { stroke-opacity: 1; } to { stroke-opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { #overlay .mask-marks .edge { animation-duration: 6s; } }
+#overlay .lasso-live { fill: #ffffff14; stroke: #fff; stroke-width: 1.5; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+#scroller.lassoing, #scroller.lassoing #overlay g[data-i] { cursor: crosshair; }
+#lasso-hint { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); z-index: 6; padding: 5px 14px; border-radius: 999px;
+  background: var(--shade); border: 1px solid var(--line); font-weight: 600; font-size: 13px; pointer-events: none; }
+#lasso-hint[hidden] { display: none; }

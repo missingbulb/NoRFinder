@@ -14,6 +14,7 @@ const BARS = "nor-bars-v1"; // {left, right}: side bar widths in pixels
 const SOURCE = "nor-load-source"; // "local" | "drive": where Load reads from
 const DRIVE_LINK = "nor-drive-link"; // the last Google Drive link pasted
 const MISSING = "nor-missing-v1:"; // + file name: [[x, y]], the NoRs the user marked as missed by the finder
+const MASK = "nor-mask-v1:"; // + file name: [[[x, y]...]...], the lassoed areas the summary counts, combined by exclusive or
 // a missing mark counts as found when a candidate lies within this distance: about half a NoR's
 // length on the lab's slide (median 26 px), so the mark need not be placed on the NoR's centre
 const MISSING_RADIUS = 12;
@@ -37,7 +38,7 @@ const st = {
   worker: null, H: 0, W: 0, um: null, img: null, meta: null, seg: null, cands: [],
   fails: [], alone: null, forced: new Map(), edits: new Map(), defaults: {}, values: {}, off: new Set(),
   about: {}, detectValues: {}, lastRun: null, filtersFor: null, seq: 0, inflight: false, pending: false,
-  zoom: 2, fileName: "", sha: "", source: null, missing: [], numbers: new Map(), order: [], times: {}, sel: null, tab: "pass",
+  zoom: 2, fileName: "", sha: "", source: null, missing: [], mask: [], lasso: null, numbers: new Map(), order: [], times: {}, sel: null, tab: "pass",
   show: { ...SHOW_DEFAULTS, ...readJSON(SHOW) }, opt: readOpts(), crops: new Map(),
 };
 
@@ -157,7 +158,7 @@ function onWorker(m) {
     st.plain = null; st.peeked = false; drawBase(); $("#empty").hidden = true; $("#stage").hidden = false; $("#thumb-wrap").hidden = false;
     setZoom(st.zoom);
     busy(false); st.times.open = m.secs; st.times.detect = st.times.filter = null; statusBar();
-    showView("image"); updateFind(); fold(true); loadShine(); drawMissing();
+    showView("image"); updateFind(); fold(true); loadShine(); drawMissing(); drawMask();
     status("Image loaded. Press Find Candidates.");
     if (st.source && st.source.kind === "local") notice(LOCAL_GT);
   } else if (m.type === "detected") {
@@ -189,7 +190,7 @@ function refilter() {
 // ---------- loading ----------
 // source: where the image came from, {kind: "local"} or {kind: "drive", id}
 async function openBytes(name, bytes, source) {
-  st.fileName = name; st.source = source; st.missing = readJSON(MISSING + name, []).map(([x, y]) => ({ x, y })); st.meta = null; st.lastRun = null; st.cands = []; st.order = []; st.sel = null; st.ring = null; st.crops = new Map();
+  st.fileName = name; st.source = source; st.missing = readJSON(MISSING + name, []).map(([x, y]) => ({ x, y })); st.mask = readJSON(MASK + name, []); endLasso(); st.meta = null; st.lastRun = null; st.cands = []; st.order = []; st.passes = st.rejects = null; st.sel = null; st.ring = null; st.crops = new Map();
   st.sha = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map((b) => b.toString(16).padStart(2, "0")).join("");
   $("#file-name").textContent = name; $("#file-name").classList.remove("dim"); statusBar();
   $("#overlay").innerHTML = ""; $("#list").replaceChildren(); $("#summary").textContent = "No candidates yet.";
@@ -381,7 +382,7 @@ function onDetected(meta, seg) {
     .sort((a, b) => a.cy - b.cy || a.cx - b.cx);
   st.numbers = new Map(st.order.map((c, k) => [c.i, k + 1]));
   loadMarks();
-  buildOverlay(); drawMissing();
+  buildOverlay(); drawMissing(); drawMask();
   $("#switch").disabled = false;
   refilter();
 }
@@ -434,7 +435,7 @@ function removeMissing(k) { st.missing.splice(k, 1); saveMissing(); drawMissing(
 function drawMissing() {
   const svg = $("#overlay"); svg.querySelector(".missing-marks")?.remove();
   $("#n-miss").textContent = st.missing.length;
-  $("#dl-truth").disabled = !st.img;
+  gtButton();
   if (!st.W) return;
   svg.setAttribute("viewBox", `0 0 ${st.W} ${st.H}`);
   const g = el("g", { class: "missing-marks" });
@@ -639,13 +640,13 @@ function updateFind() {
 
 // ---------- drawing ----------
 function render() {
-  const passes = [], rejects = [], counts = {};
+  const passes = [], rejects = [];
   for (const c of st.order) {
     const r = result(c.i), cls = r === null ? "pass" : "fail";
     c.el.setAttribute("class", cls + (st.forced.has(c.i) ? " forced" : ""));
     const let_ = c.text.lastChild;
     if (r === null) { let_.textContent = ""; passes.push(c); }
-    else { const R = reasonOf(r); let_.textContent = R.letter; let_.setAttribute("fill", `rgb(${R.color})`); rejects.push(c); counts[r] = (counts[r] || 0) + 1; }
+    else { const R = reasonOf(r); let_.textContent = R.letter; let_.setAttribute("fill", `rgb(${R.color})`); rejects.push(c); }
   }
   st.passes = passes; st.rejects = rejects;
   document.querySelectorAll(".filter").forEach((d) => {
@@ -655,7 +656,7 @@ function render() {
   $("#sb-counts").innerHTML = `<b>${st.order.length}</b> candidates · <b>${passes.length}</b> finalists`;
   $("#n-pass").textContent = passes.length; $("#n-fail").textContent = rejects.length;
   if (st.view === "items") renderList();
-  renderSummary(passes, counts); renderSelected(); placeRing(); downloads(true);
+  renderSummary(); renderSelected(); placeRing(); downloads(true);
 }
 
 // ---------- cards: one per candidate, in the item views and as the selection ----------
@@ -857,8 +858,15 @@ function hist(label, s) {
 function summaryRows(passes) {
   return MEASURES.map((_, k) => [measures(passes[0] || { m: {} })[k][0], stats(passes.map((c) => measures(c)[k][1]))]);
 }
-function renderSummary(passes, counts) {
-  const rows = summaryRows(passes);
+// what the summary and the CSVs count: the finalists and the rejected whose centre is inside the mask
+function counted() {
+  const passes = st.passes.filter(inMask), counts = {};
+  for (const c of st.rejects) if (inMask(c)) { const r = result(c.i); counts[r] = (counts[r] || 0) + 1; }
+  return { passes, counts };
+}
+function renderSummary() {
+  if (!st.passes) return;
+  const { passes, counts } = counted(), rows = summaryRows(passes);
   st.counts = counts;
   const tbl = `<table><tr><th>measurement</th><th>n</th><th>mean</th><th>SD</th><th>median</th><th>min</th><th>max</th></tr>` +
     rows.map(([l, s]) => `<tr><td>${l}</td><td>${s.n}</td><td>${fmt(s.mean)}</td><td>${fmt(s.sd)}</td><td>${fmt(s.med)}</td><td>${fmt(s.min)}</td><td>${fmt(s.max)}</td></tr>`).join("") + "</table>";
@@ -866,14 +874,14 @@ function renderSummary(passes, counts) {
     .map(([k, n]) => `<b class="lt" style="--c:${colour(k)}">${reasonOf(k).letter}</b> ${esc(reasonOf(k).title)}: ${n}`).join(" · ");
   const scale = st.um ? `Scale from the file: ${st.um.toFixed(4)} µm per pixel.` : "No scale in the file, so lengths are in pixels.";
   $("#summary").classList.remove("dim");
-  $("#summary").innerHTML = `<div>${passes.length} passing NoRs. ${scale}</div><div class="tbl">${tbl}</div>
+  $("#summary").innerHTML = `<div>${passes.length} passing NoRs${st.mask.length ? " inside the mask" : ""}. ${scale}</div><div class="tbl">${tbl}</div>
     <div class="hists">${rows.map(([l, s]) => hist(l, s)).join("")}</div><div class="reasons">Rejected: ${reasons || "none"}</div>`;
 }
 
 // ---------- downloads ----------
 function downloads(on) {
   for (const id of ["#dl-cands", "#dl-summary"]) $(id).disabled = !on || !st.meta;
-  $("#dl-truth").disabled = !st.img;
+  gtButton();
 }
 const base = () => st.fileName.replace(/\.[^.]+$/, "") || "nors";
 function save_(name, text, type) {
@@ -886,7 +894,7 @@ const csv = (rows) => rows.map((r) => r.map(csvCell).join(",")).join("\n");
 $("#dl-cands").onclick = () => {
   const u = st.um ? "um" : "px";
   const head = ["n", "x_px", "y_px", "status", "reason", "rejected_by", "decision", "lengths", ...MEASURES.map(([k, , s]) => (s ? `${k}_${u}` : k))];
-  const rows = st.order.map((c) => {
+  const rows = st.order.filter(inMask).map((c) => {
     const r = result(c.i), f = st.forced.get(c.i);
     return [st.numbers.get(c.i), fmt(c.cx, 1), fmt(c.cy, 1), r === null ? "finalist" : "rejected", r === null ? "" : reasonOf(r).title,
       whyAll(c).map((k) => reasonOf(k).letter).join(" "), { in: "approved", out: "rejected by you" }[f] || "", measured(c) || "",
@@ -896,8 +904,9 @@ $("#dl-cands").onclick = () => {
 };
 $("#dl-summary").onclick = () => {
   const rows = [["measurement", "n", "mean", "sd", "median", "min", "max"],
-    ...summaryRows(st.passes).map(([l, s]) => [l, s.n, fmt(s.mean, 3), fmt(s.sd, 3), fmt(s.med, 3), fmt(s.min, 3), fmt(s.max, 3)]),
-    [], ["rejected", "count"], ...Object.entries(st.counts).map(([k, n]) => [`${reasonOf(k).letter} ${reasonOf(k).title}`, n])];
+    ...summaryRows(counted().passes).map(([l, s]) => [l, s.n, fmt(s.mean, 3), fmt(s.sd, 3), fmt(s.med, 3), fmt(s.min, 3), fmt(s.max, 3)]),
+    [], ["rejected", "count"], ...Object.entries(st.counts).map(([k, n]) => [`${reasonOf(k).letter} ${reasonOf(k).title}`, n]),
+    ...(st.mask.length ? [[], ["counted", `inside a mask of ${st.mask.length} lassoed areas`]] : [])];
   save_(base() + "_summary.csv", csv(rows), "text/csv");
 };
 // What a person decided on this image, for scoring finders in the lab (detection/nor_lab.py reads it
@@ -931,16 +940,124 @@ function issueUrl(gt, file) {
   const q = new URLSearchParams({ labels: GT_LABEL, title: `Ground truth: ${gt.image.name}`, body });
   return `https://github.com/${REPO}/issues/new?${q}`;
 }
+// How finished the user's ground truth is: "done" when every finalist has a verdict, "part" when some
+// candidates have one but a finalist does not, "todo" when none has one yet; with what is missing, in a line each
+function gtState() {
+  const voted = st.forced.size, open = (st.passes || []).filter((c) => !st.forced.has(c.i)).length, problems = [];
+  if (!voted) problems.push("No candidate has your verdict yet.");
+  else if (open) problems.push(`${open} of ${st.passes.length} finalists have no verdict, so they are left out.`);
+  return { state: !voted ? "todo" : open ? "part" : "done", problems };
+}
+function gtButton() {
+  const b = $("#dl-truth"); b.disabled = !st.img;
+  const { state, problems } = gtState();
+  b.dataset.state = st.img ? state : "";
+  b.title = (problems.length ? problems.join(" ") : "Every finalist has your verdict.") + " Click to export or submit.";
+}
 $("#dl-truth").onclick = () => {
-  const gt = truth(), btn = $("#dl-truth");
-  if (!gt.labels.length) return notice("Nothing marked yet: vote on candidates with the thumbs, or right-click the image to mark a missing one.", btn);
-  const file = base() + "_ground_truth.json";
-  save_(file, JSON.stringify(gt, null, 1), "application/json");
-  if (gt.image.location.source !== "drive") return notice(LOCAL_GT, btn);
-  window.open(issueUrl(gt, file), "_blank", "noopener");
-  notice(`Downloaded ${file}. Attach it to the GitHub issue that just opened, then submit. ` +
-    "Only the candidates you marked (thumbs up or down) and your missing candidates are sent.", btn);
+  const gt = truth(), { problems } = gtState(), file = base() + "_ground_truth.json", local = gt.image.location.source !== "drive";
+  const lines = gt.labels.length ? problems.length ? problems : ["Every finalist has your verdict."]
+    : ["Nothing marked yet: vote on candidates with the thumbs, or right-click the image to mark a missing one."];
+  const nMiss = gt.labels.filter((L) => L.kind === "missing").length;
+  if (gt.labels.length && nMiss) lines.push(`${nMiss} missing candidate${nMiss > 1 ? "s" : ""} included.`);
+  if (st.mask.length) lines.push("The mask is not exported: the file holds what you marked inside and outside it.");
+  if (gt.labels.length && local) lines.push(LOCAL_GT);
+  $("#gt-problems").replaceChildren(...lines.map((t) => Object.assign(document.createElement("p"), { textContent: t })));
+  $("#gt-msg").textContent = "";
+  $("#gt-export").disabled = !gt.labels.length;
+  const issue = $("#gt-issue");
+  issue.disabled = !gt.labels.length || local; issue.title = local ? LOCAL_GT : "";
+  $("#gt-export").onclick = () => {
+    save_(file, JSON.stringify(gt, null, 1), "application/json");
+    $("#gt-msg").textContent = `Downloaded ${file}.` + (local ? "" : " Open the issue next and attach it there.");
+  };
+  issue.onclick = () => {
+    window.open(issueUrl(gt, file), "_blank", "noopener");
+    $("#gt-msg").textContent = `Attach ${file} to the GitHub issue that just opened, then submit.`;
+  };
+  $("#gt-dlg").showModal();
 };
+$("#gt-close").onclick = () => $("#gt-dlg").close();
+
+// ---------- the summary mask: areas lassoed on the image, combined by exclusive or ----------
+// a point is inside a polygon when a ray from it crosses the border an odd number of times
+function inPoly(poly, x, y) {
+  let k = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i], [xj, yj] = poly[j];
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) k = !k;
+  }
+  return k;
+}
+const inMask = (c) => !st.mask.length || st.mask.reduce((k, poly) => k !== inPoly(poly, c.cx, c.cy), false);
+function crosses([a, b], [c, d]) {
+  const side = (p, q, r) => Math.sign((q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]));
+  return side(a, b, c) !== side(a, b, d) && side(c, d, a) !== side(c, d, b);
+}
+// whether any two areas overlap or one holds another: only then is the inside tinted, to show the holes
+function complexMask() {
+  const edges = (p) => p.map((q, i) => [q, p[(i + 1) % p.length]]);
+  for (let i = 0; i < st.mask.length; i++) for (let j = i + 1; j < st.mask.length; j++) {
+    const A = st.mask[i], B = st.mask[j];
+    if (inPoly(B, ...A[0]) || inPoly(A, ...B[0])) return true;
+    const eb = edges(B);
+    if (edges(A).some((e) => eb.some((f) => crosses(e, f)))) return true;
+  }
+  return false;
+}
+function drawMask() {
+  const svg = $("#overlay"); svg.querySelector(".mask-marks")?.remove();
+  $("#mask-add").disabled = !st.img; $("#mask-clear").hidden = !st.mask.length;
+  if (!st.W || !st.mask.length) return;
+  const g = el("g", { class: "mask-marks" }), d = (p) => "M" + p.map((q) => q.join(" ")).join("L") + "Z";
+  if (complexMask()) g.append(el("path", { class: "fill", d: st.mask.map(d).join(""), "fill-rule": "evenodd" }));
+  for (const p of st.mask) g.append(el("path", { class: "edge under", d: d(p) }), el("path", { class: "edge", d: d(p) }));
+  svg.append(g);
+}
+function setMask(mask) {
+  st.mask = mask; writeJSON(MASK + st.fileName, mask); drawMask(); renderSummary();
+}
+// Add mask: the whole image in view, then a lasso drawn by dragging; a click or Esc draws nothing
+function startLasso() {
+  showView("image");
+  const sc = $("#scroller");
+  setZoom(Math.min(sc.clientWidth / st.W, sc.clientHeight / st.H));
+  sc.scrollTo(0, 0);
+  st.lasso = { pts: null }; sc.classList.add("lassoing"); $("#lasso-hint").hidden = false;
+}
+function endLasso() {
+  st.lasso = null; $("#scroller").classList.remove("lassoing"); $("#lasso-hint").hidden = true;
+  $("#overlay").querySelector(".lasso-live")?.remove();
+}
+$("#mask-add").onclick = startLasso;
+$("#mask-clear").onclick = () => setMask([]);
+{
+  const sc = $("#scroller");
+  const at = (e) => { const r = $("#base").getBoundingClientRect(); return [(e.clientX - r.left) / st.zoom, (e.clientY - r.top) / st.zoom]; };
+  sc.addEventListener("pointerdown", (e) => {
+    if (!st.lasso || e.button !== 0) return;
+    // no text selection or native drag may start under the lasso: either would cancel the pointer
+    e.preventDefault(); sc.setPointerCapture(e.pointerId);
+    st.lasso.pts = [at(e)]; st.lasso.line = el("polyline", { class: "lasso-live" }); $("#overlay").append(st.lasso.line);
+  });
+  sc.addEventListener("pointermove", (e) => {
+    const L = st.lasso; if (!L || !L.pts) return;
+    const p = at(e), q = L.pts[L.pts.length - 1];
+    if (Math.hypot(p[0] - q[0], p[1] - q[1]) * st.zoom < 3) return;
+    L.pts.push(p.map((v) => Math.round(v * 10) / 10));
+    L.line.setAttribute("points", L.pts.map((q) => q.join(",")).join(" "));
+  });
+  sc.addEventListener("pointerup", () => {
+    const L = st.lasso; if (!L || !L.pts) return;
+    const pts = L.pts.map(([x, y]) => [Math.min(Math.max(x, 0), st.W), Math.min(Math.max(y, 0), st.H)]);
+    const area = Math.abs(pts.reduce((a, [x, y], i) => { const [p, q] = pts[(i + 1) % pts.length]; return a + x * q - p * y; }, 0)) / 2;
+    endLasso();
+    // a lasso smaller than a NoR's footprint is a slip, not an area
+    if (pts.length >= 3 && area * st.zoom * st.zoom >= 100) setMask([...st.mask, pts]);
+  });
+  sc.addEventListener("pointercancel", () => { if (st.lasso) endLasso(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && st.lasso) endLasso(); });
+}
 
 // ---------- notices: a short message, at the top of the view or under the button it is about ----------
 const LOCAL_GT = "Ground truth cannot be sent from local files, only from Google Drive.";
@@ -971,7 +1088,7 @@ function candAt(e) {
 {
   const sc = $("#scroller"); let drag = null;
   sc.addEventListener("pointerdown", (e) => {
-    if (e.button !== 0 || !st.img) return;
+    if (e.button !== 0 || !st.img || st.lasso) return;
     drag = { x: e.clientX, y: e.clientY, l: sc.scrollLeft, t: sc.scrollTop, c: candAt(e), moved: false, id: e.pointerId };
   });
   sc.addEventListener("pointermove", (e) => {

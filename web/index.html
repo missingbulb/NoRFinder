@@ -109,6 +109,7 @@
     </div>
     <div id="busy" hidden><div id="scan-light"></div><span class="spin big"></span><div id="busy-text"></div><div id="busy-time"></div></div>
 
+    <div id="lasso-hint" hidden>Drag around the area to count · Esc cancels</div>
     <div id="image-view">
       <div id="scroller">
         <div id="empty">Load a three-channel ImageJ TIFF (Caspr green, Nav red, DAPI) or an RGB PNG, then press Find Candidates.<br>
@@ -130,15 +131,17 @@
       </div>
       <div id="selected" class="dim">Click a candidate on the image.</div>
     </section>
-    <section class="box">
-      <h2>Summary</h2>
+    <section class="box" id="summary-box">
+      <div class="sec-head"><h2>Summary</h2>
+        <span class="mask-btns"><button id="mask-add" disabled title="Lasso the part of the image the summary and the CSVs should count; lasso again to add or cut out an area">Add mask</button><button id="mask-clear" hidden>Clear mask</button></span>
+      </div>
       <div id="summary" class="dim">No candidates yet.</div>
     </section>
     <section class="box" id="downloads">
       <h2>Downloads</h2>
       <button id="dl-cands" disabled>Candidates CSV</button>
       <button id="dl-summary" disabled>Summary CSV</button>
-      <button id="dl-truth" disabled title="The candidates you voted on and your missing candidates, as a file; for an image from Google Drive, also opens a GitHub issue to submit it to the repo's ground truth">Ground truth</button>
+      <button id="dl-truth" disabled>Ground truth</button>
     </section>
   </aside>
 </div>
@@ -161,6 +164,14 @@
     <div id="drive-list"></div>
     <div class="drive-row end"><span id="drive-msg" class="hint"></span><button value="close">Close</button></div>
   </form>
+</dialog>
+<dialog id="gt-dlg">
+  <h2>Ground truth</h2>
+  <div id="gt-problems"></div>
+  <p id="gt-msg" class="hint"></p>
+  <div class="drive-row end">
+    <span class="grow"></span><button id="gt-export" class="primary" type="button">Export file</button><button id="gt-issue" type="button">Open new GitHub issue</button><button id="gt-close" type="button">Close</button>
+  </div>
 </dialog>
 <div id="tip" hidden></div>
 <div id="ctx" class="pop" role="menu" hidden><button class="item" role="menuitem" type="button"></button></div>

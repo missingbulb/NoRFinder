@@ -300,13 +300,26 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   down (label 0), and every missing candidate (label 1, with its radius). A candidate nobody voted
   on is ambiguous and left out. The lab's `nor_lab.py --labels` reads it: the labels score
   detection and the checked lengths score measurement (`tests/test_ground_truth.py`).
-- **Submitting ground truth.** For an image from Google Drive, the Ground truth button downloads the
-  file and opens a new GitHub issue on the repo, labelled `new-ground-truth` and naming the image
-  (name, SHA-256, Drive link, finder, what was marked); a note at the button says to attach the
-  file to that issue and that only explicitly marked candidates are sent. An image from the
-  computer cannot be submitted: right after it loads, the page says so in one line (at most 15
-  words), and the button only downloads. With nothing marked the button says how to mark
+- **Submitting ground truth** (changed by the owner on 2026-10-06). The Ground truth button's colour
+  says how finished the work is: green when every finalist has the user's verdict, orange when some
+  candidates have one but a finalist does not, and red when no candidate has one yet or a candidate
+  the user added still waits for a verdict. Pressing it opens a popup that names what is missing in
+  a line or two (and, while a summary mask is on, that the mask is not exported and the file holds
+  the marked candidates inside and outside it), with an Export file button that downloads the file
+  and beside it an Open new GitHub issue button: a new issue on the repo, labelled
+  `new-ground-truth` and naming the image (name, SHA-256, Drive link, finder, what was marked),
+  whose body says to attach the file. An image from the computer cannot be submitted: right after
+  it loads, the page says so in one line (at most 15 words), and in the popup the issue button is
+  off and says why. With nothing marked the popup says how to mark and exports nothing
   (`tests/test_ground_truth_page.py`). What happens to a submission is R10.
+- **A summary mask** (set by the owner on 2026-10-06). Add mask, at the top of the Summary box,
+  switches to the image view, zooms out to show the whole image and lets the user lasso an area by
+  dragging (Esc cancels). The summary then counts only the candidates whose centre is inside the
+  mask, and the Candidates and Summary CSVs hold only those; the ground truth ignores the mask.
+  Lassoing again adds an area by exclusive or, so a lasso inside another cuts a hole. The mask's
+  borders show as a pulsing dashed line, and its inside is tinted a very transparent white only when
+  areas overlap or nest. Clear mask, shown while a mask is on, removes it. The mask is remembered in
+  the browser per file name (`tests/test_ground_truth_page.py`).
 - **Fixed numbers.** Each candidate keeps one number, top to bottom, for as long as a detection
   lasts. Filters never renumber candidates.
 - **Remembered marks.** Decisions and adjusted or approved lengths are saved in the browser per
