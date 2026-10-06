@@ -104,7 +104,8 @@ async function markAndVote(page) {
   // a thumbs up on the first candidate, a thumbs down on the third; the second stays undecided
   await page.click("#sel-next"); await page.click("#selected .verdict .up");
   await page.click("#sel-next"); await page.click("#sel-next"); await page.click("#selected .verdict .down");
-  await page.click("#switch"); await page.click("#tab-miss");
+  const idle = () => page.waitForFunction(() => !document.querySelector("button.working"));
+  await page.click("#switch"); await idle(); await page.click("#tab-miss"); await idle();
   await check(await page.$$eval("#list .card.missing", (c) => c.length) === 1, "the Missing view lists the mark");
   await check(await page.isHidden("#card-menu"), "the Missing view has no crop options");
   return page.evaluate(() => ({ undecided: st.order.length - st.forced.size }));

@@ -71,7 +71,7 @@ for (const width of [1000, 1600]) {
   await page.click("#sel-next");
   const views = [["image", async () => {}], ["finalists", () => page.click("#switch")], ["rejected", () => page.click("#tab-fail")]];
   for (const [view, go] of views) {
-    await go();
+    await go(); await page.waitForFunction(() => !document.querySelector("button.working"));
     const got = await measure(page);
     const cards = got.filter((g) => g.where === "list").length, selected = got.filter((g) => g.where === "selected").length;
     console.log(`${width}px ${view}: ${got.length} images, ${cards} cards, ${selected} selected`);

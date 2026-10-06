@@ -162,6 +162,19 @@
     <div class="drive-row end"><span id="drive-msg" class="hint"></span><button value="close">Close</button></div>
   </form>
 </dialog>
+<dialog id="memory-dlg" aria-labelledby="memory-title">
+  <form method="dialog">
+    <h2 id="memory-title">Please free some memory</h2>
+    <p id="memory-why"></p>
+    <ul class="tips">
+      <li>Close the tabs and apps you are not using now.</li>
+      <li><b>Tab groups</b> keep tabs for later: put them in a group, then close the group. The browser saves it, ready to reopen.</li>
+      <li><kbd id="memory-mod">Ctrl</kbd> <kbd>Shift</kbd> <kbd>T</kbd> reopens the last tab you closed. Press it again to go further back, whole windows too.</li>
+      <li><b>Memory Saver</b> in Chrome (Settings, Performance) and sleeping tabs in Edge rest the tabs you are not looking at.</li>
+    </ul>
+    <div class="drive-row end"><label id="memory-never"><input type="checkbox" id="memory-off"> Don't show this again</label><button value="ok" class="primary" autofocus>OK</button></div>
+  </form>
+</dialog>
 <div id="tip" hidden></div>
 <div id="ctx" class="pop" role="menu" hidden><button class="item" role="menuitem" type="button"></button></div>
 <div id="notice" role="alertdialog" aria-labelledby="notice-text" hidden><p id="notice-text"></p><button id="notice-ok" class="primary" type="button">OK</button></div>
