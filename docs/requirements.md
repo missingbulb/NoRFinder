@@ -319,8 +319,10 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   the last link pasted, or else on the lab's folder (the repository variable
   `DRIVE_DEFAULT_FOLDER`), and lists a folder link at once.
   Nothing read from Drive is cached.
-- **No waiting to start.** Python loads in the background while the user picks an image, which
-  opens as soon as Python is ready. Until an image is loaded, Load shines, and the finder and
+- **No waiting to start.** Python loads in the background from the moment the page opens, while the
+  user picks an image, which opens as soon as Python is ready. Its packages download while Python
+  itself starts, and the status bar names each stage (downloading, with the megabytes so far;
+  installing; loading the finders; ready). Until an image is loaded, Load shines, and the finder and
   filter boxes are folded (their titles open them).
 - **Visible waiting.** While an image waits for Python, the page shows a spinner and the elapsed
   time; while a finder runs, a photocopier's light sweeps back and forth over the image, with what
