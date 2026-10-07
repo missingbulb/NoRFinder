@@ -50,7 +50,7 @@ const st = {
   worker: null, H: 0, W: 0, um: null, img: null, meta: null, seg: null, cands: [],
   fails: [], alone: null, forced: new Map(), edits: new Map(), defaults: {}, values: {}, off: new Set(),
   about: {}, detectValues: {}, lastRun: null, filtersFor: null, seq: 0, inflight: false, pending: false,
-  zoom: 2, fileName: "", sha: "", source: null, added: [], mask: [], lasso: null, numbers: new Map(), order: [], times: {}, sel: null, tab: "pass",
+  zoom: 2, fileName: "", sha: "", source: null, added: [], mask: [], lasso: null, numbers: new Map(), order: [], heap: null, sel: null, tab: "pass",
   show: { ...SHOW_DEFAULTS, ...readJSON(SHOW) }, opt: readOpts(), crops: new Map(),
 };
 
@@ -158,15 +158,18 @@ function busy(on, text, look) {
   $("#busy-text").textContent = text || $("#status").textContent; $("#busy-time").textContent = "";
   st.busyTimer = setInterval(() => { $("#busy-time").textContent = ((Date.now() - st.busySince) / 1000).toFixed(0) + " s"; }, 500);
 }
+// the memory the tab holds: Python's (the bulk, and it never shrinks) and, in Chrome and Edge, the page's own
+// scripts; the browser's own share and the compiled code are not readable from a page
 function statusBar() {
-  const t = st.times, parts = [];
-  if (t.load != null) parts.push(`Python ${t.load.toFixed(0)} s`);
-  if (t.open != null) parts.push(`image ${t.open.toFixed(1)} s`);
-  if (t.detect != null) parts.push(`finding ${t.detect.toFixed(1)} s`);
-  if (t.filter != null) parts.push(`filters ${t.filter.toFixed(0)} ms`);
-  $("#sb-times").textContent = parts.join(" · ");
+  const js = performance.memory?.usedJSHeapSize, total = st.heap == null ? null : st.heap + (js || 0);
+  const gb = navigator.deviceMemory, el = $("#sb-memory");
+  el.textContent = total == null ? "" : `Memory Usage ${mbOf(total)} MB`;
+  el.classList.toggle("warn", !!gb && total > gb * 2 ** 30 / 4);
+  el.title = total == null ? "" : `Python ${mbOf(st.heap)} MB` + (js ? `, the page ${mbOf(js)} MB` : "") +
+    ". The browser and Python's compiled code hold a few hundred MB more, which a page cannot read." + (gb ? ` This computer has ${gb} GB in all.` : "");
   $("#sb-file").textContent = st.fileName || "No image";
 }
+const mbOf = (n) => Math.round(n / 2 ** 20);
 // ---------- buttons whose action takes a while: disabled, with a small spinner, until the action is done ----------
 // the worker's next message of a type, or its error; a refilter counts as done once none is queued behind it
 const waiting = { detected: [], opened: [], filtered: [] };
@@ -233,7 +236,8 @@ function memoryTip(ranOut) {
 $("#memory-off").onchange = () => writeJSON(MEMORY_TIP, $("#memory-off").checked);
 
 function onWorker(m) {
-  handle(m); settle(m);
+  if (m.heap != null) st.heap = m.heap;
+  handle(m); settle(m); statusBar();
 }
 function handle(m) {
   if (m.type === "progress") status(m.text);
@@ -250,7 +254,7 @@ function handle(m) {
       for (const o of sel.options) if (q && q.finders[o.value]) o.textContent += ` (${pr(best(q.finders[o.value].filtered))})`;
     });
     sel.disabled = false; st.ready = true; $("#spin").classList.remove("on");
-    st.about = m.about; st.times.load = m.secs; st.help = Object.values(m.about)[0].help;
+    st.about = m.about; st.help = Object.values(m.about)[0].help;
     buildDetect(); useFilters(sel.value); statusBar();
     status("Ready. Load an image.");
     if (st.queued) { const q = st.queued; st.queued = null; send(q.name, q.bytes); }
@@ -259,19 +263,19 @@ function handle(m) {
     st.img = { r: m.images.subarray(0, n), g: m.images.subarray(n, 2 * n), b: m.images.subarray(2 * n, 3 * n) };
     st.plain = null; st.peeked = false; drawBase(); $("#empty").hidden = true; $("#stage").hidden = false; $("#thumb-wrap").hidden = false;
     setZoom(st.zoom);
-    busy(false); st.times.open = m.secs; st.times.detect = st.times.filter = null; statusBar();
+    busy(false); statusBar();
     showView("image"); updateFind(); fold(true); loadShine(); drawAdded(); drawMask();
     status("Image loaded. Press Find Candidates.");
     if (st.source && st.source.kind === "local") notice(LOCAL_GT);
     if (st.source && st.source.kind === "drive") saveThumb(st.source.id);
   } else if (m.type === "detected") {
     busy(false);
-    st.times.detect = m.secs; st.lastRun = st.running; st.running = null;
+    st.lastRun = st.running; st.running = null;
     onDetected(m.meta, m.seg); statusBar(); updateFind();
     status(m.meta.exact_refilter ? "Done." : "This finder picks between alternatives using the filters, so after a filter change press Find Candidates again for its exact result.");
   } else if (m.type === "filtered") {
     st.inflight = false;
-    if (m.seq === st.seq) { st.fails = m.fails; st.alone = m.alone; st.times.filter = m.ms; statusBar(); render(); }
+    if (m.seq === st.seq) { st.fails = m.fails; st.alone = m.alone; statusBar(); render(); }
     if (st.pending) { st.pending = false; refilter(); }
   }
 }
