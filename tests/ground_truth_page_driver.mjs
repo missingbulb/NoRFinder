@@ -149,7 +149,7 @@ async function markAndVote(page) {
   await page.evaluate(() => decide(st.order[0].i, "approve"));
   const waiting = await page.$eval("#dl-truth", (b) => ({ state: b.dataset.state, why: b.title }));
   await page.evaluate(() => decide(st.order[0].i, null));
-  await check(waiting.state === "todo" && /you added still needs your verdict/.test(waiting.why), `an added NoR without a verdict keeps the button red: "${waiting.why}"`);
+  await check(waiting.state === "todo" && /Approve or reject the 1 NoR you added/.test(waiting.why), `an added NoR without a verdict keeps the button red: "${waiting.why}"`);
   await page.click("#selected .verdict .up");
   await check(await page.$$eval("#overlay .added .glow", (c) => c.length) === 0, "approving it stops the glow");
   // a thumbs up on the first candidate, a thumbs down on the third; the second stays undecided
@@ -176,7 +176,12 @@ async function popup(page) {
   await check(await page.isVisible("#gt-dlg"), "the Ground truth button opens its popup");
   // a checklist of every issue, the resolved ones crossed out: what is still open
   const items = await page.$$eval("#gt-problems li", (li) => li.map((l) => ({ ok: l.classList.contains("ok"), struck: getComputedStyle(l.querySelector("span")).textDecorationLine, text: l.textContent })));
-  await check(items.length === 5 && items.every((t) => (t.struck === "line-through") === t.ok), `the popup lists every issue, crossing out the resolved ones (${items.filter((t) => t.ok).length} of ${items.length})`);
+  const has = await page.evaluate(() => ({ added: st.added.length > 0, mask: st.mask.length > 0 }));
+  await check(items.length === 3 + has.added + has.mask && items.every((t) => (t.struck === "line-through") === t.ok),
+    `the popup lists every issue that applies, crossing out the resolved ones (${items.filter((t) => t.ok).length} of ${items.length})`);
+  const line = (re) => items.find((t) => re.test(t.text));
+  await check(!!line(/you added/) === has.added && !!line(/mask/) === has.mask && (!has.mask || !line(/mask/).ok),
+    `the added NoRs and the mask are listed only when there are some, and the mask never as done (${items.map((t) => t.text).join(" | ")})`);
   return items.filter((t) => !t.ok).map((t) => t.text).join(" | ");
 }
 async function download(page) {
@@ -244,12 +249,12 @@ async function mask(page) {
   await page.click("#find");
   await page.waitForFunction(() => st.alone && $("#busy").hidden);
   const none = await popup(page);
-  await check(/No candidate has your verdict/.test(none) && /thumbs/.test(await page.textContent("#gt-msg")) && await page.isDisabled("#gt-export"), `with nothing marked the popup says how to mark and exports nothing: "${none}"`);
+  await check(/Vote on at least one/.test(none) && /thumbs/.test(await page.textContent("#gt-msg")) && await page.isDisabled("#gt-export"), `with nothing marked the popup says how to mark and exports nothing: "${none}"`);
   await page.click("#gt-close");
   const { undecided } = await markAndVote(page);
   await mask(page);
   const { said, gt } = await download(page);
-  await check(/finalists have no verdict/.test(said), `the popup names the finalists left without a verdict: "${said}"`);
+  await check(/have no vote/.test(said), `the popup names the finalists left without a verdict: "${said}"`);
   const kinds = gt.labels.map((L) => (L.kind === "missing" ? "missing" : L.decision)).sort().join(",");
   await check(gt.format === "norfinder-ground-truth/2" && kinds === "approved,missing,rejected" && undecided > 0,
     `the file holds only the voted candidates and the mark, inside and outside the mask (${kinds}; ${undecided} undecided left out)`);

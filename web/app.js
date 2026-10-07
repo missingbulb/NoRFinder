@@ -1195,13 +1195,14 @@ function gtState() {
   const waiting = st.added.filter((a) => !a.verdict).length, voted = st.forced.size + st.added.length - waiting;
   const finalists = (st.passes || []).filter((c) => !c.added), open = finalists.filter((c) => !verdict(c)).length;
   const local = !st.source || st.source.kind !== "drive", s = (n) => (n === 1 ? "" : "s");
+  // instructions to the user, crossed out once done; the added NoRs and the mask show only when there are any
   const items = [
-    { level: "error", grade: true, ok: !waiting, text: waiting ? `${waiting} NoR${s(waiting)} you added still need${waiting === 1 ? "s" : ""} your verdict` : "NoRs you added still need your verdict" },
-    { level: "error", grade: true, ok: voted > 0, text: "No candidate has your verdict yet" },
-    { level: "warn", grade: true, ok: voted > 0 && !open, text: open ? `${open} of ${finalists.length} finalists have no verdict and are left out` : "Finalists without a verdict are left out" },
-    { level: "warn", ok: !st.mask.length, text: "The mask is not exported; the file holds your marks inside and outside it" },
-    { level: "warn", ok: !local, text: "A local image's ground truth can only be exported, not sent as an issue" },
-  ];
+    st.added.length && { level: "error", grade: true, ok: !waiting, text: waiting ? `Approve or reject the ${waiting} NoR${s(waiting)} you added` : "Approve or reject the NoRs you added" },
+    { level: "error", grade: true, ok: voted > 0, text: "Vote on at least one candidate" },
+    { level: "warn", grade: true, ok: voted > 0 && !open, text: open ? `Vote on every finalist: ${open} of ${finalists.length} have no vote and won't be exported` : "Vote on every finalist" },
+    st.mask.length && { level: "warn", ok: false, text: "The mask is not exported: the file covers the whole image" },
+    { level: "warn", ok: !local, text: "Only images from Google Drive can be exported" },
+  ].filter(Boolean);
   return { state: !voted || waiting ? "todo" : open ? "part" : "done", items };
 }
 function gtButton() {
