@@ -26,11 +26,15 @@ def segment_tl(caspr, nav, bm, p=PT):
     lens = [max(sl[0].stop - sl[0].start, sl[1].stop - sl[1].start) / 2
             for i, sl in enumerate(ndi.find_objects(glab)) if sl is not None and gsz[i + 1] >= p['min_green']]
     unit = float(np.median(lens)); H, W = cn.shape
+    # Full-image arrays are dropped as soon as they are done with: the page's WebAssembly memory
+    # never shrinks, so the tab keeps this function's peak for good.
+    del glab, gsz
     cs_ = ndi.gaussian_filter(cn, p['smooth_u'] * unit); rs_ = ndi.gaussian_filter(rn, p['smooth_u'] * unit)
     # what each window sees: colour averaged over a small patch, in units of its own threshold,
     # and only if that colour wins there
     cw = ndi.gaussian_filter(cn, p['win_u'] * unit) / tg; rw = ndi.gaussian_filter(rn, p['win_u'] * unit) / tr
     gwin = np.where(cw * tg >= rw * tr, cw, 0); rwin = np.where(rw * tr > cw * tg, rw, 0)
+    del cw, rw
     gwin[bm] = 0; rwin[bm] = 0
     # s <= rwin, so only pixels whose red window reaches s_min can become a peak: score only those.
     # The rest keep best = 0, which changes no peak since their true score is below s_min anyway.
@@ -50,11 +54,16 @@ def segment_tl(caspr, nav, bm, p=PT):
                 mA = at(gwin + rwin, dy / 2, dx / 2); mB = at(gwin + rwin, -dy / 2, -dx / 2)
                 s = np.minimum(s, np.minimum(mA, mB) / p['dip'])
             up = s > best1; best1[up] = s[up]; bang1[up] = a; bd1[up] = d
-    best = np.zeros((H, W)); bang = np.zeros((H, W)); bd = np.zeros((H, W))
-    best[sy_, sx_] = best1; bang[sy_, sx_] = bang1; bd[sy_, sx_] = bd1
+    del gwin, rwin, sup
+    best = np.zeros((H, W)); best[sy_, sx_] = best1
     nms = max(3, 2 * int(round(p['nms_u'] * unit / 2)) + 1)
     peak = (best == ndi.maximum_filter(best, size=nms)) & (best >= p['s_min']) & valid_
-    sy, sx = np.nonzero(peak); order = np.argsort(-best[sy, sx])
+    del best
+    sy, sx = np.nonzero(peak); del peak
+    # a peak's score is at least s_min, so it was scored above: its angle and distance are read from
+    # the scored pixels (raster order, so sorted by y * W + x) instead of from full-image copies
+    at_peak = np.searchsorted(sy_.astype(np.int64) * W + sx_, sy.astype(np.int64) * W + sx)
+    order = np.argsort(-best1[at_peak])
     # fibre direction from the structure tensor, only for the 'along the fibre' check
     comb = nor3.FibreAngle(ndi.gaussian_filter(cs_ + rs_, p['smooth_u'] * unit), p['comb_u'] * unit)
     from skimage.segmentation import watershed
@@ -66,7 +75,7 @@ def segment_tl(caspr, nav, bm, p=PT):
         cy, cx = float(sy[k]), float(sx[k])
         if used[int(cy), int(cx)]:
             continue
-        a, d = bang[int(cy), int(cx)], bd[int(cy), int(cx)]
+        a, d = bang1[at_peak[k]], bd1[at_peak[k]]
         pad = int(math.ceil(d + 3 * unit)) + 2
         y0, y1 = max(0, int(cy) - pad), min(H, int(cy) + pad + 1); x0, x1 = max(0, int(cx) - pad), min(W, int(cx) + pad + 1)
         csw, rsw, vw = cs_[y0:y1, x0:x1], rs_[y0:y1, x0:x1], valid_[y0:y1, x0:x1]
@@ -89,7 +98,7 @@ def segment_tl(caspr, nav, bm, p=PT):
             continue
         used[y0:y1, x0:x1] |= rmask
         c = dict(cy=cy, cx=cx, box=(y0, x0), red=rmask, greens=[], fail=None, unit=unit, walk_ang=a,
-                 comb=float(comb[int(cy), int(cx)]), tl_score=float(best[int(cy), int(cx)]), tl_d_u=d / unit)
+                 comb=float(comb[int(cy), int(cx)]), tl_score=float(best1[at_peak[k]]), tl_d_u=d / unit)
         along = (yy_ + y0 - cy) * np.sin(a) + (xx_ + x0 - cx) * np.cos(a)
         gm = []
         for sg in (1, -1):

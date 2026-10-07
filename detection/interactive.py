@@ -122,6 +122,7 @@ class Session:
         candidate's segments are an h*w block at meta offset `off`, 1 = red, 2 and 3 = the greens."""
         fn, P = nor_lab.finders()[finder]
         self.P = dict(P, **(overrides or {})); self.finder = finder
+        self.cands = []   # the last run's candidates would otherwise be held through this run's peak
         bm = self.bm if finder in OWN_BLUE else np.zeros_like(self.bm)
         self.cands, info = fn(self.caspr, self.nav, bm, self.P)
         H, W = self.caspr.shape

@@ -56,12 +56,26 @@ the largest peak seen so far.
    - Output hash identical for all five finders (tl, rf, fill, walk, blobs).
    - The first download drops the packages never imported (matplotlib, fonttools, networkx,
      pywavelets, imageio, pytz, setuptools, micropip, ...), about 12 MB of the ~40 MB.
-2. **Lower the finders' peaks** (not measured in the browser). tl allocates 248 MB of temporaries
-   at its peak and keeps 12 MB; rf 157/9, fill 169/1, walk 73/7, blobs 59/9 (native tracemalloc).
+2. **Lower the finders' peaks** (partly done 2026-10-07). tl allocated 248 MB of temporaries
+   at its peak and kept 12 MB; rf 157/9, fill 169/1, walk 73/7, blobs 59/9 (native tracemalloc).
    Since the tab keeps the peak, freeing big intermediates sooner, working in place, or
    processing in strips lowers the tab's memory for good. Each change is checked the way the
-   perf ledger does it (`perf.py check`: bit-identical output). tl is the target, with up to
-   ~200 MB to win; this is the largest remaining item.
+   perf ledger does it (`perf.py check`: bit-identical output).
+   - Done: tl drops each full-image array after its last use and reads a peak's angle and
+     distance from the scored pixels instead of two full-image copies; `FibreAngle` builds its
+     three smoothed products one at a time. Native peaks: tl 248 → 129 MB, rf 157 → 142,
+     fill 169 → 143. In Chromium the WebAssembly memory after one Find goes tl 418 → 290 MB,
+     rf 348 → 290 (it is 168 MB after the slide opens). All five finders identical.
+   - Left: tl's peak is now the watershed (129) and `FibreAngle` (124) over ~95 MB of arrays the
+     candidate loop needs (cn, rn, cs_, rs_, the fibre-angle halves). `FibreAngle` could filter
+     only the rows it is asked for (~35 MB), but the watershed peak would then lead.
+
+   What a Find leaves behind (Ariel, 2026-10-07): Python holds 4 MB more than before it (the
+   candidates); the rest of the growth is WebAssembly memory that is free inside the tab but can
+   never be handed back to the browser. Repeated Finds do not grow it (`mem_growth_live.mjs`,
+   five rounds). The status bar's figure also counts the page's JavaScript heap, which climbs
+   between the browser's garbage collections and falls back after one: that is the small rise
+   seen on each run. Switching finders raises the figure to the largest peak seen so far.
 3. **Drop scikit-image** (estimated). The finders call only `watershed` and `reconstruction`
    (h-maxima) from it, plus `perimeter` and `threshold_otsu`. Replacing them with our own
    numpy/scipy code saves its 16 MB of files, its 16 loaded modules, and 9 MB of download,
