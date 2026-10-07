@@ -293,7 +293,7 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   corner that shows it on the image), then "Lengths adjusted" with a reset, and the rest.
   A rejected card names every filter that rejects it by itself, or says the user rejected it. Each
   view has its own Options menu (remembered per view) that sets the crop's context padding, turns
-  each crop so the NoR lies level, and shows or hides the NoR borders, the measurement bars, the
+  each crop so the NoR lies level (finalists only; the rejected are never turned), and shows or hides the NoR borders, the measurement bars, the
   lengths on the crop, the lengths on the card and the measurement adjusters. The finalists open with a
   4 px padding and everything on but the lengths on the card; the rejected open with a 10 px
   padding and only the NoR borders on. The selected card in the right bar uses the options of the

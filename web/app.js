@@ -59,7 +59,8 @@ function readJSON(key, fallback = {}) {
 }
 function readOpts() {
   const saved = readJSON(CARDS);
-  return { pass: { ...CARD_DEFAULTS.pass, ...saved.pass }, fail: { ...CARD_DEFAULTS.fail, ...saved.fail } };
+  // the rejected are never turned level, whatever an older page saved
+  return { pass: { ...CARD_DEFAULTS.pass, ...saved.pass }, fail: { ...CARD_DEFAULTS.fail, ...saved.fail, align: false } };
 }
 // the options a candidate's card is drawn with: those of the view it is listed in
 const optsOf = (c) => st.opt[result(c.i) === null ? "pass" : "fail"];
@@ -1485,6 +1486,7 @@ function applyShow() {
     for (const [id, k] of Object.entries(opts)) $("#" + id).checked = st.opt[st.tab][k];
     if (document.activeElement !== pad) pad.value = st.opt[st.tab].pad;
     pad.placeholder = CARD_DEFAULTS[st.tab].pad;
+    $("#opt-align").parentElement.hidden = st.tab === "fail";
     $("#card-menu summary").textContent = (st.tab === "pass" ? "Finalist" : "Rejected") + " options";
   };
   st.showOpts();

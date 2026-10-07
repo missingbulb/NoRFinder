@@ -78,6 +78,15 @@ for (const width of [1000, 1600]) {
     if (!selected) { console.error("no selected card drawn"); await done(1); }
     if (view !== "image" && !cards) { console.error(`no ${view} cards drawn`); await done(1); }
     seen += got.length;
+    // the rejected are never turned level, so their Options menu does not offer it
+    if (view !== "image") {
+      await page.click("#card-menu summary");
+      const shown = await page.isVisible("#opt-align");
+      if (process.env.SHOTS) await page.evaluate(() => { $("#notice").hidden = true; });
+      if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/${width}_${view}.png` });
+      await page.click("#card-menu summary");
+      if (shown !== (view === "finalists")) { console.error(`"align to horizon" ${shown ? "shown" : "missing"} in the ${view} options`); await done(1); }
+    }
     for (const g of got) if (g.skew > worst.skew) worst = { ...g, width, view };
   }
   await ctx.close();
