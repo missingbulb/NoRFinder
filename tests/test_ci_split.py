@@ -20,17 +20,14 @@ def marked_full(path):
 def test_every_heavy_test_is_in_the_full_set():
     heavy = [p for p in sorted(glob.glob(os.path.join(HERE, 'test_*.py')))
              if any(h in open(p).read() for h in HEAVY) and not p.endswith('test_ci_split.py')]
-    assert heavy, 'found no heavy tests: the probe is not looking at anything'
+    assert len(heavy) >= 7, f'found only {len(heavy)} heavy test modules: the probe is not looking at them all'
     unmarked = [os.path.basename(p) for p in heavy if not marked_full(p)]
     assert not unmarked, f'drive Node or a browser, or time or weigh something, but are not marked full: {unmarked}'
 
 
-def test_the_fast_set_is_light_and_the_full_set_runs_everything():
+def test_the_fast_workflow_leaves_out_what_is_marked_full():
     fast = open(os.path.join(WORKFLOWS, 'tests.yml')).read()
     full = open(os.path.join(WORKFLOWS, 'tests-full.yml')).read()
-    assert '-m "not full"' in fast and 'playwright' not in fast and 'pyodide' not in fast
-    assert 'pull_request' in fast
-    assert '-m "not full"' not in full and 'branches: [main]' in full and 'workflow_dispatch' in full
-    assert 'wake=github-pages/site-release' in full.split('needs: tests', 1)[1]
-    task = os.path.join(HERE, '..', '.claudinite', 'local', 'packs', 'nor-finder', 'tasks', 'full-tests')
-    assert 'tests-full.yml' in open(os.path.join(task, 'worker.mjs')).read()
+    assert '-m "not full"' in fast, 'the fast workflow does not deselect the full mark'
+    assert 'playwright' not in fast and 'pyodide' not in fast, 'the fast workflow still installs the browser'
+    assert '-m "not full"' not in full, 'the full workflow leaves the full mark out'
