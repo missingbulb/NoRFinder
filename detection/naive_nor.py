@@ -18,7 +18,7 @@ def load(path):
         with tifffile.TiffFile(path) as t:
             a = t.asarray().astype(np.float64)          # C,Y,X
             luts = (t.imagej_metadata or {}).get('LUTs')
-            res = t.pages[0].tags['XResolution'].value
+            um = um_per_px(t.pages[0])
         if not luts or a.ndim != 3 or len(a) != 3:
             raise ValueError('expected a 3-channel ImageJ TIFF with display colours (LUTs)')
         cols = []
@@ -30,11 +30,46 @@ def load(path):
         dapi = max((k for k in range(3) if k != g), key=lambda k: blob_area(a[k]))
         r = 3 - g - dapi
         print('display colours', cols, 'dapi ch', dapi, '-> caspr(green) ch', g, 'nav ch', r)
-        um = 1 / res[0] * res[1]
         return a[g], a[r], um, a[dapi]
     with Image.open(path) as f:
         im = np.asarray(f.convert('RGB')).astype(np.float64)
     return im[..., 1], im[..., 0], None, im[..., 2]
+
+def um_per_px(page):
+    res = page.tags.get('XResolution')
+    return 1 / res.value[0] * res.value[1] if res and res.value[0] else None
+
+
+def file_info(path):
+    """What the file says about the image, as [label, text] rows for the page; a fact the file lacks has no row.
+    The lab's TIFFs are ImageJ exports: they carry the scale and the series name, never the microscope."""
+    rows = []
+    if not path.lower().endswith(('.tif', '.tiff')):
+        with Image.open(path) as f:
+            return [['Field', f'{f.width} × {f.height} px'], ['Depth', f'8-bit {f.mode}']]
+    import tifffile
+    with tifffile.TiffFile(path) as t:
+        p, ij = t.pages[0], t.imagej_metadata or {}
+        H, W = p.shape[-2:]
+        um = um_per_px(p)
+        tag = lambda name: str(p.tags[name].value).strip() if name in p.tags else ''
+        rows.append(['Field', f'{W * um:.1f} × {H * um:.1f} µm ({W} × {H} px)' if um else f'{W} × {H} px'])
+        if um:
+            rows.append(['Pixel', f'{um:.4f} µm'])
+        rows.append(['Depth', f'{p.bitspersample}-bit'])
+        series = {l.split(' - ', 1)[1] for l in ij.get('Labels') or [] if ' - ' in l}
+        if len(series) == 1:
+            rows.append(['Series', series.pop()])
+        scope = ' '.join(v for v in (tag('Make'), tag('Model')) if v)
+        if scope:
+            rows.append(['Microscope', scope])
+        if tag('DateTime'):
+            rows.append(['Date', tag('DateTime')])
+        saved = tag('Software') or (f"ImageJ {ij['ImageJ']}" if ij.get('ImageJ') else '')
+        if saved:
+            rows.append(['Saved by', saved])
+    return rows
+
 
 def blob_area(c):
     """Mean area of the brightest 3% after a sigma-2 blur, in connected pieces: large for nuclei."""

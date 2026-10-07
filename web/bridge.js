@@ -2,7 +2,7 @@
 // runtime that has already imported interactive and json. The worker runs it; the tests drive it
 // outside a browser.
 // Messages in: open {name, bytes}, detect {finder, overrides}, refilter {spec, seq}, memory.
-// Messages out: progress {text}, opened {H, W, images}, detected {meta, seg}, filtered {fails, alone, seq},
+// Messages out: progress {text}, opened {H, W, um, info, images}, detected {meta, seg}, filtered {fails, alone, seq},
 // memory {used, heap, objects}.
 export function bridge(py, post) {
   const say = (text) => post({ type: "progress", text });
@@ -14,10 +14,10 @@ export function bridge(py, post) {
       py.FS.writeFile(path, new Uint8Array(m.bytes));
       py.globals.set("path", path);
       // the file is read once; kept, every image opened would stay in the worker's memory
-      try { py.runPython("S = interactive.Session(path); H, W = S.caspr.shape; um = S.um"); } finally { py.FS.unlink(path); }
+      try { py.runPython("S = interactive.Session(path); H, W = S.caspr.shape; um = S.um; info = json.dumps(S.info)"); } finally { py.FS.unlink(path); }
       // a handle to a Python object keeps it alive until it is destroyed, whatever JavaScript collects
       const im = py.runPython("S.images()"), images = im.toJs(); im.destroy();
-      post({ type: "opened", H: py.globals.get("H"), W: py.globals.get("W"), um: py.globals.get("um"),
+      post({ type: "opened", H: py.globals.get("H"), W: py.globals.get("W"), um: py.globals.get("um"), info: JSON.parse(py.globals.get("info")),
                 images, secs: (performance.now() - t0) / 1000 }, [images.buffer]);
     } else if (m.type === "detect") {
       say("Finding candidates (the slow part)…");
