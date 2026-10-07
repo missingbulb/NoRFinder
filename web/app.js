@@ -66,6 +66,40 @@ function save() {
   const values = {};
   for (const [k, v] of Object.entries(st.values)) if (v !== st.defaults[k]) values[k] = v;
   writeJSON(STORE, { values, off: [...st.off] });
+  markPreset();
+}
+
+// ---------- filter presets: each finder's precision and recall on the ground truth (detection/finder_metrics.py) ----------
+const PRESETS = { precise: "Precise", balanced: "Balanced", sensitive: "Sensitive" };
+const quality = fetch("../detection/lab/finder_metrics.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
+const two = (x) => x.toFixed(2).replace(/^0/, "");
+const pr = (r) => `P ${two(r.precision)} · R ${two(r.recall)}`;
+// the preset with the highest F1: the finder's best combined result
+const best = (per) => Object.values(per).reduce((a, r) => (f1(r) > f1(a) ? r : a));
+const f1 = (r) => (2 * r.tp) / Math.max(1, 2 * r.tp + r.fp + r.fn);
+async function buildPresets() {
+  const q = await quality, box = $("#presets"), per = q && q.finders[st.filtersFor] && q.finders[st.filtersFor].filtered;
+  box.hidden = !per; if (!per) return;
+  const real = q.images.reduce((a, im) => a + im.real, 0), not = q.images.reduce((a, im) => a + im.not_nor, 0);
+  box.title = `After the filters: precision (P) and recall (R) on ${real} real and ${not} not-NoR marked spots in ${q.images.length} image${q.images.length > 1 ? "s" : ""}`;
+  box.replaceChildren(...Object.entries(PRESETS).filter(([k]) => per[k]).map(([k, name]) => {
+    const b = document.createElement("button"); b.type = "button"; b.dataset.preset = k;
+    b.innerHTML = `${name}<small>${pr(per[k])}</small>`;
+    b.onclick = () => { st.values = { ...st.defaults, ...per[k].values }; st.off.clear(); buildFilters(); save(); refilter(); };
+    return b;
+  }));
+  markPreset();
+}
+// a preset is lit while the filters hold exactly its values
+function markPreset() {
+  quality.then((q) => {
+    const per = q && q.finders[st.filtersFor] && q.finders[st.filtersFor].filtered;
+    if (!per) return;
+    for (const b of $("#presets").children) {
+      const v = per[b.dataset.preset].values;
+      b.classList.toggle("on", !st.off.size && Object.keys(v).every((k) => st.values[k] === v[k]));
+    }
+  });
 }
 
 // ---------- the user's decisions and measurements: saved per file and finder, tied to each candidate's position ----------
@@ -152,6 +186,10 @@ function onWorker(m) {
   else if (m.type === "ready") {
     const sel = $("#finder");
     sel.innerHTML = Object.entries(m.finders).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+    quality.then((q) => {
+      if (q) sel.title = "Precision (P) and recall (R) of each finder with its best filter preset";
+      for (const o of sel.options) if (q && q.finders[o.value]) o.textContent += ` (${pr(best(q.finders[o.value].filtered))})`;
+    });
     sel.disabled = false; st.ready = true; $("#spin").classList.remove("on");
     st.about = m.about; st.times.load = m.secs; st.help = Object.values(m.about)[0].help;
     buildDetect(); useFilters(sel.value); statusBar();
@@ -671,7 +709,7 @@ function useFilters(finder) {
   for (const f of about.filters) for (const [k, v] of Object.entries(f.params)) st.defaults[k] = v;
   for (const k in st.defaults) st.values[k] = k in saved.values ? saved.values[k] : st.defaults[k];
   st.off = new Set(saved.off.filter((k) => about.filters.some((f) => f.key === k)));
-  buildFilters(); $("#reset-filters").disabled = false;
+  buildFilters(); buildPresets(); $("#reset-filters").disabled = false;
 }
 
 function buildFilters() {
@@ -701,6 +739,11 @@ function buildDetect() {
   const finder = $("#finder").value, about = st.about[finder];
   const defs = about.detection_params, vals = (st.detectValues[finder] ||= { ...defs });
   $("#finder-note").textContent = about.about + (about.exact_refilter ? "" : " It picks between alternatives using the filters, so after a filter change, find again for its exact result.");
+  quality.then((q) => {
+    const own = q && q.finders[finder] && q.finders[finder].finder;
+    if (own && $("#finder").value === finder)
+      $("#finder-note").append(document.createElement("br"), `Before any filter: ${own.candidates} candidates, ${pr(own)}.`);
+  });
   const row = (k) => dial(k, defs[k], vals[k], (v) => {
     vals[k] = v;
     document.querySelectorAll(`#main-params .param[data-name="${k}"], #detect-params .param[data-name="${k}"]`).forEach((o) => { if (!o.contains(document.activeElement)) o.set(v); });
@@ -1156,7 +1199,7 @@ $("#find").onclick = detect;
 $("#reset-detect").onclick = () => { const f = $("#finder").value; st.detectValues[f] = { ...st.about[f].detection_params }; buildDetect(); };
 $("#reset-filters").onclick = () => {
   try { localStorage.removeItem(STORE); } catch { /* nothing saved */ }
-  st.values = { ...st.defaults }; st.off.clear(); buildFilters(); refilter();
+  st.values = { ...st.defaults }; st.off.clear(); buildFilters(); markPreset(); refilter();
 };
 $("#zoom-in").onclick = () => setZoom(st.zoom * 1.25);
 $("#zoom-out").onclick = () => setZoom(st.zoom / 1.25);
