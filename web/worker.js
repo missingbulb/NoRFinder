@@ -56,6 +56,7 @@ sys.meta_path.append(RepoModules())
 os.environ['NORFINDER_SRC'] = '/py'
 import interactive, json
 `);
+  files = py.runPython("sum(os.path.getsize(os.path.join(d, f)) for top in ('/lib', '/py') for d, _, fs in os.walk(top) for f in fs)");
   const finders = JSON.parse(py.runPython("json.dumps(interactive.FINDERS)"));
   const about = JSON.parse(py.runPython("json.dumps({f: interactive.describe(f) for f in interactive.FINDERS})"));
   post({ type: "ready", finders, about, secs: (performance.now() - t0) / 1000 });
@@ -88,8 +89,10 @@ async function fetchWheel({ url, sha256 }) {
 
 const booted = boot().catch((e) => postMessage({ type: "error", text: String(e) }));
 
-// every answer says how large Python's memory has grown: it never shrinks, and it is most of the tab's
-const post = (m, transfer) => postMessage({ ...m, heap: py._module.HEAPU8.byteLength }, transfer);
+// every answer says how large Python's memory has grown, which never shrinks and is most of the tab's, and
+// what Python's files take: the file system, Python's own library and the packages installed, is in memory
+let files = 0;
+const post = (m, transfer) => postMessage({ ...m, heap: py._module.HEAPU8.byteLength, files }, transfer);
 let answer;
 async function handle(m) {
   await booted;

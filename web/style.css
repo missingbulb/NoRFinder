@@ -96,6 +96,7 @@ input.ch.r { accent-color: #f33; } input.ch.g { accent-color: #2fb344; } input.c
 .shine { position: relative; overflow: hidden; box-shadow: 0 0 10px var(--accent); }
 .shine::after { pointer-events: none; content: ""; position: absolute; inset: 0; width: 40%;
   background: linear-gradient(100deg, transparent, #ffffff90, transparent); animation: shine 1.8s ease-in-out infinite; }
+.offscreen, .offscreen::before, .offscreen::after { animation-play-state: paused !important; }
 @keyframes shine { from { transform: translateX(-120%); } to { transform: translateX(320%); } }
 /* folding parts of a box */
 details.fold { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }

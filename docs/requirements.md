@@ -247,7 +247,7 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   summary and the downloads. Folding or unfolding a box never changes a bar's width. No image is ever drawn out of its proportions: a crop
   or picture narrower than its box shrinks as a whole (`tests/test_page_layout.py`). Both side bars can be dragged wider or narrower (remembered; a double
   click restores one). A status bar shows the image name, the candidate and finalist counts, the memory the tab holds
-  ("Memory Usage", Python's and the page's; amber past a quarter of the computer's total where the
+  ("Memory Usage", Python's, its files, the page's and an estimate for the compiled code and the browser, which a page cannot read; amber past a quarter of the computer's total where the
   browser says it, which the hover names), and the site's version (stamped by each release).
 - **Version history.** Clicking the version in the status bar (it has no tooltip) opens a Version
   history popup: each release, newest first, with its date and terse lines on what changed for the
@@ -333,7 +333,7 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   the Submit new GT to GitHub button's text says how finished the work is: a green check when every finalist has
   the user's verdict, an orange warning when some candidates have one but a finalist does not, and a
   red error when no candidate has one yet or a candidate the user added still waits for a verdict;
-  the warning and the error pulse gently. The button itself stays plain. Pressing it opens a popup
+  the warning and the error pulse gently. Any animation scrolled out of view is paused, since Chrome would keep drawing it. The button itself stays plain. Pressing it opens a popup
   with a checklist of short instructions (approve or reject the NoRs you added, vote on at least one
   candidate, vote on every finalist, only images from Google Drive can be exported), each done one
   crossed out with a green check; the added-NoRs line shows only when the user added some, and while a

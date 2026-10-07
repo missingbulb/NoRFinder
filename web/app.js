@@ -27,6 +27,9 @@ const MEMORY_TIP = "nor-memory-tip-off"; // true: the user asked never to see th
 // the page's memory with a finder run (detection/browser/MEMORY.md), and the device memory below which it asks
 // the user to free some: browsers say only how much a computer has in all, never how much is free
 const PAGE_GB = 1, LOW_GB = 4;
+// what Chrome holds for the tab beyond what a page can read: the compiled code of Python and its packages, and the
+// browser's own share; measured once as Chrome's private memory for the tab against the readable total (2026-10-07)
+const UNREAD_MB = 190;
 // an added NoR counts as found when a candidate lies within this distance of its middle: about half a
 // NoR's length on the lab's slide (median 26 px)
 const MISSING_RADIUS = 12;
@@ -52,7 +55,7 @@ const st = {
   worker: null, H: 0, W: 0, um: null, img: null, meta: null, seg: null, cands: [],
   fails: [], alone: null, forced: new Map(), edits: new Map(), defaults: {}, values: {}, off: new Set(),
   about: {}, detectValues: {}, lastRun: null, filtersFor: null, seq: 0, inflight: false, pending: false,
-  zoom: 2, fileName: "", sha: "", source: null, added: [], mask: [], lasso: null, numbers: new Map(), order: [], heap: null, sel: null, tab: "pass",
+  zoom: 2, fileName: "", sha: "", source: null, added: [], mask: [], lasso: null, numbers: new Map(), order: [], heap: null, files: 0, sel: null, tab: "pass",
   show: { ...SHOW_DEFAULTS, ...readJSON(SHOW) }, opt: readOpts(), sort: { pass: "number", fail: "number", ...readJSON(SORT) }, crops: new Map(),
 };
 
@@ -161,15 +164,15 @@ function busy(on, text, look) {
   $("#busy-text").textContent = text || $("#status").textContent; $("#busy-time").textContent = "";
   st.busyTimer = setInterval(() => { $("#busy-time").textContent = ((Date.now() - st.busySince) / 1000).toFixed(0) + " s"; }, 500);
 }
-// the memory the tab holds: Python's (the bulk, and it never shrinks) and, in Chrome and Edge, the page's own
-// scripts; the browser's own share and the compiled code are not readable from a page
+// the memory the tab holds: Python's (the bulk, and it never shrinks), its files and, in Chrome and Edge, the
+// page's own scripts, plus an estimate of what a page cannot read
 function statusBar() {
-  const js = performance.memory?.usedJSHeapSize, total = st.heap == null ? null : st.heap + (js || 0);
+  const js = performance.memory?.usedJSHeapSize, total = st.heap == null ? null : st.heap + st.files + (js || 0) + UNREAD_MB * 2 ** 20;
   const gb = navigator.deviceMemory, el = $("#sb-memory");
   el.textContent = total == null ? "" : `Memory Usage ${mbOf(total)} MB`;
   el.classList.toggle("warn", !!gb && total > gb * 2 ** 30 / 4);
-  el.title = total == null ? "" : `Python ${mbOf(st.heap)} MB` + (js ? `, the page ${mbOf(js)} MB` : "") +
-    ". The browser and Python's compiled code hold a few hundred MB more, which a page cannot read." + (gb ? ` This computer has ${gb} GB in all.` : "");
+  el.title = total == null ? "" : `Python ${mbOf(st.heap)} MB, its files ${mbOf(st.files)} MB` + (js ? `, the page ${mbOf(js)} MB` : "") +
+    `, and an estimated ${UNREAD_MB} MB for Python's compiled code and the browser, which a page cannot read.` + (gb ? ` This computer has ${gb} GB in all.` : "");
   $("#sb-file").textContent = st.fileName || "No image";
 }
 const mbOf = (n) => Math.round(n / 2 ** 20);
@@ -239,7 +242,7 @@ function memoryTip(ranOut) {
 $("#memory-off").onchange = () => writeJSON(MEMORY_TIP, $("#memory-off").checked);
 
 function onWorker(m) {
-  if (m.heap != null) st.heap = m.heap;
+  if (m.heap != null) { st.heap = m.heap; st.files = m.files || 0; }
   handle(m); settle(m); statusBar();
 }
 function handle(m) {
@@ -1659,6 +1662,10 @@ async function showHistory(since) {
     }).catch(() => { historyLoad = null; /* no history to point at: ask again on the next visit */ });
   }
 }
+
+// an animation out of view is paused: Chrome keeps drawing every frame for one scrolled out of sight
+const inView = new IntersectionObserver((seen) => { for (const e of seen) e.target.classList.toggle("offscreen", !e.isIntersecting); });
+document.addEventListener("animationstart", (e) => inView.observe(e.target));
 
 // the buttons whose action can take a while on a slow computer; Load is held from a chosen image until it is open
 for (const id of ["#find", "#switch", "#tab-pass", "#tab-fail", "#dl-cands", "#dl-summary", "#gt-export"]) slow($(id));
