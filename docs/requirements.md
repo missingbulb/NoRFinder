@@ -318,8 +318,8 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   a double click, or Enter) opens it: an image loads, a folder lists its contents. A thumbnail is
   drawn only once its row is in view, a lab TIFF's from 48 of its rows per channel (about 4% of the
   file) in the colours the page gives its channels, and a PNG's is Drive's own; Drive's own picture
-  of a multi-channel TIFF is grey, so it is never used. A checkbox at the bottom, "Avoid downloading
-  thumbnails" (off at first, remembered in the browser), stops them. It needs the site's Google API key, kept in the repository variable `GOOGLE_API_KEY`
+  of a multi-channel TIFF is grey, so it is never used. A checkbox at the bottom, "Download
+  thumbnails" (on at first, remembered in the browser), turns them off. It needs the site's Google API key, kept in the repository variable `GOOGLE_API_KEY`
   and written into `web/config.js` at deploy; without one the option is off. The dialog opens on
   the last link pasted, or else on the lab's folder (the repository variable
   `DRIVE_DEFAULT_FOLDER`), and lists a folder link at once.

@@ -341,7 +341,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #drive-list .item .pic img { width: 100%; height: 100%; object-fit: cover; }
 #drive-list .item.folder .pic::before { content: "📁"; font-size: 24px; }
 #drive-msg.err { color: var(--err); }
-#drive-no-thumbs-l { display: flex; gap: 6px; align-items: center; margin: 0; white-space: nowrap; }
+#drive-thumbs-l { display: flex; gap: 6px; align-items: center; margin: 0; white-space: nowrap; }
 
 /* a box that folds: its title opens and closes it */
 .box.foldable > .sec-head h2 { display: flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }

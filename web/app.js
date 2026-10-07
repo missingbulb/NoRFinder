@@ -13,7 +13,7 @@ const CARDS = "nor-cards-v3"; // the item views' Options menu, one per view: {pa
 const BARS = "nor-bars-v1"; // {left, right}: side bar widths in pixels
 const SOURCE = "nor-load-source"; // "local" | "drive": where Load reads from
 const DRIVE_LINK = "nor-drive-link"; // the last Google Drive link pasted
-const NO_THUMBS = "nor-drive-no-thumbs"; // true: the Drive dialog downloads no thumbnails
+const THUMBS = "nor-drive-thumbs"; // "on" | "off": whether the Drive dialog downloads thumbnails
 const MISSING = "nor-missing-v1:"; // + file name: [[x, y]], the NoRs the user marked as missed by the finder
 // a missing mark counts as found when a candidate lies within this distance: about half a NoR's
 // length on the lab's slide (median 26 px), so the mark need not be placed on the NoR's centre
@@ -309,22 +309,22 @@ document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => 
       ctl.abort(); ctl = new AbortController(); running = 0; waiting.length = 0;
       if (seen) seen.disconnect();
       seen = new IntersectionObserver((es) => es.forEach((e) => {
-        if (!e.isIntersecting || $("#drive-no-thumbs").checked) return;
+        if (!e.isIntersecting || !$("#drive-thumbs").checked) return;
         seen.unobserve(e.target); waiting.push([e.target, e.target.file]); next();
       }), { root: $("#drive-list") });
     };
     const watch = (pic, f) => {
       if (made.get(f.id)) return put(pic, made.get(f.id));
-      if (made.has(f.id) || $("#drive-no-thumbs").checked) return;
+      if (made.has(f.id) || !$("#drive-thumbs").checked) return;
       pic.file = f; seen.observe(pic);
     };
     return { reset, watch, stop: () => ctl.abort() };
   })();
   $("#drive-open").onclick = () => chosen && enter(chosen);
-  $("#drive-no-thumbs").checked = readJSON(NO_THUMBS, false);
-  $("#drive-no-thumbs").onchange = (e) => {
-    writeJSON(NO_THUMBS, e.target.checked);
-    if (e.target.checked) thumbs.stop(); else if (trail.length) show();
+  $("#drive-thumbs").checked = readJSON(THUMBS, "on") !== "off";
+  $("#drive-thumbs").onchange = (e) => {
+    writeJSON(THUMBS, e.target.checked ? "on" : "off");
+    if (!e.target.checked) thumbs.stop(); else if (trail.length) show();
   };
   $("#drive-dlg").addEventListener("close", () => thumbs.stop());
   if (!NorDrive.ready) {
