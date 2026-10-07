@@ -308,10 +308,11 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   `origin: "added by user"`, its measurements and lines). A candidate nobody voted
   on is ambiguous and left out. The lab's `nor_lab.py --labels` reads it: the labels score
   detection and the checked lengths score measurement (`tests/test_ground_truth.py`).
-- **Submitting ground truth** (changed by the owner on 2026-10-06). The Ground truth button's colour
-  says how finished the work is: green when every finalist has the user's verdict, orange when some
-  candidates have one but a finalist does not, and red when no candidate has one yet or a candidate
-  the user added still waits for a verdict. Pressing it opens a popup that names what is missing in
+- **Submitting ground truth** (changed by the owner on 2026-10-06 and 2026-10-07). A small icon beside
+  the Ground truth button's text says how finished the work is: a green check when every finalist has
+  the user's verdict, an orange warning when some candidates have one but a finalist does not, and a
+  red error when no candidate has one yet or a candidate the user added still waits for a verdict;
+  the warning and the error pulse gently. The button itself stays plain. Pressing it opens a popup that names what is missing in
   a line or two (and, while a summary mask is on, that the mask is not exported and the file holds
   the marked candidates inside and outside it), with an Export file button that downloads the file
   and beside it an Open new GitHub issue button: a new issue on the repo, labelled

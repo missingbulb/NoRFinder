@@ -95,7 +95,11 @@ const middle = (page) => page.evaluate(() => {
   return { sx, sy, x: (sx - b.left) / st.zoom, y: (sy - b.top) / st.zoom };
 });
 
-const gtColour = (page) => page.$eval("#dl-truth", (b) => b.dataset.state);
+// the state the Ground truth button shows: the one icon on display beside its text
+const gtColour = (page) => page.$eval("#dl-truth", (b) => {
+  const on = [...b.querySelectorAll(".gt-ico svg")].filter((v) => getComputedStyle(v).display !== "none");
+  return on.length === 1 ? on[0].getAttribute("class") : `${on.length} icons`;
+});
 // the selected card's handle for one end of a measuring line, as a point on the screen
 const handle = async (page, k, j) => {
   const h = page.locator(`#selected .handle[data-k="${k}"][data-j="${j}"]`);

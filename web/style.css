@@ -370,9 +370,17 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #ctx[hidden], #card-menu[hidden] { display: none; }
 
 /* the Ground truth button's colour: how finished the user's verdicts are */
-#dl-truth[data-state=done] { background: var(--yes); border-color: var(--yes); color: #fff; }
-#dl-truth[data-state=part] { background: var(--gt-part); border-color: var(--gt-part); color: #fff; }
-#dl-truth[data-state=todo] { background: var(--no); border-color: var(--no); color: #fff; }
+/* the Ground truth button: a plain button with a small check, warning or error icon; the last two pulse gently */
+#dl-truth { display: inline-flex; align-items: center; gap: 6px; }
+#dl-truth .gt-ico { display: none; line-height: 0; }
+#dl-truth .gt-ico svg { display: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+#dl-truth[data-state=done] .gt-ico, #dl-truth[data-state=part] .gt-ico, #dl-truth[data-state=todo] .gt-ico { display: inline-block; }
+#dl-truth[data-state=done] .done, #dl-truth[data-state=part] .part, #dl-truth[data-state=todo] .todo { display: block; }
+#dl-truth[data-state=done] .gt-ico { color: var(--yes); }
+#dl-truth[data-state=part] .gt-ico { color: var(--gt-part); animation: gt-pulse 2s ease-in-out infinite; }
+#dl-truth[data-state=todo] .gt-ico { color: var(--no); animation: gt-pulse 2s ease-in-out infinite; }
+@keyframes gt-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(.9); } }
+@media (prefers-reduced-motion: reduce) { #dl-truth .gt-ico { animation: none !important; } }
 :root { --gt-part: #e8890c; }
 #gt-dlg { width: min(460px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
   border: 1px solid var(--line); border-radius: var(--r-panel); box-shadow: 0 12px 40px #0006; }
