@@ -143,7 +143,7 @@ async function markAndVote(page) {
   const w1 = await page.evaluate(() => candOf("u1").m.width);
   await check(w1 > w0 + 1, `a dragged width end widens the NoR (${w0.toFixed(1)} to ${w1.toFixed(1)} px)`);
   await page.click("#switch"); await idle(page);
-  await check(await page.$eval("#list .card", (d) => d.dataset.i) === "u1", "the added NoR lists first among the finalists");
+  await check(await page.$eval("#list .card:last-child", (d) => d.dataset.i) === "u1", "by default the added NoR, numbered last, lists last among the finalists");
   await page.click("#switch"); await idle(page);
   // with another candidate voted on, only the added NoR keeps the button red
   await page.evaluate(() => decide(st.order[0].i, "approve"));
@@ -167,7 +167,43 @@ async function markAndVote(page) {
     await page.click("#selected .verdict .down");
   }
   await check(await gtColour(page) === "part", "with some verdicts but a finalist left the button is orange");
+  await sorting(page);
   return page.evaluate(() => ({ undecided: st.order.length - st.forced.size }));
+}
+
+// the item views' sort, in each view's Options menu: by number (the default), the verified first or last, and on the rejected the most
+// rejecting filters first; remembered per view
+async function sorting(page) {
+  await page.click("#switch"); await idle(page);
+  const shown = () => page.evaluate(() => [...document.querySelectorAll("#list .card")].map((d) => {
+    const c = candOf(d.dataset.i[0] === "u" ? d.dataset.i : +d.dataset.i);
+    return { n: numOf(c), v: !!(c.added ? st.added[c.k].verdict : st.forced.get(c.i)), f: whyAll(c).length };
+  }));
+  const sortBy = async (v) => { await page.$eval("#card-menu", (d) => { d.open = true; }); await page.selectOption("#sort", v); await idle(page); return shown(); };
+  const up = (xs) => xs.every((x, k) => !k || xs[k - 1] <= x), down = (xs) => xs.every((x, k) => !k || xs[k - 1] >= x);
+  const byNum = (L) => up(L.map((c) => c.n));
+  for (const tab of ["#tab-pass", "#tab-fail"]) {
+    await page.click(tab); await idle(page);
+    const choices = await page.$$eval("#sort option", (o) => o.map((x) => x.value));
+    const fail = tab === "#tab-fail";
+    await check(JSON.stringify(choices) === JSON.stringify(["number", "verified-first", "verified-last", ...(fail ? ["filters"] : [])]),
+      `the ${fail ? "rejected" : "finalists"} sort by ${choices.join(", ")}`);
+    let L = await shown();
+    await check(await page.$eval("#sort", (s) => s.value) === "number" && byNum(L) && L.length > 2, "by number by default");
+    L = await sortBy("verified-first");
+    await check(down(L.map((c) => +c.v)) && L.some((c) => c.v) && byNum(L.filter((c) => c.v)) && byNum(L.filter((c) => !c.v)), "verified first, each part by number");
+    L = await sortBy("verified-last");
+    await check(up(L.map((c) => +c.v)) && byNum(L.filter((c) => !c.v)), "verified last, each part by number");
+    if (fail) {
+      L = await sortBy("filters");
+      await check(down(L.map((c) => c.f)) && L[0].f > L[L.length - 1].f, `the rejected sort by how many filters reject them, most first (${L[0].f} to ${L[L.length - 1].f})`);
+    }
+  }
+  await page.click("#tab-pass"); await idle(page);
+  await check(await page.$eval("#sort", (s) => s.value) === "verified-last", "each view keeps its own sort");
+  for (const tab of ["#tab-pass", "#tab-fail"]) { await page.click(tab); await idle(page); await sortBy("number"); }
+  await page.$eval("#card-menu", (d) => { d.open = false; });
+  await page.click("#switch"); await idle(page);
 }
 
 // the popup the Ground truth button opens: its text, and the file its Export button downloads

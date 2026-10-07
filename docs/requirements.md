@@ -292,8 +292,8 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
 - **Added NoRs.** Right-clicking the image offers "Add a NoR Here": a NoR the finder proposed
   nothing for. It is not drawn as a mask; it gets measuring lines (level, centred where clicked, as
   long and wide as the image's median finalist) that the user corrects on its card, which is
-  selected at once. It lists first among the finalists, marked by an icon rather than text, and
-  first among the rejected once thumbed down; its card can also remove it (as can right-clicking
+  selected at once. It lists among the finalists, marked by an icon rather than text, and
+  among the rejected once thumbed down; its card can also remove it (as can right-clicking
   it). On the image it shows its lines and, until the user gives a verdict, a dashed yellow circle
   glowing between 0.8 and 0.3 opacity. Like any candidate it enters the ground truth only once the
   user approves it. Added NoRs are remembered in the browser per file name, whatever the finder.
@@ -301,7 +301,9 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   its number, state and decision buttons on top, the crop below (with a faint go-to button in its
   corner that shows it on the image), then "Lengths adjusted" with a reset, and the rest.
   A rejected card names every filter that rejects it by itself, or says the user rejected it. Each
-  view has its own Options menu (remembered per view) that sets the crop's context padding, turns
+  view has its own Options menu (remembered per view) that sets the order of its cards (by number,
+  the default; verified first; verified last; and on the rejected, the most rejecting filters first;
+  ties by number; set by the owner on 2026-10-07), the crop's context padding, turns
   each crop so the NoR lies level (finalists only; the rejected are never turned), and shows or hides the NoR borders, the measurement bars, the
   lengths on the crop, the lengths on the card and the measurement adjusters. The finalists open with a
   4 px padding and everything on but the lengths on the card; the rejected open with a 10 px
