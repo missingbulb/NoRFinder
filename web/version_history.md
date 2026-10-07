@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 web/version_histo
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- An idle page no longer keeps the CPU busy: the ground-truth icon pulses three times, then holds still, and animations out of view pause. Memory Usage now comes close to Chrome's own count. (#377)
 - NoRs you add are numbered after the found candidates, and that one number is used on the image, the cards, the CSV and the ground truth. (#373)
 - Each item view can sort its cards: by number, verified first or last, or (rejected) most filters first. (#374)
 - Click the version in the status bar to see this history; after an update, a bubble points at it. (#369)
