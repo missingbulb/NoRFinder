@@ -247,8 +247,8 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   summary and the downloads. Folding or unfolding a box never changes a bar's width. No image is ever drawn out of its proportions: a crop
   or picture narrower than its box shrinks as a whole (`tests/test_page_layout.py`). Both side bars can be dragged wider or narrower (remembered; a double
   click restores one). A status bar shows the image name, the candidate and finalist counts, the memory the tab holds
-  (Python's and the page's, out of the computer's total where the browser says it; amber past a
-  quarter of it), and the site's version (stamped by each release).
+  ("Memory Usage", Python's and the page's; amber past a quarter of the computer's total where the
+  browser says it, which the hover names), and the site's version (stamped by each release).
 - **Moving around the image.** Dragging moves the image; scrolling up and down zooms around the
   pointer in small steps; scrolling sideways steps to the previous or next candidate. The Show
   menu switches accepted and rejected markings on and off, each with its own line width and colour,

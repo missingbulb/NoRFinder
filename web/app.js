@@ -161,7 +161,7 @@ function busy(on, text, look) {
 function statusBar() {
   const js = performance.memory?.usedJSHeapSize, total = st.heap == null ? null : st.heap + (js || 0);
   const gb = navigator.deviceMemory, el = $("#sb-memory");
-  el.textContent = total == null ? "" : `Memory ${mbOf(total)} MB` + (gb ? ` of ${gb} GB` : "");
+  el.textContent = total == null ? "" : `Memory Usage ${mbOf(total)} MB`;
   el.classList.toggle("warn", !!gb && total > gb * 2 ** 30 / 4);
   el.title = total == null ? "" : `Python ${mbOf(st.heap)} MB` + (js ? `, the page ${mbOf(js)} MB` : "") +
     ". The browser and Python's compiled code hold a few hundred MB more, which a page cannot read." + (gb ? ` This computer has ${gb} GB in all.` : "");
