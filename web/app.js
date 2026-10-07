@@ -660,7 +660,9 @@ function addedCand(k) {
 }
 const candOf = (i) => (i == null ? null : isAdded(i) ? addedCand(+i.slice(1) - 1) : st.cands[i]);
 const addedCands = () => st.added.map((_, k) => addedCand(k));
-const nameOf = (c) => (c.added ? "U" + (c.k + 1) : "#" + st.numbers.get(c.i));
+// a candidate's one number: the finder's top to bottom, then the added NoRs in the order added
+const numOf = (c) => (c.added ? st.order.length + c.k + 1 : st.numbers.get(c.i));
+const nameOf = (c) => "#" + numOf(c);
 function addedChanged() {
   saveAdded(); drawAdded();
   if (st.meta) render(); else { renderSelected(); placeRing(); }
@@ -685,7 +687,7 @@ function drawAdded() {
   const g = el("g", { class: "added-marks" });
   for (const c of addedCands()) {
     const v = st.added[c.k].verdict, a = el("g", { "data-i": c.i, class: "added" + (v === "out" ? " out" : "") });
-    const t = el("text", { x: c.cx + radiusOf(c) + 1, y: c.cy - radiusOf(c) }); t.textContent = "U" + (c.k + 1);
+    const t = el("text", { x: c.cx + radiusOf(c) + 1, y: c.cy - radiusOf(c) }); t.textContent = numOf(c);
     if (!v) a.append(el("circle", { class: "glow", cx: c.cx, cy: c.cy, r: radiusOf(c) }));
     const lines = el("g", { class: "lines" });
     for (const [k, cls] of [["length", ""], ["width", ""], ["red", "r"]]) {
@@ -708,7 +710,7 @@ function drawAdded() {
     e.preventDefault();
     const k = addedCands().findIndex((c) => Math.hypot(c.cx - x, c.cy - y) <= radiusOf(c));
     const b = menu.querySelector("button");
-    b.textContent = k < 0 ? "Add a NoR Here" : `Remove Added NoR U${k + 1}`;
+    b.textContent = k < 0 ? "Add a NoR Here" : `Remove Added NoR #${numOf(addedCand(k))}`;
     b.onclick = () => { close(); k < 0 ? addAdded(x, y) : removeAdded(k); };
     menu.hidden = false;
     menu.style.left = Math.min(e.clientX, innerWidth - menu.offsetWidth - 4) + "px";
@@ -1029,7 +1031,7 @@ function card(c, where) {
     (where === "list" && c.i === st.sel ? " selected" : "");
   d.dataset.i = c.i;
   const state = r === null ? "Finalist" : "Rejected";
-  const num = c.added ? `<span class="num added" title="Added by you" aria-label="Added by you, U${c.k + 1}">${ADD_ICON}${c.k + 1}</span>` : `<span class="num">#${st.numbers.get(c.i)}</span>`;
+  const num = c.added ? `<span class="num added" title="Added by you" aria-label="Added by you, #${numOf(c)}">${ADD_ICON}#${numOf(c)}</span>` : `<span class="num">#${numOf(c)}</span>`;
   d.innerHTML = `<div class="head">${num}<span class="state">${state}</span>
     <span class="verdict" role="group" aria-label="Your verdict"></span></div>`;
   const acts = d.querySelector(".verdict");
@@ -1177,7 +1179,7 @@ $("#dl-cands").onclick = () => {
   const head = ["n", "x_px", "y_px", "status", "reason", "rejected_by", "decision", "lengths", ...MEASURES.map(([k, , s]) => (s ? `${k}_${u}` : k))];
   const rows = [...addedCands(), ...st.order].filter(inMask).map((c) => {
     const r = result(c.i), f = c.added ? st.added[c.k].verdict : st.forced.get(c.i);
-    return [c.added ? "U" + (c.k + 1) : st.numbers.get(c.i), fmt(c.cx, 1), fmt(c.cy, 1), r === null ? "finalist" : "rejected", r === null ? "" : reasonOf(r).title,
+    return [numOf(c), fmt(c.cx, 1), fmt(c.cy, 1), r === null ? "finalist" : "rejected", r === null ? "" : reasonOf(r).title,
       whyAll(c).map((k) => reasonOf(k).letter).join(" "), { in: "approved", out: "rejected by you" }[f] || (c.added ? "added by you" : ""), measured(c) || "",
       ...measures(c).map(([, v]) => fmt(v, 3))];
   });
@@ -1200,7 +1202,7 @@ function truth() {
   for (const c of st.order) {
     const f = st.forced.get(c.i); if (!f) continue;
     const L = linesOf(c), px = measuresPx(c);
-    labels.push({ id: st.numbers.get(c.i), x: c.cx, y: c.cy, label: f === "in" ? 1 : 0, source: "user",
+    labels.push({ id: numOf(c), x: c.cx, y: c.cy, label: f === "in" ? 1 : 0, source: "user",
       decision: f === "in" ? "approved" : "rejected", measured: f === "in" ? measured(c) : null,
       length_px: px.length ?? null, red_length_px: px.red_length ?? null, width_px: px.width ?? null,
       lines: L ? { length: L.length, red: L.red, width: L.width } : null });
@@ -1208,7 +1210,7 @@ function truth() {
   // an added NoR the user approved, with its measurements; until then it is only a suggestion
   for (const c of addedCands()) {
     if (st.added[c.k].verdict !== "in") continue;
-    labels.push({ id: "U" + (c.k + 1), kind: "missing", origin: "added by user", x: c.cx, y: c.cy, label: 1, source: "user",
+    labels.push({ id: numOf(c), kind: "missing", origin: "added by user", x: c.cx, y: c.cy, label: 1, source: "user",
       radius_px: MISSING_RADIUS, decision: "approved", measured: "adjusted", length_px: c.m.length, red_length_px: c.m.red_length,
       width_px: c.m.width, lines: { length: c.lines.length, red: c.lines.red, width: c.lines.width } });
   }

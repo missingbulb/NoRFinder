@@ -356,7 +356,10 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   the scale in the file, or per million square pixels when the file has none
   (`tests/test_ground_truth_page.py`).
 - **Fixed numbers.** Each candidate keeps one number, top to bottom, for as long as a detection
-  lasts. Filters never renumber candidates.
+  lasts, finalists and rejected alike. Filters never renumber candidates. Added NoRs are numbered
+  after the finder's candidates, in the order added (set by the owner on 2026-10-07). The image,
+  the cards, the Candidates CSV and the ground-truth file all name a candidate by that number
+  (`tests/test_ground_truth_page.py`).
 - **Remembered marks.** Decisions and adjusted or approved lengths are saved in the browser per
   file name and finder, tied to each candidate's position; added NoRs per file name.
 - **Google Drive.** The user pastes the link of an image or a folder shared as "Anyone with the
