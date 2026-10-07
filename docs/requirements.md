@@ -234,11 +234,12 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   last run. Everything else (filters, forced markings, the list, the summary) redraws from the
   stored candidates without finding again.
 - **Layout.** A header with the logo, the title and a dark/light switch (remembered). The left bar
-  holds the image (Load, with a dropdown for where from: this computer or Google Drive; a
-  thumbnail showing the part in view, which moves the view when clicked; its name, which unfolds (folded at first) what the
-  file says about the image: the field in µm and px, the pixel size, the bit depth, the ImageJ series,
-  the microscope and date when the file names them (the lab's ImageJ exports never do, and the box
-  says so), and the software that saved it; a checkbox per
+  holds the image (Load, with a dropdown for where from: this computer or Google Drive, filled and
+  glowing until an image is open and a plain button with a blue border after; the image's name,
+  which unfolds (folded at first) what the file says about the image: the field in µm and px, the
+  pixel size, the bit depth, the ImageJ series, the microscope and date when the file names them
+  (the lab's ImageJ exports never do, and the box says so), and the software that saved it; below
+  it a thumbnail showing the part in view, which moves the view when clicked; a checkbox per
   colour layer, in that layer's colour when on, blue off at first), the candidates finder (its
   "how it works" and its settings fold away) and the filters. The main area has a toolbar over two
   views: the image and the individual items, with the button that switches between them at its

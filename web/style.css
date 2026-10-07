@@ -46,6 +46,9 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 .split .menu summary { border-radius: 0 var(--r-ctl) var(--r-ctl) 0; padding: 4px 8px; border-left: 1px solid #ffffff55; height: 100%; }
 .split .menu summary.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .split .menu summary.primary::after { color: #fff; content: "▾"; }
+#load.done .primary { background: var(--panel); border-color: var(--accent); color: var(--accent); }
+#load.done .menu summary.primary { border-left-color: var(--accent); }
+#load.done .menu summary.primary::after { color: var(--accent); }
 .menu .pop.right { left: auto; right: 0; }
 .menu .pop .item { text-align: left; border: 0; background: none; padding: 4px 2px; white-space: nowrap; }
 .menu .pop .item:not(:disabled):hover { color: var(--accent); }

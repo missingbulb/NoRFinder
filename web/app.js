@@ -266,7 +266,8 @@ function peek() {
   }));
 }
 // Load shimmers until there is an image to work on
-const loadShine = () => $("#load-main").classList.toggle("shine", !st.img && !st.queued);
+// Load calls for attention until an image is open, then steps back to a plain button
+const loadShine = () => { $("#load-main").classList.toggle("shine", !st.img && !st.queued); $("#load").classList.toggle("done", !!st.img); };
 $("#file").onchange = async (e) => {
   const f = e.target.files[0]; if (!f) return;
   const bytes = await f.arrayBuffer(); peek()(bytes, bytes.byteLength);
