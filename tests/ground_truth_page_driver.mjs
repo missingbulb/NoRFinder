@@ -278,6 +278,18 @@ async function mask(page) {
   const miss = gt.labels.find((L) => L.kind === "missing");
   await check(miss.label === 1 && miss.radius_px > 0 && miss.origin === "added by user" && miss.width_px > 0 && miss.lines.width,
     `an added NoR is a real NoR with its radius, its origin and its measurements (${miss.radius_px} px, ${miss.width_px.toFixed(1)} px wide)`);
+  // one number per candidate, finalists and rejected alike, the added NoR after the found ones; the image,
+  // the cards, the CSV and the file all name a candidate by it
+  const nums = await page.evaluate(() => {
+    const cs = [...addedCands(), ...st.order], on = (c) => $(`#overlay g[data-i="${c.i}"] text`).firstChild.textContent;
+    return { found: st.order.length, image: cs.map(on), cards: cs.map((c) => [on(c), card(c, "list").querySelector(".num").textContent]),
+      at: Object.fromEntries(cs.map((c) => [on(c), [c.cx, c.cy]])) };
+  });
+  const all = Array.from({ length: nums.found + 1 }, (_, k) => String(k + 1));
+  await check(JSON.stringify([...nums.image].sort()) === JSON.stringify([...all].sort()), `the image numbers every candidate once, 1 to ${nums.found}, the added NoR ${nums.found + 1}`);
+  await check(nums.cards.every(([n, shown]) => shown === "#" + n), "each card shows its candidate's number");
+  await check(miss.id === nums.found + 1 && gt.labels.every((L) => nums.at[L.id] && Math.hypot(nums.at[L.id][0] - L.x, nums.at[L.id][1] - L.y) < 1e-6),
+    `the file names each candidate by its number on the image, the added NoR by ${miss.id}`);
   await check(gt.image.location.source === "local", "the file says the image was local");
   await check(!("mask" in gt), "the file holds no mask");
   const issue = await page.$eval("#gt-issue", (b) => ({ off: b.disabled, why: b.title }));
@@ -286,6 +298,8 @@ async function mask(page) {
   await page.click("#gt-close");
   await page.click("#mask-clear");
   await check(await page.evaluate(() => !st.mask.length) && await page.isHidden("#mask-clear") && !(await page.$("#overlay .mask-marks .edge")), "Clear mask removes the mask");
+  const ns = (await csvRows(page, "#dl-cands")).map((r) => r.split(",")[0]);
+  await check(ns.length === all.length && new Set(ns).size === ns.length && ns.every((n) => all.includes(n)), "the Candidates CSV names each candidate by its number");
   await page.evaluate(() => st.passes.filter((c) => !c.added && !st.forced.has(c.i)).forEach((c) => decide(c.i, "approve")));
   await check(await gtColour(page) === "done", "with every finalist voted on the button is green");
   await ctx.close();
