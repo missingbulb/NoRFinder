@@ -430,6 +430,7 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 
 /* the summary mask: its borders as a pulsing dashed line; its inside tinted only when areas overlap or nest */
 #summary-box .sec-head { margin-bottom: 10px; }
+#summary-box .csv-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .mask-btns { display: inline-flex; gap: 6px; }
 .mask-btns button[hidden] { display: none; }
 #overlay .mask-marks { pointer-events: none; }

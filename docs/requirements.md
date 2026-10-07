@@ -303,8 +303,10 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   width end sets where along the axis the width is measured and, mirrored, how wide it is. On
   release the crop turns level with the new axis. The new measurements show on the image, the
   card, the summary and the downloads. The measurements of the finalists are summarised in the right bar.
-- **Downloads.** The candidates as CSV (every candidate, its status, its reasons, the user's
-  decision and its measurements), the summary as CSV, and the ground truth
+- **Downloads** (moved by the owner on 2026-10-07). At the bottom of the Summary box, the candidates
+  as CSV (every candidate, its status, its reasons, the user's decision and its measurements) and the
+  summary as CSV. In the box below it, titled Ground Truth, the Submit new GT to GitHub button gives
+  the ground truth
   (`norfinder-ground-truth/2`): a JSON file naming the image (its SHA-256, and where it was loaded
   from: its Google Drive id and link, or "local") that lists only what the user marked: every
   candidate voted up (label 1, with its lengths and length lines, marked adjusted or approved) or
@@ -313,7 +315,7 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   on is ambiguous and left out. The lab's `nor_lab.py --labels` reads it: the labels score
   detection and the checked lengths score measurement (`tests/test_ground_truth.py`).
 - **Submitting ground truth** (changed by the owner on 2026-10-06 and 2026-10-07). A small icon beside
-  the Ground truth button's text says how finished the work is: a green check when every finalist has
+  the Submit new GT to GitHub button's text says how finished the work is: a green check when every finalist has
   the user's verdict, an orange warning when some candidates have one but a finalist does not, and a
   red error when no candidate has one yet or a candidate the user added still waits for a verdict;
   the warning and the error pulse gently. The button itself stays plain. Pressing it opens a popup
