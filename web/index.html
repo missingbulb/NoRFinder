@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NoR Finder</title>
+<meta name="version" id="site-version" title="version 0.11007.21">
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="style.css">
 <script>
@@ -153,7 +154,8 @@
   <span id="sb-thumbs" class="seg"></span>
   <span class="grow"></span>
   <span class="spin" id="spin"></span><span id="status">Starting…</span>
-  <span id="sb-version" title="version 0.11007.21"></span>
+  <button id="sb-version" type="button"></button>
+  <div id="whats-new" role="status" hidden><button id="whats-new-open" type="button"></button><button id="whats-new-x" class="x" type="button" aria-label="Close">×</button></div>
 </footer>
 
 <dialog id="drive-dlg">
@@ -186,6 +188,13 @@
   <div class="drive-row end">
     <span class="grow"></span><button id="gt-export" class="primary" type="button">Export file</button><button id="gt-issue" type="button">Open new GitHub issue</button><button id="gt-close" type="button">Close</button>
   </div>
+</dialog>
+<dialog id="history-dlg" aria-labelledby="history-title">
+  <form method="dialog">
+    <h2 id="history-title">Version history</h2>
+    <div id="history-list"></div>
+    <div class="drive-row end"><span class="grow"></span><button value="close" class="primary" autofocus>Close</button></div>
+  </form>
 </dialog>
 <div id="tip" hidden></div>
 <div id="ctx" class="pop" role="menu" hidden><button class="item" role="menuitem" type="button"></button></div>

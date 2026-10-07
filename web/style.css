@@ -314,7 +314,9 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #status.err { color: var(--err); }
 #statusbar .spin { width: 12px; height: 12px; display: none; }
 #statusbar .spin.on { display: inline-block; }
-#sb-version { padding: 1px 8px; border: 1px solid var(--line); border-radius: var(--r-chip); font-variant-numeric: tabular-nums; }
+#sb-version { padding: 1px 8px; border: 1px solid var(--line); border-radius: var(--r-chip); font: inherit; font-variant-numeric: tabular-nums;
+  color: inherit; background: none; cursor: pointer; }
+#sb-version:hover, #sb-version:focus-visible { color: var(--text); border-color: var(--accent); }
 #sb-version.stale { cursor: pointer; color: var(--bg); background: var(--warn); border-color: var(--warn); font-weight: 600; }
 
 #tip { position: fixed; pointer-events: none; background: var(--tipbg); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 8px 10px; font-size: 12px; max-width: 320px; z-index: 10; white-space: pre-line; }
@@ -354,9 +356,9 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 @media (prefers-reduced-motion: reduce) { #busy.scan #scan-light { animation-duration: 8s; } }
 
 /* the Google Drive dialog */
-#drive-dlg, #memory-dlg { width: min(640px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
+#drive-dlg, #memory-dlg, #history-dlg { width: min(640px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
   border: 1px solid var(--line); border-radius: var(--r-panel); box-shadow: 0 12px 40px #0006; }
-#drive-dlg::backdrop, #memory-dlg::backdrop { background: #0007; }
+#drive-dlg::backdrop, #memory-dlg::backdrop, #history-dlg::backdrop { background: #0007; }
 .drive-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
 .drive-row.end { justify-content: space-between; }
 #drive-link { flex: 1; min-width: 0; }
@@ -459,3 +461,24 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 #memory-dlg .tips { margin: 10px 0 0; padding-left: 20px; line-height: 1.5; }
 #memory-dlg .tips li + li { margin-top: 6px; }
 kbd { font: 12px ui-monospace, monospace; padding: 1px 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; }
+
+/* the version history popup, and the bubble that points at the version after an update */
+#history-dlg { width: min(560px, calc(100vw - 32px)); }
+#history-dlg h2 { margin: 0 0 10px; }
+#history-list { max-height: min(60vh, 520px); overflow-y: auto; padding-right: 6px; }
+#history-list section { padding: 8px 0; border-top: 1px solid var(--line); }
+#history-list section:first-child { border-top: 0; }
+#history-list h3 { display: flex; align-items: baseline; gap: 8px; margin: 0 0 4px; font-size: 13px; font-variant-numeric: tabular-nums; }
+#history-list h3 .date { color: var(--dim); font-weight: 400; }
+#history-list h3 .tag { padding: 0 6px; border-radius: var(--r-chip); font-size: 11px; color: var(--bg); background: var(--accent); }
+#history-list ul { margin: 0; padding-left: 18px; line-height: 1.5; }
+#history-list .since { margin: 0 0 6px; color: var(--dim); }
+#whats-new { position: fixed; right: 10px; bottom: calc(1cm + 10px); z-index: 35; display: flex; align-items: flex-start; gap: 4px; max-width: min(300px, calc(100vw - 20px));
+  padding: 8px 6px 8px 12px; color: var(--text); background: var(--panel); border: 1px solid var(--accent); border-radius: var(--r-ctl); box-shadow: 0 8px 24px #0007; font-size: 13px; }
+#whats-new[hidden] { display: none; }
+#whats-new::after { content: ""; position: absolute; right: var(--arrow, 24px); bottom: -7px; width: 12px; height: 12px; background: var(--panel);
+  border-right: 1px solid var(--accent); border-bottom: 1px solid var(--accent); transform: rotate(45deg); }
+#whats-new-open { flex: 1; min-width: 0; white-space: normal; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+#whats-new-open:hover { color: var(--accent); }
+#whats-new .x { padding: 0 6px; border: 0; background: none; color: var(--dim); font-size: 16px; line-height: 1; cursor: pointer; }
+#whats-new .x:hover { color: var(--text); }

@@ -20,3 +20,10 @@ canon instead, where every repo gets it.
   caches, contact sheets and other outputs that validate the repo's algorithm and can be
   regenerated from it. Before replying that work is done, check that nothing the next session
   would need exists only in the project. (working-claude-project)
+
+## The page's version history
+
+- **Changing what a user of the NoR Finder page sees** — add one terse line, in the user's words,
+  under "Next release" in `web/version_history.md`, ending with the pull request's number `(#123)`,
+  in the same pull request; the page's Version history popup shows it once released. A change
+  nobody using the page would notice adds nothing. (page-version-history)

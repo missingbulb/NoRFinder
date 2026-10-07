@@ -21,6 +21,7 @@ const SAVED_THUMBS = "nor-drive-thumbs-saved"; // [Drive id], oldest first: whic
 const ADDED = "nor-added-v1:";
 const MISSING = "nor-missing-v1:"; // + file name: [[x, y]], what ADDED replaced; read once and converted
 const MASK = "nor-mask-v1:"; // + file name: [[[x, y]...]...], the lassoed areas the summary counts, combined by exclusive or
+const SEEN_VERSION = "nor-seen-version"; // the site version the user last saw, to tell them what changed since
 const MEMORY_TIP = "nor-memory-tip-off"; // true: the user asked never to see the low-memory popup again
 // the page's memory with a finder run (detection/browser/MEMORY.md), and the device memory below which it asks
 // the user to free some: browsers say only how much a computer has in all, never how much is free
@@ -1553,23 +1554,79 @@ $("#theme").onclick = () => {
 // a dropdown closes when the user clicks anywhere else
 document.addEventListener("click", (e) => { document.querySelectorAll("details.menu[open]").forEach((m) => { if (!m.contains(e.target)) m.open = false; }); });
 showView("image");
-// the release writes the version into the element's title; show it as text
-$("#sb-version").textContent = "v" + $("#sb-version").title.replace(/^version /, "");
+// the release stamps the version into the page's <meta name="version">; the status bar shows it
+const VERSION = $("#site-version").title.replace(/^version /, "");
+$("#sb-version").textContent = "v" + VERSION;
 // every 5 minutes, compare this page's version with the one now published; a newer one lights up the
 // version box, which then reloads the page when clicked
 {
-  const mine = $("#sb-version").title, v = $("#sb-version");
+  const v = $("#sb-version");
   const check = async () => {
     try {
       const html = await (await fetch(location.pathname, { cache: "no-store" })).text();
-      const live = (html.match(/id="sb-version" title="([^"]*)"/) || [])[1];
-      if (!live || live === mine || v.classList.contains("stale")) return;
-      v.classList.add("stale"); v.textContent = "Refresh for " + live.replace(/^version /, "v");
-      v.title = `This page is ${mine}; ${live} is out. Click to refresh.`; v.setAttribute("role", "button"); v.tabIndex = 0;
-      v.onclick = v.onkeydown = (e) => { if (e.type === "click" || e.key === "Enter") location.reload(); };
+      const live = ((html.match(/id="site-version" title="version ([^"]*)"/) || [])[1]);
+      if (!live || live === VERSION || v.classList.contains("stale")) return;
+      v.classList.add("stale"); v.textContent = "Refresh for v" + live;
+      v.title = `This page is v${VERSION}; v${live} is out. Click to refresh.`;
     } catch { /* offline: try again next time */ }
   };
   setInterval(check, 5 * 60 * 1000);
+}
+
+// Version history: the version box opens it; after an update, a bubble points at the box
+const build = (version) => Number(String(version).split(".").pop());
+const releaseDay = (version) => { // the middle part is years since 2025, then month and day
+  const m = String(version).split(".")[1]?.match(/^(\d+)(\d\d)(\d\d)$/);
+  return m ? new Date(Date.UTC(2025 + Number(m[1]), Number(m[2]) - 1, Number(m[3]))) : null;
+};
+let historyLoad = null;
+const loadHistory = () => historyLoad ||= fetch("version_history.json", { cache: "no-cache" })
+  .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); });
+async function showHistory(since) {
+  const list = $("#history-list");
+  list.textContent = "Loading…";
+  $("#history-dlg").showModal();
+  let releases;
+  try { releases = await loadHistory(); } catch { historyLoad = null; list.textContent = "The version history could not be loaded. Please try again later."; return; }
+  list.replaceChildren();
+  if (since) list.append(Object.assign(document.createElement("p"), { className: "since", textContent: `New since v${since}, the version you saw last:` }));
+  for (const r of releases) {
+    const sec = document.createElement("section"), h = document.createElement("h3"), ul = document.createElement("ul");
+    h.append("v" + r.version);
+    const day = releaseDay(r.version);
+    if (day) h.append(Object.assign(document.createElement("span"), { className: "date", textContent: day.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) }));
+    if (since && build(r.version) > build(since)) h.append(Object.assign(document.createElement("span"), { className: "tag", textContent: "New" }));
+    for (const c of r.changes) ul.append(Object.assign(document.createElement("li"), { textContent: c }));
+    sec.append(h, ul); list.append(sec);
+  }
+}
+{
+  const v = $("#sb-version"), bubble = $("#whats-new");
+  const seen = readJSON(SEEN_VERSION, null);
+  const dismiss = () => { bubble.hidden = true; writeJSON(SEEN_VERSION, VERSION); };
+  const place = () => { // the bubble's arrow points at the middle of the version box
+    const r = v.getBoundingClientRect();
+    bubble.style.right = Math.max(8, innerWidth - r.right) + "px";
+    bubble.style.setProperty("--arrow", Math.max(10, r.width / 2 - 6) + "px");
+  };
+  v.onclick = () => {
+    if (v.classList.contains("stale")) return location.reload();
+    const since = bubble.hidden ? null : seen;
+    if (!bubble.hidden) dismiss();
+    showHistory(since);
+  };
+  $("#whats-new-open").onclick = () => { dismiss(); showHistory(seen); };
+  $("#whats-new-x").onclick = dismiss;
+  if (!seen) writeJSON(SEEN_VERSION, VERSION); // a first visit has nothing to compare with
+  else if (seen !== VERSION && build(VERSION) > build(seen)) {
+    // only an update that changed something the history names earns the bubble
+    loadHistory().then((releases) => {
+      if (!releases.some((r) => build(r.version) > build(seen))) return writeJSON(SEEN_VERSION, VERSION);
+      $("#whats-new-open").textContent = `Click here to see what was updated since v${seen}.`;
+      bubble.hidden = false; place();
+      addEventListener("resize", place);
+    }).catch(() => { historyLoad = null; /* no history to point at: ask again on the next visit */ });
+  }
 }
 
 // the buttons whose action can take a while on a slow computer; Load is held from a chosen image until it is open

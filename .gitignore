@@ -18,4 +18,6 @@ __pycache__/
 /detection/browser/package*.json
 # the page's vendored wheels (python3 web/build.py) and the Pages deploy's assembled site
 /web/vendor/
+# the version history the page reads, built from web/version_history.md (python3 web/version_history.py json)
+/web/version_history.json
 /_site/

@@ -249,6 +249,15 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   click restores one). A status bar shows the image name, the candidate and finalist counts, the memory the tab holds
   ("Memory Usage", Python's and the page's; amber past a quarter of the computer's total where the
   browser says it, which the hover names), and the site's version (stamped by each release).
+- **Version history.** Clicking the version in the status bar (it has no tooltip) opens a Version
+  history popup: each release, newest first, with its date and terse lines on what changed for the
+  user. The lines live in [`web/version_history.md`](../web/version_history.md): a pull request that
+  changes what users see adds one under "Next release", and the site build files it under the
+  release that first carried that pull request. The browser remembers the version last seen; when
+  the page has been updated since and the history names a change in between, a bubble points at
+  the version saying "Click here to see what was updated since v…", until the user opens the
+  history or closes the bubble with its ×. The history then marks the releases that are new
+  (`tests/test_version_history.py`, `tests/test_version_history_page.py`).
 - **Moving around the image.** Dragging moves the image; scrolling up and down zooms around the
   pointer in small steps; scrolling sideways steps to the previous or next candidate. The Show
   menu switches accepted and rejected markings on and off, each with its own line width and colour,
