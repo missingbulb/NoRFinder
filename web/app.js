@@ -48,7 +48,7 @@ const st = {
   worker: null, H: 0, W: 0, um: null, img: null, meta: null, seg: null, cands: [],
   fails: [], alone: null, forced: new Map(), edits: new Map(), defaults: {}, values: {}, off: new Set(),
   about: {}, detectValues: {}, lastRun: null, filtersFor: null, seq: 0, inflight: false, pending: false,
-  zoom: 2, fileName: "", sha: "", source: null, added: [], mask: [], lasso: null, numbers: new Map(), order: [], heap: null, mem: null, files: 0, sel: null, tab: "pass",
+  zoom: 2, fileName: "", sha: "", source: null, added: [], mask: [], lasso: null, numbers: new Map(), order: [], heap: null, sel: null, tab: "pass",
   show: { ...SHOW_DEFAULTS, ...readJSON(SHOW) }, opt: readOpts(), crops: new Map(),
 };
 
@@ -156,17 +156,15 @@ function busy(on, text, look) {
   $("#busy-text").textContent = text || $("#status").textContent; $("#busy-time").textContent = "";
   st.busyTimer = setInterval(() => { $("#busy-time").textContent = ((Date.now() - st.busySince) / 1000).toFixed(0) + " s"; }, 500);
 }
-// what each major thing loaded holds, as the worker measured it in Python's memory, and in Chrome and
-// Edge the page's own scripts; the browser's own share and the compiled code are not readable from a page
+// the memory the tab holds: Python's (the bulk, and it never shrinks) and, in Chrome and Edge, the page's own
+// scripts; the browser's own share and the compiled code are not readable from a page
 function statusBar() {
-  const js = performance.memory?.usedJSHeapSize, total = st.heap == null ? null : st.heap + st.files + (js || 0);
+  const js = performance.memory?.usedJSHeapSize, total = st.heap == null ? null : st.heap + (js || 0);
   const gb = navigator.deviceMemory, el = $("#sb-memory");
-  const parts = (st.mem || []).concat(js ? [["page", js]] : []);
-  el.textContent = total == null ? "" : "Memory " + parts.map(([name, n]) => `${name} ${mbOf(n)}`).join(" · ") + " MB";
+  el.textContent = total == null ? "" : `Memory ${mbOf(total)} MB` + (gb ? ` of ${gb} GB` : "");
   el.classList.toggle("warn", !!gb && total > gb * 2 ** 30 / 4);
-  el.title = total == null ? "" : `The tab holds ${mbOf(total)} MB that a page can read` + (gb ? `, of the computer's ${gb} GB` : "") +
-    ". Held free is memory Python grew to at its busiest and keeps, since it never shrinks." +
-    " The browser and Python's compiled code hold a few hundred MB more.";
+  el.title = total == null ? "" : `Python ${mbOf(st.heap)} MB` + (js ? `, the page ${mbOf(js)} MB` : "") +
+    ". The browser and Python's compiled code hold a few hundred MB more, which a page cannot read." + (gb ? ` This computer has ${gb} GB in all.` : "");
   $("#sb-file").textContent = st.fileName || "No image";
 }
 const mbOf = (n) => Math.round(n / 2 ** 20);
@@ -237,7 +235,6 @@ $("#memory-off").onchange = () => writeJSON(MEMORY_TIP, $("#memory-off").checked
 
 function onWorker(m) {
   if (m.heap != null) st.heap = m.heap;
-  if (m.mem) { st.mem = m.mem; st.files = m.files || 0; }
   handle(m); settle(m); statusBar();
 }
 function handle(m) {

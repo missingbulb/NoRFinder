@@ -26,7 +26,7 @@ const A = await (await fetch("answers/answers.json")).json();
 const bin = async (n) => new Uint8Array(await (await fetch("answers/" + n)).arrayBuffer());
 const late = () => new Promise((ok) => setTimeout(ok, ${LATE}));
 let finder, runs = 0;
-postMessage({ type: "ready", finders: A.finders, about: A.about, secs: 0, heap: 300 * 2 ** 20, mem: [["Python", 31 * 2 ** 20], ["numpy", 20 * 2 ** 20], ["our code", 2 ** 20]] });
+postMessage({ type: "ready", finders: A.finders, about: A.about, secs: 0, heap: 300 * 2 ** 20 });
 onmessage = async ({ data: m }) => {
   await late();
   if (m.type === "open") {
@@ -79,7 +79,7 @@ const free = (page, id) => page.waitForFunction((id) => !$(id).classList.contain
   const { ctx, page } = await open(8);
   await check(!(await page.evaluate(() => $("#memory-dlg").open)), "no memory popup on a computer with 8 GB");
   const mem = await page.textContent("#sb-memory");
-  await check(/^Memory Python 31 · numpy 20 · our code 1( · page \d+)? MB$/.test(mem), `the status bar shows what each thing loaded holds: "${mem}"`);
+  await check(/^Memory \d+ MB of 8 GB$/.test(mem) && parseInt(mem.slice(7)) >= 300, `the status bar shows the memory in use: "${mem}"`);
   await shot(page, "status_memory", "#statusbar");
   await page.setInputFiles("#file", image);
   await page.waitForFunction(() => $("#load-main").classList.contains("working"));
