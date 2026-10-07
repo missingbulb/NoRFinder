@@ -1,6 +1,7 @@
 """R9: CI runs in two sets. The fast set (`-m "not full"`) runs on every PR and needs neither Node nor a
 browser; the full set adds every test that drives Node, Pyodide or Chromium, or measures speed or memory,
-and runs nightly and on every push to main, before anything can be released."""
+and runs on every push to main, before anything can be released, and nightly from the nor-finder
+pack's full-tests task."""
 import ast
 import glob
 import os
@@ -29,4 +30,6 @@ def test_the_fast_set_is_light_and_the_full_set_runs_everything():
     full = open(os.path.join(WORKFLOWS, 'tests-full.yml')).read()
     assert '-m "not full"' in fast and 'playwright' not in fast and 'pyodide' not in fast
     assert 'pull_request' in fast
-    assert '-m "not full"' not in full and 'schedule' in full and 'branches: [main]' in full
+    assert '-m "not full"' not in full and 'branches: [main]' in full and 'workflow_dispatch' in full
+    task = os.path.join(HERE, '..', '.claudinite', 'local', 'packs', 'nor-finder', 'tasks', 'full-tests')
+    assert 'tests-full.yml' in open(os.path.join(task, 'worker.mjs')).read()

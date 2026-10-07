@@ -404,7 +404,7 @@ written into the baseline by a local test run and locked from then on
 labels, not the owner's (`detection/STATE.md`), so the lock is only as right as they are. CI runs in two sets, and a test that would
 skip there fails instead. The fast set runs on each PR (`.github/workflows/tests.yml`,
 `-m "not full"`) and needs neither Node nor a browser; every test that drives Node, Pyodide or Chromium,
-or measures speed or memory, is marked `full` and runs only in the full set, nightly and on every push
+or measures speed or memory, is marked `full` and runs only in the full set, nightly (the nor-finder pack's `full-tests` task) and on every push
 to main, so it has run on anything a release can ship (`.github/workflows/tests-full.yml`,
 `tests/test_ci_split.py`).
 
