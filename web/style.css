@@ -303,7 +303,8 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #statusbar .grow { flex: 1; }
 #statusbar b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
 #sb-file { color: var(--text); font-weight: 600; max-width: 30vw; overflow: hidden; text-overflow: ellipsis; }
-#sb-times { font-variant-numeric: tabular-nums; }
+#sb-memory { font-variant-numeric: tabular-nums; }
+#sb-memory.warn { color: var(--warn); }
 #status { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 #status.err { color: var(--err); }
 #statusbar .spin { width: 12px; height: 12px; display: none; }

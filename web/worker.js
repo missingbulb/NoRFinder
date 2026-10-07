@@ -58,7 +58,7 @@ import interactive, json
 `);
   const finders = JSON.parse(py.runPython("json.dumps(interactive.FINDERS)"));
   const about = JSON.parse(py.runPython("json.dumps({f: interactive.describe(f) for f in interactive.FINDERS})"));
-  postMessage({ type: "ready", finders, about, secs: (performance.now() - t0) / 1000 });
+  post({ type: "ready", finders, about, secs: (performance.now() - t0) / 1000 });
 }
 
 // the packages' download, counted for the status bar while Python starts
@@ -88,10 +88,12 @@ async function fetchWheel({ url, sha256 }) {
 
 const booted = boot().catch((e) => postMessage({ type: "error", text: String(e) }));
 
+// every answer says how large Python's memory has grown: it never shrinks, and it is most of the tab's
+const post = (m, transfer) => postMessage({ ...m, heap: py._module.HEAPU8.byteLength }, transfer);
 let answer;
 async function handle(m) {
   await booted;
-  answer ||= bridge(py, postMessage);
+  answer ||= bridge(py, post);
   answer(m);
 }
 

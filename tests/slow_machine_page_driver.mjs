@@ -2,7 +2,7 @@
 // tests/test_memory.py), each answer late as on a slow computer, and checks R8's kindness to slow computers:
 // a button whose action takes a while is held, with a spinner, until the action is done; the low-memory popup
 // shows on a computer reporting little memory and not on one with plenty, stays away once the user asks, and
-// shows whenever the page runs out of memory. Optional SHOTS: a directory for screenshots.
+// shows whenever the page runs out of memory; the status bar shows the memory in use. Optional SHOTS: a directory for screenshots.
 // Exits 1 on a failed check, 2 when it cannot run.
 //   node tests/slow_machine_page_driver.mjs ANSWERS IMAGE [SHOTS]
 import { createRequire } from "node:module";
@@ -26,7 +26,7 @@ const A = await (await fetch("answers/answers.json")).json();
 const bin = async (n) => new Uint8Array(await (await fetch("answers/" + n)).arrayBuffer());
 const late = () => new Promise((ok) => setTimeout(ok, ${LATE}));
 let finder, runs = 0;
-postMessage({ type: "ready", finders: A.finders, about: A.about, secs: 0 });
+postMessage({ type: "ready", finders: A.finders, about: A.about, secs: 0, heap: 300 * 2 ** 20 });
 onmessage = async ({ data: m }) => {
   await late();
   if (m.type === "open") {
@@ -78,6 +78,9 @@ const free = (page, id) => page.waitForFunction((id) => !$(id).classList.contain
 {
   const { ctx, page } = await open(8);
   await check(!(await page.evaluate(() => $("#memory-dlg").open)), "no memory popup on a computer with 8 GB");
+  const mem = await page.textContent("#sb-memory");
+  await check(/^Memory \d+ MB of 8 GB$/.test(mem) && parseInt(mem.slice(7)) >= 300, `the status bar shows the memory in use: "${mem}"`);
+  await shot(page, "status_memory", "#statusbar");
   await page.setInputFiles("#file", image);
   await page.waitForFunction(() => $("#load-main").classList.contains("working"));
   await check(await held(page, "#load-main") && !(await page.evaluate(() => !!st.img)), "Load is held while the image opens");
