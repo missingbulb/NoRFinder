@@ -279,6 +279,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #summary .hist { font-size: 12px; color: var(--dim); }
 #summary .hist rect { fill: var(--pink); opacity: .75; }
 #summary .reasons { margin-top: 12px; color: var(--dim); font-size: 13px; }
+#summary .density { margin-top: 6px; font-variant-numeric: tabular-nums; }
 
 /* the footer: file, counts and timings as sections on the left; progress and the version on the right */
 #statusbar { display: flex; align-items: center; gap: 10px; height: 1cm; padding: 0 14px; background: var(--panel); border-top: 1px solid var(--line);
@@ -376,3 +377,48 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #notice p { margin: 0; }
 #notice button { align-self: flex-end; }
 #ctx[hidden], #card-menu[hidden] { display: none; }
+
+/* the Ground truth button's colour: how finished the user's verdicts are */
+/* the Ground truth button: a plain button with a small check, warning or error icon; the last two pulse gently */
+#dl-truth { display: inline-flex; align-items: center; gap: 6px; }
+#dl-truth .gt-ico { display: none; line-height: 0; }
+#dl-truth .gt-ico svg { display: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+#dl-truth[data-state=done] .gt-ico, #dl-truth[data-state=part] .gt-ico, #dl-truth[data-state=todo] .gt-ico { display: inline-block; }
+#dl-truth[data-state=done] .done, #dl-truth[data-state=part] .part, #dl-truth[data-state=todo] .todo { display: block; }
+#dl-truth[data-state=done] .gt-ico { color: var(--yes); }
+#dl-truth[data-state=part] .gt-ico { color: var(--gt-part); animation: gt-pulse 2s ease-in-out infinite; }
+#dl-truth[data-state=todo] .gt-ico { color: var(--no); animation: gt-pulse 2s ease-in-out infinite; }
+@keyframes gt-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(.9); } }
+@media (prefers-reduced-motion: reduce) { #dl-truth .gt-ico { animation: none !important; } }
+:root { --gt-part: #e8890c; }
+#gt-dlg { width: min(460px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
+  border: 1px solid var(--line); border-radius: var(--r-panel); box-shadow: 0 12px 40px #0006; }
+#gt-dlg::backdrop { background: #0007; }
+/* the popup's checklist: every issue the ground truth can have, crossed out with a green check once resolved */
+.checklist { list-style: none; margin: 4px 0 10px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.checklist li { display: flex; gap: 8px; align-items: flex-start; }
+.checklist svg { flex: none; margin-top: 1px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.checklist li.ok { color: var(--dim); }
+.checklist li.ok span { text-decoration: line-through; }
+.checklist li.ok svg { color: var(--yes); }
+.checklist li.warn svg { color: var(--gt-part); }
+.checklist li.error svg { color: var(--no); }
+#gt-msg:empty { display: none; }
+#gt-dlg .grow { flex: 1; }
+
+/* the summary mask: its borders as a pulsing dashed line; its inside tinted only when areas overlap or nest */
+#summary-box .sec-head { margin-bottom: 10px; }
+.mask-btns { display: inline-flex; gap: 6px; }
+.mask-btns button[hidden] { display: none; }
+#overlay .mask-marks { pointer-events: none; }
+#overlay .mask-marks .edge { fill: none; stroke: #fff; stroke-width: 1.5; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke;
+  animation: mask-pulse 1.6s ease-in-out infinite alternate; }
+#overlay .mask-marks .edge.under { stroke: #000; stroke-dasharray: none; stroke-width: 2.5; stroke-opacity: .5; animation: none; }
+#overlay .mask-marks .fill { fill: #fff; fill-opacity: .07; stroke: none; }
+@keyframes mask-pulse { from { stroke-opacity: 1; } to { stroke-opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { #overlay .mask-marks .edge { animation-duration: 6s; } }
+#overlay .lasso-live { fill: #ffffff14; stroke: #fff; stroke-width: 1.5; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+#scroller.lassoing, #scroller.lassoing #overlay g[data-i] { cursor: crosshair; }
+#lasso-hint { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); z-index: 6; padding: 5px 14px; border-radius: 999px;
+  background: var(--shade); border: 1px solid var(--line); font-weight: 600; font-size: 13px; pointer-events: none; }
+#lasso-hint[hidden] { display: none; }
