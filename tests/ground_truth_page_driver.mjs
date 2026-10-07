@@ -184,10 +184,13 @@ async function popup(page) {
     `the added NoRs and the mask are listed only when there are some, and the mask never as done (${items.map((t) => t.text).join(" | ")})`);
   return items.filter((t) => !t.ok).map((t) => t.text).join(" | ");
 }
+// which of the popup's buttons is blue: the next step
+const blue = (page) => page.$$eval("#gt-dlg button.primary", (b) => b.map((x) => x.id).join());
 async function download(page) {
   const said = await popup(page);
+  await check(await blue(page) === "gt-export", "the popup opens with Export file blue");
   const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#gt-export")]);
-  return { said, name: dl.suggestedFilename(), gt: JSON.parse(fs.readFileSync(await dl.path(), "utf8")) };
+  return { said, name: dl.suggestedFilename(), gt: JSON.parse(fs.readFileSync(await dl.path(), "utf8")), after: await blue(page) };
 }
 const csvRows = async (page, id) => {
   const [dl] = await Promise.all([page.waitForEvent("download"), page.click(id)]);
@@ -270,7 +273,8 @@ async function mask(page) {
   await page.click("#gt-close");
   const { undecided } = await markAndVote(page);
   await mask(page);
-  const { said, gt } = await download(page);
+  const { said, gt, after } = await download(page);
+  await check(after === "gt-close", `after the export of a local image, which cannot be sent, Close turns blue (${after})`);
   await check(/have no vote/.test(said), `the popup names the finalists left without a verdict: "${said}"`);
   const kinds = gt.labels.map((L) => (L.kind === "missing" ? "missing" : L.decision)).sort().join(",");
   await check(gt.format === "norfinder-ground-truth/2" && kinds === "approved,missing,rejected" && undecided > 0,
@@ -296,7 +300,8 @@ async function mask(page) {
   const { ctx, page, asked } = await open(true);
   await check(await page.isHidden("#notice"), "a Drive image shows no warning");
   await markAndVote(page);
-  const { said, name, gt } = await download(page);
+  const { said, name, gt, after } = await download(page);
+  await check(after === "gt-issue", `after the export Open new GitHub issue turns blue (${after})`);
   await check(!/mask/i.test(said), `with no mask the mask item is crossed out: "${said}"`);
   await check(gt.image.location.source === "drive" && gt.image.location.drive_id === DRIVE_ID, "the file names the image's Drive id");
   await page.click("#gt-issue");
@@ -305,6 +310,7 @@ async function mask(page) {
   await check(issue && issue.host === "github.com" && /\/issues\/new$/.test(issue.pathname) && issue.searchParams.get("labels") === "new-ground-truth"
     && issue.searchParams.get("body").includes(gt.image.sha256) && issue.searchParams.get("body").includes(DRIVE_ID) && issue.searchParams.get("body").includes(name),
     `Open new GitHub issue opens one labelled new-ground-truth, naming the image and the file (${issue && issue.pathname})`);
+  await check(await blue(page) === "gt-close", `after the issue opens Close turns blue (${await blue(page)})`);
   const note = await page.textContent("#gt-msg");
   await check(note.includes(name) && /Attach/.test(note), `the popup says to attach the file: "${note}"`);
   await ctx.close();

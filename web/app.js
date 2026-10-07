@@ -1258,13 +1258,18 @@ $("#dl-truth").onclick = () => {
   $("#gt-export").disabled = !gt.labels.length;
   const issue = $("#gt-issue");
   issue.disabled = !gt.labels.length || local; issue.title = local ? LOCAL_GT : "";
+  // the blue button is the next step: export, then open the issue (a local image cannot), then close
+  const next = (b) => { for (const id of ["#gt-export", "#gt-issue", "#gt-close"]) $(id).classList.toggle("primary", $(id) === b); };
+  next($("#gt-export"));
   $("#gt-export").onclick = () => {
     save_(file, JSON.stringify(gt, null, 1), "application/json");
     $("#gt-msg").textContent = `Downloaded ${file}.` + (local ? "" : " Open the issue next and attach it there.");
+    next(local ? $("#gt-close") : issue);
   };
   issue.onclick = () => {
     window.open(issueUrl(gt, file), "_blank", "noopener");
     $("#gt-msg").textContent = `Attach ${file} to the GitHub issue that just opened, then submit.`;
+    next($("#gt-close"));
   };
   $("#gt-dlg").showModal();
 };
