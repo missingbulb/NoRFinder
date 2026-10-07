@@ -12,3 +12,8 @@ def pytest_runtest_makereport(item, call):
     if os.environ.get('CI') and report.skipped:
         report.outcome = 'failed'
         report.longrepr = f'skipped in CI, where every test must run: {report.longrepr}'
+
+
+def pytest_configure(config):
+    config.addinivalue_line('markers', 'full: drives Node, Pyodide or Chromium, or measures speed or memory; '
+                                       'left out of the fast set every PR runs (-m "not full")')

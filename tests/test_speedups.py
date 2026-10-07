@@ -10,6 +10,9 @@ import sys
 import numpy as np
 from scipy import ndimage as ndi
 from skimage.morphology import h_maxima
+import pytest
+
+pytestmark = pytest.mark.full
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'detection'))
 import nor3

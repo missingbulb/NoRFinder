@@ -4,6 +4,8 @@ import numpy as np
 import pytest
 import tifffile
 
+pytestmark = pytest.mark.full
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys_path = os.path.join(HERE, '..', 'detection')
 NODE = shutil.which('node')

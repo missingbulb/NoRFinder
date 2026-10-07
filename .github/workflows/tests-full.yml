@@ -1,0 +1,29 @@
+name: Full tests
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Python packages
+        run: python3 -m pip install -r requirements.txt
+      - name: Install Pyodide and Chromium for the page tests
+        run: |
+          npm i --prefix detection/browser pyodide@314.0.7
+          npm i -g playwright@1.56.1
+          playwright install --with-deps chromium
+      - name: Fetch the ground-truth images
+        run: python3 detection/ground_truth.py fetch
+      - name: Run every test
+        run: python3 -m pytest tests -q --durations=10

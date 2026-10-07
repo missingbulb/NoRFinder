@@ -410,8 +410,12 @@ proposing a candidate at a missing mark fails the tests; a loss the owner agreed
 `python3 tests/test_quality.py --accept`, so the PR's diff names every spot that moved. Gains are
 written into the baseline by a local test run and locked from then on
 (`tests/test_quality.py`). Until submissions cover it, the reference slide is scored on Claude's
-labels, not the owner's (`detection/STATE.md`), so the lock is only as right as they are. Every test runs in CI on each PR
-(`.github/workflows/tests.yml`), and a test that would skip there fails instead.
+labels, not the owner's (`detection/STATE.md`), so the lock is only as right as they are. CI runs in two sets, and a test that would
+skip there fails instead. The fast set runs on each PR (`.github/workflows/tests.yml`,
+`-m "not full"`) and needs neither Node nor a browser; every test that drives Node, Pyodide or Chromium,
+or measures speed or memory, is marked `full` and runs only in the full set, nightly (the nor-finder pack's `full-tests` task) and on every push
+to main, so it has run on anything a release can ship (`.github/workflows/tests-full.yml`,
+`tests/test_ci_split.py`).
 
 ## R10 — Submitted ground truth joins the data set by code, and outranks older labels
 

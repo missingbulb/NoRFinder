@@ -3,6 +3,9 @@ image's ready-made thumbnail (web/drive_thumbs.py) or the one saved when it was 
 Drive for one (drive_dialog_driver.mjs)."""
 import glob, json, os, sys
 from test_memory import HERE, TIF, needs_node, needs_slide, run
+import pytest
+
+pytestmark = pytest.mark.full
 
 WEB = os.path.join(HERE, '..', 'web')
 sys.path.insert(0, WEB)

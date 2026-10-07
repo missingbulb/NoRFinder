@@ -20,6 +20,8 @@ import sys
 import pytest
 import tifffile
 
+pytestmark = pytest.mark.full
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'detection'))
 import interactive
