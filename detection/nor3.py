@@ -186,7 +186,10 @@ class FibreAngle:
     pass of the smoothing runs per row on demand; each row is exactly that row of the whole map."""
     def __init__(self, S, w):
         gy_, gx_ = np.gradient(S); self.w = w; self.rows = {}
-        self.half = [ndi.gaussian_filter1d(v, w, axis=0) for v in (gx_ * gx_, gy_ * gy_, gx_ * gy_)]
+        # one product at a time, each gradient dropped after its last use: the same values, a lower peak
+        f = lambda v: ndi.gaussian_filter1d(v, w, axis=0)
+        xx = f(gx_ * gx_); xy = f(gx_ * gy_); del gx_
+        self.half = [xx, f(gy_ * gy_), xy]
 
     def __getitem__(self, yx):
         y, x = yx

@@ -59,7 +59,8 @@ _Last updated 2026-10-06._
 - **Keep or drop every change by data:** `nor_lab.py ablate BASE VARIANT...`. Log every attempt,
   failures included, in `lab/ledger.md`.
 - **Performance pass** at the end of long algorithmic tasks, never on quick fixes where Ariel is
-  waiting: `perf.py` (the output must stay identical). See the skill.
+  waiting: `perf.py` (the output must stay identical; it reports time and peak memory, and a
+  lower peak is a gain of its own since the page keeps it). See the skill.
 - **Algorithmic and performance work runs the raw Python finders** (`nor_lab.py`, `perf.py`,
   `bench.py`), never through the web page (2026-09-29). The browser tools in `browser/` only check
   the page's own runtime.
