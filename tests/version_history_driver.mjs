@@ -70,7 +70,8 @@ async function open(seen, theme = "dark") {
 }
 const bubble = (page) => page.evaluate(() => !$("#whats-new").hidden && $("#whats-new-open").textContent);
 const stored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("nor-seen-version")));
-const tags = (page) => page.evaluate(() => [...document.querySelectorAll("#history-list section")].map((s) => [s.querySelector("h3").firstChild.textContent, !!s.querySelector(".tag")]));
+// the releases listed once the history has arrived: [version, marked new]
+const tags = async (page) => (await page.waitForFunction(() => !/Loading/.test($("#history-list").textContent)), page.evaluate(() => [...document.querySelectorAll("#history-list section")].map((s) => [s.querySelector("h3").firstChild.textContent, !!s.querySelector(".tag")])));
 
 // ---- a first visit: no bubble; the version box opens the full history ----
 {
