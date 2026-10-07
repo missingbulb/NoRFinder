@@ -26,7 +26,7 @@ const A = await (await fetch("answers/answers.json")).json();
 const bin = async (n) => new Uint8Array(await (await fetch("answers/" + n)).arrayBuffer());
 const late = () => new Promise((ok) => setTimeout(ok, ${LATE}));
 let finder, runs = 0;
-postMessage({ type: "ready", finders: A.finders, about: A.about, secs: 0, heap: 300 * 2 ** 20 });
+postMessage({ type: "ready", finders: A.finders, about: A.about, secs: 0, heap: 300 * 2 ** 20, files: 80 * 2 ** 20 });
 onmessage = async ({ data: m }) => {
   await late();
   if (m.type === "open") {
@@ -79,7 +79,7 @@ const free = (page, id) => page.waitForFunction((id) => !$(id).classList.contain
   const { ctx, page } = await open(8);
   await check(!(await page.evaluate(() => $("#memory-dlg").open)), "no memory popup on a computer with 8 GB");
   const mem = await page.textContent("#sb-memory");
-  await check(/^Memory Usage \d+ MB$/.test(mem) && parseInt(mem.slice(13)) >= 300, `the status bar shows the memory in use: "${mem}"`);
+  await check(/^Memory Usage \d+ MB$/.test(mem) && parseInt(mem.slice(13)) >= 380, `the status bar shows the memory in use: "${mem}"`);
   await shot(page, "status_memory", "#statusbar");
   await page.setInputFiles("#file", image);
   await page.waitForFunction(() => $("#load-main").classList.contains("working"));
@@ -93,6 +93,9 @@ const free = (page, id) => page.waitForFunction((id) => !$(id).classList.contain
   await check(await held(page, "#find"), "and stays held while the finder runs and the first filtering follows");
   await page.waitForFunction(() => !$("#find").classList.contains("working"), null, { timeout: 4 * LATE + 2000 });
   await check(await page.evaluate(() => st.meta && !st.inflight), "it lets go once the candidates are drawn");
+  const endless = await page.evaluate(() => document.getAnimations()
+    .filter((a) => a.effect.getComputedTiming().iterations === Infinity).map((a) => a.animationName));
+  await check(endless.length === 0, `nothing animates forever once the page waits for the user, which would redraw it every frame: ${endless}`);
   const preset = "#presets button[data-preset=precise]";
   await page.evaluate(() => { for (const d of $("#filters").children) d.kept = true; });
   await page.click(preset);
