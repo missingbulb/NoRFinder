@@ -305,9 +305,9 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   card, the summary and the downloads. The measurements of the finalists are summarised in the right bar
   as one histogram each (changed by the owner on 2026-10-07): a count axis, the mean drawn as a line
   with one SD either side shaded, and the mean, SD and n written above it, with no separate table.
-- **Downloads** (moved by the owner on 2026-10-07). At the bottom of the Summary box, the candidates
-  as CSV (every candidate, its status, its reasons, the user's decision and its measurements) and the
-  summary as CSV. In the box below it, titled Ground Truth, the Submit new GT to GitHub button gives
+- **Downloads** (moved by the owner on 2026-10-07). At the bottom of the Summary box, side by side across
+  its width, Download Candidates gives the candidates as CSV (every candidate, its status, its reasons, the user's decision and its measurements) and Download
+  Summary the summary as CSV. In the box below it, titled Ground Truth, the Submit new GT to GitHub button gives
   the ground truth
   (`norfinder-ground-truth/2`): a JSON file naming the image (its SHA-256, and where it was loaded
   from: its Google Drive id and link, or "local") that lists only what the user marked: every
