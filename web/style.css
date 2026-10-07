@@ -285,13 +285,16 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #selected-box .sec-head { margin-bottom: 10px; }
 #downloads { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 #downloads h2 { flex-basis: 100%; margin-bottom: 2px; }
-#summary .tbl { overflow-x: auto; }
-#summary table { border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; font-size: 12px; width: 100%; }
-#summary th, #summary td { padding: 4px 4px; text-align: right; border-bottom: 1px solid var(--line); }
-#summary th:first-child, #summary td:first-child { text-align: left; }
 #summary .hists { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
-#summary .hist { font-size: 12px; color: var(--dim); }
-#summary .hist rect { fill: var(--pink); opacity: .75; }
+#summary .hist { font-size: 12px; color: var(--dim); width: 100%; }
+#summary .hist svg { display: block; width: 100%; height: auto; }
+#summary .hist > div { margin-bottom: 2px; font-variant-numeric: tabular-nums; }
+#summary .hist b { color: var(--text); font-weight: 600; }
+#summary .hist text { fill: currentColor; font-size: 10px; }
+#summary .hist .bar { fill: var(--pink); opacity: .75; }
+#summary .hist .grid { stroke: var(--line); }
+#summary .hist .sd { fill: var(--text); opacity: .1; }
+#summary .hist .mean { stroke: var(--text); stroke-width: 1.5; }
 #summary .density { margin-top: 6px; font-variant-numeric: tabular-nums; }
 
 /* the footer: file, counts and timings as sections on the left; progress and the version on the right */

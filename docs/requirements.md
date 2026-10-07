@@ -302,7 +302,9 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   green end on the far side, and the other ends keep their distances from that end, in order. A
   width end sets where along the axis the width is measured and, mirrored, how wide it is. On
   release the crop turns level with the new axis. The new measurements show on the image, the
-  card, the summary and the downloads. The measurements of the finalists are summarised in the right bar.
+  card, the summary and the downloads. The measurements of the finalists are summarised in the right bar
+  as one histogram each (changed by the owner on 2026-10-07): a count axis, the mean drawn as a line
+  with one SD either side shaded, and the mean, SD and n written above it, with no separate table.
 - **Downloads** (moved by the owner on 2026-10-07). At the bottom of the Summary box, the candidates
   as CSV (every candidate, its status, its reasons, the user's decision and its measurements) and the
   summary as CSV. In the box below it, titled Ground Truth, the Submit new GT to GitHub button gives

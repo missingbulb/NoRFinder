@@ -246,6 +246,17 @@ async function mask(page) {
     return ["#dl-cands", "#dl-summary"].map((id) => { const b = $(id).getBoundingClientRect(); return b.top >= sum.bottom && b.bottom <= box.bottom; });
   });
   await check(!/Rejected/.test(await page.textContent("#summary")), "the summary lists no filter reasons");
+  const hists = await page.evaluate(() => {
+    const ss = summaryRows(st.passes.filter(inMask)).map(([, s]) => s);
+    return [...document.querySelectorAll("#summary .hist")].map((h, k) => {
+      const line = h.querySelector(".mean"), x = +line.getAttribute("x1"), b = h.querySelectorAll(".bar");
+      const at = (i) => +b[i].getAttribute("x"), lo = at(0), hi = at(b.length - 1) + +b[0].getAttribute("width");
+      return { said: h.firstElementChild.textContent.includes(fmt(ss[k].mean)), where: Math.abs((x - lo) / (hi - lo) - (ss[k].mean - ss[k].min) / (ss[k].max - ss[k].min)) < 0.02,
+        axis: [...h.querySelectorAll("text")].some((t) => t.textContent === String(Math.max(...[...b].map((r) => +r.textContent)))) };
+    });
+  });
+  await check(!(await page.$("#summary table")) && hists.length >= 3 && hists.every((h) => h.said && h.where && h.axis),
+    `each histogram names its mean, draws it where it falls and has a count axis, and no table repeats them (${JSON.stringify(hists)})`);
   await check(csvAt.every(Boolean), `both CSV buttons sit at the bottom of the Summary box (${csvAt})`);
   const none = await popup(page);
   await check(/No candidate has your verdict/.test(none) && /thumbs/.test(await page.textContent("#gt-msg")) && await page.isDisabled("#gt-export"), `with nothing marked the popup says how to mark and exports nothing: "${none}"`);
