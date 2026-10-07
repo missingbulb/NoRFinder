@@ -68,7 +68,6 @@ body.resizing { cursor: col-resize; user-select: none; }
 .box + .box { margin-top: var(--pad); }
 .box h2 { margin-bottom: 10px; }
 .box select { width: 100%; }
-#image-box .sec-head { margin-bottom: 10px; }
 #thumb-wrap { position: relative; margin-bottom: 8px; border-radius: var(--r-ctl); overflow: hidden; background: #000; cursor: crosshair; line-height: 0; }
 #thumb-wrap[hidden] { display: none; }
 #thumb { width: 100%; height: auto; }
@@ -113,6 +112,8 @@ details.fold[open] > summary::before, .box.foldable:not(.folded) > .sec-head h2:
 #main-params:empty { display: none; }
 .sec-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .sec-head h2, .sec-head button { margin: 0; white-space: nowrap; }
+.box > .sec-head { margin-bottom: 10px; }
+.box.foldable.folded > .sec-head { margin-bottom: 0; }
 .sec-head button { padding: 3px 10px; font-size: 12px; }
 button.link { border: 0; background: none; padding: 0; color: var(--accent); font-size: 12px; }
 button.link:not(:disabled):hover { text-decoration: underline; }
@@ -151,7 +152,7 @@ button.link:disabled { color: var(--dim); }
 #finder-note { margin: 8px 0 0; }
 /* the filter presets: each one's precision and recall on the ground truth */
 #presets { display: flex; margin: 0 0 8px; }
-#presets[hidden] { display: none; }
+#presets[hidden], .box.foldable.folded > #presets { display: none; }
 #presets button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 2px; }
 #presets small { font-size: 11px; opacity: .75; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
@@ -282,7 +283,6 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 .stepper button { border: 0; border-radius: 0; background: transparent; width: 32px; padding: 2px 0; font-size: 16px; line-height: 1.2; }
 .stepper button + button { border-left: 1px solid var(--line); }
 .stepper button:not(:disabled):hover { background: var(--bg); }
-#selected-box .sec-head { margin-bottom: 10px; }
 #downloads { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 #downloads h2 { flex-basis: 100%; margin-bottom: 2px; }
 #summary .tbl { overflow-x: auto; }
@@ -429,7 +429,6 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 #gt-dlg .grow { flex: 1; }
 
 /* the summary mask: its borders as a pulsing dashed line; its inside tinted only when areas overlap or nest */
-#summary-box .sec-head { margin-bottom: 10px; }
 .mask-btns { display: inline-flex; gap: 6px; }
 .mask-btns button[hidden] { display: none; }
 #overlay .mask-marks { pointer-events: none; }

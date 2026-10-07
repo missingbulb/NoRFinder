@@ -90,9 +90,10 @@ const free = (page, id) => page.waitForFunction((id) => !$(id).classList.contain
   await check(await held(page, "#find"), "and stays held while the finder runs and the first filtering follows");
   await page.waitForFunction(() => !$("#find").classList.contains("working"), null, { timeout: 4 * LATE + 2000 });
   await check(await page.evaluate(() => st.meta && !st.inflight), "it lets go once the candidates are drawn");
-  await page.click("#reset-filters");
-  await check(await held(page, "#reset-filters"), "restore defaults is held while the filters run again");
-  await free(page, "#reset-filters");
+  const preset = "#presets button[data-preset=precise]";
+  await page.click(preset);
+  await check(await held(page, preset), "a filter preset is held while the filters run again");
+  await free(page, preset);
   await page.click("#switch");
   await free(page, "#switch");
   await check(await page.evaluate(() => st.view === "items"), "Item View switches views and lets go");
