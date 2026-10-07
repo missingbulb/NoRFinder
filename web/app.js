@@ -68,6 +68,9 @@ const PRESETS = { precise: "Precise", balanced: "Balanced", sensitive: "Sensitiv
 const quality = fetch("../detection/lab/finder_metrics.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
 const two = (x) => x.toFixed(2).replace(/^0/, "");
 const pr = (r) => `P ${two(r.precision)} · R ${two(r.recall)}`;
+// the preset with the highest F1: the finder's best combined result
+const best = (per) => Object.values(per).reduce((a, r) => (f1(r) > f1(a) ? r : a));
+const f1 = (r) => (2 * r.tp) / Math.max(1, 2 * r.tp + r.fp + r.fn);
 async function buildPresets() {
   const q = await quality, box = $("#presets"), per = q && q.finders[st.filtersFor] && q.finders[st.filtersFor].filtered;
   box.hidden = !per; if (!per) return;
@@ -178,8 +181,8 @@ function onWorker(m) {
     const sel = $("#finder");
     sel.innerHTML = Object.entries(m.finders).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
     quality.then((q) => {
-      if (q) sel.title = "Each finder's own precision (P) and recall (R): its candidates before any filter";
-      for (const o of sel.options) if (q && q.finders[o.value]) o.textContent += ` (${pr(q.finders[o.value].finder)})`;
+      if (q) sel.title = "Precision (P) and recall (R) of each finder with its best filter preset";
+      for (const o of sel.options) if (q && q.finders[o.value]) o.textContent += ` (${pr(best(q.finders[o.value].filtered))})`;
     });
     sel.disabled = false; st.ready = true; $("#spin").classList.remove("on");
     st.about = m.about; st.times.load = m.secs; st.help = Object.values(m.about)[0].help;
@@ -647,6 +650,11 @@ function buildDetect() {
   const finder = $("#finder").value, about = st.about[finder];
   const defs = about.detection_params, vals = (st.detectValues[finder] ||= { ...defs });
   $("#finder-note").textContent = about.about + (about.exact_refilter ? "" : " It picks between alternatives using the filters, so after a filter change, find again for its exact result.");
+  quality.then((q) => {
+    const own = q && q.finders[finder] && q.finders[finder].finder;
+    if (own && $("#finder").value === finder)
+      $("#finder-note").append(document.createElement("br"), `Before any filter: ${own.candidates} candidates, ${pr(own)}.`);
+  });
   const row = (k) => dial(k, defs[k], vals[k], (v) => {
     vals[k] = v;
     document.querySelectorAll(`#main-params .param[data-name="${k}"], #detect-params .param[data-name="${k}"]`).forEach((o) => { if (!o.contains(document.activeElement)) o.set(v); });
