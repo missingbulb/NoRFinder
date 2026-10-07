@@ -370,6 +370,9 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 #drive-list .item.folder .pic::before { content: "📁"; font-size: 24px; }
 #drive-msg.err { color: var(--err); }
 #drive-thumbs-l { display: flex; gap: 6px; align-items: center; margin: 0; white-space: nowrap; }
+#drive-thumbs-note { font-variant-numeric: tabular-nums; }
+#drive-thumbs-note:not(:empty)::before { content: "· "; }
+#drive-msg { margin: 0; }
 
 /* a box that folds: its title opens and closes it */
 .box.foldable > .sec-head h2 { display: flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }

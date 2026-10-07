@@ -346,15 +346,19 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   link", with no sign-in. An image loads at once; a folder lists its images and subfolders to pick
   from, each image with its size, the date it was added to Drive and a small colour thumbnail; the
   dialog keeps one size while the user moves between folders. A click only selects a row; Open (or
-  a double click, or Enter) opens it: an image loads, a folder lists its contents. A thumbnail is
-  drawn only once its row is in view, a lab TIFF's from 48 of its rows per channel (about 4% of the
-  file) in the colours the page gives its channels, and a PNG's is Drive's own; Drive's own picture
-  of a multi-channel TIFF is grey, so it is never used. A checkbox at the bottom, "Download
-  thumbnails" (on at first, remembered in the browser), turns them off. It needs the site's Google API key, kept in the repository variable `GOOGLE_API_KEY`
-  and written into `web/config.js` at deploy; without one the option is off. The dialog opens on
+  a double click, or Enter) opens it: an image loads, a folder lists its contents. Thumbnails are
+  never read from Drive, which answers a burst of reads by refusing the browser for a while, the
+  next image included. Each image named in `data/sources.json` has a ready-made one on the site
+  (`web/drive_thumbs.py`, rerun when that list changes; a test fails until it is), fetched once its
+  row is in view; an image opened from Drive saves its own in the browser (the latest 100), shown
+  from then on without a download; a PNG shows Drive's own. All are in the colours the page gives
+  the channels. A checkbox at the bottom, "Download thumbnails" (on at first, remembered in the
+  browser), turns the downloads off; beside it, and in the status bar while they load, how many
+  have arrived and their size. It needs the site's Google API key, kept in the repository
+  variable `GOOGLE_API_KEY` and written into `web/config.js` at deploy; without one the option is off. The dialog opens on
   the last link pasted, or else on the lab's folder (the repository variable
   `DRIVE_DEFAULT_FOLDER`), and lists a folder link at once.
-  Nothing read from Drive is cached; thumbnails are kept only while the page stays open.
+  Nothing read from Drive is cached, apart from the small thumbnail of an image opened from it.
 - **No waiting to start.** Python loads in the background from the moment the page opens, while the
   user picks an image, which opens as soon as Python is ready. Its packages download while Python
   itself starts, and the status bar names each stage (downloading, with the megabytes so far;

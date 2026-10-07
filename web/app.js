@@ -14,6 +14,8 @@ const BARS = "nor-bars-v1"; // {left, right}: side bar widths in pixels
 const SOURCE = "nor-load-source"; // "local" | "drive": where Load reads from
 const DRIVE_LINK = "nor-drive-link"; // the last Google Drive link pasted
 const THUMBS = "nor-drive-thumbs"; // "on" | "off": whether the Drive dialog downloads thumbnails
+const SAVED_THUMB = "nor-drive-thumb:"; // + Drive id: a JPEG data URL of the image, saved when it was opened
+const SAVED_THUMBS = "nor-drive-thumbs-saved"; // [Drive id], oldest first: which images have one
 // + file name: [{lines: {length, red, width}, verdict: "in" | "out" | null}], the NoRs the user added
 // where the finder proposed none
 const ADDED = "nor-added-v1:";
@@ -261,6 +263,7 @@ function handle(m) {
     showView("image"); updateFind(); fold(true); loadShine(); drawAdded(); drawMask();
     status("Image loaded. Press Find Candidates.");
     if (st.source && st.source.kind === "local") notice(LOCAL_GT);
+    if (st.source && st.source.kind === "drive") saveThumb(st.source.id);
   } else if (m.type === "detected") {
     busy(false);
     st.times.detect = m.secs; st.lastRun = st.running; st.running = null;
@@ -348,6 +351,7 @@ document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => 
   const sizeText = (n) => (n < 1048576 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1048576).toFixed(1)} MB`);
   let trail = [], chosen = null;
   const take = async (id, name) => {
+    thumbs.stop();
     msg("Downloading " + (name || "the image") + "…");
     const mb = (n) => (n / 1048576).toFixed(1);
     let push, what;
@@ -393,43 +397,46 @@ document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => 
       }
     } catch (err) { msg(err.message || String(err), true); }
   };
-  // each image's thumbnail, drawn once its row scrolls into view and kept while the page is open
+  // each image's thumbnail: the one saved when it was last opened here, else the site's ready-made one
+  // (drive_thumbs.py), fetched once its row scrolls into view; never read from Drive, which refuses a
+  // burst of reads and then the image itself. Progress shows beside the checkbox and in the status bar.
   const thumbs = (() => {
-    const made = new Map(), waiting = [], ROWS = 48, AT_ONCE = 2;
-    let ctl = new AbortController(), running = 0, seen;
+    const made = new Map(), waiting = [], AT_ONCE = 4;
+    let ctl = new AbortController(), running = 0, seen, ready, asked = 0, done = 0, bytes = 0;
     const put = (pic, url) => { const i = new Image(); i.alt = ""; i.src = url; pic.replaceChildren(i); };
-    const make = async (f, signal) => {
-      if (f.preview) return f.preview;
-      const t = await NorPeek.thumb((s, e) => NorDrive.range(f.id, s, e, signal), ROWS);
-      if (!t) return null;
-      const c = document.createElement("canvas"); c.width = t.W; c.height = t.H;
-      c.getContext("2d").putImageData(new ImageData(t.data, t.W, t.H), 0, 0);
-      return c.toDataURL();
+    const tell = () => {
+      const t = asked ? `${done} of ${asked} · ${sizeText(bytes)}` : "";
+      $("#drive-thumbs-note").textContent = t;
+      $("#sb-thumbs").textContent = running || waiting.length ? "Thumbnails " + t : "";
     };
     const next = () => {
       while (running < AT_ONCE && waiting.length) {
         const [pic, f] = waiting.shift(), signal = ctl.signal;
         running++;
-        (made.has(f.id) ? Promise.resolve(made.get(f.id)) : make(f, signal))
-          .then((url) => { made.set(f.id, url); if (url && !signal.aborted) put(pic, url); })
+        fetch(`drive_thumbs/${f.id}.jpg`, { signal }).then((r) => (r.ok ? r.blob() : null))
+          .then((b) => { if (!b || signal.aborted) return; bytes += b.size; made.set(f.id, URL.createObjectURL(b)); put(pic, made.get(f.id)); })
           .catch(() => {})
-          .finally(() => { running--; if (!signal.aborted) next(); });
+          .finally(() => { if (signal.aborted) return; running--; done++; tell(); next(); });
       }
+      tell();
     };
+    const stop = () => { ctl.abort(); ctl = new AbortController(); running = 0; waiting.length = 0; asked = done = bytes = 0; tell(); };
     const reset = () => {
-      ctl.abort(); ctl = new AbortController(); running = 0; waiting.length = 0;
+      stop();
+      ready = ready || fetch("drive_thumbs/index.json").then((r) => r.json()).then((ids) => new Set(ids)).catch(() => new Set());
       if (seen) seen.disconnect();
       seen = new IntersectionObserver((es) => es.forEach((e) => {
         if (!e.isIntersecting || !$("#drive-thumbs").checked) return;
-        seen.unobserve(e.target); waiting.push([e.target, e.target.file]); next();
+        seen.unobserve(e.target); waiting.push([e.target, e.target.file]); asked++; next();
       }), { root: $("#drive-list") });
     };
-    const watch = (pic, f) => {
-      if (made.get(f.id)) return put(pic, made.get(f.id));
-      if (made.has(f.id) || !$("#drive-thumbs").checked) return;
+    const watch = async (pic, f) => {
+      const url = made.get(f.id) || readJSON(SAVED_THUMB + f.id, "") || f.preview;
+      if (url) return put(pic, url);
+      if (!$("#drive-thumbs").checked || !(await ready).has(f.id)) return;
       pic.file = f; seen.observe(pic);
     };
-    return { reset, watch, stop: () => ctl.abort() };
+    return { reset, watch, stop };
   })();
   $("#drive-open").onclick = () => chosen && enter(chosen);
   $("#drive-thumbs").checked = readJSON(THUMBS, "on") !== "off";
@@ -452,6 +459,28 @@ document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => 
   };
   $("#drive-go").onclick = open;
   $("#drive-link").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); open(); } });
+}
+
+// the open image's thumbnail, all three colours, for the Drive dialog to show next time without a download;
+// shrunk and brightened as drive_thumbs.py makes the site's own, and only the latest few hundred are kept
+function saveThumb(id) {
+  const SIDE = 96, GAIN = 2, KEEP = 100;
+  const full = document.createElement("canvas"); full.width = st.W; full.height = st.H;
+  const im = full.getContext("2d").createImageData(st.W, st.H), d = im.data, { r, g, b } = st.img;
+  for (let i = 0, j = 0; i < r.length; i++, j += 4) { d[j] = r[i]; d[j + 1] = g[i]; d[j + 2] = b[i]; d[j + 3] = 255; }
+  full.getContext("2d").putImageData(im, 0, 0);
+  const k = SIDE / Math.max(st.W, st.H), c = document.createElement("canvas");
+  c.width = Math.round(st.W * k); c.height = Math.round(st.H * k);
+  const x = c.getContext("2d"); x.imageSmoothingQuality = "high"; x.drawImage(full, 0, 0, c.width, c.height);
+  const small = x.getImageData(0, 0, c.width, c.height), p = small.data, v = [];
+  for (let j = 0; j < p.length; j += 4) v.push(p[j], p[j + 1], p[j + 2]);
+  v.sort((a, b) => a - b);
+  const gain = Math.min(GAIN, 255 / Math.max(1, v[Math.floor(0.995 * (v.length - 1))]));
+  for (let j = 0; j < p.length; j += 4) { p[j] *= gain; p[j + 1] *= gain; p[j + 2] *= gain; }
+  x.putImageData(small, 0, 0);
+  const kept = readJSON(SAVED_THUMBS, []).filter((i) => i !== id).concat(id);
+  for (const old of kept.splice(0, Math.max(0, kept.length - KEEP))) try { localStorage.removeItem(SAVED_THUMB + old); } catch { /* nothing kept */ }
+  writeJSON(SAVED_THUMB + id, c.toDataURL("image/jpeg", 0.85)); writeJSON(SAVED_THUMBS, kept);
 }
 
 // ---------- image ----------
