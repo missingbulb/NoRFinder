@@ -187,6 +187,7 @@ button.big { padding: 6px 18px; font-size: 14px; font-weight: 600; background: v
 /* each view shows only its own tools */
 #view[data-view=image] .for-items, #view[data-view=items] .for-image { display: none; }
 .tabs { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; }
+.menu .pop label.sort select { padding: 2px 6px; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-ctl); }
 .tabs button { border: 0; border-radius: 0; background: transparent; padding: 5px 14px; }
 .tabs button + button { border-left: 1px solid var(--line); }
 .tabs button.on { background: var(--accent); color: #fff; }

@@ -9,6 +9,7 @@ const THEME = "nor-theme"; // "dark" | "light"; absent = follow the system
 const MARKS = "nor-marks-v1:"; // + file name + "|" + finder: {"x,y": "in" | "out"}, the user's keepers and removals
 const EDITS = "nor-edits-v1:"; // + file name + "|" + finder: {"x,y": {length, red, approved}}, the user's measurements
 const SHOW = "nor-show-v1"; // the image view's Show menu
+const SORT = "nor-sort-v1"; // the item views' Sort menu, one per view: {pass, fail}
 const CARDS = "nor-cards-v3"; // the item views' Options menu, one per view: {pass: {...}, fail: {...}}, only what the user changed
 const BARS = "nor-bars-v1"; // {left, right}: side bar widths in pixels
 const SOURCE = "nor-load-source"; // "local" | "drive": where Load reads from
@@ -52,7 +53,7 @@ const st = {
   fails: [], alone: null, forced: new Map(), edits: new Map(), defaults: {}, values: {}, off: new Set(),
   about: {}, detectValues: {}, lastRun: null, filtersFor: null, seq: 0, inflight: false, pending: false,
   zoom: 2, fileName: "", sha: "", source: null, added: [], mask: [], lasso: null, numbers: new Map(), order: [], heap: null, sel: null, tab: "pass",
-  show: { ...SHOW_DEFAULTS, ...readJSON(SHOW) }, opt: readOpts(), crops: new Map(),
+  show: { ...SHOW_DEFAULTS, ...readJSON(SHOW) }, opt: readOpts(), sort: { pass: "number", fail: "number", ...readJSON(SORT) }, crops: new Map(),
 };
 
 function readJSON(key, fallback = {}) {
@@ -892,10 +893,7 @@ function render() {
     if (r === null) { let_.textContent = ""; passes.push(c); }
     else { const R = reasonOf(r); let_.textContent = R.letter; let_.setAttribute("fill", `rgb(${R.color})`); rejects.push(c); }
   }
-  for (const c of addedCands().reverse()) {
-    const r = result(c.i);
-    if (r === null) passes.unshift(c); else rejects.unshift(c);
-  }
+  for (const c of addedCands()) (result(c.i) === null ? passes : rejects).push(c);
   st.passes = passes; st.rejects = rejects;
   document.querySelectorAll(".filter").forEach((d) => {
     const k = d.dataset.key;
@@ -1069,8 +1067,26 @@ function card(c, where) {
   return d;
 }
 
+// ---------- the item views' order ----------
+const SORTS = [["number", "By number"], ["verified-first", "Verified first"], ["verified-last", "Verified last"], ["filters", "Most filters first", "fail"]];
+const verified = (c) => !!(c.added ? st.added[c.k].verdict : st.forced.get(c.i));
+// the cards of the view on show, in its chosen order; ties go by number
+function listed() {
+  const items = [...((st.tab === "pass" ? st.passes : st.rejects) || [])], how = st.sort[st.tab];
+  const key = how === "verified-first" ? (c) => -verified(c) : how === "verified-last" ? (c) => +verified(c) : how === "filters" ? (c) => -whyAll(c).length : () => 0;
+  return items.map((c) => [key(c), numOf(c), c]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(([, , c]) => c);
+}
+function showSort() {
+  const s = $("#sort");
+  s.replaceChildren(...SORTS.filter(([, , only]) => !only || only === st.tab).map(([v, t]) => new Option(t, v)));
+  s.value = st.sort[st.tab];
+  if (!s.value) s.value = st.sort[st.tab] = "number";
+}
+$("#sort").onchange = () => { st.sort[st.tab] = $("#sort").value; writeJSON(SORT, st.sort); if (st.meta) renderList(); };
+showSort();
+
 function renderList() {
-  const items = st.tab === "pass" ? st.passes || [] : st.rejects || [];
+  const items = listed();
   $("#list").replaceChildren(...items.map((c) => card(c, "list")));
   if (!items.length) $("#list").innerHTML = `<p class="dim">${st.tab === "pass" ? "No finalists. Right-click the image to add a NoR the finder missed." : "Nothing rejected."}</p>`;
 }
@@ -1106,7 +1122,7 @@ function placeRing() {
 // the next candidate by number among those on show
 // (in the item views: among the cards on show)
 function step(dir) {
-  const list = st.view === "items" ? (st.tab === "pass" ? st.passes : st.rejects) || []
+  const list = st.view === "items" ? listed()
     : [...addedCands(), ...st.order].filter((c) => (result(c.i) === null ? st.show.pass : st.show.fails));
   if (!list.length) return;
   const k = list.findIndex((c) => c.i === st.sel);
@@ -1511,7 +1527,7 @@ for (const [id, t] of [["#tab-pass", "pass"], ["#tab-fail", "fail"]]) $(id).oncl
   if (st.tab !== t) setTab(t); renderList();
 };
 function setTab(t) {
-  st.tab = t; $("#tab-pass").classList.toggle("on", t === "pass"); $("#tab-fail").classList.toggle("on", t === "fail"); st.showOpts();
+  st.tab = t; $("#tab-pass").classList.toggle("on", t === "pass"); $("#tab-fail").classList.toggle("on", t === "fail"); st.showOpts(); showSort();
 }
 
 // ---------- boxes that fold: the finder and the filters, folded until there is an image ----------
