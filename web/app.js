@@ -1110,7 +1110,7 @@ function renderSummary() {
   const scale = st.um ? `Pixel size: ${st.um.toFixed(4)} µm.` : "No scale in the file, so lengths are in pixels.";
   const D = density(passes.length);
   $("#summary").classList.remove("dim");
-  $("#summary").innerHTML = `<div>${passes.length} passing NoRs${st.mask.length ? " inside the mask" : ""}. ${scale}</div>
+  $("#summary").innerHTML = `<div>${passes.length} NoRs${st.mask.length ? " inside the mask" : ""}. ${scale}</div>
     <div class="density">Density: <b>${fmt(D.value, 0)}</b> ${D.unit} (${passes.length} in ${fmt(D.area, 4)} ${D.areaUnit})</div>
     <div class="hists">${rows.map(([l, s]) => hist(l, s)).join("")}</div>`;
 }

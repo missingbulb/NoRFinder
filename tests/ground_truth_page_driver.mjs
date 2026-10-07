@@ -210,7 +210,7 @@ async function mask(page) {
   let want = await inside(page);
   const head = () => page.textContent("#summary > div");
   await check(want.length > 0 && want.length < (await page.evaluate(() => st.order.length)), `the lasso holds some candidates and not others (${want.length})`);
-  await check((await head()).startsWith(`${want.filter(([, p]) => p).length} passing NoRs inside the mask`) && passes > want.filter(([, p]) => p).length,
+  await check((await head()).startsWith(`${want.filter(([, p]) => p).length} NoRs inside the mask`) && passes > want.filter(([, p]) => p).length,
     `the summary counts only the finalists inside the mask: "${await head()}"`);
   await check(await page.isVisible("#mask-clear"), "Clear mask shows while a mask is on");
   await check(await page.$$eval("#overlay .mask-marks .edge:not(.under)", (e) => e.length) === 1 && !(await page.$("#overlay .mask-marks .fill")),
@@ -225,7 +225,7 @@ async function mask(page) {
   // a second lasso inside the first cuts a hole
   await lasso(page, [[0.4, 0.4], [0.6, 0.4], [0.6, 0.6], [0.4, 0.6]]);
   want = await inside(page);
-  await check((await head()).startsWith(`${want.filter(([, p]) => p).length} passing NoRs inside the mask`), `a lasso inside the mask cuts a hole: "${await head()}"`);
+  await check((await head()).startsWith(`${want.filter(([, p]) => p).length} NoRs inside the mask`), `a lasso inside the mask cuts a hole: "${await head()}"`);
   await check(await page.$$eval("#overlay .mask-marks .edge:not(.under)", (e) => e.length) === 2 && !!(await page.$("#overlay .mask-marks .fill")),
     "a shape inside a shape is tinted inside");
   const said = await popup(page);
