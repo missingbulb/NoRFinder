@@ -1108,16 +1108,20 @@ function stats(xs) {
   return { n, mean, sd, med, min: v[0], max: v[n - 1], v };
 }
 
+// a histogram with a count axis, the mean as a line and one SD either side of it as a band
 function hist(label, s) {
-  const W = 220, H = 70, bins = 20;
+  const W = 300, H = 70, L = 24, T = 6, bins = 20;
   if (!s.n) return "";
   const lo = s.min, hi = s.max === s.min ? s.min + 1 : s.max, cnt = new Array(bins).fill(0);
   for (const x of s.v) cnt[Math.min(bins - 1, Math.floor(((x - lo) / (hi - lo)) * bins))]++;
-  const top = Math.max(...cnt), bw = W / bins;
-  const bars = cnt.map((c, k) => `<rect x="${k * bw + 0.5}" y="${H - (c / top) * H}" width="${bw - 1}" height="${(c / top) * H}"><title>${c}</title></rect>`).join("");
-  return `<div class="hist">${label}<br><svg width="${W}" height="${H + 14}"><g>${bars}</g>
-    <text x="0" y="${H + 12}" fill="currentColor" font-size="10">${fmt(lo)}</text>
-    <text x="${W}" y="${H + 12}" fill="currentColor" font-size="10" text-anchor="end">${fmt(hi)}</text></svg></div>`;
+  const top = Math.max(...cnt), bw = W / bins, X = (v) => L + Math.min(W, Math.max(0, ((v - lo) / (hi - lo)) * W)), Y = (c) => T + H - (c / top) * H;
+  const ticks = [...new Set([0, Math.round(top / 2), top])];
+  const axis = ticks.map((t) => `<line class="grid" x1="${L}" x2="${L + W}" y1="${Y(t)}" y2="${Y(t)}"/><text x="${L - 4}" y="${Y(t) + 3}" text-anchor="end">${t}</text>`).join("");
+  const bars = cnt.map((c, k) => `<rect class="bar" x="${L + k * bw + 0.5}" y="${Y(c)}" width="${bw - 1}" height="${T + H - Y(c)}"><title>${c}</title></rect>`).join("");
+  const sd = s.sd || 0, band = `<rect class="sd" x="${X(s.mean - sd)}" y="${T}" width="${X(s.mean + sd) - X(s.mean - sd)}" height="${H}"/>`;
+  return `<div class="hist"><div>${label}: mean <b>${fmt(s.mean)}</b> ± ${fmt(sd)} SD, n ${s.n}</div><svg viewBox="0 0 ${L + W + 2} ${T + H + 14}">
+    ${axis}${band}<g>${bars}</g><line class="mean" x1="${X(s.mean)}" x2="${X(s.mean)}" y1="${T}" y2="${T + H}"/>
+    <text x="${L}" y="${T + H + 12}">${fmt(lo)}</text><text x="${L + W}" y="${T + H + 12}" text-anchor="end">${fmt(hi)}</text></svg></div>`;
 }
 
 function summaryRows(passes) {
@@ -1133,16 +1137,12 @@ function renderSummary() {
   if (!st.passes) return;
   const { passes, counts } = counted(), rows = summaryRows(passes);
   st.counts = counts;
-  const tbl = `<table><tr><th>measurement</th><th>n</th><th>mean</th><th>SD</th><th>median</th><th>min</th><th>max</th></tr>` +
-    rows.map(([l, s]) => `<tr><td>${l}</td><td>${s.n}</td><td>${fmt(s.mean)}</td><td>${fmt(s.sd)}</td><td>${fmt(s.med)}</td><td>${fmt(s.min)}</td><td>${fmt(s.max)}</td></tr>`).join("") + "</table>";
-  const reasons = Object.entries(counts).sort((a, b) => b[1] - a[1])
-    .map(([k, n]) => `<b class="lt" style="--c:${colour(k)}">${reasonOf(k).letter}</b> ${esc(reasonOf(k).title)}: ${n}`).join(" · ");
-  const scale = st.um ? `Scale from the file: ${st.um.toFixed(4)} µm per pixel.` : "No scale in the file, so lengths are in pixels.";
+  const scale = st.um ? `Pixel size: ${st.um.toFixed(4)} µm.` : "No scale in the file, so lengths are in pixels.";
   const D = density(passes.length);
   $("#summary").classList.remove("dim");
-  $("#summary").innerHTML = `<div>${passes.length} passing NoRs${st.mask.length ? " inside the mask" : ""}. ${scale}</div>
-    <div class="density">Density: <b>${fmt(D.value, 0)}</b> ${D.unit} (${passes.length} in ${fmt(D.area, 4)} ${D.areaUnit})</div><div class="tbl">${tbl}</div>
-    <div class="hists">${rows.map(([l, s]) => hist(l, s)).join("")}</div><div class="reasons">Rejected: ${reasons || "none"}</div>`;
+  $("#summary").innerHTML = `<div>${passes.length} NoRs${st.mask.length ? " inside the mask" : ""}. ${scale}</div>
+    <div class="density">Density: <b>${fmt(D.value, 0)}</b> ${D.unit} (${passes.length} in ${fmt(D.area, 4)} ${D.areaUnit})</div>
+    <div class="hists">${rows.map(([l, s]) => hist(l, s)).join("")}</div>`;
 }
 
 // ---------- downloads ----------

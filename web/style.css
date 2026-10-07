@@ -285,15 +285,19 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 .stepper button:not(:disabled):hover { background: var(--bg); }
 #downloads { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 #downloads h2 { flex-basis: 100%; margin-bottom: 2px; }
-#summary .tbl { overflow-x: auto; }
-#summary table { border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; font-size: 12px; width: 100%; }
-#summary th, #summary td { padding: 4px 4px; text-align: right; border-bottom: 1px solid var(--line); }
-#summary th:first-child, #summary td:first-child { text-align: left; }
 #summary .hists { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
-#summary .hist { font-size: 12px; color: var(--dim); }
-#summary .hist rect { fill: var(--pink); opacity: .75; }
-#summary .reasons { margin-top: 12px; color: var(--dim); font-size: 13px; }
+#summary .hist { font-size: 12px; color: var(--dim); width: 100%; }
+#summary .hist svg { display: block; width: 100%; height: auto; }
+#summary .hist > div { margin-bottom: 2px; font-variant-numeric: tabular-nums; }
+#summary .hist b { color: var(--text); font-weight: 600; }
+#summary .hist text { fill: currentColor; font-size: 10px; }
+#summary .hist .bar { fill: var(--pink); opacity: .75; }
+#summary .hist .grid { stroke: var(--line); }
+#summary .hist .sd { fill: var(--text); opacity: .1; }
+#summary .hist .mean { stroke: var(--text); stroke-width: 1.5; }
 #summary .density { margin-top: 6px; font-variant-numeric: tabular-nums; }
+#summary-box .csv-btns { display: flex; gap: 8px; margin-top: 12px; }
+#summary-box .csv-btns button { flex: 1; white-space: nowrap; padding-inline: 6px; }
 
 /* the footer: file, counts and timings as sections on the left; progress and the version on the right */
 #statusbar { display: flex; align-items: center; gap: 10px; height: 1cm; padding: 0 14px; background: var(--panel); border-top: 1px solid var(--line);
