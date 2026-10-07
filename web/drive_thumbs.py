@@ -15,7 +15,7 @@ from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, '..')
 sys.path.insert(0, os.path.join(ROOT, 'detection'))
-import naive_nor  # noqa: E402
+import naive_nor
 
 OUT = os.path.join(HERE, 'drive_thumbs')
 SIDE = 96  # twice the dialog's 48 px, for sharp screens

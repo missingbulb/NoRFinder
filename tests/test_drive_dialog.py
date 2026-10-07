@@ -6,7 +6,7 @@ from test_memory import HERE, TIF, needs_node, needs_slide, run
 
 WEB = os.path.join(HERE, '..', 'web')
 sys.path.insert(0, WEB)
-import drive_thumbs  # noqa: E402
+import drive_thumbs
 
 
 def test_every_lab_image_has_a_ready_made_thumbnail():
