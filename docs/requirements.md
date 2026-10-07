@@ -298,8 +298,9 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   padding and only the NoR borders on. The selected card in the right bar uses the options of the
   view that lists it. The adjusters are the ends of
   the green-to-green length, the red length and the width, each draggable anywhere. The four
-  length and red ends stay on one straight axis: dragging one turns the axis, through it, about the
-  green end on the far side, and the other ends keep their distances from that end, in order. A
+  length and red ends stay on one straight axis, in order. A red end only slides along the axis,
+  changing the red length. A green end drags anywhere: the axis turns, through it, about the other
+  green end, and the other ends keep their distances from that end. A
   width end sets where along the axis the width is measured and, mirrored, how wide it is. On
   release the crop turns level with the new axis. The new measurements show on the image, the
   card, the summary and the downloads. The measurements of the finalists are summarised in the right bar
@@ -316,14 +317,15 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   `origin: "added by user"`, its measurements and lines). A candidate nobody voted
   on is ambiguous and left out. The lab's `nor_lab.py --labels` reads it: the labels score
   detection and the checked lengths score measurement (`tests/test_ground_truth.py`).
-- **Submitting ground truth** (changed by the owner on 2026-10-06 and 2026-10-07). A small icon beside
+- **Submitting ground truth** (changed by the owner on 2026-10-06 and twice on 2026-10-07). A small icon beside
   the Submit new GT to GitHub button's text says how finished the work is: a green check when every finalist has
   the user's verdict, an orange warning when some candidates have one but a finalist does not, and a
   red error when no candidate has one yet or a candidate the user added still waits for a verdict;
   the warning and the error pulse gently. The button itself stays plain. Pressing it opens a popup
-  with a checklist of every issue the ground truth can have (added NoRs without a verdict, no verdict
-  at all, finalists left out, a summary mask that is not exported, a local image that cannot be sent),
-  each resolved one crossed out with a green check, with an Export file button that downloads the file
+  with a checklist of short instructions (approve or reject the NoRs you added, vote on at least one
+  candidate, vote on every finalist, only images from Google Drive can be exported), each done one
+  crossed out with a green check; the added-NoRs line shows only when the user added some, and while a
+  summary mask is on a warning that the mask is not exported, never crossed out; and an Export file button that downloads the file
   and beside it an Open new GitHub issue button: a new issue on the repo, labelled
   `new-ground-truth` and naming the image (name, SHA-256, Drive link, finder, what was marked),
   whose body says to attach the file. An image from the computer cannot be submitted: right after
@@ -450,4 +452,5 @@ behind them (R9).
 On the page (R8), the finder list shows each finder's precision and recall after its best preset (the
 highest F1), its "How it works" note its own candidates' numbers before any filter, and the Filters
 box opens with the three presets, each with its precision and recall after the filters; choosing one sets every filter to its values, and
-it stays lit while the filters hold them.
+it stays lit while the filters hold them. The Filters box has no "restore defaults": there are no
+absolute defaults, and Balanced is the finder's own values.

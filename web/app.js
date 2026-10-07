@@ -91,7 +91,7 @@ async function buildPresets() {
     const b = document.createElement("button"); b.type = "button"; b.dataset.preset = k;
     b.innerHTML = `${name}<small>${pr(per[k])}</small>`;
     b.onclick = () => { st.values = { ...st.defaults, ...per[k].values }; st.off.clear(); buildFilters(); save(); refilter(); };
-    return b;
+    slow(b); return b;
   }));
   markPreset();
 }
@@ -777,7 +777,7 @@ function useFilters(finder) {
   for (const f of about.filters) for (const [k, v] of Object.entries(f.params)) st.defaults[k] = v;
   for (const k in st.defaults) st.values[k] = k in saved.values ? saved.values[k] : st.defaults[k];
   st.off = new Set(saved.off.filter((k) => about.filters.some((f) => f.key === k)));
-  buildFilters(); buildPresets(); $("#reset-filters").disabled = false;
+  buildFilters(); buildPresets();
 }
 
 function buildFilters() {
@@ -905,8 +905,9 @@ function crop(c, size) {
 }
 
 // The measuring lines after a handle (line k, end j) is dragged to P. The two green ends and the two red
-// ends stay on one straight axis: dragging one of them turns the axis about the green end on the far side,
-// through P, and every other point keeps its distance from that end, in order and at least a pixel apart.
+// ends stay on one straight axis, in order and at least a pixel apart. A red end only slides along it. A
+// green end turns the axis, through P, about the other green end, and every other point keeps its
+// distance from that end.
 // A width end sets where along the axis the width is measured and, mirrored across the axis, how wide.
 function dragLines(L, k, j, P) {
   const sub = (a, b) => [a[0] - b[0], a[1] - b[1]], dot = (a, b) => a[0] * b[0] + a[1] * b[1];
@@ -925,8 +926,8 @@ function dragLines(L, k, j, P) {
   const pts = [["length", 1 - piv, len], ["red", 0, d(L.red[0])], ["red", 1, d(L.red[1])]].sort((a, b) => a[2] - b[2]);
   const me = pts.findIndex(([kk, jj]) => kk === k && jj === j);
   const lo = me > 0 ? pts[me - 1][2] + 1 : 1, hi = me < pts.length - 1 ? pts[me + 1][2] - 1 : Infinity;
-  const nv = unit(sub(P, O)), nn = [-nv[1] * Math.sign(dot(n, [-v[1], v[0]])), nv[0] * Math.sign(dot(n, [-v[1], v[0]]))];
-  pts[me][2] = Math.max(lo, Math.min(hi, Math.hypot(...sub(P, O))));
+  const nv = k === "red" ? v : unit(sub(P, O)), nn = [-nv[1] * Math.sign(dot(n, [-v[1], v[0]])), nv[0] * Math.sign(dot(n, [-v[1], v[0]]))];
+  pts[me][2] = Math.max(lo, Math.min(hi, k === "red" ? d(P) : Math.hypot(...sub(P, O))));
   const out = { length: [[...A], [...B]], red: [[...L.red[0]], [...L.red[1]]] };
   for (const [kk, jj, s] of pts) out[kk][jj] = at(O, nv, s);
   out.length[piv] = [...O];
@@ -1194,13 +1195,14 @@ function gtState() {
   const waiting = st.added.filter((a) => !a.verdict).length, voted = st.forced.size + st.added.length - waiting;
   const finalists = (st.passes || []).filter((c) => !c.added), open = finalists.filter((c) => !verdict(c)).length;
   const local = !st.source || st.source.kind !== "drive", s = (n) => (n === 1 ? "" : "s");
+  // instructions to the user, crossed out once done; the added NoRs and the mask show only when there are any
   const items = [
-    { level: "error", grade: true, ok: !waiting, text: waiting ? `${waiting} NoR${s(waiting)} you added still need${waiting === 1 ? "s" : ""} your verdict` : "NoRs you added still need your verdict" },
-    { level: "error", grade: true, ok: voted > 0, text: "No candidate has your verdict yet" },
-    { level: "warn", grade: true, ok: voted > 0 && !open, text: open ? `${open} of ${finalists.length} finalists have no verdict and are left out` : "Finalists without a verdict are left out" },
-    { level: "warn", ok: !st.mask.length, text: "The mask is not exported; the file holds your marks inside and outside it" },
-    { level: "warn", ok: !local, text: "A local image's ground truth can only be exported, not sent as an issue" },
-  ];
+    st.added.length && { level: "error", grade: true, ok: !waiting, text: waiting ? `Approve or reject the ${waiting} NoR${s(waiting)} you added` : "Approve or reject the NoRs you added" },
+    { level: "error", grade: true, ok: voted > 0, text: "Vote on at least one candidate" },
+    { level: "warn", grade: true, ok: voted > 0 && !open, text: open ? `Vote on every finalist: ${open} of ${finalists.length} have no vote and won't be exported` : "Vote on every finalist" },
+    st.mask.length && { level: "warn", ok: false, text: "The mask is not exported: the file covers the whole image" },
+    { level: "warn", ok: !local, text: "Only images from Google Drive can be exported" },
+  ].filter(Boolean);
   return { state: !voted || waiting ? "todo" : open ? "part" : "done", items };
 }
 function gtButton() {
@@ -1414,10 +1416,6 @@ document.addEventListener("mouseout", hideHelp); document.addEventListener("focu
 $("#finder").onchange = () => { buildDetect(); if (!st.meta) useFilters($("#finder").value); };
 $("#find").onclick = detect;
 $("#reset-detect").onclick = () => { const f = $("#finder").value; st.detectValues[f] = { ...st.about[f].detection_params }; buildDetect(); };
-$("#reset-filters").onclick = () => {
-  try { localStorage.removeItem(STORE); } catch { /* nothing saved */ }
-  st.values = { ...st.defaults }; st.off.clear(); buildFilters(); markPreset(); refilter();
-};
 $("#zoom-in").onclick = () => setZoom(st.zoom * 1.25);
 $("#zoom-out").onclick = () => setZoom(st.zoom / 1.25);
 for (const id of ["show-r", "show-g", "show-b"]) $("#" + id).onchange = () => (st.img ? drawBase() : st.peeked && st.peek.redraw());
@@ -1540,5 +1538,5 @@ $("#sb-version").textContent = "v" + $("#sb-version").title.replace(/^version /,
 }
 
 // the buttons whose action can take a while on a slow computer; Load is held from a chosen image until it is open
-for (const id of ["#find", "#switch", "#tab-pass", "#tab-fail", "#dl-cands", "#dl-summary", "#gt-export", "#reset-filters"]) slow($(id));
+for (const id of ["#find", "#switch", "#tab-pass", "#tab-fail", "#dl-cands", "#dl-summary", "#gt-export"]) slow($(id));
 start();
