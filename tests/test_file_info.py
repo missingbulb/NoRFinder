@@ -33,9 +33,9 @@ def test_an_imagej_export_shows_scale_series_and_no_microscope(tmp_path):
 
 def test_a_file_naming_its_microscope_shows_it(tmp_path):
     p = str(tmp_path / 'b.tif')
-    write(p, extratags=[(271, 's', 0, 'Zeiss', True), (272, 's', 0, 'LSM 980', True), (306, 's', 0, '2026:10:01 12:00:00', True)])
+    write(p, extratags=[(271, 's', 0, 'Acme', True), (272, 's', 0, 'Scope 9', True), (306, 's', 0, '2026:10:01 12:00:00', True)])
     rows = dict(naive_nor.file_info(p))
-    assert rows['Microscope'] == 'Zeiss LSM 980'
+    assert rows['Microscope'] == 'Acme Scope 9'
     assert rows['Date'] == '2026:10:01 12:00:00'
 
 
