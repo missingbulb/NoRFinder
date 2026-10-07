@@ -77,7 +77,7 @@ function save() {
 }
 
 // ---------- filter presets: each finder's precision and recall on the ground truth (detection/finder_metrics.py) ----------
-const PRESETS = { precise: "Precise", balanced: "Balanced", sensitive: "Sensitive" };
+const PRESETS = { precise: "Precise", balanced: "Balanced", recalling: "Recalling" };
 const quality = fetch("../detection/lab/finder_metrics.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
 const two = (x) => x.toFixed(2).replace(/^0/, "");
 const pr = (r) => `P ${two(r.precision)} · R ${two(r.recall)}`;
