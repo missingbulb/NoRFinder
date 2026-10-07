@@ -18,20 +18,35 @@ async function boot() {
   const wheels = (async () => {
     const [lock, vendored] = await Promise.all([fetch(PYODIDE + "pyodide-lock.json"), fetch("vendor/wheels.json")].map(async (r) => (await r).json()));
     const list = ["numpy", "scipy", "scikit-image", "lazy-loader", "packaging", "pillow"]
-      .map((n) => ({ url: PYODIDE + lock.packages[n].file_name, sha256: lock.packages[n].sha256 }))
-      .concat(vendored.map((w) => ({ url: new URL("vendor/" + w, self.location.href).href })));
+      .map((n) => ({ name: n, url: PYODIDE + lock.packages[n].file_name, sha256: lock.packages[n].sha256 }))
+      .concat(vendored.map((w) => ({ name: w, url: new URL("vendor/" + w, self.location.href).href })));
     expected = list.length;
-    return Promise.all(list.map(fetchWheel));
+    return Promise.all(list.map(async (w) => ({ name: w.name, buf: await fetchWheel(w) })));
   })();
   wheels.catch(() => {}); // a failed download is reported where it is awaited, after Python starts
   const { loadPyodide } = await import(PYODIDE + "pyodide.mjs");
   py = await loadPyodide({ indexURL: PYODIDE });
+  measure();
+  part("Python", used() + filed(files("/lib")));
   stage = "Downloading packages";
   const bufs = await wheels;
   say("Installing numpy, scipy, scikit-image…");
   const site = py.runPython("import sysconfig; sysconfig.get_path('purelib')");
-  for (const buf of bufs) py.unpackArchive(buf, "wheel", { extractDir: site });
+  // an installed package's files stay in memory: the file system is in memory
+  for (const { name, buf } of bufs) {
+    const before = files(site);
+    py.unpackArchive(buf, "wheel", { extractDir: site });
+    part(LIBRARY[name] || "other", filed(files(site) - before));
+  }
   say("Loading the finders…");
+  for (const [name, code] of [["numpy", "import numpy"], ["SciPy", "from scipy import ndimage"],
+    ["scikit-image", "import skimage.segmentation, skimage.measure, skimage.morphology, skimage.filters"],
+    ["other", "import PIL.Image, tifffile"]]) {
+    const before = used();
+    py.runPython(code);
+    part(name, used() - before);
+  }
+  const before = used();
   // Python modules are read straight from the repo's layout as they are imported: a new finder
   // file in detection/ ships with no list to update.
   py.globals.set("bases", py.toPy(["../detection/", "../src/"].map((b) => new URL(b, self.location.href).href)));
@@ -56,6 +71,8 @@ sys.meta_path.append(RepoModules())
 os.environ['NORFINDER_SRC'] = '/py'
 import interactive, json
 `);
+  part("our code", used() - before + filed(files("/py")));
+  base = used();
   const finders = JSON.parse(py.runPython("json.dumps(interactive.FINDERS)"));
   const about = JSON.parse(py.runPython("json.dumps({f: interactive.describe(f) for f in interactive.FINDERS})"));
   post({ type: "ready", finders, about, secs: (performance.now() - t0) / 1000 });
@@ -88,8 +105,41 @@ async function fetchWheel({ url, sha256 }) {
 
 const booted = boot().catch((e) => postMessage({ type: "error", text: String(e) }));
 
-// every answer says how large Python's memory has grown: it never shrinks, and it is most of the tab's
-const post = (m, transfer) => postMessage({ ...m, heap: py._module.HEAPU8.byteLength }, transfer);
+// What each major thing loaded holds in Python's memory, in load order: bytes in use by malloc once
+// collected, plus its files, which the in-memory file system keeps. What a finder imports the first
+// time it runs counts with the candidates.
+const LIBRARY = { numpy: "numpy", scipy: "SciPy", "scikit-image": "scikit-image" };
+const parts = new Map();
+let base = 0, kept = 0;
+const part = (name, n) => parts.set(name, (parts.get(name) || 0) + n);
+const used = () => py.runPython("_used()");
+const files = (dir) => py.runPython(`_files(${JSON.stringify(dir)})`);
+const filed = (n) => (kept += n, n); // the files sit outside Python's memory, in the worker's
+function measure() {
+  py.runPython(`
+import ctypes, gc, os
+class _MallInfo(ctypes.Structure):
+    _fields_ = [(n, ctypes.c_size_t) for n in 'arena ordblks smblks hblks hblkhd usmblks fsmblks uordblks fordblks keepcost'.split()]
+_libc = ctypes.CDLL(None); _libc.mallinfo.restype = _MallInfo
+def _used():
+    gc.collect()
+    return _libc.mallinfo().uordblks
+def _files(top):
+    return sum(os.path.getsize(os.path.join(d, f)) for d, _, fs in os.walk(top) for f in fs)
+`);
+}
+
+// Every answer says how large Python's memory has grown, which never shrinks and is most of the tab's,
+// and what each part of it holds.
+let room = 0;
+const post = (m, transfer) => {
+  if (m.type === "opened") { parts.delete("candidates"); parts.set("image", used() - base); }
+  if (m.type === "detected") parts.set("candidates", used() - base - parts.get("image"));
+  // what the finders' working arrays left behind: memory Python grew to at its peak and keeps, unused
+  if (["ready", "opened", "detected"].includes(m.type)) room = py._module.HEAPU8.byteLength - used();
+  const mem = m.type === "progress" ? undefined : [...parts, ["held free", room]];
+  postMessage({ ...m, heap: py._module.HEAPU8.byteLength, files: kept, mem }, transfer);
+};
 let answer;
 async function handle(m) {
   await booted;
