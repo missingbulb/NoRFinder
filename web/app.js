@@ -13,11 +13,16 @@ const CARDS = "nor-cards-v3"; // the item views' Options menu, one per view: {pa
 const BARS = "nor-bars-v1"; // {left, right}: side bar widths in pixels
 const SOURCE = "nor-load-source"; // "local" | "drive": where Load reads from
 const DRIVE_LINK = "nor-drive-link"; // the last Google Drive link pasted
-const MISSING = "nor-missing-v1:"; // + file name: [[x, y]], the NoRs the user marked as missed by the finder
-// a missing mark counts as found when a candidate lies within this distance: about half a NoR's
-// length on the lab's slide (median 26 px), so the mark need not be placed on the NoR's centre
+// + file name: [{lines: {length, red, width}, verdict: "in" | "out" | null}], the NoRs the user added
+// where the finder proposed none
+const ADDED = "nor-added-v1:";
+const MISSING = "nor-missing-v1:"; // + file name: [[x, y]], what ADDED replaced; read once and converted
+// an added NoR counts as found when a candidate lies within this distance of its middle: about half a
+// NoR's length on the lab's slide (median 26 px)
 const MISSING_RADIUS = 12;
 const MISSING_COLOUR = "#ffd400"; // yellow: none of the image's own colours
+// a new NoR's lines before any finder has run: the lab slide's median finalist (px)
+const TYPICAL = { length: 25, red_length: 10, width: 4.6 };
 // where ground truth is submitted: an issue with this label, which the repo's daily intake reads
 const REPO = "missingbulb/NoRFinder", GT_LABEL = "new-ground-truth";
 const MEASURES = [
@@ -37,7 +42,7 @@ const st = {
   worker: null, H: 0, W: 0, um: null, img: null, meta: null, seg: null, cands: [],
   fails: [], alone: null, forced: new Map(), edits: new Map(), defaults: {}, values: {}, off: new Set(),
   about: {}, detectValues: {}, lastRun: null, filtersFor: null, seq: 0, inflight: false, pending: false,
-  zoom: 2, fileName: "", sha: "", source: null, missing: [], numbers: new Map(), order: [], times: {}, sel: null, tab: "pass",
+  zoom: 2, fileName: "", sha: "", source: null, added: [], numbers: new Map(), order: [], times: {}, sel: null, tab: "pass",
   show: { ...SHOW_DEFAULTS, ...readJSON(SHOW) }, opt: readOpts(), crops: new Map(),
 };
 
@@ -157,7 +162,7 @@ function onWorker(m) {
     st.plain = null; st.peeked = false; drawBase(); $("#empty").hidden = true; $("#stage").hidden = false; $("#thumb-wrap").hidden = false;
     setZoom(st.zoom);
     busy(false); st.times.open = m.secs; st.times.detect = st.times.filter = null; statusBar();
-    showView("image"); updateFind(); fold(true); loadShine(); drawMissing();
+    showView("image"); updateFind(); fold(true); loadShine(); drawAdded();
     status("Image loaded. Press Find Candidates.");
     if (st.source && st.source.kind === "local") notice(LOCAL_GT);
   } else if (m.type === "detected") {
@@ -197,7 +202,7 @@ function fileInfo(rows) {
 
 // source: where the image came from, {kind: "local"} or {kind: "drive", id}
 async function openBytes(name, bytes, source) {
-  st.fileName = name; st.source = source; st.missing = readJSON(MISSING + name, []).map(([x, y]) => ({ x, y })); st.meta = null; st.lastRun = null; st.cands = []; st.order = []; st.sel = null; st.ring = null; st.crops = new Map();
+  st.fileName = name; st.source = source; st.added = loadAdded(name); st.meta = null; st.lastRun = null; st.cands = []; st.order = []; st.sel = null; st.ring = null; st.crops = new Map();
   st.sha = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map((b) => b.toString(16).padStart(2, "0")).join("");
   $("#file-name").textContent = name; $("#file-name").classList.remove("dim"); fileInfo(null); statusBar();
   $("#overlay").innerHTML = ""; $("#list").replaceChildren(); $("#summary").textContent = "No candidates yet.";
@@ -389,7 +394,7 @@ function onDetected(meta, seg) {
     .sort((a, b) => a.cy - b.cy || a.cx - b.cx);
   st.numbers = new Map(st.order.map((c, k) => [c.i, k + 1]));
   loadMarks();
-  buildOverlay(); drawMissing();
+  buildOverlay(); drawAdded();
   $("#switch").disabled = false;
   refilter();
 }
@@ -421,9 +426,10 @@ function buildOverlay() {
 
 // the measuring lines as the user left them: their own length and red lines, else the finder's
 function linesOf(c) {
+  if (c.added) return c.lines;
   if (!c.lines) return null;
   const e = st.edits.get(c.i) || {};
-  return { ...c.lines, length: e.length || c.lines.length, red: e.red || c.lines.red };
+  return { ...c.lines, length: e.length || c.lines.length, red: e.red || c.lines.red, width: e.width || c.lines.width };
 }
 function drawLines(c) {
   const L = linesOf(c); c.lineEl.replaceChildren();
@@ -434,27 +440,75 @@ function drawLines(c) {
   }
 }
 
-// ---------- missing candidates: NoRs the user marked because the finder proposed nothing there ----------
-function saveMissing() { writeJSON(MISSING + st.fileName, st.missing.map((m) => [m.x, m.y])); }
-function addMissing(x, y) { st.missing.push({ x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 }); saveMissing(); drawMissing(); }
-function removeMissing(k) { st.missing.splice(k, 1); saveMissing(); drawMissing(); }
-// the marks on the image, each a dashed circle of the radius it is scored within
-function drawMissing() {
-  const svg = $("#overlay"); svg.querySelector(".missing-marks")?.remove();
-  $("#n-miss").textContent = st.missing.length;
+// ---------- added candidates: NoRs the user added where the finder proposed none ----------
+// Each has measuring lines the user corrects on its card, and lists first among the finalists until
+// thumbed down. Until the user gives a verdict, a glowing circle marks it on the image.
+function loadAdded(name) {
+  const added = readJSON(ADDED + name, null);
+  if (added) return added;
+  return readJSON(MISSING + name, []).map(([x, y]) => ({ lines: typicalLines(x, y), verdict: null }));
+}
+function saveAdded() {
+  writeJSON(ADDED + st.fileName, st.added);
+  try { localStorage.removeItem(MISSING + st.fileName); } catch { /* private mode */ }
+}
+// level lines centred on (x, y), as long and wide as this image's finalists' medians
+function typicalLines(x, y) {
+  const med = (k) => { const s = stats((st.passes || []).filter((c) => !c.added).map((c) => c.m && c.m[k])); return s.n ? s.med : TYPICAL[k]; };
+  const len = med("length"), red = Math.min(len - 2, med("red_length")), w = med("width");
+  const level = (a) => [[x - a / 2, y], [x + a / 2, y]];
+  return { length: level(len), red: level(red), width: [[x, y - w / 2], [x, y + w / 2]] };
+}
+// an added NoR as a candidate: "u1", "u2", ... in place of a finder's index
+const isAdded = (i) => typeof i === "string";
+function addedCand(k) {
+  const a = st.added[k]; if (!a) return null;
+  const L = a.lines, pts = [...L.length, ...L.red, ...L.width], [[p, q], [r, t]] = L.length;
+  const m = { length: dist(L.length), red_length: dist(L.red), width: dist(L.width) };
+  m.red_over_length = m.red_length / m.length; m.length_over_width = m.length / m.width;
+  return { i: "u" + (k + 1), k, added: true, lines: L, cx: (p + r) / 2, cy: (q + t) / 2, m, x0: 0, y0: 0, h: 0, w: 0, blk: [],
+    bb: [Math.min(...pts.map((v) => v[0])), Math.min(...pts.map((v) => v[1])), Math.max(...pts.map((v) => v[0])), Math.max(...pts.map((v) => v[1]))] };
+}
+const candOf = (i) => (i == null ? null : isAdded(i) ? addedCand(+i.slice(1) - 1) : st.cands[i]);
+const addedCands = () => st.added.map((_, k) => addedCand(k));
+const nameOf = (c) => (c.added ? "U" + (c.k + 1) : "#" + st.numbers.get(c.i));
+function addedChanged() {
+  saveAdded(); drawAdded();
+  if (st.meta) render(); else { renderSelected(); placeRing(); }
+}
+function addAdded(x, y) {
+  st.added.push({ lines: typicalLines(Math.round(x * 10) / 10, Math.round(y * 10) / 10), verdict: null });
+  st.sel = "u" + st.added.length; addedChanged();
+}
+function removeAdded(k) {
+  const was = st.sel; st.added.splice(k, 1);
+  if (isAdded(was)) { const j = +was.slice(1) - 1; st.sel = j === k ? null : j > k ? "u" + j : was; }
+  addedChanged();
+}
+function setAdded(k, change) { st.added[k] = { ...st.added[k], ...change }; addedChanged(); }
+const radiusOf = (c) => Math.max(MISSING_RADIUS, dist(c.lines.length) / 2 + 4);
+// on the image: the lines, and until the user decides, the circle, glowing
+function drawAdded() {
+  const svg = $("#overlay"); svg.querySelector(".added-marks")?.remove();
   $("#dl-truth").disabled = !st.img;
   if (!st.W) return;
   svg.setAttribute("viewBox", `0 0 ${st.W} ${st.H}`);
-  const g = el("g", { class: "missing-marks" });
-  st.missing.forEach((m, k) => {
-    const t = el("text", { x: m.x + MISSING_RADIUS + 1, y: m.y - MISSING_RADIUS });
-    t.textContent = "M" + (k + 1);
-    g.append(el("circle", { cx: m.x, cy: m.y, r: MISSING_RADIUS }), t);
-  });
+  const g = el("g", { class: "added-marks" });
+  for (const c of addedCands()) {
+    const v = st.added[c.k].verdict, a = el("g", { "data-i": c.i, class: "added" + (v === "out" ? " out" : "") });
+    const t = el("text", { x: c.cx + radiusOf(c) + 1, y: c.cy - radiusOf(c) }); t.textContent = "U" + (c.k + 1);
+    if (!v) a.append(el("circle", { class: "glow", cx: c.cx, cy: c.cy, r: radiusOf(c) }));
+    const lines = el("g", { class: "lines" });
+    for (const [k, cls] of [["length", ""], ["width", ""], ["red", "r"]]) {
+      const [[x1, y1], [x2, y2]] = c.lines[k]; lines.append(el("line", { x1, y1, x2, y2, ...(cls ? { class: cls } : {}) }));
+    }
+    a.append(lines, t, el("circle", { class: "hit", cx: c.cx, cy: c.cy, r: radiusOf(c) }));
+    g.append(a);
+  }
   svg.append(g);
-  if (st.view === "items" && st.tab === "missing") renderList();
+  if (st.view === "items" && st.meta) renderList();
 }
-// right-clicking the image offers to mark a missing candidate there, or to remove the mark under the pointer
+// right-clicking the image offers to add a NoR there, or to remove the added one under the pointer
 {
   const menu = $("#ctx");
   const close = () => { menu.hidden = true; };
@@ -463,10 +517,10 @@ function drawMissing() {
     const r = $("#base").getBoundingClientRect(), x = (e.clientX - r.left) / st.zoom, y = (e.clientY - r.top) / st.zoom;
     if (x < 0 || y < 0 || x > st.W || y > st.H) return;
     e.preventDefault();
-    const k = st.missing.findIndex((m) => Math.hypot(m.x - x, m.y - y) <= MISSING_RADIUS);
+    const k = addedCands().findIndex((c) => Math.hypot(c.cx - x, c.cy - y) <= radiusOf(c));
     const b = menu.querySelector("button");
-    b.textContent = k < 0 ? "Mark Missing Candidate" : `Remove Missing Mark M${k + 1}`;
-    b.onclick = () => { close(); k < 0 ? addMissing(x, y) : removeMissing(k); };
+    b.textContent = k < 0 ? "Add a NoR Here" : `Remove Added NoR U${k + 1}`;
+    b.onclick = () => { close(); k < 0 ? addAdded(x, y) : removeAdded(k); };
     menu.hidden = false;
     menu.style.left = Math.min(e.clientX, innerWidth - menu.offsetWidth - 4) + "px";
     menu.style.top = Math.min(e.clientY, innerHeight - menu.offsetHeight - 4) + "px";
@@ -476,32 +530,10 @@ function drawMissing() {
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
   $("#scroller").addEventListener("scroll", close);
 }
-// a missing mark's card: the image around it, with the circle it is scored within
-function missingCard(m, k) {
-  const d = document.createElement("div"); d.className = "card missing";
-  d.innerHTML = `<div class="head"><span class="num">M${k + 1}</span><span class="state">Missing candidate</span>
-    <span class="verdict"><button type="button" class="remove" title="Remove this mark" aria-label="Remove this mark">×</button></span></div>`;
-  d.querySelector(".remove").onclick = () => removeMissing(k);
-  const half = MISSING_RADIUS + 8, side = 2 * half, s = Math.max(2, Math.floor(170 / side)), dpr = devicePixelRatio || 1;
-  const cv = document.createElement("canvas"); cv.width = side * s * dpr; cv.height = side * s * dpr; cv.style.width = side * s + "px";
-  const ctx = cv.getContext("2d"); ctx.imageSmoothingEnabled = false;
-  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, cv.width, cv.height);
-  ctx.setTransform(s * dpr, 0, 0, s * dpr, 0, 0); ctx.translate(half - m.x, half - m.y);
-  const sx = Math.max(0, Math.floor(m.x - half)), sy = Math.max(0, Math.floor(m.y - half));
-  const sw = Math.min(st.W, Math.ceil(m.x + half)) - sx, sh = Math.min(st.H, Math.ceil(m.y + half)) - sy;
-  ctx.drawImage(st.plain, sx, sy, sw, sh, sx, sy, sw, sh);
-  ctx.lineWidth = 1 / s; ctx.setLineDash([3 / s, 2 / s]); ctx.strokeStyle = MISSING_COLOUR;
-  ctx.beginPath(); ctx.arc(m.x, m.y, MISSING_RADIUS, 0, 2 * Math.PI); ctx.stroke();
-  const wrap = document.createElement("div"); wrap.className = "crop-wrap";
-  const node = document.createElement("div"); node.className = "crop"; node.append(cv); wrap.append(node);
-  wrap.insertAdjacentHTML("beforeend", `<button class="goto" title="Show it on the image" aria-label="Show it on the image">${GOTO}</button>`);
-  wrap.querySelector(".goto").onclick = () => { showView("image"); focusOn({ cx: m.x, cy: m.y }); };
-  d.append(wrap);
-  return d;
-}
 
 // the result shown for candidate i: null = pass, else a failure reason
 function result(i) {
+  if (isAdded(i)) return st.added[+i.slice(1) - 1]?.verdict === "out" ? BY_YOU : null;
   const f = st.forced.get(i);
   if (f === "in") return null;
   if (f === "out") return BY_YOU;
@@ -528,14 +560,15 @@ function measuresPx(c) {
   const e = st.edits.get(c.i) || {}, m = { ...c.m };
   if (e.length) m.length = dist(e.length);
   if (e.red) m.red_length = dist(e.red);
-  if (e.length || e.red) { m.red_over_length = m.red_length / m.length; m.length_over_width = m.length / m.width; }
+  if (e.width) m.width = dist(e.width);
+  if (e.length || e.red || e.width) { m.red_over_length = m.red_length / m.length; m.length_over_width = m.length / m.width; }
   return m;
 }
 function measures(c) {
   const f = st.um || 1, m = measuresPx(c);
   return MEASURES.map(([k, label, scaled]) => [label + (scaled ? ` (${unitName()})` : ""), m[k] == null ? null : scaled ? m[k] * f : m[k]]);
 }
-const measured = (c) => { const e = st.edits.get(c.i) || {}; return e.length || e.red ? "adjusted" : e.approved ? "approved" : null; };
+const measured = (c) => { if (c.added) return "adjusted"; const e = st.edits.get(c.i) || {}; return e.length || e.red || e.width ? "adjusted" : e.approved ? "approved" : null; };
 
 // ---------- controls ----------
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -655,6 +688,10 @@ function render() {
     if (r === null) { let_.textContent = ""; passes.push(c); }
     else { const R = reasonOf(r); let_.textContent = R.letter; let_.setAttribute("fill", `rgb(${R.color})`); rejects.push(c); counts[r] = (counts[r] || 0) + 1; }
   }
+  for (const c of addedCands().reverse()) {
+    const r = result(c.i);
+    if (r === null) passes.unshift(c); else { rejects.unshift(c); counts[r] = (counts[r] || 0) + 1; }
+  }
   st.passes = passes; st.rejects = rejects;
   document.querySelectorAll(".filter").forEach((d) => {
     const k = d.dataset.key;
@@ -670,7 +707,7 @@ function render() {
 // The crop, turned so the NoR lies level when "align to horizon" is on, with its outlines, bars and
 // length handles drawn over it. Cached until the options or the candidate's lengths change.
 function crop(c, size) {
-  const o = optsOf(c), key = JSON.stringify([size, o, st.edits.get(c.i) || null, st.show.passC, st.show.failC, result(c.i) === null]);
+  const o = optsOf(c), key = JSON.stringify([size, o, (c.added ? c.lines : st.edits.get(c.i)) || null, st.show.passC, st.show.failC, result(c.i) === null]);
   const hit = st.crops.get(c.i + "|" + size);
   if (hit && hit.key === key) return hit.node;
   const L = linesOf(c), pad = o.pad;
@@ -686,7 +723,7 @@ function crop(c, size) {
   let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
   const take = (p) => { const [u, v] = toUV(p); u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v); };
   for (let y = 0; y < c.h; y++) for (let x = 0; x < c.w; x++) if (c.blk[y * c.w + x]) for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) take([c.x0 + x + dx, c.y0 + y + dy]);
-  if (L) for (const k of ["length", "red"]) L[k].forEach(take);
+  if (L) for (const k of ["length", "red", "width"]) L[k].forEach(take);
   u0 -= pad; u1 += pad; v0 -= pad; v1 += pad;
   const uw = u1 - u0, vw = v1 - v0, s = Math.max(2, Math.min(size / 10, size / Math.max(uw, vw))), dpr = devicePixelRatio || 1;
   const cv = document.createElement("canvas"); cv.width = Math.round(uw * s * dpr); cv.height = Math.round(vw * s * dpr);
@@ -708,6 +745,36 @@ function crop(c, size) {
   st.crops.set(c.i + "|" + size, { key, node }); return node;
 }
 
+// The measuring lines after a handle (line k, end j) is dragged to P. The two green ends and the two red
+// ends stay on one straight axis: dragging one of them turns the axis about the green end on the far side,
+// through P, and every other point keeps its distance from that end, in order and at least a pixel apart.
+// A width end sets where along the axis the width is measured and, mirrored across the axis, how wide.
+function dragLines(L, k, j, P) {
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1]], dot = (a, b) => a[0] * b[0] + a[1] * b[1];
+  const at = (o, u, s) => [o[0] + s * u[0], o[1] + s * u[1]], unit = (a) => { const n = Math.hypot(...a) || 1; return [a[0] / n, a[1] / n]; };
+  const mid = ([a, b]) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const [A, B] = L.length, u = unit(sub(B, A)), n = [-u[1], u[0]], len = Math.hypot(...sub(B, A));
+  const wc = mid(L.width), hw = Math.hypot(...sub(L.width[1], L.width[0])) / 2, side = Math.sign(dot(sub(L.width[0], wc), n)) || 1;
+  if (k === "width") {
+    const s = Math.max(0, Math.min(len, dot(sub(P, A), u))), off = dot(sub(P, A), n), c = at(A, u, s);
+    const w = Math.max(0.5, Math.abs(off)), sg = Math.sign(off) || 1, out = [at(c, n, sg * w), at(c, n, -sg * w)];
+    return { ...L, width: j === 0 ? out : [out[1], out[0]] };
+  }
+  // the turning end, and the distance of each point from it along the axis
+  const piv = k === "length" ? 1 - j : dot(sub(L.red[j], A), u) < len / 2 ? 1 : 0;
+  const O = L.length[piv], v = unit(sub(L.length[1 - piv], O)), d = (p) => dot(sub(p, O), v);
+  const pts = [["length", 1 - piv, len], ["red", 0, d(L.red[0])], ["red", 1, d(L.red[1])]].sort((a, b) => a[2] - b[2]);
+  const me = pts.findIndex(([kk, jj]) => kk === k && jj === j);
+  const lo = me > 0 ? pts[me - 1][2] + 1 : 1, hi = me < pts.length - 1 ? pts[me + 1][2] - 1 : Infinity;
+  const nv = unit(sub(P, O)), nn = [-nv[1] * Math.sign(dot(n, [-v[1], v[0]])), nv[0] * Math.sign(dot(n, [-v[1], v[0]]))];
+  pts[me][2] = Math.max(lo, Math.min(hi, Math.hypot(...sub(P, O))));
+  const out = { length: [[...A], [...B]], red: [[...L.red[0]], [...L.red[1]]] };
+  for (const [kk, jj, s] of pts) out[kk][jj] = at(O, nv, s);
+  out.length[piv] = [...O];
+  const far = pts.find(([kk]) => kk === "length")[2], ws = Math.max(0, Math.min(far, d(wc))), c = at(O, nv, ws);
+  return { ...L, ...out, width: [at(c, nn, side * hw), at(c, nn, -side * hw)] };
+}
+
 // bars, length labels and draggable ends over a crop, in its own turned coordinates
 function cropMarks(c, L, g) {
   const o = optsOf(c), f = st.um || 1, svg = el("svg", { class: "marks", viewBox: `${g.u0} ${g.v0} ${g.uw} ${g.vw}`, width: g.uw * g.s, height: g.vw * g.s });
@@ -721,28 +788,27 @@ function cropMarks(c, L, g) {
         t.textContent = fmt(dist(L[k]) * f, 1); svg.append(t);
       }
     }
-    if (o.adjust && result(c.i) === null) for (const k of ["length", "red"]) L[k].forEach((p, j) => {
-      const [u, v] = g.toUV(p), h = el("circle", { cx: u, cy: v, r: 4 * px, class: "handle" + (k === "red" ? " r" : ""), "stroke-width": px });
+    if (o.adjust && result(c.i) === null) for (const k of ["length", "red", "width"]) L[k].forEach((p, j) => {
+      const [u, v] = g.toUV(p), h = el("circle", { cx: u, cy: v, r: 4 * px, class: "handle" + (k === "red" ? " r" : k === "width" ? " w" : ""), "stroke-width": px });
       h.dataset.k = k; h.dataset.j = j; svg.append(h);
     });
   };
   draw();
-  // an end slides along its own line; the result is kept in image coordinates
+  // a handle goes wherever it is dragged; the result is kept in image coordinates
   svg.addEventListener("pointerdown", (e) => {
     const h = e.target.closest(".handle"); if (!h) return;
     e.preventDefault(); e.stopPropagation(); svg.setPointerCapture(e.pointerId);
-    const k = h.dataset.k, j = +h.dataset.j, [A, B] = L[k], d = [B[0] - A[0], B[1] - A[1]], n = Math.hypot(...d), dir = [d[0] / n, d[1] / n];
-    L = { ...L, [k]: [[...A], [...B]] };
+    const k = h.dataset.k, j = +h.dataset.j, from = L;
     const move = (ev) => {
       const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
-      const q = pt.matrixTransform(svg.getScreenCTM().inverse()), P = g.toXY([q.x, q.y]);
-      let t = (P[0] - A[0]) * dir[0] + (P[1] - A[1]) * dir[1];
-      t = j === 0 ? Math.min(t, n - 1) : Math.max(t, 1);
-      L[k][j] = [A[0] + t * dir[0], A[1] + t * dir[1]]; draw();
+      const q = pt.matrixTransform(svg.getScreenCTM().inverse());
+      L = dragLines(from, k, j, g.toXY([q.x, q.y])); draw();
     };
     const up = () => {
       svg.removeEventListener("pointermove", move); svg.removeEventListener("pointerup", up);
-      edit(c.i, { [k]: L[k].map((p) => p.map((v) => Math.round(v * 100) / 100)) });
+      if (L === from) return;
+      const r2 = (seg) => seg.map((p) => p.map((v) => Math.round(v * 100) / 100)), lines = { length: r2(L.length), red: r2(L.red), width: r2(L.width) };
+      c.added ? setAdded(c.k, { lines }) : edit(c.i, lines);
     };
     svg.addEventListener("pointermove", move); svg.addEventListener("pointerup", up);
   });
@@ -751,14 +817,17 @@ function cropMarks(c, L, g) {
 
 // thumbs up and down (paths from Lucide, ISC licence): the user's own verdict on a candidate
 const THUMB = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>`;
+// user-plus (Lucide, ISC licence): a NoR the user added
+const ADD_ICON = `<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>`;
 const GOTO = `<svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2" class="dot"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></svg>`;
 function card(c, where) {
-  const r = result(c.i), f = st.forced.get(c.i), d = document.createElement("div");
-  d.className = "card " + (r === null ? "pass" : "fail") + (f === "in" ? " approved" : f === "out" ? " byyou" : "") +
+  const r = result(c.i), f = c.added ? st.added[c.k].verdict : st.forced.get(c.i), d = document.createElement("div");
+  d.className = "card " + (r === null ? "pass" : "fail") + (f === "in" ? " approved" : f === "out" ? " byyou" : "") + (c.added ? " added" : "") +
     (where === "list" && c.i === st.sel ? " selected" : "");
   d.dataset.i = c.i;
   const state = r === null ? "Finalist" : "Rejected";
-  d.innerHTML = `<div class="head"><span class="num">#${st.numbers.get(c.i)}</span><span class="state">${state}</span>
+  const num = c.added ? `<span class="num added" title="Added by you" aria-label="Added by you, U${c.k + 1}">${ADD_ICON}${c.k + 1}</span>` : `<span class="num">#${st.numbers.get(c.i)}</span>`;
+  d.innerHTML = `<div class="head">${num}<span class="state">${state}</span>
     <span class="verdict" role="group" aria-label="Your verdict"></span></div>`;
   const acts = d.querySelector(".verdict");
   const btn = (cls, on, title, fn) => {
@@ -766,10 +835,15 @@ function card(c, where) {
     b.title = title; b.setAttribute("aria-label", title); b.setAttribute("aria-pressed", on);
     b.onclick = (e) => { e.stopPropagation(); st.sel = c.i; fn(); }; acts.append(b);
   };
+  const say = (v) => (c.added ? setAdded(c.k, { verdict: v === "approve" ? "in" : v === "reject" ? "out" : null }) : decide(c.i, v));
   btn("up", f === "in", f === "in" ? "You said this is a NoR. Click to undo" : "A NoR: keep it, with its lengths as shown (saved as ground truth)",
-    () => decide(c.i, f === "in" ? null : "approve"));
-  btn("down", f === "out", f === "out" ? "You said this is not a NoR. Click to let the filters decide again" : "Not a NoR: reject it (saved as ground truth)",
-    () => decide(c.i, f === "out" ? null : "reject"));
+    () => say(f === "in" ? null : "approve"));
+  btn("down", f === "out", f === "out" ? (c.added ? "You said this is not a NoR. Click to undo" : "You said this is not a NoR. Click to let the filters decide again") : "Not a NoR: reject it (saved as ground truth)",
+    () => say(f === "out" ? null : "reject"));
+  if (c.added) {
+    acts.insertAdjacentHTML("beforeend", `<button type="button" class="remove" title="Remove this NoR you added" aria-label="Remove this NoR you added">×</button>`);
+    acts.lastChild.onclick = (e) => { e.stopPropagation(); removeAdded(c.k); };
+  }
   if (where === "list") d.onclick = () => select(c.i);
   const wrap = document.createElement("div"); wrap.className = "crop-wrap";
   wrap.append(crop(c, where === "selected" ? 320 : 170));
@@ -777,9 +851,9 @@ function card(c, where) {
   wrap.querySelector(".goto").onclick = () => { select(c.i); showView("image"); focusOn(c); };
   d.append(wrap);
   const e = st.edits.get(c.i) || {};
-  if (e.length || e.red) {
+  if (e.length || e.red || e.width) {
     d.insertAdjacentHTML("beforeend", `<div class="tag">Lengths adjusted <button class="link">reset</button></div>`);
-    d.querySelector(".tag button").onclick = () => edit(c.i, { length: null, red: null });
+    d.querySelector(".tag button").onclick = () => edit(c.i, { length: null, red: null, width: null });
   }
   if (r !== null) d.insertAdjacentHTML("beforeend", `<div class="why">${whyAll(c).map((k) => `<span><b class="lt" style="--c:${colour(k)}">${reasonOf(k).letter}</b> ${esc(reasonOf(k).title)}</span>`).join("")}</div>`);
   if (optsOf(c).lenCard && c.m) {
@@ -791,38 +865,33 @@ function card(c, where) {
 }
 
 function renderList() {
-  if (st.tab === "missing") {
-    $("#list").replaceChildren(...st.missing.map(missingCard));
-    if (!st.missing.length) $("#list").innerHTML = `<p class="dim">No missing candidates. Right-click the image where the finder missed a NoR to mark one.</p>`;
-    return;
-  }
   const items = st.tab === "pass" ? st.passes || [] : st.rejects || [];
   $("#list").replaceChildren(...items.map((c) => card(c, "list")));
-  if (!items.length) $("#list").innerHTML = `<p class="dim">${st.tab === "pass" ? "No finalists." : "Nothing rejected."}</p>`;
+  if (!items.length) $("#list").innerHTML = `<p class="dim">${st.tab === "pass" ? "No finalists. Right-click the image to add a NoR the finder missed." : "Nothing rejected."}</p>`;
 }
 
 // ---------- selection ----------
 function select(i) {
   st.sel = i; renderSelected(); placeRing();
-  document.querySelectorAll("#list .card").forEach((d) => d.classList.toggle("selected", +d.dataset.i === i));
+  document.querySelectorAll("#list .card").forEach((d) => d.classList.toggle("selected", d.dataset.i === String(i)));
 }
 // in the item views, the selected candidate's card is brought into sight, on the tab that lists it
 function revealSelected(block) {
-  if (st.sel == null || !st.meta) return;
+  if (st.sel == null || !st.meta || !candOf(st.sel)) return;
   const t = result(st.sel) === null ? "pass" : "fail";
   if (t !== st.tab) { setTab(t); renderList(); }
   const d = $(`#list .card[data-i="${st.sel}"]`);
   if (d) d.scrollIntoView({ block, behavior: block === "center" ? "auto" : "smooth" });
 }
 function renderSelected() {
-  const c = st.sel == null ? null : st.cands[st.sel];
+  const c = candOf(st.sel);
   $("#selected").classList.toggle("dim", !c);
   $("#selected").replaceChildren(c ? card(c, "selected") : "Click a candidate on the image.");
-  $("#sel-prev").disabled = $("#sel-next").disabled = !st.order.length;
+  $("#sel-prev").disabled = $("#sel-next").disabled = !st.order.length && !st.added.length;
 }
 function placeRing() {
   if (!st.ring) return;
-  const c = st.sel == null ? null : st.cands[st.sel];
+  const c = candOf(st.sel);
   st.ring.style.display = c ? "" : "none";
   if (!c) return;
   const [a, b, cc, d] = c.bb;
@@ -832,8 +901,8 @@ function placeRing() {
 // the next candidate by number among those on show
 // (in the item views: among the cards on show)
 function step(dir) {
-  const list = st.view === "items" ? (st.tab === "pass" ? st.passes : st.tab === "fail" ? st.rejects : []) || []
-    : st.order.filter((c) => (result(c.i) === null ? st.show.pass : st.show.fails));
+  const list = st.view === "items" ? (st.tab === "pass" ? st.passes : st.rejects) || []
+    : [...addedCands(), ...st.order].filter((c) => (result(c.i) === null ? st.show.pass : st.show.fails));
   if (!list.length) return;
   const k = list.findIndex((c) => c.i === st.sel);
   const c = list[k < 0 ? (dir > 0 ? 0 : list.length - 1) : (k + dir + list.length) % list.length];
@@ -894,10 +963,10 @@ const csv = (rows) => rows.map((r) => r.map(csvCell).join(",")).join("\n");
 $("#dl-cands").onclick = () => {
   const u = st.um ? "um" : "px";
   const head = ["n", "x_px", "y_px", "status", "reason", "rejected_by", "decision", "lengths", ...MEASURES.map(([k, , s]) => (s ? `${k}_${u}` : k))];
-  const rows = st.order.map((c) => {
-    const r = result(c.i), f = st.forced.get(c.i);
-    return [st.numbers.get(c.i), fmt(c.cx, 1), fmt(c.cy, 1), r === null ? "finalist" : "rejected", r === null ? "" : reasonOf(r).title,
-      whyAll(c).map((k) => reasonOf(k).letter).join(" "), { in: "approved", out: "rejected by you" }[f] || "", measured(c) || "",
+  const rows = [...addedCands(), ...st.order].map((c) => {
+    const r = result(c.i), f = c.added ? st.added[c.k].verdict : st.forced.get(c.i);
+    return [c.added ? "U" + (c.k + 1) : st.numbers.get(c.i), fmt(c.cx, 1), fmt(c.cy, 1), r === null ? "finalist" : "rejected", r === null ? "" : reasonOf(r).title,
+      whyAll(c).map((k) => reasonOf(k).letter).join(" "), { in: "approved", out: "rejected by you" }[f] || (c.added ? "added by you" : ""), measured(c) || "",
       ...measures(c).map(([, v]) => fmt(v, 3))];
   });
   save_(base() + "_candidates.csv", csv([head, ...rows]), "text/csv");
@@ -919,9 +988,15 @@ function truth() {
     labels.push({ id: st.numbers.get(c.i), x: c.cx, y: c.cy, label: f === "in" ? 1 : 0, source: "user",
       decision: f === "in" ? "approved" : "rejected", measured: f === "in" ? measured(c) : null,
       length_px: px.length ?? null, red_length_px: px.red_length ?? null, width_px: px.width ?? null,
-      lines: L ? { length: L.length, red: L.red } : null });
+      lines: L ? { length: L.length, red: L.red, width: L.width } : null });
   }
-  st.missing.forEach((m, k) => labels.push({ id: "M" + (k + 1), kind: "missing", x: m.x, y: m.y, label: 1, source: "user", radius_px: MISSING_RADIUS }));
+  // an added NoR the user approved, with its measurements; until then it is only a suggestion
+  for (const c of addedCands()) {
+    if (st.added[c.k].verdict !== "in") continue;
+    labels.push({ id: "U" + (c.k + 1), kind: "missing", origin: "added by user", x: c.cx, y: c.cy, label: 1, source: "user",
+      radius_px: MISSING_RADIUS, decision: "approved", measured: "adjusted", length_px: c.m.length, red_length_px: c.m.red_length,
+      width_px: c.m.width, lines: { length: c.lines.length, red: c.lines.red, width: c.lines.width } });
+  }
   const src = st.source || { kind: "local" };
   const location = src.kind === "drive" ? { source: "drive", drive_id: src.id, url: `https://drive.google.com/file/d/${src.id}/view` } : { source: "local" };
   return { format: "norfinder-ground-truth/2", exported: new Date().toISOString(),
@@ -934,20 +1009,20 @@ function issueUrl(gt, file) {
   const body = [`Ground truth marked on the NoR Finder page.`, ``,
     `- Image: ${gt.image.name}`, `- SHA-256: ${gt.image.sha256}`, `- Google Drive: ${gt.image.location.url}`,
     `- Finder: ${gt.finder || "none run"}`,
-    `- Marked: ${n((L) => !L.kind && L.label === 1)} NoRs, ${n((L) => L.label === 0)} not NoRs, ${n((L) => L.kind === "missing")} missing candidates`,
+    `- Marked: ${n((L) => !L.kind && L.label === 1)} NoRs, ${n((L) => L.label === 0)} not NoRs, ${n((L) => L.kind === "missing")} added by hand`,
     ``, `**Attach ${file} below before submitting** (drag it into this box).`].join("\n");
   const q = new URLSearchParams({ labels: GT_LABEL, title: `Ground truth: ${gt.image.name}`, body });
   return `https://github.com/${REPO}/issues/new?${q}`;
 }
 $("#dl-truth").onclick = () => {
   const gt = truth(), btn = $("#dl-truth");
-  if (!gt.labels.length) return notice("Nothing marked yet: vote on candidates with the thumbs, or right-click the image to mark a missing one.", btn);
+  if (!gt.labels.length) return notice("Nothing marked yet: vote on candidates with the thumbs, or right-click the image to add a NoR the finder missed.", btn);
   const file = base() + "_ground_truth.json";
   save_(file, JSON.stringify(gt, null, 1), "application/json");
   if (gt.image.location.source !== "drive") return notice(LOCAL_GT, btn);
   window.open(issueUrl(gt, file), "_blank", "noopener");
   notice(`Downloaded ${file}. Attach it to the GitHub issue that just opened, then submit. ` +
-    "Only the candidates you marked (thumbs up or down) and your missing candidates are sent.", btn);
+    "Only the candidates you marked (thumbs up or down) are sent, the NoRs you added included.", btn);
 };
 
 // ---------- notices: a short message, at the top of the view or under the button it is about ----------
@@ -974,7 +1049,7 @@ function focusOn(c) {
 }
 function candAt(e) {
   const g = e.target.closest && e.target.closest("g[data-i]");
-  return g ? st.cands[+g.dataset.i] : null;
+  return g ? candOf(g.dataset.i[0] === "u" ? g.dataset.i : +g.dataset.i) : null;
 }
 {
   const sc = $("#scroller"); let drag = null;
@@ -1010,7 +1085,7 @@ function tip(e) {
   const c = candAt(e), t = $("#tip");
   if (!c || $("#scroller").classList.contains("dragging")) { t.hidden = true; return; }
   const r = result(c.i);
-  let s = `#${st.numbers.get(c.i)} ` + (r === null ? "finalist" : `rejected: ${whyAll(c).map((k) => `${reasonOf(k).letter} ${reasonOf(k).title}`).join(", ")}`);
+  let s = `${nameOf(c)} ` + (c.added ? "added by you, " : "") + (r === null ? "finalist" : `rejected: ${whyAll(c).map((k) => `${reasonOf(k).letter} ${reasonOf(k).title}`).join(", ")}`);
   if (c.m) s += "\n" + measures(c).slice(0, 3).map(([l, v]) => `${l}: ${fmt(v)}`).join("\n");
   t.textContent = s; t.hidden = false;
   t.style.left = Math.min(e.clientX + 14, innerWidth - 330) + "px"; t.style.top = e.clientY + 14 + "px";
@@ -1068,8 +1143,6 @@ function applyShow() {
   pad.oninput = () => { const v = parseInt(pad.value, 10); st.opt[st.tab].pad = isFinite(v) && v >= 0 ? v : CARD_DEFAULTS[st.tab].pad; changed(); };
   // the menu shows the options of the view on show
   st.showOpts = () => {
-    $("#card-menu").hidden = st.tab === "missing";
-    if (st.tab === "missing") return;
     for (const [id, k] of Object.entries(opts)) $("#" + id).checked = st.opt[st.tab][k];
     if (document.activeElement !== pad) pad.value = st.opt[st.tab].pad;
     pad.placeholder = CARD_DEFAULTS[st.tab].pad;
@@ -1077,12 +1150,11 @@ function applyShow() {
   };
   st.showOpts();
 }
-for (const [id, t] of [["#tab-pass", "pass"], ["#tab-fail", "fail"], ["#tab-miss", "missing"]]) $(id).onclick = () => {
+for (const [id, t] of [["#tab-pass", "pass"], ["#tab-fail", "fail"]]) $(id).onclick = () => {
   if (st.tab !== t) setTab(t); renderList();
 };
 function setTab(t) {
-  st.tab = t; $("#tab-pass").classList.toggle("on", t === "pass"); $("#tab-fail").classList.toggle("on", t === "fail");
-  $("#tab-miss").classList.toggle("on", t === "missing"); st.showOpts();
+  st.tab = t; $("#tab-pass").classList.toggle("on", t === "pass"); $("#tab-fail").classList.toggle("on", t === "fail"); st.showOpts();
 }
 
 // ---------- boxes that fold: the finder and the filters, folded until there is an image ----------

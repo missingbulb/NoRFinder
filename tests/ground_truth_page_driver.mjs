@@ -1,8 +1,9 @@
 // Drives the page (web/) in headless Chromium with a stand-in worker that answers from ANSWERS (written by
 // tests/test_memory.py) and checks the ground-truth workflow: a local image warns that its ground truth cannot
-// be sent; a right click marks a missing candidate, listed in the Missing view; the Ground truth file holds only
-// the candidates voted on and the missing marks; and for an image from Google Drive (a stand-in Drive API) the
-// button also opens a GitHub issue labelled for the intake. Exits 1 on a failed check, 2 when it cannot run.
+// be sent; a right click adds a NoR, with measuring lines to correct on its card, first among the finalists and
+// glowing on the image until the user decides; the measuring ends drag freely and keep the NoR on one axis; the
+// Ground truth file holds only the candidates voted on, the added NoR once approved; and for an image from Google
+// Drive (a stand-in Drive API) the button also opens a GitHub issue labelled for the intake. Exits 1 on a failed check, 2 when it cannot run.
 //   node tests/ground_truth_page_driver.mjs ANSWERS IMAGE
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
@@ -91,22 +92,59 @@ const middle = (page) => page.evaluate(() => {
   return { sx, sy, x: (sx - b.left) / st.zoom, y: (sy - b.top) / st.zoom };
 });
 
+// the selected card's handle for one end of a measuring line, as a point on the screen
+const handle = async (page, k, j) => {
+  const b = await page.locator(`#selected .handle[data-k="${k}"][data-j="${j}"]`).boundingBox();
+  return [b.x + b.width / 2, b.y + b.height / 2];
+};
+async function drag(page, [x, y], dx, dy) {
+  await page.mouse.move(x, y); await page.mouse.down();
+  await page.mouse.move(x + dx, y + dy, { steps: 5 }); await page.mouse.up();
+}
+// how far the four ends of a candidate's length and red lines are from one straight line, in pixels
+const offAxis = (L) => {
+  const [A, B] = L.length, n = Math.hypot(B[0] - A[0], B[1] - A[1]);
+  return Math.max(...L.red.map((p) => Math.abs((B[0] - A[0]) * (A[1] - p[1]) - (A[0] - p[0]) * (B[1] - A[1])) / n));
+};
+
 async function markAndVote(page) {
   await page.click("#find");
   await page.waitForFunction(() => st.alone && $("#busy").hidden);
   const m = await middle(page);
   await page.mouse.click(m.sx, m.sy, { button: "right" });
-  await check(await page.isVisible("#ctx") && (await page.textContent("#ctx button")) === "Mark Missing Candidate", "a right click on the image offers Mark Missing Candidate");
+  await check(await page.isVisible("#ctx") && (await page.textContent("#ctx button")) === "Add a NoR Here", "a right click on the image offers Add a NoR Here");
   await page.click("#ctx button");
-  const marks = await page.evaluate(() => st.missing);
-  await check(marks.length === 1 && Math.hypot(marks[0].x - m.x, marks[0].y - m.y) < 1, `the mark lands where clicked (${JSON.stringify(marks[0])} vs ${m.x.toFixed(1)}, ${m.y.toFixed(1)})`);
-  await check(await page.$$eval("#overlay .missing-marks circle", (c) => c.length) === 1, "the mark is drawn on the image");
+  const added = await page.evaluate(() => ({ sel: st.sel, c: candOf(st.sel) }));
+  await check(added.sel === "u1" && Math.hypot(added.c.cx - m.x, added.c.cy - m.y) < 1, `the added NoR is centred where clicked and selected (${added.c.cx}, ${added.c.cy})`);
+  await check(await page.$$eval("#overlay .added .glow", (c) => c.length) === 1, "it glows on the image");
+  await check(await page.$$eval("#selected .card.added .num.added svg", (c) => c.length) === 1 && await page.$$eval("#selected .handle", (h) => h.length) === 6,
+    "its card carries the added icon and six handles");
+  // a green end dragged off the axis turns it; the red ends follow onto the new axis
+  await drag(page, await handle(page, "length", 1), 0, -40);
+  let L = await page.evaluate(() => candOf("u1").lines);
+  await check(Math.abs(L.length[1][1] - L.length[0][1]) > 3 && offAxis(L) < 0.05, `a dragged green end turns the axis, the red ends staying on it (${offAxis(L).toFixed(3)} px off)`);
+  // a width end sets the width
+  const w0 = await page.evaluate(() => candOf("u1").m.width);
+  await drag(page, await handle(page, "width", 0), 0, -25);
+  const w1 = await page.evaluate(() => candOf("u1").m.width);
+  await check(w1 > w0 + 1, `a dragged width end widens the NoR (${w0.toFixed(1)} to ${w1.toFixed(1)} px)`);
+  await page.click("#switch");
+  await check(await page.$eval("#list .card", (d) => d.dataset.i) === "u1", "the added NoR lists first among the finalists");
+  await page.click("#switch");
+  await page.click("#selected .verdict .up");
+  await check(await page.$$eval("#overlay .added .glow", (c) => c.length) === 0, "approving it stops the glow");
   // a thumbs up on the first candidate, a thumbs down on the third; the second stays undecided
   await page.click("#sel-next"); await page.click("#selected .verdict .up");
   await page.click("#sel-next"); await page.click("#sel-next"); await page.click("#selected .verdict .down");
-  await page.click("#switch"); await page.click("#tab-miss");
-  await check(await page.$$eval("#list .card.missing", (c) => c.length) === 1, "the Missing view lists the mark");
-  await check(await page.isHidden("#card-menu"), "the Missing view has no crop options");
+  // a found candidate's ends drag freely too
+  L = await page.evaluate(() => linesOf(candOf(st.sel)));
+  if (L) {
+    await page.click("#selected .verdict .down"); // back to a finalist, which has handles
+    await drag(page, await handle(page, "red", 0), 6, 12);
+    L = await page.evaluate(() => linesOf(candOf(st.sel)));
+    await check(offAxis(L) < 0.05, `a found candidate's red end dragged off the axis keeps the four ends on one line (${offAxis(L).toFixed(3)} px off)`);
+    await page.click("#selected .verdict .down");
+  }
   return page.evaluate(() => ({ undecided: st.order.length - st.forced.size }));
 }
 
@@ -127,7 +165,8 @@ async function download(page) {
   await check(gt.format === "norfinder-ground-truth/2" && kinds === "approved,missing,rejected" && undecided > 0,
     `the file holds only the voted candidates and the mark (${kinds}; ${undecided} undecided left out)`);
   const miss = gt.labels.find((L) => L.kind === "missing");
-  await check(miss.label === 1 && miss.radius_px > 0, `a missing mark is a real NoR with its radius (${miss.radius_px} px)`);
+  await check(miss.label === 1 && miss.radius_px > 0 && miss.origin === "added by user" && miss.width_px > 0 && miss.lines.width,
+    `an added NoR is a real NoR with its radius, its origin and its measurements (${miss.radius_px} px, ${miss.width_px.toFixed(1)} px wide)`);
   await check(gt.image.location.source === "local", "the file says the image was local");
   const said = await page.textContent("#notice-text");
   await new Promise((ok) => setTimeout(ok, 300));

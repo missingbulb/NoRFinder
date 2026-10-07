@@ -10,19 +10,27 @@ let py;
 
 async function boot() {
   const t0 = performance.now();
-  say("Loading Python…");
-  const { loadPyodide } = await import(PYODIDE + "pyodide.mjs");
-  py = await loadPyodide({ indexURL: PYODIDE });
-  say("Loading numpy, scipy, scikit-image…");
+  say("Downloading Python…");
   // Only the packages the finders import are unpacked, and each native module loads the first time
   // Python imports it: loadPackage would load every module of every package and of its dependencies
   // up front, about 100 MB more memory. A package missing here fails loudly as an ImportError.
-  const lock = (await (await fetch(PYODIDE + "pyodide-lock.json")).json()).packages;
-  const vendored = (await (await fetch("vendor/wheels.json")).json()).map((w) => ({ url: new URL("vendor/" + w, self.location.href).href }));
-  const wheels = ["numpy", "scipy", "scikit-image", "lazy-loader", "packaging", "pillow"]
-    .map((n) => ({ url: PYODIDE + lock[n].file_name, sha256: lock[n].sha256 })).concat(vendored);
+  // They download while Python itself downloads and starts.
+  const wheels = (async () => {
+    const [lock, vendored] = await Promise.all([fetch(PYODIDE + "pyodide-lock.json"), fetch("vendor/wheels.json")].map(async (r) => (await r).json()));
+    const list = ["numpy", "scipy", "scikit-image", "lazy-loader", "packaging", "pillow"]
+      .map((n) => ({ url: PYODIDE + lock.packages[n].file_name, sha256: lock.packages[n].sha256 }))
+      .concat(vendored.map((w) => ({ url: new URL("vendor/" + w, self.location.href).href })));
+    expected = list.length;
+    return Promise.all(list.map(fetchWheel));
+  })();
+  wheels.catch(() => {}); // a failed download is reported where it is awaited, after Python starts
+  const { loadPyodide } = await import(PYODIDE + "pyodide.mjs");
+  py = await loadPyodide({ indexURL: PYODIDE });
+  stage = "Downloading packages";
+  const bufs = await wheels;
+  say("Installing numpy, scipy, scikit-image…");
   const site = py.runPython("import sysconfig; sysconfig.get_path('purelib')");
-  for (const buf of await Promise.all(wheels.map(fetchWheel))) py.unpackArchive(buf, "wheel", { extractDir: site });
+  for (const buf of bufs) py.unpackArchive(buf, "wheel", { extractDir: site });
   say("Loading the finders…");
   // Python modules are read straight from the repo's layout as they are imported: a new finder
   // file in detection/ ships with no list to update.
@@ -53,10 +61,24 @@ import interactive, json
   postMessage({ type: "ready", finders, about, secs: (performance.now() - t0) / 1000 });
 }
 
+// the packages' download, counted for the status bar while Python starts
+let stage = "Downloading Python and packages", expected = Infinity, heads = 0, sized = true, got = 0, total = 0, shown = 0;
+const mb = (n) => (n / 1048576).toFixed(0);
+function counted(n, size) {
+  got += n; if (size !== undefined) { heads++; total += size || 0; sized &&= !!size; }
+  const all = heads === expected && sized && got >= total;
+  if (!n || (performance.now() - shown < 250 && !all)) return;
+  shown = performance.now();
+  say(`${stage}… ${mb(got)}${heads === expected && sized ? " of " + mb(total) : ""} MB`);
+}
+
 async function fetchWheel({ url, sha256 }) {
-  const r = await fetch(url);
+  const r = await fetch(url, { priority: "low" }); // Python itself downloads first: it starts while these finish
   if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
-  const buf = await r.arrayBuffer();
+  counted(0, Number(r.headers.get("content-length")));
+  const parts = [], reader = r.body.getReader();
+  for (let c; !(c = await reader.read()).done;) { parts.push(c.value); counted(c.value.length); }
+  const buf = await new Blob(parts).arrayBuffer();
   if (sha256) {
     const got = [...new Uint8Array(await crypto.subtle.digest("SHA-256", buf))].map((b) => b.toString(16).padStart(2, "0")).join("");
     if (got !== sha256) throw new Error(`${url}: checksum mismatch`);
