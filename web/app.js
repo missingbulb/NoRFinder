@@ -197,7 +197,8 @@ function fileInfo(rows) {
   const box = $("#file-info"), item = (tag, text, cls) => Object.assign(document.createElement(tag), { textContent: text, className: cls || "" });
   box.replaceChildren(...(rows || []).flatMap(([k, v]) => [item("dt", k), item("dd", v)]));
   if (rows && !rows.some(([k]) => k === "Microscope")) box.append(item("dd", "No microscope or acquisition details in the file.", "dim none"));
-  box.hidden = !rows;
+  $("#file-box").classList.toggle("empty", !rows);
+  if (!rows) $("#file-box").open = false;
 }
 
 // source: where the image came from, {kind: "local"} or {kind: "drive", id}
