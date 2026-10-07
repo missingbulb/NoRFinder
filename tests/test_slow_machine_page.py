@@ -2,6 +2,9 @@
 until it is done, and a low-memory popup asks the user to close other tabs. Drives web/ in headless Chromium
 with the stand-in worker of the memory test, answering late (slow_machine_page_driver.mjs)."""
 from test_memory import crop, needs_node, needs_slide, page_answers, run  # noqa: F401  (fixtures)
+import pytest
+
+pytestmark = pytest.mark.full
 
 
 @needs_slide

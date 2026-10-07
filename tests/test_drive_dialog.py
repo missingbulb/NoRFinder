@@ -2,6 +2,9 @@
 image's thumbnail in colour from a few of its rows, never the whole file (drive_dialog_driver.mjs)."""
 import glob, os
 from test_memory import HERE, TIF, needs_node, needs_slide, run
+import pytest
+
+pytestmark = pytest.mark.full
 
 
 @needs_slide

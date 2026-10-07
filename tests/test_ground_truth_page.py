@@ -2,6 +2,9 @@
 file holds, submitting it as a GitHub issue, the warning for a local image) and the summary mask. Drives
 web/ in headless Chromium with the stand-in worker of the memory test (ground_truth_page_driver.mjs)."""
 from test_memory import crop, needs_node, needs_slide, page_answers, run  # noqa: F401  (fixtures)
+import pytest
+
+pytestmark = pytest.mark.full
 
 
 @needs_slide
