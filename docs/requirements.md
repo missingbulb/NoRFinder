@@ -312,9 +312,10 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   the Ground truth button's text says how finished the work is: a green check when every finalist has
   the user's verdict, an orange warning when some candidates have one but a finalist does not, and a
   red error when no candidate has one yet or a candidate the user added still waits for a verdict;
-  the warning and the error pulse gently. The button itself stays plain. Pressing it opens a popup that names what is missing in
-  a line or two (and, while a summary mask is on, that the mask is not exported and the file holds
-  the marked candidates inside and outside it), with an Export file button that downloads the file
+  the warning and the error pulse gently. The button itself stays plain. Pressing it opens a popup
+  with a checklist of every issue the ground truth can have (added NoRs without a verdict, no verdict
+  at all, finalists left out, a summary mask that is not exported, a local image that cannot be sent),
+  each resolved one crossed out with a green check, with an Export file button that downloads the file
   and beside it an Open new GitHub issue button: a new issue on the repo, labelled
   `new-ground-truth` and naming the image (name, SHA-256, Drive link, finder, what was marked),
   whose body says to attach the file. An image from the computer cannot be submitted: right after

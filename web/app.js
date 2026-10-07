@@ -1019,35 +1019,39 @@ function issueUrl(gt, file) {
   const q = new URLSearchParams({ labels: GT_LABEL, title: `Ground truth: ${gt.image.name}`, body });
   return `https://github.com/${REPO}/issues/new?${q}`;
 }
-// How finished the user's ground truth is: "done" when every finalist has a verdict, "part" when some
-// candidates have one but a finalist does not, "todo" when none has one yet or an added NoR still waits
-// for one; with what is missing, in a line each
+// How finished the user's ground truth is, as a checklist of every issue it can have, each resolved or not
+// (the graded ones set the button's state):
+// "done" when every finalist has a verdict, "part" when some candidates have one but a finalist does not,
+// "todo" when none has one yet or an added NoR still waits for one
 function gtState() {
   const verdict = (c) => (c.added ? st.added[c.k].verdict : st.forced.get(c.i));
-  const waiting = st.added.filter((a) => !a.verdict).length, problems = [];
-  const voted = st.forced.size + st.added.length - waiting;
-  const open = (st.passes || []).filter((c) => !c.added && !verdict(c)).length, finalists = (st.passes || []).filter((c) => !c.added).length;
-  if (waiting) problems.push(`${waiting} NoR${waiting > 1 ? "s" : ""} you added still need${waiting > 1 ? "" : "s"} your verdict.`);
-  if (!voted) problems.push("No candidate has your verdict yet.");
-  else if (open) problems.push(`${open} of ${finalists} finalists have no verdict, so they are left out.`);
-  return { state: !voted || waiting ? "todo" : open ? "part" : "done", problems };
+  const waiting = st.added.filter((a) => !a.verdict).length, voted = st.forced.size + st.added.length - waiting;
+  const finalists = (st.passes || []).filter((c) => !c.added), open = finalists.filter((c) => !verdict(c)).length;
+  const local = !st.source || st.source.kind !== "drive", s = (n) => (n === 1 ? "" : "s");
+  const items = [
+    { level: "error", grade: true, ok: !waiting, text: waiting ? `${waiting} NoR${s(waiting)} you added still need${waiting === 1 ? "s" : ""} your verdict` : "NoRs you added still need your verdict" },
+    { level: "error", grade: true, ok: voted > 0, text: "No candidate has your verdict yet" },
+    { level: "warn", grade: true, ok: voted > 0 && !open, text: open ? `${open} of ${finalists.length} finalists have no verdict and are left out` : "Finalists without a verdict are left out" },
+    { level: "warn", ok: !st.mask.length, text: "The mask is not exported; the file holds your marks inside and outside it" },
+    { level: "warn", ok: !local, text: "A local image's ground truth can only be exported, not sent as an issue" },
+  ];
+  return { state: !voted || waiting ? "todo" : open ? "part" : "done", items };
 }
 function gtButton() {
   const b = $("#dl-truth"); b.disabled = !st.img;
-  const { state, problems } = gtState();
+  const { state, items } = gtState(), open = items.filter((t) => t.grade && !t.ok);
   b.dataset.state = st.img ? state : "";
-  b.title = (problems.length ? problems.join(" ") : "Every finalist has your verdict.") + " Click to export or submit.";
+  b.title = (open.length ? open.map((t) => t.text + ".").join(" ") : "Every finalist has your verdict.") + " Click to export or submit.";
 }
+const ICON = (id) => `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">${$(`#dl-truth .gt-ico .${id}`).innerHTML}</svg>`;
 $("#dl-truth").onclick = () => {
-  const gt = truth(), { problems } = gtState(), file = base() + "_ground_truth.json", local = gt.image.location.source !== "drive";
-  const lines = gt.labels.length ? problems.length ? problems : ["Every finalist has your verdict."]
-    : [...problems.filter((t) => /added/.test(t)), "Nothing marked yet: vote on candidates with the thumbs, or right-click the image to add a NoR the finder missed."];
-  const nAdded = gt.labels.filter((L) => L.kind === "missing").length;
-  if (gt.labels.length && nAdded) lines.push(`${nAdded} NoR${nAdded > 1 ? "s" : ""} you added and approved included.`);
-  if (st.mask.length) lines.push("The mask is not exported: the file holds what you marked inside and outside it.");
-  if (gt.labels.length && local) lines.push(LOCAL_GT);
-  $("#gt-problems").replaceChildren(...lines.map((t) => Object.assign(document.createElement("p"), { textContent: t })));
-  $("#gt-msg").textContent = "";
+  const gt = truth(), { items } = gtState(), file = base() + "_ground_truth.json", local = gt.image.location.source !== "drive";
+  $("#gt-problems").replaceChildren(...items.map((t) => {
+    const li = document.createElement("li"); li.className = t.ok ? "ok" : t.level;
+    li.innerHTML = ICON(t.ok ? "done" : t.level === "error" ? "todo" : "part") + `<span>${esc(t.text)}</span>`;
+    return li;
+  }));
+  $("#gt-msg").textContent = gt.labels.length ? "" : "Vote on candidates with the thumbs, or right-click the image to add a NoR the finder missed.";
   $("#gt-export").disabled = !gt.labels.length;
   const issue = $("#gt-issue");
   issue.disabled = !gt.labels.length || local; issue.title = local ? LOCAL_GT : "";

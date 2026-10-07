@@ -385,7 +385,15 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #gt-dlg { width: min(460px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
   border: 1px solid var(--line); border-radius: var(--r-panel); box-shadow: 0 12px 40px #0006; }
 #gt-dlg::backdrop { background: #0007; }
-#gt-problems p { margin: 0 0 6px; }
+/* the popup's checklist: every issue the ground truth can have, crossed out with a green check once resolved */
+.checklist { list-style: none; margin: 4px 0 10px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.checklist li { display: flex; gap: 8px; align-items: flex-start; }
+.checklist svg { flex: none; margin-top: 1px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.checklist li.ok { color: var(--dim); }
+.checklist li.ok span { text-decoration: line-through; }
+.checklist li.ok svg { color: var(--yes); }
+.checklist li.warn svg { color: var(--gt-part); }
+.checklist li.error svg { color: var(--no); }
 #gt-msg:empty { display: none; }
 #gt-dlg .grow { flex: 1; }
 

@@ -169,7 +169,10 @@ async function markAndVote(page) {
 async function popup(page) {
   await page.click("#dl-truth");
   await check(await page.isVisible("#gt-dlg"), "the Ground truth button opens its popup");
-  return page.textContent("#gt-problems");
+  // a checklist of every issue, the resolved ones crossed out: what is still open
+  const items = await page.$$eval("#gt-problems li", (li) => li.map((l) => ({ ok: l.classList.contains("ok"), struck: getComputedStyle(l.querySelector("span")).textDecorationLine, text: l.textContent })));
+  await check(items.length === 5 && items.every((t) => (t.struck === "line-through") === t.ok), `the popup lists every issue, crossing out the resolved ones (${items.filter((t) => t.ok).length} of ${items.length})`);
+  return items.filter((t) => !t.ok).map((t) => t.text).join(" | ");
 }
 async function download(page) {
   const said = await popup(page);
@@ -236,7 +239,7 @@ async function mask(page) {
   await page.click("#find");
   await page.waitForFunction(() => st.alone && $("#busy").hidden);
   const none = await popup(page);
-  await check(/Nothing marked/.test(none) && await page.isDisabled("#gt-export"), `with nothing marked the popup says how to mark and exports nothing: "${none}"`);
+  await check(/No candidate has your verdict/.test(none) && /thumbs/.test(await page.textContent("#gt-msg")) && await page.isDisabled("#gt-export"), `with nothing marked the popup says how to mark and exports nothing: "${none}"`);
   await page.click("#gt-close");
   const { undecided } = await markAndVote(page);
   await mask(page);
@@ -267,7 +270,7 @@ async function mask(page) {
   await check(await page.isHidden("#notice"), "a Drive image shows no warning");
   await markAndVote(page);
   const { said, name, gt } = await download(page);
-  await check(!/mask/i.test(said), `with no mask the popup does not mention one: "${said}"`);
+  await check(!/mask/i.test(said), `with no mask the mask item is crossed out: "${said}"`);
   await check(gt.image.location.source === "drive" && gt.image.location.drive_id === DRIVE_ID, "the file names the image's Drive id");
   await page.click("#gt-issue");
   for (let t = 0; t < 40 && !asked.length; t++) await new Promise((ok) => setTimeout(ok, 50));
