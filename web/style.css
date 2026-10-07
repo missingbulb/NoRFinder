@@ -216,7 +216,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 .card .marks line.r { stroke-width: 2.5; }
 .card .marks text { fill: #fff; text-anchor: middle; paint-order: stroke; stroke: #000; font-family: system-ui, sans-serif; }
 .card .marks text.r { fill: #ffb3b3; }
-.card .marks .handle { fill: #fff; stroke: #000; cursor: ew-resize; }
+.card .marks .handle { fill: #fff; stroke: #000; cursor: move; touch-action: none; }
 .card .marks .handle.r { fill: #ff6b6b; }
 .card .head { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
 /* the user's verdict: a thumbs up and a thumbs down side by side, quiet until pointed at or chosen */
@@ -345,11 +345,18 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 .box.foldable.folded > :not(.sec-head) { display: none; }
 .box.foldable.folded > .sec-head button { display: none; }
 
-/* missing candidates: the user's marks where the finder proposed nothing, in a colour the image never has */
-#overlay .missing-marks { --miss: #ffd400; pointer-events: none; }
-#overlay .missing-marks circle { fill: none; stroke: var(--miss); stroke-width: 1.5; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
-#overlay .missing-marks text { fill: var(--miss); }
-.card.missing { border-color: #ffd40080; }
+/* NoRs the user added, in a colour the image never has; the circle glows until the user decides */
+#overlay .added-marks { --miss: #ffd400; }
+#overlay .added .glow { fill: none; stroke: var(--miss); stroke-width: 1.5; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; pointer-events: none;
+  animation: glow 1.6s ease-in-out infinite; }
+@keyframes glow { 0%, 100% { opacity: .8; } 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { #overlay .added .glow { animation: none; opacity: .8; } }
+#overlay .added .lines { display: inline; }
+#overlay .added.out .lines, #overlay.no-lines .added .lines { display: none; }
+#overlay .added text { fill: var(--miss); }
+.card.added { border-color: #ffd40080; }
+.card .num.added { display: inline-flex; align-items: center; gap: 2px; color: #d4a800; }
+.card .num.added svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .card .verdict .remove { font-size: 18px; line-height: 1; color: var(--dim); }
 .card .verdict .remove:hover { color: var(--no); background: color-mix(in srgb, var(--no) 14%, transparent); }
 #ctx { position: fixed; z-index: 30; display: flex; flex-direction: column; padding: 4px 8px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px #0006; }
