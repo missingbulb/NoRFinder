@@ -414,7 +414,7 @@ labels, not the owner's (`detection/STATE.md`), so the lock is only as right as 
 skip there fails instead. The fast set runs on each PR (`.github/workflows/tests.yml`,
 `-m "not full"`) and needs neither Node nor a browser; every test that drives Node, Pyodide or Chromium,
 or measures speed or memory, is marked `full` and runs only in the full set, nightly (the nor-finder pack's `full-tests` task) and on every push
-to main, so it has run on anything a release can ship (`.github/workflows/tests-full.yml`,
+to main, so it has run on anything a release can ship: a green full run on main wakes the site release (`.github/workflows/tests-full.yml`,
 `tests/test_ci_split.py`).
 
 ## R10 — Submitted ground truth joins the data set by code, and outranks older labels

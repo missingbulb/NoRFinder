@@ -18,6 +18,7 @@ submissions it adds); the baseline's diff in the PR shows exactly which spots mo
 images: python3 detection/ground_truth.py fetch.
 """
 import json
+import multiprocessing
 import os
 import sys
 
@@ -55,6 +56,23 @@ def images():
     return [dict(im, data=nor_lab.load(im['path'])) for im in CORPUS]
 
 
+_IMAGES = []
+
+
+def _score(name):
+    return [ground_truth.result(name, im['data'], im['labels']) for im in _IMAGES]
+
+
+@pytest.fixture(scope='module')
+def results(images):
+    """Every finder's result on every image, the finders scored side by side in forked workers that
+    inherit the loaded images."""
+    _IMAGES[:] = images
+    names = sorted(interactive.FINDERS)
+    with multiprocessing.get_context('fork').Pool(min(len(names), os.cpu_count() or 1)) as pool:
+        return dict(zip(names, pool.map(_score, names)))
+
+
 def test_every_finder_and_image_is_locked():
     assert len(interactive.FINDERS) >= 5
     base = read_baseline()
@@ -71,11 +89,11 @@ def test_the_reference_covers_enough():
 
 @needs_images
 @pytest.mark.parametrize('name', sorted(interactive.FINDERS))
-def test_finder_keeps_its_quality(name, images):
+def test_finder_keeps_its_quality(name, images, results):
     record = read_baseline()[name]
     report, gained = [], {}
-    for im in images:
-        old, new = record.get(im['name'], {}), ground_truth.result(name, im['data'], im['labels'])
+    for im, new in zip(images, results[name]):
+        old = record.get(im['name'], {})
         losses, gains = ground_truth.compare(old, new)
         if losses:
             report.append(f'{im["name"]}: {len(new["found"])} real found and {len(new["false"])} false, '
