@@ -331,6 +331,13 @@ warning.
   minimum of a few runs: run-to-run noise on a shared machine can reach ±15%, so a small gain is
   re-checked before it is claimed. A lower-precision type is a classic trap: faster, but it
   changes ties, so the hash catches it.
+- Measure peak memory beside time, in a separate run since tracing slows it: the most the
+  algorithm allocates at once (numpy's allocations count; Python's `tracemalloc` sees them), and
+  report it before and after like the time. A pass that lowers the peak with identical output and
+  no slower is a gain on its own, and one that buys speed with a higher peak is weighed, not
+  waved through. Where the algorithm also runs in a runtime that never returns memory (a browser's
+  WebAssembly), the peak is what that tab keeps after every run: free each whole-image array
+  after its last use, and read the few values needed later rather than keeping full-size copies.
 - Restore the token budget the same way: if you have been reading full renders, fix the run
   command's summary until the score and the gained/lost sheets are enough.
 - **Deployment is not quality work**: memory limits, instance sizes, job APIs and device ports are
