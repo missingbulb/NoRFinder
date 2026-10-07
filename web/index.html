@@ -166,6 +166,19 @@
     <div class="drive-row end"><label class="hint" id="drive-thumbs-l" title="Each thumbnail downloads about 350 KB of its image"><input type="checkbox" id="drive-thumbs" checked>Download thumbnails</label><span id="drive-msg" class="hint"></span><button id="drive-open" class="primary" type="button" disabled>Open</button><button value="close">Close</button></div>
   </form>
 </dialog>
+<dialog id="memory-dlg" aria-labelledby="memory-title">
+  <form method="dialog">
+    <h2 id="memory-title">Please free some memory</h2>
+    <p id="memory-why"></p>
+    <ul class="tips">
+      <li>Close the tabs and apps you are not using now.</li>
+      <li><b>Tab groups</b> keep tabs for later: put them in a group, then close the group. The browser saves it, ready to reopen.</li>
+      <li><kbd id="memory-mod">Ctrl</kbd> <kbd>Shift</kbd> <kbd>T</kbd> reopens the last tab you closed. Press it again to go further back, whole windows too.</li>
+      <li><b>Memory Saver</b> in Chrome (Settings, Performance) and sleeping tabs in Edge rest the tabs you are not looking at.</li>
+    </ul>
+    <div class="drive-row end"><label id="memory-never"><input type="checkbox" id="memory-off"> Don't show this again</label><button value="ok" class="primary" autofocus>OK</button></div>
+  </form>
+</dialog>
 <dialog id="gt-dlg">
   <h2>Ground truth</h2>
   <ul id="gt-problems" class="checklist"></ul>

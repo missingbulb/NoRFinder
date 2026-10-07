@@ -363,6 +363,14 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
 - **Visible waiting.** While an image waits for Python, the page shows a spinner and the elapsed
   time; while a finder runs, a photocopier's light sweeps back and forth over the image, with what
   it is doing and the elapsed time below.
+- **Kind to slow computers.** A button whose action can take a while (Load, Find Candidates, the view
+  switch, the item tabs, the CSV downloads, the ground truth export, restoring the filter defaults) is disabled the moment it is
+  pressed, with a small spinner after its label, and comes back only when its action is done,
+  including the worker's answer. A failed request frees its button. Browsers do not say how much
+  memory is free, so when the browser reports 4 GB or less in all (Chrome and Edge report it), a
+  popup on opening asks the user to close other tabs and apps, with tips (tab groups, the shortcut
+  that reopens closed tabs, Memory Saver) and "Don't show this again". The page running out of
+  memory shows it whatever was chosen, saying so (`tests/test_slow_machine_page.py`).
 - **An image shows while it downloads.** An uncompressed TIFF like the lab's paints onto the page
   from its bytes as they arrive from Google Drive, one channel after another in its own colour,
   with the megabytes so far and the elapsed time below; a file from the computer shows at once.

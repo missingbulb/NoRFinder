@@ -319,6 +319,10 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 
 .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: var(--pink); border-radius: 50%; animation: spin .8s linear infinite; visibility: hidden; }
 .spin.on { visibility: visible; }
+/* a button at work: held, with a small spinner after its label */
+button.working:disabled { opacity: 1; cursor: progress; }
+button.working::after { content: ""; display: inline-block; width: .75em; height: .75em; margin-left: .45em; vertical-align: -.1em;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
 .spin.big { width: 44px; height: 44px; border-width: 4px; visibility: visible; }
 @keyframes spin { to { transform: rotate(360deg); } }
 #busy { position: absolute; inset: 52px 0 0 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: var(--shade); color: var(--text); }
@@ -328,7 +332,11 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
    Find Candidates sweeps a copier's light bar back and forth over the image */
 #scan-light { display: none; }
 #busy.scan, #busy.peek { background: none; justify-content: flex-end; padding-bottom: 28px; pointer-events: none; overflow: hidden; }
-#busy.scan .spin.big, #busy.peek .spin.big { display: none; }
+#busy.scan .spin.big, #busy.peek /* a button at work: held, with a small spinner after its label */
+button.working:disabled { opacity: 1; cursor: progress; }
+button.working::after { content: ""; display: inline-block; width: .75em; height: .75em; margin-left: .45em; vertical-align: -.1em;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
+.spin.big { display: none; }
 #busy.scan #busy-text, #busy.scan #busy-time, #busy.peek #busy-text, #busy.peek #busy-time { position: relative; z-index: 1; }
 #busy.scan #busy-text, #busy.peek #busy-text { padding: 5px 14px; border-radius: 999px; background: var(--shade); font-weight: 600; font-variant-numeric: tabular-nums; }
 #busy.scan #busy-time, #busy.peek #busy-time { margin-top: -6px; padding: 1px 10px; border-radius: 999px; background: var(--shade); color: var(--text); }
@@ -340,9 +348,9 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 @media (prefers-reduced-motion: reduce) { #busy.scan #scan-light { animation-duration: 8s; } }
 
 /* the Google Drive dialog */
-#drive-dlg { width: min(640px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
+#drive-dlg, #memory-dlg { width: min(640px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
   border: 1px solid var(--line); border-radius: var(--r-panel); box-shadow: 0 12px 40px #0006; }
-#drive-dlg::backdrop { background: #0007; }
+#drive-dlg::backdrop, #memory-dlg::backdrop { background: #0007; }
 .drive-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
 .drive-row.end { justify-content: space-between; }
 #drive-link { flex: 1; min-width: 0; }
@@ -436,3 +444,10 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #lasso-hint { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); z-index: 6; padding: 5px 14px; border-radius: 999px;
   background: var(--shade); border: 1px solid var(--line); font-weight: 600; font-size: 13px; pointer-events: none; }
 #lasso-hint[hidden] { display: none; }
+
+/* the low-memory popup */
+#memory-dlg { width: min(520px, calc(100vw - 32px)); }
+#memory-dlg h2 { margin: 0 0 8px; }
+#memory-dlg .tips { margin: 10px 0 0; padding-left: 20px; line-height: 1.5; }
+#memory-dlg .tips li + li { margin-top: 6px; }
+kbd { font: 12px ui-monospace, monospace; padding: 1px 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; }

@@ -19,6 +19,10 @@ const THUMBS = "nor-drive-thumbs"; // "on" | "off": whether the Drive dialog dow
 const ADDED = "nor-added-v1:";
 const MISSING = "nor-missing-v1:"; // + file name: [[x, y]], what ADDED replaced; read once and converted
 const MASK = "nor-mask-v1:"; // + file name: [[[x, y]...]...], the lassoed areas the summary counts, combined by exclusive or
+const MEMORY_TIP = "nor-memory-tip-off"; // true: the user asked never to see the low-memory popup again
+// the page's memory with a finder run (detection/browser/MEMORY.md), and the device memory below which it asks
+// the user to free some: browsers say only how much a computer has in all, never how much is free
+const PAGE_GB = 1, LOW_GB = 4;
 // an added NoR counts as found when a candidate lies within this distance of its middle: about half a
 // NoR's length on the lab's slide (median 26 px)
 const MISSING_RADIUS = 12;
@@ -161,6 +165,34 @@ function statusBar() {
   $("#sb-times").textContent = parts.join(" · ");
   $("#sb-file").textContent = st.fileName || "No image";
 }
+// ---------- buttons whose action takes a while: disabled, with a small spinner, until the action is done ----------
+// the worker's next message of a type, or its error; a refilter counts as done once none is queued behind it
+const waiting = { detected: [], opened: [], filtered: [] };
+const until = (type) => new Promise((ok, bad) => waiting[type].push({ ok, bad }));
+function settle(m) {
+  if (m.type === "error") for (const w of Object.values(waiting)) w.splice(0).forEach((x) => x.bad(new Error(m.text)));
+  else if (waiting[m.type] && !(m.type === "filtered" && st.inflight)) waiting[m.type].splice(0).forEach((x) => x.ok(m));
+}
+// a frame after the button is disabled, so it shows before the work holds the page
+const painted = () => new Promise((ok) => requestAnimationFrame(() => setTimeout(ok)));
+async function working(btn, action) {
+  if (btn.classList.contains("working")) return;
+  btn.classList.add("working"); btn.disabled = true;
+  // whatever the page redraws meanwhile, the button stays held until the action is done
+  const hold = new MutationObserver(() => { if (!btn.disabled) btn.disabled = true; });
+  hold.observe(btn, { attributes: true, attributeFilter: ["disabled"] });
+  try {
+    await painted(); await action();
+    if (st.running) await until("detected");
+    if (st.inflight) await until("filtered");
+  } catch (e) {
+    console.warn(e);
+  } finally {
+    hold.disconnect(); btn.classList.remove("working"); btn.disabled = false; updateFind();
+  }
+}
+const slow = (btn) => { const act = btn.onclick; btn.onclick = (e) => working(btn, () => act.call(btn, e)); };
+
 const fmt = (v, d = 2) => (v == null || !isFinite(v) ? "–" : Number(v).toFixed(d));
 
 // ---------- worker ----------
@@ -179,11 +211,35 @@ async function start() {
   status("Loading Python in the background…"); $("#spin").classList.add("on");
   st.worker = new Worker("worker.js", { type: "module" });
   st.worker.onmessage = (e) => onWorker(e.data);
+  st.worker.onerror = (e) => onWorker({ type: "error", text: e.message || "Python stopped." });
+  if (navigator.deviceMemory <= LOW_GB) memoryTip();
 }
 
+// ---------- the low-memory popup: on a computer with little memory, and whenever the page runs out of it ----------
+const OUT_OF_MEMORY = /MemoryError|out of memory|Memory\.grow|allocation failed|Maximum memory|OOM/i;
+function memoryTip(ranOut) {
+  if (!ranOut && readJSON(MEMORY_TIP, false)) return;
+  const mac = /Mac|iPhone|iPad/.test(navigator.userAgentData?.platform || navigator.platform);
+  $("#memory-mod").textContent = mac ? "⌘" : "Ctrl";
+  $("#memory-why").textContent = ranOut
+    ? "The page ran out of memory. Please close other tabs and apps, then reload the page."
+    : `This computer has ${navigator.deviceMemory} GB of memory and this page needs about ${PAGE_GB} GB. ` +
+      "Please close other tabs and apps, so it does not slow down or stop.";
+  $("#memory-never").hidden = !!ranOut; $("#memory-off").checked = false;
+  if (!$("#memory-dlg").open) $("#memory-dlg").showModal();
+}
+$("#memory-off").onchange = () => writeJSON(MEMORY_TIP, $("#memory-off").checked);
+
 function onWorker(m) {
+  handle(m); settle(m);
+}
+function handle(m) {
   if (m.type === "progress") status(m.text);
-  else if (m.type === "error") status("Error: " + m.text, true);
+  else if (m.type === "error") {
+    // the request that failed is over: its button can be pressed again
+    st.running = null; st.inflight = st.pending = false; updateFind();
+    status("Error: " + m.text, true); if (OUT_OF_MEMORY.test(m.text)) memoryTip(true);
+  }
   else if (m.type === "ready") {
     const sel = $("#finder");
     sel.innerHTML = Object.entries(m.finders).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
@@ -243,6 +299,7 @@ function fileInfo(rows) {
 
 // source: where the image came from, {kind: "local"} or {kind: "drive", id}
 async function openBytes(name, bytes, source) {
+  const opened = until("opened"); working($("#load-main"), () => opened);
   st.fileName = name; st.source = source; st.added = loadAdded(name); st.mask = readJSON(MASK + name, []); endLasso(); st.meta = null; st.lastRun = null; st.cands = []; st.order = []; st.passes = st.rejects = null; st.sel = null; st.ring = null; st.crops = new Map();
   st.sha = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map((b) => b.toString(16).padStart(2, "0")).join("");
   $("#file-name").textContent = name; $("#file-name").classList.remove("dim"); fileInfo(null); statusBar();
@@ -1482,4 +1539,6 @@ $("#sb-version").textContent = "v" + $("#sb-version").title.replace(/^version /,
   setInterval(check, 5 * 60 * 1000);
 }
 
+// the buttons whose action can take a while on a slow computer; Load is held from a chosen image until it is open
+for (const id of ["#find", "#switch", "#tab-pass", "#tab-fail", "#dl-cands", "#dl-summary", "#gt-export", "#reset-filters"]) slow($(id));
 start();

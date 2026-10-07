@@ -88,6 +88,9 @@ async function open(drive) {
   return { ctx, page, asked };
 }
 
+// a held button (busy with its action) has finished
+const idle = (page) => page.waitForFunction(() => !document.querySelector("button.working"));
+
 // the middle of the view, as a point on the screen and on the image
 const middle = (page) => page.evaluate(() => {
   const v = $("#scroller").getBoundingClientRect(), b = $("#base").getBoundingClientRect();
@@ -139,9 +142,9 @@ async function markAndVote(page) {
   await drag(page, await handle(page, "width", 0), 0, -25);
   const w1 = await page.evaluate(() => candOf("u1").m.width);
   await check(w1 > w0 + 1, `a dragged width end widens the NoR (${w0.toFixed(1)} to ${w1.toFixed(1)} px)`);
-  await page.click("#switch");
+  await page.click("#switch"); await idle(page);
   await check(await page.$eval("#list .card", (d) => d.dataset.i) === "u1", "the added NoR lists first among the finalists");
-  await page.click("#switch");
+  await page.click("#switch"); await idle(page);
   // with another candidate voted on, only the added NoR keeps the button red
   await page.evaluate(() => decide(st.order[0].i, "approve"));
   const waiting = await page.$eval("#dl-truth", (b) => ({ state: b.dataset.state, why: b.title }));
