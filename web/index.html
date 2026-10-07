@@ -89,7 +89,7 @@
         </div>
       </details>
       <div class="for-items tabs" role="tablist">
-        <button id="tab-pass" role="tab" class="on">Finalists <span id="n-pass"></span></button><button id="tab-fail" role="tab">Rejected <span id="n-fail"></span></button><button id="tab-miss" role="tab" title="NoRs you marked because the finder proposed nothing there (right-click the image)">Missing <span id="n-miss"></span></button>
+        <button id="tab-pass" role="tab" class="on">Finalists <span id="n-pass"></span></button><button id="tab-fail" role="tab">Rejected <span id="n-fail"></span></button>
       </div>
       <details class="menu for-items" id="card-menu">
         <summary>Options</summary>
@@ -139,7 +139,7 @@
       <h2>Downloads</h2>
       <button id="dl-cands" disabled>Candidates CSV</button>
       <button id="dl-summary" disabled>Summary CSV</button>
-      <button id="dl-truth" disabled title="The candidates you voted on and your missing candidates, as a file; for an image from Google Drive, also opens a GitHub issue to submit it to the repo's ground truth">Ground truth</button>
+      <button id="dl-truth" disabled title="The candidates you voted on, the NoRs you added included, as a file; for an image from Google Drive, also opens a GitHub issue to submit it to the repo's ground truth">Ground truth</button>
     </section>
   </aside>
 </div>
@@ -157,10 +157,10 @@
   <form method="dialog">
     <h2>Load from Google Drive</h2>
     <p class="hint">Paste the link of an image or a folder shared as "Anyone with the link".</p>
-    <div class="drive-row"><input id="drive-link" type="text" placeholder="https://drive.google.com/…" autocomplete="off"><button id="drive-go" class="primary" type="button">Open</button></div>
+    <div class="drive-row"><input id="drive-link" type="text" placeholder="https://drive.google.com/…" autocomplete="off"><button id="drive-go" type="button">Go</button></div>
     <div id="drive-path"></div>
     <div id="drive-list"></div>
-    <div class="drive-row end"><span id="drive-msg" class="hint"></span><button value="close">Close</button></div>
+    <div class="drive-row end"><label class="hint" id="drive-thumbs-l" title="Each thumbnail downloads about 350 KB of its image"><input type="checkbox" id="drive-thumbs" checked>Download thumbnails</label><span id="drive-msg" class="hint"></span><button id="drive-open" class="primary" type="button" disabled>Open</button><button value="close">Close</button></div>
   </form>
 </dialog>
 <div id="tip" hidden></div>
