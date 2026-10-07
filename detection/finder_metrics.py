@@ -7,7 +7,7 @@ itself, before any filter (the ones its own structural checks keep: two greens a
 
   balanced   the finder's own filter values
   precise    every filter moved PRESETS['precise'] of the way from those values towards STRICT
-  sensitive  every filter moved the same share towards LOOSE
+  recalling  every filter moved the same share towards LOOSE
 
 One share for every filter and every finder, chosen by hand rather than fitted: fitting filter
 values to the labels did not hold up on held-out labels (lab/ledger.md §5), so a preset is a move
@@ -29,7 +29,7 @@ import ground_truth, interactive, nor_lab
 
 FORMAT = 'norfinder-finder-metrics/2'
 OUT = os.path.join(HERE, 'lab', 'finder_metrics.json')
-PRESETS = {'precise': 0.4, 'balanced': 0.0, 'sensitive': -0.4}
+PRESETS = {'precise': 0.4, 'balanced': 0.0, 'recalling': -0.4}
 # the strict and loose ends of every filter value the page offers
 STRICT = dict(min_green_balance=0.5, min_snr=5.0, purity=0.1, min_opposite=140, max_off_u=0.5, max_axis_dev=10,
               min_aspect=4.5, min_solid=0.95, nucleus_frac=0.5, max_shared=0.1)
