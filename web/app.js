@@ -1107,7 +1107,7 @@ function renderSummary() {
   if (!st.passes) return;
   const { passes, counts } = counted(), rows = summaryRows(passes);
   st.counts = counts;
-  const scale = st.um ? `Scale from the file: ${st.um.toFixed(4)} µm per pixel.` : "No scale in the file, so lengths are in pixels.";
+  const scale = st.um ? `Pixel size: ${st.um.toFixed(4)} µm.` : "No scale in the file, so lengths are in pixels.";
   const D = density(passes.length);
   $("#summary").classList.remove("dim");
   $("#summary").innerHTML = `<div>${passes.length} passing NoRs${st.mask.length ? " inside the mask" : ""}. ${scale}</div>
