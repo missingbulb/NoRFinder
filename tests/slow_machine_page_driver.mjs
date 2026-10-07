@@ -79,7 +79,7 @@ const free = (page, id) => page.waitForFunction((id) => !$(id).classList.contain
   const { ctx, page } = await open(8);
   await check(!(await page.evaluate(() => $("#memory-dlg").open)), "no memory popup on a computer with 8 GB");
   const mem = await page.textContent("#sb-memory");
-  await check(/^Memory Usage \d+ MB$/.test(mem) && parseInt(mem.slice(13)) >= 380, `the status bar shows the memory in use: "${mem}"`);
+  await check(/^Memory Usage \d+ MB$/.test(mem) && parseInt(mem.slice(13)) >= 570, `the status bar shows the memory in use: "${mem}"`);
   await shot(page, "status_memory", "#statusbar");
   await page.setInputFiles("#file", image);
   await page.waitForFunction(() => $("#load-main").classList.contains("working"));
@@ -109,6 +109,13 @@ const free = (page, id) => page.waitForFunction((id) => !$(id).classList.contain
   await page.click("#switch");
   await free(page, "#switch");
   await check(await page.evaluate(() => st.view === "items"), "Item View switches views and lets go");
+  const playing = () => page.evaluate(() => $("#far").getAnimations({ subtree: true })[0].playState);
+  await page.evaluate(() => $("#right").insertAdjacentHTML("beforeend", '<div style="height:3000px"></div><div id="far" class="shine">x</div>'));
+  await page.waitForFunction(() => $("#far").classList.contains("offscreen"));
+  await check(await playing() === "paused", "an animation scrolled out of view is paused");
+  await page.evaluate(() => $("#far").scrollIntoView());
+  await page.waitForFunction(() => !$("#far").classList.contains("offscreen"));
+  await check(await playing() === "running", "and runs again once it is in view");
   await ctx.close();
 }
 
