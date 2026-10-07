@@ -31,5 +31,6 @@ def test_the_fast_set_is_light_and_the_full_set_runs_everything():
     assert '-m "not full"' in fast and 'playwright' not in fast and 'pyodide' not in fast
     assert 'pull_request' in fast
     assert '-m "not full"' not in full and 'branches: [main]' in full and 'workflow_dispatch' in full
+    assert 'wake=github-pages/site-release' in full.split('needs: tests', 1)[1]
     task = os.path.join(HERE, '..', '.claudinite', 'local', 'packs', 'nor-finder', 'tasks', 'full-tests')
     assert 'tests-full.yml' in open(os.path.join(task, 'worker.mjs')).read()
