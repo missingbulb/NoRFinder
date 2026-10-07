@@ -92,7 +92,7 @@ async function buildPresets() {
   box.replaceChildren(...Object.entries(PRESETS).filter(([k]) => per[k]).map(([k, name]) => {
     const b = document.createElement("button"); b.type = "button"; b.dataset.preset = k;
     b.innerHTML = `${name}<small>${pr(per[k])}</small>`;
-    b.onclick = () => { st.values = { ...st.defaults, ...per[k].values }; st.off.clear(); buildFilters(); save(); refilter(); };
+    b.onclick = () => { st.values = { ...st.defaults, ...per[k].values }; st.off.clear(); showFilterValues(); save(); refilter(); };
     slow(b); return b;
   }));
   markPreset();
@@ -833,6 +833,14 @@ function buildFilters() {
     }
     box.append(d);
   }
+}
+// the filters already on show take st.values and st.off as they are, nothing rebuilt
+function showFilterValues() {
+  for (const d of $("#filters").children) {
+    const on = !st.off.has(d.dataset.key);
+    d.querySelector(".top input").checked = on; d.classList.toggle("off", !on);
+  }
+  for (const p of document.querySelectorAll("#filters .param")) p.set(st.values[p.dataset.name]);
 }
 
 // the finder's settings: its main ones on show, every one under Advanced; both edit the same values

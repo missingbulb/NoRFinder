@@ -94,9 +94,15 @@ const free = (page, id) => page.waitForFunction((id) => !$(id).classList.contain
   await page.waitForFunction(() => !$("#find").classList.contains("working"), null, { timeout: 4 * LATE + 2000 });
   await check(await page.evaluate(() => st.meta && !st.inflight), "it lets go once the candidates are drawn");
   const preset = "#presets button[data-preset=precise]";
+  await page.evaluate(() => { for (const d of $("#filters").children) d.kept = true; });
   await page.click(preset);
   await check(await held(page, preset), "a filter preset is held while the filters run again");
   await free(page, preset);
+  await check(await page.evaluate(() => [...$("#filters").children].every((d) => d.kept)), "a preset sets the filters in place, rebuilding none");
+  await check(await page.evaluate(() => [...document.querySelectorAll("#filters .param")].every((p) => {
+    const v = st.values[p.dataset.name], box = p.querySelector(".box");
+    return !box || box.type !== "number" || +box.value === v;
+  }) && $(`#presets [data-preset=precise]`).classList.contains("on")), "and every filter shows the preset's values");
   await page.click("#switch");
   await free(page, "#switch");
   await check(await page.evaluate(() => st.view === "items"), "Item View switches views and lets go");
