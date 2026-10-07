@@ -333,7 +333,7 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   the Submit new GT to GitHub button's text says how finished the work is: a green check when every finalist has
   the user's verdict, an orange warning when some candidates have one but a finalist does not, and a
   red error when no candidate has one yet or a candidate the user added still waits for a verdict;
-  the warning and the error pulse gently three times when reached, then hold still, so an idle page draws nothing. Any animation scrolled out of view is paused, since Chrome would keep drawing it. The button itself stays plain. Pressing it opens a popup
+  the warning and the error pulse gently. Any animation scrolled out of view is paused, since Chrome would keep drawing it. The button itself stays plain. Pressing it opens a popup
   with a checklist of short instructions (approve or reject the NoRs you added, vote on at least one
   candidate, vote on every finalist, only images from Google Drive can be exported), each done one
   crossed out with a green check; the added-NoRs line shows only when the user added some, and while a

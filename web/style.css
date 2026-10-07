@@ -414,18 +414,16 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 #ctx[hidden], #card-menu[hidden] { display: none; }
 
 /* the Ground truth button's colour: how finished the user's verdicts are */
-/* the Ground truth button: a plain button with a small check, warning or error icon; the last two pulse gently a
-   few times when the state is reached, then hold still: an endless animation redraws the page every frame */
+/* the Ground truth button: a plain button with a small check, warning or error icon; the last two pulse gently */
 #dl-truth { display: inline-flex; align-items: center; gap: 6px; }
 #dl-truth .gt-ico { display: none; line-height: 0; }
 #dl-truth .gt-ico svg { display: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 #dl-truth[data-state=done] .gt-ico, #dl-truth[data-state=part] .gt-ico, #dl-truth[data-state=todo] .gt-ico { display: inline-block; }
 #dl-truth[data-state=done] .done, #dl-truth[data-state=part] .part, #dl-truth[data-state=todo] .todo { display: block; }
 #dl-truth[data-state=done] .gt-ico { color: var(--yes); }
-#dl-truth[data-state=part] .gt-ico { color: var(--gt-part); animation: gt-pulse-part 2s ease-in-out 3; }
-#dl-truth[data-state=todo] .gt-ico { color: var(--no); animation: gt-pulse-todo 2s ease-in-out 3; }
-@keyframes gt-pulse-part { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(.9); } }
-@keyframes gt-pulse-todo { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(.9); } }
+#dl-truth[data-state=part] .gt-ico { color: var(--gt-part); animation: gt-pulse 2s ease-in-out infinite; }
+#dl-truth[data-state=todo] .gt-ico { color: var(--no); animation: gt-pulse 2s ease-in-out infinite; }
+@keyframes gt-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(.9); } }
 @media (prefers-reduced-motion: reduce) { #dl-truth .gt-ico { animation: none !important; } }
 :root { --gt-part: #e8890c; }
 #gt-dlg { width: min(460px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
