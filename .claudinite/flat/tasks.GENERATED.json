@@ -276,6 +276,22 @@
         "agent_model": "none"
       }
     },
+    "local/nor-finder/full-tests": {
+      "path": ".claudinite/local/packs/nor-finder/tasks/full-tests/task.json",
+      "declaration": {
+        "$schema": "../../../../../shared/packs/claudinite-tasks/task.schema.json",
+        "id": "full-tests",
+        "description": "Runs the full test set, the page, browser, memory and speed-up tests every PR leaves out, on the default branch every night, and parks with the run's link when it fails so a red night reaches a person.",
+        "trigger": "schedule",
+        "preconditions": [
+          "schedule:at-most-daily"
+        ],
+        "expected_outcome": "no_code_changes",
+        "code_worker_mjs": "worker.mjs",
+        "code_work_timeout": 1800,
+        "agent_model": "none"
+      }
+    },
     "local/nor-finder/ground-truth-intake": {
       "path": ".claudinite/local/packs/nor-finder/tasks/ground-truth-intake/task.json",
       "declaration": {

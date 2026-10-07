@@ -149,7 +149,7 @@ async function markAndVote(page) {
   await page.evaluate(() => decide(st.order[0].i, "approve"));
   const waiting = await page.$eval("#dl-truth", (b) => ({ state: b.dataset.state, why: b.title }));
   await page.evaluate(() => decide(st.order[0].i, null));
-  await check(waiting.state === "todo" && /you added still needs your verdict/.test(waiting.why), `an added NoR without a verdict keeps the button red: "${waiting.why}"`);
+  await check(waiting.state === "todo" && /Approve or reject the 1 NoR you added/.test(waiting.why), `an added NoR without a verdict keeps the button red: "${waiting.why}"`);
   await page.click("#selected .verdict .up");
   await check(await page.$$eval("#overlay .added .glow", (c) => c.length) === 0, "approving it stops the glow");
   // a thumbs up on the first candidate, a thumbs down on the third; the second stays undecided
@@ -176,7 +176,12 @@ async function popup(page) {
   await check(await page.isVisible("#gt-dlg"), "the Ground truth button opens its popup");
   // a checklist of every issue, the resolved ones crossed out: what is still open
   const items = await page.$$eval("#gt-problems li", (li) => li.map((l) => ({ ok: l.classList.contains("ok"), struck: getComputedStyle(l.querySelector("span")).textDecorationLine, text: l.textContent })));
-  await check(items.length === 5 && items.every((t) => (t.struck === "line-through") === t.ok), `the popup lists every issue, crossing out the resolved ones (${items.filter((t) => t.ok).length} of ${items.length})`);
+  const has = await page.evaluate(() => ({ added: st.added.length > 0, mask: st.mask.length > 0 }));
+  await check(items.length === 3 + has.added + has.mask && items.every((t) => (t.struck === "line-through") === t.ok),
+    `the popup lists every issue that applies, crossing out the resolved ones (${items.filter((t) => t.ok).length} of ${items.length})`);
+  const line = (re) => items.find((t) => re.test(t.text));
+  await check(!!line(/you added/) === has.added && !!line(/mask/) === has.mask && (!has.mask || !line(/mask/).ok),
+    `the added NoRs and the mask are listed only when there are some, and the mask never as done (${items.map((t) => t.text).join(" | ")})`);
   return items.filter((t) => !t.ok).map((t) => t.text).join(" | ");
 }
 async function download(page) {
@@ -212,7 +217,7 @@ async function mask(page) {
   let want = await inside(page);
   const head = () => page.textContent("#summary > div");
   await check(want.length > 0 && want.length < (await page.evaluate(() => st.order.length)), `the lasso holds some candidates and not others (${want.length})`);
-  await check((await head()).startsWith(`${want.filter(([, p]) => p).length} passing NoRs inside the mask`) && passes > want.filter(([, p]) => p).length,
+  await check((await head()).startsWith(`${want.filter(([, p]) => p).length} NoRs inside the mask`) && passes > want.filter(([, p]) => p).length,
     `the summary counts only the finalists inside the mask: "${await head()}"`);
   await check(await page.isVisible("#mask-clear"), "Clear mask shows while a mask is on");
   await check(await page.$$eval("#overlay .mask-marks .edge:not(.under)", (e) => e.length) === 1 && !(await page.$("#overlay .mask-marks .fill")),
@@ -227,7 +232,7 @@ async function mask(page) {
   // a second lasso inside the first cuts a hole
   await lasso(page, [[0.4, 0.4], [0.6, 0.4], [0.6, 0.6], [0.4, 0.6]]);
   want = await inside(page);
-  await check((await head()).startsWith(`${want.filter(([, p]) => p).length} passing NoRs inside the mask`), `a lasso inside the mask cuts a hole: "${await head()}"`);
+  await check((await head()).startsWith(`${want.filter(([, p]) => p).length} NoRs inside the mask`), `a lasso inside the mask cuts a hole: "${await head()}"`);
   await check(await page.$$eval("#overlay .mask-marks .edge:not(.under)", (e) => e.length) === 2 && !!(await page.$("#overlay .mask-marks .fill")),
     "a shape inside a shape is tinted inside");
   const said = await popup(page);
@@ -243,13 +248,30 @@ async function mask(page) {
   await page.click("#notice-ok");
   await page.click("#find");
   await page.waitForFunction(() => st.alone && $("#busy").hidden);
+  const csvAt = await page.evaluate(() => {
+    const box = $("#summary-box").getBoundingClientRect(), sum = $("#summary").getBoundingClientRect();
+    return ["#dl-cands", "#dl-summary"].map((id) => { const b = $(id).getBoundingClientRect(); return b.top >= sum.bottom && b.bottom <= box.bottom; });
+  });
+  await check(!/Rejected/.test(await page.textContent("#summary")), "the summary lists no filter reasons");
+  const hists = await page.evaluate(() => {
+    const ss = summaryRows(st.passes.filter(inMask)).map(([, s]) => s);
+    return [...document.querySelectorAll("#summary .hist")].map((h, k) => {
+      const line = h.querySelector(".mean"), x = +line.getAttribute("x1"), b = h.querySelectorAll(".bar");
+      const at = (i) => +b[i].getAttribute("x"), lo = at(0), hi = at(b.length - 1) + +b[0].getAttribute("width");
+      return { said: h.firstElementChild.textContent.includes(fmt(ss[k].mean)), where: Math.abs((x - lo) / (hi - lo) - (ss[k].mean - ss[k].min) / (ss[k].max - ss[k].min)) < 0.02,
+        axis: [...h.querySelectorAll("text")].some((t) => t.textContent === String(Math.max(...[...b].map((r) => +r.textContent)))) };
+    });
+  });
+  await check(!(await page.$("#summary table")) && hists.length >= 3 && hists.every((h) => h.said && h.where && h.axis),
+    `each histogram names its mean, draws it where it falls and has a count axis, and no table repeats them (${JSON.stringify(hists)})`);
+  await check(csvAt.every(Boolean), `both CSV buttons sit at the bottom of the Summary box (${csvAt})`);
   const none = await popup(page);
-  await check(/No candidate has your verdict/.test(none) && /thumbs/.test(await page.textContent("#gt-msg")) && await page.isDisabled("#gt-export"), `with nothing marked the popup says how to mark and exports nothing: "${none}"`);
+  await check(/Vote on at least one/.test(none) && /thumbs/.test(await page.textContent("#gt-msg")) && await page.isDisabled("#gt-export"), `with nothing marked the popup says how to mark and exports nothing: "${none}"`);
   await page.click("#gt-close");
   const { undecided } = await markAndVote(page);
   await mask(page);
   const { said, gt } = await download(page);
-  await check(/finalists have no verdict/.test(said), `the popup names the finalists left without a verdict: "${said}"`);
+  await check(/have no vote/.test(said), `the popup names the finalists left without a verdict: "${said}"`);
   const kinds = gt.labels.map((L) => (L.kind === "missing" ? "missing" : L.decision)).sort().join(",");
   await check(gt.format === "norfinder-ground-truth/2" && kinds === "approved,missing,rejected" && undecided > 0,
     `the file holds only the voted candidates and the mark, inside and outside the mask (${kinds}; ${undecided} undecided left out)`);

@@ -304,9 +304,13 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   green end, and the other ends keep their distances from that end. A
   width end sets where along the axis the width is measured and, mirrored, how wide it is. On
   release the crop turns level with the new axis. The new measurements show on the image, the
-  card, the summary and the downloads. The measurements of the finalists are summarised in the right bar.
-- **Downloads.** The candidates as CSV (every candidate, its status, its reasons, the user's
-  decision and its measurements), the summary as CSV, and the ground truth
+  card, the summary and the downloads. The measurements of the finalists are summarised in the right bar
+  as one histogram each (changed by the owner on 2026-10-07): a count axis, the mean drawn as a line
+  with one SD either side shaded, and the mean, SD and n written above it, with no separate table.
+- **Downloads** (moved by the owner on 2026-10-07). At the bottom of the Summary box, side by side across
+  its width, Download Candidates gives the candidates as CSV (every candidate, its status, its reasons, the user's decision and its measurements) and Download
+  Summary the summary as CSV. In the box below it, titled Ground Truth, the Submit new GT to GitHub button gives
+  the ground truth
   (`norfinder-ground-truth/2`): a JSON file naming the image (its SHA-256, and where it was loaded
   from: its Google Drive id and link, or "local") that lists only what the user marked: every
   candidate voted up (label 1, with its lengths and length lines, marked adjusted or approved) or
@@ -314,14 +318,15 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   `origin: "added by user"`, its measurements and lines). A candidate nobody voted
   on is ambiguous and left out. The lab's `nor_lab.py --labels` reads it: the labels score
   detection and the checked lengths score measurement (`tests/test_ground_truth.py`).
-- **Submitting ground truth** (changed by the owner on 2026-10-06 and 2026-10-07). A small icon beside
-  the Ground truth button's text says how finished the work is: a green check when every finalist has
+- **Submitting ground truth** (changed by the owner on 2026-10-06 and twice on 2026-10-07). A small icon beside
+  the Submit new GT to GitHub button's text says how finished the work is: a green check when every finalist has
   the user's verdict, an orange warning when some candidates have one but a finalist does not, and a
   red error when no candidate has one yet or a candidate the user added still waits for a verdict;
   the warning and the error pulse gently. The button itself stays plain. Pressing it opens a popup
-  with a checklist of every issue the ground truth can have (added NoRs without a verdict, no verdict
-  at all, finalists left out, a summary mask that is not exported, a local image that cannot be sent),
-  each resolved one crossed out with a green check, with an Export file button that downloads the file
+  with a checklist of short instructions (approve or reject the NoRs you added, vote on at least one
+  candidate, vote on every finalist, only images from Google Drive can be exported), each done one
+  crossed out with a green check; the added-NoRs line shows only when the user added some, and while a
+  summary mask is on a warning that the mask is not exported, never crossed out; and an Export file button that downloads the file
   and beside it an Open new GitHub issue button: a new issue on the repo, labelled
   `new-ground-truth` and naming the image (name, SHA-256, Drive link, finder, what was marked),
   whose body says to attach the file. An image from the computer cannot be submitted: right after
@@ -348,15 +353,19 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   link", with no sign-in. An image loads at once; a folder lists its images and subfolders to pick
   from, each image with its size, the date it was added to Drive and a small colour thumbnail; the
   dialog keeps one size while the user moves between folders. A click only selects a row; Open (or
-  a double click, or Enter) opens it: an image loads, a folder lists its contents. A thumbnail is
-  drawn only once its row is in view, a lab TIFF's from 48 of its rows per channel (about 4% of the
-  file) in the colours the page gives its channels, and a PNG's is Drive's own; Drive's own picture
-  of a multi-channel TIFF is grey, so it is never used. A checkbox at the bottom, "Download
-  thumbnails" (on at first, remembered in the browser), turns them off. It needs the site's Google API key, kept in the repository variable `GOOGLE_API_KEY`
-  and written into `web/config.js` at deploy; without one the option is off. The dialog opens on
+  a double click, or Enter) opens it: an image loads, a folder lists its contents. Thumbnails are
+  never read from Drive, which answers a burst of reads by refusing the browser for a while, the
+  next image included. Each image named in `data/sources.json` has a ready-made one on the site
+  (`web/drive_thumbs.py`, rerun when that list changes; a test fails until it is), fetched once its
+  row is in view; an image opened from Drive saves its own in the browser (the latest 100), shown
+  from then on without a download; a PNG shows Drive's own. All are in the colours the page gives
+  the channels. A checkbox at the bottom, "Download thumbnails" (on at first, remembered in the
+  browser), turns the downloads off; beside it, and in the status bar while they load, how many
+  have arrived and their size. It needs the site's Google API key, kept in the repository
+  variable `GOOGLE_API_KEY` and written into `web/config.js` at deploy; without one the option is off. The dialog opens on
   the last link pasted, or else on the lab's folder (the repository variable
   `DRIVE_DEFAULT_FOLDER`), and lists a folder link at once.
-  Nothing read from Drive is cached; thumbnails are kept only while the page stays open.
+  Nothing read from Drive is cached, apart from the small thumbnail of an image opened from it.
 - **No waiting to start.** Python loads in the background from the moment the page opens, while the
   user picks an image, which opens as soon as Python is ready. Its packages download while Python
   itself starts, and the status bar names each stage (downloading, with the megabytes so far;
@@ -402,8 +411,12 @@ proposing a candidate at a missing mark fails the tests; a loss the owner agreed
 `python3 tests/test_quality.py --accept`, so the PR's diff names every spot that moved. Gains are
 written into the baseline by a local test run and locked from then on
 (`tests/test_quality.py`). Until submissions cover it, the reference slide is scored on Claude's
-labels, not the owner's (`detection/STATE.md`), so the lock is only as right as they are. Every test runs in CI on each PR
-(`.github/workflows/tests.yml`), and a test that would skip there fails instead.
+labels, not the owner's (`detection/STATE.md`), so the lock is only as right as they are. CI runs in two sets, and a test that would
+skip there fails instead. The fast set runs on each PR (`.github/workflows/tests.yml`,
+`-m "not full"`) and needs neither Node nor a browser; every test that drives Node, Pyodide or Chromium,
+or measures speed or memory, is marked `full` and runs only in the full set, nightly (the nor-finder pack's `full-tests` task) and on every push
+to main, so it has run on anything a release can ship: a green full run on main wakes the site release (`.github/workflows/tests-full.yml`,
+`tests/test_ci_split.py`).
 
 ## R10 — Submitted ground truth joins the data set by code, and outranks older labels
 

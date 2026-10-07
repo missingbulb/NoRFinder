@@ -42,7 +42,7 @@ Full specification, including the parts the overview leaves unstated:
   detector against *itself*, which says nothing about whether it finds the right nodes.
 - ❌ **No scoring harness** (needs annotations), no z-stack handling, no µm output path.
 
-Run the tests: `pip install -r requirements.txt && python3 detection/ground_truth.py fetch && python3 -m pytest tests` (the page tests also need `npm i --prefix detection/browser pyodide@314.0.7` and Playwright's Chromium). CI runs them all on every PR (`.github/workflows/tests.yml`).
+Run the tests: `pip install -r requirements.txt && python3 detection/ground_truth.py fetch && python3 -m pytest tests` (the page tests also need `npm i --prefix detection/browser pyodide@314.0.7` and Playwright's Chromium). CI runs the fast set (`-m "not full"`, no Node or browser) on every PR (`.github/workflows/tests.yml`) and every test nightly and on each push to main (`.github/workflows/tests-full.yml`), where a green run wakes the site release.
 Fetch the raw data: `python3 src/fetch_data.py`
 
 ## What blocks starting

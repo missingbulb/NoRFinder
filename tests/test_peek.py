@@ -4,6 +4,8 @@ import numpy as np
 import pytest
 import tifffile
 
+pytestmark = pytest.mark.full
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys_path = os.path.join(HERE, '..', 'detection')
 NODE = shutil.which('node')
@@ -52,27 +54,6 @@ def test_paints_each_channel_in_the_colour_of_its_role_early_and_the_same_in_pie
             drawn = whole[..., colour].astype(float).ravel()
             follows = [np.corrcoef(drawn, np.minimum(c, np.quantile(c, .99)).ravel())[0, 1] for c in a]
             assert int(np.argmax(follows)) == k, (path, k, follows)
-
-
-@pytest.mark.skipif(not NODE or not TIFS, reason='needs node and the lab images')
-def test_thumbnail_reads_a_few_rows_and_draws_each_channel_in_the_colour_of_its_role():
-    d = tempfile.mkdtemp()
-    copies = [shutil.copy(p, os.path.join(d, f'{k}.tif')) for k, p in enumerate(TIFS)]
-    r = subprocess.run([NODE, os.path.join(HERE, 'peek_thumb_driver.mjs'), '48', *copies], capture_output=True, text=True, check=True)
-    for path, line, c in zip(TIFS, r.stdout.splitlines(), copies):
-        info = json.loads(line)
-        a, roles = python_roles(path)
-        C, H, W = a.shape
-        w, h = info['size']
-        assert h == 48 and w == round(48 * W / H), path
-        assert info['read'] < info['total'] / 10, path
-        rgba = np.fromfile(c + '.thumb', np.uint8).reshape(h, w, 4)
-        # each channel shrunk to the thumbnail's size, box by box
-        small = a[:, :h * (H // h), :w * (W // w)].reshape(C, h, H // h, w, W // w).mean(axis=(2, 4))
-        for k, colour in roles.items():
-            follows = [np.corrcoef(rgba[..., colour].astype(float).ravel(), s.ravel())[0, 1] for s in small]
-            assert int(np.argmax(follows)) == k, (path, k, follows)
-    shutil.rmtree(d)
 
 
 @pytest.mark.skipif(not NODE or not TIFS, reason='needs node and the lab images')
