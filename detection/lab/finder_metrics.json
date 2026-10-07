@@ -41,7 +41,7 @@
       "purity": 0.16
      }
     },
-    "sensitive": {
+    "recalling": {
      "fn": 30,
      "fp": 13,
      "precision": 0.7636,
@@ -110,7 +110,7 @@
       "purity": 0.16
      }
     },
-    "sensitive": {
+    "recalling": {
      "fn": 24,
      "fp": 8,
      "precision": 0.8571,
@@ -179,7 +179,7 @@
       "purity": 0.16
      }
     },
-    "sensitive": {
+    "recalling": {
      "fn": 20,
      "fp": 10,
      "precision": 0.8387,
@@ -248,7 +248,7 @@
       "purity": 0.16
      }
     },
-    "sensitive": {
+    "recalling": {
      "fn": 22,
      "fp": 9,
      "precision": 0.8475,
@@ -317,7 +317,7 @@
       "purity": 0.16
      }
     },
-    "sensitive": {
+    "recalling": {
      "fn": 29,
      "fp": 11,
      "precision": 0.7963,
@@ -358,6 +358,6 @@
  "presets": {
   "balanced": 0.0,
   "precise": 0.4,
-  "sensitive": -0.4
+  "recalling": -0.4
  }
 }

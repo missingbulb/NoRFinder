@@ -34,7 +34,7 @@ _Last updated 2026-10-06._
   None has arrived yet.
 - **Precision and recall per finder and filter preset** (R11, 2026-10-06):
   `lab/finder_metrics.json`, written by `finder_metrics.py` (and by every baseline rewrite).
-  Presets: precise / balanced (the finder's own) / sensitive, every filter 40% towards a fixed
+  Presets: precise / balanced (the finder's own) / recalling, every filter 40% towards a fixed
   strict or loose end. Fitting filter values to the labels does not survive held-out labels
   (ledger §5), so don't tune filters per finder on these labels.
 - **Filters are not finder-specific** (ledger §5): tl's filter values score as well as or better

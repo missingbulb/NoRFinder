@@ -47,9 +47,9 @@ def test_balanced_is_the_finders_own_filters():
         assert fm.preset_values(f, 'balanced') == fm.own_values(f)
 
 
-def test_precise_is_stricter_and_sensitive_looser_in_every_filter():
+def test_precise_is_stricter_and_recalling_looser_in_every_filter():
     for f in interactive.FINDERS:
-        own, hi, lo = fm.own_values(f), fm.preset_values(f, 'precise'), fm.preset_values(f, 'sensitive')
+        own, hi, lo = fm.own_values(f), fm.preset_values(f, 'precise'), fm.preset_values(f, 'recalling')
         for k, v in own.items():
             if k in fm.OFF and v == fm.OFF[k]:
                 assert hi[k] == lo[k] == v, f'{f} {k}: a filter the finder leaves off stays off'
@@ -58,10 +58,10 @@ def test_precise_is_stricter_and_sensitive_looser_in_every_filter():
             assert (hi[k] > v > lo[k]) if up else (hi[k] < v < lo[k]), f'{f} {k}: {lo[k]} {v} {hi[k]}'
 
 
-def test_recall_falls_from_sensitive_to_precise():
+def test_recall_falls_from_recalling_to_precise():
     for f, d in doc()['finders'].items():
         per = d['filtered']
-        assert per['sensitive']['recall'] >= per['balanced']['recall'] >= per['precise']['recall'], f
+        assert per['recalling']['recall'] >= per['balanced']['recall'] >= per['precise']['recall'], f
 
 
 def test_filters_only_remove():
