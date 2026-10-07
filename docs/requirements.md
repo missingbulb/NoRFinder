@@ -327,6 +327,7 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   candidate, vote on every finalist, only images from Google Drive can be exported), each done one
   crossed out with a green check; the added-NoRs line shows only when the user added some, and while a
   summary mask is on a warning that the mask is not exported, never crossed out; and an Export file button that downloads the file
+  (the next step is the blue button: Export file, then Open new GitHub issue, then Close; for a local image Close follows the export)
   and beside it an Open new GitHub issue button: a new issue on the repo, labelled
   `new-ground-truth` and naming the image (name, SHA-256, Drive link, finder, what was marked),
   whose body says to attach the file. An image from the computer cannot be submitted: right after
