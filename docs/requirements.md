@@ -321,12 +321,17 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   file name and finder, tied to each candidate's position; added NoRs per file name.
 - **Google Drive.** The user pastes the link of an image or a folder shared as "Anyone with the
   link", with no sign-in. An image loads at once; a folder lists its images and subfolders to pick
-  from, each image with its size and the date it was added to Drive; the dialog keeps one size
-  while the user moves between folders. It needs the site's Google API key, kept in the repository variable `GOOGLE_API_KEY`
+  from, each image with its size, the date it was added to Drive and a small colour thumbnail; the
+  dialog keeps one size while the user moves between folders. A click only selects a row; Open (or
+  a double click, or Enter) opens it: an image loads, a folder lists its contents. A thumbnail is
+  drawn only once its row is in view, a lab TIFF's from 48 of its rows per channel (about 4% of the
+  file) in the colours the page gives its channels, and a PNG's is Drive's own; Drive's own picture
+  of a multi-channel TIFF is grey, so it is never used. A checkbox at the bottom, "Download
+  thumbnails" (on at first, remembered in the browser), turns them off. It needs the site's Google API key, kept in the repository variable `GOOGLE_API_KEY`
   and written into `web/config.js` at deploy; without one the option is off. The dialog opens on
   the last link pasted, or else on the lab's folder (the repository variable
   `DRIVE_DEFAULT_FOLDER`), and lists a folder link at once.
-  Nothing read from Drive is cached.
+  Nothing read from Drive is cached; thumbnails are kept only while the page stays open.
 - **No waiting to start.** Python loads in the background from the moment the page opens, while the
   user picks an image, which opens as soon as Python is ready. Its packages download while Python
   itself starts, and the status bar names each stage (downloading, with the megabytes so far;
