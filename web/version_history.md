@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 web/version_histo
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- Click the version in the status bar to see this history; after an update, a bubble points at it. (#369)
 
 ## 0.11007.21
 - The status bar shows how much memory the page is using. (#358)

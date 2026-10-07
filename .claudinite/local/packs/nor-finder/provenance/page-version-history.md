@@ -1,4 +1,4 @@
-## 2026-10-07 · born · a page change adds its line to the version history (#PR)
+## 2026-10-07 · born · a page change adds its line to the version history (#369)
 - **Source:** the owner, in the project thread: "clicking it would open a "Version history" popup.
   Please implement that and generate a version history document that keeps user-facing terse
   explanations."
@@ -9,4 +9,4 @@
 - **Mechanism:** a prose rule in the local pack: whether a change is visible to users is a
   judgment no check can make. Which release carried a line is derived from git by the site build,
   so the rule asks for no version.
-- **Landed:** #PR.
+- **Landed:** #369.
