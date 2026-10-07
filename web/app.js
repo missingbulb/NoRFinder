@@ -91,7 +91,7 @@ async function buildPresets() {
     const b = document.createElement("button"); b.type = "button"; b.dataset.preset = k;
     b.innerHTML = `${name}<small>${pr(per[k])}</small>`;
     b.onclick = () => { st.values = { ...st.defaults, ...per[k].values }; st.off.clear(); buildFilters(); save(); refilter(); };
-    return b;
+    slow(b); return b;
   }));
   markPreset();
 }
@@ -777,7 +777,7 @@ function useFilters(finder) {
   for (const f of about.filters) for (const [k, v] of Object.entries(f.params)) st.defaults[k] = v;
   for (const k in st.defaults) st.values[k] = k in saved.values ? saved.values[k] : st.defaults[k];
   st.off = new Set(saved.off.filter((k) => about.filters.some((f) => f.key === k)));
-  buildFilters(); buildPresets(); $("#reset-filters").disabled = false;
+  buildFilters(); buildPresets();
 }
 
 function buildFilters() {
@@ -1414,10 +1414,6 @@ document.addEventListener("mouseout", hideHelp); document.addEventListener("focu
 $("#finder").onchange = () => { buildDetect(); if (!st.meta) useFilters($("#finder").value); };
 $("#find").onclick = detect;
 $("#reset-detect").onclick = () => { const f = $("#finder").value; st.detectValues[f] = { ...st.about[f].detection_params }; buildDetect(); };
-$("#reset-filters").onclick = () => {
-  try { localStorage.removeItem(STORE); } catch { /* nothing saved */ }
-  st.values = { ...st.defaults }; st.off.clear(); buildFilters(); markPreset(); refilter();
-};
 $("#zoom-in").onclick = () => setZoom(st.zoom * 1.25);
 $("#zoom-out").onclick = () => setZoom(st.zoom / 1.25);
 for (const id of ["show-r", "show-g", "show-b"]) $("#" + id).onchange = () => (st.img ? drawBase() : st.peeked && st.peek.redraw());
@@ -1540,5 +1536,5 @@ $("#sb-version").textContent = "v" + $("#sb-version").title.replace(/^version /,
 }
 
 // the buttons whose action can take a while on a slow computer; Load is held from a chosen image until it is open
-for (const id of ["#find", "#switch", "#tab-pass", "#tab-fail", "#dl-cands", "#dl-summary", "#gt-export", "#reset-filters"]) slow($(id));
+for (const id of ["#find", "#switch", "#tab-pass", "#tab-fail", "#dl-cands", "#dl-summary", "#gt-export"]) slow($(id));
 start();
