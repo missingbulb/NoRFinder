@@ -10,17 +10,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         id: python
         with:
           python-version: '3.11'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
       - name: Restore the Python packages
         id: venv
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/venv
           key: venv-${{ runner.os }}-${{ steps.python.outputs.python-version }}-${{ hashFiles('requirements.txt') }}
@@ -30,7 +30,7 @@ jobs:
       - run: echo ~/venv/bin >> "$GITHUB_PATH"
       - name: Restore Pyodide and Chromium
         id: browser
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             detection/browser/node_modules
@@ -44,7 +44,7 @@ jobs:
             playwright install chromium
           fi
       - name: Restore the ground-truth images
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: data/raw
           key: images-${{ hashFiles('data/sources.json', 'detection/lab/ground_truth/dataset.json') }}
