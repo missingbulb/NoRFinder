@@ -34,3 +34,14 @@
 - **Mechanism:** additions to the existing workflow skill's State 4, render and performance
   sections, and to its resume line: a committed state file, never a project side folder.
 - **Landed:** #221.
+
+## 2026-10-07 · strengthened · the performance pass measures peak memory beside time
+- **Source:** the owner, in the project thread on the page's memory after Find candidates: "add this
+  'peak RAM' measurement to the regularly running algorithms performance improvements skill".
+- **Reason:** traffic light's 248 MB peak stayed with the browser tab after every run (WebAssembly
+  memory never shrinks), and the time-only performance pass could not see it; freeing arrays halved
+  it with identical output.
+- **Actor:** @missingbulb (owner).
+- **Model:** Claude, per the commit trailer.
+- **Mechanism:** a bullet in the skill's performance section, and `detection/perf.py` recording the
+  peak (tracemalloc) in every snapshot and check.
