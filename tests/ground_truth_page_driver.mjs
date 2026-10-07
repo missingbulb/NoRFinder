@@ -155,13 +155,15 @@ async function markAndVote(page) {
   // a thumbs up on the first candidate, a thumbs down on the third; the second stays undecided
   await page.click("#sel-next"); await page.click("#selected .verdict .up");
   await page.click("#sel-next"); await page.click("#sel-next"); await page.click("#selected .verdict .down");
-  // a found candidate's ends drag freely too
+  // a found candidate's red end dragged off the axis only slides along it: the green ends stay put
   L = await page.evaluate(() => linesOf(candOf(st.sel)));
   if (L) {
     await page.click("#selected .verdict .down"); // back to a finalist, which has handles
-    await drag(page, await handle(page, "red", 0), 6, 12);
-    L = await page.evaluate(() => linesOf(candOf(st.sel)));
-    await check(offAxis(L) < 0.05, `a found candidate's red end dragged off the axis keeps the four ends on one line (${offAxis(L).toFixed(3)} px off)`);
+    await drag(page, await handle(page, "red", 0), 15, 20);
+    const M = await page.evaluate(() => linesOf(candOf(st.sel)));
+    const moved = Math.hypot(M.red[0][0] - L.red[0][0], M.red[0][1] - L.red[0][1]);
+    await check(offAxis(M) < 0.05 && JSON.stringify(M.length) === JSON.stringify(L.length.map((p) => p.map((v) => Math.round(v * 100) / 100))) && moved > 0.5,
+      `a red end dragged off the axis slides along it (${moved.toFixed(1)} px), the green ends unmoved (${offAxis(M).toFixed(3)} px off)`);
     await page.click("#selected .verdict .down");
   }
   await check(await gtColour(page) === "part", "with some verdicts but a finalist left the button is orange");

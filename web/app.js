@@ -905,8 +905,9 @@ function crop(c, size) {
 }
 
 // The measuring lines after a handle (line k, end j) is dragged to P. The two green ends and the two red
-// ends stay on one straight axis: dragging one of them turns the axis about the green end on the far side,
-// through P, and every other point keeps its distance from that end, in order and at least a pixel apart.
+// ends stay on one straight axis, in order and at least a pixel apart. A red end only slides along it. A
+// green end turns the axis, through P, about the other green end, and every other point keeps its
+// distance from that end.
 // A width end sets where along the axis the width is measured and, mirrored across the axis, how wide.
 function dragLines(L, k, j, P) {
   const sub = (a, b) => [a[0] - b[0], a[1] - b[1]], dot = (a, b) => a[0] * b[0] + a[1] * b[1];
@@ -925,8 +926,8 @@ function dragLines(L, k, j, P) {
   const pts = [["length", 1 - piv, len], ["red", 0, d(L.red[0])], ["red", 1, d(L.red[1])]].sort((a, b) => a[2] - b[2]);
   const me = pts.findIndex(([kk, jj]) => kk === k && jj === j);
   const lo = me > 0 ? pts[me - 1][2] + 1 : 1, hi = me < pts.length - 1 ? pts[me + 1][2] - 1 : Infinity;
-  const nv = unit(sub(P, O)), nn = [-nv[1] * Math.sign(dot(n, [-v[1], v[0]])), nv[0] * Math.sign(dot(n, [-v[1], v[0]]))];
-  pts[me][2] = Math.max(lo, Math.min(hi, Math.hypot(...sub(P, O))));
+  const nv = k === "red" ? v : unit(sub(P, O)), nn = [-nv[1] * Math.sign(dot(n, [-v[1], v[0]])), nv[0] * Math.sign(dot(n, [-v[1], v[0]]))];
+  pts[me][2] = Math.max(lo, Math.min(hi, k === "red" ? d(P) : Math.hypot(...sub(P, O))));
   const out = { length: [[...A], [...B]], red: [[...L.red[0]], [...L.red[1]]] };
   for (const [kk, jj, s] of pts) out[kk][jj] = at(O, nv, s);
   out.length[piv] = [...O];

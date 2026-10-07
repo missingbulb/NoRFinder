@@ -298,8 +298,9 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   padding and only the NoR borders on. The selected card in the right bar uses the options of the
   view that lists it. The adjusters are the ends of
   the green-to-green length, the red length and the width, each draggable anywhere. The four
-  length and red ends stay on one straight axis: dragging one turns the axis, through it, about the
-  green end on the far side, and the other ends keep their distances from that end, in order. A
+  length and red ends stay on one straight axis, in order. A red end only slides along the axis,
+  changing the red length. A green end drags anywhere: the axis turns, through it, about the other
+  green end, and the other ends keep their distances from that end. A
   width end sets where along the axis the width is measured and, mirrored, how wide it is. On
   release the crop turns level with the new axis. The new measurements show on the image, the
   card, the summary and the downloads. The measurements of the finalists are summarised in the right bar.
