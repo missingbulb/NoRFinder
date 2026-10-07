@@ -138,7 +138,10 @@ async function markAndVote(page) {
   await page.click("#switch");
   await check(await page.$eval("#list .card", (d) => d.dataset.i) === "u1", "the added NoR lists first among the finalists");
   await page.click("#switch");
+  // with another candidate voted on, only the added NoR keeps the button red
+  await page.evaluate(() => decide(st.order[0].i, "approve"));
   const waiting = await page.$eval("#dl-truth", (b) => ({ state: b.dataset.state, why: b.title }));
+  await page.evaluate(() => decide(st.order[0].i, null));
   await check(waiting.state === "todo" && /you added still needs your verdict/.test(waiting.why), `an added NoR without a verdict keeps the button red: "${waiting.why}"`);
   await page.click("#selected .verdict .up");
   await check(await page.$$eval("#overlay .added .glow", (c) => c.length) === 0, "approving it stops the glow");
