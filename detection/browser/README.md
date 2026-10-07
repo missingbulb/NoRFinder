@@ -36,6 +36,9 @@ Three tools, all running the page's path (open the slide, blue mask, detect, fir
 - `node bench_live.mjs [URL] [FINDER ...]` drives the page's own `worker.js` in headless Chromium,
   the deployed site by default or a local preview URL, and samples Chromium's resident memory.
 
+`node boot_live.mjs [REPO] [MBPS]` times the page's own start, stage by stage, until the finders are
+ready, over a simulated link (0 for a return visit from the cache).
+
 Install Pyodide for the first two with `npm i --prefix . pyodide@314.0.7` here (`--prefix`, or npm
 installs into the repo root's package.json). Results are in `../lab/ledger.md` §4.
 

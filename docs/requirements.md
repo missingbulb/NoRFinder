@@ -275,58 +275,92 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   is missing).
 - **All finders are offered.** Traffic light is the default.
 - **The blue mask is only a filter.** No finder on the page blanks nuclei before finding.
-- **Missing candidates.** Right-clicking the image offers "Mark Missing Candidate": a NoR the finder
-  proposed nothing for. The mark shows on the image as a dashed yellow circle of the radius it is
-  scored within (12 px, about half a NoR's length on the lab's slide), and as a card in its own
-  Missing item view, where it can be removed (as it can by right-clicking it). Marks are remembered
-  in the browser per file name, whatever the finder.
+- **Added NoRs.** Right-clicking the image offers "Add a NoR Here": a NoR the finder proposed
+  nothing for. It is not drawn as a mask; it gets measuring lines (level, centred where clicked, as
+  long and wide as the image's median finalist) that the user corrects on its card, which is
+  selected at once. It lists first among the finalists, marked by an icon rather than text, and
+  first among the rejected once thumbed down; its card can also remove it (as can right-clicking
+  it). On the image it shows its lines and, until the user gives a verdict, a dashed yellow circle
+  glowing between 0.8 and 0.3 opacity. Like any candidate it enters the ground truth only once the
+  user approves it. Added NoRs are remembered in the browser per file name, whatever the finder.
 - **The item views.** Two views: the finalists and the rejected, each candidate cropped on a card:
   its number, state and decision buttons on top, the crop below (with a faint go-to button in its
   corner that shows it on the image), then "Lengths adjusted" with a reset, and the rest.
   A rejected card names every filter that rejects it by itself, or says the user rejected it. Each
   view has its own Options menu (remembered per view) that sets the crop's context padding, turns
   each crop so the NoR lies level, and shows or hides the NoR borders, the measurement bars, the
-  lengths on the crop, the lengths on the card and the length adjusters. The finalists open with a
+  lengths on the crop, the lengths on the card and the measurement adjusters. The finalists open with a
   4 px padding and everything on but the lengths on the card; the rejected open with a 10 px
   padding and only the NoR borders on. The selected card in the right bar uses the options of the
-  view that lists it. The adjusters drag the ends of
-  the green-to-green length and the red length; the new lengths show on the image, the card, the
-  summary and the downloads. The measurements of the finalists are summarised in the right bar.
+  view that lists it. The adjusters are the ends of
+  the green-to-green length, the red length and the width, each draggable anywhere. The four
+  length and red ends stay on one straight axis: dragging one turns the axis, through it, about the
+  green end on the far side, and the other ends keep their distances from that end, in order. A
+  width end sets where along the axis the width is measured and, mirrored, how wide it is. On
+  release the crop turns level with the new axis. The new measurements show on the image, the
+  card, the summary and the downloads. The measurements of the finalists are summarised in the right bar.
 - **Downloads.** The candidates as CSV (every candidate, its status, its reasons, the user's
   decision and its measurements), the summary as CSV, and the ground truth
   (`norfinder-ground-truth/2`): a JSON file naming the image (its SHA-256, and where it was loaded
   from: its Google Drive id and link, or "local") that lists only what the user marked: every
   candidate voted up (label 1, with its lengths and length lines, marked adjusted or approved) or
-  down (label 0), and every missing candidate (label 1, with its radius). A candidate nobody voted
+  down (label 0), and every added NoR the user approved (kind `missing`, label 1, with its radius,
+  `origin: "added by user"`, its measurements and lines). A candidate nobody voted
   on is ambiguous and left out. The lab's `nor_lab.py --labels` reads it: the labels score
   detection and the checked lengths score measurement (`tests/test_ground_truth.py`).
-- **Submitting ground truth.** For an image from Google Drive, the Ground truth button downloads the
-  file and opens a new GitHub issue on the repo, labelled `new-ground-truth` and naming the image
-  (name, SHA-256, Drive link, finder, what was marked); a note at the button says to attach the
-  file to that issue and that only explicitly marked candidates are sent. An image from the
-  computer cannot be submitted: right after it loads, the page says so in one line (at most 15
-  words), and the button only downloads. With nothing marked the button says how to mark
+- **Submitting ground truth** (changed by the owner on 2026-10-06 and 2026-10-07). A small icon beside
+  the Ground truth button's text says how finished the work is: a green check when every finalist has
+  the user's verdict, an orange warning when some candidates have one but a finalist does not, and a
+  red error when no candidate has one yet or a candidate the user added still waits for a verdict;
+  the warning and the error pulse gently. The button itself stays plain. Pressing it opens a popup
+  with a checklist of every issue the ground truth can have (added NoRs without a verdict, no verdict
+  at all, finalists left out, a summary mask that is not exported, a local image that cannot be sent),
+  each resolved one crossed out with a green check, with an Export file button that downloads the file
+  and beside it an Open new GitHub issue button: a new issue on the repo, labelled
+  `new-ground-truth` and naming the image (name, SHA-256, Drive link, finder, what was marked),
+  whose body says to attach the file. An image from the computer cannot be submitted: right after
+  it loads, the page says so in one line (at most 15 words), and in the popup the issue button is
+  off and says why. With nothing marked the popup says how to mark and exports nothing
   (`tests/test_ground_truth_page.py`). What happens to a submission is R10.
+- **A summary mask** (set by the owner on 2026-10-06). Add mask, at the top of the Summary box,
+  switches to the image view, zooms out to show the whole image and lets the user lasso an area by
+  dragging (Esc cancels). The summary then counts only the candidates whose centre is inside the
+  mask, and the Candidates and Summary CSVs hold only those; the ground truth ignores the mask.
+  Lassoing again adds an area by exclusive or, so a lasso inside another cuts a hole. The mask's
+  borders show as a pulsing dashed line, and its inside is tinted a very transparent white only when
+  areas overlap or nest. Clear mask, shown while a mask is on, removes it. The mask is remembered in
+  the browser per file name (`tests/test_ground_truth_page.py`).
+- **NoR density** (set by the owner on 2026-10-06). The summary and the Summary CSV give the
+  finalists' density over the area counted (the mask, else the whole image) in NoRs per mm², from
+  the scale in the file, or per million square pixels when the file has none
+  (`tests/test_ground_truth_page.py`).
 - **Fixed numbers.** Each candidate keeps one number, top to bottom, for as long as a detection
   lasts. Filters never renumber candidates.
 - **Remembered marks.** Decisions and adjusted or approved lengths are saved in the browser per
-  file name and finder, tied to each candidate's position; missing candidates per file name.
+  file name and finder, tied to each candidate's position; added NoRs per file name.
 - **Google Drive.** The user pastes the link of an image or a folder shared as "Anyone with the
   link", with no sign-in. An image loads at once; a folder lists its images and subfolders to pick
-  from, each image with its size and the date it was added to Drive; the dialog keeps one size
-  while the user moves between folders. It needs the site's Google API key, kept in the repository variable `GOOGLE_API_KEY`
+  from, each image with its size, the date it was added to Drive and a small colour thumbnail; the
+  dialog keeps one size while the user moves between folders. A click only selects a row; Open (or
+  a double click, or Enter) opens it: an image loads, a folder lists its contents. A thumbnail is
+  drawn only once its row is in view, a lab TIFF's from 48 of its rows per channel (about 4% of the
+  file) in the colours the page gives its channels, and a PNG's is Drive's own; Drive's own picture
+  of a multi-channel TIFF is grey, so it is never used. A checkbox at the bottom, "Download
+  thumbnails" (on at first, remembered in the browser), turns them off. It needs the site's Google API key, kept in the repository variable `GOOGLE_API_KEY`
   and written into `web/config.js` at deploy; without one the option is off. The dialog opens on
   the last link pasted, or else on the lab's folder (the repository variable
   `DRIVE_DEFAULT_FOLDER`), and lists a folder link at once.
-  Nothing read from Drive is cached.
-- **No waiting to start.** Python loads in the background while the user picks an image, which
-  opens as soon as Python is ready. Until an image is loaded, Load shines, and the finder and
+  Nothing read from Drive is cached; thumbnails are kept only while the page stays open.
+- **No waiting to start.** Python loads in the background from the moment the page opens, while the
+  user picks an image, which opens as soon as Python is ready. Its packages download while Python
+  itself starts, and the status bar names each stage (downloading, with the megabytes so far;
+  installing; loading the finders; ready). Until an image is loaded, Load shines, and the finder and
   filter boxes are folded (their titles open them).
 - **Visible waiting.** While an image waits for Python, the page shows a spinner and the elapsed
   time; while a finder runs, a photocopier's light sweeps back and forth over the image, with what
   it is doing and the elapsed time below.
 - **Kind to slow computers.** A button whose action can take a while (Load, Find Candidates, the view
-  switch, the item tabs, the downloads, restoring the filter defaults) is disabled the moment it is
+  switch, the item tabs, the CSV downloads, the ground truth export, restoring the filter defaults) is disabled the moment it is
   pressed, with a small spinner after its label, and comes back only when its action is done,
   including the worker's answer. A failed request frees its button. Browsers do not say how much
   memory is free, so when the browser reports 4 GB or less in all (Chrome and Edge report it), a
@@ -391,3 +425,21 @@ Set by the owner on 2026-10-03.
   (`ground_truth.corpus()`).
 - **A missing mark is a real NoR** found when a pass lies within its radius, and proposed when any
   candidate does.
+
+## R11 — Every finder's precision and recall are on record, per filter preset
+
+Set by the owner on 2026-10-06. [`detection/lab/finder_metrics.json`](../detection/lab/finder_metrics.json)
+holds, for every finder the page offers, the precision and recall summed over every ground-truth image
+(R10), run the way the page runs it, at two stages kept apart: the finder's own candidates before any
+filter, and what passes the filters after it at three filter presets (precise, balanced = the
+finder's own values, sensitive). Precision counts labelled spots only: real spots passed over labelled spots
+passed. A preset moves every filter the same share of the way towards a fixed strict or loose end
+(`detection/finder_metrics.py`), the same for every finder. The file is rewritten whenever the
+quality baseline (R9) is, and `tests/test_finder_metrics.py` fails when it was measured against
+another baseline, another ground truth or other presets. The numbers are only as right as the labels
+behind them (R9).
+
+On the page (R8), the finder list shows each finder's precision and recall after its best preset (the
+highest F1), its "How it works" note its own candidates' numbers before any filter, and the Filters
+box opens with the three presets, each with its precision and recall after the filters; choosing one sets every filter to its values, and
+it stays lit while the filters hold them.

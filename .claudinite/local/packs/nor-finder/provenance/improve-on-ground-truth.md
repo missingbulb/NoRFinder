@@ -10,3 +10,13 @@
 - **Model:** Claude, per the commit trailer.
 - **Mechanism:** a workflow skill in the local pack, loaded by the ground-truth-intake task's agent
   and by its description when someone asks for the same work.
+
+## 2026-10-06 · strengthened · the improvement run also commits and reads the finder metrics
+- **Source:** the owner, in the project chat: "We'll need to start maintaining per-algorithm quality
+  metrics … overall numbers for precision and recall based on the ground truth images" (R11).
+- **Reason:** the quality baseline rewrite now regenerates `detection/lab/finder_metrics.json`, so a
+  run that records gains must commit it, and its precision and recall per preset are the overall
+  view of how each finder moved.
+- **Actor:** @missingbulb (owner).
+- **Model:** Claude, per the commit trailer.
+- **Mechanism:** two sentences in the skill's "See what moved" and "Land it" steps.

@@ -135,6 +135,11 @@ button.link:disabled { color: var(--dim); }
   border: 1px solid var(--dim); color: var(--dim); font-size: 10px; font-weight: 700; line-height: 1; cursor: help; vertical-align: 1px; }
 .help:hover, .help:focus-visible { color: var(--accent); border-color: var(--accent); outline: none; }
 #finder-note { margin: 8px 0 0; }
+/* the filter presets: each one's precision and recall on the ground truth */
+#presets { display: flex; margin: 0 0 8px; }
+#presets[hidden] { display: none; }
+#presets button { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 2px; }
+#presets small { font-size: 11px; opacity: .75; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 #view { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; margin: var(--pad) 0;
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-panel); overflow: hidden; }
@@ -216,7 +221,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 .card .marks line.r { stroke-width: 2.5; }
 .card .marks text { fill: #fff; text-anchor: middle; paint-order: stroke; stroke: #000; font-family: system-ui, sans-serif; }
 .card .marks text.r { fill: #ffb3b3; }
-.card .marks .handle { fill: #fff; stroke: #000; cursor: ew-resize; }
+.card .marks .handle { fill: #fff; stroke: #000; cursor: move; touch-action: none; }
 .card .marks .handle.r { fill: #ff6b6b; }
 .card .head { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
 /* the user's verdict: a thumbs up and a thumbs down side by side, quiet until pointed at or chosen */
@@ -274,6 +279,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #summary .hist { font-size: 12px; color: var(--dim); }
 #summary .hist rect { fill: var(--pink); opacity: .75; }
 #summary .reasons { margin-top: 12px; color: var(--dim); font-size: 13px; }
+#summary .density { margin-top: 6px; font-variant-numeric: tabular-nums; }
 
 /* the footer: file, counts and timings as sections on the left; progress and the version on the right */
 #statusbar { display: flex; align-items: center; gap: 10px; height: 1cm; padding: 0 14px; background: var(--panel); border-top: 1px solid var(--line);
@@ -338,25 +344,36 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 #drive-path { margin-top: 10px; font-size: 13px; height: 1.5em; line-height: 1.5em; white-space: nowrap; overflow-x: auto; overflow-y: hidden; }
 #drive-list { display: flex; flex-direction: column; height: 300px; overflow-y: auto; margin-top: 6px;
   border: 1px solid var(--line); border-radius: var(--r-ctl); }
-#drive-list .item { display: flex; gap: 12px; align-items: baseline; flex: none; text-align: left; border: 0; border-radius: 0; background: none; padding: 6px 10px; }
+#drive-list .item { display: flex; gap: 12px; align-items: center; flex: none; text-align: left; border: 0; border-radius: 0; background: none; padding: 6px 10px; }
 #drive-list .item .name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 #drive-list .item .meta { color: var(--dim); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 #drive-msg { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #drive-list .item + .item { border-top: 1px solid var(--line); }
 #drive-list .item:hover { background: var(--bg); }
-#drive-list .item.folder .name::before { content: "📁 "; }
+#drive-list .item[aria-selected="true"] { background: color-mix(in srgb, var(--accent) 18%, transparent); box-shadow: inset 3px 0 0 var(--accent); }
+#drive-list .item .pic { flex: none; width: 48px; height: 48px; border-radius: 3px; background: var(--bg); overflow: hidden; display: grid; place-items: center; }
+#drive-list .item .pic img { width: 100%; height: 100%; object-fit: cover; }
+#drive-list .item.folder .pic::before { content: "📁"; font-size: 24px; }
 #drive-msg.err { color: var(--err); }
+#drive-thumbs-l { display: flex; gap: 6px; align-items: center; margin: 0; white-space: nowrap; }
 
 /* a box that folds: its title opens and closes it */
 .box.foldable > .sec-head h2 { display: flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }
 .box.foldable.folded > :not(.sec-head) { display: none; }
 .box.foldable.folded > .sec-head button { display: none; }
 
-/* missing candidates: the user's marks where the finder proposed nothing, in a colour the image never has */
-#overlay .missing-marks { --miss: #ffd400; pointer-events: none; }
-#overlay .missing-marks circle { fill: none; stroke: var(--miss); stroke-width: 1.5; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
-#overlay .missing-marks text { fill: var(--miss); }
-.card.missing { border-color: #ffd40080; }
+/* NoRs the user added, in a colour the image never has; the circle glows until the user decides */
+#overlay .added-marks { --miss: #ffd400; }
+#overlay .added .glow { fill: none; stroke: var(--miss); stroke-width: 1.5; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; pointer-events: none;
+  animation: glow 1.6s ease-in-out infinite; }
+@keyframes glow { 0%, 100% { opacity: .8; } 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { #overlay .added .glow { animation: none; opacity: .8; } }
+#overlay .added .lines { display: inline; }
+#overlay .added.out .lines, #overlay.no-lines .added .lines { display: none; }
+#overlay .added text { fill: var(--miss); }
+.card.added { border-color: #ffd40080; }
+.card .num.added { display: inline-flex; align-items: center; gap: 2px; color: #d4a800; }
+.card .num.added svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .card .verdict .remove { font-size: 18px; line-height: 1; color: var(--dim); }
 .card .verdict .remove:hover { color: var(--no); background: color-mix(in srgb, var(--no) 14%, transparent); }
 #ctx { position: fixed; z-index: 30; display: flex; flex-direction: column; padding: 4px 8px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px #0006; }
@@ -368,6 +385,51 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 #notice p { margin: 0; }
 #notice button { align-self: flex-end; }
 #ctx[hidden], #card-menu[hidden] { display: none; }
+
+/* the Ground truth button's colour: how finished the user's verdicts are */
+/* the Ground truth button: a plain button with a small check, warning or error icon; the last two pulse gently */
+#dl-truth { display: inline-flex; align-items: center; gap: 6px; }
+#dl-truth .gt-ico { display: none; line-height: 0; }
+#dl-truth .gt-ico svg { display: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+#dl-truth[data-state=done] .gt-ico, #dl-truth[data-state=part] .gt-ico, #dl-truth[data-state=todo] .gt-ico { display: inline-block; }
+#dl-truth[data-state=done] .done, #dl-truth[data-state=part] .part, #dl-truth[data-state=todo] .todo { display: block; }
+#dl-truth[data-state=done] .gt-ico { color: var(--yes); }
+#dl-truth[data-state=part] .gt-ico { color: var(--gt-part); animation: gt-pulse 2s ease-in-out infinite; }
+#dl-truth[data-state=todo] .gt-ico { color: var(--no); animation: gt-pulse 2s ease-in-out infinite; }
+@keyframes gt-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(.9); } }
+@media (prefers-reduced-motion: reduce) { #dl-truth .gt-ico { animation: none !important; } }
+:root { --gt-part: #e8890c; }
+#gt-dlg { width: min(460px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
+  border: 1px solid var(--line); border-radius: var(--r-panel); box-shadow: 0 12px 40px #0006; }
+#gt-dlg::backdrop { background: #0007; }
+/* the popup's checklist: every issue the ground truth can have, crossed out with a green check once resolved */
+.checklist { list-style: none; margin: 4px 0 10px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.checklist li { display: flex; gap: 8px; align-items: flex-start; }
+.checklist svg { flex: none; margin-top: 1px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.checklist li.ok { color: var(--dim); }
+.checklist li.ok span { text-decoration: line-through; }
+.checklist li.ok svg { color: var(--yes); }
+.checklist li.warn svg { color: var(--gt-part); }
+.checklist li.error svg { color: var(--no); }
+#gt-msg:empty { display: none; }
+#gt-dlg .grow { flex: 1; }
+
+/* the summary mask: its borders as a pulsing dashed line; its inside tinted only when areas overlap or nest */
+#summary-box .sec-head { margin-bottom: 10px; }
+.mask-btns { display: inline-flex; gap: 6px; }
+.mask-btns button[hidden] { display: none; }
+#overlay .mask-marks { pointer-events: none; }
+#overlay .mask-marks .edge { fill: none; stroke: #fff; stroke-width: 1.5; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke;
+  animation: mask-pulse 1.6s ease-in-out infinite alternate; }
+#overlay .mask-marks .edge.under { stroke: #000; stroke-dasharray: none; stroke-width: 2.5; stroke-opacity: .5; animation: none; }
+#overlay .mask-marks .fill { fill: #fff; fill-opacity: .07; stroke: none; }
+@keyframes mask-pulse { from { stroke-opacity: 1; } to { stroke-opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { #overlay .mask-marks .edge { animation-duration: 6s; } }
+#overlay .lasso-live { fill: #ffffff14; stroke: #fff; stroke-width: 1.5; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+#scroller.lassoing, #scroller.lassoing #overlay g[data-i] { cursor: crosshair; }
+#lasso-hint { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); z-index: 6; padding: 5px 14px; border-radius: 999px;
+  background: var(--shade); border: 1px solid var(--line); font-weight: 600; font-size: 13px; pointer-events: none; }
+#lasso-hint[hidden] { display: none; }
 
 /* the low-memory popup */
 #memory-dlg { width: min(520px, calc(100vw - 32px)); }
