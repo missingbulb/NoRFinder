@@ -4,6 +4,7 @@
 @../shared/packs/claudinite-lifecycle/RULES.md
 @../shared/packs/github-pages/RULES.md
 @../shared/packs/html/RULES.md
+@../shared/packs/node/RULES.md
 @../shared/packs/numpy-image-processing/RULES.md
 @../shared/packs/public-website/RULES.md
 @../shared/packs/research-project/RULES.md

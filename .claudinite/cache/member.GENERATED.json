@@ -47,6 +47,9 @@
       },
       {
         "id": "numpy-image-processing"
+      },
+      {
+        "id": "node"
       }
     ]
   },
@@ -59,6 +62,7 @@
     "git-github": "1.61008.2",
     "github-pages": "1.61009.1",
     "html": "1.61004.1",
+    "node": "1.61004.1",
     "numpy-image-processing": "1.61004.1",
     "public-website": "1.61005.1",
     "research-project": "1.61004.1"
