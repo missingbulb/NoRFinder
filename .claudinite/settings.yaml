@@ -23,6 +23,7 @@ packs:
     - "public-website"
     - "html"
     - "numpy-image-processing"
+    - "node"
 tasks:
   routines:
     default:
