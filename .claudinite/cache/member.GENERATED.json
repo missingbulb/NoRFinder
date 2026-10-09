@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "settings": {
+    "path": ".claudinite/settings.yaml",
+    "format": "yaml"
+  },
+  "engine": {
+    "package": "@claudinite/cli",
+    "version": "1.61009.1",
+    "channel": "staging"
+  },
+  "packs": {
+    "channel": "canary",
+    "declared": [
+      {
+        "id": "local/nor-finder"
+      },
+      {
+        "id": "basics"
+      },
+      {
+        "id": "claudinite-lifecycle"
+      },
+      {
+        "id": "git-github"
+      },
+      {
+        "id": "claude-code-web-users-support",
+        "config": {
+          "repo": "missingbulb/Shepherd"
+        }
+      },
+      {
+        "id": "claudinite-growth"
+      },
+      {
+        "id": "research-project"
+      },
+      {
+        "id": "github-pages"
+      },
+      {
+        "id": "public-website"
+      },
+      {
+        "id": "html"
+      },
+      {
+        "id": "numpy-image-processing"
+      },
+      {
+        "id": "claudinite-tasks"
+      }
+    ]
+  },
+  "dormant": false,
+  "held": {
+    "basics": "1.61008.1",
+    "claude-code-web-users-support": "1.61005.1",
+    "claudinite-growth": "1.61008.2",
+    "claudinite-lifecycle": "1.61008.1",
+    "claudinite-tasks": "1.61008.1",
+    "git-github": "1.61008.2",
+    "github-pages": "1.61005.1",
+    "html": "1.61004.1",
+    "numpy-image-processing": "1.61004.1",
+    "public-website": "1.61005.1",
+    "research-project": "1.61004.1"
+  }
+}

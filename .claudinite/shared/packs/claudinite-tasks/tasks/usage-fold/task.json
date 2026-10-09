@@ -1,5 +1,4 @@
 {
-  "$schema": "../../task.schema.json",
   "id": "usage-fold",
   "description": "Folds the repository's captured session logs, workflow runs and closed work items into two small tracked usage aggregates: what its sessions did - skill loads, scheduler and executor activity, work-item outcomes - and what its machinery cost - billed minutes, API calls, latencies.",
   "trigger": "schedule",

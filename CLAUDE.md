@@ -1,1 +1,1 @@
-@.claudinite/flat/claudinite-rules.GENERATED.md
+@.claudinite/cache/claudinite-rules.GENERATED.md

@@ -1,6 +1,6 @@
 {
-  "version": "60928.1",
-  "minEngineVersion": "60928.1",
+  "version": "1.61004.1",
+  "minEngineVersion": "1.61001.1",
   "ruleRoutingGuidance": {
     "belongs": "numeric image analysis in Python — deriving a mask/skeleton/threshold from a NumPy image array with SciPy ndimage and scikit-image",
     "excludes": "Python packaging conventions — that is python; iterate-on-an-algorithm methodology — that is research-project; browser canvas — that is html"

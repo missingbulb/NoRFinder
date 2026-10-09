@@ -17,9 +17,10 @@
 // waiting, only that the mark is behind. A repo whose scheduler has stopped
 // entirely is not asked at all, so there is nothing for this term to decline there.
 
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { mostRecentAnchor } from '../../src/items/anchors.mjs';
-import { decodeTasksUsageFile, TASKS_USAGE_PATH, LEGACY_TASKS_USAGE_PATH } from '../../src/items/tasks-usage-format.mjs';
+import { mostRecentAnchor } from './queue-wire.mjs';
+import { decodeTasksUsageFile, TASKS_USAGE_PATH, LEGACY_TASKS_USAGE_PATH } from './tasks-usage-format.mjs';
 
 // The mark the last fold left, read from the checkout the run holds. Null for a repo
 // that has never folded — which is movement by definition, since everything its
@@ -33,14 +34,20 @@ export function foldedThroughAt(root) {
   return null;
 }
 
+// The checkout the run holds. The engine asks a term from the task's own directory,
+// inside that checkout, so its top level is the root wherever no variable names it.
+export function checkoutRoot(env = process.env, cwd = process.cwd()) {
+  if (env.CLAUDINITE_REPO_ROOT) return env.CLAUDINITE_REPO_ROOT;
+  try {
+    return execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || cwd;
+  } catch { return cwd; }
+}
+
 export const terms = {
   'runs-since-fold': {
     signals: [],
     holds(_signals, { now }) {
-      // The scheduler and the executor both run with the checkout as their working
-      // directory, and the fold's own worker takes the same root the same way.
-      const root = process.env.CLAUDINITE_REPO_ROOT || process.cwd();
-      const mark = foldedThroughAt(root);
+      const mark = foldedThroughAt(checkoutRoot());
       if (!mark) return { holds: true, reason: 'nothing has been folded yet — every run this repo has made is uncounted' };
       const at = mostRecentAnchor('daily', now).toISOString();
       return mark < at

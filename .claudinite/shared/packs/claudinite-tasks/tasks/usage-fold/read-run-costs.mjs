@@ -32,7 +32,7 @@
 // costs that tick its cost record. Neither takes the run counts down with it.
 
 import { makeReader as makeJsonReader, readRuns, WATCHED_WORKFLOWS } from './read-runs.mjs';
-import { parseRunCosts } from '../../src/items/run-record.mjs';
+import { parseRunCosts } from './queue-wire.mjs';
 
 const API = process.env.GITHUB_API_URL || 'https://api.github.com';
 

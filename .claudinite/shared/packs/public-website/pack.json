@@ -1,6 +1,6 @@
 {
-  "version": "60928.1",
-  "minEngineVersion": "60928.1",
+  "version": "1.61005.1",
+  "minEngineVersion": "1.61001.1",
   "ruleRoutingGuidance": {
     "belongs": "being a public website whatever serves it: the version scheme and page stamp, client-side caching and data freshness",
     "excludes": "how the site is built, served or released — the hosting pack declared beside this one; markup — html"

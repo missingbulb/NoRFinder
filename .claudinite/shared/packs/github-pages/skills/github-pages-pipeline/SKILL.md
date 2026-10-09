@@ -1,6 +1,6 @@
 ---
 name: github-pages-pipeline
-description: Wiring, operating or debugging a site repo's GitHub Pages release. Use when setting one up, when a gp/ check fires, when a release parks, or to deploy now.
+description: Wiring, operating or debugging a site repo's GitHub Pages release. Use when setting one up, when a site-config or deploy-workflow check fires, when a release parks, or to deploy now.
 metadata:
   body: workflow
   usage:
@@ -25,7 +25,7 @@ wire it, operate it, and what a change to it must not break.
 1. Declare `github-pages` and answer its one adoption question. Write the answer into
    `.github/site.config`: `publish_root`, `publish_paths` (the additive publish set), and
    `build_command` (`""` = nothing to build, stated), plus `build_vars` only if the build
-   reads repo variables. `gp/site-config` is the checklist for whether it is complete.
+   reads repo variables. `site-config` is the checklist for whether it is complete.
 2. Re-vendor, and copy the pack's [deploy workflow stub](../../stubs/workflows/github-pages-deploy.yml)
    into `.github/workflows/`. There are no tokens to replace; the file is a managed copy, so
    fix the pack and re-vendor, never the copy.
@@ -53,7 +53,7 @@ but the window, and one with a version takes the next number.
 Revert on the branch and let the next release carry it — the revert sits above the last
 release commit, so the gate opens on it; force the run with the command above when it
 cannot wait for the nightly anchor. Don't add a rollback lever: it would be a second path to
-production, and `gp/deploy-workflow` refuses one.
+production, and `deploy-workflow` refuses one.
 
 ## Reading a park
 
@@ -71,7 +71,7 @@ tip.
 
 - **Never add a workflow that publishes, and never give the deploy workflow a push trigger.**
   The task is the one path to production; a second publisher ships a tree with no version cut
-  and no park lane. `gp/deploy-workflow` refuses both, so don't also guard it in review.
+  and no park lane. `deploy-workflow` refuses both, so don't also guard it in review.
 - **Keep the workflow to the `uses:` steps.** Reading the config, exporting build variables
   and assembling the publish set are the pack's [`build-site.mjs`](../../build-site.mjs), run
   from the mount, so a fix reaches every Pages repo the night it lands without a workflow

@@ -1,10 +1,13 @@
 {
-  "version": 1,
   "ruleRoutingGuidance": {
     "belongs": "everything specific to this repository and portable nowhere else: its working rules, and the checks, skills and tasks carrying them",
     "excludes": "anything true beyond this repo — that belongs in a canon pack, proposed upstream"
   },
-  "worldRules": [],
+  "githubActions": [
+    "openPr",
+    "createComment",
+    "dispatchWorkflow"
+  ],
   "env": {
     "label": "Python imaging stack (numpy, scipy, pillow, matplotlib)",
     "setup": "python3 -m pip install --quiet --root-user-action=ignore -r requirements.txt",
