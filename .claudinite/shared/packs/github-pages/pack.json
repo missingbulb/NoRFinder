@@ -1,5 +1,5 @@
 {
-  "version": "1.61005.1",
+  "version": "1.61009.1",
   "minEngineVersion": "1.61001.1",
   "ruleRoutingGuidance": {
     "belongs": "serving a site from GitHub Pages: the nightly release, the vendored deploy workflow, site.config, the serving subpath",
@@ -10,9 +10,6 @@
     "about": ".github/site.config, or the vendored .github/workflows/github-pages-deploy.yml",
     "paths": "^(\\.github/site\\.config|\\.github/workflows/github-pages-deploy\\.yml)$"
   },
-  "requires": [
-    "claudinite-tasks"
-  ],
   "questions": [
     {
       "id": "publish_set",
