@@ -23,7 +23,6 @@ packs:
     - "public-website"
     - "html"
     - "numpy-image-processing"
-    - "claudinite-tasks"
 tasks:
   routines:
     default:

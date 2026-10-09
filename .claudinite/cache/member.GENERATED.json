@@ -47,9 +47,6 @@
       },
       {
         "id": "numpy-image-processing"
-      },
-      {
-        "id": "claudinite-tasks"
       }
     ]
   },
@@ -59,7 +56,6 @@
     "claude-code-web-users-support": "1.61005.1",
     "claudinite-growth": "1.61009.1",
     "claudinite-lifecycle": "1.61008.1",
-    "claudinite-tasks": "1.61008.1",
     "git-github": "1.61008.2",
     "github-pages": "1.61009.1",
     "html": "1.61004.1",
