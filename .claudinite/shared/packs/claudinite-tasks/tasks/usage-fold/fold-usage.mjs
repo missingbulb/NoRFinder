@@ -16,23 +16,23 @@
 // The zero set is derived by the consumer, diffing against the repo's mounted
 // skills — which is exactly what makes "this skill never loads" visible at all.
 
-// The non-builtin imports are both the engine surface a pack may build on
-// (pack-independence). "Which skills does this repo mount" has exactly one home —
-// the pack registry — and asking it here is what keeps the fold's answer identical
-// to what the SessionStart hook actually mounted. The task-exec status vocabulary
-// has exactly one home too, beside the code that prints those records, so the
-// counter keys here cannot drift from the words the runs actually emit.
-import { loadPacks, isActive, bundledSkillSources } from '../../../../engine/pack_loader/pack-registry.mjs';
-import { TASK_EXEC_STATUSES, parseTaskExecs } from '../../src/items/run-record.mjs';
+// "Which skills does this repo mount" is read off the declared packs' own trees, the
+// list the engine hands the task; the task-exec status vocabulary is the queue's
+// wire, beside the record parse, so the counter keys here cannot drift from the
+// words the runs actually emit.
+import { existsSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { TASK_EXEC_STATUSES, parseTaskExecs } from './queue-wire.mjs';
 // The file's on-disk shape is the format module's. Everything below
 // works in the NAMED counter shape and meets the tuples only at the two boundary
 // functions at the foot of this file.
 import { isUserMessage, commandName, skillToolLoads, entryText } from './capture-entries.mjs';
 import { countCorpusUse, countMoments, countCheckTiming } from './corpus-use.mjs';
+import { readCheckBuild, foldCheckBuild } from './check-build.mjs';
 import {
   USAGE_FIELDS, USAGE_VERSION, CAPTURE_DAY_FIELDS, WEEK_FROM_DAY, QUEUE_OUTCOMES,
   COUNTER_GROUPS, BARE_MAPS, MAX_FIELDS, USAGE_CAPS, hourKey, encodeUsageFile, decodeUsageFile,
-} from '../../src/items/usage-format.mjs';
+} from './usage-format.mjs';
 
 // --- entry classification -----------------------------------------------------
 // The per-entry readers live beside the second counting pass that asks the same
@@ -566,6 +566,7 @@ export function countEntries(entries, corpus = {}) {
     ...use,
     moments: countMoments(entries, corpus.declarations ?? [], corpus.hits ?? {}),
     checkTiming: countCheckTiming(entries),
+    checkBuild: readCheckBuild(entries),
     skillCaught: caughtSkills(Object.keys(use.skillLoadsBy), checks.checkFindings, corpus.ownerOf),
   };
 }
@@ -698,6 +699,7 @@ export function foldDays(files) {
     s.userMessages += file.counts.userMessages;
   }
 
+  foldCheckBuild(days, files);
   // Distinct sessions, not capture count: one session can capture more than once
   // (a merge, then the session-end tail).
   for (const [date, set] of Object.entries(sessionsByDay)) days[date].sessions = set.size;
@@ -1084,42 +1086,32 @@ export { encodeUsageFile as encodeUsage, decodeUsageFile as decodeUsage };
 
 // --- the mounted-skill set -----------------------------------------------------
 
-// The skill names this repo mounts, from the PACK REGISTRY — never from
-// `.claude/skills/`, which is gitignored session state an Action checkout does not
-// carry at all. Fails soft to an empty set: with no mounted set, a typed `/command`
-// still counts as a userCommand and simply never counts as a skill load.
-export async function mountedSkillNames(root, config) {
-  return (await mountedCorpus(root, config)).mounted;
+// Where each kind of declared pack is mounted in the member.
+const MOUNTS = { canon: '.claudinite/shared/packs', local: '.claudinite/local/packs', temp: '.claudinite/temp/packs' };
+
+// The skill names this repo mounts, read off the declared packs' own trees — never
+// from `.claude/skills/`, which is gitignored session state an Action checkout does
+// not carry at all. Fails soft to an empty set: with no mounted set, a typed
+// `/command` still counts as a userCommand and simply never counts as a skill load.
+export async function mountedSkillNames(root, declared) {
+  return (await mountedCorpus(root, declared)).mounted;
 }
 
-// What the mounted corpus offers the counters that need to know it: the skill
-// names, the force-load declarations a moment is counted against, the predicates
-// that decide whether a moment hit, and which skill owns which check.
+// What the mounted corpus offers the counters that need to know it: the skill names
+// of the declared packs (`declared` is the engine's `packs()` answer).
 //
-// The engine is probed rather than depended on: the two lanes land on separate
-// cycles, so a member can hold an engine without the predicates or the
-// `ownerSkill` stamp beside this pack. A namespace import that comes back
-// without them leaves `hits`/`ownerOf` unset, and the counters reading them write
-// NO KEY - *not recorded*, which is the honest answer, where a zero would report a
-// skill whose moments could not be resolved as one whose moments never came.
-export async function mountedCorpus(root, config) {
-  const empty = { mounted: new Set(), declarations: [], hits: {}, ownerOf: null };
-  try {
-    const active = (await loadPacks({ localRoot: root })).filter((p) => isActive(p, config));
-    const scoped = await import('../../../../engine/pack_loader/path-scoped-skills.mjs');
-    const hits = scoped.hitsCall && scoped.hitsPrompt && scoped.hitsPath
-      ? { call: scoped.hitsCall, prompt: scoped.hitsPrompt, path: scoped.hitsPath }
-      : {};
-    const declarations = [...scoped.triggeredSkills(active), ...scoped.pathScopedSkills(active)];
-    const byRule = new Map();
-    for (const pack of active) {
-      for (const rule of pack.skillChecks ?? []) if (rule?.ownerSkill) byRule.set(rule.id, rule.ownerSkill);
-    }
-    return {
-      mounted: new Set(bundledSkillSources(active).keys()),
-      declarations,
-      hits,
-      ownerOf: byRule.size ? (id) => byRule.get(id) ?? null : null,
-    };
-  } catch { return empty; }
+// The force-load declarations, the predicates that decide whether a moment hit, and
+// which skill owns which check are the engine's, and no SDK call answers them, so
+// they stay unset: the counters reading them write NO KEY - *not recorded*, which is
+// the honest answer, where a zero would report a skill whose moments could not be
+// resolved as one whose moments never came.
+export async function mountedCorpus(root, declared) {
+  const mounted = new Set();
+  for (const pack of Array.isArray(declared) ? declared : []) {
+    const dir = join(root, MOUNTS[pack?.kind] ?? MOUNTS.canon, String(pack?.id ?? ''), 'skills');
+    let names = [];
+    try { names = readdirSync(dir, { withFileTypes: true }); } catch { continue; }
+    for (const d of names) if (d.isDirectory() && existsSync(join(dir, d.name, 'SKILL.md'))) mounted.add(d.name);
+  }
+  return { mounted, declarations: [], hits: {}, ownerOf: null };
 }

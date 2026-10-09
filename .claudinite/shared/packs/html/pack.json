@@ -1,6 +1,6 @@
 {
-  "version": "60928.1",
-  "minEngineVersion": "60928.1",
+  "version": "1.61004.1",
+  "minEngineVersion": "1.61001.1",
   "ruleRoutingGuidance": {
     "belongs": "hand-authored HTML markup gotchas — element nesting, injected content placement, live browser verification of a page",
     "excludes": "javascript runtime APIs — web-speech; map widgets — leaflet; npm and dependency policy — node"

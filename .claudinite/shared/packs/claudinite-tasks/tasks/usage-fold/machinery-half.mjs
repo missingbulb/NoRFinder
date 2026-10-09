@@ -25,31 +25,26 @@
 // under ten calls a day, which a test asserts by counting the fetches a
 // representative day makes.
 
-import { readFileSync } from 'node:fs';
-import { readAt, readRollingAt } from '../../public/delivery.mjs';
+import { readAt, readRollingAt } from './deliver.mjs';
 import {
   encodeTasksUsageFile, decodeTasksUsageFile, renderTasksUsageFile, withoutStamp, TASKS_USAGE_PATH, LEGACY_TASKS_USAGE_PATH,
-} from '../../src/items/tasks-usage-format.mjs';
+} from './tasks-usage-format.mjs';
 import { foldTasksUsage } from './fold-tasks-usage.mjs';
 import { makeReader, readRunCosts } from './read-run-costs.mjs';
 import { readClosedItems } from './read-items.mjs';
-import { settingsPath } from '../../../../engine/settings-file.mjs';
-
-const PACK_ID = 'claudinite-tasks';
 
 // What a minute of Actions costs this repo, from the pack's own config. UNSET IS
 // NOT ZERO: a public repo bills nothing and a private one bills something, and a
 // fold that wrote `spend: 0` for the second would be stating a figure nobody gave
 // it. Absent, no row in the file carries a spend at all and a reader says so.
-export function minuteRateFrom(config, packId = PACK_ID) {
-  const rate = config?.packConfig?.[packId]?.actionsMinuteRate;
+export function minuteRateFrom(packConfig) {
+  const rate = packConfig?.actionsMinuteRate;
   return typeof rate === 'number' && Number.isFinite(rate) && rate >= 0 ? rate : null;
 }
 
-export async function foldMachinery({ root, repo, token, baseSha, now, log }) {
-  let config = {};
-  try { config = JSON.parse(readFileSync(settingsPath(root), 'utf8')); } catch { /* no declaration */ }
-  const minuteRate = minuteRateFrom(config);
+// `packConfig` is this pack's own config, as the engine hands it to the task.
+export async function foldMachinery({ root, repo, token, baseSha, packConfig, now, log }) {
+  const minuteRate = minuteRateFrom(packConfig);
   if (minuteRate === null) log('no `actionsMinuteRate` in this pack\'s config — the file records minutes and no spend');
 
   const rolling = readRollingAt(root, baseSha, TASKS_USAGE_PATH, LEGACY_TASKS_USAGE_PATH);

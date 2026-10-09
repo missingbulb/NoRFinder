@@ -21,7 +21,7 @@
 // the tooling" — publishes every draft, note and key nobody thought to exclude, and
 // publishes each new one silently the day it lands. An additive list can only ever
 // publish what the repo asked for, and its failure mode, a file that does not show
-// up, is visible on the site and caught by `gp/site-config` before it merges.
+// up, is visible on the site and caught by `site-config` before it merges.
 //
 // A missing file, a missing key, an unknown (typo'd) key and an empty required path
 // key are all hard failures — a deploy that "worked" because a typo fell back to a
@@ -138,5 +138,5 @@ export function publishSet(values) {
 // Has this repo adopted the standard? TWO INDEPENDENT SIGNALS, either sufficient —
 // because the artifact the checks most need to catch missing IS one of them. Gating
 // on the config alone would let a repo that vendored the workflow and never wrote
-// its config pass silently, which is the one case `gp/site-config` exists to report.
+// its config pass silently, which is the one case `site-config` exists to report.
 export const adoptedPages = (ctx) => ctx.read(CONFIG_PATH) !== null || ctx.read(DEPLOY_WORKFLOW_PATH) !== null;

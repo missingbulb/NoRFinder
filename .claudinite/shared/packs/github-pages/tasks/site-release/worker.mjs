@@ -21,14 +21,11 @@ import { execFileSync } from 'node:child_process';
 import { rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-// Reading a branch tip without disturbing the executor's checkout, stamping the
-// trailer that says which task wrote a commit, and reaching GitHub the way the
-// executor does are claudinite-tasks' to own; the published `public/` seam is the
-// only way a pack may reach another's code, and the relative path resolves the same
-// from the canon and from a member's mount.
-import { baseTip, readAt, remoteUrl } from '../../../claudinite-tasks/public/delivery.mjs';
-import { withTaskTrailer } from '../../../claudinite-tasks/public/work-item-grammar.mjs';
-import { dispatchWorkflow, listWorkflowRuns, readPagesSite, readWorkflowRun } from '../../../claudinite-tasks/public/github.mjs';
+// The remote and the trailer that says which task wrote a commit are the engine's:
+// a fetch or a push goes through the SDK's `git`, which carries the job's token, and
+// `commitMessage` stamps the trailers. Everything local is plain git on the checkout.
+import { commitMessage, git as engineGit } from '@claudinite/sdk';
+import { makeGh } from './github-api.mjs';
 import { CONFIG_PATH, DEPLOY_WORKFLOW_FILE, DEPLOY_WORKFLOW_PATH, parseConfig, publishSet } from '../../lib.mjs';
 
 // public-website's seam, resolved beside this pack on whatever tree runs the worker.
@@ -62,6 +59,36 @@ const log = (m) => console.log(`site-release: ${m}`);
 const git = (cwd, args, opts = {}) => execFileSync('git', ['-C', cwd, ...args], {
   encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, ...opts,
 });
+
+// A command that talks to the remote, through the engine; a non-zero exit is a throw.
+async function remoteGit(...args) {
+  const r = await engineGit(...args);
+  if (r.code !== 0) throw new Error(`git ${args[0]} exited ${r.code}: ${r.stderr.trim()}`);
+  return r.stdout;
+}
+
+// The base branch's remote tip, fetched into the checkout's object store: read from
+// the remote, never from HEAD, which the executor's other items share.
+export async function baseTip(root, base) {
+  await remoteGit('fetch', '--quiet', 'origin', base);
+  return git(root, ['rev-parse', 'FETCH_HEAD']).trim();
+}
+
+// One file's content at a commit, or null when the path does not exist there.
+export function readAt(root, sha, path) {
+  try { return git(root, ['show', `${sha}:${path}`], { stdio: ['ignore', 'pipe', 'ignore'] }); } catch { return null; }
+}
+
+// The deploy's REST calls. The dispatch carries the commit as the workflow's `ref`
+// input, which the SDK's `dispatchWorkflow` cannot pass, and the run and Pages reads
+// have no SDK action at all.
+const dispatchWorkflow = async (gh, repo, file, ref, inputs) => {
+  const { status } = await gh(`/repos/${repo}/actions/workflows/${file}/dispatches`, { method: 'POST', body: { ref, inputs } });
+  return { ok: status === 204, status };
+};
+const listWorkflowRuns = (gh, repo, file) => gh(`/repos/${repo}/actions/workflows/${file}/runs?event=workflow_dispatch&per_page=10`);
+const readWorkflowRun = (gh, repo, runId) => gh(`/repos/${repo}/actions/runs/${runId}`);
+const readPagesSite = (gh, repo) => gh(`/repos/${repo}/pages`);
 
 const park = (lane, what) => {
   console.error(`claudinite-needs-human: ${lane} — ${what}`);
@@ -113,10 +140,10 @@ function commitOnto(root, { parent, files, message }) {
 //
 // Deliberately not `pushGenerated`: that lane force-pushes, which is correct for a
 // regenerate-not-reconcile branch and catastrophic for the default branch.
-export function pushRelease(root, { remote, base, taskId, versioning, now = new Date() }) {
+export async function pushRelease(root, { base, versioning, now = new Date() }) {
   let lastError = null;
   for (let attempt = 1; attempt <= PUSH_ATTEMPTS; attempt += 1) {
-    const parent = baseTip(root, remote, base);
+    const parent = await baseTip(root, base);
     const deployment = deploymentAt(root, parent);
     if (!versioning) return { version: null, commit: parent, attempts: attempt, deployment };
 
@@ -126,15 +153,12 @@ export function pushRelease(root, { remote, base, taskId, versioning, now = new 
     const commit = commitOnto(root, {
       parent,
       files: bump.files,
-      message: withTaskTrailer(`Release site version ${bump.version}`, taskId),
+      message: commitMessage(`Release site version ${bump.version}`),
     });
-    try {
-      git(root, ['push', '--quiet', remote, `${commit}:refs/heads/${base}`]);
-      return { version: bump.version, commit, attempts: attempt, deployment };
-    } catch (e) {
-      lastError = e;
-      log(`push rejected on attempt ${attempt} — ${base} moved; rebuilding on its new tip`);
-    }
+    const pushed = await engineGit('push', '--quiet', 'origin', `${commit}:refs/heads/${base}`);
+    if (pushed.code === 0) return { version: bump.version, commit, attempts: attempt, deployment };
+    lastError = new Error(pushed.stderr.trim());
+    log(`push rejected on attempt ${attempt} — ${base} moved; rebuilding on its new tip`);
   }
   throw new Error(`could not push the version bump after ${PUSH_ATTEMPTS} attempts: ${lastError?.message ?? 'unknown'}`);
 }
@@ -198,17 +222,15 @@ export async function reportServed(url, { version = null, fetchImpl = fetch } = 
   }
 }
 
-export async function worker({ root, repo, defaultBranch, pack, task, token, gh }) {
+export async function worker({ root, repo, defaultBranch }, gh = makeGh()) {
   const base = defaultBranch ?? 'main';
-  const taskId = `${pack}/${task}`;
-
 
   const versioning = await loadVersioning();
   log(versioning
     ? 'public-website is declared — the release advances the version before deploying'
     : 'public-website is not declared — the release deploys the branch tip with no version bump');
 
-  const { version, commit, attempts } = pushRelease(root, { remote: remoteUrl(repo, token), base, taskId, versioning });
+  const { version, commit, attempts } = await pushRelease(root, { base, versioning });
   log(version
     ? `released version ${version} as ${commit.slice(0, 7)}${attempts > 1 ? ` (after ${attempts} push attempts)` : ''}`
     : `releasing ${commit.slice(0, 7)}`);

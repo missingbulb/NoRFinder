@@ -19,11 +19,11 @@
 // FAIL-SOFT per item: a timeline that cannot be read costs that item its parks, its
 // latencies and its cost record, and keeps its outcome row.
 
-import { isQueueItem } from '../../src/items/read.mjs';
+import { isQueueItem } from './queue-wire.mjs';
 import { taskOf, parkKindOf } from './read-queue.mjs';
-import { STATUS_RUNNING_EXECUTOR, STATUS_RUNNING_AGENT } from '../../public/task-constants.mjs';
-import { outcomeOf, spellingsOf } from '../../public/work-item-grammar.mjs';
-import { parseRunCosts } from '../../src/items/run-record.mjs';
+import { STATUS_RUNNING_EXECUTOR, STATUS_RUNNING_AGENT } from './queue-wire.mjs';
+import { outcomeOf, spellingsOf } from './queue-wire.mjs';
+import { parseRunCosts } from './queue-wire.mjs';
 
 // How far back the FIRST read looks with no mark yet — the day tier's own width, as
 // the session fold's queue read does, so one fold populates the whole window.

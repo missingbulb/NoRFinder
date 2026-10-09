@@ -1,5 +1,4 @@
 {
-  "$schema": "../../../../../shared/packs/claudinite-tasks/task.schema.json",
   "id": "full-tests",
   "description": "Runs the full test set, the page, browser, memory and speed-up tests every PR leaves out, on the default branch every night, and parks with the run's link when it fails so a red night reaches a person.",
   "trigger": "schedule",

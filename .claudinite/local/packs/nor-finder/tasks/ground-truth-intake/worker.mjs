@@ -1,15 +1,15 @@
 // The intake, by code: every open issue labelled new-ground-truth has its attached file added to the
 // ground-truth data set (detection/ground_truth.py ingest), the quality baseline is re-recorded against the
 // new reference, and the result is opened as this run's pull request, which closes the issues it took
-// when merged. The pull request is left open whatever the repo's delivery setting: the agent works on it
-// next, and only a person merges it. A submission that cannot be used gets a comment saying why and loses the label, so it waits
+// when merged. The task's automerge policy is nothing, so the pull request stays open: the agent works on
+// it next, and only a person merges it. A submission that cannot be used gets a comment saying why and loses the label, so it waits
 // for its author instead of being retried every day. The agent is asked for only when something was added.
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { baseTip, landDelivery, pullCreateError, pushGenerated, remoteUrl } from '../../../../../shared/packs/claudinite-tasks/public/delivery.mjs';
-import { withTaskTrailer } from '../../../../../shared/packs/claudinite-tasks/public/work-item-grammar.mjs';
+import { commitMessage, git as engineGit, github } from '@claudinite/sdk';
+import { makeGh } from '../github-api.mjs';
 import { LABEL } from './label.mjs';
 
 const MARK = '<!-- ground-truth-intake -->';
@@ -24,21 +24,20 @@ async function paged(gh, path) {
   }
 }
 
-// The executor's generated-file delivery lands its pull request wherever the repo allows auto-merge, which
-// would merge this one before the agent starts. This opens it the same way and asks the landing lane for
-// a review delivery, which starts the pull request's checks and merges nothing.
-async function openForAgent({ gh, log, root, repo, base, token, branch, taskId, files, title, body, message }) {
-  const remote = remoteUrl(repo, token);
-  const commit = pushGenerated(root, { remote, baseSha: baseTip(root, remote, base), branch, files, message: withTaskTrailer(message, taskId) });
-  const created = await gh(`/repos/${repo}/pulls`, { method: 'POST', body: { head: branch, base, title, body } });
-  const failure = pullCreateError(created.status, created.json);
-  if (failure) throw new Error(`opening the pull request for ${branch}: ${failure}`);
-  const pr = created.json;
-  await landDelivery({ token, repo, base, delivery: 'review', log, task: taskId, pr: { ...pr, head: { ...pr.head, ref: branch, sha: commit } } });
-  return { branch, number: pr.number };
+// The intake's commit, on the scratch tree, pushed as the run's branch: the push goes through the
+// engine, which holds the token and refuses anything touching the default branch.
+async function pushBranch(wt, branch, message) {
+  const local = (...args) => execFileSync('git', ['-C', wt, ...args], { encoding: 'utf8' }).trim();
+  local('add', '--', 'detection/lab');
+  local('-c', 'user.name=claudinite', '-c', 'user.email=claudinite@users.noreply.github.com', '-c', 'commit.gpgsign=false',
+    'commit', '--quiet', '-m', commitMessage(message));
+  const sha = local('rev-parse', 'HEAD');
+  const pushed = await engineGit('push', '--force', 'origin', `${sha}:refs/heads/${branch}`);
+  if (pushed.code !== 0) throw new Error(`pushing ${branch}: ${pushed.stderr.trim()}`);
+  return sha;
 }
 
-export async function worker({ gh, log, root, repo, defaultBranch, token, target, pack, task }) {
+export async function worker({ log, root, repo, defaultBranch, target, gh = makeGh(), token = process.env.GITHUB_TOKEN }) {
   const open = (await paged(gh, `/repos/${repo}/issues?state=open&labels=${LABEL}`)).filter((i) => !i.pull_request);
   const issues = [];
   for (const i of open) {
@@ -51,7 +50,8 @@ export async function worker({ gh, log, root, repo, defaultBranch, token, target
   const tmp = mkdtempSync(join(tmpdir(), 'gt-intake-'));
   const wt = join(tmp, 'repo');
   const git = (...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' });
-  git('fetch', '--quiet', 'origin', defaultBranch ?? 'main');
+  const fetched = await engineGit('fetch', '--quiet', 'origin', defaultBranch ?? 'main');
+  if (fetched.code !== 0) throw new Error(`fetching ${defaultBranch ?? 'main'}: ${fetched.stderr.trim()}`);
   git('worktree', 'add', '--quiet', '--detach', wt, 'FETCH_HEAD');
   try {
     const py = join(tmp, 'venv', 'bin', 'python');
@@ -64,19 +64,16 @@ export async function worker({ gh, log, root, repo, defaultBranch, token, target
     log(`added ${added.length ? added.map((n) => `#${n}`).join(' ') : 'nothing'}; refused ${Object.keys(refused).length}`);
 
     for (const [n, why] of Object.entries(refused)) {
-      await gh(`/repos/${repo}/issues/${n}/comments`, { method: 'POST', body: { body:
+      await github.createComment({ issue: Number(n), body:
         `${MARK}\nThis ground truth could not be added: ${why}.\n\n`
         + `Export it again from the NoR Finder page with the image opened from Google Drive, attach the new file here, `
-        + `and put the \`${LABEL}\` label back; the next daily intake will take it.` } });
+        + `and put the \`${LABEL}\` label back; the next daily intake will take it.` });
       await gh(`/repos/${repo}/issues/${n}/labels/${LABEL}`, { method: 'DELETE' });
     }
     if (!added.length) return undefined;
 
     run(py, ['detection/ground_truth.py', 'fetch']);
     const scores = run(py, ['tests/test_quality.py', '--accept']).split('\n').filter((l) => / real found, /.test(l)).join('\n');
-    const changed = execFileSync('git', ['-C', wt, 'status', '--porcelain', '--untracked-files=all', '--', 'detection/lab'], { encoding: 'utf8' })
-      .split('\n').filter(Boolean).map((l) => l.slice(3));
-    const files = Object.fromEntries(changed.map((p) => [p, readFileSync(join(wt, p), 'utf8')]));
     const body = [
       `Adds ${added.length} ground-truth submission(s) from the NoR Finder page to \`detection/lab/ground_truth/\` and re-records the quality baseline against the new reference (submitted labels outrank older ones: docs/requirements.md R10).`,
       '',
@@ -87,8 +84,11 @@ export async function worker({ gh, log, root, repo, defaultBranch, token, target
       scores.trim(),
       '```',
     ].join('\n');
-    const d = await openForAgent({ gh, log, root, repo, base: defaultBranch ?? 'main', token, branch: target.branch, taskId: `${pack}/${task}`, files, title: `Ground truth: add ${added.map((n) => `#${n}`).join(', ')}`, body,
-      message: `Add ground truth from ${added.map((n) => `#${n}`).join(', ')}` });
+    const branch = target.branch;
+    if (!branch) throw new Error('the run was handed no target branch to open its pull request from');
+    await pushBranch(wt, branch, `Add ground truth from ${added.map((n) => `#${n}`).join(', ')}`);
+    const pr = await github.openPr({ title: `Ground truth: add ${added.map((n) => `#${n}`).join(', ')}`, body, head: branch, base: defaultBranch ?? 'main' });
+    const d = { number: pr.number, branch };
     log(`opened #${d.number} on ${d.branch}, left open for the agent`);
     return { requestAgent: { delivered: { pr: d.number, branch: d.branch }, reason: { code: 'ground-truth-added', detail: `${added.length} submission(s) added` } } };
   } finally {

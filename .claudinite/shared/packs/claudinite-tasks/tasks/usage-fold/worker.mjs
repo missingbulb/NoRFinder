@@ -33,25 +33,28 @@
 //      settings allow - leaving out a file whose recompute is byte-identical apart
 //      from its stamp, and opening NOTHING when both are.
 //
+// Every remote read and write goes through the engine (`@claudinite/sdk`): the fetches
+// and the push through its `git`, the pull request through its `openPr`. The REST
+// listings in steps 3-5 have no engine action, so they read the job's own token,
+// which the executor leaves in every work step's environment.
+//
 // The aggregate lives under `.claudinite/usage/`, beside the repo's other rolling
 // records, where the vendoring refresh never reaches; the mount root itself is
 // read-only canon.
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { baseTip, readAt, readRollingAt, remoteUrl } from '../../public/delivery.mjs';
-import { AUTOMERGE_TRAILER } from '../../src/contract/merge-policy.mjs';
+import { config as packConfigOf, git as engineGit, packs as declaredPacks } from '@claudinite/sdk';
+import { baseTip, readAt, readRollingAt, deliver as deliverFiles } from './deliver.mjs';
 
 import {
-  countEntries, foldUsage, encodeUsage, decodeUsage, mountedCorpus, DAY_WINDOW_DAYS,
+  countEntries, foldUsage, encodeUsage, decodeUsage, mountedCorpus, DAY_WINDOW_DAYS, isoWeek,
 } from './fold-usage.mjs';
-import { renderUsageFile, withoutStamp } from '../../src/items/usage-format.mjs';
+import { renderUsageFile, withoutStamp } from './usage-format.mjs';
+import { checkBuildReport, renderCheckBuildReport } from './check-build.mjs';
 import { makeReader, readRuns } from './read-runs.mjs';
 import { makeReader as makeQueueReader, readQueueOutcomes } from './read-queue.mjs';
 import { readMergedPrs, prRecordsFrom } from './read-prs.mjs';
-import { settingsPath } from '../../../../engine/settings-file.mjs';
-import { TASKS_USAGE_PATH } from '../../src/items/tasks-usage-format.mjs';
+import { TASKS_USAGE_PATH } from './tasks-usage-format.mjs';
 import { foldMachinery } from './machinery-half.mjs';
 
 const BRANCH = 'conversation-logs';
@@ -104,12 +107,19 @@ export function parseEntries(text) {
   return out;
 }
 
+// git against the remote, through the engine: the job's token reaches only these.
+async function remoteGit(...args) {
+  const r = await engineGit(...args);
+  if (r.code !== 0) throw new Error(`git ${args[0]} exited ${r.code}: ${r.stderr.trim()}`);
+  return r.stdout;
+}
+
 // Fetch the logs branch and return its capture files. Returns null when the branch
 // does not exist — a repo that has never captured has nothing to fold, which is a
 // clean no-op rather than a failure.
-function logFiles(root, remote) {
-  if (!git(root, ['ls-remote', '--heads', remote, BRANCH]).trim()) return null;
-  git(root, ['fetch', '--quiet', remote, BRANCH]);
+async function logFiles(root) {
+  if (!(await remoteGit('ls-remote', '--heads', 'origin', BRANCH)).trim()) return null;
+  await remoteGit('fetch', '--quiet', 'origin', BRANCH);
   const tip = git(root, ['rev-parse', 'FETCH_HEAD']).trim();
   const names = git(root, ['ls-tree', '--name-only', tip]).split('\n').filter(Boolean);
   return { tip, names: names.filter((n) => parseLogName(n) !== null).sort() };
@@ -166,10 +176,10 @@ export function parseCommitLog(text) {
 // Returns which path ran, so the log says whether the deepen engaged: a fetch that
 // silently did nothing and a checkout that never needed one produce the same series
 // and must not read the same in the log.
-export function deepenHistory(git, root, remote, base, sinceIso) {
+export async function deepenHistory(git, root, fetch, base, sinceIso) {
   try {
     if (git(root, ['rev-parse', '--is-shallow-repository']).trim() !== 'true') return 'complete';
-    git(root, ['fetch', '--quiet', `--shallow-since=${sinceIso}`, remote, base]);
+    await fetch('fetch', '--quiet', `--shallow-since=${sinceIso}`, 'origin', base);
     return 'deepened';
   } catch {
     // A server that will not deepen, or a window with no commits in it: the series is
@@ -244,17 +254,15 @@ export function dayLadder(nowIso, days = DAY_WINDOW_DAYS) {
 // The session half: capture files, run listings, closed items, merged PRs and the git
 // history, folded into `USAGE_PATH`. Hands back the file, or nothing when the
 // recompute is byte-identical apart from its stamp.
-async function foldSessions({ root, repo, token, base, remote, baseSha, now, log }) {
+async function foldSessions({ root, repo, token, base, baseSha, declared, now, log }) {
   // No logs branch is not "nothing to do": the capture-derived half of the
   // aggregate is empty, but every other source — the run listings, the queue's own
   // closed items, the git history — exists as soon as the repo has a scheduler, and a
   // repo whose sessions are all unattended is exactly the one worth counting.
-  const found = logFiles(root, remote);
+  const found = await logFiles(root);
   if (found === null) log(`no ${BRANCH} branch — nothing captured yet; folding the run, queue and git sources only`);
 
-  let config = {};
-  try { config = JSON.parse(readFileSync(settingsPath(root), 'utf8')); } catch { /* no declaration */ }
-  const corpus = await mountedCorpus(root, config);
+  const corpus = await mountedCorpus(root, declared);
 
   const files = (found?.names ?? []).map((name) => ({
     ...parseLogName(name),
@@ -291,7 +299,7 @@ async function foldSessions({ root, repo, token, base, remote, baseSha, now, log
 
   const ladder = dayLadder(now);
   const windowStart = `${ladder[0]}T00:00:00Z`;
-  log(`git history: ${deepenHistory(git, root, remote, base, windowStart)} for the window from ${ladder[0]}`);
+  log(`git history: ${await deepenHistory(git, root, remoteGit, base, windowStart)} for the window from ${ladder[0]}`);
   const commits = commitSeries(git, root, baseSha, windowStart);
   if (commits === null) log('the local git history could not be read — the commit and line rows are absent this run');
   else if (commits.coveredFrom > ladder[0]) {
@@ -301,7 +309,7 @@ async function foldSessions({ root, repo, token, base, remote, baseSha, now, log
   if (releases === null) log('the releases listing could not be read — the release rows are absent this run');
   else if (releases.truncated) log('more than 100 releases exist — the far end of the release series may be under-counted');
 
-  const text = renderUsageFile(encodeUsage(foldUsage({
+  const folded = foldUsage({
     files,
     prior,
     today: now.slice(0, 10),
@@ -314,7 +322,9 @@ async function foldSessions({ root, repo, token, base, remote, baseSha, now, log
     prRecords: prRecordsFrom({ prs: prs.prs, files }),
     prsFoldedThrough: prs.watermark,
     dayFields: dayFieldsFrom({ commits, releases, ladder }),
-  })));
+  });
+  const text = renderUsageFile(encodeUsage(folded));
+  const report = renderCheckBuildReport(checkBuildReport(folded.weeks, isoWeek(now.slice(0, 10))));
 
   const summary = `${files.length} capture file(s), ${runs.runs.length} run(s), ${queue.records.length} closed item(s) `
     + `and ${prs.prs.length} merged PR(s)`;
@@ -323,41 +333,42 @@ async function foldSessions({ root, repo, token, base, remote, baseSha, now, log
   // that would otherwise make every fold a PR.
   const landed = readAt(root, baseSha, USAGE_PATH);
   if (landed !== null && withoutStamp(landed) === withoutStamp(text)) {
-    return { files: {}, moves: {}, summary: `${summary} - byte-identical` };
+    return { files: {}, moves: {}, summary: `${summary} - byte-identical`, report };
   }
-  return { files: { [USAGE_PATH]: text }, moves: rolling.moves, summary };
+  return { files: { [USAGE_PATH]: text }, moves: rolling.moves, summary, report };
 }
 
 // Runs every half, then lands whatever changed on ONE pull request. A half that
 // throws costs only its own file: the others still deliver, and the run then fails
 // with every half's error, so a broken half is never mistaken for a quiet one.
-export async function deliverFolds({ halves, deliver, automerge, log }) {
+export async function deliverFolds({ halves, deliver, log }) {
   const files = {};
   const moves = {};
   const failures = [];
   const summaries = [];
+  const reports = [];
   for (const [name, fold] of Object.entries(halves)) {
     try {
       const out = await fold();
       Object.assign(files, out.files);
       Object.assign(moves, out.moves);
       summaries.push(`${name}: ${out.summary}`);
+      if (out.report?.length) reports.push('', ...out.report);
     } catch (err) {
       log(`the ${name} half failed - its file is unchanged this run: ${err?.stack ?? err}`);
       failures.push(`${name}: ${err?.message ?? err}`);
     }
   }
-  for (const line of summaries) log(line);
+  for (const line of [...summaries, ...reports]) log(line);
 
   if (Object.keys(files).length) {
     const pr = await deliver({
       files,
       moves,
-      // The arming trailer carries the task's own automerge, so the
+      // The engine stamps the task's trailers, its automerge among them, so the
       // automerge-policy-scope check re-measures this delivery's diff wherever the
-      // PR's CI runs check_the_work - the code lane's equivalent of the agent
-      // lane's stamp-before-merge.
-      message: `Claudinite: fold usage\n\n${AUTOMERGE_TRAILER}: ${automerge}`,
+      // PR's CI runs.
+      subject: 'Claudinite: fold usage',
       title: 'Claudinite: usage fold',
       body: [
         'Regenerated the repo\'s rolling usage records:',
@@ -378,10 +389,10 @@ export async function deliverFolds({ halves, deliver, automerge, log }) {
         'A file whose recompute differs only in its `generated` stamp is left out, and a fold',
         'where neither moved opens no PR at all. Machine-written - never hand-edit either;',
         'each fold starts from the last, so a lost copy is lost history.',
+        ...reports,
       ].join('\n'),
     });
-    log(`${pr.reused ? 'updated' : 'opened'} PR ${pr.number !== null ? `#${pr.number}` : `on ${pr.branch}`}`
-      + `${pr.merged ? ' (landed)' : pr.delivery === 'review' ? ' (left for review)' : ''}`);
+    log(`${pr.reused ? 'updated' : 'opened'} PR ${pr.number !== null ? `#${pr.number}` : `on ${pr.branch}`}`);
   } else if (!failures.length) {
     log('every recompute is byte-identical - nothing to deliver');
   }
@@ -389,17 +400,19 @@ export async function deliverFolds({ halves, deliver, automerge, log }) {
   if (failures.length) throw new Error(`usage fold: ${failures.join('; ')}`);
 }
 
-export async function worker({ root, repo, token, defaultBranch, automerge, deliver, log: runLog }) {
+export async function worker({ root, repo, defaultBranch, target, log: runLog }) {
   log = runLog;
   const base = defaultBranch ?? 'main';
-  const remote = remoteUrl(repo, token);
-  const baseSha = baseTip(root, remote, base);
+  const token = process.env.GITHUB_TOKEN ?? null;
+  const baseSha = await baseTip(root, base);
   const now = new Date().toISOString();
+  const [declared, packConfig] = await Promise.all([declaredPacks(), packConfigOf('claudinite-tasks')]);
   await deliverFolds({
     halves: {
-      sessions: () => foldSessions({ root, repo, token, base, remote, baseSha, now, log }),
-      machinery: () => foldMachinery({ root, repo, token, baseSha, now, log }),
+      sessions: () => foldSessions({ root, repo, token, base, baseSha, declared, now, log }),
+      machinery: () => foldMachinery({ root, repo, token, baseSha, packConfig, now, log }),
     },
-    deliver, automerge, log,
+    deliver: (change) => deliverFiles({ root, base, target, ...change }),
+    log,
   });
 }

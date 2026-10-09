@@ -1,14 +1,8 @@
-/.claudinite-hooks.log
-/.claudinite-hooks.log.tmp
-/.claudinite/temp/
 __pycache__/
 *.pyc
 
 # raw microscope data, fetched from Drive (python3 src/fetch_data.py), never committed
 /data/raw/
-
-# per-session copy of the person's own pack (claude-code-web-users-support), never committed
-/.claudinite/temp/
 
 # detection processing artifacts (image cache, perf timings), never committed
 /detection/.cache/

@@ -12,13 +12,13 @@ The version. [public-website](../public-website/README.md) owns the scheme and t
 
 | Check | Severity | Reason | Enforcement |
 |---|---|---|---|
-| `gp/site-config` | high | correctness | check: blocking |
-| `gp/deploy-workflow` | high | correctness | check: blocking |
+| `site-config` | high | correctness | check: blocking |
+| `deploy-workflow` | high | correctness | check: blocking |
 
 What each holds:
 
-- `gp/site-config`: `.github/site.config` exists with its three explicit keys, no unknown keys, every publish path tracked, no tooling directory published, and an `index.html` in the set.
-- `gp/deploy-workflow`: the vendored deploy workflow is present, named, dispatch-only and building from the mount, and no other workflow publishes to Pages.
+- `site-config`: `.github/site.config` exists with its three explicit keys, no unknown keys, every publish path tracked, no tooling directory published, and an `index.html` in the set.
+- `deploy-workflow`: the vendored deploy workflow is present, named, dispatch-only and building from the mount, and no other workflow publishes to Pages.
 
 Relevance for both is **two independent signals, either sufficient**: the site config, or the vendored deploy workflow.
 
@@ -37,7 +37,7 @@ Relevance for both is **two independent signals, either sufficient**: the site c
 | Rule | Severity | Reason | Enforcement |
 |---|---|---|---|
 | The site is served from a subpath | high | correctness | prose: <50 words |
-| One path to production | high | correctness | prose: <100 words + check (`gp/deploy-workflow`) |
+| One path to production | high | correctness | prose: <100 words + check (`deploy-workflow`) |
 
 ## Adoption
 

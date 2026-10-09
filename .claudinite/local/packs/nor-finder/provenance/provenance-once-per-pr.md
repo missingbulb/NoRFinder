@@ -19,3 +19,12 @@
   decision landing in one ordinary PR, while rare, is not a defect.
 - **Retire when:** `provenance.mjs append` itself refuses or folds a second call naming an element
   whose file already changed within the current branch, making the check's job structural.
+
+## 2026-10-09 · moved · the repo moved off the Node engine, which ran the JavaScript check; cn runs Go checks
+- **Reason:** cn runs no JavaScript check, so the rule would have stopped firing silently with the
+  move.
+- **Actor:** @missingbulb (owner), re-adoption onto cn.
+- **Model:** Claude.
+- **Mechanism:** the same work-scope advisory check, ported line for line to
+  `checks/provenance_once_per_pr.go`; proven to fire on a branch adding two entries and to stay
+  silent under a `Provenance: backfill` commit.

@@ -9,13 +9,12 @@
 // publish path that does not exist fails the run (a rename that silently dropped a
 // directory from the site is exactly what the explicit list is for), and so does an
 // assembled site with no index.html at its root (a site whose "/" 404s is a broken
-// deploy, not a deploy). `gp/site-config` holds the same two on the repo, so a
+// deploy, not a deploy). `site-config` holds the same two on the repo, so a
 // release that reaches this step has already passed them once.
 import { execSync } from 'node:child_process';
-import { appendFileSync, cpSync, existsSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
+import { appendFileSync, cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { removeTree } from '../../engine/remove-tree.mjs';
 import { CONFIG_PATH, parseConfig, publishSet, SITE_DIR } from './lib.mjs';
 
 // The declared build variables against the repo's `vars`. A DECLARED NAME WITH NO
@@ -44,7 +43,7 @@ const filesUnder = (dir, base = dir) => readdirSync(dir, { withFileTypes: true }
 export function assemble(root, values, dest = SITE_DIR) {
   const { siteRoot, paths, fullOf } = publishSet(values);
   const target = join(root, dest);
-  removeTree(target);
+  rmSync(target, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 });
   mkdirSync(target, { recursive: true });
   for (const p of paths) {
     const source = join(root, fullOf(p));

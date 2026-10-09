@@ -22,3 +22,13 @@
 - **Model:** Claude, per the commit trailer.
 - **Mechanism:** the worker opens the pull request itself and hands it to the landing lane as a
   review delivery, which starts its checks and merges nothing.
+
+## 2026-10-09 · policy-changed · the worker moved onto cn's task SDK with the repo's move off the Node engine
+- **Reason:** the Node tasks pack's delivery and trailer helpers it imported are gone under cn.
+- **Actor:** @missingbulb (owner), re-adoption onto cn.
+- **Model:** Claude.
+- **Mechanism:** the commit carries the SDK's trailers, the push goes through the SDK's `git`, and
+  the pull request opens through `github.openPr`; the task's `automerge: nothing` keeps it open for
+  the agent, which replaces the old explicit review delivery. Refusal comments go through
+  `github.createComment`; reading issues and comments and removing the label stay REST calls under
+  the job token.

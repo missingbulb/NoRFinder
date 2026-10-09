@@ -1,6 +1,6 @@
 {
-  "version": "60928.1",
-  "minEngineVersion": "60928.1",
+  "version": "1.61005.1",
+  "minEngineVersion": "1.61001.1",
   "ruleRoutingGuidance": {
     "belongs": "serving a site from GitHub Pages: the nightly release, the vendored deploy workflow, site.config, the serving subpath",
     "excludes": "the version scheme and the page stamp — public-website; markup — html"
@@ -17,7 +17,7 @@
     {
       "id": "publish_set",
       "prompt": "Which files and folders make up the published site — the exact list, and the directory it is rooted at? The artifact is built from this list and nothing else, so name the pages, assets and data the site actually serves (not \"everything except the tooling\").",
-      "distill": "written into the repo's own .github/site.config as publish_root + publish_paths (with build_command), which is where the deploy's build step and the gp/site-config check both read it"
+      "distill": "written into the repo's own .github/site.config as publish_root + publish_paths (with build_command), which is where the deploy's build step and the site-config check both read it"
     }
   ],
   "adoptionHandover": [
