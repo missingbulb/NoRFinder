@@ -1,8 +1,10 @@
 # NoRFinder
 
-Automated  detection of Nodes of Ranvier
+A research page for image-analysis studies, and the studies that run in it. The first study is
+automated detection of Nodes of Ranvier.
 
-Start here: **[docs/WARMUP.md](docs/WARMUP.md)** — the project map, current status and open questions.
+Start here: **[docs/WARMUP.md](docs/WARMUP.md)** — the repo map: the shell, the study contract and
+how to add a study.
 
-- [docs/project-brief.md](docs/project-brief.md) — the specification, ingested from the owner's overview document
-- [docs/literature/](docs/literature/README.md) — the literature review
+- [studies/nor/](studies/nor/docs/WARMUP.md) — the NoR Finder study: its brief, literature, finders
+  and ground truth

@@ -16,7 +16,7 @@ for (const base of [here, path.join(here, "..", "detection", "browser")]) {
 }
 if (!entry) { console.error("no pyodide: npm i --prefix detection/browser pyodide@314.0.7"); process.exit(2); }
 const { loadPyodide } = await import(pathToFileURL(entry).href);
-const { bridge } = await import(pathToFileURL(path.join(here, "..", "web", "bridge.js")).href);
+const { bridge } = await import(pathToFileURL(path.join(here, "..", "..", "..", "web", "bridge.js")).href);
 
 const STAND_IN = `
 import json

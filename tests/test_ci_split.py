@@ -18,7 +18,8 @@ def marked_full(path):
 
 
 def test_every_heavy_test_is_in_the_full_set():
-    heavy = [p for p in sorted(glob.glob(os.path.join(HERE, 'test_*.py')))
+    every = glob.glob(os.path.join(HERE, 'test_*.py')) + glob.glob(os.path.join(HERE, '..', 'studies', '*', 'tests', 'test_*.py'))
+    heavy = [p for p in sorted(every)
              if any(h in open(p).read() for h in HEAVY) and not p.endswith('test_ci_split.py')]
     assert len(heavy) >= 7, f'found only {len(heavy)} heavy test modules: the probe is not looking at them all'
     unmarked = [os.path.basename(p) for p in heavy if not marked_full(p)]

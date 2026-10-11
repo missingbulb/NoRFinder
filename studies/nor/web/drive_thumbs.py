@@ -1,9 +1,9 @@
 """Writes the Google Drive dialog's ready-made thumbnails: one small JPEG per image named in
 data/sources.json, coloured as the page draws it (red Nav, green Caspr, blue DAPI), at
-web/drive_thumbs/<drive id>.jpg, and index.json listing the ids that have one. The dialog shows them
+studies/nor/web/drive_thumbs/<drive id>.jpg, and index.json listing the ids that have one. The dialog shows them
 instead of reading the images from Drive. Needs the images in data/raw/ (src/fetch_data.py); run it
 whenever sources.json changes:
-    python3 web/drive_thumbs.py
+    python3 studies/nor/web/drive_thumbs.py
 """
 import json
 import os
@@ -13,13 +13,13 @@ import numpy as np
 from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.join(HERE, '..')
+ROOT = os.path.join(HERE, '..')  # the study
 sys.path.insert(0, os.path.join(ROOT, 'detection'))
 import naive_nor
 
 OUT = os.path.join(HERE, 'drive_thumbs')
 SIDE = 96  # twice the dialog's 48 px, for sharp screens
-GAIN = 2  # the most a thumbnail is brightened (web/app.js brightens the ones it saves alike)
+GAIN = 2  # the most a thumbnail is brightened (the page brightens the ones it saves alike)
 
 
 def images(manifest):

@@ -124,11 +124,10 @@ def test_the_newest_attachment_is_the_submission():
 
 def test_the_page_and_the_intake_use_one_label():
     # the page opens the issue with its label and the intake task looks for it: two languages, one value
-    import re
-    root = os.path.join(HERE, '..')
-    page = re.search(r'GT_LABEL = "([^"]+)"', open(os.path.join(root, 'web', 'app.js')).read()).group(1)
+    import json, re
+    page = json.load(open(os.path.join(HERE, '..', 'study.json')))['groundTruth']['label']
     task = re.search(r"LABEL = '([^']+)'", open(os.path.join(
-        root, '.claudinite', 'local', 'packs', 'nor-finder', 'tasks', 'ground-truth-intake', 'label.mjs')).read()).group(1)
+        HERE, '..', '..', '..', '.claudinite', 'local', 'packs', 'nor-finder', 'tasks', 'ground-truth-intake', 'label.mjs')).read()).group(1)
     assert page == task == 'new-ground-truth'
 
 

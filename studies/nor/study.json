@@ -1,0 +1,27 @@
+{
+  "id": "nor",
+  "title": "NoR Finder",
+  "viewer": "image2d",
+  "python": {
+    "paths": ["detection/", "src/"],
+    "entry": "interactive",
+    "packages": ["numpy", "scipy", "scikit-image", "lazy-loader", "packaging", "pillow"],
+    "wheels": ["tifffile==2026.3.3"]
+  },
+  "web": { "module": "web/nor.js", "panels": "web/nor.html", "style": "web/nor.css" },
+  "files": {
+    "accept": ".tif,.tiff,.png",
+    "empty": "Load a three-channel ImageJ TIFF (Caspr green, Nav red, DAPI) or an RGB PNG, then press Find Candidates."
+  },
+  "channels": [
+    { "key": "r", "name": "Nav1.6", "title": "Nav1.6: sodium channels at the node (shown red)", "shown": true },
+    { "key": "g", "name": "Caspr", "title": "Caspr: the paranodes either side of the node (shown green)", "shown": true },
+    { "key": "b", "name": "DAPI", "title": "DAPI: cell nuclei (shown blue)", "shown": false }
+  ],
+  "progress": {
+    "open": "Reading the image and building the blue mask…",
+    "detect": "Finding candidates (the slow part)…"
+  },
+  "groundTruth": { "label": "new-ground-truth" },
+  "driveThumbs": "web/drive_thumbs/"
+}

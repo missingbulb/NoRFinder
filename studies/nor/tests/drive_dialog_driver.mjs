@@ -19,7 +19,7 @@ try { pw = require("playwright"); } catch {
   try { pw = require(path.join(execSync("npm root -g").toString().trim(), "playwright")); } catch { console.error("no playwright: npm i -g playwright"); process.exit(2); }
 }
 const [shot, ...images] = process.argv.slice(2);
-const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const ROOT = "rootfolder0000000001", SUB = "subfolder00000000001";
 const lab = JSON.parse(fs.readFileSync(path.join(repo, "data", "sources.json"), "utf8")).sources.flatMap((x) => x.files || []);

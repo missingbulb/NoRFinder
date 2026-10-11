@@ -1,5 +1,5 @@
 // The intake, by code: every open issue labelled new-ground-truth has its attached file added to the
-// ground-truth data set (detection/ground_truth.py ingest), the quality baseline is re-recorded against the
+// ground-truth data set (studies/nor/detection/ground_truth.py ingest), the quality baseline is re-recorded against the
 // new reference, and the result is opened as this run's pull request, which closes the issues it took
 // when merged. The task's automerge policy is nothing, so the pull request stays open: the agent works on
 // it next, and only a person merges it. A submission that cannot be used gets a comment saying why and loses the label, so it waits
@@ -28,7 +28,7 @@ async function paged(gh, path) {
 // engine, which holds the token and refuses anything touching the default branch.
 async function pushBranch(wt, branch, message) {
   const local = (...args) => execFileSync('git', ['-C', wt, ...args], { encoding: 'utf8' }).trim();
-  local('add', '--', 'detection/lab');
+  local('add', '--', 'studies/nor/detection/lab');
   local('-c', 'user.name=claudinite', '-c', 'user.email=claudinite@users.noreply.github.com', '-c', 'commit.gpgsign=false',
     'commit', '--quiet', '-m', commitMessage(message));
   const sha = local('rev-parse', 'HEAD');
@@ -59,7 +59,7 @@ export async function worker({ log, root, repo, defaultBranch, target, gh = make
     run('python3', ['-m', 'venv', join(tmp, 'venv')]);
     run(py, ['-m', 'pip', 'install', '--quiet', '-r', 'requirements.txt']);
     writeFileSync(join(tmp, 'issues.json'), JSON.stringify(issues));
-    run(py, ['detection/ground_truth.py', 'ingest', join(tmp, 'issues.json'), '--out', join(tmp, 'result.json')], { GITHUB_TOKEN: token });
+    run(py, ['studies/nor/detection/ground_truth.py', 'ingest', join(tmp, 'issues.json'), '--out', join(tmp, 'result.json')], { GITHUB_TOKEN: token });
     const { added, refused } = JSON.parse(readFileSync(join(tmp, 'result.json'), 'utf8'));
     log(`added ${added.length ? added.map((n) => `#${n}`).join(' ') : 'nothing'}; refused ${Object.keys(refused).length}`);
 
@@ -72,10 +72,10 @@ export async function worker({ log, root, repo, defaultBranch, target, gh = make
     }
     if (!added.length) return undefined;
 
-    run(py, ['detection/ground_truth.py', 'fetch']);
-    const scores = run(py, ['tests/test_quality.py', '--accept']).split('\n').filter((l) => / real found, /.test(l)).join('\n');
+    run(py, ['studies/nor/detection/ground_truth.py', 'fetch']);
+    const scores = run(py, ['studies/nor/tests/test_quality.py', '--accept']).split('\n').filter((l) => / real found, /.test(l)).join('\n');
     const body = [
-      `Adds ${added.length} ground-truth submission(s) from the NoR Finder page to \`detection/lab/ground_truth/\` and re-records the quality baseline against the new reference (submitted labels outrank older ones: docs/requirements.md R10).`,
+      `Adds ${added.length} ground-truth submission(s) from the NoR Finder page to \`studies/nor/detection/lab/ground_truth/\` and re-records the quality baseline against the new reference (submitted labels outrank older ones: studies/nor/docs/requirements.md R10).`,
       '',
       ...added.map((n) => `Closes #${n}`),
       '',

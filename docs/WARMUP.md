@@ -1,151 +1,66 @@
-# Session warm-up — read this first
+# Repo warm-up — read this first
 
-The map for a fresh session. If you read only one file, read this one, then
-[`project-brief.md`](project-brief.md).
+The repo is **one page and several studies**. The page (`web/`, the shell) knows how to load an
+image, run Python in the browser, show the image, keep the user's settings and send ground truth to
+GitHub. A study (`studies/<id>/`) is one piece of research: its data, its algorithms, its own flow
+on the page, its ground truth and its docs. The shell knows no study; a study knows the shell only
+through the contract below. [`requirements.md`](requirements.md) states what that means as tests.
 
-## What this project is
+Working on a study? Read its own warm-up next: [NoR Finder](../studies/nor/docs/WARMUP.md).
 
-Automated detection, counting and length measurement of **Nodes of Ranvier** in two-channel
-immunofluorescence microscopy images of CNS tissue. A node is identified by a **spatial
-arrangement**, not by colour: two Caspr-labelled paranodes with a Na<sub>v</sub>1.6-labelled node
-between them, all three collinear along one axon.
+## Layers
 
-Three requirements, in order of dependency:
+| Layer | Where | Swapped by |
+|---|---|---|
+| Shell: loading (computer, Google Drive), the Python runtime, status and memory, notices, theme, side bars, version history, downloads, ground-truth submission | `web/` | — |
+| Viewer: shows the opened image and what a study draws over it, zoom, pan, the thumbnail, channel toggles | `web/viewer2d.js` | a study's `viewer` |
+| Study: its panels, its flow, its Python | `studies/<id>/` | `?study=<id>` |
 
-1. **MVP** — detect and count all nodes; output count, per-node coordinates, and a visualization
-   for manual control.
-2. **Horizontal-node selection** — pick the nodes oriented so length can be measured reliably.
-3. **Node length** — plot-profile method on the Caspr channel, with a tunable threshold.
+A 3D viewer is a second module beside `viewer2d.js` with the same interface; a method shared by
+several studies (the NoR study's candidates-then-filters flow, say) is lifted out of its study once a
+second study needs it, not before.
 
-Full specification, including the parts the overview leaves unstated:
-[`project-brief.md`](project-brief.md).
+## The study contract
 
-## Where things stand — 2026-09-04
+A study is a folder with a `study.json`:
 
-**Literature review done, six sources read in full. Nothing else exists yet.**
+- `viewer` — the viewer it is shown in (`image2d`).
+- `python` — `paths` (folders, relative to the study, its modules are imported from), `entry` (the
+  module the page imports), `packages` (from Pyodide's own set) and `wheels` (from PyPI, vendored
+  by `web/build.py`).
+- `web` — `module`, an ES module exporting `mount(shell)`; `panels`, an HTML file of `<template
+  data-slot="…">` elements the shell puts into its slots before mounting; `style`, its stylesheet.
+- `files` — what Load accepts, and the text the empty view shows.
+- `channels` — the image's channels as the viewer shows them: key (`r`, `g`, `b`), name, title,
+  whether shown at first.
+- `progress` — the status line for each Python action while it runs.
+- `groundTruth.label` — the GitHub issue label its submissions carry.
+- `driveThumbs` — optional, the folder of ready-made thumbnails for the Google Drive dialog.
 
-- ✅ Project overview ingested durably ([`project-brief.md`](project-brief.md) +
-  [`figures/`](figures/)) — the PDF upload path does not persist, these files are the record.
-- ✅ Literature review ([`literature/`](literature/README.md)), issues
-  [#5](https://github.com/missingbulb/NoRFinder/issues/5) and
-  [#8](https://github.com/missingbulb/NoRFinder/issues/8). Nothing is unreachable.
-- ✅ **Real sample data: 55 owner images**, fetched from Drive by `src/fetch_data.py` and pinned by
-  checksum in [`../data/sources.json`](../data/sources.json) — never committed (R6). Single-plane,
-  3-channel, 16-bit, 0.1746 µm/px read from the files. **Channel order varies between files** —
-  read [`../data/README.md`](../data/README.md) before touching them. The images in `figures/`
-  remain document illustrations — **no number may be measured off them.**
-- ❌ **No ground truth.** No annotated image, and no stated annotation convention.
-- ✅ **R1 — scale-free baseline detector + transform-invariance harness**
-  ([`results/`](results/README.md), #10). Tier-1 invariance is exact and pinned by
-  `tests/test_invariance.py`; the scale envelope is measured at ~0.85×–2.5×.
-- ❌ **No accuracy metric, and none is possible yet** — no ground truth. The harness measures the
-  detector against *itself*, which says nothing about whether it finds the right nodes.
-- ❌ **No scoring harness** (needs annotations), no z-stack handling, no µm output path.
+Its Python entry module offers `ready()` (JSON, what the page needs before any image) and
+`Session(path)` with `opened()` (JSON meta and the viewer's image bytes) and `call(action, args)`
+(JSON result and optional bytes). The shell forwards every call and knows none of their meanings.
+`studies/fixture/` is the smallest study there is; the shell's own tests run on it.
 
-Run the tests: `pip install -r requirements.txt && python3 detection/ground_truth.py fetch && python3 -m pytest tests` (the page tests also need `npm i --prefix detection/browser pyodide@314.0.7` and Playwright's Chromium). CI runs the fast set (`-m "not full"`, no Node or browser) on every PR (`.github/workflows/tests.yml`) and every test nightly and on each push to main (`.github/workflows/tests-full.yml`), where a green run wakes the site release.
-Fetch the raw data: `python3 src/fetch_data.py`
-
-## What blocks starting
-
-In priority order. The first two block the MVP; the third blocks §5.3 entirely.
-
-1. ~~**Real sample images**~~ — arrived 2026-09-25: 55 single-plane, 3-channel TIFFs with pixel size
-   in their metadata ([`../data/README.md`](../data/README.md)). Still no z-stack.
-2. **Ground-truth annotations** on at least a few of them, plus the convention used to make them
-   (what mark means "node"). Per the research playbook, ground truth is **annotated, never
-   invented** — we do not get to label these ourselves.
-3. **Native multi-channel files, not exports.** Blocks the µm output of §5.3, the z-stack that the
-   reference horizontality criterion needs, and unambiguous channel identity. Not a blocker on
-   detection at all — see [`requirements.md`](requirements.md) R1/R3.
-   The 2026-09-25 files carry µm per pixel, so the µm output is unblocked; the z-stack and a
-   recorded channel identity are still missing (the raw `.sld` has both).
-
-## Settled — do not re-open these
-
-- **The pipeline is scale-free and unit-free; physical units enter once, at output.**
-  [`requirements.md`](requirements.md) R1 and R3.
-- **Detection must be invariant to rescaling, rotation and reflection**, in three tiers — exact for
-  the resampling-free transforms, within tolerance for the rest, and with the working scale range
-  *measured* rather than promised. R2.
-- **The node-length definition is not chosen up front.** All the definitions are computed and
-  reported side by side; the owner's own hand measurements pick the winner later. R4. The owner
-  should not be asked to choose a definition again — only to demonstrate how they measure a node.
-- **The corpus includes pathological tissue, not only controls.** R5.
-
-## Open questions for the owner
-
-- **Should void nodes (Caspr pair, no Nav) and heminodes be counted and reported separately?** They
-  are excluded by the current rules, they are biologically real, and their frequency changes with
-  injury — so excluding them silently biases group comparisons. More pressing now that pathological
-  tissue is confirmed ([`literature/node-biology.md`](literature/node-biology.md) §4).
-- **What is the cost asymmetry between a false positive and a missed node?** Unstated, and it is
-  the trade-off the MVP is tuned against.
-- **Is there an existing lab macro or script for this?** The literature has none; an unpublished one
-  would not surface in a search.
-
-## How to work here
-
-Claudinite's **research-project** pack governs, and its rules load into every session here, so
-there is nothing to go and read. The parts that bite hardest on this project:
-
-- **Show, don't tell.** Every algorithmic change is presented as a rendered comparison — original |
-  result, and against ground truth where scoring applies — inline in the conversation. The picture
-  leads; metrics confirm.
-- **Prototype in the scratchpad first.** Tracked code is touched only after the visual result is
-  right.
-- **Don't overfit.** No single-image special-casing. And specifically here: **no rule may bake in an
-  assumed node length**, because node length is what the project measures — which is also why the
-  spec's 1–2 µm plausibility window becomes a ratio rather than a constant
-  ([`requirements.md`](requirements.md) R1).
-- **No absolute pixel or µm constants anywhere in a decision rule**, and every change is checked
-  against the transform-invariance harness before it is scored for accuracy (R2).
-- **Record each accepted change** as a numbered iteration note (`R1`, `R2`, …) — what was wrong,
-  what changed, the metric delta, and *what was tried and rejected*.
-
-Standing preferences learned so far are folded into this doc; if the owner corrects *how* work is
-done, it belongs here (or in the doc that owns the topic), not just in the reply.
-
-## Environment
-
-Keep the dependency set small.
-
-The project's own stack — numpy, scipy, pillow, matplotlib — is declared as an `env` requirement
-on the local pack, so the environment image installs it from `requirements.txt` and a session
-should find it already present. If SessionStart halt-gates saying it is missing, the setup script
-needs re-pasting into the environment's Setup script field; nothing project-specific goes in that
-body.
-
-`pymupdf` is **not** in `requirements.txt` and is installed ad hoc: it is for reading source PDFs,
-which is intake work, not part of the pipeline.
-
-- **No `pdftoppm` / poppler.** Render PDFs with PyMuPDF in-process, not a system binary — the
-  built-in PDF reader fails on this box for exactly that reason, on every PDF.
-- **Do not trust the harness's reported PDF page count.** It has been wrong on every PDF attached
-  to this project so far, sometimes by a lot (a 4-page overview reported as 26; a 29-page preprint
-  as 201). Open the file with PyMuPDF and read `page_count`; extract all pages in one pass rather
-  than working through the ranges the harness suggests.
-- Outbound HTTPS goes through a proxy. Publisher `403`s are a policy boundary: don't retry, don't
-  try sibling URLs, don't route around it. Record the source as unreachable and ask the owner —
-  which is what [#6](https://github.com/missingbulb/NoRFinder/issues/6) did, successfully.
-- **A web-search summary is not a source.** Two author attributions and one metric definition taken
-  from search snippets in the first literature pass were all wrong, and only the PDFs caught it.
-  Never write a name, number or definition into the notes from a snippet.
-- Scratchpad, not `/tmp`, for throwaway renders and diagnostics. Only the final artifact and the
-  code that regenerates it get committed.
-
-## Repo map
+## Run
 
 ```
-src/         nor.py (detector), harness.py (invariance), render.py (overlays)
-tests/       every requirement that can be executed; test_quality.py locks the finders (R9)
-docs/
-  WARMUP.md                          this file
-  requirements.md                    standing constraints on HOW it is built — read with the brief
-  results/                           iteration notes; R1 is the first
-  project-brief.md                   the specification, ingested from the owner's PDF
-  project-overview-extracted-text.txt  verbatim PDF text, for wording questions
-  figures/                           overview figures — ILLUSTRATIONS, not analysis inputs
-  literature/                        the review; start at its README
+pip install -r requirements.txt
+python3 -m pytest tests studies -m "not full"
+python3 web/build.py
+python3 -m http.server 8000
 ```
 
-`src/` is **the pipeline** — there are no spikes yet. When there are, this map says which is which.
+then open `http://localhost:8000/web/` (the NoR study) or `http://localhost:8000/web/?study=fixture`.
+The full set (`python3 -m pytest tests studies`) also needs Node, Pyodide
+(`npm i --prefix studies/nor/detection/browser pyodide@314.0.7`) and Playwright's Chromium.
+
+## Map
+
+```
+web/              the shell, the viewer, the Python runtime (worker.js, bridge.js)
+tests/            the shell's tests, run on the fixture study
+studies/nor/      the NoR Finder study: study.json, web/, detection/, src/, data/, docs/, tests/
+studies/fixture/  the smallest study, for the shell's tests (`?study=fixture`)
+docs/             this map and the shell's requirements
+```

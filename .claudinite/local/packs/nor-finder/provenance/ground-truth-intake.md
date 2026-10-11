@@ -32,3 +32,10 @@
   the agent, which replaces the old explicit review delivery. Refusal comments go through
   `github.createComment`; reading issues and comments and removing the label stay REST calls under
   the job token.
+
+## 2026-10-11 · scope-changed · the NoR study moved under studies/nor/
+- **Reason:** the repo now holds one page and several studies; the paths this element names moved
+  with the NoR study.
+- **Actor:** @missingbulb (owner).
+- **Model:** Claude, per the commit trailer.
+- **Mechanism:** the same carrier, its paths repointed.

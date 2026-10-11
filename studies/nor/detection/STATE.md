@@ -9,10 +9,10 @@ _Last updated 2026-10-06._
 
 ## Setup
 1. `python3 -m pip install -r requirements.txt`
-2. `python3 detection/ground_truth.py fetch`: fetches the reference slide
+2. `python3 studies/nor/detection/ground_truth.py fetch`: fetches the reference slide
    (`Slide5_4AP_NoR.sld - Slice1_up_left2.tif`) and every image submitted ground truth was marked on
    into `data/raw/`, which is never committed.
-3. `cd detection && python3 nor_lab.py cmp tl rf`. The first run builds `.cache/` (image plus blue
+3. `cd studies/nor/detection && python3 nor_lab.py cmp tl rf`. The first run builds `.cache/` (image plus blue
    mask, never committed); after that a run takes about 5-10 s.
 
 ## Where things stand
@@ -40,7 +40,7 @@ _Last updated 2026-10-06._
 - **Filters are not finder-specific** (ledger §5): tl's filter values score as well as or better
   than each finder's own on all five finders. Each finder still opens on its own values.
 - **Only one image has been processed.**
-- **Browser page** (`web/`, requirement R8): open an image, detect once, then tune every filter
+- **Browser page** (the shell in `web/` running this study, requirement R8): open an image, detect once, then tune every filter
   live. It runs `interactive.py` over the unchanged finders under Pyodide. It deploys to GitHub
   Pages through the github-pages pack. Preview it locally with `python3 web/build.py` and then
   `python3 -m http.server` from the repo root, opening `/web/`.
@@ -52,9 +52,9 @@ _Last updated 2026-10-06._
   pink (pass) or blue (fail) 1-px outline around each segment at 3×, a reason letter, numbers
   running top to bottom, white measuring lines, and a legend and list panel. The zoom is always
   x 900-2100, y 1200-2400. Don't change it unless Ariel asks; propose changes for approval.
-- **Quality is locked (R9, 2026-09-30).** `tests/test_quality.py` fails when a finder loses a
+- **Quality is locked (R9, 2026-09-30).** `studies/nor/tests/test_quality.py` fails when a finder loses a
   labelled real NoR or passes a new not-NoR; CI runs it with every test on each PR. A loss goes
-  in only with Ariel's agreement (`python3 tests/test_quality.py --accept`); a local test run
+  in only with Ariel's agreement (`python3 studies/nor/tests/test_quality.py --accept`); a local test run
   records gains in `lab/quality_baseline.json`, which the PR must carry.
 - **Keep or drop every change by data:** `nor_lab.py ablate BASE VARIANT...`. Log every attempt,
   failures included, in `lab/ledger.md`.
