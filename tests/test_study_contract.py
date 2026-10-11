@@ -41,12 +41,11 @@ def test_a_study_names_files_that_exist(path):
 
 
 def test_the_shell_names_no_study():
-    found = []
-    for f in sorted(glob.glob(os.path.join(WEB, '*.*'))):
-        if f.endswith(('.js', '.html', '.css', '.py')):
-            for n, line in enumerate(open(f, encoding='utf8'), 1):
-                for w in STUDY_WORDS.findall(line):
-                    found.append(f'{os.path.basename(f)}:{n} {w}')
+    found, files = [], [f for f in sorted(glob.glob(os.path.join(WEB, '*.*'))) if f.endswith(('.js', '.html', '.css', '.py'))]
+    assert len(files) >= 10, f'read only {len(files)} of the shell\'s files: the sweep is not looking at them all'
+    for f in files:
+        for n, line in enumerate(open(f, encoding='utf8'), 1):
+            found += [f'{os.path.basename(f)}:{n} {w}' for w in STUDY_WORDS.findall(line)]
     assert not found, 'the shell names a study\'s own words:\n' + '\n'.join(found)
 
 
