@@ -250,7 +250,7 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 #drive-list .item .pic img { width: 100%; height: 100%; object-fit: cover; }
 #drive-list .item.folder .pic::before { content: "📁"; font-size: 24px; }
 #drive-msg.err { color: var(--err); }
-#drive-thumbs-l { display: flex; gap: 6px; align-items: center; margin: 0; white-space: nowrap; }
+#drive-thumbs-l, #drive-autosave-l { display: flex; gap: 6px; align-items: center; margin: 0; white-space: nowrap; }
 #drive-thumbs-note { font-variant-numeric: tabular-nums; }
 #drive-thumbs-note:not(:empty)::before { content: "· "; }
 #drive-msg { margin: 0; }
