@@ -11,37 +11,34 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 // pyodide at the version the page loads, installed here or beside the browser tools
 let entry;
-for (const base of [here, path.join(here, "..", "detection", "browser")]) {
+for (const base of [here, path.join(here, "..", "..", "..", "tests"), path.join(here, "..", "detection", "browser")]) {
   try { entry = require.resolve("pyodide/pyodide.mjs", { paths: [base] }); break; } catch {}
 }
-if (!entry) { console.error("no pyodide: npm i --prefix detection/browser pyodide@314.0.7"); process.exit(2); }
+if (!entry) { console.error("no pyodide: npm i --prefix tests pyodide@314.0.7"); process.exit(2); }
 const { loadPyodide } = await import(pathToFileURL(entry).href);
 const { bridge } = await import(pathToFileURL(path.join(here, "..", "..", "..", "web", "bridge.js")).href);
 
 const STAND_IN = `
 import json
 N = 1000
-class Channel:
-    shape = (N, N)
+def ready():
+    return json.dumps({})
 class Session:
     def __init__(self, path):
         with open(path, 'rb') as f:
             self.size = len(f.read())
-        self.caspr, self.um, self.info = Channel(), 0.17, [["Pixel", "0.17 µm"]]
-    def images(self):
-        return bytes(4 * N * N)
-    def detect(self, finder, overrides):
-        return json.dumps({'finder': finder, 'cands': []}), bytes(2 * N * N)
-    def refilter(self, spec):
-        return []
-    def alone(self, spec):
-        return {'counts': {}, 'only': {}}
+    def opened(self):
+        return json.dumps({'H': N, 'W': N, 'um': 0.17, 'info': [["Pixel", "0.17 µm"]]}), bytes(4 * N * N)
+    def call(self, action, args):
+        if action == 'detect':
+            return json.dumps({'finder': args['finder'], 'cands': []}), bytes(2 * N * N)
+        return json.dumps({'fails': [], 'alone': {'counts': {}, 'only': {}}}), None
 `;
 
 const py = await loadPyodide();
 py.FS.mkdirTree("/py");
 py.FS.writeFile("/py/interactive.py", STAND_IN);
-py.runPython("import sys; sys.path.insert(0, '/py'); import interactive, json");
+py.runPython("import sys; sys.path.insert(0, '/py'); import interactive as study, json");
 
 let out = [];
 const answer = bridge(py, (m) => out.push(m));
@@ -49,8 +46,8 @@ const ask = (m) => { out = []; answer(m); return out.find((o) => o.type !== "pro
 let opened = 0;
 function round() {
   ask({ type: "open", name: `image ${++opened}.tif`, bytes: new ArrayBuffer(1 << 20) });
-  ask({ type: "detect", finder: "tl", overrides: {} });
-  ask({ type: "refilter", seq: opened, spec: { values: {}, off: [] } });
+  ask({ type: "call", action: "detect", args: { finder: "tl", overrides: {} } });
+  ask({ type: "call", action: "refilter", args: { spec: { values: {}, off: [] } }, echo: opened });
   return ask({ type: "memory" });
 }
 

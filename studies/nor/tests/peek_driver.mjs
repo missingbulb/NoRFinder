@@ -4,7 +4,7 @@
 import fs from "node:fs";
 const [chunk, ...files] = process.argv.slice(2);
 const window = {};
-new Function("window", fs.readFileSync(new URL("../../../web/peek.js", import.meta.url), "utf8"))(window);
+new Function("window", fs.readFileSync(new URL("../web/peek.js", import.meta.url), "utf8"))(window);
 const canvas = () => {
   const c = { getContext: () => ({
     createImageData: (w, h) => ({ width: w, height: h, data: new Uint8ClampedArray(w * h * 4) }),

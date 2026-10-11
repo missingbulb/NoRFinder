@@ -1,25 +1,33 @@
-// Runs the repo's Python finders (detection/interactive.py) under Pyodide, off the page's thread.
-// Messages out while it boots: progress {text}, ready {finders, about}, error {text}; the rest are the bridge's.
+// Runs a study's Python under Pyodide, off the page's thread: the study its address names (worker.js?study=<id>),
+// with the packages, module folders and entry module its study.json names.
+// Messages out while it boots: progress {text}, ready {info}, error {text}; the rest are the bridge's.
 // A module worker: its imports are fetched with CORS, so the service worker can cache them.
 import { bridge } from "./bridge.js";
 
 const PYODIDE = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/";
 
 const say = (text) => postMessage({ type: "progress", text });
-let py;
+let py, manifest;
+const id = new URL(self.location.href).searchParams.get("study");
+const studyBase = new URL(`../studies/${id}/`, self.location.href).href;
 
 async function boot() {
   const t0 = performance.now();
+  if (!/^[\w-]+$/.test(id || "")) throw new Error(`no study "${id}"`);
+  manifest = await (await fetch(studyBase + "study.json")).json();
   say("Downloading Python…");
-  // Only the packages the finders import are unpacked, and each native module loads the first time
+  // Only the packages the study imports are unpacked, and each native module loads the first time
   // Python imports it: loadPackage would load every module of every package and of its dependencies
   // up front, about 100 MB more memory. A package missing here fails loudly as an ImportError.
   // They download while Python itself downloads and starts.
   const wheels = (async () => {
     const [lock, vendored] = await Promise.all([fetch(PYODIDE + "pyodide-lock.json"), fetch("vendor/wheels.json")].map(async (r) => (await r).json()));
-    const list = ["numpy", "scipy", "scikit-image", "lazy-loader", "packaging", "pillow"]
+    // the build vendors every study's wheels; this study's are the ones its study.json pins, by name and version
+    const wheel = (pin) => pin.replace("==", "-").replace(/-/g, "_").toLowerCase();
+    const own = vendored.filter((w) => manifest.python.wheels.some((pin) => w.toLowerCase().replace(/-/g, "_").startsWith(wheel(pin) + "_")));
+    const list = manifest.python.packages
       .map((n) => ({ url: PYODIDE + lock.packages[n].file_name, sha256: lock.packages[n].sha256 }))
-      .concat(vendored.map((w) => ({ url: new URL("vendor/" + w, self.location.href).href })));
+      .concat(own.map((w) => ({ url: new URL("vendor/" + w, self.location.href).href })));
     expected = list.length;
     return Promise.all(list.map(fetchWheel));
   })();
@@ -28,13 +36,14 @@ async function boot() {
   py = await loadPyodide({ indexURL: PYODIDE });
   stage = "Downloading packages";
   const bufs = await wheels;
-  say("Installing numpy, scipy, scikit-image…");
+  say(manifest.progress?.install || "Installing Python's packages…");
   const site = py.runPython("import sysconfig; sysconfig.get_path('purelib')");
   for (const buf of bufs) py.unpackArchive(buf, "wheel", { extractDir: site });
-  say("Loading the finders…");
-  // Python modules are read straight from the repo's layout as they are imported: a new finder
-  // file in detection/ ships with no list to update.
-  py.globals.set("bases", py.toPy(["../detection/", "../src/"].map((b) => new URL(b, self.location.href).href)));
+  say(manifest.progress?.load || "Loading the study…");
+  // the study's Python modules are read straight from the repo's layout as they are imported: a new module
+  // in one of its folders ships with no list to update
+  py.globals.set("bases", py.toPy(manifest.python.paths.map((b) => new URL(b, studyBase).href)));
+  py.globals.set("entry", manifest.python.entry);
   py.runPython(`
 import sys, os, importlib.util
 from js import XMLHttpRequest
@@ -53,13 +62,11 @@ class RepoModules:
         return None
 
 sys.meta_path.append(RepoModules())
-os.environ['NORFINDER_SRC'] = '/py'
-import interactive, json
+import json
+study = importlib.import_module(entry)
 `);
   files = py.runPython("sum(os.path.getsize(os.path.join(d, f)) for top in ('/lib', '/py') for d, _, fs in os.walk(top) for f in fs)");
-  const finders = JSON.parse(py.runPython("json.dumps(interactive.FINDERS)"));
-  const about = JSON.parse(py.runPython("json.dumps({f: interactive.describe(f) for f in interactive.FINDERS})"));
-  post({ type: "ready", finders, about, secs: (performance.now() - t0) / 1000 });
+  post({ type: "ready", info: JSON.parse(py.runPython("study.ready()")), secs: (performance.now() - t0) / 1000 });
 }
 
 // the packages' download, counted for the status bar while Python starts
@@ -96,7 +103,7 @@ const post = (m, transfer) => postMessage({ ...m, heap: py._module.HEAPU8.byteLe
 let answer;
 async function handle(m) {
   await booted;
-  answer ||= bridge(py, post);
+  answer ||= bridge(py, post, manifest.progress);
   answer(m);
 }
 

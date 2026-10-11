@@ -33,14 +33,14 @@ jobs:
         uses: actions/cache@v5
         with:
           path: |
-            studies/nor/detection/browser/node_modules
+            tests/node_modules
             ~/.cache/ms-playwright
           key: browser-${{ runner.os }}-pyodide-314.0.7-playwright-1.56.1
       - name: Install Pyodide and Chromium for the page tests
         run: |
           npm i -g playwright@1.56.1
           if [ "${{ steps.browser.outputs.cache-hit }}" != 'true' ]; then
-            npm i --prefix studies/nor/detection/browser pyodide@314.0.7
+            npm i --prefix tests pyodide@314.0.7
             playwright install chromium
           fi
       - name: Restore the ground-truth images

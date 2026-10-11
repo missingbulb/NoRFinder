@@ -23,16 +23,16 @@ const STAND_IN = `
 const A = await (await fetch("answers/answers.json")).json();
 const bin = async (n) => new Uint8Array(await (await fetch("answers/" + n)).arrayBuffer());
 let finder;
-postMessage({ type: "ready", finders: A.finders, about: A.about, secs: 0 });
+postMessage({ type: "ready", info: { finders: A.finders, about: A.about }, secs: 0 });
 onmessage = async ({ data: m }) => {
   if (m.type === "open") {
     const images = await bin("images.bin");
-    postMessage({ type: "opened", H: A.H, W: A.W, um: A.um, images, secs: 0 }, [images.buffer]);
-  } else if (m.type === "detect") {
-    finder = m.finder; const seg = await bin("seg_" + finder + ".bin");
-    postMessage({ type: "detected", meta: A.detected[finder], seg, secs: 0 }, [seg.buffer]);
-  } else if (m.type === "refilter") {
-    postMessage({ type: "filtered", ...A.filtered[finder][m.seq % 2], seq: m.seq, ms: 0 });
+    postMessage({ type: "opened", meta: { H: A.H, W: A.W, um: A.um }, images, secs: 0 }, [images.buffer]);
+  } else if (m.type === "call" && m.action === "detect") {
+    finder = m.args.finder; const seg = await bin("seg_" + finder + ".bin");
+    postMessage({ type: "result", action: "detect", meta: A.detected[finder], bytes: seg, secs: 0 }, [seg.buffer]);
+  } else if (m.type === "call" && m.action === "refilter") {
+    postMessage({ type: "result", action: "refilter", meta: A.filtered[finder][m.echo % 2], echo: m.echo, ms: 0 });
   }
 };`;
 
@@ -60,11 +60,11 @@ page.setDefaultTimeout(10000);
 const cdp = await ctx.newCDPSession(page);
 await cdp.send("Performance.enable");
 
-// resolves with the worker's next message of this type (the page's own handler still gets it)
-const next = (type) => page.evaluate((type) => new Promise((ok) => {
-  const h = (e) => { if (e.data.type === type) { st.worker.removeEventListener("message", h); ok(); } };
+// resolves with the worker's next message of this type, or answer to this action (the page's own handler still gets it)
+const next = (action) => page.evaluate((action) => new Promise((ok) => {
+  const h = (e) => { if (e.data.type === action || (e.data.type === "result" && e.data.action === action)) { st.worker.removeEventListener("message", h); ok(); } };
   st.worker.addEventListener("message", h);
-}), type);
+}), action);
 const settled = () => page.waitForFunction(() => !st.inflight && !st.pending && $("#busy").hidden);
 
 let opened = 0;
@@ -77,7 +77,7 @@ async function open() {
 // finding ends with the first filter pass on the new candidates
 async function find() {
   for (const f of ["tl", "rf"]) {
-    const done = next("filtered");
+    const done = next("refilter");
     await page.evaluate((f) => { $("#finder").value = f; $("#finder").dispatchEvent(new Event("change")); $("#find").click(); }, f);
     await done; await settled();
   }
@@ -87,16 +87,16 @@ async function tune() {
   const n = await page.evaluate(() => document.querySelectorAll("#filters .param.number").length);
   if (n < 6) await fail(`only ${n} filter dials to move`);
   for (let k = 0; k < 2 * n; k++) {
-    const done = next("filtered");
+    const done = next("refilter");
     await page.evaluate(([k, n]) => {
-      if (k === 0) showView("items"); if (k === n) showView("image");
+      if (k === 0) nor.showView("items"); if (k === n) nor.showView("image");
       const p = document.querySelectorAll("#filters .param.number")[Math.floor(k / 2)], box = p.querySelector(".box");
       box.value = k % 2 ? st.defaults[p.dataset.name] : st.defaults[p.dataset.name] * 1.3 + 0.1; box.dispatchEvent(new Event("input"));
     }, [k, n]);
     await done; await settled();
   }
   for (const on of [false, true]) {
-    const done = next("filtered");
+    const done = next("refilter");
     await page.evaluate((on) => { const c = document.querySelector("#filters .filter input[type=checkbox]"); c.checked = on; c.dispatchEvent(new Event("change")); }, on);
     await done; await settled();
   }

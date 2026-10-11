@@ -1,5 +1,5 @@
-"""Fetch the third-party wheels the page installs into Pyodide (packages Pyodide does not ship) into
-web/vendor/, so the page never depends on PyPI at run time, and write the deployment's settings into
+"""Fetch the third-party wheels the studies install into Pyodide (packages Pyodide does not ship, each
+study's python.wheels in its study.json) into web/vendor/, so the page never depends on PyPI at run time, and write the deployment's settings into
 web/config.js from the repository variables the deploy passes in (.github/site.config's build_vars):
 GOOGLE_API_KEY turns on loading from Google Drive, and DRIVE_DEFAULT_FOLDER is the link its dialog
 opens on. It also writes the version history the page shows (version_history.py). The deploy runs this; so does a local preview:
@@ -11,9 +11,16 @@ import glob, json, os, shutil, subprocess, sys
 
 import version_history
 
-VENDOR = ['tifffile==2026.3.3']
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, 'vendor')
+
+
+def wheels():
+    """Every study's pinned wheels, once each."""
+    pins = set()
+    for path in glob.glob(os.path.join(HERE, '..', 'studies', '*', 'study.json')):
+        pins.update(json.load(open(path))['python']['wheels'])
+    return sorted(pins)
 
 
 def config_js(env):
@@ -27,7 +34,7 @@ def config_js(env):
 
 if __name__ == '__main__':
     shutil.rmtree(OUT, ignore_errors=True)
-    subprocess.run([sys.executable, '-m', 'pip', 'download', '-q', '--no-deps', '--only-binary', ':all:', '-d', OUT, *VENDOR], check=True)
+    subprocess.run([sys.executable, '-m', 'pip', 'download', '-q', '--no-deps', '--only-binary', ':all:', '-d', OUT, *wheels()], check=True)
     json.dump(sorted(os.path.basename(f) for f in glob.glob(os.path.join(OUT, '*.whl'))), open(os.path.join(OUT, 'wheels.json'), 'w'))
     json.dump(version_history.history(os.path.dirname(HERE)), open(version_history.OUT, 'w'), indent=1)
     text = config_js(os.environ)

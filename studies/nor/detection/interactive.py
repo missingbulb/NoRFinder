@@ -1,4 +1,4 @@
-"""One image, detected once, filtered many times: the engine behind the browser page (web/).
+"""One image, detected once, filtered many times: the study's Python on the page (its study.json entry).
 
   s = Session('slide.tif')          load the channels and the blue (DAPI) mask
   s.detect('tl')                    the slow part: a finder proposes candidates and measures each one
@@ -87,6 +87,11 @@ def describe(finder):
                 about=finder_help.ABOUT.get(finder, ''), help=finder_help.HELP)
 
 
+def ready():
+    """What the page needs before any image: the finders it offers, first = default, and each one's controls."""
+    return json.dumps(dict(finders=FINDERS, about={f: describe(f) for f in FINDERS}))
+
+
 def reason(k):
     letter, title, text = finder_help.REASONS.get(k, (REASONS.get(k, ('?',))[0], k, REASON_TEXT.get(k, k)))
     return dict(letter=letter, title=title, text=text, color=REASONS.get(k, (0, (200, 200, 200)))[1])
@@ -111,6 +116,22 @@ class Session:
         s.caspr, s.nav, s.um, s.bm, s.dapi = caspr, nav, um, bm, None
         s.cands, s.P, s.finder = [], {}, None
         return s
+
+    def opened(self):
+        """The shell's answer to opening the file: its meta (size, scale, what the file says about
+        itself) and the image bytes the viewer shows."""
+        H, W = self.caspr.shape
+        return json.dumps(dict(H=H, W=W, um=self.um, info=self.info)), self.images()
+
+    def call(self, action, args):
+        """The page's requests: 'detect' {finder, overrides} -> (meta, segments); 'refilter' {spec} ->
+        (each candidate's result and what each filter rejects alone, no bytes)."""
+        if action == 'detect':
+            return self.detect(args['finder'], args.get('overrides'))
+        if action == 'refilter':
+            spec = args['spec']
+            return json.dumps(dict(fails=self.refilter(spec), alone=self.alone(spec))), None
+        raise ValueError(f'unknown action {action!r}')
 
     def images(self):
         """red, green, blue (8-bit display stretch) and the blue mask, H*W bytes each, in that order."""

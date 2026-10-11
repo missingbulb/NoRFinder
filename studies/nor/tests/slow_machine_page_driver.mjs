@@ -26,18 +26,18 @@ const A = await (await fetch("answers/answers.json")).json();
 const bin = async (n) => new Uint8Array(await (await fetch("answers/" + n)).arrayBuffer());
 const late = () => new Promise((ok) => setTimeout(ok, ${LATE}));
 let finder, runs = 0;
-postMessage({ type: "ready", finders: A.finders, about: A.about, secs: 0, heap: 300 * 2 ** 20, files: 80 * 2 ** 20 });
+postMessage({ type: "ready", info: { finders: A.finders, about: A.about }, secs: 0, heap: 300 * 2 ** 20, files: 80 * 2 ** 20 });
 onmessage = async ({ data: m }) => {
   await late();
   if (m.type === "open") {
     const images = await bin("images.bin");
-    postMessage({ type: "opened", H: A.H, W: A.W, um: A.um, images, secs: 0 }, [images.buffer]);
-  } else if (m.type === "detect") {
+    postMessage({ type: "opened", meta: { H: A.H, W: A.W, um: A.um }, images, secs: 0 }, [images.buffer]);
+  } else if (m.type === "call" && m.action === "detect") {
     if (++runs === 3) return postMessage({ type: "error", text: "MemoryError" });
-    finder = m.finder; const seg = await bin("seg_" + finder + ".bin");
-    postMessage({ type: "detected", meta: A.detected[finder], seg, secs: 0 }, [seg.buffer]);
-  } else if (m.type === "refilter") {
-    postMessage({ type: "filtered", ...A.filtered[finder][0], seq: m.seq, ms: 0 });
+    finder = m.args.finder; const seg = await bin("seg_" + finder + ".bin");
+    postMessage({ type: "result", action: "detect", meta: A.detected[finder], bytes: seg, secs: 0 }, [seg.buffer]);
+  } else if (m.type === "call" && m.action === "refilter") {
+    postMessage({ type: "result", action: "refilter", meta: A.filtered[finder][0], echo: m.echo, ms: 0 });
   }
 };`;
 
@@ -68,7 +68,7 @@ async function open(gb) {
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);
   await page.goto(origin + "/web/index.html");
-  await page.waitForFunction(() => !document.querySelector("#finder").disabled);
+  await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false);
   return { ctx, page };
 }
 const held = (page, id) => page.evaluate((id) => { const b = $(id); return b.disabled && b.classList.contains("working"); }, id);
@@ -124,7 +124,7 @@ const free = (page, id) => page.waitForFunction((id) => !$(id).classList.contain
   await shot(page, "memory_popup");
   await shot(page, "memory_popup_box", "#memory-dlg");
   await page.check("#memory-off"); await page.click("#memory-dlg button.primary");
-  await page.reload(); await page.waitForFunction(() => !document.querySelector("#finder").disabled);
+  await page.reload(); await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false);
   await check(!(await page.evaluate(() => $("#memory-dlg").open)), "after Don't show this again, it does not come back");
   // running out of memory shows it anyway, without the opt-out
   await page.setInputFiles("#file", image); await free(page, "#load-main");

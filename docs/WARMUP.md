@@ -33,13 +33,16 @@ A study is a folder with a `study.json`:
 - `files` — what Load accepts, and the text the empty view shows.
 - `channels` — the image's channels as the viewer shows them: key (`r`, `g`, `b`), name, title,
   whether shown at first.
-- `progress` — the status line for each Python action while it runs.
+- `progress` — the status line while Python installs (`install`), loads the study (`load`), opens an
+  image (`open`) and runs each action (by its name).
 - `groundTruth.label` — the GitHub issue label its submissions carry.
 - `driveThumbs` — optional, the folder of ready-made thumbnails for the Google Drive dialog.
 
 Its Python entry module offers `ready()` (JSON, what the page needs before any image) and
-`Session(path)` with `opened()` (JSON meta and the viewer's image bytes) and `call(action, args)`
-(JSON result and optional bytes). The shell forwards every call and knows none of their meanings.
+`Session(path)` with `opened()` (JSON meta — `W`, `H`, `um`, `info` — and the viewer's image bytes,
+one plane per channel) and `call(action, args)` (JSON result and optional bytes). The shell forwards
+every call and knows none of their meanings. `mount(shell)` returns the study's hooks; the list, and
+what `shell` offers, heads `web/shell.js`, and the viewer's own heads `web/viewer2d.js`.
 `studies/fixture/` is the smallest study there is; the shell's own tests run on it.
 
 ## Run

@@ -1,0 +1,57 @@
+"""S1, S2: the shell knows no study, and a study is a folder whose study.json names everything the
+shell needs. The shell running a study is test_study_runs.py."""
+import glob
+import json
+import os
+import re
+
+import pytest
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.join(HERE, '..')
+WEB = os.path.join(ROOT, 'web')
+STUDIES = sorted(glob.glob(os.path.join(ROOT, 'studies', '*', 'study.json')))
+# the NoR study's own words: none of them may appear in the shell
+STUDY_WORDS = re.compile(r'(?-i:\bNoRs?\b|\bNav\b)|Ranvier|Caspr|Nav1|DAPI|\bfinders?\b|\bcandidates?\b|paranode', re.I)
+
+
+def manifest(path):
+    return json.load(open(path))
+
+
+def test_there_are_studies_and_the_default_is_one():
+    ids = [manifest(p)['id'] for p in STUDIES]
+    assert 'nor' in ids and 'fixture' in ids, ids
+    assert all(os.path.basename(os.path.dirname(p)) == manifest(p)['id'] for p in STUDIES), 'a study\'s id is its folder'
+
+
+@pytest.mark.parametrize('path', STUDIES, ids=lambda p: os.path.basename(os.path.dirname(p)))
+def test_a_study_names_files_that_exist(path):
+    m, base = manifest(path), os.path.dirname(path)
+    for key in ('id', 'title', 'viewer', 'python', 'web', 'files', 'channels', 'groundTruth'):
+        assert key in m, f'{key} missing'
+    assert os.path.exists(os.path.join(WEB, {'image2d': 'viewer2d.js'}[m['viewer']]))
+    for key in ('module', 'panels', 'style'):
+        assert os.path.isfile(os.path.join(base, m['web'][key])), m['web'][key]
+    py = m['python']
+    assert any(os.path.isfile(os.path.join(base, d, py['entry'] + '.py')) for d in py['paths']), py
+    assert {c['key'] for c in m['channels']} <= {'r', 'g', 'b', 'w'}
+    if 'driveThumbs' in m:
+        assert os.path.isdir(os.path.join(base, m['driveThumbs']))
+
+
+def test_the_shell_names_no_study():
+    found = []
+    for f in sorted(glob.glob(os.path.join(WEB, '*.*'))):
+        if f.endswith(('.js', '.html', '.css', '.py')):
+            for n, line in enumerate(open(f, encoding='utf8'), 1):
+                for w in STUDY_WORDS.findall(line):
+                    found.append(f'{os.path.basename(f)}:{n} {w}')
+    assert not found, 'the shell names a study\'s own words:\n' + '\n'.join(found)
+
+
+def test_the_build_vendors_every_studys_wheels():
+    import sys
+    sys.path.insert(0, WEB)
+    import build
+    assert set(build.wheels()) >= {w for p in STUDIES for w in manifest(p)['python']['wheels']}

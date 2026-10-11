@@ -22,7 +22,7 @@ const [shot, ...images] = process.argv.slice(2);
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const ROOT = "rootfolder0000000001", SUB = "subfolder00000000001";
-const lab = JSON.parse(fs.readFileSync(path.join(repo, "data", "sources.json"), "utf8")).sources.flatMap((x) => x.files || []);
+const lab = JSON.parse(fs.readFileSync(path.join(repo, "studies", "nor", "data", "sources.json"), "utf8")).sources.flatMap((x) => x.files || []);
 const files = images.map((p) => {
   const known = lab.find((f) => p.endsWith(f.path));
   if (!known) { console.error(p + " is not in data/sources.json"); process.exit(2); }
@@ -40,7 +40,7 @@ const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(""); }
   if (u === "/web/config.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(CONFIG); }
-  if (u.startsWith("/web/drive_thumbs/") && u.endsWith(".jpg")) thumbsServed++;
+  if (u.startsWith("/studies/nor/web/drive_thumbs/") && u.endsWith(".jpg")) thumbsServed++;
   const f = path.join(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
@@ -124,7 +124,7 @@ if (!asked[files[0].id].whole) await done(1, "Open did not load the image");
 console.log("select, double click and Open all work");
 
 // an opened image keeps its thumbnail in the browser, shown next time without a download
-await page.evaluate((id) => { st.W = 8; st.H = 8; const v = (k) => Uint8Array.from({ length: 64 }, (_, i) => (i * k) % 256); st.img = { r: v(3), g: v(5), b: v(7) }; saveThumb(id); }, stranger.id);
+await page.evaluate((id) => { st.W = 8; st.H = 8; const v = (k) => Uint8Array.from({ length: 64 }, (_, i) => (i * k) % 256); st.img = { r: v(3), g: v(5), b: v(7) }; shellForTests.saveThumb(id); }, stranger.id);
 
 // "Download thumbnails" is on at first, and once unticked it is remembered and nothing is downloaded
 const fresh = await ctx.newPage();

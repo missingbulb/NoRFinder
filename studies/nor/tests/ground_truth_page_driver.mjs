@@ -28,16 +28,16 @@ const STAND_IN = `
 const A = await (await fetch("answers/answers.json")).json();
 const bin = async (n) => new Uint8Array(await (await fetch("answers/" + n)).arrayBuffer());
 let finder;
-postMessage({ type: "ready", finders: A.finders, about: A.about, secs: 0 });
+postMessage({ type: "ready", info: { finders: A.finders, about: A.about }, secs: 0 });
 onmessage = async ({ data: m }) => {
   if (m.type === "open") {
     const images = await bin("images.bin");
-    postMessage({ type: "opened", H: A.H, W: A.W, um: A.um, images, secs: 0 }, [images.buffer]);
-  } else if (m.type === "detect") {
-    finder = m.finder; const seg = await bin("seg_" + finder + ".bin");
-    postMessage({ type: "detected", meta: A.detected[finder], seg, secs: 0 }, [seg.buffer]);
-  } else if (m.type === "refilter") {
-    postMessage({ type: "filtered", ...A.filtered[finder][0], seq: m.seq, ms: 0 });
+    postMessage({ type: "opened", meta: { H: A.H, W: A.W, um: A.um }, images, secs: 0 }, [images.buffer]);
+  } else if (m.type === "call" && m.action === "detect") {
+    finder = m.args.finder; const seg = await bin("seg_" + finder + ".bin");
+    postMessage({ type: "result", action: "detect", meta: A.detected[finder], bytes: seg, secs: 0 }, [seg.buffer]);
+  } else if (m.type === "call" && m.action === "refilter") {
+    postMessage({ type: "result", action: "refilter", meta: A.filtered[finder][0], echo: m.echo, ms: 0 });
   }
 };`;
 const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "test-key" }, drive: { defaultLink: "" } };`;
@@ -75,7 +75,7 @@ async function open(drive) {
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);
   await page.goto(origin + "/web/index.html");
-  await page.waitForFunction(() => !document.querySelector("#finder").disabled);
+  await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false);
   if (drive) {
     await page.click("#load-menu summary");
     await page.click('#load-menu .item[data-src="drive"]');
@@ -128,27 +128,27 @@ async function markAndVote(page) {
   await page.mouse.click(m.sx, m.sy, { button: "right" });
   await check(await page.isVisible("#ctx") && (await page.textContent("#ctx button")) === "Add a NoR Here", "a right click on the image offers Add a NoR Here");
   await page.click("#ctx button");
-  const added = await page.evaluate(() => ({ sel: st.sel, c: candOf(st.sel) }));
+  const added = await page.evaluate(() => ({ sel: st.sel, c: nor.candOf(st.sel) }));
   await check(added.sel === "u1" && Math.hypot(added.c.cx - m.x, added.c.cy - m.y) < 1, `the added NoR is centred where clicked and selected (${added.c.cx}, ${added.c.cy})`);
   await check(await page.$$eval("#overlay .added .glow", (c) => c.length) === 1, "it glows on the image");
   await check(await page.$$eval("#selected .card.added .num.added svg", (c) => c.length) === 1 && await page.$$eval("#selected .handle", (h) => h.length) === 6,
     "its card carries the added icon and six handles");
   // a green end dragged off the axis turns it; the red ends follow onto the new axis
   await drag(page, await handle(page, "length", 1), 0, -40);
-  let L = await page.evaluate(() => candOf("u1").lines);
+  let L = await page.evaluate(() => nor.candOf("u1").lines);
   await check(Math.abs(L.length[1][1] - L.length[0][1]) > 3 && offAxis(L) < 0.05, `a dragged green end turns the axis, the red ends staying on it (${offAxis(L).toFixed(3)} px off)`);
   // a width end sets the width
-  const w0 = await page.evaluate(() => candOf("u1").m.width);
+  const w0 = await page.evaluate(() => nor.candOf("u1").m.width);
   await drag(page, await handle(page, "width", 0), 0, -25);
-  const w1 = await page.evaluate(() => candOf("u1").m.width);
+  const w1 = await page.evaluate(() => nor.candOf("u1").m.width);
   await check(w1 > w0 + 1, `a dragged width end widens the NoR (${w0.toFixed(1)} to ${w1.toFixed(1)} px)`);
   await page.click("#switch"); await idle(page);
   await check(await page.$eval("#list .card:last-child", (d) => d.dataset.i) === "u1", "by default the added NoR, numbered last, lists last among the finalists");
   await page.click("#switch"); await idle(page);
   // with another candidate voted on, only the added NoR keeps the button red
-  await page.evaluate(() => decide(st.order[0].i, "approve"));
+  await page.evaluate(() => nor.decide(st.order[0].i, "approve"));
   const waiting = await page.$eval("#dl-truth", (b) => ({ state: b.dataset.state, why: b.title }));
-  await page.evaluate(() => decide(st.order[0].i, null));
+  await page.evaluate(() => nor.decide(st.order[0].i, null));
   await check(waiting.state === "todo" && /Approve or reject the 1 NoR you added/.test(waiting.why), `an added NoR without a verdict keeps the button red: "${waiting.why}"`);
   await page.click("#selected .verdict .up");
   await check(await page.$$eval("#overlay .added .glow", (c) => c.length) === 0, "approving it stops the glow");
@@ -156,11 +156,11 @@ async function markAndVote(page) {
   await page.click("#sel-next"); await page.click("#selected .verdict .up");
   await page.click("#sel-next"); await page.click("#sel-next"); await page.click("#selected .verdict .down");
   // a found candidate's red end dragged off the axis only slides along it: the green ends stay put
-  L = await page.evaluate(() => linesOf(candOf(st.sel)));
+  L = await page.evaluate(() => nor.linesOf(nor.candOf(st.sel)));
   if (L) {
     await page.click("#selected .verdict .down"); // back to a finalist, which has handles
     await drag(page, await handle(page, "red", 0), 15, 20);
-    const M = await page.evaluate(() => linesOf(candOf(st.sel)));
+    const M = await page.evaluate(() => nor.linesOf(nor.candOf(st.sel)));
     const moved = Math.hypot(M.red[0][0] - L.red[0][0], M.red[0][1] - L.red[0][1]);
     await check(offAxis(M) < 0.05 && JSON.stringify(M.length) === JSON.stringify(L.length.map((p) => p.map((v) => Math.round(v * 100) / 100))) && moved > 0.5,
       `a red end dragged off the axis slides along it (${moved.toFixed(1)} px), the green ends unmoved (${offAxis(M).toFixed(3)} px off)`);
@@ -176,8 +176,8 @@ async function markAndVote(page) {
 async function sorting(page) {
   await page.click("#switch"); await idle(page);
   const shown = () => page.evaluate(() => [...document.querySelectorAll("#list .card")].map((d) => {
-    const c = candOf(d.dataset.i[0] === "u" ? d.dataset.i : +d.dataset.i);
-    return { n: numOf(c), v: !!(c.added ? st.added[c.k].verdict : st.forced.get(c.i)), f: whyAll(c).length };
+    const c = nor.candOf(d.dataset.i[0] === "u" ? d.dataset.i : +d.dataset.i);
+    return { n: nor.numOf(c), v: !!(c.added ? st.added[c.k].verdict : st.forced.get(c.i)), f: nor.whyAll(c).length };
   }));
   const sortBy = async (v) => { await page.$eval("#card-menu", (d) => { d.open = true; }); await page.selectOption("#sort", v); await idle(page); return shown(); };
   const up = (xs) => xs.every((x, k) => !k || xs[k - 1] <= x), down = (xs) => xs.every((x, k) => !k || xs[k - 1] >= x);
@@ -249,10 +249,10 @@ async function mask(page) {
   const fit = await page.evaluate(() => ({ view: st.view, w: st.W * st.zoom, h: st.H * st.zoom, sw: $("#scroller").clientWidth, sh: $("#scroller").clientHeight }));
   await check(fit.view === "image" && fit.w <= fit.sw + 1 && fit.h <= fit.sh + 1, `Add mask shows the whole image (${JSON.stringify(fit)})`);
   // what the summary should count: the finalists whose centre lies in the middle square
-  const inside = (page) => page.evaluate(() => [...addedCands(), ...st.order].filter((c) => {
+  const inside = (page) => page.evaluate(() => [...nor.addedCands(), ...st.order].filter((c) => {
     const x = c.cx / st.W, y = c.cy / st.H, mid = x > 0.25 && x < 0.75 && y > 0.25 && y < 0.75, hole = x > 0.4 && x < 0.6 && y > 0.4 && y < 0.6;
     return st.mask.length > 1 ? mid && !hole : mid;
-  }).map((c) => [c.i, result(c.i) === null]));
+  }).map((c) => [c.i, nor.result(c.i) === null]));
   let want = await inside(page);
   const head = () => page.textContent("#summary > div");
   await check(want.length > 0 && want.length < (await page.evaluate(() => st.order.length)), `the lasso holds some candidates and not others (${want.length})`);
@@ -293,11 +293,11 @@ async function mask(page) {
   });
   await check(!/Rejected/.test(await page.textContent("#summary")), "the summary lists no filter reasons");
   const hists = await page.evaluate(() => {
-    const ss = summaryRows(st.passes.filter(inMask)).map(([, s]) => s);
+    const ss = nor.summaryRows(st.passes.filter(nor.inMask)).map(([, s]) => s);
     return [...document.querySelectorAll("#summary .hist")].map((h, k) => {
       const line = h.querySelector(".mean"), x = +line.getAttribute("x1"), b = h.querySelectorAll(".bar");
       const at = (i) => +b[i].getAttribute("x"), lo = at(0), hi = at(b.length - 1) + +b[0].getAttribute("width");
-      return { said: h.firstElementChild.textContent.includes(fmt(ss[k].mean)), where: Math.abs((x - lo) / (hi - lo) - (ss[k].mean - ss[k].min) / (ss[k].max - ss[k].min)) < 0.02,
+      return { said: h.firstElementChild.textContent.includes(nor.fmt(ss[k].mean)), where: Math.abs((x - lo) / (hi - lo) - (ss[k].mean - ss[k].min) / (ss[k].max - ss[k].min)) < 0.02,
         axis: [...h.querySelectorAll("text")].some((t) => t.textContent === String(Math.max(...[...b].map((r) => +r.textContent)))) };
     });
   });
@@ -321,8 +321,8 @@ async function mask(page) {
   // one number per candidate, finalists and rejected alike, the added NoR after the found ones; the image,
   // the cards, the CSV and the file all name a candidate by it
   const nums = await page.evaluate(() => {
-    const cs = [...addedCands(), ...st.order], on = (c) => $(`#overlay g[data-i="${c.i}"] text`).firstChild.textContent;
-    return { found: st.order.length, image: cs.map(on), cards: cs.map((c) => [on(c), card(c, "list").querySelector(".num").textContent]),
+    const cs = [...nor.addedCands(), ...st.order], on = (c) => $(`#overlay g[data-i="${c.i}"] text`).firstChild.textContent;
+    return { found: st.order.length, image: cs.map(on), cards: cs.map((c) => [on(c), nor.card(c, "list").querySelector(".num").textContent]),
       at: Object.fromEntries(cs.map((c) => [on(c), [c.cx, c.cy]])) };
   });
   const all = Array.from({ length: nums.found + 1 }, (_, k) => String(k + 1));
@@ -340,7 +340,7 @@ async function mask(page) {
   await check(await page.evaluate(() => !st.mask.length) && await page.isHidden("#mask-clear") && !(await page.$("#overlay .mask-marks .edge")), "Clear mask removes the mask");
   const ns = (await csvRows(page, "#dl-cands")).map((r) => r.split(",")[0]);
   await check(ns.length === all.length && new Set(ns).size === ns.length && ns.every((n) => all.includes(n)), "the Candidates CSV names each candidate by its number");
-  await page.evaluate(() => st.passes.filter((c) => !c.added && !st.forced.has(c.i)).forEach((c) => decide(c.i, "approve")));
+  await page.evaluate(() => st.passes.filter((c) => !c.added && !st.forced.has(c.i)).forEach((c) => nor.decide(c.i, "approve")));
   await check(await gtColour(page) === "done", "with every finalist voted on the button is green");
   await ctx.close();
 }

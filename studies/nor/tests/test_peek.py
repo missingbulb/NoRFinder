@@ -1,4 +1,4 @@
-"""web/peek.js paints the lab's TIFFs while they download, each channel in the colour of the role Python gives it."""
+"""The study's web/peek.js paints the lab's TIFFs while they download, each channel in the colour of the role Python gives it."""
 import glob, json, os, shutil, subprocess, tempfile
 import numpy as np
 import pytest

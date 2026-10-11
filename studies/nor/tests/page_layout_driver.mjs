@@ -22,16 +22,16 @@ const STAND_IN = `
 const A = await (await fetch("answers/answers.json")).json();
 const bin = async (n) => new Uint8Array(await (await fetch("answers/" + n)).arrayBuffer());
 let finder;
-postMessage({ type: "ready", finders: A.finders, about: A.about, secs: 0 });
+postMessage({ type: "ready", info: { finders: A.finders, about: A.about }, secs: 0 });
 onmessage = async ({ data: m }) => {
   if (m.type === "open") {
     const images = await bin("images.bin");
-    postMessage({ type: "opened", H: A.H, W: A.W, um: A.um, images, secs: 0 }, [images.buffer]);
-  } else if (m.type === "detect") {
-    finder = m.finder; const seg = await bin("seg_" + finder + ".bin");
-    postMessage({ type: "detected", meta: A.detected[finder], seg, secs: 0 }, [seg.buffer]);
-  } else if (m.type === "refilter") {
-    postMessage({ type: "filtered", ...A.filtered[finder][0], seq: m.seq, ms: 0 });
+    postMessage({ type: "opened", meta: { H: A.H, W: A.W, um: A.um }, images, secs: 0 }, [images.buffer]);
+  } else if (m.type === "call" && m.action === "detect") {
+    finder = m.args.finder; const seg = await bin("seg_" + finder + ".bin");
+    postMessage({ type: "result", action: "detect", meta: A.detected[finder], bytes: seg, secs: 0 }, [seg.buffer]);
+  } else if (m.type === "call" && m.action === "refilter") {
+    postMessage({ type: "result", action: "refilter", meta: A.filtered[finder][0], echo: m.echo, ms: 0 });
   }
 };`;
 
@@ -63,7 +63,7 @@ for (const width of [1000, 1600]) {
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);
   await page.goto(origin + "/web/index.html");
-  await page.waitForFunction(() => !document.querySelector("#finder").disabled);
+  await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false);
   await page.setInputFiles("#file", image);
   await page.waitForFunction(() => !document.querySelector("#find").disabled);
   await page.click("#find");
