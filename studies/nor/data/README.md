@@ -14,7 +14,7 @@ To fetch only some files, pass one or more path globs:
 They land in `data/raw/` (git-ignored, gone with the container). Every file is checked against
 the SHA-256 in `sources.json`; a mismatch stops the run. The first fetch of a new source runs with
 `--pin` to record its checksums (and, for a folder, its file listing), and that manifest change is
-committed. Requirement: [`docs/requirements.md`](../docs/requirements.md) R6.
+committed. Requirement: [`studies/nor/docs/requirements.md`](../docs/requirements.md) R6.
 
 **Adding data:** put it in Drive, share it as **"Anyone with the link"**, add an entry to
 `sources.json` (`kind: "file"` with `"sha256": null`, or `kind: "folder"` with `"files": null` and

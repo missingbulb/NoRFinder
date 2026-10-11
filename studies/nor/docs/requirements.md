@@ -182,21 +182,21 @@ it for their real analysis. Concretely, for us:
 ## R6 — Raw data lives on Drive, never in git, and is trusted only by checksum
 
 The owner's microscope files sit in Google Drive; the repository carries only
-[`data/sources.json`](../data/sources.json), naming each one by Drive id with its SHA-256.
-[`src/fetch_data.py`](../src/fetch_data.py) downloads what is missing into the git-ignored
+[`studies/nor/data/sources.json`](../data/sources.json), naming each one by Drive id with its SHA-256.
+[`studies/nor/src/fetch_data.py`](../src/fetch_data.py) downloads what is missing into the git-ignored
 `data/raw/` and **refuses a file whose checksum differs from the manifest** — a scan silently
 replaced on Drive would otherwise change every downstream number with nothing in the repo
 recording why. A checksum is `null` until the first fetch pins it (`--pin`); unknown is never
 written as a placeholder value. **A fetch can be limited to a subset** (`--match GLOB` over the file's path under `data/raw/`):
 the folder is hundreds of MB, and most work needs only a few planes, so pulling everything each
 session wastes minutes and disk. Why Drive rather than git, LFS or a Release:
-[`data/README.md`](../data/README.md). Test: `tests/test_fetch_data.py`.
+[`studies/nor/data/README.md`](../data/README.md). Test: `tests/test_fetch_data.py`.
 
 ## R7 — What counts as a NoR: the owner's validation criteria
 
 Set by the owner (2026-09-25 to 09-27) while reviewing renders; each is a named check in
-[`detection/nor3.py`](../detection/nor3.py) (`CHECKS`, letters A-J, plus K and N in
-[`detection/nor_rf.py`](../detection/nor_rf.py)), so every rejected candidate says which rule
+[`studies/nor/detection/nor3.py`](../detection/nor3.py) (`CHECKS`, letters A-J, plus K and N in
+[`studies/nor/detection/nor_rf.py`](../detection/nor_rf.py)), so every rejected candidate says which rule
 removed it.
 
 - **Shape of the object.** A green-red-green triplet between nuclei: a short, thick stick
@@ -226,8 +226,8 @@ a question for the owner, shown with the objects that only that check rejects.
 ## R8 — The NoR Finder page: detect once, filter live, in the browser
 
 Set by the owner on 2026-09-28. The page is [`web/`](../web/), served from GitHub Pages with no
-backend. Its engine is [`detection/interactive.py`](../detection/interactive.py), tested by
-[`tests/test_interactive.py`](../tests/test_interactive.py).
+backend. Its engine is [`studies/nor/detection/interactive.py`](../detection/interactive.py), tested by
+[`studies/nor/tests/test_interactive.py`](../tests/test_interactive.py).
 
 - **One image, one slow step.** Loading an image only reads it. The finder runs when the user
   presses Find Candidates, and that button shines while the finder or its settings differ from the
@@ -251,7 +251,7 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
   browser says it, which the hover names), and the site's version (stamped by each release).
 - **Version history.** Clicking the version in the status bar (it has no tooltip) opens a Version
   history popup: each release, newest first, with its date and terse lines on what changed for the
-  user. The lines live in [`web/version_history.md`](../web/version_history.md): a pull request that
+  user. The lines live in [`web/version_history.md`](../../../web/version_history.md): a pull request that
   changes what users see adds one under "Next release", and the site build files it under the
   release that first carried that pull request. The browser remembers the version last seen; when
   the page has been updated since and the history names a change in between, a bubble points at
@@ -419,7 +419,7 @@ backend. Its engine is [`detection/interactive.py`](../detection/interactive.py)
 
 Set by the owner on 2026-09-30. Every finder the page offers is scored on every ground-truth image
 (R10) spot by spot, and
-[`detection/lab/quality_baseline.json`](../detection/lab/quality_baseline.json) records, per finder
+[`studies/nor/detection/lab/quality_baseline.json`](../detection/lab/quality_baseline.json) records, per finder
 and image, which real NoRs each one finds, which not-NoR spots it passes and which missing-candidate
 marks it proposes a candidate on. A change that loses a real NoR, passes a new not-NoR or stops
 proposing a candidate at a missing mark fails the tests; a loss the owner agreed to is recorded with
@@ -462,7 +462,7 @@ Set by the owner on 2026-10-03.
 
 ## R11 — Every finder's precision and recall are on record, per filter preset
 
-Set by the owner on 2026-10-06. [`detection/lab/finder_metrics.json`](../detection/lab/finder_metrics.json)
+Set by the owner on 2026-10-06. [`studies/nor/detection/lab/finder_metrics.json`](../detection/lab/finder_metrics.json)
 holds, for every finder the page offers, the precision and recall summed over every ground-truth image
 (R10), run the way the page runs it, at two stages kept apart: the finder's own candidates before any
 filter, and what passes the filters after it at three filter presets (precise, balanced = the

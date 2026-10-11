@@ -59,6 +59,6 @@ Consider a JS port only once a finder is frozen and load time or speed is a real
 Chromium, `mem_breakdown.mjs` in Node), and the options to reduce it with identical output.
 
 Growth with use (repeated image loads, finder runs, filter changes) is a test,
-[`tests/test_memory.py`](../../tests/test_memory.py), which checks the Python session, the worker's
+[`studies/nor/tests/test_memory.py`](../../tests/test_memory.py), which checks the Python session, the worker's
 bridge and the page each on its own in about 12 seconds. `node mem_growth_live.mjs` drives the whole
 page instead, Pyodide and all five finders, in about 2.5 minutes.

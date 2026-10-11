@@ -2,7 +2,7 @@
 
 Read this first, then `lab/ledger.md` (everything tried, with verdicts). The method is the
 `image-algorithm-development` skill in this repo's local pack; what counts as a NoR is
-[`docs/requirements.md`](../docs/requirements.md) R7. Update this file in the PR that changes the
+[`studies/nor/docs/requirements.md`](../docs/requirements.md) R7. Update this file in the PR that changes the
 state.
 
 _Last updated 2026-10-06._
