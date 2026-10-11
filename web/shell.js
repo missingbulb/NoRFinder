@@ -11,7 +11,9 @@
 // work still running, holds(message) while a result is not the last of its kind, and idle() once a held
 // button is free again; painter, a preview
 // painter for an image's bytes as they arrive; showImage() when the shell brings the image back into
-// view; and the viewer's hooks (viewer2d.js).
+// view; stored(key), what one of the study's browser keys holds, for the Manage storage dialog:
+// {group: "settings", what} or {group: "images", image, what}, null for a key not its own; and the viewer's
+// hooks (viewer2d.js).
 "use strict";
 import { viewer as viewer2d } from "./viewer2d.js";
 
@@ -26,6 +28,7 @@ const DRIVE_LINK = "nor-drive-link"; // the last Google Drive link pasted
 const THUMBS = "nor-drive-thumbs"; // "on" | "off": whether the Drive dialog downloads thumbnails
 const SAVED_THUMB = "nor-drive-thumb:"; // + Drive id: a JPEG data URL of the image, saved when it was opened
 const SAVED_THUMBS = "nor-drive-thumbs-saved"; // [Drive id], oldest first: which images have one
+const THUMB_NAMES = "nor-drive-thumb-names"; // {Drive id: file name}: the image each saved thumbnail shows
 const SEEN_VERSION = "nor-seen-version"; // the site version the user last saw, to tell them what changed since
 const MEMORY_TIP = "nor-memory-tip-off"; // true: the user asked never to see the low-memory popup again
 // the page's memory with a study's Python loaded (studies/nor/detection/browser/MEMORY.md), and the device
@@ -45,6 +48,7 @@ function readJSON(key, fallback = {}) {
 function writeJSON(key, v) {
   try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* private mode: lasts for this page only */ }
 }
+const sizeText = (n) => (n < 1048576 ? `${Math.max(1, Math.round(n / 1024))} KB` : n < 2 ** 30 ? `${(n / 1048576).toFixed(1)} MB` : `${(n / 2 ** 30).toFixed(1)} GB`);
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 // the page's state: the shell's fields below, and whatever the study keeps beside them
@@ -168,7 +172,7 @@ function handle(m) {
     showImage(); fold(true); loadShine();
     study.opened?.(m.meta);
     if (st.source && st.source.kind === "local") notice(LOCAL_GT);
-    if (st.source && st.source.kind === "drive") saveThumb(st.source.id);
+    if (st.source && st.source.kind === "drive") saveThumb(st.source.id, st.fileName);
   } else if (m.type === "result") {
     study.result?.(m.action, m.meta, m.bytes, m.echo);
   }
@@ -227,7 +231,6 @@ document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => 
 // click selects and Open (or a double click) opens the selection
 function driveDialog() {
   const msg = (t, err) => { const m = $("#drive-msg"); m.textContent = m.title = t; m.classList.toggle("err", !!err); };
-  const sizeText = (n) => (n < 1048576 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1048576).toFixed(1)} MB`);
   let trail = [], chosen = null;
   const take = async (id, name) => {
     thumbs.stop();
@@ -342,7 +345,7 @@ function driveDialog() {
 
 // the open image's thumbnail, every colour on show, for the Drive dialog to show next time without a download;
 // shrunk and brightened as the studies' ready-made ones are, and only the latest few hundred are kept
-function saveThumb(id) {
+function saveThumb(id, name) {
   const SIDE = 96, GAIN = 2, KEEP = 100;
   const full = document.createElement("canvas"); full.width = st.W; full.height = st.H;
   const im = full.getContext("2d").createImageData(st.W, st.H), d = im.data, { r, g, b } = st.img;
@@ -359,8 +362,107 @@ function saveThumb(id) {
   x.putImageData(small, 0, 0);
   const kept = readJSON(SAVED_THUMBS, []).filter((i) => i !== id).concat(id);
   for (const old of kept.splice(0, Math.max(0, kept.length - KEEP))) try { localStorage.removeItem(SAVED_THUMB + old); } catch { /* nothing kept */ }
-  writeJSON(SAVED_THUMB + id, c.toDataURL("image/jpeg", 0.85)); writeJSON(SAVED_THUMBS, kept);
+  const names = readJSON(THUMB_NAMES);
+  for (const k of Object.keys(names)) if (!kept.includes(k)) delete names[k];
+  writeJSON(SAVED_THUMB + id, c.toDataURL("image/jpeg", 0.85)); writeJSON(SAVED_THUMBS, kept); writeJSON(THUMB_NAMES, { ...names, [id]: name });
 }
+
+// ---------- the user: whoever opened the page on this device, and what the site keeps here ----------
+// what each of the shell's own setting keys holds, in the user's words
+const OWN_SETTINGS = {
+  [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link",
+  [THUMBS]: "Download thumbnails in the Drive dialog", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off",
+};
+const GROUPS = [
+  ["code", "Code kept for the next visit", "Python and its packages, so the page starts without downloading them again."],
+  ["thumbs", "Image thumbnails", "Small pictures of the images opened from Google Drive, shown in its dialog."],
+  ["settings", "Settings", ""],
+  ["images", "Your selections, per image", "What you marked and measured on each image, kept by its file name."],
+  ["other", "Other", "Kept under this site by something the page no longer names."],
+];
+// every key in the browser's storage, and every file in its caches, sorted into GROUPS: [{name, what, size, del}]
+async function inventory() {
+  const out = Object.fromEntries(GROUPS.map(([g]) => [g, []])), extra = { thumbs: 0 };
+  const bytesOf = (k) => 2 * (k.length + (localStorage.getItem(k) || "").length); // UTF-16
+  const drop = (...keys) => keys.forEach((k) => { try { localStorage.removeItem(k); } catch { /* nothing kept */ } });
+  let keys = [];
+  try { keys = Object.keys(localStorage); } catch { /* no storage */ }
+  const names = readJSON(THUMB_NAMES), images = new Map();
+  for (const k of keys) {
+    if (k === SAVED_THUMBS || k === THUMB_NAMES) { extra.thumbs += bytesOf(k); continue; }
+    if (k.startsWith(SAVED_THUMB)) {
+      const id = k.slice(SAVED_THUMB.length);
+      out.thumbs.push({ name: names[id] || id, what: names[id] ? "" : "Saved before names were kept", pic: readJSON(k, ""), size: bytesOf(k), del: () => {
+        drop(k); writeJSON(SAVED_THUMBS, readJSON(SAVED_THUMBS, []).filter((i) => i !== id));
+        const n = readJSON(THUMB_NAMES); delete n[id]; writeJSON(THUMB_NAMES, n);
+      } });
+      continue;
+    }
+    if (OWN_SETTINGS[k]) { out.settings.push({ name: OWN_SETTINGS[k], size: bytesOf(k), del: () => drop(k), held: true }); continue; }
+    const s = study.stored?.(k);
+    if (s && s.group === "images") {
+      const im = images.get(s.image) || { name: s.image, whats: new Set(), keys: [], size: 0, held: true };
+      im.whats.add(s.what); im.keys.push(k); im.size += bytesOf(k); images.set(s.image, im);
+    } else if (s) out.settings.push({ name: s.what, size: bytesOf(k), del: () => drop(k), held: true });
+    else out.other.push({ name: k, size: bytesOf(k), del: () => drop(k), held: true });
+  }
+  for (const im of images.values()) out.images.push({ name: im.name, what: [...im.whats].join(", "), size: im.size, del: () => drop(...im.keys), held: true, ask: true });
+  if (window.caches) {
+    for (const c of await caches.keys()) {
+      const cache = await caches.open(c);
+      for (const req of await cache.keys()) {
+        const res = await cache.match(req), u = new URL(req.url), at = Number(res.headers.get("x-nor-cached-at"));
+        out.code.push({ name: decodeURIComponent(u.pathname.split("/").pop()) || u.href, size: (await res.blob()).size,
+          what: u.host + (at ? " · kept " + new Date(at).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : ""),
+          del: () => cache.delete(req) });
+      }
+    }
+  }
+  for (const list of Object.values(out)) list.sort((a, b) => a.name.localeCompare(b.name));
+  return { out, extra };
+}
+async function storageDialog() {
+  // every group opens unfolded; a redraw after a deletion keeps what the user folded
+  const list = $("#storage-list"), fresh = !$("#storage-dlg").open, open = new Set([...list.querySelectorAll(".group[open]")].map((g) => g.dataset.group));
+  if (fresh) { list.textContent = "Reading what this device keeps…"; $("#storage-total").textContent = ""; $("#storage-dlg").showModal(); }
+  const { out, extra } = await inventory();
+  const held = () => { $("#storage-reload").hidden = false; $("#storage-msg").textContent = "The page still holds what you deleted until it reloads."; };
+  const act = async (items, ask) => {
+    if (ask && !confirm(ask)) return;
+    for (const e of items) await e.del();
+    if (items.some((e) => e.held)) held();
+    storageDialog();
+  };
+  let total = 0;
+  list.replaceChildren(...GROUPS.map(([g, title, about]) => {
+    const items = out[g], size = items.reduce((a, e) => a + e.size, 0) + (extra[g] || 0);
+    total += size;
+    const box = document.createElement("details"); box.className = "group"; box.dataset.group = g; box.open = fresh || open.has(g);
+    box.innerHTML = `<summary>${esc(title)}<span class="count">${items.length ? `${items.length} · ${sizeText(size)}` : "Nothing kept"}</span></summary>`;
+    if (items.length) {
+      const clear = Object.assign(document.createElement("button"), { type: "button", className: "link clear", textContent: "Delete all" });
+      clear.onclick = (e) => { e.preventDefault(); act(items, `Delete all ${items.length} of "${title}" from this device?`); };
+      box.firstChild.append(clear);
+    }
+    if (about) box.append(Object.assign(document.createElement("p"), { className: "hint", textContent: about }));
+    for (const e of items) {
+      const row = document.createElement("div"); row.className = "entry"; row.dataset.name = e.name;
+      row.innerHTML = `<span class="label"><span class="name"></span>${e.what ? '<span class="what"></span>' : ""}</span><span class="size">${sizeText(e.size)}</span>` +
+        `<button type="button" class="del" title="Delete from this device" aria-label="Delete ${esc(e.name)} from this device">×</button>`;
+      if (e.pic) row.prepend(Object.assign(new Image(), { className: "pic", alt: "", src: e.pic }));
+      row.querySelector(".name").textContent = e.name;
+      if (e.what) row.querySelector(".what").textContent = e.what;
+      row.querySelector(".del").onclick = () => act([e], e.ask && `Delete everything kept for ${e.name}?`);
+      box.append(row);
+    }
+    return box;
+  }));
+  const est = await navigator.storage?.estimate?.().catch(() => null);
+  $("#storage-total").textContent = `This site keeps ${sizeText(total)} on this device` + (est?.quota ? `; the browser allows it up to ${sizeText(est.quota)}.` : ".");
+}
+$("#manage-storage").onclick = () => { $("#user-menu").open = false; storageDialog(); };
+$("#storage-reload").onclick = () => location.reload();
+$("#storage-dlg").addEventListener("close", () => { $("#storage-msg").textContent = ""; });
 
 // ---------- downloads and ground truth ----------
 function saveFile(name, text, type) {

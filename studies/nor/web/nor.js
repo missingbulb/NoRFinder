@@ -56,6 +56,19 @@ export function mount(shell) {
   // the options a candidate's card is drawn with: those of the view it is listed in
   const optsOf = (c) => st.opt[result(c.i) === null ? "pass" : "fail"];
 
+  // what each of the study's browser keys holds, for the shell's Manage storage dialog
+  const SETTINGS = { [STORE]: "Filter settings", [SHOW]: "Show menu of the image view", [SORT]: "Sort menus of the item views", [CARDS]: "Options menus of the item views" };
+  const PER_FILE = [[MARKS, "keepers and removals"], [EDITS, "measurements"], [ADDED, "added NoRs"], [MISSING, "added NoRs"], [MASK, "mask"]];
+  function stored(key) {
+    if (SETTINGS[key]) return { group: "settings", what: SETTINGS[key] };
+    const [prefix, what] = PER_FILE.find(([p]) => key.startsWith(p)) || [];
+    if (!prefix) return null;
+    const rest = key.slice(prefix.length), bar = rest.lastIndexOf("|"), byFinder = prefix === MARKS || prefix === EDITS;
+    return byFinder && bar >= 0
+      ? { group: "images", image: rest.slice(0, bar), what: `${what} (${rest.slice(bar + 1)})` }
+      : { group: "images", image: rest, what };
+  }
+
   // ---------- saved filter settings ----------
   const loadSaved = () => readJSON(STORE, { values: {}, off: [] });
   function save() {
@@ -1105,5 +1118,6 @@ export function mount(shell) {
     step,
     capturesPointer: () => !!st.lasso,
     zoomed: placeRing,
+    stored,
   };
 }

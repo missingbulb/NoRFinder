@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 web/version_histo
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- Click your avatar, top right, and choose Manage storage to see and delete what the site keeps on this device. (#438)
 - Animations out of view pause, so they no longer keep the CPU busy; Memory Usage now comes close to Chrome's own count. (#377)
 - Find candidates leaves about 130 MB less memory behind. (#379)
 - NoRs you add are numbered after the found candidates, and that one number is used on the image, the cards, the CSV and the ground truth. (#373)
