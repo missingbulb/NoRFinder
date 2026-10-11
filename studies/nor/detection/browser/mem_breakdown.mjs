@@ -61,7 +61,8 @@ console.log(["stage".padEnd(30), ...COLS.map((s) => s.padStart(8)), "Δrss".padS
 sample("node, nothing loaded");
 py = await loadPyodide();
 sample("pyodide runtime + stdlib");
-const vendored = JSON.parse(fs.readFileSync(path.join(repo, "web", "vendor", "wheels.json"))).map((w) => path.join(repo, "web", "vendor", w));
+const site = path.resolve(here, "..", "..", "..", "..");
+const vendored = JSON.parse(fs.readFileSync(path.join(site, "web", "vendor", "wheels.json"))).map((w) => path.join(site, "web", "vendor", w));
 if (lazy) {
   // loadPackage fetches the wheels into Pyodide's package directory; read them from there
   const lock = py._api.lockfile_packages;

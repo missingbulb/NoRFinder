@@ -11,7 +11,7 @@ import path from "node:path";
 const require = createRequire(import.meta.url);
 let pw;
 try { pw = require("playwright"); } catch { pw = require(path.join(execSync("npm root -g").toString().trim(), "playwright")); }
-const [repo = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", ".."), mbps = "0"] = process.argv.slice(2);
+const [repo = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "..", "..", ".."), mbps = "0"] = process.argv.slice(2);
 const CDN = process.env.CACHE || "/tmp/boot_live_cdn";
 fs.mkdirSync(CDN, { recursive: true });
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".wasm": "application/wasm" };
@@ -53,5 +53,5 @@ await page.addInitScript(() => {
   });
 });
 await page.goto(origin + "/web/index.html");
-await page.waitForFunction(() => !document.querySelector("#finder").disabled, null, { timeout: 600000 });
+await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false, null, { timeout: 600000 });
 await browser.close(); server.close();

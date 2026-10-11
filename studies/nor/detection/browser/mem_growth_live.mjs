@@ -6,7 +6,7 @@
 //
 //   python3 web/build.py            once, for the page's vendored wheels
 //   python3 src/fetch_data.py -m '*Slide5*Slice1_up_left2*'
-//   node detection/browser/mem_growth_live.mjs [--rounds N] [--finders tl,rf,...]   (about 2.5 minutes)
+//   node studies/nor/detection/browser/mem_growth_live.mjs [--rounds N] [--finders tl,rf,...]   (about 2.5 minutes)
 //
 // Needs Playwright (npm i -g playwright). Remote files (Pyodide and its packages) are fetched with
 // curl when HTTPS_PROXY is set, since headless Chromium does not trust a proxy's own CA.
@@ -24,8 +24,8 @@ const require = createRequire(import.meta.url);
 let pw;
 try { pw = require("playwright"); } catch { pw = require(path.join(execSync("npm root -g").toString().trim(), "playwright")); }
 
-const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const TIF = path.join(repo, "data", "raw", "Left Up- Edited", "Slide5_4AP_NoR.sld - Slice1_up_left2.tif");
+const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
+const TIF = path.join(repo, "studies", "nor", "data", "raw", "Left Up- Edited", "Slide5_4AP_NoR.sld - Slice1_up_left2.tif");
 const opt = (name, def) => { const i = process.argv.indexOf("--" + name); return i > 0 ? process.argv[i + 1] : def; };
 const ROUNDS = +opt("rounds", 2), MOVES = 12;
 let FINDERS = opt("finders", "").split(",").filter(Boolean);   // all the page offers, unless named
@@ -38,7 +38,7 @@ const bounded = (p, what) => Promise.race([p, new Promise((_, bad) => setTimeout
 // were; the V8 heaps get a little slack for code caches and inline caches that settle over the first rounds.
 const LIMITS = { pyUsedAfterGc: 1 * MB, pyObjects: 500, pageHeap: 1 * MB, workerHeap: 1 * MB, pageBuffers: 1 * MB, workerBuffers: 1 * MB, nodes: 0, listeners: 0 };
 
-for (const [f, how] of [[TIF, "python3 src/fetch_data.py -m '*Slide5*Slice1_up_left2*'"], [path.join(repo, "web", "vendor", "wheels.json"), "python3 web/build.py"]]) {
+for (const [f, how] of [[TIF, "python3 studies/nor/src/fetch_data.py -m '*Slide5*Slice1_up_left2*'"], [path.join(repo, "web", "vendor", "wheels.json"), "python3 web/build.py"]]) {
   if (!fs.existsSync(f)) { console.error(`missing ${path.relative(repo, f)}: run ${how}`); process.exit(2); }
 }
 
@@ -90,10 +90,10 @@ const inWorker = (method, params = {}) => bounded(new Promise((ok, bad) => {
 await cdp.send("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: false, flatten: false });
 await cdp.send("Performance.enable");
 
-// resolves with the worker's next message of this type (the page's own handler still gets it)
+// resolves with the worker's next message of this type, or answer to this action (the page's own handler still gets it)
 const next = (type) => bounded(page.evaluate((type) => new Promise((ok, bad) => {
   const h = (e) => {
-    if (e.data.type === type) { st.worker.removeEventListener("message", h); ok(e.data.type === "memory" ? e.data : null); }
+    if (e.data.type === type || (e.data.type === "result" && e.data.action === type)) { st.worker.removeEventListener("message", h); ok(e.data.type === "memory" ? e.data : null); }
     else if (e.data.type === "error") { st.worker.removeEventListener("message", h); bad(new Error(e.data.text)); }
   };
   st.worker.addEventListener("message", h);
@@ -108,7 +108,7 @@ async function open() {
   await page.setInputFiles("#file", { name: `slide ${++opened}.tif`, mimeType: "image/tiff", buffer: slide }); await done; await settled();
 }
 async function findWith(f) {
-  const done = next("filtered");   // finding ends with the first filter pass on the new candidates
+  const done = next("refilter");   // finding ends with the first filter pass on the new candidates
   await page.evaluate((f) => { $("#finder").value = f; $("#finder").dispatchEvent(new Event("change")); $("#find").click(); }, f);
   await done; await settled();
 }
@@ -118,7 +118,7 @@ async function tune() {
   const n = await page.evaluate(() => document.querySelectorAll("#filters .param.number").length);
   assert.ok(n >= 6, `only ${n} filter dials to move`);
   for (let k = 0; k < MOVES; k++) {
-    const done = next("filtered");
+    const done = next("refilter");
     await page.evaluate(([k, n]) => {
       if (k === 0) showView("items"); if (k === 6) showView("image");
       const p = document.querySelectorAll("#filters .param.number")[Math.floor(k / 2) % n], box = p.querySelector(".box");
@@ -129,7 +129,7 @@ async function tune() {
   }
   // switching a filter off and on again
   for (const on of [false, true]) {
-    const done = next("filtered");
+    const done = next("refilter");
     await page.evaluate((on) => { const c = document.querySelector("#filters .filter input[type=checkbox]"); c.checked = on; c.dispatchEvent(new Event("change")); }, on);
     await done; await settled();
   }

@@ -63,22 +63,22 @@ for (const finder of finders) {
     } catch { return r.fulfill({ status: 404, body: "" }); }
   });
   const page = await ctx.newPage();
-  await page.route("**/app.js", (r) => r.abort());
+  await page.route("**/shell.js", (r) => r.abort());
   await page.route("**/__bench.tif", (r) => r.fulfill({ body: fs.readFileSync(tif), contentType: "image/tiff" }));
   await page.goto(url);
   const r = await page.evaluate(async (finder) => {
-    const w = new Worker(new URL("worker.js", location.href), { type: "module" });
-    const next = (type) => new Promise((ok, bad) => {
-      w.onmessage = (e) => { if (e.data.type === type) ok(e.data); else if (e.data.type === "error") bad(new Error(e.data.text)); };
+    const w = new Worker(new URL("worker.js?study=nor", location.href), { type: "module" });
+    const next = (kind) => new Promise((ok, bad) => {
+      w.onmessage = (e) => { if (e.data.type === kind || (e.data.type === "result" && e.data.action === kind)) ok(e.data); else if (e.data.type === "error") bad(new Error(e.data.text)); };
     });
     const t0 = performance.now();
     await next("ready"); const boot = (performance.now() - t0) / 1000;
     const bytes = await (await fetch("__bench.tif")).arrayBuffer();
     let t = performance.now(); w.postMessage({ type: "open", name: "slide.tif", bytes }, [bytes]); await next("opened");
     const open = (performance.now() - t) / 1000;
-    t = performance.now(); w.postMessage({ type: "detect", finder, overrides: {} }); const d = await next("detected");
+    t = performance.now(); w.postMessage({ type: "call", action: "detect", args: { finder, overrides: {} } }); const d = await next("detect");
     const detect = (performance.now() - t) / 1000;
-    t = performance.now(); w.postMessage({ type: "refilter", seq: 1, spec: { values: {}, off: [] } }); const f = await next("filtered");
+    t = performance.now(); w.postMessage({ type: "call", action: "refilter", args: { spec: { values: {}, off: [] } }, echo: 1 }); const f = await next("refilter");
     const refilter = (performance.now() - t) / 1000;
     return { boot, open, detect, refilter, cands: (typeof d.meta === "string" ? JSON.parse(d.meta) : d.meta).cands.length, passes: f.fails.filter((x) => x === null).length };
   }, finder);
