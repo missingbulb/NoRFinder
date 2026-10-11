@@ -20,7 +20,7 @@ are tuned and scored against.
 
 All of it runs in your browser: images are analysed on your own machine, never uploaded to a
 server. The image analysis is the
-repository's own Python code (`detection/`), run under Pyodide (CPython compiled to WebAssembly)
+repository's own Python code (`studies/nor/detection/`), run under Pyodide (CPython compiled to WebAssembly)
 with numpy, scipy and scikit-image, inside a Web Worker so the page stays responsive. A small
 bridge passes the image in and the candidates and filter results back out. The JavaScript does
 everything that isn't image analysis: drawing the image and its overlays, the item views, the
@@ -32,7 +32,8 @@ its packages, about 50 MB, download on the first visit and are cached for 30 day
 
 ## For contributors
 
-Start here: **[docs/WARMUP.md](docs/WARMUP.md)** — the project map, current status and open questions.
+Start here: **[docs/WARMUP.md](docs/WARMUP.md)** — the repo map: the shell, the study contract and
+how to add a study.
 
-- [docs/project-brief.md](docs/project-brief.md) — the specification, ingested from the owner's overview document
-- [docs/literature/](docs/literature/README.md) — the literature review
+- [studies/nor/](studies/nor/docs/WARMUP.md) — the NoR Finder study: its brief, literature, finders
+  and ground truth

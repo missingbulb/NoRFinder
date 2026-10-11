@@ -1,0 +1,88 @@
+<template data-slot="left">
+    <section class="box foldable">
+      <div class="sec-head"><h2>Candidates finder</h2><button id="reset-detect" class="link" disabled>restore defaults</button></div>
+      <select id="finder" disabled></select>
+      <details id="about-box" class="fold">
+        <summary>How it works</summary>
+        <p id="finder-note" class="hint"></p>
+      </details>
+      <details id="settings-box" class="fold" open>
+        <summary>Settings</summary>
+        <div id="main-params"></div>
+        <details id="advanced">
+          <summary>Advanced <span class="dim">(every setting)</span></summary>
+          <div id="detect-params"></div>
+        </details>
+      </details>
+      <div class="row">
+        <button id="find" class="primary" disabled>Find Candidates</button>
+      </div>
+    </section>
+
+    <section class="box foldable">
+      <div class="sec-head"><h2>Filters</h2></div>
+      <div id="presets" class="tabs presets" role="group" aria-label="Filter preset" hidden></div>
+      <div id="filters"></div>
+    </section>
+</template>
+<template data-slot="toolbar">
+      <button id="switch" class="big" disabled>Item View</button>
+      <details class="menu for-image" id="show-menu">
+        <summary>Show</summary>
+        <div class="pop">
+          <div class="opt"><label><input type="checkbox" id="show-pass" checked> accepted</label>
+            <input type="range" id="pass-w" min="0.5" max="4" step="0.5" title="Line width"><input type="color" id="pass-c" title="Colour"></div>
+          <div class="opt"><label><input type="checkbox" id="show-fails" checked> rejected</label>
+            <input type="range" id="fail-w" min="0.5" max="4" step="0.5" title="Line width"><input type="color" id="fail-c" title="Colour"></div>
+          <label><input type="checkbox" id="show-nums" checked> candidate numbers</label>
+          <label><input type="checkbox" id="show-letters" checked> rejection reasons</label>
+          <label><input type="checkbox" id="show-lines" checked> measuring lines</label>
+        </div>
+      </details>
+      <div class="for-items tabs" role="tablist">
+        <button id="tab-pass" role="tab" class="on">Finalists <span id="n-pass"></span></button><button id="tab-fail" role="tab">Rejected <span id="n-fail"></span></button>
+      </div>
+      <details class="menu for-items" id="card-menu">
+        <summary>Options</summary>
+        <div class="pop">
+          <label class="sort">sort <select id="sort" title="The order of the cards in this view"></select></label>
+          <label class="num">context padding <input type="number" id="opt-pad" placeholder="auto" min="0" max="60" step="1"> px</label>
+          <label><input type="checkbox" id="opt-align"> align to horizon</label>
+          <label><input type="checkbox" id="opt-borders"> NoR borders</label>
+          <label><input type="checkbox" id="opt-bars"> measurement bars</label>
+          <label><input type="checkbox" id="opt-len-img"> lengths on the image</label>
+          <label><input type="checkbox" id="opt-len-card"> lengths on the card</label>
+          <label><input type="checkbox" id="opt-adjust"> length adjusters</label>
+        </div>
+      </details>
+</template>
+<template data-slot="view-top">
+    <div id="lasso-hint" hidden>Drag around the area to count · Esc cancels</div>
+</template>
+<template data-slot="views">
+    <div id="items-view" hidden>
+      <div id="list"></div>
+    </div>
+</template>
+<template data-slot="right">
+    <section class="box" id="selected-box">
+      <div class="sec-head"><h2>Selected</h2>
+        <div class="stepper"><button id="sel-prev" title="Previous candidate" aria-label="Previous candidate" disabled>‹</button><button id="sel-next" title="Next candidate" aria-label="Next candidate" disabled>›</button></div>
+      </div>
+      <div id="selected" class="dim">Click a candidate on the image.</div>
+    </section>
+    <section class="box" id="summary-box">
+      <div class="sec-head"><h2>Summary</h2>
+        <span class="mask-btns"><button id="mask-add" class="primary" disabled title="Lasso the part of the image the summary and the CSVs should count; lasso again to add or cut out an area">Add mask</button><button id="mask-clear" hidden>Clear mask</button></span>
+      </div>
+      <div id="summary" class="dim">No candidates yet.</div>
+      <div class="csv-btns"><button id="dl-cands" disabled>Download Candidates</button><button id="dl-summary" disabled>Download Summary</button></div>
+    </section>
+    <section class="box" id="downloads">
+      <h2>Ground Truth</h2>
+      <button id="dl-truth" disabled><span class="gt-ico" aria-hidden="true"></span>Submit new GT to GitHub</button>
+    </section>
+</template>
+<template data-slot="body">
+<div id="ctx" class="pop" role="menu" hidden><button class="item" role="menuitem" type="button"></button></div>
+</template>

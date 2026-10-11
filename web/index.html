@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NoR Finder</title>
+<title></title>
 <meta name="version" id="site-version" title="version 0.11011.31">
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="style.css">
@@ -15,7 +15,7 @@
 <body>
 <header>
   <img id="logo" src="logo.svg" alt="Sagol School of Neuroscience, Tel Aviv University">
-  <h1>NoR Finder</h1>
+  <h1 id="title"></h1>
   <button id="theme" class="icon" title="Switch between dark and light" aria-label="Switch between dark and light">
     <svg class="sun" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
     <svg class="moon" viewBox="0 0 24 24" width="18" height="18"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
@@ -35,76 +35,20 @@
             </div>
           </details>
         </div>
-        <input id="file" type="file" accept=".tif,.tiff,.png" hidden>
+        <input id="file" type="file" hidden>
       </div>
       <details id="file-box" class="empty"><summary id="file-name" class="dim">No image loaded</summary><dl id="file-info"></dl></details>
       <div id="thumb-wrap" hidden><canvas id="thumb"></canvas><div id="thumb-view"></div></div>
-      <div class="layers">
-        <label title="Nav1.6: sodium channels at the node (shown red)"><input type="checkbox" id="show-r" class="ch r" checked>Nav1.6</label>
-        <label title="Caspr: the paranodes either side of the node (shown green)"><input type="checkbox" id="show-g" class="ch g" checked>Caspr</label>
-        <label title="DAPI: cell nuclei (shown blue)"><input type="checkbox" id="show-b" class="ch b">DAPI</label>
-      </div>
+      <div class="layers" id="channels"></div>
     </section>
 
-    <section class="box foldable">
-      <div class="sec-head"><h2>Candidates finder</h2><button id="reset-detect" class="link" disabled>restore defaults</button></div>
-      <select id="finder" disabled></select>
-      <details id="about-box" class="fold">
-        <summary>How it works</summary>
-        <p id="finder-note" class="hint"></p>
-      </details>
-      <details id="settings-box" class="fold" open>
-        <summary>Settings</summary>
-        <div id="main-params"></div>
-        <details id="advanced">
-          <summary>Advanced <span class="dim">(every setting)</span></summary>
-          <div id="detect-params"></div>
-        </details>
-      </details>
-      <div class="row">
-        <button id="find" class="primary" disabled>Find Candidates</button>
-      </div>
-    </section>
-
-    <section class="box foldable">
-      <div class="sec-head"><h2>Filters</h2></div>
-      <div id="presets" class="tabs presets" role="group" aria-label="Filter preset" hidden></div>
-      <div id="filters"></div>
-    </section>
+    <slot-here data-slot-for="left"></slot-here>
   </aside>
   <div class="gutter" id="gutter-left" title="Drag to resize"></div>
 
   <main id="view">
     <div class="toolbar">
-      <button id="switch" class="big" disabled>Item View</button>
-      <details class="menu for-image" id="show-menu">
-        <summary>Show</summary>
-        <div class="pop">
-          <div class="opt"><label><input type="checkbox" id="show-pass" checked> accepted</label>
-            <input type="range" id="pass-w" min="0.5" max="4" step="0.5" title="Line width"><input type="color" id="pass-c" title="Colour"></div>
-          <div class="opt"><label><input type="checkbox" id="show-fails" checked> rejected</label>
-            <input type="range" id="fail-w" min="0.5" max="4" step="0.5" title="Line width"><input type="color" id="fail-c" title="Colour"></div>
-          <label><input type="checkbox" id="show-nums" checked> candidate numbers</label>
-          <label><input type="checkbox" id="show-letters" checked> rejection reasons</label>
-          <label><input type="checkbox" id="show-lines" checked> measuring lines</label>
-        </div>
-      </details>
-      <div class="for-items tabs" role="tablist">
-        <button id="tab-pass" role="tab" class="on">Finalists <span id="n-pass"></span></button><button id="tab-fail" role="tab">Rejected <span id="n-fail"></span></button>
-      </div>
-      <details class="menu for-items" id="card-menu">
-        <summary>Options</summary>
-        <div class="pop">
-          <label class="sort">sort <select id="sort" title="The order of the cards in this view"></select></label>
-          <label class="num">context padding <input type="number" id="opt-pad" placeholder="auto" min="0" max="60" step="1"> px</label>
-          <label><input type="checkbox" id="opt-align"> align to horizon</label>
-          <label><input type="checkbox" id="opt-borders"> NoR borders</label>
-          <label><input type="checkbox" id="opt-bars"> measurement bars</label>
-          <label><input type="checkbox" id="opt-len-img"> lengths on the image</label>
-          <label><input type="checkbox" id="opt-len-card"> lengths on the card</label>
-          <label><input type="checkbox" id="opt-adjust"> length adjusters</label>
-        </div>
-      </details>
+      <slot-here data-slot-for="toolbar"></slot-here>
       <span class="grow"></span>
       <div class="for-image zoom" role="group" aria-label="Zoom">
         <button id="zoom-out" title="Zoom out" aria-label="Zoom out">−</button><span id="zoom-label">100%</span><button id="zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
@@ -112,39 +56,21 @@
     </div>
     <div id="busy" hidden><div id="scan-light"></div><span class="spin big"></span><div id="busy-text"></div><div id="busy-time"></div></div>
 
-    <div id="lasso-hint" hidden>Drag around the area to count · Esc cancels</div>
+    <slot-here data-slot-for="view-top"></slot-here>
     <div id="image-view">
       <div id="scroller">
-        <div id="empty">Load a three-channel ImageJ TIFF (Caspr green, Nav red, DAPI) or an RGB PNG, then press Find Candidates.<br>
-          Python, which runs the finders, loads in the background meanwhile: about 50 MB on the first visit, then from this browser's cache for 30 days.</div>
+        <div id="empty"><span id="empty-text"></span><br>
+          Python, which runs the analysis, loads in the background meanwhile: about 50 MB on the first visit, then from this browser's cache for 30 days.</div>
         <div id="stage" hidden><canvas id="base"></canvas><svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg></div>
       </div>
     </div>
 
-    <div id="items-view" hidden>
-      <div id="list"></div>
-    </div>
+    <slot-here data-slot-for="views"></slot-here>
   </main>
   <div class="gutter" id="gutter-right" title="Drag to resize"></div>
 
   <aside id="right">
-    <section class="box" id="selected-box">
-      <div class="sec-head"><h2>Selected</h2>
-        <div class="stepper"><button id="sel-prev" title="Previous candidate" aria-label="Previous candidate" disabled>‹</button><button id="sel-next" title="Next candidate" aria-label="Next candidate" disabled>›</button></div>
-      </div>
-      <div id="selected" class="dim">Click a candidate on the image.</div>
-    </section>
-    <section class="box" id="summary-box">
-      <div class="sec-head"><h2>Summary</h2>
-        <span class="mask-btns"><button id="mask-add" class="primary" disabled title="Lasso the part of the image the summary and the CSVs should count; lasso again to add or cut out an area">Add mask</button><button id="mask-clear" hidden>Clear mask</button></span>
-      </div>
-      <div id="summary" class="dim">No candidates yet.</div>
-      <div class="csv-btns"><button id="dl-cands" disabled>Download Candidates</button><button id="dl-summary" disabled>Download Summary</button></div>
-    </section>
-    <section class="box" id="downloads">
-      <h2>Ground Truth</h2>
-      <button id="dl-truth" disabled><span class="gt-ico" aria-hidden="true"><svg class="done" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg><svg class="part" viewBox="0 0 24 24" width="16" height="16"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><svg class="todo" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></span>Submit new GT to GitHub</button>
-    </section>
+    <slot-here data-slot-for="right"></slot-here>
   </aside>
 </div>
 
@@ -198,11 +124,11 @@
   </form>
 </dialog>
 <div id="tip" hidden></div>
-<div id="ctx" class="pop" role="menu" hidden><button class="item" role="menuitem" type="button"></button></div>
+<div id="icons" hidden><svg class="done" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg><svg class="part" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><svg class="todo" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></div>
+<slot-here data-slot-for="body"></slot-here>
 <div id="notice" role="alertdialog" aria-labelledby="notice-text" hidden><p id="notice-text"></p><button id="notice-ok" class="primary" type="button">OK</button></div>
 <script src="config.js"></script>
 <script src="drive.js"></script>
-<script src="peek.js"></script>
-<script src="app.js"></script>
+<script type="module" src="shell.js"></script>
 </body>
 </html>

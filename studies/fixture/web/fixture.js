@@ -1,0 +1,25 @@
+// The fixture study's page: a threshold, a Count button, the count, and the counted pixels drawn over
+// the image.
+export function mount(shell) {
+  const $ = shell.$;
+  let ready = false;
+  $("#fx-count").onclick = () => {
+    shell.busy(true, "Counting…");
+    shell.call("count", { threshold: +$("#fx-threshold").value });
+  };
+  return {
+    ready(info) { $("#fx-threshold").value = info.threshold; ready = true; },
+    opened() { $("#fx-count").disabled = !ready; $("#fx-result").textContent = "Nothing counted yet."; shell.viewer.layer("fx").replaceChildren(); },
+    result(action, meta, bytes) {
+      shell.busy(false);
+      $("#fx-result").textContent = `${meta.count} pixels above the threshold`;
+      const { W } = shell.state, g = shell.viewer.layer("fx");
+      let d = "";
+      for (let i = 0; i < bytes.length; i++) if (bytes[i]) d += `M${i % W} ${Math.floor(i / W)}h1v1h-1z`;
+      const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      p.setAttribute("d", d); p.setAttribute("fill", "rgba(255, 0, 200, 0.4)"); p.id = "fx-mask";
+      g.replaceChildren(p);
+      shell.status("Counted.");
+    },
+  };
+}

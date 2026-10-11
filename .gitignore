@@ -1,15 +1,18 @@
 __pycache__/
 *.pyc
 
-# raw microscope data, fetched from Drive (python3 src/fetch_data.py), never committed
-/data/raw/
+# raw microscope data, fetched from Drive (python3 studies/nor/src/fetch_data.py), never committed
+/studies/nor/data/raw/
 
 # detection processing artifacts (image cache, perf timings), never committed
-/detection/.cache/
+/studies/nor/detection/.cache/
 
-# browser check (detection/browser), npm install output
-/detection/browser/node_modules/
-/detection/browser/package*.json
+# browser check (studies/nor/detection/browser), npm install output
+/studies/nor/detection/browser/node_modules/
+/studies/nor/detection/browser/package*.json
+# Pyodide for the tests that run the shell's Python runtime under Node (npm i --prefix tests pyodide@314.0.7)
+/tests/node_modules/
+/tests/package*.json
 # the page's vendored wheels (python3 web/build.py) and the Pages deploy's assembled site
 /web/vendor/
 # the version history the page reads, built from web/version_history.md (python3 web/version_history.py json)

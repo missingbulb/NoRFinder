@@ -1,6 +1,6 @@
 # Improve the finders on the ground truth just added
 
-The ground truth people submitted from the NoR Finder page was added to `detection/lab/ground_truth/`
+The ground truth people submitted from the NoR Finder page was added to `studies/nor/detection/lab/ground_truth/`
 on the pull request named under "Delivered by code-work", with the quality baseline re-recorded
 against it. Work on that pull request's branch and push onto it; never open another, never merge.
 
@@ -13,4 +13,4 @@ make the finders propose candidates at the newly marked missing NoRs, then impro
 - When nothing you tried kept its gains, say so in the pull request with what you tried; the ground
   truth it adds stands on its own.
 - Add your report to the pull request's body below what is already there, and log every attempt in
-  `detection/lab/ledger.md`.
+  `studies/nor/detection/lab/ledger.md`.

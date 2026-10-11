@@ -1,0 +1,37 @@
+{
+  "id": "fixture",
+  "title": "Fixture",
+  "viewer": "image2d",
+  "python": {
+    "paths": [
+      "py/"
+    ],
+    "entry": "fixture",
+    "packages": [],
+    "wheels": []
+  },
+  "web": {
+    "module": "web/fixture.js",
+    "panels": "web/fixture.html",
+    "style": "web/fixture.css"
+  },
+  "files": {
+    "accept": ".png",
+    "empty": "Load a greyscale PNG, then press Count."
+  },
+  "channels": [
+    {
+      "key": "w",
+      "name": "Grey",
+      "title": "The image itself",
+      "shown": true
+    }
+  ],
+  "progress": {
+    "open": "Reading the image…",
+    "count": "Counting…"
+  },
+  "groundTruth": {
+    "label": "fixture-ground-truth"
+  }
+}

@@ -1,11 +1,21 @@
 """R8: the page's version box opens its Version history, and after an update a bubble points at it
 (version_history_driver.mjs, in headless Chromium)."""
-from test_memory import needs_node, run
+import os
+import shutil
+import subprocess
+
 import pytest
 
 pytestmark = pytest.mark.full
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+NODE = shutil.which('node')
 
-@needs_node
+
+@pytest.mark.skipif(not NODE, reason='node missing')
 def test_version_history_popup_and_update_bubble():
-    run('version_history_driver.mjs')
+    r = subprocess.run([NODE, os.path.join(HERE, 'version_history_driver.mjs')], capture_output=True, text=True, timeout=60)
+    print(r.stdout, r.stderr)
+    if r.returncode == 2:
+        pytest.skip(r.stderr.strip())
+    assert r.returncode == 0, r.stdout + r.stderr

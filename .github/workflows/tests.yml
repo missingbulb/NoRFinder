@@ -25,9 +25,9 @@ jobs:
       - name: Restore the ground-truth images
         uses: actions/cache@v5
         with:
-          path: data/raw
-          key: images-${{ hashFiles('data/sources.json', 'detection/lab/ground_truth/dataset.json') }}
+          path: studies/nor/data/raw
+          key: images-${{ hashFiles('studies/nor/data/sources.json', 'studies/nor/detection/lab/ground_truth/dataset.json') }}
       - name: Fetch the ground-truth images not restored
-        run: python3 detection/ground_truth.py fetch
+        run: python3 studies/nor/detection/ground_truth.py fetch
       - name: Run the fast tests
-        run: python3 -m pytest tests -q -m "not full" --durations=5
+        run: python3 -m pytest tests studies -q -m "not full" --durations=5

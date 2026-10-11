@@ -45,3 +45,10 @@
 - **Model:** Claude, per the commit trailer.
 - **Mechanism:** a bullet in the skill's performance section, and `detection/perf.py` recording the
   peak (tracemalloc) in every snapshot and check.
+
+## 2026-10-11 · scope-changed · the NoR study moved under studies/nor/
+- **Reason:** the repo now holds one page and several studies; the paths this element names moved
+  with the NoR study.
+- **Actor:** @missingbulb (owner).
+- **Model:** Claude, per the commit trailer.
+- **Mechanism:** the same carrier, its paths repointed.
