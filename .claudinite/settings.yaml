@@ -1,8 +1,8 @@
 engine:
   channel: "staging"
   releases: "missingbulb/ClaudiniteStagingDistro"
-  version: "1.61009.3"
-  manifest: "sha512-kuxxWzBEyNlVGf/cp2nHrtBGzEHs2N3CzlzX6CgzgQM5wL3r8FyvzRtGuddN6RADq5VDhMMR+jwRFlsChke/YQ=="
+  version: "1.61011.1"
+  manifest: "sha512-pBaD+Xr/qn/jRqRFAwT8GD7HL/UWOSxj151bVCVzo4H1XIuixvpAE2zCBhZJ9v42OPL4wSvnc8PPdG+sSvbKkQ=="
 packs:
   channel: "canary"
   declared:
