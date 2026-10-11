@@ -26,7 +26,9 @@ bridge passes the image in and the candidates and filter results back out. The J
 everything that isn't image analysis: drawing the image and its overlays, the item views, the
 measurement editors, the summary statistics, the CSVs, the Drive browser and your saved settings.
 The site is plain static files on GitHub Pages, with no server and no build framework. Python and
-its packages, about 50 MB, download on the first visit and are cached for 30 days.
+its packages, about 50 MB, download on the first visit and are cached for 30 days. Images opened
+from Google Drive are kept in your browser too, so they open again without a download, unless you
+untick Auto-save images; your avatar's Manage storage lists, and deletes, everything kept.
 
 ![NoR Finder with a dense corpus callosum field: 428 candidates found, 193 finalists measured, one selected, and the summary's length histograms](docs/screenshot.png)
 
