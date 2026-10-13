@@ -24,6 +24,8 @@ packs:
     - "html"
     - "numpy-image-processing"
     - "node"
+  sources:
+    - "missingbulb/Shepherd"
 tasks:
   routines:
     default:
