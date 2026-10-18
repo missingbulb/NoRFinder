@@ -6,7 +6,8 @@ engine:
 packs:
   channel: "canary"
   declared:
-    - "local/nor-finder"
+    - id: "nor-finder"
+      source: "local"
     - "basics"
     - "claudinite-lifecycle"
     - "git-github"
@@ -26,8 +27,14 @@ packs:
     - "node"
   sources:
     - "missingbulb/Shepherd"
+  manager:
+    repo: "missingbulb/Shepherd"
 tasks:
   routines:
     default:
       url: "https://api.anthropic.com/v1/claude_code/routines/trig_015wS2eGf4nRRnk6q47jTuQn/fire"
       tokenSecret: "CCR_ROUTINE_TOKEN"
+  merge:
+    "engine/update": "merge-safe-changes"
+  frequency:
+    "engine/update": "weekly"
