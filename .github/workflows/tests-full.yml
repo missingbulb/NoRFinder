@@ -54,6 +54,29 @@ jobs:
         run: python3 -m pytest tests studies -q --durations=10
 
   # Main is released only once the full set is green on it; the release task owns the deploy.
+      # Claudinite's checks; the engine update keeps these steps current.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/claudinite
+            ~/.npm/_cacache
+          key: cn-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.claudinite/settings.yaml') }}
+          restore-keys: cn-${{ runner.os }}-${{ runner.arch }}-
+      - name: install the engine settings.yaml pins
+        run: npx --yes --prefer-offline @claudinite/setup@1.0.1
+      - name: name the Claudinite checks build
+        id: claudinite-checks
+        continue-on-error: true
+        run: .claudinite/bin/cn check key >> "$GITHUB_OUTPUT"
+      - if: steps.claudinite-checks.outputs.key != ''
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.claudinite-checks.outputs.dir }}
+          key: claudinite-checks-${{ runner.os }}-${{ runner.arch }}-${{ steps.claudinite-checks.outputs.key }}
+      - name: cn check work-and-world
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: .claudinite/bin/cn check work-and-world
   release:
     needs: tests
     if: github.event_name == 'push'
