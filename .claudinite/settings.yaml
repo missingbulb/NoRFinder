@@ -1,6 +1,6 @@
 engine:
   channel: "staging"
-  releases: "missingbulb/ClaudiniteStagingDistro"
+  releases: "Claudinite/StagingReleases"
   version: "1.61021.1"
   manifest: "sha512-TNL4D6nKYFHbOy2SyBsc9/1/D7eg+HLBPS8mWZsPvFwA7Bn5B9kpDDuPjvnuLb615zw/geEkUiz+8pH8Qt41oQ=="
 packs:
