@@ -35,3 +35,23 @@ worker in the page; the NoR study's memory test checks that repeated calls leave
 
 A browser key an existing study saves under keeps its name across the split and every later change
 to the shell, so a person's settings, decisions and measurements survive a release.
+
+## S6 — The user sees, and can clear, what this device keeps
+
+With no sign-in, the user is whoever opened the page on this device. An avatar at the right of the
+header opens a menu whose **Manage storage** dialog lists everything the site keeps on this device,
+each with its size, in six groups, each folded when the dialog opens: the code kept for the next
+visit (Python and its packages, by file); image thumbnails, by the image's full name (by its Drive
+id for one saved before names were kept); image files saved from Google Drive, by name; settings,
+the shell's and the study's; the study's selections per image, by image name; and anything else
+stored under the site that neither the shell nor the study names. Each entry, and each group, can
+be deleted. The shell names its own keys; the study names its keys through its `stored` hook, so
+the shell still names no study (S1). Test: `tests/test_storage_page.py`.
+
+## S7 — Images from Drive open again without a download
+
+The Google Drive dialog's bottom row holds two remembered checkboxes, **Show thumbnails** and
+**Auto-save images** (both on at first), and beside them a link that opens Manage storage, its
+text the bytes the thumbnails and saved images take on this device. While Auto-save images is on,
+an image downloaded from Drive is kept on this device; an image kept there opens from it, with no
+download, whatever the checkbox says. Test: `tests/test_storage_page.py`.

@@ -1,8 +1,8 @@
 // "Load from Google Drive": the user pastes the link of an image or a folder shared as "Anyone
 // with the link", with no sign-in. Google answers a page on another site only through the Drive
 // API with an API key (NOR_CONFIG.google.apiKey, written into config.js at deploy): its plain download link refuses any
-// request a browser marks cross-site. Nothing is kept: the file goes to the study like one loaded
-// from the computer.
+// request a browser marks cross-site. This module keeps nothing: the file goes to the study like one
+// loaded from the computer.
 "use strict";
 window.NorDrive = (() => {
   const key = ((window.NOR_CONFIG && window.NOR_CONFIG.google) || {}).apiKey || "";

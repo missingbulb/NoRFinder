@@ -6,7 +6,7 @@
   },
   "engine": {
     "package": "@claudinite/cli",
-    "version": "1.61011.2",
+    "version": "1.61022.2",
     "channel": "staging"
   },
   "packs": {
@@ -56,10 +56,8 @@
   "dormant": false,
   "held": {
     "basics": "1.61009.1",
-    "claude-code-web-users-support": "1.61009.2",
-    "claudinite-growth": "1.61009.4",
-    "claudinite-lifecycle": "1.61009.2",
-    "git-github": "1.61009.1",
+    "claude-code-web-users-support": "1.61012.1",
+    "git-github": "1.61013.1",
     "github-pages": "1.61009.1",
     "html": "1.61004.1",
     "node": "1.61004.1",
