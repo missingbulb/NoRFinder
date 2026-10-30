@@ -1,7 +1,7 @@
 // The page's shell: it runs the study the address names (/<id>, the default at the bare address), and knows
 // none of them; the header's switcher offers the ones the build lists and swaps one in without a reload. What it gives a study, as shell in mount(shell): loading images (from the
 // computer or Google Drive), Python (the study's own, run in worker.js), the viewer the study asks for,
-// the status line and the busy screen, notices, the user's saved settings, downloads and ground-truth
+// the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own), notices, the user's saved settings, downloads and ground-truth
 // submission; and around them the theme, side bars, foldable boxes, the memory popup and the version
 // history.
 //
@@ -12,9 +12,9 @@
 // button is free again; painter, a preview
 // painter for an image's bytes as they arrive; showImage() when the shell brings the image back into
 // view; stored(key), what one of the study's browser keys holds, for the Manage storage dialog:
-// {group: "settings", what} or {group: "images", image, what}, null for a key not its own; and the viewer's
-// hooks (viewer2d.js). A listener a study adds outside its own panels takes shell.signal, which ends it when
-// the study leaves.
+// {group: "settings", what} or {group: "images", image, what}, null for a key not its own; memory(), the
+// study's own large holdings for the memory popup, [{name, what, size}]; and the viewer's hooks (viewer2d.js).
+// A listener a study adds outside its own panels takes shell.signal, which ends it when the study leaves.
 "use strict";
 import { viewer as viewer2d } from "./viewer2d.js";
 
@@ -86,15 +86,97 @@ function busy(on, text, look) {
 // the memory the tab holds: Python's (the bulk, and it never shrinks), its files and, in Chrome and Edge, the
 // page's own scripts, plus an estimate of what a page cannot read
 function statusBar() {
-  const js = performance.memory?.usedJSHeapSize, total = st.heap == null ? null : st.heap + st.files + (js || 0) + UNREAD_MB * 2 ** 20;
-  const gb = navigator.deviceMemory, el = $("#sb-memory");
-  el.textContent = total == null ? "" : `Memory Usage ${mbOf(total)} MB`;
+  const { js, total } = memoryNow(), gb = navigator.deviceMemory, el = $("#sb-memory");
+  el.textContent = total == null ? "" : `RAM ${mbOf(total)} MB`;
   el.classList.toggle("warn", !!gb && total > gb * 2 ** 30 / 4);
   el.title = total == null ? "" : `Python ${mbOf(st.heap)} MB, its files ${mbOf(st.files)} MB` + (js ? `, the page ${mbOf(js)} MB` : "") +
-    `, and an estimated ${UNREAD_MB} MB for Python's compiled code and the browser, which a page cannot read.` + (gb ? ` This computer has ${gb} GB in all.` : "");
-  $("#sb-file").textContent = st.fileName || "No image";
+    `, and an estimated ${UNREAD_MB} MB for Python's compiled code and the browser. Click for more.`;
+  if (ramOpen()) ramList();
+}
+function memoryNow() {
+  const js = performance.memory?.usedJSHeapSize;
+  return { js, total: st.heap == null ? null : st.heap + st.files + (js || 0) + UNREAD_MB * 2 ** 20 };
 }
 const mbOf = (n) => Math.round(n / 2 ** 20);
+
+// a browser without popovers has no such selector
+const ramOpen = () => { try { return $("#ram-pop").matches(":popover-open"); } catch { return false; } };
+// the memory popup: what holds the tab's memory, the image and the study's results within the page's share
+function ramList() {
+  const { js, total } = memoryNow(), gb = navigator.deviceMemory;
+  const image = Object.values(st.img || {}).reduce((a, c) => a + (c?.byteLength || 0), 0);
+  const rows = [
+    ["Python", "Its memory as far as it has grown", st.heap],
+    ["Python's files", "Python's library, its packages and the study's code", st.files],
+    ["The page", js == null ? "Only Chrome and Edge say it" : "Its scripts and what they hold, the indented rows among it", js],
+    ...(st.img ? [["The image", `${st.W} × ${st.H} px, each colour layer`, image, true]] : []),
+    ...(study.memory?.() || []).map((r) => [r.name, r.what, r.size, true]),
+    ["Compiled code and the browser", "An estimate: a page cannot read it", UNREAD_MB * 2 ** 20],
+  ];
+  $("#ram-total").textContent = total == null ? "Python is still loading." : `This tab holds about ${mbOf(total)} MB` + (gb ? ` of this computer's ${gb} GB.` : ".");
+  $("#ram-list").replaceChildren(...rows.map(([name, what, size, within]) => {
+    const row = document.createElement("div"); row.className = "entry" + (within ? " within" : "");
+    row.innerHTML = `<span class="label"><span class="name"></span><span class="what"></span></span><span class="size">${size == null ? "–" : sizeText(size)}</span>`;
+    row.querySelector(".name").textContent = name; row.querySelector(".what").textContent = what;
+    return row;
+  }));
+}
+$("#ram-pop").addEventListener("beforetoggle", (e) => {
+  if (e.newState !== "open") return;
+  ramList(); $("#ram-msg").textContent = "";
+  $("#ram-pop").style.right = Math.max(8, innerWidth - $("#sb-memory").getBoundingClientRect().right) + "px";
+});
+$("#ram-gc").onclick = () => working($("#ram-gc"), () => { const told = until("memory"); st.worker.postMessage({ type: "memory" }); return told; });
+
+// the disk: what the site keeps on this device, as Manage storage counts it
+async function diskBar() {
+  const { out, extra } = await inventory();
+  showDisk(Object.entries(out).reduce((a, [g, items]) => a + items.reduce((b, e) => b + e.size, 0) + (extra[g] || 0), 0));
+}
+const showDisk = (n) => { $("#sb-disk").textContent = "Disk " + sizeText(n); };
+$("#sb-disk").onclick = () => storageDialog();
+
+// ---------- the study's stage and steps ----------
+const STAGES = {
+  PreGT: "PreGT: this study's tools work, but cannot make ground truth yet, so there is nothing to export.",
+  GT: "GT: this study's tools make ground truth, to export and submit.",
+  PostGT: "PostGT: this study makes ground truth, and has batch actions too.",
+};
+const makesTruth = () => manifest.stage !== "PreGT";
+// The study's steps, in order, in one state that the breadcrumbs and the shining buttons are drawn from:
+// [{key, name, button, done, info, at}]. Load image and Submit GT are the shell's, the study's own come from its
+// study.json; the step to do now is the first not done.
+let steps = [];
+const stepsWatch = new MutationObserver(() => drawSteps());
+function makeSteps() {
+  steps = [{ key: "load", name: "Load image", button: "#load-main" }, ...manifest.phases,
+    ...(makesTruth() ? [{ key: "submit", name: "Submit GT", button: manifest.groundTruth.button }] : [])]
+    .map((p) => ({ ...p, done: false, info: "", at: null }));
+  // a step's button shines only while it can be pressed
+  stepsWatch.disconnect();
+  for (const p of steps) if (p.button && $(p.button)) stepsWatch.observe($(p.button), { attributes: true, attributeFilter: ["disabled", "hidden"] });
+  drawSteps();
+}
+// a step done or not, and what was done in it (or how far it has got)
+function step(key, done, info) {
+  const p = steps.find((x) => x.key === key);
+  if (!p) return;
+  if (done && !p.done) p.at = new Date();
+  p.done = !!done;
+  if (info !== undefined) p.info = info;
+  drawSteps();
+}
+function drawSteps() {
+  const now = steps.findIndex((p) => !p.done), shown = now < 0 ? steps : steps.slice(0, now + 1);
+  const when = (d) => d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  $("#sb-steps").replaceChildren(...shown.map((p, k) => {
+    const c = document.createElement("span");
+    c.id = "sb-" + p.key; c.className = "crumb" + (k === now ? " now shine" : ""); c.textContent = p.name; c.tabIndex = 0;
+    c.dataset.help = (p.done ? `${p.info || "Done"}\nDone at ${when(p.at)}.` : p.info || "To do now.");
+    return c;
+  }));
+  steps.forEach((p, k) => { const b = p.button && $(p.button); if (b) b.classList.toggle("shine", k === now && !b.disabled && !b.hidden); });
+}
 
 // ---------- buttons whose action takes a while: disabled, with a small spinner, until the action is done ----------
 // the worker's next message of a kind ("opened", or "result:<action>"), or its error
@@ -175,7 +257,8 @@ function handle(m) {
     status("Error: " + m.text, true); if (OUT_OF_MEMORY.test(m.text)) memoryTip(true);
   } else if (m.type === "ready") {
     st.ready = true; $("#spin").classList.remove("on");
-    study.ready?.(m.info); statusBar();
+    study.ready?.(m.info); statusBar(); diskBar();
+    $("#ram-gc").disabled = false;
     status("Ready. Load an image.");
     if (st.queued) { const q = st.queued; st.queued = null; send(q.name, q.bytes); }
     else if (st.kept) reopen();
@@ -183,14 +266,17 @@ function handle(m) {
     st.um = m.meta.um; fileInfo(m.meta.info);
     view.show(m.meta.W, m.meta.H, m.images);
     busy(false); statusBar();
-    showImage(); fold(true); loadShine();
+    showImage(); fold(true); loadDone();
+    step("load", true, `${st.fileName}, ${m.meta.W} × ${m.meta.H} px, from ${st.source?.kind === "drive" ? "Google Drive" : "this computer"}`);
     status("Image loaded."); // the study's opened hook says what comes next, if anything
     study.opened?.(m.meta);
-    if (!st.reopening && st.source && st.source.kind === "local" && manifest.groundTruth) notice(LOCAL_GT);
+    if (!st.reopening && st.source && st.source.kind === "local" && makesTruth()) notice(LOCAL_GT);
     if (!st.reopening && st.source && st.source.kind === "drive") saveThumb(st.source.id, st.fileName);
     st.reopening = false;
   } else if (m.type === "result") {
     study.result?.(m.action, m.meta, m.bytes, m.echo);
+  } else if (m.type === "memory") {
+    $("#ram-msg").textContent = `Python: ${mbOf(m.used)} MB in use of ${mbOf(m.heap)} MB reserved.`;
   }
 }
 
@@ -208,15 +294,17 @@ function fileInfo(rows) {
 async function openBytes(name, bytes, source) {
   const opened = until("opened"); working($("#load-main"), () => opened);
   st.fileName = name; st.source = source;
+  for (const p of steps) Object.assign(p, { done: false, info: "", at: null });
+  drawSteps();
   // a copy, for the next study to open: the bytes themselves go to Python
   st.kept = { name, source, bytes: bytes.slice(0) };
   study.opening?.(name, source);
   st.sha = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map((b) => b.toString(16).padStart(2, "0")).join("");
   $("#file-name").textContent = name; $("#file-name").classList.remove("dim"); fileInfo(null); statusBar();
-  view.clear(); $("#sb-counts").textContent = "";
+  view.clear();
   if (st.ready) return send(name, bytes);
   // Python is still loading: the image opens the moment it is ready
-  st.queued = { name, bytes }; busy(true, "Python is still loading; your image opens as soon as it is ready…", st.peeked && "peek"); loadShine();
+  st.queued = { name, bytes }; busy(true, "Python is still loading; your image opens as soon as it is ready…", st.peeked && "peek");
 }
 function send(name, bytes) {
   busy(true, "Reading the image…", st.peeked && "peek");
@@ -235,8 +323,8 @@ function peek() {
   st.peeked = false;
   return study.painter ? view.preview(study.painter) : () => false;
 }
-// Load calls for attention until an image is open, then steps back to a plain button
-const loadShine = () => { $("#load-main").classList.toggle("shine", !st.img && !st.queued); $("#load").classList.toggle("done", !!st.img); };
+// Load is filled until an image is open, then steps back to a plain button
+const loadDone = () => $("#load").classList.toggle("done", !!st.img);
 $("#file").onchange = async (e) => {
   const f = e.target.files[0]; if (!f) return;
   const bytes = await f.arrayBuffer(); peek()(bytes, bytes.byteLength);
@@ -427,6 +515,7 @@ function saveThumb(id, name) {
   const names = readJSON(THUMB_NAMES);
   for (const k of Object.keys(names)) if (!kept.includes(k)) delete names[k];
   writeJSON(SAVED_THUMB + id, c.toDataURL("image/jpeg", 0.85)); writeJSON(SAVED_THUMBS, kept); writeJSON(THUMB_NAMES, { ...names, [id]: name });
+  diskBar();
 }
 
 // images downloaded from Drive, kept on this device while Auto-save images is on
@@ -443,7 +532,7 @@ async function saveImage(id, name, bytes) {
   try {
     await (await caches.open(IMAGES)).put(imageUrl(id), new Response(body, { headers: { [IMAGE_NAME]: encodeURIComponent(name), [IMAGE_AT]: String(Date.now()) } }));
   } catch (e) { console.warn("image not saved:", e); }
-  showSaved();
+  showSaved(); diskBar();
 }
 const bytesOf = (k) => 2 * (k.length + (localStorage.getItem(k) || "").length); // UTF-16
 // the Drive dialog's link to Manage storage: what thumbnails and saved images take on this device
@@ -553,6 +642,7 @@ async function storageDialog() {
     return box;
   }));
   const est = await navigator.storage?.estimate?.().catch(() => null);
+  showDisk(total);
   $("#storage-total").textContent = `This site keeps ${sizeText(total)} on this device` + (est?.quota ? `; the browser allows it up to ${sizeText(est.quota)}.` : ".");
 }
 $("#manage-storage").onclick = () => { $("#user-menu").open = false; storageDialog(); };
@@ -571,6 +661,7 @@ const icon = (name) => `<svg viewBox="0 0 24 24" width="16" height="16" aria-hid
 // labelled for the study's intake, to attach it to. gt: {doc, file, items: [{level, ok, text}], empty,
 // issue: {title, body}}; an image from the computer can be exported but not sent.
 function submitTruth(gt) {
+  if (!makesTruth()) return;
   const local = !st.source || st.source.kind !== "drive", n = gt.doc.labels.length;
   $("#gt-problems").replaceChildren(...gt.items.map((t) => {
     const li = document.createElement("li"); li.className = t.ok ? "ok" : t.level;
@@ -587,6 +678,7 @@ function submitTruth(gt) {
   $("#gt-export").onclick = () => {
     saveFile(gt.file, JSON.stringify(gt.doc, null, 1), "application/json");
     $("#gt-msg").textContent = `Downloaded ${gt.file}.` + (local ? "" : " Open the issue next and attach it there.");
+    step("submit", local, local ? `Exported ${gt.file}; an image from this computer cannot be sent` : `Exported ${gt.file}; the GitHub issue is next`);
     next(local ? $("#gt-close") : issue);
   };
   issue.onclick = () => {
@@ -594,6 +686,7 @@ function submitTruth(gt) {
       body: gt.issue.body + `\n\n**Attach ${gt.file} below before submitting** (drag it into this box).` });
     window.open(`https://github.com/${REPO}/issues/new?${q}`, "_blank", "noopener");
     $("#gt-msg").textContent = `Attach ${gt.file} to the GitHub issue that just opened, then submit.`;
+    step("submit", true, `Exported ${gt.file} and opened a GitHub issue for it`);
     next($("#gt-close"));
   };
   $("#gt-dlg").showModal();
@@ -616,15 +709,17 @@ function notice(text, anchor) {
 }
 $("#notice-ok").onclick = () => { $("#notice").hidden = true; };
 
-// a setting's help: hovering or focusing a .help mark shows its data-help text
+// a setting's help, or a step's: hovering or focusing what carries data-help shows it, beside it or, in the
+// status bar, above it
 function helpTip(e) {
-  const h = e.target.closest && e.target.closest(".help"), t = $("#tip");
+  const h = e.target.closest && e.target.closest("[data-help]"), t = $("#tip");
   if (!h) return;
   const r = h.getBoundingClientRect();
   t.textContent = h.dataset.help; t.hidden = false;
-  t.style.left = Math.min(r.right + 8, innerWidth - 330) + "px"; t.style.top = r.top + "px";
+  if (h.closest("#statusbar")) { t.style.left = Math.min(r.left, innerWidth - 330) + "px"; t.style.top = r.top - 6 - t.offsetHeight + "px"; }
+  else { t.style.left = Math.min(r.right + 8, innerWidth - 330) + "px"; t.style.top = r.top + "px"; }
 }
-const hideHelp = (e) => { if (e.target.closest && e.target.closest(".help")) $("#tip").hidden = true; };
+const hideHelp = (e) => { if (e.target.closest && e.target.closest("[data-help]")) $("#tip").hidden = true; };
 document.addEventListener("mouseover", helpTip); document.addEventListener("focusin", helpTip);
 document.addEventListener("mouseout", hideHelp); document.addEventListener("focusout", hideHelp);
 
@@ -636,7 +731,7 @@ function foldable() {
     const flip = () => h.closest(".box").classList.toggle("folded");
     h.onclick = flip; h.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } };
   });
-  fold(false); loadShine();
+  fold(false); loadDone();
 }
 // the image back in view, from whichever of the study's views is on show
 function showImage() { study.showImage?.(); view.thumbView(); }
@@ -871,6 +966,9 @@ async function mountStudy(id) {
   const mod = await import(base + manifest.web.module);
   study = (await mod.mount(shell)) || {};
   view.use(study);
+  $("#sb-stage").textContent = manifest.stage; $("#sb-stage").title = STAGES[manifest.stage];
+  if (!makesTruth() && manifest.groundTruth?.button) $(manifest.groundTruth.button).hidden = true;
+  makeSteps();
   foldable();
 }
 const viewers = {};
@@ -882,14 +980,14 @@ function leaveStudy() {
   css?.remove(); css = null;
   study = {}; manifest = null; view?.use({}); view?.clear();
   for (const k of Object.keys(st)) if (!SHELL_STATE.has(k)) delete st[k];
-  st.ready = false;
+  st.ready = false; $("#ram-gc").disabled = true;
   for (const w of Object.values(waiting)) w.splice(0).forEach((x) => x.bad(new Error("the study left")));
-  busy(false); $("#sb-counts").textContent = ""; $("#notice").hidden = true; $("#tip").hidden = true;
+  busy(false); $("#notice").hidden = true; $("#tip").hidden = true;
   $("#image-view").hidden = false; delete $("#view").dataset.view;
 }
 
 const shell = {
-  $, state: st, status, busy, statusBar, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, showImage,
+  $, state: st, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, showImage,
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; },
 };
 // for the page's tests, which drive it from outside

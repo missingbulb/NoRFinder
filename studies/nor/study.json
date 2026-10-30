@@ -2,6 +2,18 @@
   "id": "nor",
   "title": "NoR Finder",
   "listed": true,
+  "stage": "GT",
+  "phases": [
+    {
+      "key": "find",
+      "name": "Run algorithm",
+      "button": "#find"
+    },
+    {
+      "key": "review",
+      "name": "Review all items"
+    }
+  ],
   "viewer": "image2d",
   "python": {
     "paths": [
@@ -56,6 +68,7 @@
     "detect": "Finding candidates (the slow part)…"
   },
   "groundTruth": {
-    "label": "new-ground-truth"
+    "label": "new-ground-truth",
+    "button": "#dl-truth"
   }
 }

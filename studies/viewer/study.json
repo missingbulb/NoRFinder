@@ -2,6 +2,8 @@
   "id": "viewer",
   "title": "Image Viewer",
   "listed": true,
+  "stage": "PreGT",
+  "phases": [],
   "viewer": "image2d",
   "python": {
     "paths": [

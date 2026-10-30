@@ -110,7 +110,7 @@ try {
   const shown = () => page.evaluate(() => ({
     stayed: !!window.stayed, path: location.pathname, title: document.title, h1: document.querySelector("#title").textContent,
     image: !document.querySelector("#stage").hidden && [document.querySelector("#base").width, document.querySelector("#base").height].join(),
-    file: document.querySelector("#sb-file").textContent, fixture: !!document.querySelector("#fx-box, #fx-result"),
+    file: document.querySelector("#file-name").textContent, fixture: !!document.querySelector("#fx-box, #fx-result"),
     css: [...document.querySelectorAll("link[rel=stylesheet]")].map((l) => l.getAttribute("href")).filter((h) => h.includes("studies/")),
     channels: [...document.querySelectorAll("#channels label")].map((l) => l.textContent).join(),
   }));
