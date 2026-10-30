@@ -116,7 +116,7 @@ const KB = 1024;
 // alone is a quarter of a megabyte and a candidate's card several kilobytes
 const LIMITS = { heap: 256 * KB, buffers: 64 * KB, nodes: 0, listeners: 0 };
 
-await page.goto(origin + "/web/");
+await page.goto(origin + "/web/?study=nor");
 await page.waitForFunction(() => st.ready);
 await open(); await find(); await tune();
 const problems = [];

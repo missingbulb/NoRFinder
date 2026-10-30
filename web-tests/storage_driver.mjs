@@ -86,7 +86,7 @@ page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.me
 page.setDefaultTimeout(10000);
 const shot = async (name, sel) => { if (shots) await page.locator(sel).screenshot({ path: path.join(shots, name + ".png") }); };
 try {
-  await page.goto(origin + "/web/index.html");
+  await page.goto(origin + "/web/index.html?study=nor");
   await page.waitForFunction(() => $("#title").textContent);
   // the code the service worker keeps, as it keeps it: the body, stamped with when it was kept
   await page.evaluate(async (url) => {

@@ -67,7 +67,7 @@ async function open(gb) {
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);
-  await page.goto(origin + "/web/index.html");
+  await page.goto(origin + "/web/index.html?study=nor");
   await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false);
   return { ctx, page };
 }

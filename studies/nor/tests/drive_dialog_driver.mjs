@@ -81,7 +81,7 @@ await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; localS
 const page = await ctx.newPage();
 page.on("pageerror", (e) => done(1, "page error: " + e.message));
 page.setDefaultTimeout(15000);
-await page.goto(origin + "/web/index.html");
+await page.goto(origin + "/web/index.html?study=nor");
 await page.click("#load-main");
 await page.waitForSelector("#drive-list .item");
 const rows = await page.$$eval("#drive-list .item", (b) => b.map((e) => e.querySelector(".name").textContent));
@@ -136,7 +136,7 @@ await page.evaluate((id) => { st.W = 8; st.H = 8; const v = (k) => Uint8Array.fr
 // "Download thumbnails" is on at first, and once unticked it is remembered and nothing is downloaded
 const fresh = await ctx.newPage();
 fresh.on("pageerror", (e) => done(1, "page error: " + e.message));
-await fresh.goto(origin + "/web/index.html");
+await fresh.goto(origin + "/web/index.html?study=nor");
 await fresh.click("#load-main");
 await fresh.waitForSelector("#drive-list .item");
 await fresh.waitForSelector("#drive-list .item:last-child .pic img");

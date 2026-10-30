@@ -52,6 +52,6 @@ await page.addInitScript(() => {
       .observe(sb, { subtree: true, childList: true, characterData: true });
   });
 });
-await page.goto(origin + "/web/index.html");
+await page.goto(origin + "/web/index.html?study=nor");
 await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false, null, { timeout: 600000 });
 await browser.close(); server.close();

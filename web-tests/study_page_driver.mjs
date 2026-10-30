@@ -1,11 +1,13 @@
 // Drives the page (web/) in headless Chromium on the fixture study, with a stand-in worker answering from
 // ANSWERS (what the fixture's own Python answers, written by tests/test_study_runs.py), and checks that the
 // shell runs the study the address names: its title, panels, channel and Python calls, its drawing on the
-// image, and none of another study's panels; and that with no study named the page opens the default one.
+// image, and none of another study's panels; that with no study named the page opens the default one, the
+// Image Viewer, whose empty right bar gives its room to the image; and that the header's switcher lists the
+// studies in STUDIES (the build's list), ticks the one on show and opens another.
 // Then the same with the real worker (web/worker.js), Pyodide served from the copy installed beside the
 // tests, since the fixture needs none of its packages. Prints what it saw; exits 1 on a failure, 2 when it
 // cannot run.
-//   node web-tests/study_page_driver.mjs ANSWERS IMAGE.png
+//   node web-tests/study_page_driver.mjs ANSWERS IMAGE.png STUDIES
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -18,7 +20,7 @@ let pw;
 try { pw = require("playwright"); } catch {
   try { pw = require(path.join(execSync("npm root -g").toString().trim(), "playwright")); } catch { console.error("no playwright: npm i -g playwright"); process.exit(2); }
 }
-const [answers, image] = process.argv.slice(2);
+const [answers, image, studies] = process.argv.slice(2);
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 let pyodide;
 try { pyodide = path.dirname(require.resolve("pyodide/pyodide.mjs", { paths: [path.dirname(fileURLToPath(import.meta.url))] })); } catch {
@@ -41,7 +43,7 @@ const server = http.createServer((q, r) => {
   if (u === "/web/worker.js" && stub) { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
   // the build's list of vendored wheels, which the fixture needs none of
   if (u === "/web/vendor/wheels.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end("[]"); }
-  const f = u === "/web/answers.json" ? answers : path.join(repo, u);
+  const f = u === "/web/answers.json" ? answers : u === "/web/studies.json" ? studies : path.join(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
@@ -70,6 +72,14 @@ try {
   if (seen.threshold !== "100") problems.push("the study's ready hook did not get its Python's answer");
   if (seen.channels.join() !== "Grey" || seen.accept !== ".png") problems.push("the study's channels or file types are not the page's");
   if (seen.other || seen.slots) problems.push("another study's panels, or an unfilled slot, are on the page");
+  const menu = () => page.evaluate(() => ({
+    items: [...document.querySelectorAll("#study-list a")].map((a) => a.textContent + (a.getAttribute("aria-current") ? "*" : "")),
+    noRight: document.querySelector("#layout").classList.contains("no-right"),
+  }));
+  const fixtureMenu = await menu();
+  console.log(JSON.stringify(fixtureMenu));
+  if (fixtureMenu.items.join() !== "Image Viewer,NoR Finder") problems.push("the switcher does not list the listed studies, or ticks one not on show: " + fixtureMenu.items);
+  if (fixtureMenu.noRight) problems.push("a study with a right-hand panel lost its right bar");
   await page.setInputFiles("#file", image);
   await page.waitForFunction(() => !document.querySelector("#fx-count").disabled);
   const base = await page.evaluate(() => [document.querySelector("#base").width, document.querySelector("#base").height]);
@@ -80,10 +90,23 @@ try {
   console.log(result[0]);
   if (result[0] !== "400 pixels above the threshold" || !result[1]) problems.push("the call's answer did not reach the study, or its layer was not drawn");
 
-  // no study named: the default one, as every link from before studies
+  // no study named: the Image Viewer, with no right bar; the switcher opens another study at its own address
   await page.goto(origin + "/web/index.html");
+  await page.waitForFunction(() => document.querySelectorAll("#study-list a").length && document.title);
+  const viewerMenu = await menu();
+  console.log(await page.title(), JSON.stringify(viewerMenu));
+  if (await page.title() !== "Image Viewer") problems.push("with no study named the page does not open the Image Viewer");
+  if (viewerMenu.items.join() !== "Image Viewer*,NoR Finder") problems.push("the switcher does not tick the study on show: " + viewerMenu.items);
+  if (!viewerMenu.noRight) problems.push("a study with nothing on the right still keeps the right bar");
+  await page.click("#study-menu summary");
+  await page.click("#study-list a >> text=NoR Finder");
   await page.waitForSelector("#finder", { state: "attached" });
-  if (await page.title() !== "NoR Finder") problems.push("with no study named the page does not open the default study");
+  const at = new URL(page.url());
+  if (at.searchParams.get("study") !== "nor" || await page.title() !== "NoR Finder") problems.push("choosing NoR Finder opened " + page.url());
+  await page.click("#study-menu summary");
+  await page.click("#study-list a >> text=Image Viewer");
+  await page.waitForFunction(() => document.title === "Image Viewer");
+  if (new URL(page.url()).search) problems.push("the default study's address carries a study: " + page.url());
 
   // the real worker: the fixture's own Python in Pyodide, answering the page
   stub = false;

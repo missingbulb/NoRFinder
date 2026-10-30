@@ -8,7 +8,8 @@ through wrangler.json's build command; so does a local preview:
 
 It also fetches the third-party wheels the studies install into Pyodide (packages Pyodide does not
 ship, each study's python.wheels) into web/vendor/, so the page never depends on PyPI at run time;
-writes the version history the page shows (version_history.py); and writes the deployment's
+writes the version history the page shows (version_history.py) and the studies its header offers
+(studies.json); and writes the deployment's
 settings into the published web/config.js from the repository variables: GOOGLE_API_KEY turns on
 loading from Google Drive, and DRIVE_DEFAULT_FOLDER is the link its dialog opens on.
 """
@@ -21,7 +22,7 @@ WEB = os.path.join(ROOT, 'web')
 OUT = os.path.join(WEB, 'vendor')
 SITE = os.path.join(ROOT, 'dev', 'build', 'site')
 # what the build writes into web/ and the page reads
-GENERATED = ('vendor', 'version_history.json')
+GENERATED = ('vendor', 'version_history.json', 'studies.json')
 
 
 def wheels():
@@ -30,6 +31,12 @@ def wheels():
     for path in glob.glob(os.path.join(ROOT, 'studies', '*', 'study.json')):
         pins.update(json.load(open(path))['python']['wheels'])
     return sorted(pins)
+
+
+def studies(root):
+    """The studies the header's switcher offers, [{id, title}] by title: those whose study.json lists them."""
+    found = [json.load(open(p)) for p in glob.glob(os.path.join(root, 'studies', '*', 'study.json'))]
+    return sorted(({'id': m['id'], 'title': m['title']} for m in found if m['listed']), key=lambda m: m['title'])
 
 
 def config_js(env):
@@ -112,6 +119,7 @@ if __name__ == '__main__':
     subprocess.run([sys.executable, '-m', 'pip', 'download', '-q', '--no-deps', '--only-binary', ':all:', '-d', OUT, *wheels()], check=True)
     json.dump(sorted(os.path.basename(f) for f in glob.glob(os.path.join(OUT, '*.whl'))), open(os.path.join(OUT, 'wheels.json'), 'w'))
     json.dump(version_history.history(ROOT), open(version_history.OUT, 'w'), indent=1)
+    json.dump(studies(ROOT), open(os.path.join(WEB, 'studies.json'), 'w'), indent=1)
     count, drive = assemble(ROOT, SITE, os.environ)
     size = sum(os.path.getsize(os.path.join(d, f)) for d, _, fs in os.walk(SITE) for f in fs)
     print(f'build: assembled {count} repo files and the generated ones under dev/build/site/, {size / 1e6:.1f} MB; '

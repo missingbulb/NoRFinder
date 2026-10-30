@@ -1,6 +1,7 @@
 {
   "id": "fixture",
   "title": "Fixture",
+  "listed": false,
   "viewer": "image2d",
   "python": {
     "paths": [

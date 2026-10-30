@@ -20,10 +20,9 @@ test fold under it. A study's research requirements, which no user sees, stay in
   <details>
 
   A study is `studies/<id>/` with a `study.json` that names everything the shell needs, and every
-  file it names exists. The page runs the study `?study=<id>` names, the NoR study when none is
-  named, so every link to the page from before studies existed opens what it opened then. Adding a
-  study changes nothing in `web/`, in the deploy's settings or in CI. Test:
-  `web-tests/test_study_contract.py`.
+  file it names exists. The page runs the study `?study=<id>` names, the Image Viewer (`1.28`)
+  when none is named. Adding a study changes nothing in `web/`, in the deploy's settings or in CI.
+  Test: `web-tests/test_study_contract.py`.
   </details>
 
 - `1.3` The viewer is the study's choice.
@@ -96,7 +95,14 @@ test fold under it. A study's research requirements, which no user sees, stay in
   preview or a fork counts nothing. Test: `web-tests/test_published_site.py`.
   </details>
 
-- `1.10` A header with the logo, the title and a dark/light switch (remembered).
+- `1.10` A header with the logo, the study switcher and a dark/light switch (remembered).
+  <details>
+
+  The study's title, with a caret beside it, opens a "Switch study" list of every study whose
+  `study.json` says `"listed": true`, by title, the one on show ticked. Each is a link to the page
+  running it: `?study=<id>`, and the bare address for the Image Viewer. Test:
+  `web-tests/test_study_runs.py`.
+  </details>
 
 - `1.11` Side bars drag wider or narrower (remembered; a double click restores one).
   <details>
@@ -261,6 +267,17 @@ test fold under it. A study's research requirements, which no user sees, stay in
   preview of the repo itself. A `_redirects` rule, which Cloudflare applies, sends every `/web/…`
   address to the same address without `/web`. Test: `web-tests/test_published_site.py` (the
   layout); the redirect is seen on the released site.
+  </details>
+
+- `1.28` The Image Viewer: the page with no study's tools, the one it opens on.
+  <details>
+
+  A study with no panels and no actions (`studies/viewer/`): it loads any TIFF or PNG and shows each
+  channel in the colour the file displays it in (an ImageJ LUT, mixed colours included), else red,
+  green and blue in order, a grey image grey; the image box says what the file states, its scale
+  only when the file gives one in µm. A side bar it leaves empty gives its room to the image, and it
+  has no ground truth, so a local image earns no notice about sending one. Test:
+  `studies/viewer/tests/test_viewer.py`, `web-tests/test_study_runs.py`.
   </details>
 
 ## `2` The repo's checks

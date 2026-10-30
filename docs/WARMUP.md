@@ -24,18 +24,20 @@ second study needs it, not before.
 
 A study is a folder with a `study.json`:
 
+- `listed` — whether the header's study switcher offers it (`true` or `false`; the fixture is not).
 - `viewer` — the viewer it is shown in (`image2d`).
 - `python` — `paths` (folders, relative to the study, its modules are imported from), `entry` (the
   module the page imports), `packages` (from Pyodide's own set) and `wheels` (from PyPI, vendored
   by `dev/tools/build/build.py`).
-- `web` — `module`, an ES module exporting `mount(shell)`; `panels`, an HTML file of `<template
-  data-slot="…">` elements the shell puts into its slots before mounting; `style`, its stylesheet.
+- `web` — `module`, an ES module exporting `mount(shell)`; optionally `panels`, an HTML file of
+  `<template data-slot="…">` elements the shell puts into its slots before mounting, and `style`, its
+  stylesheet. A study with nothing on the right loses the right bar.
 - `files` — what Load accepts, and the text the empty view shows.
 - `channels` — the image's channels as the viewer shows them: key (`r`, `g`, `b`), name, title,
   whether shown at first.
 - `progress` — the status line while Python installs (`install`), loads the study (`load`), opens an
   image (`open`) and runs each action (by its name).
-- `groundTruth.label` — the GitHub issue label its submissions carry.
+- `groundTruth.label` — optional, the GitHub issue label its submissions carry.
 - `driveThumbs` — optional, the folder of ready-made thumbnails for the Google Drive dialog.
 
 Its Python entry module offers `ready()` (JSON, what the page needs before any image) and
@@ -44,6 +46,8 @@ one plane per channel) and `call(action, args)` (JSON result and optional bytes)
 every call and knows none of their meanings. `mount(shell)` returns the study's hooks; the list, and
 what `shell` offers, heads `web/shell.js`, and the viewer's own heads `web/viewer2d.js`.
 `studies/fixture/` is the smallest study there is; the shell's own tests run on it.
+`studies/viewer/`, the Image Viewer the page opens on, is the study with nothing of its own: what the
+shell shows there is what every study gets.
 
 The shell publishes a study's `study.json`, its `web/` folder (Python there stays home) and the
 modules directly in its `python.paths` folders, and nothing else of it (requirement 1.8): keep the
@@ -58,7 +62,8 @@ python3 dev/tools/build/build.py
 python3 -m http.server -d dev/build/site 8000
 ```
 
-then open `http://localhost:8000/` (the NoR study) or `http://localhost:8000/?study=fixture`.
+then open `http://localhost:8000/` (the Image Viewer), `http://localhost:8000/?study=nor` or
+`http://localhost:8000/?study=fixture`.
 The build assembles under `dev/build/site/` exactly what is published (requirement 1.8), with the
 page at the root as rauntruth.com serves it (requirement 1.27); serving the repo root instead and
 opening `/web/` shows the page with every file of every study reachable.
@@ -71,6 +76,7 @@ The full set (`python3 -m pytest web-tests studies`) also needs Node, Pyodide
 web/              the shell, the viewer, the Python runtime (worker.js, bridge.js)
 web-tests/        the shell's tests, run on the fixture study
 studies/nor/      the NoR Finder study: study.json, web/, detection/, src/, data/, docs/, tests/
+studies/viewer/   the Image Viewer, the page's default: any image, no analysis
 studies/fixture/  the smallest study, for the shell's tests (`?study=fixture`)
 docs/             this map
 dev/requirements/ the page's one spec: the shell, the repo's checks, each study's page
