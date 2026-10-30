@@ -74,20 +74,29 @@ window.NorDrive = (() => {
     return (await download(id, { headers: { Range: `bytes=0-${n - 1}` }, signal })).arrayBuffer();
   }
 
-  // [{id, name, folder, size, created, preview}] in a public folder: its subfolders and its TIFF and PNG
+  // a file's SHA-256 as Drive gives it, null when it gives none
+  async function checksum(id) {
+    need();
+    const r = await fetch(`${API}/${encodeURIComponent(id)}?fields=sha256Checksum&key=${key}`);
+    if (!r.ok) throw refused(r, "file");
+    return (await r.json()).sha256Checksum || null;
+  }
+
+  // [{id, name, folder, size, created, preview, sha}] in a public folder: its subfolders and its TIFF and PNG
   // images; size in bytes (null for a folder), created a Date, preview the link of Drive's own small
-  // picture of the file or null (Drive draws a multi-channel TIFF grey, so it serves only a PNG)
+  // picture of the file or null (Drive draws a multi-channel TIFF grey, so it serves only a PNG), sha its
+  // SHA-256 or null when Drive gives none
   async function list(id) {
     need();
     const q = encodeURIComponent(`'${id}' in parents and trashed = false`);
-    const r = await fetch(`${API}?q=${q}&fields=files(id,name,mimeType,size,createdTime,thumbnailLink)&pageSize=1000&orderBy=folder,name&key=${key}`);
+    const r = await fetch(`${API}?q=${q}&fields=files(id,name,mimeType,size,createdTime,thumbnailLink,sha256Checksum)&pageSize=1000&orderBy=folder,name&key=${key}`);
     if (!r.ok) throw refused(r, "folder");
     return (await r.json()).files
       .map((f) => ({ id: f.id, name: f.name, folder: f.mimeType === "application/vnd.google-apps.folder",
         size: f.size == null ? null : +f.size, created: f.createdTime ? new Date(f.createdTime) : null,
-        preview: f.thumbnailLink && /\.png$/i.test(f.name) ? f.thumbnailLink : null }))
+        preview: f.thumbnailLink && /\.png$/i.test(f.name) ? f.thumbnailLink : null, sha: f.sha256Checksum || null }))
       .filter((f) => f.folder || /\.(tiff?|png)$/i.test(f.name));
   }
 
-  return { parse, file, head, list, ready: !!key };
+  return { parse, file, head, checksum, list, ready: !!key };
 })();
