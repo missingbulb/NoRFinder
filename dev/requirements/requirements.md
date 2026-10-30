@@ -466,12 +466,12 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   tied to each candidate's position; added NoRs per file name.
   </details>
 
-- `3.19` Filter settings persist across images, visits and days; one button restores the defaults.
+- `3.19` Filter settings persist across images, visits and days; the Balanced preset returns to the finder's own values.
 
 - `3.20` The page runs the lab's code, and at our settings passes what the lab passes.
   <details>
 
-  The Python it runs is the study's `detection/` and `src/` as they are, so the finder stays
+  The Python it runs is the study's `detection/` as it is, so the finder stays
   malleable. At our settings, the page passes what the lab passes with the blue mask applied after
   finding.
   </details>
