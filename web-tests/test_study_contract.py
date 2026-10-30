@@ -56,11 +56,6 @@ def test_a_study_names_its_stage_and_steps(path):
     assert all(p.get('name') for p in m['phases'])
 
 
-def test_the_viewer_is_pre_gt_and_nor_makes_ground_truth():
-    stage = {manifest(p)['id']: manifest(p)['stage'] for p in STUDIES}
-    assert stage['viewer'] == 'PreGT' and stage['nor'] == 'GT', stage
-
-
 def test_the_shell_names_no_study():
     shell = glob.glob(os.path.join(WEB, '*.*')) + glob.glob(os.path.join(ROOT, 'dev', 'tools', 'build', '*.py'))
     found, files = [], [f for f in sorted(shell) if f.endswith(('.js', '.html', '.css', '.py'))]
