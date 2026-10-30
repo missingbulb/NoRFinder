@@ -33,8 +33,8 @@ Three tools, all running the page's path (open the slide, blue mask, detect, fir
 - `node bench_pyodide.mjs FINDER` runs `bench.py` under Pyodide in Node and adds the WebAssembly
   heap's peak (it never shrinks, so a tab keeps its peak). Set `NOR_REPO` to measure another
   checkout, e.g. a worktree of `main` for a before/after.
-- `node bench_live.mjs [URL] [FINDER ...]` drives the page's own `worker.js` in headless Chromium,
-  the deployed site by default or a local preview URL, and samples Chromium's resident memory.
+- `node bench_live.mjs URL [FINDER ...]` drives the page's own `worker.js` in headless Chromium,
+  the deployed site or a local preview, and samples Chromium's resident memory.
 
 `node boot_live.mjs [REPO] [MBPS]` times the page's own start, stage by stage, until the finders are
 ready, over a simulated link (0 for a return visit from the cache).

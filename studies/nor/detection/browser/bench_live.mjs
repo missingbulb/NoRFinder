@@ -1,6 +1,6 @@
 // Times each finder on the deployed page in headless Chromium, the way a user runs it: the page's
 // own worker.js (Pyodide) opens the reference slide, detects, and runs the first refilter.
-//   node bench_live.mjs [URL] [FINDER ...]      (needs Playwright; the slide in data/raw)
+//   node bench_live.mjs URL [FINDER ...]      (needs Playwright; the slide in data/raw)
 // Each finder gets a fresh browser, so the peak memory it reports is that finder's own: the largest
 // Chromium process's resident set, sampled from /proc (Linux) every 100 ms. The page's app.js is
 // blocked so only the measuring worker runs. Remote requests are fetched by curl and handed to the
@@ -18,7 +18,8 @@ try { pw = require("playwright"); } catch { pw = require(path.join(execSync("npm
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const args = process.argv.slice(2);
-const url = args[0] && args[0].startsWith("http") ? args.shift() : "https://missingbulb.github.io/NoRFinder/web/";
+if (!args[0] || !args[0].startsWith("http")) { console.error("usage: node bench_live.mjs URL [FINDER ...]   (URL = the page, deployed or a local preview)"); process.exit(2); }
+const url = args.shift();
 const finders = args.length ? args : ["tl", "rf", "fill", "walk", "blobs"];
 const tif = path.join(repo, "data", "raw", "Left Up- Edited", "Slide5_4AP_NoR.sld - Slice1_up_left2.tif");
 

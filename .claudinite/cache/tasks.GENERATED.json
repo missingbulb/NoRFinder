@@ -177,11 +177,11 @@
         "agent_execution_timeout": 2700
       }
     },
-    "github-pages/site-release": {
-      "path": ".claudinite/shared/packs/github-pages/tasks/site-release/task.json",
+    "cloudflare-site/site-release": {
+      "path": ".claudinite/shared/packs/cloudflare-site/tasks/site-release/task.json",
       "declaration": {
         "id": "site-release",
-        "description": "Deploys the default branch to GitHub Pages, advancing the site version first where public-website is declared so the repo records what went out. The upload is the vendored deploy workflow, dispatched at the exact commit: the one part of a Pages release only a workflow job can run.",
+        "description": "Cuts the next site version, stamps it into the published pages and uploads the site tree to Cloudflare so the claimed domain serves what the default branch says. The bump lands on the branch before the upload, so the repo never records a release that did not go out.",
         "trigger": "schedule",
         "preconditions": [
           "schedule:at-most-daily",
@@ -190,7 +190,11 @@
         "expected_outcome": "no_code_changes",
         "on_interrupt": "needs-human",
         "code_worker_mjs": "worker.mjs",
-        "code_work_timeout": 1800,
+        "code_work_timeout": 900,
+        "code_work_required_secrets": [
+          "CLOUDFLARE_API_TOKEN",
+          "CLOUDFLARE_ACCOUNT_ID"
+        ],
         "agent_model": "none"
       }
     },

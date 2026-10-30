@@ -87,4 +87,4 @@ jobs:
       - name: Wake the site release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run claudinite-scheduler.yml -R "$GITHUB_REPOSITORY" -f wake=github-pages/site-release
+        run: gh workflow run claudinite-scheduler.yml -R "$GITHUB_REPOSITORY" -f wake=cloudflare-site/site-release

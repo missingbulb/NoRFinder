@@ -45,16 +45,22 @@ every call and knows none of their meanings. `mount(shell)` returns the study's 
 what `shell` offers, heads `web/shell.js`, and the viewer's own heads `web/viewer2d.js`.
 `studies/fixture/` is the smallest study there is; the shell's own tests run on it.
 
+The shell publishes a study's `study.json`, its `web/` folder (Python there stays home) and the
+modules directly in its `python.paths` folders, and nothing else of it (requirement S8): keep the
+page's files in those places, and everything else in the study is research that never ships.
+
 ## Run
 
 ```
 pip install -r requirements.txt
 python3 -m pytest tests studies -m "not full"
 python3 web/build.py
-python3 -m http.server 8000
+python3 -m http.server -d site 8000
 ```
 
 then open `http://localhost:8000/web/` (the NoR study) or `http://localhost:8000/web/?study=fixture`.
+The build assembles under `site/` exactly what is published (requirement S8); serving the repo root
+instead shows the page with every file of every study reachable.
 The full set (`python3 -m pytest tests studies`) also needs Node, Pyodide
 (`npm i --prefix studies/nor/detection/browser pyodide@314.0.7`) and Playwright's Chromium.
 
@@ -66,4 +72,6 @@ tests/            the shell's tests, run on the fixture study
 studies/nor/      the NoR Finder study: study.json, web/, detection/, src/, data/, docs/, tests/
 studies/fixture/  the smallest study, for the shell's tests (`?study=fixture`)
 docs/             this map and the shell's requirements
+site/             the published tree: the build assembles the shell and the studies' published
+                  parts here; wrangler.json uploads it to Cloudflare (rauntruth.com)
 ```

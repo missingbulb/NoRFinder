@@ -1,8 +1,8 @@
 // Chromium's memory for the page's worker, stage by stage and process by process: the browser
 // before the worker starts, after Pyodide and the packages are ready, after the slide opens, after
 // detect, after the first refilter. The worker is the page's own worker.js at URL (the deployed
-// site by default, or a local preview), and app.js is blocked so only the measuring worker runs.
-//   node mem_live.mjs [URL] [FINDER]      (needs Playwright; the slide in data/raw)
+// site or a local preview), and app.js is blocked so only the measuring worker runs.
+//   node mem_live.mjs URL [FINDER]      (needs Playwright; the slide in data/raw)
 // Memory is the proportional set size (PSS) from /proc/PID/smaps_rollup, so libraries shared
 // between Chromium's processes are counted once, grouped by Chromium process type; the renderer
 // holds the worker, and with it Pyodide. Remote requests go through curl, as in bench_live.mjs.
@@ -21,7 +21,8 @@ try { pw = require("playwright"); } catch { pw = require(path.join(execSync("npm
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const args = process.argv.slice(2);
-const url = args[0] && args[0].startsWith("http") ? args.shift() : "https://missingbulb.github.io/NoRFinder/web/";
+if (!args[0] || !args[0].startsWith("http")) { console.error("usage: node mem_live.mjs URL [FINDER]   (URL = the page, deployed or a local preview)"); process.exit(2); }
+const url = args.shift();
 const finder = args[0] || "tl";
 const tif = path.join(repo, "data", "raw", "Left Up- Edited", "Slide5_4AP_NoR.sld - Slice1_up_left2.tif");
 const MB = 1024;
