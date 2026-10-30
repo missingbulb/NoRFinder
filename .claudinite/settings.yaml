@@ -25,7 +25,7 @@ packs:
     - id: "executable-requirements"
       answers:
         ui_testing: "I'm actually leaning towards dropping this request. I'm not sure what the right way to do UI test for a pluggable system. Let's ignore this sections now."
-        requirements_source: "docs/requirements.md (shell S1–S9), R8 of studies/nor/docs/requirements.md (the NoR page's UI), and the repo-wide CI-split rule from NoR's R9, moved into one file; NoR's algorithm requirements stay in the study."
+        requirements_source: "the shell's former requirements file (S1–S9), R8 of studies/nor/docs/requirements.md (the NoR page's UI), and the repo-wide CI-split rule from NoR's R9, moved into one file; NoR's algorithm requirements stay in the study."
     - id: "product-wiki"
       answers:
         product: "Platform of studies: rauntruth.com, an in-browser, no-upload page that turns fluorescence-microscopy images into checked numbers and collects researchers' ground truth; each study (NoR Finder first) is one analysis on it."

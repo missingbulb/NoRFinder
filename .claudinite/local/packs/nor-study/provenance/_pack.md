@@ -1,12 +1,7 @@
-## 2026-10-30 · born · the local pack nor-study
-- **Reason:** a home for the lessons this repo keeps for itself: everything specific to the NoR
-  Finder study (studies/nor/): its working rules, and the skills, checks and tasks that carry them.
-- **Actor:** whoever ran `cn adopt local/nor-study`.
-- **Mechanism:** the pack manifest.
-
-## 2026-10-30 · reworded · the seed's placeholder actor and reason (#559)
-- **Reason:** the scaffold's entry named no actor; the pack exists so a study can be removed without
-  touching a repo rule.
+## 2026-10-30 · born · the NoR Finder study's own pack (#559)
+- **Reason:** a second study is coming; what only the NoR study needs leaves with it, so a study can be removed without touching a repo rule.
 - **Actor:** @missingbulb (owner).
 - **Model:** claude-opus-5-5
+- **Mechanism:** a local pack scaffolded by `cn adopt local/nor-study`; it may depend on nor-finder, never the reverse.
+- **Rejected:** a third pack for the shell's one rule (owner's choice, two packs).
 - **Landed:** #559

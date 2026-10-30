@@ -1,6 +1,6 @@
 """Fetch the raw microscope data named in data/sources.json from Google Drive into data/raw/.
 
-The images never enter git (docs/requirements.md R6); this manifest is the repository's whole
+The images never enter git (studies/nor/docs/requirements.md R6); this manifest is the repository's whole
 record of them. A file is trusted only when its SHA-256 matches the manifest; a null checksum
 means "never fetched yet", and `--pin` writes what was fetched back into the manifest.
 
