@@ -11,6 +11,7 @@
 //   node web-tests/storage_driver.mjs [SHOTS]
 import { repoFile } from "./repo_file.mjs";
 import { createRequire } from "node:module";
+import { createHash } from "node:crypto";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
@@ -72,15 +73,18 @@ const downloads = Object.fromEntries([...DRIVE, TWIN].map((f) => [f.id, 0]));
 const cors = { "access-control-allow-origin": "*" };
 await ctx.route("https://www.googleapis.com/**", (route) => {
   const id = new URL(route.request().url()).pathname.match(/\/drive\/v3\/files\/?(.*)$/)[1];
+  // each file's SHA-256, where a request's fields ask for it, as Drive gives it
+  const fields = new URL(route.request().url()).searchParams.get("fields") || "";
+  const hash = fields.includes("sha256Checksum") ? { sha256Checksum: createHash("sha256").update(PNG).digest("hex") } : {};
   if (!id) {
-    const image = (f) => ({ ...f, mimeType: "image/png", size: String(PNG.length), createdTime: "2026-10-01T10:00:00Z" });
+    const image = (f) => ({ ...f, mimeType: "image/png", size: String(PNG.length), createdTime: "2026-10-01T10:00:00Z", ...hash });
     const list = new URL(route.request().url()).searchParams.get("q").includes(SUB.id) ? [image(TWIN)]
       : [...DRIVE.map(image), { ...SUB, mimeType: "application/vnd.google-apps.folder" }];
     return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ files: list }) });
   }
-  // a file's details, as Drive answers them; these files have no SHA-256, so a kept copy opens unchecked
+  // a file's details, as Drive answers them
   if (new URL(route.request().url()).searchParams.get("alt") !== "media")
-    return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ id }) });
+    return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ id, ...hash }) });
   downloads[id]++;
   return route.fulfill({ status: 200, headers: cors, contentType: "image/png", body: PNG });
 });

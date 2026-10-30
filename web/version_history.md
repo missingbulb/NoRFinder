@@ -10,7 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
-- An image you kept from Google Drive opens from this device only if it is still the same file on Drive; if it changed there, the new one is downloaded. A tip by Load's arrow points out your recent files. (#595)
+- An image you pick from Google Drive opens from the copy on this device only if it is still the same file on Drive; otherwise it is downloaded. Recent files open from this device at once, and a tip by Load's arrow points them out. (#595)
 - A Ruler button beside Zoom: drag across the image to measure a distance, in µm when the file gives a pixel size (its width and height each counted on their own) and in pixels otherwise; press it again to clear the ruler. The image box shows both sides of a pixel that is not square. (#594)
 - The Drive dialog loads thumbnails only for the rows you can see and the next few, and no longer mixes in a folder you have just left. Each TIFF says whether it is a 3D stack or a flat image, and a stack you open gets a small 3D thumbnail. When Google throttles the site's downloads, the dialog says so and counts down 15 minutes before trying again. (#586)
 - The status bar shows the study's stage and the steps you've done, with the next one glowing; hover a step to see what was done. RAM opens what uses memory, with Run GC, and Disk opens Manage storage. (#587)
