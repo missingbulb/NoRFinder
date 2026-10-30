@@ -1,4 +1,4 @@
-"""R8 — the image box shows what the file says about the image, and nothing the file does not say.
+"""1.16 — the image box shows what the file says about the image, and nothing the file does not say.
 
 Run: python3 tests/test_file_info.py
 """

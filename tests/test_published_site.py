@@ -1,4 +1,4 @@
-"""S8: the shell decides what is published, from the studies' standard layout; S9: visits are
+"""1.8: the shell decides what is published, from the studies' standard layout; 1.9: visits are
 counted on the released site only.
 
 Run: python3 -m pytest tests/test_published_site.py

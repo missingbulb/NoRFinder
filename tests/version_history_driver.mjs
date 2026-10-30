@@ -1,4 +1,4 @@
-// Drives the page (web/) in headless Chromium, with a worker that never answers, and checks R8's version
+// Drives the page (web/) in headless Chromium, with a worker that never answers, and checks 1.14's version
 // history: the version box carries no tooltip and opens the Version history popup; after an update that the
 // history names, a bubble points at the box and says what version the user saw last, until they open the
 // history or close the bubble; a first visit, or an update the history does not name, shows no bubble; a

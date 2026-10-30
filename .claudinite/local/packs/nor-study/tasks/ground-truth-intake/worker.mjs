@@ -9,7 +9,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { commitMessage, git as engineGit, github } from '@claudinite/sdk';
-import { makeGh } from '../github-api.mjs';
+import { makeGh } from '../../../nor-finder/tasks/github-api.mjs';
 import { LABEL } from './label.mjs';
 
 const MARK = '<!-- ground-truth-intake -->';

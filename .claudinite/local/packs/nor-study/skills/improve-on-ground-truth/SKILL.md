@@ -9,7 +9,7 @@ metadata:
 
 # Improving the finders on new ground truth
 
-The method is the [image-algorithm-development](../image-algorithm-development/SKILL.md) skill's
+The method is the [image-algorithm-development](../../../nor-finder/skills/image-algorithm-development/SKILL.md) skill's
 inner loop (score, keep or drop by data, log every attempt); the rules are research-project's and
 `studies/nor/docs/requirements.md` R7, R9 and R10. This skill is the order of work when people have just
 submitted ground truth. Read `studies/nor/detection/STATE.md` and `studies/nor/detection/lab/ledger.md` first.

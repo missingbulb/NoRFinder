@@ -1,0 +1,16 @@
+{
+  "id": "wiki-growth",
+  "description": "One research-and-refine pass over the repository's product wikis: reads what each wiki already knows, researches only what its own backlog flags, and writes the findings back cited. Most runs find nothing new, and that is the documented good outcome.",
+  "trigger": "schedule",
+  "preconditions": [
+    "schedule:at-most-weekly",
+    "repo-active"
+  ],
+  "expected_outcome": "amend_existing_or_create_new_pr",
+  "automerge": [
+    "under:product-wiki/ && doc-changes"
+  ],
+  "agent_model": "opus",
+  "agent_instructions": "task.md",
+  "agent_execution_timeout": 2700
+}

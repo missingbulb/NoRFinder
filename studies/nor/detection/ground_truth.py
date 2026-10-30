@@ -5,13 +5,13 @@ Ground truth button) and one entry in lab/ground_truth/dataset.json. A file name
 SHA-256 and by its Google Drive id, so the image itself never enters git: `fetch` downloads it into
 data/raw/ground-truth/ and checks the checksum.
 
-Submitted files outrank everything older (docs/requirements.md R10): for one image, a newer
+Submitted files outrank everything older (studies/nor/docs/requirements.md R10): for one image, a newer
 submission's label wins over an older one's at the same spot, and every submission wins over the
 lab's own labels (lab/labels_claude_v1.json, Claude's eye) on the reference slide.
 
     python3 detection/ground_truth.py fetch                     every data-set image, into data/raw/
     python3 detection/ground_truth.py score [SPEC ...]          every finder on every image, vs the baseline
-    python3 detection/ground_truth.py ingest ISSUES.json        the daily intake (the nor-finder pack's
+    python3 detection/ground_truth.py ingest ISSUES.json        the daily intake (the nor-study pack's
                                                                 ground-truth-intake task runs it)
 """
 import argparse, datetime, json, math, os, re, sys, urllib.request

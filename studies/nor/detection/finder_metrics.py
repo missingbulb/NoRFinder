@@ -1,4 +1,4 @@
-"""How well each finder does on the ground truth, at a few filter settings (docs/requirements.md R11).
+"""How well each finder does on the ground truth, at a few filter settings (studies/nor/docs/requirements.md R11).
 
 Each finder runs as the page runs it (interactive.Session: detect once, then filter) on every
 ground-truth image (ground_truth.corpus), and is scored twice. 'finder': the candidates it proposes

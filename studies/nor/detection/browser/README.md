@@ -17,7 +17,7 @@ mounts the repo and runs `nor_lab.py cmp tl rf` with no code changes.
 Scores and reason counts match line for line, so the browser build would be the same algorithm,
 not a copy of it.
 
-The page is built: [`web/`](../../web/), requirement R8. It reads the `.tif` with a tifffile wheel
+The page is built: [`web/`](../../web/), requirements in [`dev/requirements/requirements.md`](../../../../dev/requirements/requirements.md). It reads the `.tif` with a tifffile wheel
 the build vendors, runs Python in a Web Worker, and draws in the page itself rather than through
 `render_std.py`. In Chromium, loading the slide, finding with traffic light and the first filter
 pass take about 16 s. After that a filter change takes 20-50 ms.

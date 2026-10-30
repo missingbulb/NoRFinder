@@ -1,4 +1,4 @@
-"""S1, S2: the shell knows no study, and a study is a folder whose study.json names everything the
+"""1.1, 1.2: the shell knows no study, and a study is a folder whose study.json names everything the
 shell needs. The shell running a study is test_study_runs.py."""
 import glob
 import json

@@ -28,7 +28,7 @@ _Last updated 2026-10-06._
   spots, a difference of 1-2 is noise.
 - **Submitted ground truth** (R10, 2026-10-03): people mark candidates (thumbs up/down) and missed
   NoRs (right-click, Mark Missing Candidate) on the page and submit them as GitHub issues; the
-  nor-finder pack's `ground-truth-intake` task adds them daily to `lab/ground_truth/` and then runs
+  nor-study pack's `ground-truth-intake` task adds them daily to `lab/ground_truth/` and then runs
   the `improve-on-ground-truth` skill on opus. Submissions outrank the Claude labels wherever both
   mark a spot, and `ground_truth.py score` / the quality lock score every finder on every image.
   None has arrived yet.
@@ -40,7 +40,7 @@ _Last updated 2026-10-06._
 - **Filters are not finder-specific** (ledger §5): tl's filter values score as well as or better
   than each finder's own on all five finders. Each finder still opens on its own values.
 - **Only one image has been processed.**
-- **Browser page** (the shell in `web/` running this study, requirement R8): open an image, detect once, then tune every filter
+- **Browser page** (the shell in `web/` running this study, `dev/requirements/requirements.md` §3): open an image, detect once, then tune every filter
   live. It runs `interactive.py` over the unchanged finders under Pyodide. How it is published
   is the shell's business ([docs/WARMUP.md](../../../docs/WARMUP.md) says how to preview it).
   A finder's `MAIN` tuple names the settings the page shows first; adding a finder to
@@ -90,6 +90,6 @@ _Last updated 2026-10-06._
 | lab/ | labels, the pool used to draw them (mkpool.py, pool.json), ledger.md, the submitted ground truth (ground_truth/) |
 | finder_metrics.py | precision and recall per finder and filter preset (`lab/finder_metrics.json`); `transfer`: every finder with every finder's filter values |
 | ground_truth.py | the ground-truth data set: the merged reference per image, `fetch`, `score`, and the daily `ingest` |
-| interactive.py | the page's engine: detect once, refilter on stored measurements (R8) |
+| interactive.py | the page's engine: detect once, refilter on stored measurements (spec §3) |
 | browser/ | runs the finders in a browser runtime (Pyodide): measured parity, recommendation |
 | history.md | how the algorithm got here (stages S0-S10, who drove what) |

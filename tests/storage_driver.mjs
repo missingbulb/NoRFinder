@@ -1,7 +1,7 @@
 // Drives the page (web/) in headless Chromium, with a worker that never answers and a stand-in Drive API, and
-// checks S6: the header's avatar opens a menu whose Manage storage dialog lists what this device keeps, in its
+// checks 1.6: the header's avatar opens a menu whose Manage storage dialog lists what this device keeps, in its
 // six groups, folded at first, each entry with its size; deleting an entry or a group removes exactly what it
-// lists; a thumbnail saved from now on is listed by its image's name. Then S7: the Drive dialog's Show
+// lists; a thumbnail saved from now on is listed by its image's name. Then 1.7: the Drive dialog's Show
 // thumbnails and Auto-save images, and the link beside them showing what thumbnails and images take; an image
 // downloaded while Auto-save is on opens again with no download, one downloaded while it is off is not kept.
 // Optional SHOTS: a directory for screenshots.
@@ -157,7 +157,7 @@ try {
   check((await page.evaluate(() => JSON.parse(localStorage.getItem("nor-drive-thumb-names")).ID3)) === "new slide.tif", "a thumbnail saved now keeps its image's name");
   await page.click("#storage-dlg button[value=close]");
 
-  // ---- S7: the Drive dialog's options, and images kept on this device ----
+  // ---- 1.7: the Drive dialog's options, and images kept on this device ----
   const drive = async () => {
     // from Load's menu: Load itself is held while an image waits for Python, which never answers here
     await page.click("#load-menu summary"); await page.click('#load-menu .item[data-src="drive"]');

@@ -2,7 +2,11 @@
 
 **Open the site: [rauntruth.com](https://rauntruth.com/)**
 
-Automated detection of Nodes of Ranvier
+A page that turns fluorescence-microscopy images into numbers a researcher can check, and gathers
+their corrections as ground truth. It runs entirely in the browser, and each analysis on it is a
+*study*. The first is NoR Finder.
+
+## NoR Finder, the first study
 
 NoR Finder is for neuroscience researchers who count and measure Nodes of Ranvier in
 immunofluorescence images of CNS tissue. Node number and node length change in myelin injury,
@@ -20,7 +24,7 @@ are tuned and scored against.
 
 All of it runs in your browser: images are analysed on your own machine, never uploaded to a
 server. The image analysis is the
-repository's own Python code (`studies/nor/detection/`), run under Pyodide (CPython compiled to WebAssembly)
+study's own Python code (`studies/nor/detection/`), run under Pyodide (CPython compiled to WebAssembly)
 with numpy, scipy and scikit-image, inside a Web Worker so the page stays responsive. A small
 bridge passes the image in and the candidates and filter results back out. The JavaScript does
 everything that isn't image analysis: drawing the image and its overlays, the item views, the
@@ -40,5 +44,7 @@ untick Auto-save images; your avatar's Manage storage lists, and deletes, everyt
 Start here: **[docs/WARMUP.md](docs/WARMUP.md)** — the repo map: the shell, the study contract and
 how to add a study.
 
+- [dev/requirements/requirements.md](dev/requirements/requirements.md) — what the page must do:
+  the shell's part, the repo's checks, each study's page
 - [studies/nor/](studies/nor/docs/WARMUP.md) — the NoR Finder study: its brief, literature, finders
   and ground truth

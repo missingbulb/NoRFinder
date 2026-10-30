@@ -1,5 +1,5 @@
 // Drives the page (web/) in headless Chromium with a stand-in worker that answers from ANSWERS (written by
-// tests/test_memory.py), each answer late as on a slow computer, and checks R8's kindness to slow computers:
+// tests/test_memory.py), each answer late as on a slow computer, and checks 1.21's kindness to slow computers:
 // a button whose action takes a while is held, with a spinner, until the action is done; the low-memory popup
 // shows on a computer reporting little memory and not on one with plenty, stays away once the user asks, and
 // shows whenever the page runs out of memory; the status bar shows the memory in use. Optional SHOTS: a directory for screenshots.

@@ -1,4 +1,4 @@
-"""R8 — the deploy's repository variables reach the page through web/config.js.
+"""1.18 — the deploy's repository variables reach the page through web/config.js.
 
 Run: python3 tests/test_site_config.py
 """

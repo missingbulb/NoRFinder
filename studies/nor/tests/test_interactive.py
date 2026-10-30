@@ -1,4 +1,4 @@
-"""R8 — the browser page's engine: detect once, then filter on the stored measurements.
+"""3 — the browser page's engine: detect once, then filter on the stored measurements.
 
 Needs the reference slide (python3 src/fetch_data.py -m '*Slide5*Slice1_up_left2*').
 Run: python3 tests/test_interactive.py

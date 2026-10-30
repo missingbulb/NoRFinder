@@ -1,4 +1,4 @@
-"""R8: the Google Drive dialog selects on a click and opens on Open or a double click, and shows each lab
+"""1.18: the Google Drive dialog selects on a click and opens on Open or a double click, and shows each lab
 image's ready-made thumbnail (web/drive_thumbs.py, in this study) or the one saved when it was opened, never reading
 Drive for one (drive_dialog_driver.mjs)."""
 import glob, json, os, sys

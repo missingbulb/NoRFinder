@@ -1,4 +1,4 @@
-"""R9: CI runs in two sets. The fast set (`-m "not full"`) runs on every PR and needs neither Node nor a
+"""2.1: CI runs in two sets. The fast set (`-m "not full"`) runs on every PR and needs neither Node nor a
 browser; the full set adds every test that drives Node, Pyodide or Chromium, or measures speed or memory,
 and runs on every push to main, before anything can be released, and nightly from the nor-finder
 pack's full-tests task."""

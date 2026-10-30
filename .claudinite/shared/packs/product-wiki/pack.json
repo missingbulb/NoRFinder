@@ -1,0 +1,26 @@
+{
+  "version": "1.61021.1",
+  "minEngineVersion": "1.61001.1",
+  "ruleRoutingGuidance": {
+    "belongs": "agent-maintained market, user and competitor research wikis — cited pages, growth logs, the reviewed product-requirements sink",
+    "excludes": "how the product is built or specced — that is spec-driven-product; requirement proofs are executable-requirements"
+  },
+  "pitch": "Gives the repo a product research wiki that grows by itself: market, user and competitor findings kept as cited pages, each opening with a short list of key insights. A weekly task researches the wiki's own open questions and delivers the results as an unmerged pull request for review. Over a dozen checks enforce page structure, real source links and freshness, and wall the unreviewed research off from the code. The explore-link skill folds any URL into the right page, and writing-wiki-pages sets how pages are written.",
+  "questions": [
+    {
+      "id": "product",
+      "prompt": "What is the product — what does it do, and what is the core value it delivers? If the repo already carries a product brief or spec, read it and confirm rather than asking cold.",
+      "distill": "recorded as intent on this entry (the pack takes no config); it names what the research is about and frames every seeded wiki"
+    },
+    {
+      "id": "users",
+      "prompt": "Who are the users or customers — the segments whose needs the research must track?",
+      "distill": "recorded as intent; scopes the user-research wiki and whose problems the findings answer to"
+    },
+    {
+      "id": "market",
+      "prompt": "What market or category is this in, and who are the main competitors or alternatives? This is what the competitor research is scoped against.",
+      "distill": "recorded as intent; names the competitor set the initial competitor-landscape wiki is seeded from"
+    }
+  ]
+}

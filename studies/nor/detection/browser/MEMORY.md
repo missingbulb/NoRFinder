@@ -88,7 +88,7 @@ the largest peak seen so far.
    Small win for the upkeep.
 
 Not options: float32 working images (changes output at ties, see the ledger's 09-27 row); a
-server (the page is required to run without a backend, R8); anything below Chromium's 167 MB
+server (the page is required to run without a backend, `dev/requirements/requirements.md` §3); anything below Chromium's 167 MB
 or Pyodide's 95 MB.
 
 ## Other solutions than Pyodide

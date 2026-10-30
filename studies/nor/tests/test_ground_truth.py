@@ -1,4 +1,4 @@
-"""R8, R10 — ground truth saved from the page scores the finders in the lab, and submitted ground truth
+"""3.13, R10 — ground truth saved from the page scores the finders in the lab, and submitted ground truth
 joins the data set by code.
 
 Run: python3 tests/test_ground_truth.py
@@ -127,7 +127,7 @@ def test_the_page_and_the_intake_use_one_label():
     import json, re
     page = json.load(open(os.path.join(HERE, '..', 'study.json')))['groundTruth']['label']
     task = re.search(r"LABEL = '([^']+)'", open(os.path.join(
-        HERE, '..', '..', '..', '.claudinite', 'local', 'packs', 'nor-finder', 'tasks', 'ground-truth-intake', 'label.mjs')).read()).group(1)
+        HERE, '..', '..', '..', '.claudinite', 'local', 'packs', 'nor-study', 'tasks', 'ground-truth-intake', 'label.mjs')).read()).group(1)
     assert page == task == 'new-ground-truth'
 
 
