@@ -6,3 +6,4 @@ gdown
 scikit-image
 tifffile
 pytest
+pyyaml

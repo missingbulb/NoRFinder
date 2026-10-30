@@ -4,7 +4,9 @@
 
 A page that turns fluorescence-microscopy images into numbers a researcher can check, and gathers
 their corrections as ground truth. It runs entirely in the browser, and each analysis on it is a
-*study*. The first is NoR Finder.
+*study*, picked from the title at the top of the page or opened by its address. The page opens on
+the Image Viewer, which only shows an image; the first study is NoR Finder, at
+[rauntruth.com/nor](https://rauntruth.com/nor).
 
 ## NoR Finder, the first study
 

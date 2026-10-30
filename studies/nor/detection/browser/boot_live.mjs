@@ -3,6 +3,7 @@
 // packages) are fetched once by curl into CACHE (default /tmp/boot_live_cdn) and served from there over a
 // simulated link of MBPS megabits/s shared by the files in flight (0: no limit, like a return visit).
 //   python3 dev/tools/build/build.py; node boot_live.mjs [REPO] [MBPS]
+import { repoFile } from "../../../../web-tests/repo_file.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import fs from "node:fs";
@@ -16,7 +17,7 @@ const CDN = process.env.CACHE || "/tmp/boot_live_cdn";
 fs.mkdirSync(CDN, { recursive: true });
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".wasm": "application/wasm" };
 const server = http.createServer((q, r) => {
-  const f = path.join(repo, decodeURIComponent(new URL(q.url, "http://x").pathname));
+  const f = repoFile(repo, decodeURIComponent(new URL(q.url, "http://x").pathname));
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });

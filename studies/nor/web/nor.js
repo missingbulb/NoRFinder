@@ -7,6 +7,8 @@ import "./peek.js";
 
 export function mount(shell) {
   const { $, status, busy, slow, until, readJSON, writeJSON, esc, saveFile } = shell, st = shell.state;
+  // a listener outside the study's own panels lasts only while the study is on show
+  const here = { signal: shell.signal };
   const SVGNS = "http://www.w3.org/2000/svg";
   const STORE = "nor-filter-settings-v1"; // {values: {param: number}, off: [filter key]}; only what the user changed
   const MARKS = "nor-marks-v1:"; // + file name + "|" + finder: {"x,y": "in" | "out"}, the user's keepers and removals
@@ -334,10 +336,10 @@ export function mount(shell) {
       menu.style.left = Math.min(e.clientX, innerWidth - menu.offsetWidth - 4) + "px";
       menu.style.top = Math.min(e.clientY, innerHeight - menu.offsetHeight - 4) + "px";
       b.focus();
-    });
-    document.addEventListener("pointerdown", (e) => { if (!menu.contains(e.target)) close(); });
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
-    $("#scroller").addEventListener("scroll", close);
+    }, here);
+    document.addEventListener("pointerdown", (e) => { if (!menu.contains(e.target)) close(); }, here);
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); }, here);
+    $("#scroller").addEventListener("scroll", close, here);
   }
 
   // the result shown for candidate i: null = pass, else a failure reason
@@ -964,14 +966,14 @@ export function mount(shell) {
       // no text selection or native drag may start under the lasso: either would cancel the pointer
       e.preventDefault(); sc.setPointerCapture(e.pointerId);
       st.lasso.pts = [at(e)]; st.lasso.line = el("polyline", { class: "lasso-live" }); $("#overlay").append(st.lasso.line);
-    });
+    }, here);
     sc.addEventListener("pointermove", (e) => {
       const L = st.lasso; if (!L || !L.pts) return;
       const p = at(e), q = L.pts[L.pts.length - 1];
       if (Math.hypot(p[0] - q[0], p[1] - q[1]) * st.zoom < 3) return;
       L.pts.push(p.map((v) => Math.round(v * 10) / 10));
       L.line.setAttribute("points", L.pts.map((q) => q.join(",")).join(" "));
-    });
+    }, here);
     sc.addEventListener("pointerup", () => {
       const L = st.lasso; if (!L || !L.pts) return;
       const pts = L.pts.map(([x, y]) => [Math.min(Math.max(x, 0), st.W), Math.min(Math.max(y, 0), st.H)]);
@@ -979,9 +981,9 @@ export function mount(shell) {
       endLasso();
       // a lasso smaller than a NoR's footprint is a slip, not an area
       if (pts.length >= 3 && area * st.zoom * st.zoom >= 100) setMask([...st.mask, pts]);
-    });
-    sc.addEventListener("pointercancel", () => { if (st.lasso) endLasso(); });
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && st.lasso) endLasso(); });
+    }, here);
+    sc.addEventListener("pointercancel", () => { if (st.lasso) endLasso(); }, here);
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && st.lasso) endLasso(); }, here);
   }
 
   // ---------- the image view ----------
@@ -999,8 +1001,8 @@ export function mount(shell) {
     t.textContent = s; t.hidden = false;
     t.style.left = Math.min(e.clientX + 14, innerWidth - 330) + "px"; t.style.top = e.clientY + 14 + "px";
   }
-  $("#overlay").addEventListener("mousemove", tip);
-  $("#overlay").addEventListener("mouseleave", () => ($("#tip").hidden = true));
+  $("#overlay").addEventListener("mousemove", tip, here);
+  $("#overlay").addEventListener("mouseleave", () => ($("#tip").hidden = true), here);
 
   $("#finder").onchange = () => { buildDetect(); if (!st.meta) useFilters($("#finder").value); };
   $("#find").onclick = detect;

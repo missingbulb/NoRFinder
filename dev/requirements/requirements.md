@@ -16,13 +16,16 @@ test fold under it. A study's research requirements, which no user sees, stay in
   and the shell's page tests run on the fixture study, which shares none of them.
   </details>
 
-- `1.2` A study is a folder, and the page runs the one `?study=` names.
+- `1.2` A study is a folder, and the page runs the one its address names: rauntruth.com/<id>.
   <details>
 
   A study is `studies/<id>/` with a `study.json` that names everything the shell needs, and every
-  file it names exists. The page runs the study `?study=<id>` names, the Image Viewer (`1.28`)
-  when none is named. Adding a study changes nothing in `web/`, in the deploy's settings or in CI.
-  Test: `web-tests/test_study_contract.py`.
+  file it names exists. The page runs the study its path names (`rauntruth.com/nor`), the Image
+  Viewer (`1.28`) at the bare address; an address from before paths, `?study=<id>`, opens the same
+  study and is rewritten to its path. The build publishes the page once more under each listed
+  study's id, so the path opens it fresh too, and refuses an id the site already serves at its
+  top. Adding a study changes nothing in `web/`, in the deploy's settings or in CI. Test:
+  `web-tests/test_study_contract.py`, `web-tests/test_published_site.py`, `web-tests/test_study_runs.py`.
   </details>
 
 - `1.3` The viewer is the study's choice.
@@ -98,9 +101,12 @@ test fold under it. A study's research requirements, which no user sees, stay in
 - `1.10` A header with the logo, the study switcher and a dark/light switch (remembered).
   <details>
 
-  The study's title, with a caret beside it, opens a "Switch study" list of every study whose
-  `study.json` says `"listed": true`, by title, the one on show ticked. Each is a link to the page
-  running it: `?study=<id>`, and the bare address for the Image Viewer. The header's spacing follows
+  GitHub's repository switcher, for studies: the study's title and a solid caret form one 32 px
+  control; it opens, under the caret, a 320 px panel headed "Switch study", a search box (focused,
+  filtering by title as the user types) and every study whose `study.json` says `"listed": true`,
+  by title, each with a study icon, a rule under its name, and a tick on the one on show. Arrow
+  keys move through the list, Enter opens the one marked, Escape closes it. Each entry is a link to
+  the study's address (`1.2`), so a middle click opens it in a new tab. The header's spacing follows
   GitHub's: 64 px tall, 16 px at the sides, a 32 px logo. Test: `web-tests/test_study_runs.py`.
   </details>
 
@@ -291,6 +297,28 @@ test fold under it. A study's research requirements, which no user sees, stay in
   Choosing one opens the copy kept on this device (`1.7`), with no download, and downloads it again
   only when none is kept. Images from this computer are not listed: a web page cannot open a file
   on the computer again by itself. Test: `web-tests/test_storage_page.py`.
+  </details>
+
+- `1.30` Switching study happens in place: no reload, and the open image stays open.
+  <details>
+
+  Choosing a study in the switcher, or going back and forward between studies, changes the address
+  and swaps the study without reloading the page: Python stays loaded and adds only the packages the
+  new study needs, and the image on show opens in the new study at once. The study that leaves
+  takes its panels, its stylesheet, its drawing and its listeners with it (each listener it adds
+  outside its own panels carries `shell.signal`), and an answer its Python was still working on is
+  dropped. Test: `web-tests/test_study_runs.py`.
+  </details>
+
+- `1.31` The switcher ends with Submit New Study Request, a GitHub issue form for proposing a study.
+  <details>
+
+  Below the studies, apart from the search, "Submit New Study Request" opens, in a new tab, a new
+  issue on the repo from its `new-study` form, labelled `new-study-request`: the research proposal
+  (a link, or a document attached in the box), a public Google Drive link to sample images, one to
+  ground truth if any, the literature, and the submitter's name and email, which the form warns
+  are public. Test: `web-tests/test_study_runs.py` (the link opens the form the repo carries),
+  `web-tests/test_study_request.py` (the form asks for each of these).
   </details>
 
 ## `2` The repo's checks
