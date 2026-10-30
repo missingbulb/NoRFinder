@@ -32,6 +32,7 @@ const SAVED_THUMB = "nor-drive-thumb:"; // + Drive id: a JPEG data URL of the im
 const SAVED_THUMBS = "nor-drive-thumbs-saved"; // [Drive id], oldest first: which images have one
 const THUMB_NAMES = "nor-drive-thumb-names"; // {Drive id: file name}: the image each saved thumbnail shows
 const HOLDS = "nor-drive-holds"; // {Drive id: what the file holds, "3D · 8 slices" or "" when it cannot tell}, oldest first
+const THROTTLE = "nor-drive-throttled-until"; // when the wait after Google throttled the site's downloads ends, in ms
 const RECENT = "nor-drive-recent"; // [{id, name, path}], newest first: images opened from Drive, path their folders under the link
 // Cache Storage, + Drive id: an image downloaded from Drive, its file name (URI-encoded) and when it was saved
 // in the headers
@@ -230,7 +231,8 @@ function load(src) {
   if (src === "local") return $("#file").click();
   const home = ((window.NOR_CONFIG || {}).drive || {}).defaultLink || "";
   $("#drive-link").value = readJSON(DRIVE_LINK, "") || home; $("#drive-dlg").showModal(); $("#drive-link").select(); showSaved();
-  if (NorDrive.parse($("#drive-link").value)?.kind === "folder") $("#drive-go").click();
+  holdDrive();
+  if (!throttled() && NorDrive.parse($("#drive-link").value)?.kind === "folder") $("#drive-go").click();
 }
 $("#load-main").onclick = () => load(readJSON(SOURCE, "local"));
 document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => load(b.dataset.src)));
@@ -256,6 +258,27 @@ function showRecent() {
 }
 showRecent();
 
+// once Google throttles the site's downloads the Drive dialog waits WAIT, with a notice and a countdown, and
+// calls Drive for nothing; the end is kept in the browser, so a reload does not cut it short. waitEnded is the
+// dialog's, which lists its link again.
+const WAIT = 15 * 60000;
+let ticker = 0, waitEnded = () => {};
+const throttled = () => readJSON(THROTTLE, 0) > Date.now();
+function holdDrive() {
+  const on = throttled(), left = Math.max(0, readJSON(THROTTLE, 0) - Date.now()), two = (n) => String(n).padStart(2, "0");
+  $("#drive-throttle").hidden = !on; $("#drive-dlg").classList.toggle("throttled", on);
+  $("#drive-link").disabled = $("#drive-go").disabled = on;
+  if (on) $("#drive-open").disabled = true;
+  $("#drive-clock").textContent = `${two(Math.floor(left / 60000))}:${two(Math.floor(left / 1000) % 60)}`;
+  if (on && !ticker) ticker = setInterval(holdDrive, 1000);
+  if (!on && ticker) {
+    clearInterval(ticker); ticker = 0;
+    try { localStorage.removeItem(THROTTLE); } catch { /* nothing kept */ }
+    waitEnded();
+  }
+}
+function throttle() { writeJSON(THROTTLE, Date.now() + WAIT); holdDrive(); }
+
 // the Drive dialog: a pasted file link loads at once; a folder link lists its images and subfolders, where a
 // click selects and Open (or a double click) opens the selection
 function driveDialog() {
@@ -270,6 +293,7 @@ function driveDialog() {
       peek()(kept.bytes, kept.bytes.byteLength); remember(id, kept.name, path); picture(id, kept.name, kept.bytes);
       return openBytes(kept.name, kept.bytes, { kind: "drive", id });
     }
+    if (throttled()) { if (!$("#drive-dlg").open) $("#drive-dlg").showModal(); return holdDrive(); }
     msg("Downloading " + (name || "the image") + "…");
     const mb = (n) => (n / 1048576).toFixed(1);
     let push, what;
@@ -286,6 +310,7 @@ function driveDialog() {
       openBytes(f.name, f.bytes, { kind: "drive", id });
     } catch (err) {
       busy(false); if (!$("#drive-dlg").open) $("#drive-dlg").showModal();
+      if (err.throttled) { msg(""); return throttle(); }
       msg(err.message || String(err), true);
     }
   };
@@ -296,6 +321,7 @@ function driveDialog() {
   const enter = (f) => (f.folder ? (trail.push(f), show()) : take(f.id, f.name, trail.slice(1).map((t) => t.name)));
   openRecent = (r) => take(r.id, r.name, r.path || []);
   const show = async () => {
+    if (throttled()) return holdDrive();
     const at = trail[trail.length - 1];
     $("#drive-path").innerHTML = trail.map((t, k) => `<button type="button" class="link" data-k="${k}">${esc(t.name)}</button>`).join(" / ");
     $("#drive-path").querySelectorAll("button").forEach((b) => (b.onclick = () => { trail = trail.slice(0, +b.dataset.k + 1); show(); }));
@@ -319,7 +345,7 @@ function driveDialog() {
         $("#drive-list").append(b);
         if (!f.folder) thumbs.watch(b.querySelector(".pic"), f, k);
       }
-    } catch (err) { if (asked === listing) msg(err.message || String(err), true); }
+    } catch (err) { if (asked === listing) (err.throttled ? throttle() : msg(err.message || String(err), true)); }
   };
   // each image's thumbnail: the one saved when it was last opened here, else the study's ready-made one,
   // fetched for the rows in view and the next AHEAD, in order, as the user scrolls; never read from Drive,
@@ -341,7 +367,7 @@ function driveDialog() {
     // the rows from the first in view to AHEAD past the last, that no fetch has been started for
     const wanted = () => {
       const list = $("#drive-list"), items = list.children;
-      if (!$("#drive-dlg").open || !$("#drive-thumbs").checked || !items.length) return [];
+      if (!$("#drive-dlg").open || !$("#drive-thumbs").checked || throttled() || !items.length) return [];
       const box = list.getBoundingClientRect();
       let first = 0, last = items.length - 1;
       for (let hi = last; first < hi; ) { const m = (first + hi) >> 1; if (items[m].getBoundingClientRect().bottom > box.top) hi = m; else first = m + 1; }
@@ -353,7 +379,7 @@ function driveDialog() {
       for (const want = wanted(); running < AT_ONCE && want.length; ) {
         const r = want.shift(), signal = ctl.signal;
         r.asked = true; running++; asked++;
-        job(r, signal).catch(() => {})
+        job(r, signal).catch((e) => { if (e.throttled) throttle(); })
           .finally(() => { if (signal.aborted) return; r.done = true; running--; done++; tell(); next(); });
       }
       tell();
@@ -406,6 +432,7 @@ function driveDialog() {
     d.disabled = true; d.title = "Needs this site's Google API key (issue #234)";
   }
   const open = () => {
+    if (throttled()) return holdDrive();
     const link = $("#drive-link").value, ref = NorDrive.parse(link);
     $("#drive-list").replaceChildren(); $("#drive-path").replaceChildren(); choose(null);
     if (!ref) return msg("That does not look like a Google Drive link.", true);
@@ -414,6 +441,8 @@ function driveDialog() {
     trail = [{ id: ref.id, name: "Folder" }]; show();
   };
   $("#drive-go").onclick = open;
+  waitEnded = () => { if ($("#drive-dlg").open) open(); };
+  holdDrive();
   $("#drive-link").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); open(); } });
 }
 
@@ -493,7 +522,7 @@ async function showSaved() {
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
   [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link",
-  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off",
+  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off",
 };
 const GROUPS = [
   ["code", "Code kept for the next visit", "Python and its packages, so the page starts without downloading them again."],
