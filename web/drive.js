@@ -53,6 +53,14 @@ window.NorDrive = (() => {
     return { name, bytes: got === buf.byteLength ? buf : buf.slice(0, got) };
   }
 
+  // the first n bytes of a file, as an ArrayBuffer
+  async function head(id, n, signal) {
+    need();
+    const r = await fetch(`${API}/${encodeURIComponent(id)}?alt=media&key=${key}`, { headers: { Range: `bytes=0-${n - 1}` }, signal });
+    if (!r.ok) throw refused(r, "file");
+    return r.arrayBuffer();
+  }
+
   // [{id, name, folder, size, created, preview}] in a public folder: its subfolders and its TIFF and PNG
   // images; size in bytes (null for a folder), created a Date, preview the link of Drive's own small
   // picture of the file or null (Drive draws a multi-channel TIFF grey, so it serves only a PNG)
@@ -68,5 +76,5 @@ window.NorDrive = (() => {
       .filter((f) => f.folder || /\.(tiff?|png)$/i.test(f.name));
   }
 
-  return { parse, file, list, ready: !!key };
+  return { parse, file, head, list, ready: !!key };
 })();
