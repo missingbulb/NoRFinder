@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- Switching study no longer reloads the page: the image you have open stays open in the new study, and each study has its own address, like rauntruth.com/nor. The study menu looks like GitHub's, with a search box, and ends with Submit New Study Request. (#585)
 - The title at the top is now a menu for switching between studies. The page opens on a plain Image Viewer that shows any TIFF or PNG; NoR Finder is one pick away, at rauntruth.com/?study=nor. (#574)
 - The finder list shows each finder's precision and recall, and the Filters box opens with the Precise, Balanced and Recalling presets. (#572)
 - The page now opens at rauntruth.com/ itself; old /web/ links forward there. The Drive dialog no longer shows ready-made thumbnails of the lab's images, only of images you have opened. (#566)
