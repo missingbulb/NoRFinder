@@ -57,6 +57,5 @@
   },
   "groundTruth": {
     "label": "new-ground-truth"
-  },
-  "driveThumbs": "web/drive_thumbs/"
+  }
 }

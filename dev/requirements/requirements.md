@@ -457,14 +457,7 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 
 - `3.19` Filter settings persist across images, visits and days; one button restores the defaults.
 
-- `3.20` Every image the study's data list names has a ready-made Drive thumbnail on the site.
-  <details>
-
-  Each image named in `studies/nor/data/sources.json` has one (`studies/nor/web/drive_thumbs.py`,
-  rerun when that list changes; a test fails until it is).
-  </details>
-
-- `3.21` The page runs the lab's code, and at our settings passes what the lab passes.
+- `3.20` The page runs the lab's code, and at our settings passes what the lab passes.
   <details>
 
   The Python it runs is the study's `detection/` and `src/` as they are, so the finder stays

@@ -1,11 +1,12 @@
 // Drives the Google Drive dialog (web/) in headless Chromium against a stand-in Drive API that serves
 // IMAGE... (lab images named in data/sources.json) and one image the lab's list lacks from a folder, with one
 // subfolder holding the first image again: a click only selects a row, Open loads the selection, a double
-// click enters a folder, and thumbnails come from the site's ready-made ones or one saved when an image was
-// opened, never from Drive, and not at all while the remembered "Download thumbnails" is unticked.
+// click enters a folder, and thumbnails come from the study's ready-made ones (served from THUMBS, a
+// stand-in driveThumbs folder) or one saved when an image was opened, never from Drive, and not at all
+// while the remembered "Download thumbnails" is unticked.
 // Prints what it measured; exits 1 when something is wrong, 2 when it cannot run. With SHOT, also saves a
 // screenshot of the dialog there.
-//   node tests/drive_dialog_driver.mjs SHOT|- IMAGE...
+//   node tests/drive_dialog_driver.mjs SHOT|- THUMBS IMAGE...
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -18,7 +19,7 @@ let pw;
 try { pw = require("playwright"); } catch {
   try { pw = require(path.join(execSync("npm root -g").toString().trim(), "playwright")); } catch { console.error("no playwright: npm i -g playwright"); process.exit(2); }
 }
-const [shot, ...images] = process.argv.slice(2);
+const [shot, thumbs, ...images] = process.argv.slice(2);
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const ROOT = "rootfolder0000000001", SUB = "subfolder00000000001";
@@ -40,8 +41,14 @@ const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(""); }
   if (u === "/web/config.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(CONFIG); }
-  if (u.startsWith("/studies/nor/web/drive_thumbs/") && u.endsWith(".jpg")) thumbsServed++;
-  const f = path.join(repo, u);
+  if (u === "/studies/nor/study.json") {
+    const manifest = JSON.parse(fs.readFileSync(path.join(repo, u), "utf8"));
+    r.writeHead(200, { "content-type": "application/json" });
+    return r.end(JSON.stringify({ ...manifest, driveThumbs: "ready-thumbs/" }));
+  }
+  const ready = u.startsWith("/studies/nor/ready-thumbs/");
+  if (ready && u.endsWith(".jpg")) thumbsServed++;
+  const f = ready ? path.join(thumbs, u.slice("/studies/nor/ready-thumbs/".length)) : path.join(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
