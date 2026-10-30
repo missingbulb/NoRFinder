@@ -1,6 +1,11 @@
 <template data-slot="left">
-    <section class="box foldable">
-      <div class="sec-head"><h2>Candidates finder</h2><button id="reset-detect" class="link" disabled>restore defaults</button></div>
+    <section class="box foldable" id="preprocessing-box" data-opens="load" data-folds="find">
+      <div class="sec-head"><h2>Preprocessing</h2></div>
+      <p class="hint">No preprocessing steps yet: Find Candidates works on the image as loaded.</p>
+    </section>
+
+    <section class="box foldable" id="finder-box" data-opens="load" data-folds="find">
+      <div class="sec-head"><h2>Algorithms</h2><button id="reset-detect" class="link" disabled>restore defaults</button></div>
       <select id="finder" disabled></select>
       <details id="about-box" class="fold">
         <summary>How it works</summary>
@@ -19,10 +24,18 @@
       </div>
     </section>
 
-    <section class="box foldable">
-      <div class="sec-head"><h2>Filters</h2></div>
+    <section class="box foldable" id="filters-box" data-opens="user">
+      <div class="sec-head"><h2>Post-processing</h2></div>
       <div id="presets" class="tabs presets" role="group" aria-label="Filter preset" hidden></div>
       <div id="filters"></div>
+    </section>
+
+    <section class="box foldable" id="summary-box" data-opens="find">
+      <div class="sec-head"><h2>Summary</h2>
+        <span class="mask-btns"><button id="mask-add" class="primary" disabled title="Lasso the part of the image the summary and the CSVs should count; lasso again to add or cut out an area">Add mask</button><button id="mask-clear" hidden>Clear mask</button></span>
+      </div>
+      <div id="summary" class="dim">No candidates yet.</div>
+      <div class="csv-btns"><button id="dl-cands" disabled>Download Candidates</button><button id="dl-summary" disabled>Download Summary</button></div>
     </section>
 </template>
 <template data-slot="toolbar">
@@ -70,13 +83,6 @@
         <div class="stepper"><button id="sel-prev" title="Previous candidate" aria-label="Previous candidate" disabled>‹</button><button id="sel-next" title="Next candidate" aria-label="Next candidate" disabled>›</button></div>
       </div>
       <div id="selected" class="dim">Click a candidate on the image.</div>
-    </section>
-    <section class="box" id="summary-box">
-      <div class="sec-head"><h2>Summary</h2>
-        <span class="mask-btns"><button id="mask-add" class="primary" disabled title="Lasso the part of the image the summary and the CSVs should count; lasso again to add or cut out an area">Add mask</button><button id="mask-clear" hidden>Clear mask</button></span>
-      </div>
-      <div id="summary" class="dim">No candidates yet.</div>
-      <div class="csv-btns"><button id="dl-cands" disabled>Download Candidates</button><button id="dl-summary" disabled>Download Summary</button></div>
     </section>
     <section class="box" id="downloads">
       <h2>Ground Truth</h2>

@@ -126,7 +126,10 @@ const offAxis = (L) => {
   return Math.max(...L.red.map((p) => Math.abs((B[0] - A[0]) * (A[1] - p[1]) - (A[0] - p[0]) * (B[1] - A[1])) / n));
 };
 
+// a box folded with the steps (1.38), opened by its title as the user would
+const unfold = (page, box) => page.evaluate((b) => { const e = $(b); if (e.classList.contains("folded")) e.querySelector(".sec-head h2").click(); }, box);
 async function markAndVote(page) {
+  await unfold(page, "#finder-box");
   await page.click("#find");
   await page.waitForFunction(() => st.alone && $("#busy").hidden);
   const ran = await crumbs(page);

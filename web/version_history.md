@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- The left bar is now Load Image, Preprocessing, Algorithms, Post-processing and Summary (moved from the right). Each box opens once it is useful and folds again when its step is done; Post-processing opens only when you click its title. (#597)
 - A Grid button, beside the Ruler, draws a grid over the image; hover it to choose the grid's colour and the distance between its lines, in µm when the file gives a pixel size and in pixels otherwise. Your choices are kept for next time. (#596)
 - A Ruler button beside Zoom: drag across the image to measure a distance, in µm when the file gives a pixel size (its width and height each counted on their own) and in pixels otherwise; press it again to clear the ruler. The image box shows both sides of a pixel that is not square. (#594)
 - The Drive dialog loads thumbnails only for the rows you can see and the next few, and no longer mixes in a folder you have just left. Each TIFF says whether it is a 3D stack or a flat image, and a stack you open gets a small 3D thumbnail. When Google throttles the site's downloads, the dialog says so and counts down 15 minutes before trying again. (#586)

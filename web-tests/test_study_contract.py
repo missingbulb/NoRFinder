@@ -4,6 +4,7 @@ import glob
 import json
 import os
 import re
+from html.parser import HTMLParser
 
 import pytest
 
@@ -54,6 +55,45 @@ def test_a_study_names_its_stage_and_steps(path):
     keys = [p['key'] for p in m['phases']]
     assert len(set(keys)) == len(keys) and not {'load', 'submit'} & set(keys), 'a step\'s key is its own, and not one of the shell\'s'
     assert all(p.get('name') for p in m['phases'])
+
+
+class Boxes(HTMLParser):
+    """Each foldable box in an HTML file: (the slot its template fills, id, its title, data-opens, data-folds)."""
+    def __init__(self, html):
+        super().__init__(); self.slot, self.boxes, self.title = None, [], False
+        self.feed(html)
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if tag == 'template':
+            self.slot = a.get('data-slot')
+        elif tag == 'section' and 'foldable' in (a.get('class') or '').split():
+            self.boxes.append([self.slot, a.get('id'), '', a.get('data-opens'), a.get('data-folds')])
+        elif tag == 'h2' and self.boxes and not self.boxes[-1][2]:
+            self.title = True
+
+    def handle_endtag(self, tag):
+        if tag == 'h2':
+            self.title = False
+
+    def handle_data(self, data):
+        if self.title:
+            self.boxes[-1][2] += data.strip()
+
+
+def test_every_studys_boxes_name_the_steps_that_open_and_fold_them():
+    """1.38: every foldable box of a study says when it opens (a step, or user: only its title), never left to a default."""
+    seen = 0
+    for path in STUDIES:
+        m = manifest(path)
+        if 'panels' not in m['web']:
+            continue
+        steps = {'load', 'submit'} | {p['key'] for p in m['phases']}
+        for slot, bid, title, opens, folds in Boxes(open(os.path.join(os.path.dirname(path), m['web']['panels']), encoding='utf8').read()).boxes:
+            seen += 1
+            assert opens in steps | {'user'}, f'{title}: data-opens names a step or user, not {opens!r}'
+            assert folds is None or folds in steps, f'{title}: data-folds names a step, not {folds!r}'
+    assert seen >= 7, f'read only {seen} foldable boxes: the sweep is not finding them all'
 
 
 def test_the_shell_names_no_study():
