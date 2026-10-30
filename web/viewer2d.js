@@ -1,14 +1,18 @@
 // The 2D viewer: the opened image on a canvas, the study's drawing over it in an SVG in image
 // coordinates, zoom (buttons, the wheel), pan (dragging), the thumbnail that shows and moves the part
-// in view, and the channel toggles. A study reaches it as shell.viewer; another viewer (3D, say) is a
-// module with the same interface.
+// in view, the channel toggles, the ruler and the grid. A study reaches it as shell.viewer; another viewer (3D, say)
+// is a module with the same interface.
 //
 // The study's hooks it calls: pickAt(event) -> what was clicked, or null; pick(it) when a click, not a
 // drag, landed on it; step(dir) on a sideways swipe; capturesPointer() while the study's own tool (a
 // lasso, say) takes the pointer; zoomed() after every zoom.
+// the user's grid: {colour, um, px}, its colour and the distance between its lines in µm and in pixels
+export const GRID = "nor-grid";
+
 export function viewer(shell) {
   const { $, state: st } = shell;
   let hooks = {}, channels = [];
+  const make = (tag, attrs) => { const n = document.createElementNS("http://www.w3.org/2000/svg", tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
 
   // the channel toggles: one per channel the study names, in the colour the viewer gives it; a study that
   // comes in brings its own
@@ -29,7 +33,7 @@ export function viewer(shell) {
     const n = W * H, img = { r: null, g: null, b: null };
     channels.forEach((c, k) => { const p = planes.subarray(k * n, (k + 1) * n); for (const ch of c.key === "w" ? ["r", "g", "b"] : [c.key]) img[ch] = p; });
     st.W = W; st.H = H; st.img = img; st.plain = null; st.peeked = false;
-    draw();
+    ruler.reset(); draw();
     $("#empty").hidden = true; $("#stage").hidden = false; $("#thumb-wrap").hidden = false;
     setZoom(st.zoom);
   }
@@ -83,7 +87,7 @@ export function viewer(shell) {
     svg.style.fontSize = 12 / st.zoom + "px";
     sc.scrollLeft = ix * st.zoom - ax; sc.scrollTop = iy * st.zoom - ay;
     $("#zoom-label").textContent = Math.round(st.zoom * 100) + "%";
-    hooks.zoomed?.(); thumbView();
+    ruler.draw(); grid.draw(); hooks.zoomed?.(); thumbView();
   }
   // the whole image in view
   function fit() {
@@ -113,7 +117,7 @@ export function viewer(shell) {
   {
     const sc = $("#scroller"); let drag = null;
     sc.addEventListener("pointerdown", (e) => {
-      if (e.button !== 0 || !st.img || hooks.capturesPointer?.()) return;
+      if (e.button !== 0 || !st.img || hooks.capturesPointer?.() || ruler.armed) return;
       drag = { x: e.clientX, y: e.clientY, l: sc.scrollLeft, t: sc.scrollTop, c: hooks.pickAt?.(e) ?? null, moved: false, id: e.pointerId };
     });
     sc.addEventListener("pointermove", (e) => {
@@ -139,6 +143,94 @@ export function viewer(shell) {
       } else setZoom(st.zoom * Math.exp(-e.deltaY * k * 0.0015), e);
     }, { passive: false });
   }
+  // the ruler: its button arms it, a drag from a point shows the reach around it, and on release the ruler
+  // stays between the two points with their distance, in µm when the file gives the pixel's width and height
+  // (each axis its own), else in pixels; the button pressed again takes it away. It draws in its own layer,
+  // in screen pixels, so a study redrawing its overlay keeps it.
+  const ruler = (() => {
+    const btn = $("#ruler-btn"), svg = $("#ruler"), sc = $("#scroller");
+    let armed = false, from = null, to = null, live = false;
+    function length() {
+      const dx = to[0] - from[0], dy = to[1] - from[1];
+      if (st.um && st.umY) { const d = Math.hypot(dx * st.um, dy * st.umY); return `${d.toFixed(d < 10 ? 2 : d < 100 ? 1 : 0)} µm`; }
+      const d = Math.hypot(dx, dy); return `${d.toFixed(d < 100 ? 1 : 0)} px`;
+    }
+    function draw() {
+      svg.replaceChildren();
+      if (!from) return;
+      svg.setAttribute("width", st.W * st.zoom); svg.setAttribute("height", st.H * st.zoom);
+      const [x1, y1] = from.map((v) => v * st.zoom), [x2, y2] = to.map((v) => v * st.zoom);
+      const len = Math.hypot(x2 - x1, y2 - y1), nx = len ? (y1 - y2) / len : 0, ny = len ? (x2 - x1) / len : 1, t = 7;
+      const d = `M${x1},${y1}L${x2},${y2}M${x1 - nx * t},${y1 - ny * t}L${x1 + nx * t},${y1 + ny * t}M${x2 - nx * t},${y2 - ny * t}L${x2 + nx * t},${y2 + ny * t}`;
+      const parts = [make("path", { class: "halo", d }), make("path", { class: "mark", d })];
+      if (live) parts.unshift(make("circle", { class: "halo reach", cx: x1, cy: y1, r: len }), make("circle", { class: "mark reach", cx: x1, cy: y1, r: len }));
+      const label = make("text", { "text-anchor": "middle", "dominant-baseline": "central" });
+      label.textContent = length(); parts.push(label);
+      svg.append(...parts);
+      // the length above the middle of the ruler, its box clear of the line whatever the line's slant
+      const { width: w, height: h } = label.getBBox(), s = ny > 0 ? -1 : 1, off = 6 + Math.abs(nx) * w / 2 + Math.abs(ny) * h / 2;
+      label.setAttribute("x", (x1 + x2) / 2 + nx * off * s); label.setAttribute("y", (y1 + y2) / 2 + ny * off * s);
+    }
+    function set(on) {
+      armed = on; from = to = null; live = false;
+      btn.setAttribute("aria-pressed", on); sc.classList.toggle("measuring", on); draw();
+    }
+    btn.onclick = () => set(btn.getAttribute("aria-pressed") !== "true");
+    sc.addEventListener("pointerdown", (e) => {
+      if (!armed || e.button !== 0 || !st.img || hooks.capturesPointer?.()) return;
+      e.preventDefault(); sc.setPointerCapture(e.pointerId);
+      from = toImage(e); to = from; live = true; draw();
+    });
+    sc.addEventListener("pointermove", (e) => { if (live) { to = toImage(e); draw(); } });
+    // a click with no drag measures nothing, and the ruler stays armed
+    const drop = () => {
+      if (!live) return;
+      live = false;
+      if (Math.hypot(to[0] - from[0], to[1] - from[1]) * st.zoom < 3) from = to = null;
+      else { armed = false; sc.classList.remove("measuring"); }
+      draw();
+    };
+    sc.addEventListener("pointerup", drop); sc.addEventListener("pointercancel", drop);
+    return { draw, reset: () => set(false), get armed() { return armed; } };
+  })();
+  // the grid: its button draws it or takes it away; a click or a hover opens the popup of its colour and
+  // spacing, in µm when the file gives the pixel's width and height (the cells then square in µm) and in
+  // pixels when it does not, each spacing kept apart
+  const grid = (() => {
+    const btn = $("#grid-btn"), pop = $("#grid-pop"), svg = $("#grid"), colour = $("#grid-colour"), spacing = $("#grid-spacing");
+    const saved = { colour: "#ff0000", um: 10, px: 50, ...shell.readJSON(GRID) };
+    let on = false, leaving = null;
+    const unit = () => (st.um && st.umY ? "um" : "px");
+    function draw() {
+      svg.replaceChildren();
+      const d = saved[unit()];
+      if (!on || !st.W || !(d > 0)) return;
+      const w = st.W * st.zoom, h = st.H * st.zoom, cw = (unit() === "um" ? d / st.um : d) * st.zoom, ch = (unit() === "um" ? d / st.umY : d) * st.zoom;
+      svg.setAttribute("width", w); svg.setAttribute("height", h);
+      const cell = make("pattern", { id: "grid-cells", patternUnits: "userSpaceOnUse", width: cw, height: ch });
+      cell.append(make("path", { d: `M0,0V${ch}M0,0H${cw}`, stroke: saved.colour, "stroke-width": 1, fill: "none", "shape-rendering": "crispEdges" }));
+      const defs = make("defs", {}); defs.append(cell);
+      svg.append(defs, make("rect", { width: w, height: h, fill: "url(#grid-cells)" }));
+    }
+    function fill() {
+      colour.value = saved.colour; spacing.value = saved[unit()]; $("#grid-unit").textContent = unit() === "um" ? "µm" : "px";
+    }
+    function show() {
+      clearTimeout(leaving); fill();
+      if (!pop.matches(":popover-open")) pop.showPopover();
+      const r = btn.getBoundingClientRect();
+      Object.assign(pop.style, { top: r.bottom + 6 + "px", left: Math.max(8, Math.min(r.right - pop.offsetWidth, innerWidth - pop.offsetWidth - 8)) + "px" });
+    }
+    // leaving the button and the popup closes it, unless the user is still at one of its fields
+    const leave = () => { clearTimeout(leaving); leaving = setTimeout(() => { if (!pop.matches(":hover, :focus-within") && !btn.matches(":hover")) pop.hidePopover(); }, 300); };
+    btn.onclick = () => { on = !on; btn.setAttribute("aria-pressed", on); draw(); show(); };
+    btn.addEventListener("mouseenter", show); btn.addEventListener("mouseleave", leave);
+    pop.addEventListener("mouseenter", () => clearTimeout(leaving)); pop.addEventListener("mouseleave", leave);
+    const save = () => { shell.writeJSON(GRID, saved); draw(); };
+    colour.addEventListener("input", () => { saved.colour = colour.value; save(); });
+    spacing.addEventListener("input", () => { const v = parseFloat(spacing.value); if (v > 0) { saved[unit()] = v; save(); } });
+    return { draw: () => { draw(); if (pop.matches(":popover-open")) fill(); } };
+  })();
   $("#zoom-in").onclick = () => setZoom(st.zoom * 1.25);
   $("#zoom-out").onclick = () => setZoom(st.zoom / 1.25);
 
@@ -146,7 +238,7 @@ export function viewer(shell) {
   function preview(painter) {
     st.peeked = false;
     return (st.peek = painter($("#base"), shown, (W, H) => {
-      st.img = null; st.plain = null; st.W = W; st.H = H; st.peeked = true;
+      st.img = null; st.plain = null; st.W = W; st.H = H; st.peeked = true; ruler.reset();
       $("#overlay").innerHTML = ""; $("#empty").hidden = true; $("#stage").hidden = false; $("#thumb-wrap").hidden = true;
       setZoom(st.zoom);
     }));

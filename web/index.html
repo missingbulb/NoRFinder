@@ -71,6 +71,12 @@
     <div class="toolbar">
       <slot-here data-slot-for="toolbar"></slot-here>
       <span class="grow"></span>
+      <button id="ruler-btn" class="for-image tool" type="button" aria-pressed="false" title="Ruler: drag across the image to measure a distance. Click again to clear it." aria-label="Ruler"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="2" y="8" width="20" height="8" rx="1.5"/><path d="M6 8v3M10 8v4M14 8v3M18 8v4"/></g></svg></button>
+      <button id="grid-btn" class="for-image tool" type="button" aria-pressed="false" title="Grid: draw a grid over the image. Hover to choose its colour and spacing." aria-label="Grid"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="#e53935" stroke-width="1.6" d="M3 3h18v18H3zM9 3v18M15 3v18M3 9h18M3 15h18"/></svg></button>
+      <div id="grid-pop" popover aria-label="Grid">
+        <label>Colour <input id="grid-colour" type="color"></label>
+        <label>Lines every <input id="grid-spacing" type="number" min="0" step="any"> <span id="grid-unit"></span></label>
+      </div>
       <div class="for-image zoom" role="group" aria-label="Zoom">
         <button id="zoom-out" title="Zoom out" aria-label="Zoom out">−</button><span id="zoom-label">100%</span><button id="zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
       </div>
@@ -82,7 +88,7 @@
       <div id="scroller">
         <div id="empty"><span id="empty-text"></span><br>
           Python, which runs the analysis, loads in the background meanwhile: about 50 MB on the first visit, then from this browser's cache for 30 days.</div>
-        <div id="stage" hidden><canvas id="base"></canvas><svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg></div>
+        <div id="stage" hidden><canvas id="base"></canvas><svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg><svg id="grid" xmlns="http://www.w3.org/2000/svg"></svg><svg id="ruler" xmlns="http://www.w3.org/2000/svg"></svg></div>
       </div>
     </div>
 
