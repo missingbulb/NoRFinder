@@ -312,6 +312,20 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `web-tests/test_drive_shapes_page.py`.
   </details>
 
+- `1.31` When Google throttles the site's Drive downloads, the Drive dialog says so and waits 15 minutes.
+  <details>
+
+  Google answers a burst of downloads by refusing the site's for a while, with no word the page
+  can read, so the page knows it by a download failing while Drive still answers for the same
+  file's details (a failure where both fail is shown as the error it is). From then on, for 15
+  minutes, the Drive dialog shows a large notice, "Google is throttling this site's downloads. Try
+  again in 15 minutes.", with a red countdown from 15:00, and makes no call to Drive: its link, Go,
+  Open, the list, its thumbnails and badges all wait. The wait is kept in the browser, so reloading
+  the page does not end it. An image kept on this device (`1.7`) still opens, from the device. When
+  the countdown ends, the notice goes and the dialog lists its link again. Test:
+  `web-tests/test_drive_throttle_page.py`.
+  </details>
+
 ## `2` The repo's checks
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.
