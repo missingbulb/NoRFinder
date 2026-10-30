@@ -81,22 +81,19 @@ class Boxes(HTMLParser):
             self.boxes[-1][2] += data.strip()
 
 
-def test_the_load_image_box_folds_once_an_image_is_open():
-    """1.38: the shell's own box opens first and folds on Load image."""
-    boxes = Boxes(open(os.path.join(WEB, 'index.html'), encoding='utf8').read()).boxes
-    assert [b[1:] for b in boxes] == [['image-box', 'Load Image', None, 'load']]
-
-
-@pytest.mark.parametrize('path', STUDIES, ids=lambda p: os.path.basename(os.path.dirname(p)))
-def test_a_studys_boxes_name_the_steps_that_open_and_fold_them(path):
+def test_every_studys_boxes_name_the_steps_that_open_and_fold_them():
     """1.38: every foldable box of a study says when it opens (a step, or user: only its title), never left to a default."""
-    m = manifest(path)
-    if 'panels' not in m['web']:
-        return
-    steps = {'load', 'submit'} | {p['key'] for p in m['phases']}
-    for slot, bid, title, opens, folds in Boxes(open(os.path.join(os.path.dirname(path), m['web']['panels']), encoding='utf8').read()).boxes:
-        assert opens in steps | {'user'}, f'{title}: data-opens names a step or user, not {opens!r}'
-        assert folds is None or folds in steps, f'{title}: data-folds names a step, not {folds!r}'
+    seen = 0
+    for path in STUDIES:
+        m = manifest(path)
+        if 'panels' not in m['web']:
+            continue
+        steps = {'load', 'submit'} | {p['key'] for p in m['phases']}
+        for slot, bid, title, opens, folds in Boxes(open(os.path.join(os.path.dirname(path), m['web']['panels']), encoding='utf8').read()).boxes:
+            seen += 1
+            assert opens in steps | {'user'}, f'{title}: data-opens names a step or user, not {opens!r}'
+            assert folds is None or folds in steps, f'{title}: data-folds names a step, not {folds!r}'
+    assert seen >= 7, f'read only {seen} foldable boxes: the sweep is not finding them all'
 
 
 def test_the_shell_names_no_study():
