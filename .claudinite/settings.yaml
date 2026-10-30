@@ -31,6 +31,8 @@ packs:
         product: "Platform of studies: rauntruth.com, an in-browser, no-upload page that turns fluorescence-microscopy images into checked numbers and collects researchers' ground truth; each study (NoR Finder first) is one analysis on it."
         users: "Neuroscience and cell-biology researchers who quantify structures in fluorescence-microscopy images (first: labs counting and measuring Nodes of Ranvier in myelin injury), and want numbers they can review and correct, without installing software or uploading images."
         market: "Microscopy image analysis. Desktop tools: Fiji/ImageJ, napari, QuPath, CellProfiler, ilastik; commercial: Imaris, arivis, Huygens; learned segmenters: Cellpose, StarDist; manual counting in ImageJ as the incumbent for node counting; plus web viewers and platforms (OMERO, Viv/Avivator, vizarr) as the browser-side alternatives."
+    - id: "nor-study"
+      source: "local"
   sources:
     - "missingbulb/Shepherd"
   manager:

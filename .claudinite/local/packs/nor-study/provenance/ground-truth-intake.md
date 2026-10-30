@@ -39,3 +39,12 @@
 - **Actor:** @missingbulb (owner).
 - **Model:** Claude, per the commit trailer.
 - **Mechanism:** the same carrier, its paths repointed.
+
+## 2026-10-30 · moved · from nor-finder to the NoR study's own pack (#559)
+- **Reason:** a second study is coming; what only the NoR study needs leaves with it.
+- **Actor:** @missingbulb (owner).
+- **Model:** claude-opus-5-5
+- **Mechanism:** the same carrier in local/nor-study; the repo pack's shared helper and skill are
+  reached by relative path, so the study depends on the repo pack and never the reverse.
+- **Rejected:** copying the GitHub helper into the study pack, which would need a drift guard.
+- **Landed:** #559

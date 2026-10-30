@@ -11,7 +11,7 @@ lab's own labels (lab/labels_claude_v1.json, Claude's eye) on the reference slid
 
     python3 detection/ground_truth.py fetch                     every data-set image, into data/raw/
     python3 detection/ground_truth.py score [SPEC ...]          every finder on every image, vs the baseline
-    python3 detection/ground_truth.py ingest ISSUES.json        the daily intake (the nor-finder pack's
+    python3 detection/ground_truth.py ingest ISSUES.json        the daily intake (the nor-study pack's
                                                                 ground-truth-intake task runs it)
 """
 import argparse, datetime, json, math, os, re, sys, urllib.request

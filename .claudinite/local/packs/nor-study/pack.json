@@ -1,0 +1,7 @@
+{
+  "version": "1",
+  "ruleRoutingGuidance": {
+    "belongs": "everything specific to the NoR Finder study (studies/nor/): its working rules, and the skills, checks and tasks that carry them",
+    "excludes": "what holds for the repo, the shell or any other study — the nor-finder pack; anything true beyond this repo — a canon pack"
+  }
+}

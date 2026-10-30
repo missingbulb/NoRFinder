@@ -28,7 +28,7 @@ _Last updated 2026-10-06._
   spots, a difference of 1-2 is noise.
 - **Submitted ground truth** (R10, 2026-10-03): people mark candidates (thumbs up/down) and missed
   NoRs (right-click, Mark Missing Candidate) on the page and submit them as GitHub issues; the
-  nor-finder pack's `ground-truth-intake` task adds them daily to `lab/ground_truth/` and then runs
+  nor-study pack's `ground-truth-intake` task adds them daily to `lab/ground_truth/` and then runs
   the `improve-on-ground-truth` skill on opus. Submissions outrank the Claude labels wherever both
   mark a spot, and `ground_truth.py score` / the quality lock score every finder on every image.
   None has arrived yet.

@@ -439,7 +439,7 @@ to main, so it has run on anything a release can ship: a green full run on main 
 Set by the owner on 2026-10-03.
 
 - **A daily intake, in code.** Every day an open issue labelled `new-ground-truth` exists, the
-  nor-finder pack's `ground-truth-intake` task takes every such issue's newest attached `.json`,
+  nor-study pack's `ground-truth-intake` task takes every such issue's newest attached `.json`,
   checks it (`norfinder-ground-truth/2`, an image from Google Drive with its SHA-256, at least one
   mark inside the image), and adds it to
   [`detection/lab/ground_truth/`](../detection/lab/ground_truth/) with an entry in its

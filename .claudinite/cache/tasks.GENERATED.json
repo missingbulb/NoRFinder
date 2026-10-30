@@ -195,8 +195,8 @@
         "agent_model": "none"
       }
     },
-    "local/nor-finder/ground-truth-intake": {
-      "path": ".claudinite/local/packs/nor-finder/tasks/ground-truth-intake/task.json",
+    "local/nor-study/ground-truth-intake": {
+      "path": ".claudinite/local/packs/nor-study/tasks/ground-truth-intake/task.json",
       "declaration": {
         "id": "ground-truth-intake",
         "description": "Adds the ground truth people submit from the NoR Finder page (issues labelled new-ground-truth) to the repo's data set by code, re-recording the quality baseline against it, then has an agent improve the finders on the new ground truth: overlooked NoRs first, then overall quality.",

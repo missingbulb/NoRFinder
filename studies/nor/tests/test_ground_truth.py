@@ -127,7 +127,7 @@ def test_the_page_and_the_intake_use_one_label():
     import json, re
     page = json.load(open(os.path.join(HERE, '..', 'study.json')))['groundTruth']['label']
     task = re.search(r"LABEL = '([^']+)'", open(os.path.join(
-        HERE, '..', '..', '..', '.claudinite', 'local', 'packs', 'nor-finder', 'tasks', 'ground-truth-intake', 'label.mjs')).read()).group(1)
+        HERE, '..', '..', '..', '.claudinite', 'local', 'packs', 'nor-study', 'tasks', 'ground-truth-intake', 'label.mjs')).read()).group(1)
     assert page == task == 'new-ground-truth'
 
 

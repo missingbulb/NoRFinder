@@ -17,3 +17,10 @@
 - **Actor:** @missingbulb (owner).
 - **Model:** Claude, per the commit trailer.
 - **Mechanism:** the same carrier, its paths repointed.
+
+## 2026-10-30 · scope-changed · names each study's STATE.md, not the NoR one (#559)
+- **Reason:** the rule is repo-wide; NoR's path made it read as the NoR study's.
+- **Actor:** @missingbulb (owner).
+- **Model:** claude-opus-5-5
+- **Mechanism:** the same carrier.
+- **Landed:** #559

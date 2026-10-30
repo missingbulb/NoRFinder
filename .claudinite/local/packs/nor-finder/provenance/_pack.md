@@ -24,3 +24,13 @@
 - **Model:** Claude, per the commit trailer.
 - **Mechanism:** deleted the two null lines from the pack manifest.
 - **Landed:** PR #275.
+
+## 2026-10-30 · scope-changed · the NoR study's skill and task moved to local/nor-study (#559)
+- **Reason:** the owner asked that what is uniquely NoR be independent before a second study lands;
+  the repo pack keeps the shell and the repo-wide elements.
+- **Actor:** @missingbulb (owner).
+- **Model:** claude-opus-5-5
+- **Mechanism:** the routing guidance in the manifest, and the RULES header pointing at the study
+  pack.
+- **Rejected:** a third pack for the shell's one rule (owner's choice, two packs).
+- **Landed:** #559
