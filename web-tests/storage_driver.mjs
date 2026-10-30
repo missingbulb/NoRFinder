@@ -4,6 +4,8 @@
 // lists; a thumbnail saved from now on is listed by its image's name. Then 1.7: the Drive dialog's Show
 // thumbnails and Auto-save images, and the link beside them showing what thumbnails and images take; an image
 // downloaded while Auto-save is on opens again with no download, one downloaded while it is off is not kept.
+// Then 1.29: Load's dropdown lists the images opened from Drive, newest first, once each, two of one name told
+// apart by their folder; a recent one opens from this device when it is kept there, and is downloaded when not.
 // Optional SHOTS: a directory for screenshots.
 // Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/storage_driver.mjs [SHOTS]
@@ -26,6 +28,8 @@ const ROOT = "acmefolder0000000001";
 // two images in a folder; their bytes need only be a real picture, which the worker never reads
 const PNG = fs.readFileSync(path.join(repo, "dev", "tools", "build", "logo_source.png"));
 const DRIVE = [{ id: "acmeimage00000000001", name: "acme one.png" }, { id: "acmeimage00000000002", name: "acme two.png" }];
+// a subfolder, listed after the images, holding an image named as the first one
+const SUB = { id: "acmefolder0000000002", name: "sub" }, TWIN = { id: "acmeimage00000000003", name: "acme one.png" };
 const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in" }, drive: { defaultLink: "" } };`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
@@ -63,12 +67,14 @@ const CODE = origin + "/cdn/pyodide.asm.wasm";
 
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
 // how often each image was downloaded from Drive
-const downloads = Object.fromEntries(DRIVE.map((f) => [f.id, 0]));
+const downloads = Object.fromEntries([...DRIVE, TWIN].map((f) => [f.id, 0]));
 const cors = { "access-control-allow-origin": "*" };
 await ctx.route("https://www.googleapis.com/**", (route) => {
   const id = new URL(route.request().url()).pathname.match(/\/drive\/v3\/files\/?(.*)$/)[1];
   if (!id) {
-    const list = DRIVE.map((f) => ({ ...f, mimeType: "image/png", size: String(PNG.length), createdTime: "2026-10-01T10:00:00Z" }));
+    const image = (f) => ({ ...f, mimeType: "image/png", size: String(PNG.length), createdTime: "2026-10-01T10:00:00Z" });
+    const list = new URL(route.request().url()).searchParams.get("q").includes(SUB.id) ? [image(TWIN)]
+      : [...DRIVE.map(image), { ...SUB, mimeType: "application/vnd.google-apps.folder" }];
     return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ files: list }) });
   }
   downloads[id]++;
@@ -161,7 +167,7 @@ try {
   const drive = async () => {
     // from Load's menu: Load itself is held while an image waits for Python, which never answers here
     await page.click("#load-menu summary"); await page.click('#load-menu .item[data-src="drive"]');
-    await page.waitForFunction((n) => $("#drive-dlg").open && document.querySelectorAll("#drive-list .item").length === n && /\d/.test($("#drive-storage").textContent), DRIVE.length);
+    await page.waitForFunction((n) => $("#drive-dlg").open && document.querySelectorAll("#drive-list .item:not(.folder)").length === n && /\d/.test($("#drive-storage").textContent), DRIVE.length);
   };
   const saved = () => page.evaluate(async () => (await (await caches.open("nor-images-v1")).keys()).length);
   const sizeOf = (t) => { const [n, u] = t.split(" "); return Number(n) * { KB: 1, MB: 1024, GB: 1024 * 1024 }[u]; };
@@ -196,6 +202,38 @@ try {
   for (let t = 0; t < 50 && !downloads[DRIVE[1].id]; t++) await page.waitForTimeout(100);
   await page.waitForTimeout(300);
   check(downloads[DRIVE[1].id] === 1 && (await saved()) === 1, "with it off, an image is downloaded and not kept");
+
+  // ---- 1.29: the recent images in Load's dropdown ----
+  const recents = async () => {
+    await page.click("#load-menu summary");
+    const r = await page.$$eval("#load-menu .recent", (bs) => bs.map((b) => ({ name: b.querySelector(".name").textContent, where: b.querySelector(".where").textContent, logo: !!b.querySelector("svg.drive-logo") })));
+    await page.click("#load-menu summary");
+    return r;
+  };
+  let r = await recents();
+  check(r.map((e) => e.name).join() === `${DRIVE[1].name},${DRIVE[0].name}`, `the dropdown lists the images opened, newest first, once each: ${JSON.stringify(r)}`);
+  check(r.every((e) => e.logo) && (await page.$('#load-menu .item[data-src="drive"] svg.drive-logo')), "each recent, and From Google Drive, shows Drive's logo");
+  await page.click("#load-menu summary"); await shot("load_recents", "#load-menu .pop"); await page.click("#load-menu summary");
+  await drive();
+  await page.check("#drive-autosave");
+  await page.dblclick("#drive-list .item.folder");
+  await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 1 && /sub/.test($("#drive-path").textContent));
+  await page.dblclick("#drive-list .item:nth-child(1)"); await page.waitForFunction(() => !$("#drive-dlg").open);
+  await page.waitForFunction(async () => (await (await caches.open("nor-images-v1")).keys()).length === 2);
+  r = await recents();
+  check(r.length === 3 && r[0].name === TWIN.name && r[2].name === DRIVE[0].name && /sub/.test(r[0].where) && r[0].where !== r[2].where,
+    `two images of one name are listed apart, by where they are in Drive: ${JSON.stringify(r)}`);
+  const pick = async (k, id) => {
+    await page.click("#load-menu summary"); await page.click(`#load-menu .recent:nth-of-type(${k})`);
+    await page.waitForFunction((i) => st.source && st.source.id === i, id);
+  };
+  await pick(3, DRIVE[0].id);
+  check(downloads[DRIVE[0].id] === 1 && downloads[TWIN.id] === 1, "a recent image kept on this device opens with no download, the one it was chosen as");
+  r = await recents();
+  check(r.map((e) => e.name).join() === `${DRIVE[0].name},${TWIN.name},${DRIVE[1].name}` && /sub/.test(r[1].where), `opening it moves it to the top: ${JSON.stringify(r)}`);
+  await pick(3, DRIVE[1].id);
+  for (let t = 0; t < 50 && downloads[DRIVE[1].id] < 2; t++) await page.waitForTimeout(100);
+  check(downloads[DRIVE[1].id] === 2, "a recent image not kept is downloaded again");
 } catch (e) {
   failed = true; console.error("FAILED: " + e.message);
 }

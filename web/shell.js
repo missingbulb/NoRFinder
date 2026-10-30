@@ -30,6 +30,7 @@ const AUTO_SAVE = "nor-drive-autosave"; // "on" | "off": whether an image downlo
 const SAVED_THUMB = "nor-drive-thumb:"; // + Drive id: a JPEG data URL of the image, saved when it was opened
 const SAVED_THUMBS = "nor-drive-thumbs-saved"; // [Drive id], oldest first: which images have one
 const THUMB_NAMES = "nor-drive-thumb-names"; // {Drive id: file name}: the image each saved thumbnail shows
+const RECENT = "nor-drive-recent"; // [{id, name, path}], newest first: images opened from Drive, path their folders under the link
 // Cache Storage, + Drive id: an image downloaded from Drive, its file name (URI-encoded) and when it was saved
 // in the headers
 const IMAGES = "nor-images-v1", IMAGE_NAME = "x-nor-name", IMAGE_AT = "x-nor-saved-at";
@@ -232,17 +233,39 @@ function load(src) {
 $("#load-main").onclick = () => load(readJSON(SOURCE, "local"));
 document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => load(b.dataset.src)));
 
+// the images opened from Drive lately, in Load's dropdown; a Drive id names one file wherever it is, so two of
+// one name stay apart. openRecent is the Drive dialog's, which opens the copy kept on this device when there is one.
+const RECENT_KEEP = 10;
+let openRecent = () => {};
+function remember(id, name, path) {
+  writeJSON(RECENT, [{ id, name, path }, ...readJSON(RECENT, []).filter((r) => r.id !== id)].slice(0, RECENT_KEEP));
+  showRecent();
+}
+function showRecent() {
+  const list = readJSON(RECENT, []), box = $("#recent");
+  box.hidden = !list.length;
+  box.replaceChildren(box.firstElementChild, ...list.map((r) => {
+    const b = document.createElement("button"), where = ["Google Drive", ...(r.path || [])].join(" / ");
+    b.type = "button"; b.className = "item recent"; b.title = `${where} / ${r.name}`;
+    b.innerHTML = `<svg class="drive-logo" aria-hidden="true"><use href="#drive-logo"/></svg><span><span class="name">${esc(r.name)}</span><span class="where">${esc(where)}</span></span>`;
+    b.onclick = () => { $("#load-menu").open = false; openRecent(r); };
+    return b;
+  }));
+}
+showRecent();
+
 // the Drive dialog: a pasted file link loads at once; a folder link lists its images and subfolders, where a
 // click selects and Open (or a double click) opens the selection
 function driveDialog() {
   const msg = (t, err) => { const m = $("#drive-msg"); m.textContent = m.title = t; m.classList.toggle("err", !!err); };
   let trail = [], chosen = null;
-  const take = async (id, name) => {
+  // path: the folders the image is in under the link it was opened from
+  const take = async (id, name, path) => {
     thumbs.stop();
     const kept = await savedImage(id);
     if (kept) {
       $("#drive-dlg").close(); msg("");
-      peek()(kept.bytes, kept.bytes.byteLength);
+      peek()(kept.bytes, kept.bytes.byteLength); remember(id, kept.name, path);
       return openBytes(kept.name, kept.bytes, { kind: "drive", id });
     }
     msg("Downloading " + (name || "the image") + "…");
@@ -257,6 +280,7 @@ function driveDialog() {
       });
       if (f.folder) { trail = [f]; return show(); }
       if ($("#drive-autosave").checked) saveImage(id, f.name, f.bytes);
+      remember(id, f.name, path);
       openBytes(f.name, f.bytes, { kind: "drive", id });
     } catch (err) {
       busy(false); if (!$("#drive-dlg").open) $("#drive-dlg").showModal();
@@ -267,7 +291,8 @@ function driveDialog() {
     chosen = f; $("#drive-open").disabled = !f;
     $("#drive-list").querySelectorAll(".item").forEach((e) => e.setAttribute("aria-selected", e === b));
   };
-  const enter = (f) => (f.folder ? (trail.push(f), show()) : take(f.id, f.name));
+  const enter = (f) => (f.folder ? (trail.push(f), show()) : take(f.id, f.name, trail.slice(1).map((t) => t.name)));
+  openRecent = (r) => take(r.id, r.name, r.path || []);
   const show = async () => {
     const at = trail[trail.length - 1];
     $("#drive-path").innerHTML = trail.map((t, k) => `<button type="button" class="link" data-k="${k}">${esc(t.name)}</button>`).join(" / ");
@@ -351,7 +376,7 @@ function driveDialog() {
     $("#drive-list").replaceChildren(); $("#drive-path").replaceChildren(); choose(null);
     if (!ref) return msg("That does not look like a Google Drive link.", true);
     writeJSON(DRIVE_LINK, link);
-    if (ref.kind === "file") return take(ref.id);
+    if (ref.kind === "file") return take(ref.id, undefined, []);
     trail = [{ id: ref.id, name: "Folder" }]; show();
   };
   $("#drive-go").onclick = open;
@@ -411,7 +436,7 @@ async function showSaved() {
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
   [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link",
-  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off",
+  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off",
 };
 const GROUPS = [
   ["code", "Code kept for the next visit", "Python and its packages, so the page starts without downloading them again."],

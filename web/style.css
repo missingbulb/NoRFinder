@@ -68,6 +68,15 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 .menu .pop.right { left: auto; right: 0; }
 .menu .pop .item { text-align: left; border: 0; background: none; padding: 4px 2px; white-space: nowrap; }
 .menu .pop .item:not(:disabled):hover { color: var(--accent); }
+.menu .pop .item:has(.drive-logo) { display: flex; align-items: center; gap: 6px; }
+.drive-logo { width: 14px; height: 12px; flex: none; }
+#recent { display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--line); padding-top: 8px; }
+#recent[hidden] { display: none; }
+#recent .recent-head { color: var(--dim); font-size: 12px; }
+#recent .item { max-width: 280px; }
+#recent .item > span { display: flex; flex-direction: column; min-width: 0; }
+#recent .name, #recent .where { overflow: hidden; text-overflow: ellipsis; }
+#recent .where { color: var(--dim); font-size: 11px; }
 
 /* three columns of panels; the gutters between them are the handles that resize the side bars */
 #layout { --lw: 320px; --rw: 400px; display: grid; grid-template-columns: var(--lw) var(--pad) minmax(0, 1fr) var(--pad) var(--rw);
