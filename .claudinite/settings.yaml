@@ -42,4 +42,4 @@ tasks:
   frequency:
     "engine/update": "weekly"
 growth:
-  sessionHistory: "localPlaintext"
+  sessionHistory: "localEncrypted"
