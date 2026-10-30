@@ -78,6 +78,9 @@ await ctx.route("https://www.googleapis.com/**", (route) => {
       : [...DRIVE.map(image), { ...SUB, mimeType: "application/vnd.google-apps.folder" }];
     return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ files: list }) });
   }
+  // a file's details, as Drive answers them; these files have no SHA-256, so a kept copy opens unchecked
+  if (new URL(route.request().url()).searchParams.get("alt") !== "media")
+    return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ id }) });
   downloads[id]++;
   return route.fulfill({ status: 200, headers: cors, contentType: "image/png", body: PNG });
 });
