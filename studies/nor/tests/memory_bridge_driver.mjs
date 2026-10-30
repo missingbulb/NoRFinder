@@ -11,10 +11,10 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 // pyodide at the version the page loads, installed here or beside the browser tools
 let entry;
-for (const base of [here, path.join(here, "..", "..", "..", "tests"), path.join(here, "..", "detection", "browser")]) {
+for (const base of [here, path.join(here, "..", "..", "..", "web-tests"), path.join(here, "..", "detection", "browser")]) {
   try { entry = require.resolve("pyodide/pyodide.mjs", { paths: [base] }); break; } catch {}
 }
-if (!entry) { console.error("no pyodide: npm i --prefix tests pyodide@314.0.7"); process.exit(2); }
+if (!entry) { console.error("no pyodide: npm i --prefix web-tests pyodide@314.0.7"); process.exit(2); }
 const { loadPyodide } = await import(pathToFileURL(entry).href);
 const { bridge } = await import(pathToFileURL(path.join(here, "..", "..", "..", "web", "bridge.js")).href);
 

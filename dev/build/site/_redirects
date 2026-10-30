@@ -1,0 +1,3 @@
+# The page moved from /web/ to the site's root.
+/web /  301
+/web/* /:splat 301

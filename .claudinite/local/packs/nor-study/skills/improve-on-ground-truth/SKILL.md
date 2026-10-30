@@ -1,6 +1,8 @@
 ---
 name: improve-on-ground-truth
 description: Improving the NoR finders when new ground truth joins studies/nor/detection/lab/ground_truth/, or when asked to improve them on the ground truth.
+paths:
+  - "studies/nor/**"
 metadata:
   body: workflow
   usage:
@@ -54,7 +56,7 @@ one image only is overfitting.
 
 ## 4. Land it
 
-- `python3 -m pytest tests studies` must pass. The quality lock fails on any loss; a loss is the owner's to
+- `python3 -m pytest web-tests studies` must pass. The quality lock fails on any loss; a loss is the owner's to
   accept, never yours, so do not run `--accept` to clear one. Say in the PR which spots it would
   lose and why the change is still worth it, and leave the decision to them.
 - A gain is recorded by the local test run; commit the baseline it rewrote and the finder metrics

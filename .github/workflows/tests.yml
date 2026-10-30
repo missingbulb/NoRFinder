@@ -30,4 +30,4 @@ jobs:
       - name: Fetch the ground-truth images not restored
         run: python3 studies/nor/detection/ground_truth.py fetch
       - name: Run the fast tests
-        run: python3 -m pytest tests studies -q -m "not full" --durations=5
+        run: python3 -m pytest web-tests studies -q -m "not full" --durations=5

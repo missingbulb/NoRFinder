@@ -12,7 +12,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
 
   Nothing in `web/` names a study, its channels, its algorithms or its flow. Everything
   study-specific reaches the page through the study's `study.json`, its Python entry module and its
-  `mount(shell)`. Test: `tests/test_study_contract.py` reads `web/` for the NoR study's own words,
+  `mount(shell)`. Test: `web-tests/test_study_contract.py` reads `web/` for the NoR study's own words,
   and the shell's page tests run on the fixture study, which shares none of them.
   </details>
 
@@ -23,7 +23,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   file it names exists. The page runs the study `?study=<id>` names, the NoR study when none is
   named, so every link to the page from before studies existed opens what it opened then. Adding a
   study changes nothing in `web/`, in the deploy's settings or in CI. Test:
-  `tests/test_study_contract.py`.
+  `web-tests/test_study_contract.py`.
   </details>
 
 - `1.3` The viewer is the study's choice.
@@ -40,7 +40,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
 
   The shell's Python runtime opens a file with the study's `Session(path)` and forwards every other
   request as `call(action, args)`, returning JSON and optional bytes. It never names an action.
-  Test: `tests/test_study_runs.py` runs the fixture study through the bridge in Pyodide and through
+  Test: `web-tests/test_study_runs.py` runs the fixture study through the bridge in Pyodide and through
   the real worker in the page; the NoR study's memory test checks that repeated calls leave nothing
   behind.
   </details>
@@ -63,7 +63,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   settings, the shell's and the study's; the study's selections per image, by image name; and
   anything else stored under the site that neither the shell nor the study names. Each entry, and
   each group, can be deleted. The shell names its own keys; the study names its keys through its
-  `stored` hook, so the shell still names no study (`1.1`). Test: `tests/test_storage_page.py`.
+  `stored` hook, so the shell still names no study (`1.1`). Test: `web-tests/test_storage_page.py`.
   </details>
 
 - `1.7` Images from Drive open again without a download.
@@ -73,7 +73,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   **Auto-save images** (both on at first), and beside them a link that opens Manage storage, its
   text the bytes the thumbnails and saved images take on this device. While Auto-save images is on,
   an image downloaded from Drive is kept on this device; an image kept there opens from it, with no
-  download, whatever the checkbox says. Test: `tests/test_storage_page.py`.
+  download, whatever the checkbox says. Test: `web-tests/test_storage_page.py`.
   </details>
 
 - `1.8` The shell decides what is published.
@@ -83,8 +83,9 @@ test fold under it. A study's research requirements, which no user sees, stay in
   the page loads: `study.json`, the study's page part under `web/` (never its Python), and the
   modules directly in the folders its Python is imported from (`python.paths`), which is all the
   page's importer can reach. A study's docs, data, tests and lab notes stay in the repo, and nothing
-  in a study says how, where or whether it is published. The build (`web/build.py`) assembles the
-  set under `site/`, the tree the release uploads. Test: `tests/test_published_site.py`.
+  in a study says how, where or whether it is published. The build (`dev/tools/build/build.py`)
+  assembles the set under `dev/build/site/`, the tree the release uploads. Test:
+  `web-tests/test_published_site.py`.
   </details>
 
 - `1.9` Visits are counted without cookies.
@@ -92,7 +93,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
 
   The released site loads Cloudflare Web Analytics, which sets no cookies and stores nothing on the
   device. Its token is a repository variable the release writes into the uploaded copy, so a local
-  preview or a fork counts nothing. Test: `tests/test_published_site.py`.
+  preview or a fork counts nothing. Test: `web-tests/test_published_site.py`.
   </details>
 
 - `1.10` A header with the logo, the title and a dark/light switch (remembered).
@@ -129,7 +130,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   updated since and the history names a change in between, a bubble points at the version saying
   "Click here to see what was updated since v…", until the user opens the history or closes the
   bubble with its ×. The history then marks the releases that are new
-  (`tests/test_version_history.py`, `tests/test_version_history_page.py`).
+  (`web-tests/test_version_history.py`, `web-tests/test_version_history_page.py`).
   </details>
 
 - `1.15` Load opens an image from this computer or Google Drive, and shines until one is open.
@@ -173,7 +174,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   turns the downloads off; beside it, and in the status bar while they load, how many have arrived
   and their size. It needs the site's Google API key, kept in the repository variable
   `GOOGLE_API_KEY` and written into `web/config.js` at deploy; without one the option is off
-  (`tests/test_site_config.py`). The dialog opens on the last link pasted, or else on the lab's
+  (`web-tests/test_site_config.py`). The dialog opens on the last link pasted, or else on the lab's
   folder (the repository variable `DRIVE_DEFAULT_FOLDER`), and lists a folder link at once. Nothing
   else read from Drive is kept, apart from the image files Auto-save images keeps (`1.6`, `1.7`;
   `studies/nor/tests/test_drive_dialog.py`).
@@ -252,6 +253,16 @@ test fold under it. A study's research requirements, which no user sees, stay in
   popup the issue button is off and says why (`studies/nor/tests/test_ground_truth_page.py`).
   </details>
 
+- `1.27` The page is at the site's root: rauntruth.com/ opens it, and an old /web/ address redirects there.
+  <details>
+
+  The shell's page files are published at the top of the site, beside the studies' `studies/`
+  folder, so the page's `../studies/` resolves to the same folder at the root and at `/web/` in a
+  preview of the repo itself. A `_redirects` rule, which Cloudflare applies, sends every `/web/…`
+  address to the same address without `/web`. Test: `web-tests/test_published_site.py` (the
+  layout); the redirect is seen on the released site.
+  </details>
+
 ## `2` The repo's checks
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.
@@ -261,7 +272,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   Node nor a browser; every test that drives Node, Pyodide or Chromium, or measures speed or memory,
   is marked `full` and runs only in the full set, nightly (the nor-finder pack's `full-tests` task)
   and on every push to main, so it has run on anything a release can ship: a green full run on main
-  wakes the site release (`.github/workflows/tests-full.yml`, `tests/test_ci_split.py`).
+  wakes the site release (`.github/workflows/tests-full.yml`, `web-tests/test_ci_split.py`).
   </details>
 
 ## `3` The NoR Finder page: detect once, filter live, in the browser
@@ -457,14 +468,7 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 
 - `3.19` Filter settings persist across images, visits and days; one button restores the defaults.
 
-- `3.20` Every image the study's data list names has a ready-made Drive thumbnail on the site.
-  <details>
-
-  Each image named in `studies/nor/data/sources.json` has one (`studies/nor/web/drive_thumbs.py`,
-  rerun when that list changes; a test fails until it is).
-  </details>
-
-- `3.21` The page runs the lab's code, and at our settings passes what the lab passes.
+- `3.20` The page runs the lab's code, and at our settings passes what the lab passes.
   <details>
 
   The Python it runs is the study's `detection/` and `src/` as they are, so the finder stays

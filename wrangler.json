@@ -2,10 +2,10 @@
   "name": "norfinder",
   "compatibility_date": "2026-09-13",
   "build": {
-    "command": "python3 web/build.py"
+    "command": "python3 dev/tools/build/build.py"
   },
   "assets": {
-    "directory": "./site"
+    "directory": "./dev/build/site"
   },
   "routes": [
     { "pattern": "rauntruth.com", "custom_domain": true },

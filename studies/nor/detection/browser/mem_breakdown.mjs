@@ -2,7 +2,7 @@
 // each import, the slide, one finder's detect. Runs in Node (the same V8 and WebAssembly runtime
 // as the page's worker) so every part can be read directly rather than inferred from Chromium.
 //   cd detection/browser && npm i --prefix . pyodide@314.0.7 && node --expose-gc mem_breakdown.mjs [FINDER] [--lazy]
-// Needs the reference slide in data/raw and the vendored wheels (python3 web/build.py).
+// Needs the reference slide in data/raw and the vendored wheels (python3 dev/tools/build/build.py).
 //
 // Default: the packages are installed the way web/worker.js does today, with loadPackage, which
 // also loads every native module in each package (and in each dependency) up front.
