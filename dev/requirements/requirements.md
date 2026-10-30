@@ -433,6 +433,17 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `web-tests/test_drive_cache_page.py`.
   </details>
 
+- `1.40` A Grid button beside the Ruler draws a grid over the image, its colour and spacing the user's.
+  <details>
+
+  The button, a red 3×3 grid, draws the grid or takes it away. Clicking it, or hovering over it,
+  opens a popup choosing the grid's colour and the distance between its lines: in µm when the file
+  gives the pixel's size, the cells then square in µm whatever the pixel's width and height, and in
+  pixels when it does not. The colour and both distances, µm and pixels each its own, are kept as
+  the user's settings for the next visit, and Manage storage lists them. The grid stays on from one
+  image to the next, and keeps its place through zoom. Test: `web-tests/test_grid_page.py`.
+  </details>
+
 ## `2` The repo's checks
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.

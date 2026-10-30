@@ -1,14 +1,18 @@
 // The 2D viewer: the opened image on a canvas, the study's drawing over it in an SVG in image
 // coordinates, zoom (buttons, the wheel), pan (dragging), the thumbnail that shows and moves the part
-// in view, the channel toggles and the ruler. A study reaches it as shell.viewer; another viewer (3D, say)
+// in view, the channel toggles, the ruler and the grid. A study reaches it as shell.viewer; another viewer (3D, say)
 // is a module with the same interface.
 //
 // The study's hooks it calls: pickAt(event) -> what was clicked, or null; pick(it) when a click, not a
 // drag, landed on it; step(dir) on a sideways swipe; capturesPointer() while the study's own tool (a
 // lasso, say) takes the pointer; zoomed() after every zoom.
+// the user's grid: {colour, um, px}, its colour and the distance between its lines in µm and in pixels
+export const GRID = "nor-grid";
+
 export function viewer(shell) {
   const { $, state: st } = shell;
   let hooks = {}, channels = [];
+  const make = (tag, attrs) => { const n = document.createElementNS("http://www.w3.org/2000/svg", tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
 
   // the channel toggles: one per channel the study names, in the colour the viewer gives it; a study that
   // comes in brings its own
@@ -83,7 +87,7 @@ export function viewer(shell) {
     svg.style.fontSize = 12 / st.zoom + "px";
     sc.scrollLeft = ix * st.zoom - ax; sc.scrollTop = iy * st.zoom - ay;
     $("#zoom-label").textContent = Math.round(st.zoom * 100) + "%";
-    ruler.draw(); hooks.zoomed?.(); thumbView();
+    ruler.draw(); grid.draw(); hooks.zoomed?.(); thumbView();
   }
   // the whole image in view
   function fit() {
@@ -146,7 +150,6 @@ export function viewer(shell) {
   const ruler = (() => {
     const btn = $("#ruler-btn"), svg = $("#ruler"), sc = $("#scroller");
     let armed = false, from = null, to = null, live = false;
-    const make = (tag, attrs) => { const n = document.createElementNS("http://www.w3.org/2000/svg", tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
     function length() {
       const dx = to[0] - from[0], dy = to[1] - from[1];
       if (st.um && st.umY) { const d = Math.hypot(dx * st.um, dy * st.umY); return `${d.toFixed(d < 10 ? 2 : d < 100 ? 1 : 0)} µm`; }
@@ -189,6 +192,44 @@ export function viewer(shell) {
     };
     sc.addEventListener("pointerup", drop); sc.addEventListener("pointercancel", drop);
     return { draw, reset: () => set(false), get armed() { return armed; } };
+  })();
+  // the grid: its button draws it or takes it away; a click or a hover opens the popup of its colour and
+  // spacing, in µm when the file gives the pixel's width and height (the cells then square in µm) and in
+  // pixels when it does not, each spacing kept apart
+  const grid = (() => {
+    const btn = $("#grid-btn"), pop = $("#grid-pop"), svg = $("#grid"), colour = $("#grid-colour"), spacing = $("#grid-spacing");
+    const saved = { colour: "#ff0000", um: 10, px: 50, ...shell.readJSON(GRID) };
+    let on = false, leaving = null;
+    const unit = () => (st.um && st.umY ? "um" : "px");
+    function draw() {
+      svg.replaceChildren();
+      const d = saved[unit()];
+      if (!on || !st.W || !(d > 0)) return;
+      const w = st.W * st.zoom, h = st.H * st.zoom, cw = (unit() === "um" ? d / st.um : d) * st.zoom, ch = (unit() === "um" ? d / st.umY : d) * st.zoom;
+      svg.setAttribute("width", w); svg.setAttribute("height", h);
+      const cell = make("pattern", { id: "grid-cells", patternUnits: "userSpaceOnUse", width: cw, height: ch });
+      cell.append(make("path", { d: `M0,0V${ch}M0,0H${cw}`, stroke: saved.colour, "stroke-width": 1, fill: "none", "shape-rendering": "crispEdges" }));
+      const defs = make("defs", {}); defs.append(cell);
+      svg.append(defs, make("rect", { width: w, height: h, fill: "url(#grid-cells)" }));
+    }
+    function fill() {
+      colour.value = saved.colour; spacing.value = saved[unit()]; $("#grid-unit").textContent = unit() === "um" ? "µm" : "px";
+    }
+    function show() {
+      clearTimeout(leaving); fill();
+      if (!pop.matches(":popover-open")) pop.showPopover();
+      const r = btn.getBoundingClientRect();
+      Object.assign(pop.style, { top: r.bottom + 6 + "px", left: Math.max(8, Math.min(r.right - pop.offsetWidth, innerWidth - pop.offsetWidth - 8)) + "px" });
+    }
+    // leaving the button and the popup closes it, unless the user is still at one of its fields
+    const leave = () => { clearTimeout(leaving); leaving = setTimeout(() => { if (!pop.matches(":hover, :focus-within") && !btn.matches(":hover")) pop.hidePopover(); }, 300); };
+    btn.onclick = () => { on = !on; btn.setAttribute("aria-pressed", on); draw(); show(); };
+    btn.addEventListener("mouseenter", show); btn.addEventListener("mouseleave", leave);
+    pop.addEventListener("mouseenter", () => clearTimeout(leaving)); pop.addEventListener("mouseleave", leave);
+    const save = () => { shell.writeJSON(GRID, saved); draw(); };
+    colour.addEventListener("input", () => { saved.colour = colour.value; save(); });
+    spacing.addEventListener("input", () => { const v = parseFloat(spacing.value); if (v > 0) { saved[unit()] = v; save(); } });
+    return { draw: () => { draw(); if (pop.matches(":popover-open")) fill(); } };
   })();
   $("#zoom-in").onclick = () => setZoom(st.zoom * 1.25);
   $("#zoom-out").onclick = () => setZoom(st.zoom / 1.25);
