@@ -75,7 +75,12 @@ test fold under it. A study's research requirements, which no user sees, stay in
   **Auto-save images** (both on at first), and beside them a link that opens Manage storage, its
   text the bytes the thumbnails and saved images take on this device. While Auto-save images is on,
   an image downloaded from Drive is kept on this device; an image kept there opens from it, with no
-  download, whatever the checkbox says. Test: `web-tests/test_storage_page.py`.
+  download, whatever the checkbox says, once its SHA-256 matches the one Drive gives for the file now
+  (from the folder's listing, or from the file's details for a link or a recent image). When they
+  differ, the file changed on Drive: it is downloaded again, and kept in place of the old copy while
+  Auto-save images is on. When Drive gives no SHA-256, or cannot be asked (offline, or while it
+  throttles the site, `1.37`), the kept copy opens unchecked. Test: `web-tests/test_storage_page.py`,
+  `web-tests/test_drive_cache_page.py`.
   </details>
 
 - `1.8` The shell decides what is published.
@@ -415,6 +420,17 @@ test fold under it. A study's research requirements, which no user sees, stay in
   Once the ruler is down the image pans again; pressing the button again takes the ruler away, as
   does opening another image. The ruler keeps its place and size through zoom and the study's own
   drawing. Test: `web-tests/test_ruler_page.py`.
+  </details>
+
+- `1.39` A tip bubble points at Load's dropdown when an image opened from Drive is one of the recent ones.
+  <details>
+
+  When an image chosen in the Google Drive dialog opens from this device (`1.7`), a bubble beside
+  Load's dropdown arrow, its arrow pointing at it, says "To load recent files click here". Its ×
+  closes it for good, and so does opening the dropdown, which is what it asks for. Each tip has an
+  id, and the ids of the tips closed are kept in the browser (listed in Manage storage's settings as
+  "Tips you closed"), so a closed tip never shows again, after a reload too. Test:
+  `web-tests/test_drive_cache_page.py`.
   </details>
 
 ## `2` The repo's checks
