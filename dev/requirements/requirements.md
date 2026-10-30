@@ -639,3 +639,14 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   does opening another image. The ruler keeps its place and size through zoom and the study's own
   drawing. Test: `web-tests/test_ruler_page.py`.
   </details>
+
+- `1.37` A Grid button beside the Ruler draws a grid over the image, its colour and spacing the user's.
+  <details>
+
+  The button, a red 3×3 grid, draws the grid or takes it away. Clicking it, or hovering over it,
+  opens a popup choosing the grid's colour and the distance between its lines: in µm when the file
+  gives the pixel's size, the cells then square in µm whatever the pixel's width and height, and in
+  pixels when it does not. The colour and both distances, µm and pixels each its own, are kept as
+  the user's settings for the next visit, and Manage storage lists them. The grid stays on from one
+  image to the next, and keeps its place through zoom. Test: `web-tests/test_grid_page.py`.
+  </details>
