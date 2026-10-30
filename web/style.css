@@ -24,6 +24,8 @@
 .lt, .filter .badge { color: color-mix(in srgb, var(--c), #000 var(--ink-amt)); }
 :root { --pad: 12px; --r-panel: 12px; --r-ctl: 8px; --r-chip: 6px; }
 * { box-sizing: border-box; }
+/* the browser's own [hidden] rule reaches HTML elements only */
+svg[hidden] { display: none; }
 /* a fixed frame: header, three columns and the footer fill the window; only the columns scroll */
 html, body { height: 100%; overflow: hidden; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif;
