@@ -34,9 +34,18 @@ def load(path):
         im = np.asarray(f.convert('RGB')).astype(np.float64)
     return im[..., 1], im[..., 0], None, im[..., 2]
 
-def um_per_px(page):
-    res = page.tags.get('XResolution')
+def um_per_px(page, tag='XResolution'):
+    res = page.tags.get(tag)
     return 1 / res.value[0] * res.value[1] if res and res.value[0] else None
+
+
+def pixel_height(path):
+    """The pixel's height in µm, which may differ from its width; None when the file does not say."""
+    if not path.lower().endswith(('.tif', '.tiff')):
+        return None
+    import tifffile
+    with tifffile.TiffFile(path) as t:
+        return um_per_px(t.pages[0], 'YResolution')
 
 
 def file_info(path):
@@ -50,11 +59,11 @@ def file_info(path):
     with tifffile.TiffFile(path) as t:
         p, ij = t.pages[0], t.imagej_metadata or {}
         H, W = p.shape[-2:]
-        um = um_per_px(p)
+        x, y = um_per_px(p), um_per_px(p, 'YResolution')
         tag = lambda name: str(p.tags[name].value).strip() if name in p.tags else ''
-        rows.append(['Field', f'{W * um:.1f} × {H * um:.1f} µm ({W} × {H} px)' if um else f'{W} × {H} px'])
-        if um:
-            rows.append(['Pixel', f'{um:.4f} µm'])
+        rows.append(['Field', f'{W * x:.1f} × {H * y:.1f} µm ({W} × {H} px)' if x and y else f'{W} × {H} px'])
+        if x and y:
+            rows.append(['Pixel', f'{x:.4f} µm' if x == y else f'{x:.4f} × {y:.4f} µm'])
         rows.append(['Depth', f'{p.bitspersample}-bit'])
         series = {l.split(' - ', 1)[1] for l in ij.get('Labels') or [] if ' - ' in l}
         if len(series) == 1:

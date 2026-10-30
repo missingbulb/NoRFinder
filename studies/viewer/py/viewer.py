@@ -33,9 +33,12 @@ def read_tiff(path):
         s, ij = t.series[0], t.imagej_metadata or {}
         a, axes = s.asarray(), s.axes
         p = t.pages[0]
-        res = p.tags.get('XResolution')
         unit = str(ij.get('unit', '')).lower()
-        um = res.value[1] / res.value[0] if res and res.value[0] and unit in ('micron', 'um', 'µm') else None
+
+        def side(name):
+            res = p.tags.get(name)
+            return res.value[1] / res.value[0] if res and res.value[0] and unit in ('micron', 'um', 'µm') else None
+        um = side('XResolution'), side('YResolution')
         tag = lambda name: str(p.tags[name].value).strip() if name in p.tags else ''
         saved = tag('Software') or (f"ImageJ {ij['ImageJ']}" if ij.get('ImageJ') else '')
         depth = f'{p.bitspersample}-bit'
@@ -64,14 +67,14 @@ def read_other(path):
         mode = f.mode
         if mode in ('RGB', 'RGBA', 'P', 'CMYK', 'YCbCr'):
             a = np.asarray(f.convert('RGB'))
-            return [(a[..., k], [k]) for k in range(3)], None, '8-bit RGB', 3, ''
+            return [(a[..., k], [k]) for k in range(3)], (None, None), '8-bit RGB', 3, ''
         a = np.asarray(f.convert('I') if mode not in ('L', 'I', 'I;16', 'F') else f)
-        return [(a, [0, 1, 2])], None, f'{16 if mode.startswith("I;16") else 8}-bit grey', 1, ''
+        return [(a, [0, 1, 2])], (None, None), f'{16 if mode.startswith("I;16") else 8}-bit grey', 1, ''
 
 
 class Session:
     def __init__(self, path):
-        chans, self.um, depth, n, saved = (read_tiff if path.lower().endswith(('.tif', '.tiff')) else read_other)(path)
+        chans, (self.um, self.um_y), depth, n, saved = (read_tiff if path.lower().endswith(('.tif', '.tiff')) else read_other)(path)
         H, W = chans[0][0].shape
         rgb = np.zeros((3, H, W), np.uint8)
         for plane, cols in chans:
@@ -79,14 +82,16 @@ class Session:
             for k in cols:
                 np.maximum(rgb[k], s, out=rgb[k])
         self.rgb = rgb
-        field = f'{W * self.um:.1f} × {H * self.um:.1f} µm ({W} × {H} px)' if self.um else f'{W} × {H} px'
-        self.info = [['Field', field]] + ([['Pixel', f'{self.um:.4f} µm']] if self.um else []) + [['Depth', depth], ['Channels', str(n)]]
+        x, y = self.um, self.um_y
+        field = f'{W * x:.1f} × {H * y:.1f} µm ({W} × {H} px)' if x and y else f'{W} × {H} px'
+        pixel = [['Pixel', f'{x:.4f} µm' if x == y else f'{x:.4f} × {y:.4f} µm']] if x and y else []
+        self.info = [['Field', field]] + pixel + [['Depth', depth], ['Channels', str(n)]]
         if saved:
             self.info.append(['Saved by', saved])
 
     def opened(self):
         _, H, W = self.rgb.shape
-        return json.dumps(dict(H=H, W=W, um=self.um, info=self.info)), self.rgb.tobytes()
+        return json.dumps(dict(H=H, W=W, um=self.um, um_y=self.um_y, info=self.info)), self.rgb.tobytes()
 
     def call(self, action, args):
         raise ValueError(f'unknown action {action!r}')

@@ -54,6 +54,15 @@ def test_an_imagej_tiff_shows_each_channel_in_its_own_colour(tmp_path):
     assert rows['Depth'] == '16-bit' and rows['Channels'] == '3'
 
 
+def test_a_pixel_taller_than_wide_gives_both_sides(tmp_path):
+    p = str(tmp_path / 't.tif')
+    tifffile.imwrite(p, spots(), imagej=True, resolution=(5.0, 2.0), metadata={'axes': 'CYX', 'unit': 'micron'})
+    meta, _ = planes(p)
+    rows = dict(meta['info'])
+    assert meta['um'] == pytest.approx(0.2) and meta['um_y'] == pytest.approx(0.5)
+    assert rows['Field'] == '8.0 × 15.0 µm (40 × 30 px)' and rows['Pixel'] == '0.2000 × 0.5000 µm'
+
+
 def test_a_mixed_colour_lut_lights_every_colour_it_holds(tmp_path):
     p = str(tmp_path / 'm.tif')
     tifffile.imwrite(p, spots()[:1], imagej=True, metadata={'axes': 'CYX', 'LUTs': [lut(1, 0, 1)]})
@@ -66,7 +75,7 @@ def test_a_tiff_without_display_colours_shows_its_channels_red_green_blue(tmp_pa
     tifffile.imwrite(p, spots()[:2], metadata={'axes': 'CYX'})
     meta, (r, g, b) = planes(p)
     assert r[4, 4] == 255 and g[15, 15] == 255 and not b.any()
-    assert 'Field' in dict(meta['info']) and meta['um'] is None, 'a scale the file never states is not shown'
+    assert 'Field' in dict(meta['info']) and meta['um'] is None and meta['um_y'] is None, 'a scale the file never states is not shown'
 
 
 def test_a_grey_image_is_grey(tmp_path):

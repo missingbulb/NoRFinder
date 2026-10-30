@@ -39,6 +39,15 @@ def test_a_file_naming_its_microscope_shows_it(tmp_path):
     assert rows['Date'] == '2026:10:01 12:00:00'
 
 
+def test_a_pixel_taller_than_wide_shows_both_sides(tmp_path):
+    p = str(tmp_path / 'd.tif')
+    tifffile.imwrite(p, np.zeros((3, 40, 50), np.uint16), imagej=True, resolution=(5.0, 2.0),
+                     metadata={'axes': 'CYX', 'unit': 'micron'})
+    rows = dict(naive_nor.file_info(p))
+    assert rows['Field'] == '10.0 × 20.0 µm (50 × 40 px)'
+    assert rows['Pixel'] == '0.2000 × 0.5000 µm'
+
+
 def test_a_png_shows_only_its_size(tmp_path):
     from PIL import Image
     p = str(tmp_path / 'c.png'); Image.new('RGB', (30, 20)).save(p)
