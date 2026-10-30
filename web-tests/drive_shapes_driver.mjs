@@ -46,6 +46,9 @@ const FILES = [
   { id: "shapeflat00000000001", name: "a flat.tif", bytes: tiff(256, 256, 3, "ImageJ=1.54f\nimages=3\nchannels=3\nmode=composite\n", (k, x) => 100 + k * x), want: "2D · 3 channels" },
   { id: "shapeplain0000000001", name: "b plain.tif", bytes: tiff(256, 256, 1, null, () => 500), want: "" },
   { id: "shapestack0000000001", name: "c stack.tif", bytes: tiff(256, 256, 8, "ImageJ=1.54f\nimages=8\nslices=8\nunit=micron\nspacing=4\n", tube), want: "3D · 8 slices" },
+  // two channels, interleaved slice by slice as ImageJ stores a hyperstack: the tube, and a square in the other
+  { id: "shapetwo00000000001", name: "c two.tif", want: "3D · 4 slices · 2 channels",
+    bytes: tiff(256, 256, 8, "ImageJ=1.54f\nimages=8\nchannels=2\nslices=4\nhyperstack=true\n", (k, x, y) => (k % 2 ? (Math.abs(x - 190) < 30 && Math.abs(y - 60) < 30 ? 3000 : 100) : tube(k >> 1, x, y))) },
   ...Array.from({ length: 30 }, (_, k) => ({ id: "shapemore" + String(k).padStart(11, "0"), name: `d more ${String(k).padStart(2, "0")}.tif`, bytes: null, want: "3D · 5 slices" })),
 ];
 const MORE = tiff(256, 256, 5, "ImageJ=1.54f\nimages=5\nslices=5\n", tube);
@@ -114,7 +117,7 @@ try {
   await open();
   const seen = await inView(), window = []; for (let k = seen[0]; k <= seen[seen.length - 1] + AHEAD; k++) window.push(k);
   let b = await badges();
-  check(FILES.slice(0, 3).every((f, k) => b[k] === f.want), `each row says what its file holds: ${JSON.stringify(b.slice(0, 3))}`);
+  check(FILES.slice(0, 4).every((f, k) => b[k] === f.want), `each row says what its file holds: ${JSON.stringify(b.slice(0, 4))}`);
   const read = [...new Set(reads.map((r) => r.k))].sort((x, y) => x - y);
   check(read.length === window.length && read.every((k, i) => k === window[i]), `read for the rows in view and the next ${AHEAD} only: ${read} (want ${window})`);
   check(reads.length > 0 && reads.length === read.length && reads.every((r) => r.range === `bytes=0-${HEAD - 1}`), `each read once, its first 64 KB: ${JSON.stringify(reads.slice(0, 3))}`);
@@ -153,6 +156,25 @@ try {
   if (shots && pic) fs.writeFileSync(path.join(shots, "stack_preview.png"), Buffer.from(JSON.parse(pic).split(",")[1], "base64"));
   await open();
   check(await page.evaluate(() => !!document.querySelector("#drive-list .item:nth-child(3) .pic img")), "the dialog shows it on the stack's row");
+  // a two-channel stack: each channel in its own colour
+  await page.dblclick("#drive-list .item:nth-child(4)");
+  await page.waitForFunction(() => st.fileName === "c two.tif");
+  for (let t = 0; t < 30 && !(await thumbOf(3)); t++) await page.waitForTimeout(100);
+  const two = await thumbOf(3);
+  const hues = two && await page.evaluate((u) => new Promise((ok) => {
+    const i = new Image();
+    i.onload = () => {
+      const c = document.createElement("canvas"); c.width = i.naturalWidth; c.height = i.naturalHeight;
+      const g = c.getContext("2d"); g.drawImage(i, 0, 0);
+      const d = g.getImageData(0, 0, c.width, c.height).data; let green = 0, magenta = 0;
+      for (let j = 0; j < d.length; j += 4) { if (d[j + 1] > 150 && d[j] < 80) green++; if (d[j] > 150 && d[j + 2] > 150 && d[j + 1] < 80) magenta++; }
+      ok({ green, magenta });
+    };
+    i.src = u;
+  }), JSON.parse(two));
+  check(hues && hues.green > 10 && hues.magenta > 10, `a two-channel stack's thumbnail shows one channel green and the other magenta: ${JSON.stringify(hues)}`);
+  if (shots && two) fs.writeFileSync(path.join(shots, "two_preview.png"), Buffer.from(JSON.parse(two).split(",")[1], "base64"));
+  await open();
   await page.dblclick("#drive-list .item:nth-child(1)");
   await page.waitForFunction(() => st.fileName === "a flat.tif");
   await page.waitForTimeout(500);

@@ -97,10 +97,11 @@ export function stackPicture(buf, s, SIDE = 96) {
   return cv.toDataURL("image/jpeg", 0.85);
 }
 
-// what a row in the Drive dialog says the file holds: "3D · 8 slices", "2D · 3 channels", or "" when it cannot tell
+// what a row in the Drive dialog says the file holds: "3D · 8 slices", "3D · 30 slices · 2 channels",
+// "2D · 3 channels", or "" when it cannot tell
 export function holds(s) {
   if (!s || s.images == null) return "";
-  if ((s.slices || 1) > 1) return `3D · ${s.slices} slices`;
-  const c = s.channels || (s.spp > 1 ? s.spp : 1);
-  return `2D · ${c} channel${c === 1 ? "" : "s"}`;
+  const c = s.channels || (s.spp > 1 ? s.spp : 1), channels = `${c} channel${c === 1 ? "" : "s"}`;
+  if ((s.slices || 1) > 1) return `3D · ${s.slices} slices` + (c > 1 ? ` · ${channels}` : "");
+  return `2D · ${channels}`;
 }
