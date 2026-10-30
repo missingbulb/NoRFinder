@@ -24,6 +24,8 @@
 .lt, .filter .badge { color: color-mix(in srgb, var(--c), #000 var(--ink-amt)); }
 :root { --pad: 12px; --r-panel: 12px; --r-ctl: 8px; --r-chip: 6px; }
 * { box-sizing: border-box; }
+/* the browser's own [hidden] rule reaches HTML elements only */
+svg[hidden] { display: none; }
 /* a fixed frame: header, three columns and the footer fill the window; only the columns scroll */
 html, body { height: 100%; overflow: hidden; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif;
@@ -344,8 +346,9 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 
 /* a box that folds: its title opens and closes it */
 .box.foldable > .sec-head h2 { display: flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }
-.box.foldable.folded > :not(.sec-head) { display: none; }
-.box.foldable.folded > .sec-head button { display: none; }
+/* folding wins over any box's own layout for its parts */
+.box.foldable.folded > :not(.sec-head) { display: none !important; }
+.box.foldable.folded > .sec-head > :not(h2) { display: none; }
 
 #notice { position: fixed; z-index: 40; max-width: min(360px, calc(100vw - 16px)); background: var(--panel); color: var(--text); border: 1px solid var(--accent);
   border-radius: var(--r-ctl); padding: 12px 14px; box-shadow: 0 8px 24px #0007; display: flex; flex-direction: column; gap: 10px; font-size: 13px; }

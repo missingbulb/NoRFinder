@@ -74,6 +74,8 @@ async function open(gb) {
 }
 const held = (page, id) => page.evaluate((id) => { const b = $(id); return b.disabled && b.classList.contains("working"); }, id);
 const free = (page, id) => page.waitForFunction((id) => !$(id).classList.contains("working") && !$(id).disabled, id);
+// a box folded with the steps (1.38), opened by its title as the user would
+const unfold = (page, box) => page.evaluate((b) => { const e = $(b); if (e.classList.contains("folded")) e.querySelector(".sec-head h2").click(); }, box);
 
 // ---- plenty of memory: no popup; slow buttons are held until their action is done ----
 {
@@ -96,6 +98,7 @@ const free = (page, id) => page.waitForFunction((id) => !$(id).classList.contain
   await check(await page.evaluate(() => st.meta && !st.inflight), "it lets go once the candidates are drawn");
   const preset = "#presets button[data-preset=precise]";
   await page.evaluate(() => { for (const d of $("#filters").children) d.kept = true; });
+  await unfold(page, "#filters-box");
   await page.click(preset);
   await check(await held(page, preset), "a filter preset is held while the filters run again");
   await free(page, preset);
@@ -129,7 +132,7 @@ const free = (page, id) => page.waitForFunction((id) => !$(id).classList.contain
   await check(!(await page.evaluate(() => $("#memory-dlg").open)), "after Don't show this again, it does not come back");
   // running out of memory shows it anyway, without the opt-out
   await page.setInputFiles("#file", image); await free(page, "#load-main");
-  for (let k = 0; k < 3; k++) { await page.click("#find"); await page.waitForFunction(() => !$("#find").classList.contains("working"), null, { timeout: 4 * LATE + 2000 }); }
+  for (let k = 0; k < 3; k++) { await unfold(page, "#finder-box"); await page.click("#find"); await page.waitForFunction(() => !$("#find").classList.contains("working"), null, { timeout: 4 * LATE + 2000 }); }
   const oom = await page.evaluate(() => $("#memory-dlg").open && $("#memory-never").hidden && $("#memory-why").textContent);
   await check(oom && /ran out of memory/.test(oom), `running out of memory shows it, whatever the user chose: "${oom}"`);
   await check(await page.evaluate(() => !$("#find").disabled), "Find Candidates is free again after the failure");

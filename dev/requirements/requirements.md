@@ -156,7 +156,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
 - `1.15` Load opens an image from this computer or Google Drive, and shines until one is open.
   <details>
 
-  The left bar holds the image: Load, with a dropdown for where from (this computer or Google
+  The left bar's Load Image box holds the image: Load, with a dropdown for where from (this computer or Google
   Drive), filled and glowing until an image is open and a plain button with a blue border after.
   Each place in the dropdown has a small icon: a computer for this computer, Drive's logo for
   Google Drive. Test: `web-tests/test_storage_page.py`.
@@ -212,7 +212,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   The user picks an image meanwhile, which opens as soon as Python is ready. Its packages download
   while Python itself starts, and the status bar names each stage (downloading, with the megabytes
   so far; installing; loading the study, in the study's own words; ready). Until an image is loaded,
-  Load shines, and the study's boxes are folded (their titles open them).
+  Load shines, and the study's boxes are folded (`1.41`).
   </details>
 
 - `1.20` Visible waiting: a spinner and the elapsed time, and a sweeping light while the study works.
@@ -444,6 +444,20 @@ test fold under it. A study's research requirements, which no user sees, stay in
   image to the next, and keeps its place through zoom. Test: `web-tests/test_grid_page.py`.
   </details>
 
+- `1.41` The left bar's boxes stay folded until their step makes them useful, and fold again once it is done.
+  <details>
+
+  Set by the owner on 2026-10-30. Every box in the left bar folds under its title, and clicking the
+  title opens or closes it. The first is the shell's Load Image (Load, the image's details, its
+  thumbnail and colour layers): open until an image opens, then folded. Each of a study's boxes
+  names the step (`1.33`) after which it opens, or that only its title opens it, and may name the
+  step after which it folds again. When a step is done by the user (an image opening, or the
+  step's button pressed, never a dial set back to the last run's) its boxes open and the boxes it
+  closes fold; opening another image also folds every box waiting for a later step. Between those moments a box
+  stays as the user left it; switching study (`1.30`) starts over. A box's title shows only its
+  name while folded. Test: `web-tests/test_left_bar_page.py`, `web-tests/test_study_contract.py`.
+  </details>
+
 ## `2` The repo's checks
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.
@@ -471,11 +485,14 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   finding again.
   </details>
 
-- `3.2` The left bar holds the finder and the filters; the right bar the selected candidate, the summary and the downloads.
+- `3.2` The left bar holds Load Image, Preprocessing, Algorithms, Post-processing and Summary; the right bar the selected candidate and the ground truth.
   <details>
 
-  Below the image box the left bar holds the candidates finder (its "how it works" and its settings
-  fold away) and the filters. The main area has a toolbar over two views: the image and the
+  Changed by the owner on 2026-10-30. Below Load Image (`1.41`) the left bar holds Preprocessing,
+  which has no steps yet and says so, open from the image's opening until Find Candidates; Algorithms,
+  the candidates finder (its "how it works" and its settings fold away), open over the same span;
+  Post-processing, the filters, which only its title opens; and Summary, which opens once the
+  candidates are found. The main area has a toolbar over two views: the image and the
   individual items, with the button that switches between them at its left.
   </details>
 
@@ -660,7 +677,7 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 - `3.21` On the released site each finder and each filter preset shows its precision and recall.
   <details>
 
-  The finder list, the finder's note and the Filters box's presets read the study's measured
+  The finder list, the finder's note and the Post-processing box's presets read the study's measured
   quality (`studies/nor/docs/requirements.md` R11), so that file ships with the page part
   (`studies/nor/web/`), like everything else the page fetches. Test:
   `web-tests/test_published_site.py`, which checks that every file a study's page module fetches is
