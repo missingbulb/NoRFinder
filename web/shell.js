@@ -420,12 +420,12 @@ function driveDialog() {
   let trail = [], chosen = null, listing = 0;
   // path: the folders the image is in under the link it was opened from; sha: its SHA-256 as the listing gave
   // it (null when Drive gave none), undefined when not yet asked; recent: whether it was chosen from the recents.
-  // A kept copy opens when its SHA-256 matches Drive's, or unchecked when Drive gives none or cannot be asked.
+  // A recent image opens from its kept copy; one chosen from Drive does only once its SHA-256 matches Drive's.
   const take = async (id, name, path, sha, recent) => {
     thumbs.stop();
     const kept = await savedImage(id);
-    if (sha === undefined && kept && !throttled()) sha = await NorDrive.checksum(id).catch(() => null);
-    if (kept && (!sha || sha === (await sha256(kept.bytes)))) {
+    if (kept && !recent && sha === undefined && !throttled()) sha = await NorDrive.checksum(id).catch(() => null);
+    if (kept && (recent || (sha && sha === (await sha256(kept.bytes))))) {
       $("#drive-dlg").close(); msg("");
       peek()(kept.bytes, kept.bytes.byteLength); remember(id, kept.name, path); picture(id, kept.name, kept.bytes);
       if (!recent) tip("recent-files", $("#load-menu summary"), "To load recent files click here");
