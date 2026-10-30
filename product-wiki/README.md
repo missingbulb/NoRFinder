@@ -13,4 +13,5 @@ this folder the rest of the repo may reference.
 |---|---|
 | [microscopy-tools](microscopy-tools/README.md) | The tools researchers use to view and analyse microscopy images, and what each means for a browser-only tool |
 | [ground-truth-and-algorithm-tools](ground-truth-and-algorithm-tools/README.md) | Ground-truth annotation tools and their export formats; libraries for building and scoring image algorithms, and which run in Pyodide |
+| [microscope-hardware](microscope-hardware/README.md) | Microscopes, cameras and acquisition software from the software side: what sets the pixel values, pixel size and metadata a file arrives with |
 | [tiff-format](tiff-format/README.md) | TIFF and its microscopy dialects (ImageJ, OME-TIFF), OME-Zarr, vendor formats, readers in Python and JavaScript, and their pitfalls |
