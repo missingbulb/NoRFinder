@@ -64,6 +64,8 @@ jobs:
           CLAUDINITE_VARS: ${{ toJSON(vars) }}
           CCR_ROUTINE_TOKEN: ${{ secrets.CCR_ROUTINE_TOKEN }}
           # claudinite:secrets
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: .claudinite/bin/cn execute loop
       # A growth run's code-work leaves the sessions it hands the agent here,
       # encrypted to a key made for that run alone; the key goes only in the
