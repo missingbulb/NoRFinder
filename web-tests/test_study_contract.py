@@ -82,7 +82,7 @@ class Boxes(HTMLParser):
 
 
 def test_every_studys_boxes_name_the_steps_that_open_and_fold_them():
-    """1.38: every foldable box of a study says when it opens (a step, or user: only its title), never left to a default."""
+    """1.41: every foldable box of a study says when it opens (a step, or user: only its title), never left to a default."""
     seen = 0
     for path in STUDIES:
         m = manifest(path)

@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- An image you pick from Google Drive opens from the copy on this device only if it is still the same file on Drive; otherwise it is downloaded. Recent files open from this device at once, and a tip by Load's arrow points them out. (#595)
 - The left bar is now Load Image, Preprocessing, Algorithms, Post-processing and Summary (moved from the right). Each box opens once it is useful and folds again when its step is done; Post-processing opens only when you click its title. (#597)
 - A Grid button, beside the Ruler, draws a grid over the image; hover it to choose the grid's colour and the distance between its lines, in µm when the file gives a pixel size and in pixels otherwise. Your choices are kept for next time. (#596)
 - A Ruler button beside Zoom: drag across the image to measure a distance, in µm when the file gives a pixel size (its width and height each counted on their own) and in pixels otherwise; press it again to clear the ruler. The image box shows both sides of a pixel that is not square. (#594)

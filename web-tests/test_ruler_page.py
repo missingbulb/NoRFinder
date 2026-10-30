@@ -1,4 +1,4 @@
-"""1.36: the Ruler, on the fixture study in headless Chromium with a stand-in worker (ruler_driver.mjs)."""
+"""1.38: the Ruler, on the fixture study in headless Chromium with a stand-in worker (ruler_driver.mjs)."""
 from test_study_runs import NODE, answers, png, run  # noqa: F401  (fixtures)
 import pytest
 

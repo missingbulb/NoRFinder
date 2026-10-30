@@ -72,6 +72,9 @@ await ctx.route("https://www.googleapis.com/**", (route) => {
   }
   const f = [...files, stranger].find((g) => g.id === id);
   if (!f) return route.fulfill({ status: 404, headers: cors, body: "{}" });
+  // a file's details, as Drive answers them
+  if (u.searchParams.get("alt") !== "media")
+    return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ id, name: f.name, mimeType: f.mimeType }) });
   if (q.headers()["range"]) { asked[id].pieces++; return route.fulfill({ status: 403, body: "refused" }); }
   asked[id].whole++;
   return route.fulfill({ status: 200, headers: cors, contentType: "image/tiff", body: f.bytes });

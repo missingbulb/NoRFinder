@@ -74,8 +74,13 @@ test fold under it. A study's research requirements, which no user sees, stay in
   The Google Drive dialog's bottom row holds two remembered checkboxes, **Show thumbnails** and
   **Auto-save images** (both on at first), and beside them a link that opens Manage storage, its
   text the bytes the thumbnails and saved images take on this device. While Auto-save images is on,
-  an image downloaded from Drive is kept on this device; an image kept there opens from it, with no
-  download, whatever the checkbox says. Test: `web-tests/test_storage_page.py`.
+  an image downloaded from Drive is kept on this device. An image chosen from the recents (`1.29`)
+  opens from the copy kept here, with no call to Drive. One chosen from Drive itself, in the dialog's
+  list or by its link, opens from the kept copy, whatever the checkbox says, only once its SHA-256
+  matches the one Drive gives for the file now (from the folder's listing, or from the file's
+  details for a link); otherwise it is downloaded: when the two differ (the file changed on Drive),
+  and when Drive gives no SHA-256 or cannot be asked. A download replaces the kept copy while
+  Auto-save images is on. Test: `web-tests/test_storage_page.py`, `web-tests/test_drive_cache_page.py`.
   </details>
 
 - `1.8` The shell decides what is published.
@@ -207,7 +212,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   The user picks an image meanwhile, which opens as soon as Python is ready. Its packages download
   while Python itself starts, and the status bar names each stage (downloading, with the megabytes
   so far; installing; loading the study, in the study's own words; ready). Until an image is loaded,
-  Load shines, and the study's boxes are folded (`1.38`).
+  Load shines, and the study's boxes are folded (`1.41`).
   </details>
 
 - `1.20` Visible waiting: a spinner and the elapsed time, and a sweeping light while the study works.
@@ -405,7 +410,41 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `web-tests/test_drive_throttle_page.py`.
   </details>
 
-- `1.38` The left bar's boxes stay folded until their step makes them useful, and fold again once it is done.
+- `1.38` A Ruler beside Zoom measures a distance on the image, in µm when the file gives a scale.
+  <details>
+
+  The Ruler button arms it: dragging from a point shows a circle of the reach around it, and on
+  release the ruler alone stays on the image between the two points with their distance beside it.
+  The distance is in µm when the file gives the pixel's size, its width and height each counted on
+  its own axis, which may differ; in pixels when it does not. A click with no drag measures nothing.
+  Once the ruler is down the image pans again; pressing the button again takes the ruler away, as
+  does opening another image. The ruler keeps its place and size through zoom and the study's own
+  drawing. Test: `web-tests/test_ruler_page.py`.
+  </details>
+
+- `1.39` A tip bubble points at Load's dropdown when an image opened from Drive is one of the recent ones.
+  <details>
+
+  When an image chosen in the Google Drive dialog opens from this device (`1.7`), a bubble beside
+  Load's dropdown arrow, its arrow pointing at it, says "To load recent files click here". Its ×
+  closes it for good, and so does opening the dropdown, which is what it asks for. Each tip has an
+  id, and the ids of the tips closed are kept in the browser (listed in Manage storage's settings as
+  "Tips you closed"), so a closed tip never shows again, after a reload too. Test:
+  `web-tests/test_drive_cache_page.py`.
+  </details>
+
+- `1.40` A Grid button beside the Ruler draws a grid over the image, its colour and spacing the user's.
+  <details>
+
+  The button, a red 3×3 grid, draws the grid or takes it away. Clicking it, or hovering over it,
+  opens a popup choosing the grid's colour and the distance between its lines: in µm when the file
+  gives the pixel's size, the cells then square in µm whatever the pixel's width and height, and in
+  pixels when it does not. The colour and both distances, µm and pixels each its own, are kept as
+  the user's settings for the next visit, and Manage storage lists them. The grid stays on from one
+  image to the next, and keeps its place through zoom. Test: `web-tests/test_grid_page.py`.
+  </details>
+
+- `1.41` The left bar's boxes stay folded until their step makes them useful, and fold again once it is done.
   <details>
 
   Set by the owner on 2026-10-30. Every box in the left bar folds under its title, and clicking the
@@ -449,7 +488,7 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 - `3.2` The left bar holds Load Image, Preprocessing, Algorithms, Post-processing and Summary; the right bar the selected candidate and the ground truth.
   <details>
 
-  Changed by the owner on 2026-10-30. Below Load Image (`1.38`) the left bar holds Preprocessing,
+  Changed by the owner on 2026-10-30. Below Load Image (`1.41`) the left bar holds Preprocessing,
   which has no steps yet and says so, open from the image's opening until Find Candidates; Algorithms,
   the candidates finder (its "how it works" and its settings fold away), open over the same span;
   Post-processing, the filters, which only its title opens; and Summary, which opens once the
@@ -645,25 +684,3 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   published.
   </details>
 
-- `1.36` A Ruler beside Zoom measures a distance on the image, in µm when the file gives a scale.
-  <details>
-
-  The Ruler button arms it: dragging from a point shows a circle of the reach around it, and on
-  release the ruler alone stays on the image between the two points with their distance beside it.
-  The distance is in µm when the file gives the pixel's size, its width and height each counted on
-  its own axis, which may differ; in pixels when it does not. A click with no drag measures nothing.
-  Once the ruler is down the image pans again; pressing the button again takes the ruler away, as
-  does opening another image. The ruler keeps its place and size through zoom and the study's own
-  drawing. Test: `web-tests/test_ruler_page.py`.
-  </details>
-
-- `1.37` A Grid button beside the Ruler draws a grid over the image, its colour and spacing the user's.
-  <details>
-
-  The button, a red 3×3 grid, draws the grid or takes it away. Clicking it, or hovering over it,
-  opens a popup choosing the grid's colour and the distance between its lines: in µm when the file
-  gives the pixel's size, the cells then square in µm whatever the pixel's width and height, and in
-  pixels when it does not. The colour and both distances, µm and pixels each its own, are kept as
-  the user's settings for the next visit, and Manage storage lists them. The grid stays on from one
-  image to the next, and keeps its place through zoom. Test: `web-tests/test_grid_page.py`.
-  </details>

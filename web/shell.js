@@ -33,6 +33,7 @@ const SAVED_THUMB = "nor-drive-thumb:"; // + Drive id: a JPEG data URL of the im
 const SAVED_THUMBS = "nor-drive-thumbs-saved"; // [Drive id], oldest first: which images have one
 const THUMB_NAMES = "nor-drive-thumb-names"; // {Drive id: file name}: the image each saved thumbnail shows
 const HOLDS = "nor-drive-holds"; // {Drive id: what the file holds, "3D · 8 slices" or "" when it cannot tell}, oldest first
+const TIPS = "nor-tips-closed"; // [tip id]: the tips the user closed, never shown again
 const THROTTLE = "nor-drive-throttled-until"; // when the wait after Google throttled the site's downloads ends, in ms
 const RECENT = "nor-drive-recent"; // [{id, name, path}], newest first: images opened from Drive, path their folders under the link
 // Cache Storage, + Drive id: an image downloaded from Drive, its file name (URI-encoded) and when it was saved
@@ -310,12 +311,15 @@ async function openBytes(name, bytes, source) {
   // a copy, for the next study to open: the bytes themselves go to Python
   st.kept = { name, source, bytes: bytes.slice(0) };
   study.opening?.(name, source);
-  st.sha = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map((b) => b.toString(16).padStart(2, "0")).join("");
+  st.sha = await sha256(bytes);
   $("#file-name").textContent = name; $("#file-name").classList.remove("dim"); fileInfo(null); statusBar();
   view.clear();
   if (st.ready) return send(name, bytes);
   // Python is still loading: the image opens the moment it is ready
   st.queued = { name, bytes }; busy(true, "Python is still loading; your image opens as soon as it is ready…", st.peeked && "peek");
+}
+async function sha256(bytes) {
+  return [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 function send(name, bytes) {
   busy(true, "Reading the image…", st.peeked && "peek");
@@ -351,6 +355,29 @@ function load(src) {
 }
 $("#load-main").onclick = () => load(readJSON(SOURCE, "local"));
 document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => load(b.dataset.src)));
+
+// a tip: a bubble below its anchor, pointing at it, until the user closes it, after which it never shows again
+function tip(id, anchor, text) {
+  if (readJSON(TIPS, []).includes(id)) return;
+  let t = document.querySelector(`.tip-bubble[data-tip="${id}"]`);
+  if (!t) {
+    t = Object.assign(document.createElement("div"), { className: "tip-bubble" });
+    t.dataset.tip = id; t.setAttribute("role", "status");
+    t.innerHTML = `<span></span><button type="button" class="x" aria-label="Close">×</button>`;
+    t.querySelector(".x").onclick = () => closeTip(id);
+    document.body.append(t);
+  }
+  t.querySelector("span").textContent = text;
+  const r = anchor.getBoundingClientRect();
+  t.style.left = Math.max(8, r.left + r.width / 2 - 22) + "px"; t.style.top = r.bottom + 10 + "px";
+}
+function closeTip(id) {
+  const t = document.querySelector(`.tip-bubble[data-tip="${id}"]`);
+  if (!t) return;
+  t.remove(); writeJSON(TIPS, [...new Set([...readJSON(TIPS, []), id])]);
+}
+// the dropdown is what the recent-files tip asks the user to open
+$("#load-menu").addEventListener("toggle", () => { if ($("#load-menu").open) closeTip("recent-files"); });
 
 // the images opened from Drive lately, in Load's dropdown; a Drive id names one file wherever it is, so two of
 // one name stay apart. openRecent is the Drive dialog's, which opens the copy kept on this device when there is one.
@@ -399,13 +426,17 @@ function throttle() { writeJSON(THROTTLE, Date.now() + WAIT); holdDrive(); }
 function driveDialog() {
   const msg = (t, err) => { const m = $("#drive-msg"); m.textContent = m.title = t; m.classList.toggle("err", !!err); };
   let trail = [], chosen = null, listing = 0;
-  // path: the folders the image is in under the link it was opened from
-  const take = async (id, name, path) => {
+  // path: the folders the image is in under the link it was opened from; sha: its SHA-256 as the listing gave
+  // it (null when Drive gave none), undefined when not yet asked; recent: whether it was chosen from the recents.
+  // A recent image opens from its kept copy; one chosen from Drive does only once its SHA-256 matches Drive's.
+  const take = async (id, name, path, sha, recent) => {
     thumbs.stop();
     const kept = await savedImage(id);
-    if (kept) {
+    if (kept && !recent && sha === undefined && !throttled()) sha = await NorDrive.checksum(id).catch(() => null);
+    if (kept && (recent || (sha && sha === (await sha256(kept.bytes))))) {
       $("#drive-dlg").close(); msg("");
       peek()(kept.bytes, kept.bytes.byteLength); remember(id, kept.name, path); picture(id, kept.name, kept.bytes);
+      if (!recent) tip("recent-files", $("#load-menu summary"), "To load recent files click here");
       return openBytes(kept.name, kept.bytes, { kind: "drive", id });
     }
     if (throttled()) { if (!$("#drive-dlg").open) $("#drive-dlg").showModal(); return holdDrive(); }
@@ -433,8 +464,8 @@ function driveDialog() {
     chosen = f; $("#drive-open").disabled = !f;
     $("#drive-list").querySelectorAll(".item").forEach((e) => e.setAttribute("aria-selected", e === b));
   };
-  const enter = (f) => (f.folder ? (trail.push(f), show()) : take(f.id, f.name, trail.slice(1).map((t) => t.name)));
-  openRecent = (r) => take(r.id, r.name, r.path || []);
+  const enter = (f) => (f.folder ? (trail.push(f), show()) : take(f.id, f.name, trail.slice(1).map((t) => t.name), f.sha));
+  openRecent = (r) => take(r.id, r.name, r.path || [], undefined, true);
   const show = async () => {
     const at = trail[trail.length - 1];
     $("#drive-path").innerHTML = trail.map((t, k) => `<button type="button" class="link" data-k="${k}">${esc(t.name)}</button>`).join(" / ");
@@ -638,7 +669,7 @@ async function showSaved() {
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
   [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link",
-  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [GRID]: "Grid colour and spacing",
+  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [GRID]: "Grid colour and spacing",
 };
 const GROUPS = [
   ["code", "Code kept for the next visit", "Python and its packages, so the page starts without downloading them again."],
