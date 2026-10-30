@@ -1,0 +1,50 @@
+name: New study request
+description: Propose a new study for the page, with its proposal, sample images and literature.
+title: "New study: "
+labels: ["new-study-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for proposing a study. Everything you write here, your name and email included, is public.
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Research proposal
+      description: A link to the proposal, or attach the document here by dragging it into the box.
+    validations:
+      required: true
+  - type: input
+    id: samples
+    attributes:
+      label: Sample images
+      description: A Google Drive folder of sample images, shared as "Anyone with the link".
+      placeholder: https://drive.google.com/drive/folders/…
+    validations:
+      required: true
+  - type: input
+    id: ground-truth
+    attributes:
+      label: Ground truth (optional)
+      description: A Google Drive folder of tagged images, if you have them, shared as "Anyone with the link".
+      placeholder: https://drive.google.com/drive/folders/…
+  - type: textarea
+    id: literature
+    attributes:
+      label: Literature
+      description: The papers the study builds on, one per line, with a link where there is one.
+    validations:
+      required: true
+  - type: input
+    id: name
+    attributes:
+      label: Your name
+    validations:
+      required: true
+  - type: input
+    id: email
+    attributes:
+      label: Your email
+      description: Public, like the rest of this issue.
+    validations:
+      required: true

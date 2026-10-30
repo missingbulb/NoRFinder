@@ -297,6 +297,17 @@ test fold under it. A study's research requirements, which no user sees, stay in
   dropped. Test: `web-tests/test_study_runs.py`.
   </details>
 
+- `1.30` The switcher ends with Submit New Study Request, a GitHub issue form for proposing a study.
+  <details>
+
+  Below the studies, apart from the search, "Submit New Study Request" opens, in a new tab, a new
+  issue on the repo from its `new-study` form, labelled `new-study-request`: the research proposal
+  (a link, or a document attached in the box), a public Google Drive link to sample images, one to
+  ground truth if any, the literature, and the submitter's name and email, which the form warns
+  are public. Test: `web-tests/test_study_runs.py` (the link opens the form the repo carries),
+  `web-tests/test_study_request.py` (the form asks for each of these).
+  </details>
+
 ## `2` The repo's checks
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.

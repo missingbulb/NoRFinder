@@ -129,6 +129,15 @@ try {
   if (inViewer.image !== "80,60" || inViewer.file !== "squares.png") problems.push("the open image did not stay open: " + inViewer.image + " " + inViewer.file);
   if (inViewer.fixture || inViewer.css.length) problems.push("the fixture left its panels or stylesheet behind: " + inViewer.css);
   if (inViewer.channels !== "Red,Green,Blue") problems.push("the channels are still the old study's: " + inViewer.channels);
+  // the last row asks GitHub for a new study, on the form the repo carries
+  const request = await page.evaluate(() => {
+    const a = document.querySelector("#study-request"), rows = [...document.querySelectorAll("#study-menu .pop a")];
+    return a && { text: a.textContent.trim(), href: a.href, target: a.target, last: rows[rows.length - 1] === a };
+  });
+  console.log(JSON.stringify(request));
+  const form = request && new URL(request.href).searchParams.get("template");
+  if (!request || request.text !== "Submit New Study Request" || !request.last || request.target !== "_blank") problems.push("no Submit New Study Request at the end of the switcher: " + JSON.stringify(request));
+  else if (!form || !fs.existsSync(path.join(repo, ".github", "ISSUE_TEMPLATE", form))) problems.push("Submit New Study Request opens a form the repo does not carry: " + request.href);
   const viewerMenu = await menu();
   if (viewerMenu.items.join() !== "Image Viewer*,NoR Finder") problems.push("the switcher does not tick the study on show: " + viewerMenu.items);
   if (!viewerMenu.noRight) problems.push("a study with nothing on the right still keeps the right bar");

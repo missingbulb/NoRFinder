@@ -46,6 +46,8 @@ const UNREAD_MB = 190;
 // where ground truth is submitted: an issue with the study's label, which the repo's intake reads
 const REPO = "missingbulb/NoRFinder";
 const LOCAL_GT = "Ground truth cannot be sent from local files, only from Google Drive.";
+// the issue form a proposal for a new study is written on
+const STUDY_REQUEST = "new-study.yml";
 
 function readJSON(key, fallback = {}) {
   try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
@@ -778,6 +780,7 @@ $("#study-menu").addEventListener("toggle", () => {
   $("#study-menu .pop").style.left = $("#study-menu .caret").offsetLeft + "px";
   $("#study-search").value = ""; filterStudies(); $("#study-search").focus();
 });
+$("#study-request").href = `https://github.com/${REPO}/issues/new?template=${STUDY_REQUEST}`;
 $("#study-search").oninput = filterStudies;
 $("#study-search").onkeydown = (e) => {
   const list = rows(), at = list.findIndex((a) => a.classList.contains("active"));
