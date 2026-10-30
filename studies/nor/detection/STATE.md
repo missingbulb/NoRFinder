@@ -33,7 +33,7 @@ _Last updated 2026-10-06._
   mark a spot, and `ground_truth.py score` / the quality lock score every finder on every image.
   None has arrived yet.
 - **Precision and recall per finder and filter preset** (R11, 2026-10-06):
-  `lab/finder_metrics.json`, written by `finder_metrics.py` (and by every baseline rewrite).
+  `../web/finder_metrics.json`, written by `finder_metrics.py` (and by every baseline rewrite).
   Presets: precise / balanced (the finder's own) / recalling, every filter 40% towards a fixed
   strict or loose end. Fitting filter values to the labels does not survive held-out labels
   (ledger §5), so don't tune filters per finder on these labels.
@@ -88,7 +88,7 @@ _Last updated 2026-10-06._
 | perf.py | snapshot / profile / check for speed-ups |
 | bench.py | time and peak memory of every finder along the page's path (browser/ runs it under Pyodide and on the live page) |
 | lab/ | labels, the pool used to draw them (mkpool.py, pool.json), ledger.md, the submitted ground truth (ground_truth/) |
-| finder_metrics.py | precision and recall per finder and filter preset (`lab/finder_metrics.json`); `transfer`: every finder with every finder's filter values |
+| finder_metrics.py | precision and recall per finder and filter preset (`../web/finder_metrics.json`); `transfer`: every finder with every finder's filter values |
 | ground_truth.py | the ground-truth data set: the merged reference per image, `fetch`, `score`, and the daily `ingest` |
 | interactive.py | the page's engine: detect once, refilter on stored measurements (spec §3) |
 | browser/ | runs the finders in a browser runtime (Pyodide): measured parity, recommendation |

@@ -271,7 +271,7 @@ Set by the owner on 2026-10-03.
 
 ## R11 — Every finder's precision and recall are on record, per filter preset
 
-Set by the owner on 2026-10-06. [`studies/nor/detection/lab/finder_metrics.json`](../detection/lab/finder_metrics.json)
+Set by the owner on 2026-10-06. [`studies/nor/web/finder_metrics.json`](../web/finder_metrics.json)
 holds, for every finder the page offers, the precision and recall summed over every ground-truth image
 (R10), run the way the page runs it, at two stages kept apart: the finder's own candidates before any
 filter, and what passes the filters after it at three filter presets (precise, balanced = the

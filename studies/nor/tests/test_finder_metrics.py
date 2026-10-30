@@ -1,5 +1,5 @@
 """R11: every finder's precision and recall on the ground truth, at each filter preset, are on record
-and current. detection/lab/finder_metrics.json is written by detection/finder_metrics.py; it is
+and current. web/finder_metrics.json is written by detection/finder_metrics.py; it is
 current while it was measured against the quality baseline (R9) now committed, since any change to a
 finder's results on the labelled spots or to the ground truth rewrites that baseline."""
 import json
@@ -12,7 +12,7 @@ import finder_metrics as fm
 import ground_truth
 import interactive
 
-REGENERATE = 'run python3 detection/finder_metrics.py and commit detection/lab/finder_metrics.json'
+REGENERATE = 'run python3 detection/finder_metrics.py and commit web/finder_metrics.json'
 
 
 def doc():
