@@ -130,7 +130,7 @@ try {
   // the fetches started as the scroll began, before it outran them, are the only rows passed over that are fetched
   const passed = sorted(asked).filter((k) => !first.includes(k) && !last.includes(k));
   check(passed.length <= 4, `a fast scroll skips the rows passed over, bar the ${passed.length} it started on: ${passed}`);
-  check(last.every((k) => first.includes(k) || asked.includes(k)), "and fetches the rows it stops on");
+  check(last.length > 0 && last.every((k) => first.includes(k) || asked.includes(k)), `and fetches the ${last.length} rows it stops on`);
   pics = await shown();
   check(last.every((k) => pics[k] === k + 1), `which land in their own rows: ${last.map((k) => pics[k])}`);
 
@@ -142,6 +142,7 @@ try {
   await page.evaluate(() => { $("#drive-list").scrollTop = $("#drive-list").scrollHeight / 2; });
   await page.waitForTimeout(100);
   const middle = span(await inView()), cut = asked.length;
+  check(had.length >= first.length && middle.length > AHEAD, `${had.length} thumbnails held before closing, ${middle.length} rows wanted midway`);
   await page.click("#drive-dlg button[value=close]");
   await page.waitForTimeout(500);
   check(cut > 0 && asked.length === cut, `closing the dialog stops the fetches: ${cut} asked before, ${asked.length - cut} after`);
