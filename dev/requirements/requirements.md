@@ -16,13 +16,16 @@ test fold under it. A study's research requirements, which no user sees, stay in
   and the shell's page tests run on the fixture study, which shares none of them.
   </details>
 
-- `1.2` A study is a folder, and the page runs the one `?study=` names.
+- `1.2` A study is a folder, and the page runs the one its address names: rauntruth.com/<id>.
   <details>
 
   A study is `studies/<id>/` with a `study.json` that names everything the shell needs, and every
-  file it names exists. The page runs the study `?study=<id>` names, the Image Viewer (`1.28`)
-  when none is named. Adding a study changes nothing in `web/`, in the deploy's settings or in CI.
-  Test: `web-tests/test_study_contract.py`.
+  file it names exists. The page runs the study its path names (`rauntruth.com/nor`), the Image
+  Viewer (`1.28`) at the bare address; an address from before paths, `?study=<id>`, opens the same
+  study and is rewritten to its path. The build publishes the page once more under each listed
+  study's id, so the path opens it fresh too, and refuses an id the site already serves at its
+  top. Adding a study changes nothing in `web/`, in the deploy's settings or in CI. Test:
+  `web-tests/test_study_contract.py`, `web-tests/test_published_site.py`, `web-tests/test_study_runs.py`.
   </details>
 
 - `1.3` The viewer is the study's choice.
@@ -98,9 +101,12 @@ test fold under it. A study's research requirements, which no user sees, stay in
 - `1.10` A header with the logo, the study switcher and a dark/light switch (remembered).
   <details>
 
-  The study's title, with a caret beside it, opens a "Switch study" list of every study whose
-  `study.json` says `"listed": true`, by title, the one on show ticked. Each is a link to the page
-  running it: `?study=<id>`, and the bare address for the Image Viewer. The header's spacing follows
+  GitHub's repository switcher, for studies: the study's title and a solid caret form one 32 px
+  control; it opens, under the caret, a 320 px panel headed "Switch study", a search box (focused,
+  filtering by title as the user types) and every study whose `study.json` says `"listed": true`,
+  by title, each with a study icon, a rule under its name, and a tick on the one on show. Arrow
+  keys move through the list, Enter opens the one marked, Escape closes it. Each entry is a link to
+  the study's address (`1.2`), so a middle click opens it in a new tab. The header's spacing follows
   GitHub's: 64 px tall, 16 px at the sides, a 32 px logo. Test: `web-tests/test_study_runs.py`.
   </details>
 
@@ -116,13 +122,16 @@ test fold under it. A study's research requirements, which no user sees, stay in
   A crop or picture narrower than its box shrinks as a whole (`studies/nor/tests/test_page_layout.py`).
   </details>
 
-- `1.13` A status bar shows the image name, the study's counts, the memory the tab holds and the version.
+- `1.13` The status bar: the study's stage and its steps at the left, the disk, memory and version at the right.
   <details>
 
-  The memory the tab holds ("Memory Usage", Python's, its files, the page's and an estimate for the
-  compiled code and the browser, which a page cannot read; amber past a quarter of the computer's
-  total where the browser says it, which the hover names), and the site's version (stamped by each
-  release). For the NoR study the counts are the candidates and the finalists.
+  From the left edge: the study's stage (`1.32`), then the breadcrumbs of its steps (`1.33`), then
+  the spinner and what the page is doing now (each stage of Python's loading, the study's progress,
+  an error in red) and the thumbnails' progress (`1.18`). From the right edge inward: the site's
+  version (stamped by each release; `1.14`, `1.23`), the memory (`1.34`) and the disk (`1.35`),
+  all three plain text with no border, alike. The image's name and the study's counts are in the
+  breadcrumbs' popups: Load image names the image, the study's own step gives its counts. Test:
+  `web-tests/test_status_bar_page.py`.
   </details>
 
 - `1.14` Clicking the version opens a Version history; a bubble points at it after an update.
@@ -297,7 +306,77 @@ test fold under it. A study's research requirements, which no user sees, stay in
   on the computer again by itself. Test: `web-tests/test_storage_page.py`.
   </details>
 
-- `1.30` The Drive dialog tells a 3D stack from a flat image, and shows a stack in 3D once opened.
+- `1.30` Switching study happens in place: no reload, and the open image stays open.
+  <details>
+
+  Choosing a study in the switcher, or going back and forward between studies, changes the address
+  and swaps the study without reloading the page: Python stays loaded and adds only the packages the
+  new study needs, and the image on show opens in the new study at once. The study that leaves
+  takes its panels, its stylesheet, its drawing and its listeners with it (each listener it adds
+  outside its own panels carries `shell.signal`), and an answer its Python was still working on is
+  dropped. Test: `web-tests/test_study_runs.py`.
+  </details>
+
+- `1.31` The switcher ends with Submit New Study Request, a GitHub issue form for proposing a study.
+  <details>
+
+  Below the studies, apart from the search, "Submit New Study Request" opens, in a new tab, a new
+  issue on the repo from its `new-study` form, labelled `new-study-request`: the research proposal
+  (a link, or a document attached in the box), a public Google Drive link to sample images, one to
+  ground truth if any, the literature, and the submitter's name and email, which the form warns
+  are public. Test: `web-tests/test_study_runs.py` (the link opens the form the repo carries),
+  `web-tests/test_study_request.py` (the form asks for each of these).
+  </details>
+
+- `1.32` A study declares its stage: PreGT, GT or PostGT.
+  <details>
+
+  Every `study.json` names its `stage`, and the status bar shows it first, its meaning on hover.
+  PreGT: the study's tools work but cannot make ground truth yet, so it offers no export: its
+  ground-truth button (`groundTruth.button`) is hidden and it has no Submit GT step. GT: the same,
+  with the ground truth exported and submitted (`1.26`). PostGT: GT with batch actions on top (none
+  yet). A GT or PostGT study names its ground truth's label and button. The Image Viewer is PreGT,
+  NoR Finder GT. Test: `web-tests/test_study_contract.py`, `web-tests/test_status_bar_page.py`.
+  </details>
+
+- `1.33` Breadcrumbs show the steps done so far, and the step to do now shines.
+  <details>
+
+  A study's steps are Load image, the study's own in order (its `study.json` `phases`; for NoR
+  Run algorithm and Review all items), then Submit GT in a GT or PostGT study. The status bar shows
+  the steps done, then the first one not done, which shines blue, and with it the button that does
+  that step (the `button` the step names; Load for Load image, the ground-truth button for Submit
+  GT); later steps do not show yet, and once every step is done none shines. Load image is done
+  once an image is open, Submit GT once its issue is opened (for a local image, once its file is
+  exported); the study says when its own steps are done (NoR: Run algorithm while the image was
+  searched with the finder and settings now chosen, Review all items while every finalist has a
+  verdict). Opening another image, or switching study (`1.30`), starts over. Hovering a crumb says what was done in that step
+  and when. The steps live in one state in the shell, and the crumbs and the shining buttons are
+  drawn from it alone. Test: `web-tests/test_status_bar_page.py`,
+  `studies/nor/tests/test_ground_truth_page.py`.
+  </details>
+
+- `1.34` The memory, "RAM 253 MB", opens what holds it and a Run GC button.
+  <details>
+
+  The memory the tab holds: Python's, its files, the page's (Chrome and Edge say it) and an estimate
+  for the compiled code and the browser, which a page cannot read; amber past a quarter of the
+  computer's total where the browser says it. Clicking it opens a popup listing each of those, and
+  within the page's share the image and the study's results, and the computer's total. Its Run GC
+  button has Python collect its garbage and says what Python then holds in use against what it has
+  reserved, which never shrinks; a page has no way to collect the browser's own. Test:
+  `web-tests/test_status_bar_page.py`.
+  </details>
+
+- `1.35` The disk, "Disk 1.4 GB", opens Manage storage.
+  <details>
+
+  What the site keeps on this device, the total Manage storage reports (`1.6`), kept current as the
+  page saves or the user deletes. Clicking it opens Manage storage. Test:
+  `web-tests/test_status_bar_page.py`.
+  </details>
+
+- `1.36` The Drive dialog tells a 3D stack from a flat image, and shows a stack in 3D once opened.
   <details>
 
   Each TIFF row in the Google Drive dialog says what the file holds, "3D · 24 slices" for a stack
@@ -312,7 +391,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `web-tests/test_drive_shapes_page.py`.
   </details>
 
-- `1.31` When Google throttles the site's Drive downloads, the Drive dialog says so and waits 15 minutes.
+- `1.37` When Google throttles the site's Drive downloads, the Drive dialog says so and waits 15 minutes.
   <details>
 
   Google answers a burst of downloads by refusing the site's for a while, with no word the page

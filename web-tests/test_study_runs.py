@@ -40,20 +40,30 @@ def test_the_bridge_runs_a_study_it_knows_nothing_of(png):
     run('study_bridge_driver.mjs', png)
 
 
-@pytest.mark.skipif(not NODE, reason='node missing')
-def test_the_page_runs_the_study_it_is_asked_for(png, tmp_path):
-    """The stand-in worker answers what the fixture's own Python answers about the image."""
+@pytest.fixture(scope='module')
+def answers(png, tmp_path_factory):
+    """What the stand-in worker answers, which is what the fixture's own Python answers about the image and each
+    study's ready() on loading, and the build's list of studies: (answers.json, studies.json)."""
     import base64, json, sys
     sys.path.insert(0, os.path.join(HERE, '..', 'studies', 'fixture', 'py'))
     import fixture
+    d = tmp_path_factory.mktemp('answers')
     s = fixture.Session(png)
     opened, images = s.opened()
     count, mask = s.call('count', {'threshold': 100})
-    answers = tmp_path / 'answers.json'
-    answers.write_text(json.dumps(dict(ready=dict(threshold=100), opened=json.loads(opened), count=json.loads(count),
-                                       images=base64.b64encode(images).decode(), mask=base64.b64encode(mask).decode())))
+    out = d / 'answers.json'
+    sys.path.insert(0, os.path.join(HERE, '..', 'studies', 'nor', 'detection'))
+    import interactive
+    ready = dict(fixture=dict(threshold=100), viewer={}, nor=json.loads(interactive.ready()))
+    out.write_text(json.dumps(dict(ready=ready, opened=json.loads(opened), count=json.loads(count),
+                                   images=base64.b64encode(images).decode(), mask=base64.b64encode(mask).decode())))
     sys.path.insert(0, os.path.join(HERE, '..', 'dev', 'tools', 'build'))
     import build
-    studies = tmp_path / 'studies.json'
+    studies = d / 'studies.json'
     studies.write_text(json.dumps(build.studies(os.path.join(HERE, '..'))))
-    run('study_page_driver.mjs', str(answers), png, str(studies))
+    return str(out), str(studies)
+
+
+@pytest.mark.skipif(not NODE, reason='node missing')
+def test_the_page_runs_the_study_it_is_asked_for(png, answers):
+    run('study_page_driver.mjs', answers[0], png, answers[1])

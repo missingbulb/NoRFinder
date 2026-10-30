@@ -10,6 +10,7 @@
 //
 // Needs Playwright (npm i -g playwright). Remote files (Pyodide and its packages) are fetched with
 // curl when HTTPS_PROXY is set, since headless Chromium does not trust a proxy's own CA.
+import { repoFile } from "../../../../web-tests/repo_file.mjs";
 import { createRequire } from "node:module";
 import { execFileSync, execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -46,7 +47,7 @@ for (const [f, how] of [[TIF, "python3 studies/nor/detection/fetch_data.py -m '*
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json",
   ".py": "text/plain", ".svg": "image/svg+xml", ".png": "image/png", ".whl": "application/zip" };
 const server = http.createServer((q, r) => {
-  let f = path.join(repo, decodeURIComponent(new URL(q.url, "http://x").pathname));
+  let f = repoFile(repo, decodeURIComponent(new URL(q.url, "http://x").pathname));
   if (f.endsWith(path.sep)) f = path.join(f, "index.html");
   if (!f.startsWith(repo) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);

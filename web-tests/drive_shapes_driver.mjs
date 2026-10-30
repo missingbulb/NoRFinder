@@ -1,6 +1,6 @@
 // Drives the Google Drive dialog (web/) in headless Chromium against a stand-in Drive API that answers Range
 // requests, listing ImageJ TIFFs: a flat three-channel image, an eight-slice stack, a TIFF with no ImageJ header
-// and a run of stacks below them. Checks 1.30: each row says what its file holds, read from the file's first 64 KB
+// and a run of stacks below them. Checks 1.36: each row says what its file holds, read from the file's first 64 KB
 // for the rows in view and the next 10, remembered so a reload reads nothing again, and not read while Show
 // thumbnails is off; opening the stack saves a 3D thumbnail at once, opening the flat image does not.
 // Optional SHOTS: a directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
@@ -61,8 +61,10 @@ const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(""); }
   if (u === "/web/config.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(CONFIG); }
-  const f = path.join(repo, u);
-  if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
+  // a folder serves its index.html, as the site does: the page rewrites its own address to the folder
+  let f = path.join(repo, u);
+  if (fs.existsSync(f) && fs.statSync(f).isDirectory()) f = path.join(f, "index.html");
+  if (!fs.existsSync(f)) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
@@ -113,7 +115,7 @@ const thumbOf = (k) => page.evaluate((id) => localStorage.getItem("nor-drive-thu
 
 try {
   await page.goto(origin + "/web/index.html");
-  await page.waitForFunction(() => $("#title").textContent);
+  await page.waitForFunction(() => window.$ && $("#title").textContent);
   await open();
   const seen = await inView(), window = []; for (let k = seen[0]; k <= seen[seen.length - 1] + AHEAD; k++) window.push(k);
   let b = await badges();
@@ -125,7 +127,7 @@ try {
   if (shots) await page.locator("#drive-dlg").screenshot({ path: path.join(shots, "drive_shapes.png") });
 
   // remembered: a reload reads nothing it read before
-  await page.reload(); await page.waitForFunction(() => $("#title").textContent);
+  await page.reload(); await page.waitForFunction(() => window.$ && $("#title").textContent);
   reads.length = 0;
   await open();
   b = await badges();

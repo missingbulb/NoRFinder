@@ -2,6 +2,14 @@
   "id": "fixture",
   "title": "Fixture",
   "listed": false,
+  "stage": "GT",
+  "phases": [
+    {
+      "key": "count",
+      "name": "Count",
+      "button": "#fx-count"
+    }
+  ],
   "viewer": "image2d",
   "python": {
     "paths": [
@@ -33,6 +41,7 @@
     "count": "Counting…"
   },
   "groundTruth": {
-    "label": "fixture-ground-truth"
+    "label": "fixture-ground-truth",
+    "button": "#fx-truth"
   }
 }

@@ -48,8 +48,10 @@ const server = http.createServer((q, r) => {
     r.writeHead(200, { "content-type": "application/json" }); return r.end(JSON.stringify({ ...m, driveThumbs: "thumbs/" }));
   }
   if (u === "/studies/viewer/thumbs/index.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end(JSON.stringify(IMAGES.map((f) => f.id))); }
-  const f = path.join(repo, u);
-  if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
+  // a folder serves its index.html, as the site does: the page rewrites its own address to the folder
+  let f = path.join(repo, u);
+  if (fs.existsSync(f) && fs.statSync(f).isDirectory()) f = path.join(f, "index.html");
+  if (!fs.existsSync(f)) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
@@ -108,7 +110,7 @@ const open = async () => {
 
 try {
   await page.goto(origin + "/web/index.html");
-  await page.waitForFunction(() => $("#title").textContent);
+  await page.waitForFunction(() => window.$ && $("#title").textContent);
 
   // answers arrive in reverse order of asking: the later rows' first
   delay = (k) => 400 - 5 * k;

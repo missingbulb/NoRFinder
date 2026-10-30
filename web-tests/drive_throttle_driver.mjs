@@ -1,7 +1,7 @@
 // Drives the Google Drive dialog (web/) in headless Chromium against a stand-in Drive API that can refuse
 // downloads as Google does when it throttles a site (a 403 without the header that lets the page read it, which
 // the page sees as a failed request) while
-// still answering for files' details, or fail outright. Checks 1.31: a refused download, or a refused read for a
+// still answering for files' details, or fail outright. Checks 1.37: a refused download, or a refused read for a
 // row's badge, starts a 15-minute wait: a large notice and a red countdown, and no call to Drive from the dialog,
 // across a reload; an image kept on this device still opens; when the countdown ends the dialog lists its link
 // again. A failure where the details fail too starts no wait.
@@ -31,8 +31,10 @@ const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(""); }
   if (u === "/web/config.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(CONFIG); }
-  const f = path.join(repo, u);
-  if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
+  // a folder serves its index.html, as the site does: the page rewrites its own address to the folder
+  let f = path.join(repo, u);
+  if (fs.existsSync(f) && fs.statSync(f).isDirectory()) f = path.join(f, "index.html");
+  if (!fs.existsSync(f)) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
@@ -82,7 +84,7 @@ const wait = () => page.evaluate(() => ({
 
 try {
   await page.goto(origin + "/web/index.html");
-  await page.waitForFunction(() => $("#title").textContent);
+  await page.waitForFunction(() => window.$ && $("#title").textContent);
   // b.png opened while Drive answers, so it is kept on this device
   await menu('#load-menu .item[data-src="drive"]'); await listed();
   await page.dblclick("#drive-list .item:nth-child(2)");
@@ -107,7 +109,7 @@ try {
   await page.evaluate(() => { $("#drive-go").click(); $("#drive-open").click(); });
   await page.dblclick("#drive-list .item:nth-child(1)", { force: true }).catch(() => {});
   await page.click("#drive-dlg button[value=close]");
-  await page.reload(); await page.waitForFunction(() => $("#title").textContent);
+  await page.reload(); await page.waitForFunction(() => window.$ && $("#title").textContent);
   await menu('#load-menu .item[data-src="drive"]');
   await page.waitForTimeout(500);
   w = await wait();

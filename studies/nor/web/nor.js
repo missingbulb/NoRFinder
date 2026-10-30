@@ -7,6 +7,8 @@ import "./peek.js";
 
 export function mount(shell) {
   const { $, status, busy, slow, until, readJSON, writeJSON, esc, saveFile } = shell, st = shell.state;
+  // a listener outside the study's own panels lasts only while the study is on show
+  const here = { signal: shell.signal };
   const SVGNS = "http://www.w3.org/2000/svg";
   const STORE = "nor-filter-settings-v1"; // {values: {param: number}, off: [filter key]}; only what the user changed
   const MARKS = "nor-marks-v1:"; // + file name + "|" + finder: {"x,y": "in" | "out"}, the user's keepers and removals
@@ -147,7 +149,7 @@ export function mount(shell) {
 
   function detect() {
     const finder = $("#finder").value, overrides = detectOverrides(finder);
-    st.running = runKey(); st.runOverrides = overrides; $("#find").disabled = true; $("#find").classList.remove("shine");
+    st.running = runKey(); st.runOverrides = overrides; $("#find").disabled = true;
     busy(true, "Finding candidates…", "scan");
     shell.call("detect", { finder, overrides });
   }
@@ -334,10 +336,10 @@ export function mount(shell) {
       menu.style.left = Math.min(e.clientX, innerWidth - menu.offsetWidth - 4) + "px";
       menu.style.top = Math.min(e.clientY, innerHeight - menu.offsetHeight - 4) + "px";
       b.focus();
-    });
-    document.addEventListener("pointerdown", (e) => { if (!menu.contains(e.target)) close(); });
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
-    $("#scroller").addEventListener("scroll", close);
+    }, here);
+    document.addEventListener("pointerdown", (e) => { if (!menu.contains(e.target)) close(); }, here);
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); }, here);
+    $("#scroller").addEventListener("scroll", close, here);
   }
 
   // the result shown for candidate i: null = pass, else a failure reason
@@ -490,13 +492,20 @@ export function mount(shell) {
     return o;
   }
   const runKey = () => JSON.stringify([$("#finder").value, detectOverrides($("#finder").value)]);
-  // Find Candidates shines while the finder or its settings differ from what the image was last searched with
   function updateFind() {
     const finder = $("#finder").value; if (!st.about[finder]) return;
-    const o = detectOverrides(finder), f = $("#find");
+    const o = detectOverrides(finder);
     $("#reset-detect").disabled = !Object.keys(o).length;
-    f.disabled = !st.img || !!st.running;
-    f.classList.toggle("shine", !f.disabled && runKey() !== st.lastRun);
+    $("#find").disabled = !st.img || !!st.running;
+    steps();
+  }
+  // the study's steps in the status bar: Run algorithm is done while the image was searched with the finder and
+  // settings now chosen (Find Candidates shines until then), Review all items while every finalist has a verdict
+  function steps() {
+    const ran = !!st.meta && runKey() === st.lastRun, finalists = (st.passes || []).filter((c) => !c.added);
+    const open = finalists.filter((c) => !st.forced.has(c.i)).length, name = $("#finder").selectedOptions[0]?.textContent.replace(/ \(.*\)$/, "");
+    shell.step("find", ran, ran ? `${name}: ${st.order.length} candidates, ${finalists.length} finalists` : st.lastRun ? "The finder or its settings changed since the last run." : "");
+    shell.step("review", ran && !open, `${finalists.length - open} of ${finalists.length} finalists have your verdict`);
   }
 
   // ---------- drawing ----------
@@ -515,7 +524,6 @@ export function mount(shell) {
       const k = d.dataset.key;
       d.querySelector(".n").innerHTML = st.alone ? `${THUMB} ${st.alone.only[k] ?? 0} (${st.alone.counts[k] ?? 0})` : "";
     });
-    $("#sb-counts").innerHTML = `<b>${st.order.length}</b> candidates · <b>${passes.length}</b> finalists`;
     $("#n-pass").textContent = passes.length; $("#n-fail").textContent = rejects.length;
     if (st.view === "items") renderList();
     renderSummary(); renderSelected(); placeRing(); downloads(true);
@@ -879,6 +887,7 @@ export function mount(shell) {
     const { state, items } = gtState(), open = items.filter((t) => t.grade && !t.ok);
     b.dataset.state = st.img ? state : "";
     b.title = (open.length ? open.map((t) => t.text + ".").join(" ") : "Every finalist has your verdict.") + " Click to export or submit.";
+    steps();
   }
   $("#dl-truth .gt-ico").innerHTML = ["done", "part", "todo"].map((n) => shell.icon(n).replace("<svg ", `<svg class="${n}" `)).join("");
   $("#dl-truth").onclick = () => shell.submitTruth({ doc: truth(), file: base() + "_ground_truth.json", items: gtState().items, issue: issue(truth()),
@@ -964,14 +973,14 @@ export function mount(shell) {
       // no text selection or native drag may start under the lasso: either would cancel the pointer
       e.preventDefault(); sc.setPointerCapture(e.pointerId);
       st.lasso.pts = [at(e)]; st.lasso.line = el("polyline", { class: "lasso-live" }); $("#overlay").append(st.lasso.line);
-    });
+    }, here);
     sc.addEventListener("pointermove", (e) => {
       const L = st.lasso; if (!L || !L.pts) return;
       const p = at(e), q = L.pts[L.pts.length - 1];
       if (Math.hypot(p[0] - q[0], p[1] - q[1]) * st.zoom < 3) return;
       L.pts.push(p.map((v) => Math.round(v * 10) / 10));
       L.line.setAttribute("points", L.pts.map((q) => q.join(",")).join(" "));
-    });
+    }, here);
     sc.addEventListener("pointerup", () => {
       const L = st.lasso; if (!L || !L.pts) return;
       const pts = L.pts.map(([x, y]) => [Math.min(Math.max(x, 0), st.W), Math.min(Math.max(y, 0), st.H)]);
@@ -979,9 +988,9 @@ export function mount(shell) {
       endLasso();
       // a lasso smaller than a NoR's footprint is a slip, not an area
       if (pts.length >= 3 && area * st.zoom * st.zoom >= 100) setMask([...st.mask, pts]);
-    });
-    sc.addEventListener("pointercancel", () => { if (st.lasso) endLasso(); });
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && st.lasso) endLasso(); });
+    }, here);
+    sc.addEventListener("pointercancel", () => { if (st.lasso) endLasso(); }, here);
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && st.lasso) endLasso(); }, here);
   }
 
   // ---------- the image view ----------
@@ -999,8 +1008,8 @@ export function mount(shell) {
     t.textContent = s; t.hidden = false;
     t.style.left = Math.min(e.clientX + 14, innerWidth - 330) + "px"; t.style.top = e.clientY + 14 + "px";
   }
-  $("#overlay").addEventListener("mousemove", tip);
-  $("#overlay").addEventListener("mouseleave", () => ($("#tip").hidden = true));
+  $("#overlay").addEventListener("mousemove", tip, here);
+  $("#overlay").addEventListener("mouseleave", () => ($("#tip").hidden = true), here);
 
   $("#finder").onchange = () => { buildDetect(); if (!st.meta) useFilters($("#finder").value); };
   $("#find").onclick = detect;
@@ -1119,5 +1128,6 @@ export function mount(shell) {
     capturesPointer: () => !!st.lasso,
     zoomed: placeRing,
     stored,
+    memory: () => (st.seg ? [{ name: "The candidates", what: `${st.cands.length} candidates' outlines`, size: st.seg.byteLength }] : []),
   };
 }

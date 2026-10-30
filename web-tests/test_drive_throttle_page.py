@@ -1,4 +1,4 @@
-"""1.31: when Google throttles the site's Drive downloads, the Drive dialog shows a notice and a countdown and
+"""1.37: when Google throttles the site's Drive downloads, the Drive dialog shows a notice and a countdown and
 calls Drive for nothing for 15 minutes (drive_throttle_driver.mjs, in headless Chromium)."""
 import os
 import shutil

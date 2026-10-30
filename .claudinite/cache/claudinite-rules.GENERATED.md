@@ -1,7 +1,6 @@
 @../shared/packs/basics/RULES.md
 @../shared/packs/claude-code-web-users-support/RULES.md
 @../shared/packs/cloudflare-site/RULES.md
-@../shared/packs/executable-requirements/RULES.md
 @../shared/packs/html/RULES.md
 @../shared/packs/numpy-image-processing/RULES.md
 @../shared/packs/product-wiki/RULES.md

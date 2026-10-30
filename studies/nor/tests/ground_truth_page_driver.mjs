@@ -6,8 +6,11 @@
 // names what is missing; the file holds only the candidates voted on, the added NoR once approved; for an image
 // from Google Drive (a stand-in Drive API) the popup opens a GitHub issue labelled for the intake. It also checks
 // the summary mask: lassoed areas, combined by exclusive or, limit the summary and the CSVs but not the ground
-// truth. Exits 1 on a failed check, 2 when it cannot run.
+// truth. And the study's steps in the status bar: Run algorithm shines with Find Candidates until the finder has run
+// with the settings chosen, then Review all items until every finalist has a verdict. Exits 1 on a failed check, 2
+// when it cannot run.
 //   node tests/ground_truth_page_driver.mjs ANSWERS IMAGE
+import { repoFile } from "../../../web-tests/repo_file.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -47,7 +50,7 @@ const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
   if (u === "/web/config.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(CONFIG); }
-  const f = u.startsWith("/web/answers/") ? path.join(answers, u.slice("/web/answers/".length)) : path.join(repo, u);
+  const f = u.startsWith("/web/answers/") ? path.join(answers, u.slice("/web/answers/".length)) : repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
@@ -88,6 +91,9 @@ async function open(drive) {
   return { ctx, page, asked };
 }
 
+// the status bar's steps, the one to do now marked *, and what shines
+const crumbs = (page) => page.evaluate(() => [...document.querySelectorAll("#sb-steps .crumb")].map((c) => c.textContent + (c.classList.contains("now") ? "*" : "")).join(" › ")
+  + " | " + [...document.querySelectorAll(".shine")].map((e) => "#" + e.id).sort().join());
 // a held button (busy with its action) has finished
 const idle = (page) => page.waitForFunction(() => !document.querySelector("button.working"));
 
@@ -123,6 +129,8 @@ const offAxis = (L) => {
 async function markAndVote(page) {
   await page.click("#find");
   await page.waitForFunction(() => st.alone && $("#busy").hidden);
+  const ran = await crumbs(page);
+  await check(ran === "Load image › Run algorithm › Review all items* | #sb-review", `once it has run, Review all items is: ${ran}`);
   await check(await gtColour(page) === "todo", "with no verdict the Ground truth button is red");
   const m = await middle(page);
   await page.mouse.click(m.sx, m.sy, { button: "right" });
@@ -285,6 +293,8 @@ async function mask(page) {
   const warn = await page.isVisible("#notice") && (await page.textContent("#notice-text"));
   await check(warn && /local files/.test(warn) && warn.split(/\s+/).length <= 15, `a local image warns its ground truth cannot be sent: "${warn}"`);
   await page.click("#notice-ok");
+  const before = await crumbs(page);
+  await check(before === "Load image › Run algorithm* | #find,#sb-find", `with an image open, Run algorithm is the step to do: ${before}`);
   await page.click("#find");
   await page.waitForFunction(() => st.alone && $("#busy").hidden);
   const csvAt = await page.evaluate(() => {
@@ -342,6 +352,11 @@ async function mask(page) {
   await check(ns.length === all.length && new Set(ns).size === ns.length && ns.every((n) => all.includes(n)), "the Candidates CSV names each candidate by its number");
   await page.evaluate(() => st.passes.filter((c) => !c.added && !st.forced.has(c.i)).forEach((c) => nor.decide(c.i, "approve")));
   await check(await gtColour(page) === "done", "with every finalist voted on the button is green");
+  const all_ = await crumbs(page);
+  await check(all_ === "Load image › Run algorithm › Review all items › Submit GT | ", `with every finalist voted on and the file exported, every step is done: ${all_}`);
+  await page.selectOption("#finder", { index: 1 });
+  const changed = await crumbs(page);
+  await check(changed === "Load image › Run algorithm* | #find,#sb-find", `another finder makes Run algorithm the step to do again: ${changed}`);
   await ctx.close();
 }
 
