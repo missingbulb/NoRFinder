@@ -6,7 +6,7 @@ in seconds rather than driving the full page through Pyodide:
   the page              web/ in headless Chromium, with a stand-in worker answering from real results
                         computed here (memory_page_driver.mjs)
 
-All three work on a corner of the reference slide (python3 src/fetch_data.py -m '*Slide5*Slice1_up_left2*').
+All three work on a corner of the reference slide (python3 detection/fetch_data.py -m '*Slide5*Slice1_up_left2*').
 The page's full run, Pyodide and finders included, is detection/browser/mem_growth_live.mjs.
 """
 import ctypes
@@ -32,7 +32,7 @@ Y, X, SIDE = 400, 725, 200
 NODE = shutil.which('node')
 KB = 1024
 
-needs_slide = pytest.mark.skipif(not os.path.exists(TIF), reason='reference slide missing (src/fetch_data.py)')
+needs_slide = pytest.mark.skipif(not os.path.exists(TIF), reason='reference slide missing (detection/fetch_data.py)')
 needs_node = pytest.mark.skipif(not NODE, reason='node missing')
 
 

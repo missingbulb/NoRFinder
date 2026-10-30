@@ -183,7 +183,7 @@ it for their real analysis. Concretely, for us:
 
 The owner's microscope files sit in Google Drive; the repository carries only
 [`studies/nor/data/sources.json`](../data/sources.json), naming each one by Drive id with its SHA-256.
-[`studies/nor/src/fetch_data.py`](../src/fetch_data.py) downloads what is missing into the git-ignored
+[`studies/nor/detection/fetch_data.py`](../detection/fetch_data.py) downloads what is missing into the git-ignored
 `data/raw/` and **refuses a file whose checksum differs from the manifest** — a scan silently
 replaced on Drive would otherwise change every downstream number with nothing in the repo
 recording why. A checksum is `null` until the first fetch pins it (`--pin`); unknown is never

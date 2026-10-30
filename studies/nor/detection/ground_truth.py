@@ -17,7 +17,6 @@ lab's own labels (lab/labels_claude_v1.json, Claude's eye) on the reference slid
 import argparse, datetime, json, math, os, re, sys, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
-sys.path.insert(0, os.path.join(HERE, '..', 'src'))
 import nor_lab
 import fetch_data
 

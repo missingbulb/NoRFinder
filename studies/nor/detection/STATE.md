@@ -79,7 +79,7 @@ _Last updated 2026-10-06._
 ## Files
 | file | what |
 |---|---|
-| naive_nor.py | S0 baseline via src/nor.detect; `load`, `blue_mask`, `to8` |
+| naive_nor.py | S0 baseline via nor.detect; `load`, `blue_mask`, `to8` |
 | nor3.py | segment checks A-J, `finish`, `measure`, blob/walk/fill finders, `main` (standard render) |
 | nor_tl.py | traffic-light finder (default) |
 | nor_rf.py | red-first finder; every tested change is a switch in `PR` |
