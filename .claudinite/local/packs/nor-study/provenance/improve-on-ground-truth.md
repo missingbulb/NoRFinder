@@ -36,3 +36,11 @@
   reached by relative path, so the study depends on the repo pack and never the reverse.
 - **Rejected:** copying the GitHub helper into the study pack, which would need a drift guard.
 - **Landed:** #559
+
+## 2026-10-30 · trigger-changed · loads only when work touches studies/nor/ (#566)
+- **Reason:** the owner wants NoR-only guidance out of sessions that never touch the study.
+- **Actor:** @missingbulb (owner).
+- **Model:** claude-opus-5-5
+- **Mechanism:** Claude Code's `paths` frontmatter, `studies/nor/**`; the intake task links the file
+  directly, so it still reads it.
+- **Landed:** #566
