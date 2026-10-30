@@ -68,6 +68,24 @@ export function publishedDir(config, configPath = 'wrangler.json') {
   return `${base}${normalized}`;
 }
 
+// What a deploy ships, as repo-relative paths (a trailing `/` is a whole folder): the
+// config itself, the published tree, the folder holding the Worker's `main` (the
+// file alone when it sits beside the config), and the package manifests the Worker
+// bundle's dependencies come from. A file the Worker imports from anywhere else is
+// not seen here.
+export function deployedPaths(config, configPath = 'wrangler.json') {
+  const base = configPath.includes('/') ? `${configPath.slice(0, configPath.lastIndexOf('/'))}/` : '';
+  const out = [configPath];
+  const published = publishedDir(config, configPath);
+  if (published) out.push(`${published}/`);
+  if (typeof config?.main === 'string' && config.main.trim()) {
+    const main = config.main.replace(/^\.\//, '');
+    out.push(main.includes('/') ? `${base}${main.slice(0, main.lastIndexOf('/'))}/` : `${base}${main}`);
+  }
+  out.push(`${base}package.json`, `${base}package-lock.json`);
+  return out;
+}
+
 // The hostnames the deploy attaches as custom domains — the ones a visitor types,
 // and the ones a record inherited from a previous host can block or shadow.
 export function claimedHostnames(config) {
