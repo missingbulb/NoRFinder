@@ -226,10 +226,7 @@ a question for the owner, shown with the objects that only that check rejects.
 ## R8 — The NoR Finder page: detect once, filter live, in the browser
 
 Set by the owner on 2026-09-28. The page is [`web/`](../web/), served from GitHub Pages with no
-backend, at the custom domain [rauntruth.com](https://rauntruth.com/) (set by the owner on
-2026-10-30; the domain is registered on Cloudflare and lives in Settings → Pages, not in a `CNAME`
-file, because the site deploys from a workflow; the Google API key's website restriction must list
-it). Its engine is [`studies/nor/detection/interactive.py`](../detection/interactive.py), tested by
+backend. Its engine is [`studies/nor/detection/interactive.py`](../detection/interactive.py), tested by
 [`studies/nor/tests/test_interactive.py`](../tests/test_interactive.py).
 
 - **One image, one slow step.** Loading an image only reads it. The finder runs when the user
