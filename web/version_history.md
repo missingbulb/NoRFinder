@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- A Ruler button beside Zoom: drag across the image to measure a distance, in µm when the file gives a pixel size (its width and height each counted on their own) and in pixels otherwise; press it again to clear the ruler. The image box shows both sides of a pixel that is not square. (#594)
 - The status bar shows the study's stage and the steps you've done, with the next one glowing; hover a step to see what was done. RAM opens what uses memory, with Run GC, and Disk opens Manage storage. (#587)
 - Switching study no longer reloads the page: the image you have open stays open in the new study, and each study has its own address, like rauntruth.com/nor. The study menu looks like GitHub's, with a search box, and ends with Submit New Study Request. (#585)
 - Load's dropdown now lists the images you opened lately from Google Drive, each opening at once from the copy kept on this device; a small Drive logo marks them and From Google Drive, and a computer marks From this computer. (#583)
