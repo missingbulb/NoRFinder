@@ -144,6 +144,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
 
   The left bar holds the image: Load, with a dropdown for where from (this computer or Google
   Drive), filled and glowing until an image is open and a plain button with a blue border after.
+  Each place in the dropdown has a small icon: a computer for this computer, Drive's logo for
+  Google Drive. Test: `web-tests/test_storage_page.py`.
   </details>
 
 - `1.16` The image's name unfolds what the file says about the image, and nothing it does not say.
