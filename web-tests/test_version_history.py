@@ -1,10 +1,10 @@
 """1.14: the page's version history. web/version_history.md parses into releases, and a Next release line
-goes under the release that first carried its pull request (web/version_history.py)."""
+goes under the release that first carried its pull request (dev/tools/build/version_history.py)."""
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'web'))
-import version_history as vh  # noqa: E402  (web/ is not a package)
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'dev', 'tools', 'build'))
+import version_history as vh  # noqa: E402  (dev/tools/build/ is not a package)
 
 # main's first-parent subjects, newest first
 LOG = ['Release site version 0.11008.23', 'Fix the bubble (#371)', 'Release site version 0.11008.22',

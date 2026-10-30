@@ -6,7 +6,7 @@
 // downloaded while Auto-save is on opens again with no download, one downloaded while it is off is not kept.
 // Optional SHOTS: a directory for screenshots.
 // Exits 1 on a failed check, 2 when it cannot run.
-//   node tests/storage_driver.mjs [SHOTS]
+//   node web-tests/storage_driver.mjs [SHOTS]
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -24,7 +24,7 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const ROOT = "acmefolder0000000001";
 // two images in a folder; their bytes need only be a real picture, which the worker never reads
-const PNG = fs.readFileSync(path.join(repo, "web", "logo_source.png"));
+const PNG = fs.readFileSync(path.join(repo, "dev", "tools", "build", "logo_source.png"));
 const DRIVE = [{ id: "acmeimage00000000001", name: "acme one.png" }, { id: "acmeimage00000000002", name: "acme two.png" }];
 const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in" }, drive: { defaultLink: "" } };`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };

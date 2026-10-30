@@ -5,8 +5,8 @@ version in the status bar shows this list.
 
 Each pull request that changes what a user sees adds one terse line under **Next release**, ending
 with its number, `(#123)`. The site build files every such line under the release that first
-carried that pull request (`web/version_history.py`, from the release commits on `main`), so
-nobody has to know the version a change will ship in; `python3 web/version_history.py fold`
+carried that pull request (`dev/tools/build/version_history.py`, from the release commits on `main`), so
+nobody has to know the version a change will ship in; `python3 dev/tools/build/version_history.py fold`
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release

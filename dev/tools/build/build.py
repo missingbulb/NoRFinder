@@ -1,9 +1,10 @@
 """Builds the site the release uploads: the shell decides what of the repo is published, from the
-studies' standard layout (requirement 1.8), and assembles it under site/, the tree wrangler.json
-publishes. The release runs this through wrangler.json's build command; so does a local preview:
+studies' standard layout (requirement 1.8), and assembles it under dev/build/site/, the tree
+wrangler.json publishes, with the shell's page at its root (requirement 1.27). The release runs this
+through wrangler.json's build command; so does a local preview:
 
-  python3 web/build.py
-  python3 -m http.server -d site 8000        then open http://localhost:8000/web/
+  python3 dev/tools/build/build.py
+  python3 -m http.server -d dev/build/site 8000        then open http://localhost:8000/
 
 It also fetches the third-party wheels the studies install into Pyodide (packages Pyodide does not
 ship, each study's python.wheels) into web/vendor/, so the page never depends on PyPI at run time;
@@ -15,12 +16,10 @@ import glob, json, os, shutil, subprocess, sys
 
 import version_history
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)
-OUT = os.path.join(HERE, 'vendor')
-SITE = os.path.join(ROOT, 'site')
-# the shell's own build and authoring files, which sit beside its page
-SHELL_TOOLING = {'logo_source.png'}
+ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..'))
+WEB = os.path.join(ROOT, 'web')
+OUT = os.path.join(WEB, 'vendor')
+SITE = os.path.join(ROOT, 'dev', 'build', 'site')
 # what the build writes into web/ and the page reads
 GENERATED = ('vendor', 'version_history.json')
 
@@ -28,7 +27,7 @@ GENERATED = ('vendor', 'version_history.json')
 def wheels():
     """Every study's pinned wheels, once each."""
     pins = set()
-    for path in glob.glob(os.path.join(HERE, '..', 'studies', '*', 'study.json')):
+    for path in glob.glob(os.path.join(ROOT, 'studies', '*', 'study.json')):
         pins.update(json.load(open(path))['python']['wheels'])
     return sorted(pins)
 
@@ -38,13 +37,17 @@ def config_js(env):
     if not env.get('GOOGLE_API_KEY'):
         return None
     settings = {'google': {'apiKey': env['GOOGLE_API_KEY']}, 'drive': {'defaultLink': env.get('DRIVE_DEFAULT_FOLDER', '')}}
-    return ('// written by web/build.py from the repository variables GOOGLE_API_KEY and DRIVE_DEFAULT_FOLDER\n'
+    return ('// written by dev/tools/build/build.py from the repository variables GOOGLE_API_KEY and DRIVE_DEFAULT_FOLDER\n'
             f'window.NOR_CONFIG = {json.dumps(settings)};\n')
 
 
 def shell_ships(rel):
-    name = os.path.basename(rel)
-    return not name.endswith(('.py', '.md')) and name not in SHELL_TOOLING
+    return not rel.endswith(('.py', '.md'))
+
+
+def served(rel):
+    """Where a published repo file is on the site: the shell's page at the root, the studies under studies/."""
+    return rel[len('web/'):] if rel.startswith('web/') else rel
 
 
 def study_ships(rel, python_dirs):
@@ -58,11 +61,14 @@ def study_ships(rel, python_dirs):
     return rel.endswith('.py') and os.path.dirname(rel) in python_dirs
 
 
+def tracked(root):
+    return [p for p in subprocess.run(['git', '-C', root, 'ls-files', '-z'], capture_output=True, check=True, text=True).stdout.split('\0') if p]
+
+
 def published(root):
     """The repo's files the site serves, repo-relative, in the order git lists them."""
-    tracked = subprocess.run(['git', '-C', root, 'ls-files', '-z'], capture_output=True, check=True, text=True).stdout.split('\0')
     dirs = {}
-    for rel in tracked:
+    for rel in tracked(root):
         parts = rel.split('/')
         if parts[0] == 'web' and len(parts) > 1 and shell_ships(rel):
             yield rel
@@ -76,22 +82,27 @@ def published(root):
 
 
 def assemble(root, out, env):
-    """Copies the published set, and what the build generated, into out/; returns the file count."""
-    for top in ('web', 'studies'):
-        shutil.rmtree(os.path.join(out, top), ignore_errors=True)
+    """Copies the published set, and what the build generated, into out/ beside the files tracked there;
+    returns the file count."""
+    kept = {os.path.relpath(os.path.join(root, p), out) for p in tracked(root)}
+    for d, _, fs in os.walk(out):
+        for f in fs:
+            if os.path.relpath(os.path.join(d, f), out) not in kept:
+                os.remove(os.path.join(d, f))
     files = list(published(root))
     for rel in files:
-        os.makedirs(os.path.dirname(os.path.join(out, rel)), exist_ok=True)
-        shutil.copy2(os.path.join(root, rel), os.path.join(out, rel))
+        dst = os.path.join(out, served(rel))
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        shutil.copy2(os.path.join(root, rel), dst)
     for name in GENERATED:
         src = os.path.join(root, 'web', name)
         if os.path.isdir(src):
-            shutil.copytree(src, os.path.join(out, 'web', name))
+            shutil.copytree(src, os.path.join(out, name), dirs_exist_ok=True)
         elif os.path.isfile(src):
-            shutil.copy2(src, os.path.join(out, 'web', name))
+            shutil.copy2(src, os.path.join(out, name))
     text = config_js(env)
     if text:
-        with open(os.path.join(out, 'web', 'config.js'), 'w') as f:
+        with open(os.path.join(out, 'config.js'), 'w') as f:
             f.write(text)
     return len(files), bool(text)
 
@@ -103,5 +114,5 @@ if __name__ == '__main__':
     json.dump(version_history.history(ROOT), open(version_history.OUT, 'w'), indent=1)
     count, drive = assemble(ROOT, SITE, os.environ)
     size = sum(os.path.getsize(os.path.join(d, f)) for d, _, fs in os.walk(SITE) for f in fs)
-    print(f'build: assembled {count} repo files and the generated ones under site/, {size / 1e6:.1f} MB; '
+    print(f'build: assembled {count} repo files and the generated ones under dev/build/site/, {size / 1e6:.1f} MB; '
           + ('Google Drive loading is on' if drive else 'no GOOGLE_API_KEY, so Google Drive loading stays off'))

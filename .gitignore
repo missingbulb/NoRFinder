@@ -1,13 +1,14 @@
 __pycache__/
 *.pyc
 
-# Pyodide for the tests that run the shell's Python runtime under Node (npm i --prefix tests pyodide@314.0.7)
-/tests/node_modules/
-/tests/package*.json
-# the page's vendored wheels (python3 web/build.py)
+# Pyodide for the tests that run the shell's Python runtime under Node (npm i --prefix web-tests pyodide@314.0.7)
+/web-tests/node_modules/
+/web-tests/package*.json
+# the page's vendored wheels (python3 dev/tools/build/build.py)
 /web/vendor/
-# the version history the page reads, built from web/version_history.md (python3 web/version_history.py json)
+# the version history the page reads, built from web/version_history.md (python3 dev/tools/build/version_history.py json)
 /web/version_history.json
-# the site the build assembles for the release beside the tracked site/ files (python3 web/build.py)
-/site/web/
-/site/studies/
+# the site the build assembles for the release beside the files tracked there (python3 dev/tools/build/build.py)
+/dev/build/site/*
+!/dev/build/site/analytics.js
+!/dev/build/site/_redirects

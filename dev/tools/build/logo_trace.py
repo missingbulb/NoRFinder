@@ -3,7 +3,7 @@ of Neuroscience logo, traced to curves and coloured red, green and blue left to 
 inside each mark (the emblem, the brain's circles) is left transparent.
 
   python3 -m pip install potracer
-  python3 web/logo_trace.py
+  python3 dev/tools/build/logo_trace.py
 """
 import os
 import numpy as np
@@ -36,5 +36,5 @@ paths = []
 for a, b, colour in MARKS:
     m = np.zeros_like(ink); m[:, a * S:b * S] = ink[:, a * S:b * S]
     paths.append(path(m, colour))
-with open(os.path.join(HERE, 'logo.svg'), 'w') as f:
+with open(os.path.join(HERE, '..', '..', '..', 'web', 'logo.svg'), 'w') as f:
     f.write(f'<svg xmlns="http://www.w3.org/2000/svg" width="{(x1 - x0) / S:.0f}" height="{(y1 - y0) / S:.0f}" viewBox="0 0 {(x1 - x0) / S:.0f} {(y1 - y0) / S:.0f}">' + ''.join(paths) + '</svg>\n')

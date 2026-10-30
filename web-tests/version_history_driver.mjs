@@ -4,7 +4,7 @@
 // history or close the bubble; a first visit, or an update the history does not name, shows no bubble; a
 // history that cannot be read says so. Optional SHOTS: a directory for screenshots.
 // Exits 1 on a failed check, 2 when it cannot run.
-//   node tests/version_history_driver.mjs [SHOTS]
+//   node web-tests/version_history_driver.mjs [SHOTS]
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";

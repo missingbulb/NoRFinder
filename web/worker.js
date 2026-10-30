@@ -9,7 +9,7 @@ const PYODIDE = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/";
 const say = (text) => postMessage({ type: "progress", text });
 let py, manifest;
 const id = new URL(self.location.href).searchParams.get("study");
-const studyBase = new URL(`../studies/${id}/`, self.location.href).href;
+const studyBase = new URL(`/studies/${id}/`, self.location.href).href;
 
 async function boot() {
   const t0 = performance.now();

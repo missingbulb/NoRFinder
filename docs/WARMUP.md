@@ -27,7 +27,7 @@ A study is a folder with a `study.json`:
 - `viewer` — the viewer it is shown in (`image2d`).
 - `python` — `paths` (folders, relative to the study, its modules are imported from), `entry` (the
   module the page imports), `packages` (from Pyodide's own set) and `wheels` (from PyPI, vendored
-  by `web/build.py`).
+  by `dev/tools/build/build.py`).
 - `web` — `module`, an ES module exporting `mount(shell)`; `panels`, an HTML file of `<template
   data-slot="…">` elements the shell puts into its slots before mounting; `style`, its stylesheet.
 - `files` — what Load accepts, and the text the empty view shows.
@@ -53,26 +53,28 @@ page's files in those places, and everything else in the study is research that 
 
 ```
 pip install -r requirements.txt
-python3 -m pytest tests studies -m "not full"
-python3 web/build.py
-python3 -m http.server -d site 8000
+python3 -m pytest web-tests studies -m "not full"
+python3 dev/tools/build/build.py
+python3 -m http.server -d dev/build/site 8000
 ```
 
-then open `http://localhost:8000/web/` (the NoR study) or `http://localhost:8000/web/?study=fixture`.
-The build assembles under `site/` exactly what is published (requirement 1.8); serving the repo root
-instead shows the page with every file of every study reachable.
-The full set (`python3 -m pytest tests studies`) also needs Node, Pyodide
-(`npm i --prefix studies/nor/detection/browser pyodide@314.0.7`) and Playwright's Chromium.
+then open `http://localhost:8000/` (the NoR study) or `http://localhost:8000/?study=fixture`.
+The build assembles under `dev/build/site/` exactly what is published (requirement 1.8), with the
+page at the root as rauntruth.com serves it (requirement 1.27); serving the repo root instead and
+opening `/web/` shows the page with every file of every study reachable.
+The full set (`python3 -m pytest web-tests studies`) also needs Node, Pyodide
+(`npm i --prefix web-tests pyodide@314.0.7`, as CI does) and Playwright's Chromium.
 
 ## Map
 
 ```
 web/              the shell, the viewer, the Python runtime (worker.js, bridge.js)
-tests/            the shell's tests, run on the fixture study
+web-tests/        the shell's tests, run on the fixture study
 studies/nor/      the NoR Finder study: study.json, web/, detection/, src/, data/, docs/, tests/
 studies/fixture/  the smallest study, for the shell's tests (`?study=fixture`)
 docs/             this map
 dev/requirements/ the page's one spec: the shell, the repo's checks, each study's page
-site/             the published tree: the build assembles the shell and the studies' published
-                  parts here; wrangler.json uploads it to Cloudflare (rauntruth.com)
+dev/tools/build/  the site build, the version history, the logo tracer and the tests' pytest hooks
+dev/build/site/   the published tree: the build assembles the shell (at its root) and the studies'
+                  published parts here; wrangler.json uploads it to Cloudflare (rauntruth.com)
 ```

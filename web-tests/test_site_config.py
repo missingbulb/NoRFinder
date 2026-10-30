@@ -1,13 +1,13 @@
 """1.18 — the deploy's repository variables reach the page through web/config.js.
 
-Run: python3 tests/test_site_config.py
+Run: python3 web-tests/test_site_config.py
 """
 import json
 import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, '..', 'web'))
+sys.path.insert(0, os.path.join(HERE, '..', 'dev', 'tools', 'build'))
 import build
 
 

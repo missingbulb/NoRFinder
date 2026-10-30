@@ -2,7 +2,7 @@
 // status-bar text with the time it appeared, until the finders are ready. Remote files (Pyodide and its
 // packages) are fetched once by curl into CACHE (default /tmp/boot_live_cdn) and served from there over a
 // simulated link of MBPS megabits/s shared by the files in flight (0: no limit, like a return visit).
-//   python3 web/build.py; node boot_live.mjs [REPO] [MBPS]
+//   python3 dev/tools/build/build.py; node boot_live.mjs [REPO] [MBPS]
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import fs from "node:fs";

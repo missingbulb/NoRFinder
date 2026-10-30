@@ -714,7 +714,7 @@ document.addEventListener("animationstart", (e) => inView.observe(e.target));
 async function mountStudy() {
   const id = new URLSearchParams(location.search).get("study") || DEFAULT_STUDY;
   if (!/^[\w-]+$/.test(id)) throw new Error(`no study "${id}"`);
-  base = `../studies/${id}/`;
+  base = `/studies/${id}/`;
   const r = await fetch(base + "study.json");
   if (!r.ok) throw new Error(`no study "${id}"`);
   manifest = await r.json();

@@ -5,7 +5,7 @@
 // Then the same with the real worker (web/worker.js), Pyodide served from the copy installed beside the
 // tests, since the fixture needs none of its packages. Prints what it saw; exits 1 on a failure, 2 when it
 // cannot run.
-//   node tests/study_page_driver.mjs ANSWERS IMAGE.png
+//   node web-tests/study_page_driver.mjs ANSWERS IMAGE.png
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -22,7 +22,7 @@ const [answers, image] = process.argv.slice(2);
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 let pyodide;
 try { pyodide = path.dirname(require.resolve("pyodide/pyodide.mjs", { paths: [path.dirname(fileURLToPath(import.meta.url))] })); } catch {
-  console.error("no pyodide: npm i --prefix tests pyodide@314.0.7"); process.exit(2);
+  console.error("no pyodide: npm i --prefix web-tests pyodide@314.0.7"); process.exit(2);
 }
 let stub = true;
 

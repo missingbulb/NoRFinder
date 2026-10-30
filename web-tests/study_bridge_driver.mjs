@@ -1,7 +1,7 @@
 // Drives web/bridge.js in Pyodide under Node with the fixture study's own Python, which the bridge knows
 // nothing of: opening a PNG and one call must come back as the study answered them. Exits 1 on a wrong
 // answer, 2 when it cannot run. Run by tests/test_study_runs.py.
-//   node tests/study_bridge_driver.mjs IMAGE.png
+//   node web-tests/study_bridge_driver.mjs IMAGE.png
 import { createRequire } from "node:module";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import fs from "node:fs";
@@ -11,7 +11,7 @@ const here = path.dirname(fileURLToPath(import.meta.url)), repo = path.join(here
 const require = createRequire(import.meta.url);
 let entry;
 try { entry = require.resolve("pyodide/pyodide.mjs", { paths: [here] }); } catch {
-  console.error("no pyodide: npm i --prefix tests pyodide@314.0.7"); process.exit(2);
+  console.error("no pyodide: npm i --prefix web-tests pyodide@314.0.7"); process.exit(2);
 }
 const { loadPyodide } = await import(pathToFileURL(entry).href);
 const { bridge } = await import(pathToFileURL(path.join(repo, "web", "bridge.js")).href);

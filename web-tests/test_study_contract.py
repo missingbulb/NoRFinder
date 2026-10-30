@@ -41,7 +41,8 @@ def test_a_study_names_files_that_exist(path):
 
 
 def test_the_shell_names_no_study():
-    found, files = [], [f for f in sorted(glob.glob(os.path.join(WEB, '*.*'))) if f.endswith(('.js', '.html', '.css', '.py'))]
+    shell = glob.glob(os.path.join(WEB, '*.*')) + glob.glob(os.path.join(ROOT, 'dev', 'tools', 'build', '*.py'))
+    found, files = [], [f for f in sorted(shell) if f.endswith(('.js', '.html', '.css', '.py'))]
     assert len(files) >= 10, f'read only {len(files)} of the shell\'s files: the sweep is not looking at them all'
     for f in files:
         for n, line in enumerate(open(f, encoding='utf8'), 1):
@@ -51,6 +52,6 @@ def test_the_shell_names_no_study():
 
 def test_the_build_vendors_every_studys_wheels():
     import sys
-    sys.path.insert(0, WEB)
+    sys.path.insert(0, os.path.join(ROOT, 'dev', 'tools', 'build'))
     import build
     assert set(build.wheels()) >= {w for p in STUDIES for w in manifest(p)['python']['wheels']}

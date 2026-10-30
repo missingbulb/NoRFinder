@@ -4,7 +4,7 @@
 // and after each round measures what the page, its worker and the Python inside the worker still
 // hold once garbage is collected.
 //
-//   python3 web/build.py            once, for the page's vendored wheels
+//   python3 dev/tools/build/build.py            once, for the page's vendored wheels
 //   python3 src/fetch_data.py -m '*Slide5*Slice1_up_left2*'
 //   node studies/nor/detection/browser/mem_growth_live.mjs [--rounds N] [--finders tl,rf,...]   (about 2.5 minutes)
 //
@@ -38,7 +38,7 @@ const bounded = (p, what) => Promise.race([p, new Promise((_, bad) => setTimeout
 // were; the V8 heaps get a little slack for code caches and inline caches that settle over the first rounds.
 const LIMITS = { pyUsedAfterGc: 1 * MB, pyObjects: 500, pageHeap: 1 * MB, workerHeap: 1 * MB, pageBuffers: 1 * MB, workerBuffers: 1 * MB, nodes: 0, listeners: 0 };
 
-for (const [f, how] of [[TIF, "python3 studies/nor/src/fetch_data.py -m '*Slide5*Slice1_up_left2*'"], [path.join(repo, "web", "vendor", "wheels.json"), "python3 web/build.py"]]) {
+for (const [f, how] of [[TIF, "python3 studies/nor/src/fetch_data.py -m '*Slide5*Slice1_up_left2*'"], [path.join(repo, "web", "vendor", "wheels.json"), "python3 dev/tools/build/build.py"]]) {
   if (!fs.existsSync(f)) { console.error(`missing ${path.relative(repo, f)}: run ${how}`); process.exit(2); }
 }
 

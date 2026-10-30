@@ -3,14 +3,14 @@
 A line under "Next release" names its pull request, and goes under the release that first carried
 that pull request, read from main's release commits. Run from the repo root:
 
-  python3 web/version_history.py json     writes web/version_history.json, which the page reads
-  python3 web/version_history.py fold     writes the found versions into version_history.md
+  python3 dev/tools/build/version_history.py json     writes web/version_history.json, which the page reads
+  python3 dev/tools/build/version_history.py fold     writes the found versions into version_history.md
 """
 import json, os, re, subprocess, sys
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-SOURCE = os.path.join(HERE, 'version_history.md')
-OUT = os.path.join(HERE, 'version_history.json')
+ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..'))
+SOURCE = os.path.join(ROOT, 'web', 'version_history.md')
+OUT = os.path.join(ROOT, 'web', 'version_history.json')
 NEXT = 'Next release'
 RELEASE = re.compile(r'^Release site version (\S+)$')
 PR_IN_SUBJECT = re.compile(r'\(#(\d+)\)$|^Merge pull request #(\d+) ')
@@ -107,7 +107,7 @@ def fold(text, found):
 
 
 if __name__ == '__main__':
-    root = os.path.dirname(HERE)
+    root = ROOT
     if sys.argv[1:] == ['json']:
         json.dump(history(root), open(OUT, 'w'), indent=1)
     elif sys.argv[1:] == ['fold']:
