@@ -28,3 +28,15 @@
 - **Mechanism:** the same work-scope advisory check, ported line for line to
   `checks/provenance_once_per_pr.go`; proven to fire on a branch adding two entries and to stay
   silent under a `Provenance: backfill` commit.
+
+## 2026-10-30 · scope-changed · an entry the merge base already held is not this PR's (#559)
+- **Source:** #559 moved two provenance files to local/nor-study; the check reported their whole
+  carried history as that PR's new entries, and the owner asked to squash entries that were already
+  one.
+- **Reason:** a moved file arrives as wholly added lines, so counting added headers mistook landed
+  history for in-flight entries.
+- **Actor:** @missingbulb (owner).
+- **Model:** claude-opus-5-5
+- **Mechanism:** the same coded check, its count narrowed to headers absent from every provenance
+  file at the merge base; the engine lists no deleted path for a rename, so the base tree is read
+  instead.

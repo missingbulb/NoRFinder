@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
+	"strings"
 
 	"claudinite.com/checksdk"
 )
@@ -44,6 +45,21 @@ func provenanceOncePerPR(repo checksdk.Repo) []checksdk.Finding {
 	if repo.OnDefaultBranch() || slices.ContainsFunc(repo.CommitMessages(), backfillRun.MatchString) {
 		return nil
 	}
+	// A file moved to another pack arrives as wholly added lines; an entry
+	// the merge base already held anywhere is landed history, not this PR's.
+	carried := map[string]bool{}
+	for _, d := range repo.ListBase() {
+		if !provenanceFile.MatchString(d) {
+			continue
+		}
+		if text, ok := repo.ReadBase(d); ok {
+			for _, l := range strings.Split(text, "\n") {
+				if entryHeader.MatchString(l) {
+					carried[l] = true
+				}
+			}
+		}
+	}
 	var out []checksdk.Finding
 	for _, f := range repo.ChangedFiles() {
 		if !provenanceFile.MatchString(f) || declinedFile.MatchString(f) {
@@ -51,7 +67,7 @@ func provenanceOncePerPR(repo checksdk.Repo) []checksdk.Finding {
 		}
 		var added []checksdk.Line
 		for _, l := range repo.AddedLines([]string{f}) {
-			if entryHeader.MatchString(l.Text) {
+			if entryHeader.MatchString(l.Text) && !carried[l.Text] {
 				added = append(added, l)
 			}
 		}
