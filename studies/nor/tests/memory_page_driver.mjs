@@ -3,6 +3,7 @@
 // filters over and over leaves the page holding no more JavaScript heap, array buffers, DOM nodes or
 // event listeners. Prints what it measured; exits 1 on growth, 2 when it cannot run.
 //   node tests/memory_page_driver.mjs ANSWERS IMAGE
+import { repoFile } from "../../../web-tests/repo_file.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -40,7 +41,7 @@ const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/cs
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
-  let f = u.startsWith("/web/answers/") ? path.join(answers, u.slice("/web/answers/".length)) : path.join(repo, u);
+  let f = u.startsWith("/web/answers/") ? path.join(answers, u.slice("/web/answers/".length)) : repoFile(repo, u);
   if (f.endsWith(path.sep)) f = path.join(f, "index.html");
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);

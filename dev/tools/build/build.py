@@ -9,7 +9,8 @@ through wrangler.json's build command; so does a local preview:
 It also fetches the third-party wheels the studies install into Pyodide (packages Pyodide does not
 ship, each study's python.wheels) into web/vendor/, so the page never depends on PyPI at run time;
 writes the version history the page shows (version_history.py) and the studies its header offers
-(studies.json); and writes the deployment's
+(studies.json); publishes the page again as <id>.html for each of them, which Cloudflare serves at
+/<id>; and writes the deployment's
 settings into the published web/config.js from the repository variables: GOOGLE_API_KEY turns on
 loading from Google Drive, and DRIVE_DEFAULT_FOLDER is the link its dialog opens on.
 """
@@ -37,6 +38,18 @@ def studies(root):
     """The studies the header's switcher offers, [{id, title}] by title: those whose study.json lists them."""
     found = [json.load(open(p)) for p in glob.glob(os.path.join(root, 'studies', '*', 'study.json'))]
     return sorted(({'id': m['id'], 'title': m['title']} for m in found if m['listed']), key=lambda m: m['title'])
+
+
+def study_pages(root, top):
+    """The page's copies, one per listed study, [<id>.html]; an id the site already serves at its top
+    (top: the names there) would hide that file or be hidden by it, and is refused."""
+    pages = []
+    for s in studies(root):
+        taken = {s['id'], s['id'] + '.html'} & set(top)
+        if taken:
+            raise ValueError(f'study "{s["id"]}" would take {", ".join(sorted(taken))}, which the site already serves')
+        pages.append(s['id'] + '.html')
+    return pages
 
 
 def config_js(env):
@@ -107,6 +120,9 @@ def assemble(root, out, env):
             shutil.copytree(src, os.path.join(out, name), dirs_exist_ok=True)
         elif os.path.isfile(src):
             shutil.copy2(src, os.path.join(out, name))
+    top = {served(rel).split('/')[0] for rel in files} | set(GENERATED)
+    for page in study_pages(root, top):
+        shutil.copy2(os.path.join(out, 'index.html'), os.path.join(out, page))
     text = config_js(env)
     if text:
         with open(os.path.join(out, 'config.js'), 'w') as f:

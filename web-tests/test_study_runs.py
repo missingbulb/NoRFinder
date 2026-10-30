@@ -42,8 +42,8 @@ def test_the_bridge_runs_a_study_it_knows_nothing_of(png):
 
 @pytest.fixture(scope='module')
 def answers(png, tmp_path_factory):
-    """What the stand-in worker answers, which is what the fixture's own Python answers about the image, and the
-    build's list of studies: (answers.json, studies.json)."""
+    """What the stand-in worker answers, which is what the fixture's own Python answers about the image and each
+    study's ready() on loading, and the build's list of studies: (answers.json, studies.json)."""
     import base64, json, sys
     sys.path.insert(0, os.path.join(HERE, '..', 'studies', 'fixture', 'py'))
     import fixture
@@ -52,7 +52,10 @@ def answers(png, tmp_path_factory):
     opened, images = s.opened()
     count, mask = s.call('count', {'threshold': 100})
     out = d / 'answers.json'
-    out.write_text(json.dumps(dict(ready=dict(threshold=100), opened=json.loads(opened), count=json.loads(count),
+    sys.path.insert(0, os.path.join(HERE, '..', 'studies', 'nor', 'detection'))
+    import interactive
+    ready = dict(fixture=dict(threshold=100), viewer={}, nor=json.loads(interactive.ready()))
+    out.write_text(json.dumps(dict(ready=ready, opened=json.loads(opened), count=json.loads(count),
                                    images=base64.b64encode(images).decode(), mask=base64.b64encode(mask).decode())))
     sys.path.insert(0, os.path.join(HERE, '..', 'dev', 'tools', 'build'))
     import build

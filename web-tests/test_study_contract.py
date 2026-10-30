@@ -45,7 +45,7 @@ def test_a_study_names_files_that_exist(path):
 
 @pytest.mark.parametrize('path', STUDIES, ids=lambda p: os.path.basename(os.path.dirname(p)))
 def test_a_study_names_its_stage_and_steps(path):
-    """1.30, 1.31: the stage and the study's own steps are stated, never assumed."""
+    """1.32, 1.33: the stage and the study's own steps are stated, never assumed."""
     m = manifest(path)
     assert m.get('stage') in ('PreGT', 'GT', 'PostGT'), 'stage: PreGT, GT or PostGT'
     if m['stage'] != 'PreGT':

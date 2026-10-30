@@ -2,7 +2,7 @@
 // ANSWERS (tests/test_study_runs.py), and checks the status bar: the study's stage first; breadcrumbs of the
 // steps done and the one to do now, which shines with its button and nothing else does; a popup on each crumb
 // saying what was done; a new image starting over; a PreGT study with no Submit GT and its ground-truth button
-// hidden; the memory as "RAM … MB" opening what holds it, with Run GC; the disk as "Disk …" matching Manage
+// hidden; switching study in place bringing its own stage and steps; the memory as "RAM … MB" opening what holds it, with Run GC; the disk as "Disk …" matching Manage
 // storage, which it opens; the version, memory and disk at the right, plain. Optional SHOTS: a directory for
 // screenshots. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/status_bar_driver.mjs ANSWERS IMAGE.png STUDIES [SHOTS]
@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { repoFile } from "./repo_file.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -28,9 +29,11 @@ const STAND_IN = `
 const A = await (await fetch("answers.json")).json();
 const bytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 const mem = { heap: ${60 * MB}, files: ${20 * MB} };
-postMessage({ type: "ready", info: A.ready, ...mem });
+const first = new URL(location.href).searchParams.get("study");
+if (A.ready[first]) postMessage({ type: "ready", info: A.ready[first], ...mem });
 onmessage = ({ data: m }) => {
-  if (m.type === "open") { const images = bytes(A.images); postMessage({ type: "opened", meta: A.opened, images, ...mem }, [images.buffer]); }
+  if (m.type === "study") postMessage({ type: "ready", info: A.ready[m.id], ...mem });
+  else if (m.type === "open") { const images = bytes(A.images); postMessage({ type: "opened", meta: A.opened, images, ...mem }, [images.buffer]); }
   else if (m.type === "call") { const b = bytes(A.mask); postMessage({ type: "result", action: m.action, meta: A.count, bytes: b, echo: m.echo, ...mem }, [b.buffer]); }
   else if (m.type === "memory") postMessage({ type: "memory", used: ${25 * MB}, objects: 1000, ...mem });
 };`;
@@ -43,7 +46,8 @@ const server = http.createServer((q, r) => {
     r.writeHead(200, { "content-type": "application/json" });
     return r.end(JSON.stringify({ ...JSON.parse(fs.readFileSync(path.join(repo, u))), stage }));
   }
-  const f = u === "/web/answers.json" ? answers : u === "/web/studies.json" ? studies : path.join(repo, u);
+  if (u === "/web/vendor/wheels.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end("[]"); }
+  const f = u === "/web/answers.json" ? answers : u === "/web/studies.json" ? studies : repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
@@ -62,7 +66,7 @@ async function open(study) {
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);
-  await page.goto(origin + "/web/index.html" + (study ? "?study=" + study : ""));
+  await page.goto(origin + "/web/" + (study || ""));
   await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
   return { ctx, page };
 }
@@ -164,6 +168,13 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   const { ctx, page } = await open(null);
   await check(await page.textContent("#sb-stage") === "PreGT", "the Image Viewer is PreGT");
   await steps(page, ["Load image*"], ["#load-main", "#sb-load"]);
+  await page.setInputFiles("#file", image);
+  await steps(page, ["Load image"], []);
+  // switching study in place: its stage and steps come with it, the image open in it already
+  await page.click("#study-menu summary");
+  await page.click("#study-list a >> text=NoR Finder");
+  await page.waitForFunction(() => document.querySelector("#sb-stage").textContent === "GT");
+  await steps(page, ["Load image", "Run algorithm*"], ["#find", "#sb-find"]);
   await ctx.close();
 }
 await done(0);
