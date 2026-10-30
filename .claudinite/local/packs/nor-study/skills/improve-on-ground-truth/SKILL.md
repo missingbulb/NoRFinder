@@ -1,6 +1,8 @@
 ---
 name: improve-on-ground-truth
 description: Improving the NoR finders when new ground truth joins studies/nor/detection/lab/ground_truth/, or when asked to improve them on the ground truth.
+paths:
+  - "studies/nor/**"
 metadata:
   body: workflow
   usage:
