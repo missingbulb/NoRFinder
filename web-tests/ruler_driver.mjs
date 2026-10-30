@@ -78,6 +78,11 @@ const ruler = (page) => page.evaluate(() => ({
   // the ruler's ends, back in image pixels
   ends: (() => { const d = document.querySelector("#ruler path")?.getAttribute("d"); if (!d) return null; return d.match(/-?[\d.]+/g).slice(0, 4).map((v) => Math.round(+v / st.zoom)); })(),
 }));
+// zoomed in n steps, the image's top left corner in view
+async function zoomIn(page, n) {
+  for (let k = 0; k < n; k++) await page.click("#zoom-in");
+  await page.evaluate(() => document.querySelector("#scroller").scrollTo(0, 0));
+}
 async function measure(page, [x1, y1], [x2, y2], during) {
   const a = await screen(page, x1, y1), b = await screen(page, x2, y2);
   await page.mouse.move(...a); await page.mouse.down();
@@ -89,23 +94,25 @@ async function measure(page, [x1, y1], [x2, y2], during) {
 // a pixel 0.2 µm wide and 0.5 µm tall: 30 px across and 20 down is 6 µm by 10 µm, 11.7 µm
 {
   const page = await open([0.2, 0.5]);
+  // in far enough that the image is larger than the view, so a drag that is not a measure would pan it
+  await zoomIn(page, 8);
   await page.click("#ruler-btn");
   await check((await ruler(page)).pressed === "true", "the Ruler button arms the ruler");
   const scroll = await page.evaluate(() => [document.querySelector("#scroller").scrollLeft, document.querySelector("#scroller").scrollTop]);
-  await measure(page, [10, 10], [40, 30], async () => {
+  // up and to the left from the corner in view: the way a drag that slipped through to the pan would scroll
+  await measure(page, [40, 30], [10, 10], async () => {
     const r = await ruler(page); await shot(page, "ruler-dragging");
     await check(r.circles > 0 && r.text === "11.7 µm", "dragging shows the reach as a circle and the distance so far", r);
   });
   let r = await ruler(page); await shot(page, "ruler-dropped");
   await check(r.circles === 0 && r.paths > 0 && r.text === "11.7 µm", "the drop leaves the ruler, not the circle, with its distance from each axis's own pixel size", r);
-  await check(r.ends.join() === "10,10,40,30", "the ruler lies between the two points", r.ends);
+  await check(r.ends.join() === "40,30,10,10", "the ruler lies between the two points", r.ends);
   const after = await page.evaluate(() => [document.querySelector("#scroller").scrollLeft, document.querySelector("#scroller").scrollTop]);
   await check(after.join() === scroll.join(), "measuring does not pan the image", [scroll, after]);
 
-  // in far enough that the image is larger than the view, so it can pan
-  for (let k = 0; k < 8; k++) await page.click("#zoom-in");
+  await zoomIn(page, 1);
   r = await ruler(page);
-  await check(r.ends.join() === "10,10,40,30" && r.text === "11.7 µm", "zoom keeps the ruler on its points", r);
+  await check(r.ends.join() === "40,30,10,10" && r.text === "11.7 µm", "zoom keeps the ruler on its points", r);
 
   // once down, a drag pans again and leaves the ruler as it is
   const sc = await page.evaluate(() => document.querySelector("#scroller").getBoundingClientRect().toJSON());
@@ -122,6 +129,7 @@ async function measure(page, [x1, y1], [x2, y2], during) {
 
   // a click is no measure: the ruler stays armed with nothing on the image
   await page.click("#ruler-btn");
+  await page.evaluate(() => document.querySelector("#scroller").scrollTo(0, 0));
   const p = await screen(page, 20, 20); await page.mouse.click(...p);
   r = await ruler(page);
   await check(r.pressed === "true" && r.paths === 0, "a click with no drag measures nothing and keeps the ruler armed", r);
