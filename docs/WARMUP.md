@@ -4,7 +4,7 @@ The repo is **one page and several studies**. The page (`web/`, the shell) knows
 image, run Python in the browser, show the image, keep the user's settings and send ground truth to
 GitHub. A study (`studies/<id>/`) is one piece of research: its data, its algorithms, its own flow
 on the page, its ground truth and its docs. The shell knows no study; a study knows the shell only
-through the contract below. [`requirements.md`](requirements.md) states what that means as tests.
+through the contract below. [`dev/requirements/requirements.md`](../dev/requirements/requirements.md) states what the page must do, the shell's part and each study's.
 
 Working on a study? Read its own warm-up next: [NoR Finder](../studies/nor/docs/WARMUP.md).
 
@@ -46,7 +46,7 @@ what `shell` offers, heads `web/shell.js`, and the viewer's own heads `web/viewe
 `studies/fixture/` is the smallest study there is; the shell's own tests run on it.
 
 The shell publishes a study's `study.json`, its `web/` folder (Python there stays home) and the
-modules directly in its `python.paths` folders, and nothing else of it (requirement S8): keep the
+modules directly in its `python.paths` folders, and nothing else of it (requirement 1.8): keep the
 page's files in those places, and everything else in the study is research that never ships.
 
 ## Run
@@ -59,7 +59,7 @@ python3 -m http.server -d site 8000
 ```
 
 then open `http://localhost:8000/web/` (the NoR study) or `http://localhost:8000/web/?study=fixture`.
-The build assembles under `site/` exactly what is published (requirement S8); serving the repo root
+The build assembles under `site/` exactly what is published (requirement 1.8); serving the repo root
 instead shows the page with every file of every study reachable.
 The full set (`python3 -m pytest tests studies`) also needs Node, Pyodide
 (`npm i --prefix studies/nor/detection/browser pyodide@314.0.7`) and Playwright's Chromium.
@@ -71,7 +71,8 @@ web/              the shell, the viewer, the Python runtime (worker.js, bridge.j
 tests/            the shell's tests, run on the fixture study
 studies/nor/      the NoR Finder study: study.json, web/, detection/, src/, data/, docs/, tests/
 studies/fixture/  the smallest study, for the shell's tests (`?study=fixture`)
-docs/             this map and the shell's requirements
+docs/             this map
+dev/requirements/ the page's one spec: the shell, the repo's checks, each study's page
 site/             the published tree: the build assembles the shell and the studies' published
                   parts here; wrangler.json uploads it to Cloudflare (rauntruth.com)
 ```

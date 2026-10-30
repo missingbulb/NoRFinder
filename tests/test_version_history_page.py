@@ -1,4 +1,4 @@
-"""R8: the page's version box opens its Version history, and after an update a bubble points at it
+"""1.14: the page's version box opens its Version history, and after an update a bubble points at it
 (version_history_driver.mjs, in headless Chromium)."""
 import os
 import shutil

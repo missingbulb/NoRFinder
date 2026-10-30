@@ -1,4 +1,4 @@
-"""R8: using the page does not grow its memory. Each layer is checked on its own, so the whole runs
+"""1.25: using the page does not grow its memory. Each layer is checked on its own, so the whole runs
 in seconds rather than driving the full page through Pyodide:
 
   the Python session    interactive.Session, natively: opening, every finder and filtering, over and over

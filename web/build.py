@@ -1,5 +1,5 @@
 """Builds the site the release uploads: the shell decides what of the repo is published, from the
-studies' standard layout (requirement S8), and assembles it under site/, the tree wrangler.json
+studies' standard layout (requirement 1.8), and assembles it under site/, the tree wrangler.json
 publishes. The release runs this through wrangler.json's build command; so does a local preview:
 
   python3 web/build.py

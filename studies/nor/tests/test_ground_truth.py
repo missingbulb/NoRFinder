@@ -1,4 +1,4 @@
-"""R8, R10 — ground truth saved from the page scores the finders in the lab, and submitted ground truth
+"""3.13, R10 — ground truth saved from the page scores the finders in the lab, and submitted ground truth
 joins the data set by code.
 
 Run: python3 tests/test_ground_truth.py
