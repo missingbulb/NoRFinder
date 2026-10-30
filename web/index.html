@@ -46,12 +46,14 @@
         <div class="split" id="load">
           <button id="load-main" class="primary">Load</button><details class="menu" id="load-menu"><summary class="primary" aria-label="Where to load from"></summary>
             <div class="pop right">
-              <button class="item" data-src="local">From this computer</button>
-              <button class="item" data-src="drive">From Google Drive</button>
+              <button class="item" data-src="local"><svg class="computer-logo" aria-hidden="true"><use href="#computer-logo"/></svg>From this computer</button>
+              <button class="item" data-src="drive"><svg class="drive-logo" aria-hidden="true"><use href="#drive-logo"/></svg>From Google Drive</button>
+              <div id="recent" hidden><div class="recent-head">Recent</div></div>
             </div>
           </details>
         </div>
         <input id="file" type="file" hidden>
+        <svg hidden><symbol id="drive-logo" viewBox="0 0 24 21"><path fill="#0f9d58" d="M8 0l4 7-8 14-4-7z"/><path fill="#ffba00" d="M8 0h8l8 14h-8z"/><path fill="#4285f4" d="M8 14h16l-4 7H4z"/></symbol><symbol id="computer-logo" viewBox="0 0 24 21"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2" y="1" width="20" height="14" rx="2"/><path d="M8 20h8M12 15v5"/></g></symbol></svg>
       </div>
       <details id="file-box" class="empty"><summary id="file-name" class="dim">No image loaded</summary><dl id="file-info"></dl></details>
       <div id="thumb-wrap" hidden><canvas id="thumb"></canvas><div id="thumb-view"></div></div>
