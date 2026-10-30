@@ -22,6 +22,22 @@ window.NorDrive = (() => {
     ? `Google refused this site's API key (${r.status})`
     : `Drive refused the ${what} (${r.status}): is it shared as "Anyone with the link"?`);
 
+  // Google answers a burst of downloads by refusing the site's for a while, without the header that lets a page
+  // read the refusal: a download that fails while the file's details still answer is that, an Error with
+  // throttled set
+  const throttled = () => Object.assign(new Error("Google is throttling this site's downloads"), { throttled: true });
+  async function download(id, init = {}) {
+    const at = `${API}/${encodeURIComponent(id)}`;
+    let r;
+    try { r = await fetch(`${at}?alt=media&key=${key}`, init); } catch (e) {
+      if (e.name !== "AbortError" && (await fetch(`${at}?fields=id&key=${key}`, { signal: init.signal }).then((d) => d.ok, () => false))) throw throttled();
+      throw e;
+    }
+    if (r.status === 403 && /rateLimitExceeded|downloadQuotaExceeded/.test(await r.clone().text())) throw throttled();
+    if (!r.ok) throw refused(r, "file");
+    return r;
+  }
+
   // onStart(name) runs once the download begins and onChunk(buffer, got, total) as each piece arrives,
   // the bytes so far at the start of buffer; total is null when Drive does not say
   async function file(id, name, onStart, onChunk) {
@@ -34,8 +50,7 @@ window.NorDrive = (() => {
       if (f.mimeType === "application/vnd.google-apps.folder") return { folder: true, id, name: f.name };
       name = f.name;
     }
-    const r = await fetch(`${at}?alt=media&key=${key}`);
-    if (!r.ok) throw refused(r, "file");
+    const r = await download(id);
     if (onStart) onStart(name);
     const total = +r.headers.get("content-length") || null;
     if (!onChunk || !r.body) return { name, bytes: await r.arrayBuffer() };
@@ -53,6 +68,12 @@ window.NorDrive = (() => {
     return { name, bytes: got === buf.byteLength ? buf : buf.slice(0, got) };
   }
 
+  // the first n bytes of a file, as an ArrayBuffer
+  async function head(id, n, signal) {
+    need();
+    return (await download(id, { headers: { Range: `bytes=0-${n - 1}` }, signal })).arrayBuffer();
+  }
+
   // [{id, name, folder, size, created, preview}] in a public folder: its subfolders and its TIFF and PNG
   // images; size in bytes (null for a folder), created a Date, preview the link of Drive's own small
   // picture of the file or null (Drive draws a multi-channel TIFF grey, so it serves only a PNG)
@@ -68,5 +89,5 @@ window.NorDrive = (() => {
       .filter((f) => f.folder || /\.(tiff?|png)$/i.test(f.name));
   }
 
-  return { parse, file, list, ready: !!key };
+  return { parse, file, head, list, ready: !!key };
 })();

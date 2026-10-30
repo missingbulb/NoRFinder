@@ -17,6 +17,7 @@
 // A listener a study adds outside its own panels takes shell.signal, which ends it when the study leaves.
 "use strict";
 import { viewer as viewer2d } from "./viewer2d.js";
+import { shape, stackPicture, holds } from "./stack.js";
 
 const $ = (s) => document.querySelector(s);
 const VIEWERS = { image2d: viewer2d };
@@ -31,6 +32,8 @@ const AUTO_SAVE = "nor-drive-autosave"; // "on" | "off": whether an image downlo
 const SAVED_THUMB = "nor-drive-thumb:"; // + Drive id: a JPEG data URL of the image, saved when it was opened
 const SAVED_THUMBS = "nor-drive-thumbs-saved"; // [Drive id], oldest first: which images have one
 const THUMB_NAMES = "nor-drive-thumb-names"; // {Drive id: file name}: the image each saved thumbnail shows
+const HOLDS = "nor-drive-holds"; // {Drive id: what the file holds, "3D · 8 slices" or "" when it cannot tell}, oldest first
+const THROTTLE = "nor-drive-throttled-until"; // when the wait after Google throttled the site's downloads ends, in ms
 const RECENT = "nor-drive-recent"; // [{id, name, path}], newest first: images opened from Drive, path their folders under the link
 // Cache Storage, + Drive id: an image downloaded from Drive, its file name (URI-encoded) and when it was saved
 // in the headers
@@ -271,7 +274,7 @@ function handle(m) {
     status("Image loaded."); // the study's opened hook says what comes next, if anything
     study.opened?.(m.meta);
     if (!st.reopening && st.source && st.source.kind === "local" && makesTruth()) notice(LOCAL_GT);
-    if (!st.reopening && st.source && st.source.kind === "drive") saveThumb(st.source.id, st.fileName);
+    if (!st.reopening && st.source && st.source.kind === "drive" && st.pictured !== st.source.id) saveThumb(st.source.id, st.fileName);
     st.reopening = false;
   } else if (m.type === "result") {
     study.result?.(m.action, m.meta, m.bytes, m.echo);
@@ -335,7 +338,8 @@ function load(src) {
   if (src === "local") return $("#file").click();
   const home = ((window.NOR_CONFIG || {}).drive || {}).defaultLink || "";
   $("#drive-link").value = readJSON(DRIVE_LINK, "") || home; $("#drive-dlg").showModal(); $("#drive-link").select(); showSaved();
-  if (NorDrive.parse($("#drive-link").value)?.kind === "folder") $("#drive-go").click();
+  holdDrive();
+  if (!throttled() && NorDrive.parse($("#drive-link").value)?.kind === "folder") $("#drive-go").click();
 }
 $("#load-main").onclick = () => load(readJSON(SOURCE, "local"));
 document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => load(b.dataset.src)));
@@ -361,20 +365,42 @@ function showRecent() {
 }
 showRecent();
 
+// once Google throttles the site's downloads the Drive dialog waits WAIT, with a notice and a countdown, and
+// calls Drive for nothing; the end is kept in the browser, so a reload does not cut it short. waitEnded is the
+// dialog's, which lists its link again.
+const WAIT = 15 * 60000;
+let ticker = 0, waitEnded = () => {};
+const throttled = () => readJSON(THROTTLE, 0) > Date.now();
+function holdDrive() {
+  const on = throttled(), left = Math.max(0, readJSON(THROTTLE, 0) - Date.now()), two = (n) => String(n).padStart(2, "0");
+  $("#drive-throttle").hidden = !on; $("#drive-dlg").classList.toggle("throttled", on);
+  $("#drive-link").disabled = $("#drive-go").disabled = on;
+  if (on) $("#drive-open").disabled = true;
+  $("#drive-clock").textContent = `${two(Math.floor(left / 60000))}:${two(Math.floor(left / 1000) % 60)}`;
+  if (on && !ticker) ticker = setInterval(holdDrive, 1000);
+  if (!on && ticker) {
+    clearInterval(ticker); ticker = 0;
+    try { localStorage.removeItem(THROTTLE); } catch { /* nothing kept */ }
+    waitEnded();
+  }
+}
+function throttle() { writeJSON(THROTTLE, Date.now() + WAIT); holdDrive(); }
+
 // the Drive dialog: a pasted file link loads at once; a folder link lists its images and subfolders, where a
 // click selects and Open (or a double click) opens the selection
 function driveDialog() {
   const msg = (t, err) => { const m = $("#drive-msg"); m.textContent = m.title = t; m.classList.toggle("err", !!err); };
-  let trail = [], chosen = null;
+  let trail = [], chosen = null, listing = 0;
   // path: the folders the image is in under the link it was opened from
   const take = async (id, name, path) => {
     thumbs.stop();
     const kept = await savedImage(id);
     if (kept) {
       $("#drive-dlg").close(); msg("");
-      peek()(kept.bytes, kept.bytes.byteLength); remember(id, kept.name, path);
+      peek()(kept.bytes, kept.bytes.byteLength); remember(id, kept.name, path); picture(id, kept.name, kept.bytes);
       return openBytes(kept.name, kept.bytes, { kind: "drive", id });
     }
+    if (throttled()) { if (!$("#drive-dlg").open) $("#drive-dlg").showModal(); return holdDrive(); }
     msg("Downloading " + (name || "the image") + "…");
     const mb = (n) => (n / 1048576).toFixed(1);
     let push, what;
@@ -387,10 +413,11 @@ function driveDialog() {
       });
       if (f.folder) { trail = [f]; return show(); }
       if ($("#drive-autosave").checked) saveImage(id, f.name, f.bytes);
-      remember(id, f.name, path);
+      remember(id, f.name, path); picture(id, f.name, f.bytes);
       openBytes(f.name, f.bytes, { kind: "drive", id });
     } catch (err) {
       busy(false); if (!$("#drive-dlg").open) $("#drive-dlg").showModal();
+      if (err.throttled) { msg(""); return throttle(); }
       msg(err.message || String(err), true);
     }
   };
@@ -406,77 +433,108 @@ function driveDialog() {
     $("#drive-path").querySelectorAll("button").forEach((b) => (b.onclick = () => { trail = trail.slice(0, +b.dataset.k + 1); show(); }));
     $("#drive-path").scrollLeft = $("#drive-path").scrollWidth;
     $("#drive-list").replaceChildren(); choose(null); thumbs.reset(); msg("Reading the folder…");
+    // a listing the user has moved on from by the time it arrives is dropped
+    const asked = ++listing;
     try {
       const items = await NorDrive.list(at.id);
+      if (asked !== listing) return;
       msg(items.length ? "" : "No TIFF or PNG images here.");
-      for (const f of items) {
+      for (const [k, f] of items.entries()) {
         const b = document.createElement("button"); b.type = "button"; b.className = "item" + (f.folder ? " folder" : "");
         b.setAttribute("aria-selected", "false");
         const meta = [f.size == null ? "" : sizeText(f.size),
           f.created ? f.created.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : ""].filter(Boolean).join(" · ");
-        b.innerHTML = `<span class="pic"></span><span class="name">${esc(f.name)}</span><span class="meta">${esc(meta)}</span>`;
+        b.innerHTML = `<span class="pic"></span><span class="name">${esc(f.name)}</span><span class="shape">${esc(readJSON(HOLDS)[f.id] || "")}</span><span class="meta">${esc(meta)}</span>`;
         b.onclick = () => choose(f, b);
         b.ondblclick = () => enter(f);
         b.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); enter(f); } };
         $("#drive-list").append(b);
-        if (!f.folder) thumbs.watch(b.querySelector(".pic"), f);
+        if (!f.folder) thumbs.watch(b.querySelector(".pic"), f, k);
       }
-    } catch (err) { msg(err.message || String(err), true); }
+    } catch (err) { if (asked === listing) (err.throttled ? throttle() : msg(err.message || String(err), true)); }
   };
   // each image's thumbnail: the one saved when it was last opened here, else the study's ready-made one,
-  // fetched once its row scrolls into view; never read from Drive, which refuses a burst of reads and then
-  // the image itself. Progress shows beside the checkbox and in the status bar.
+  // fetched for the rows in view and the next AHEAD, in order, as the user scrolls; never read from Drive,
+  // which refuses a burst of reads and then the image itself. One fetched stays for the page's life. A TIFF's
+  // row also says what the file holds, read once from the file's first HEAD bytes for the same rows. Progress
+  // shows beside the checkbox and in the status bar.
   const thumbs = (() => {
-    const made = new Map(), waiting = [], AT_ONCE = 4;
-    let ctl = new AbortController(), running = 0, seen, ready, asked = 0, done = 0, bytes = 0, dir = null;
+    const made = new Map(), AT_ONCE = 4, AHEAD = 10, HEAD = 65536;
+    // rows: the listing's image rows that await a ready-made thumbnail or what the file holds, in the list's
+    // order, each {at, row, f, thumb, holds, asked, done}, at its place in the list; epoch: which listing they
+    // belong to; dir: the study on show's ready-made thumbnails
+    let ctl = new AbortController(), running = 0, rows = [], epoch = 0, ready, frame = 0, asked = 0, done = 0, bytes = 0, dir = null;
     const put = (pic, url) => { const i = new Image(); i.alt = ""; i.src = url; pic.replaceChildren(i); };
     const tell = () => {
       const t = asked ? `${done} of ${asked} · ${sizeText(bytes)}` : "";
       $("#drive-thumbs-note").textContent = t;
-      $("#sb-thumbs").textContent = running || waiting.length ? "Thumbnails " + t : "";
+      $("#sb-thumbs").textContent = running ? "Thumbnails " + t : "";
+    };
+    // the rows from the first in view to AHEAD past the last, that no fetch has been started for
+    const wanted = () => {
+      const list = $("#drive-list"), items = list.children;
+      if (!$("#drive-dlg").open || !$("#drive-thumbs").checked || throttled() || !items.length) return [];
+      const box = list.getBoundingClientRect();
+      let first = 0, last = items.length - 1;
+      for (let hi = last; first < hi; ) { const m = (first + hi) >> 1; if (items[m].getBoundingClientRect().bottom > box.top) hi = m; else first = m + 1; }
+      for (last = first; last + 1 < items.length && items[last + 1].getBoundingClientRect().top < box.bottom; ) last++;
+      return rows.filter((r) => !r.asked && r.at >= first && r.at <= last + AHEAD);
     };
     const next = () => {
-      while (running < AT_ONCE && waiting.length) {
-        const [pic, f] = waiting.shift(), signal = ctl.signal;
-        running++;
-        fetch(`${dir}${f.id}.jpg`, { signal }).then((r) => (r.ok ? r.blob() : null))
-          .then((b) => { if (!b || signal.aborted) return; bytes += b.size; made.set(f.id, URL.createObjectURL(b)); put(pic, made.get(f.id)); })
-          .catch(() => {})
-          .finally(() => { if (signal.aborted) return; running--; done++; tell(); next(); });
+      frame = 0;
+      for (const want = wanted(); running < AT_ONCE && want.length; ) {
+        const r = want.shift(), signal = ctl.signal;
+        r.asked = true; running++; asked++;
+        job(r, signal).catch((e) => { if (e.throttled) throttle(); })
+          .finally(() => { if (signal.aborted) return; r.done = true; running--; done++; tell(); next(); });
       }
       tell();
     };
-    const stop = () => { ctl.abort(); ctl = new AbortController(); running = 0; waiting.length = 0; asked = done = bytes = 0; tell(); };
+    const job = async (r, signal) => {
+      if (r.thumb) {
+        const res = await fetch(`${dir}${r.f.id}.jpg`, { signal }), b = res.ok ? await res.blob() : null;
+        if (b && !signal.aborted) { bytes += b.size; made.set(r.f.id, URL.createObjectURL(b)); put(r.row.querySelector(".pic"), made.get(r.f.id)); }
+      }
+      if (r.holds) {
+        const buf = await NorDrive.head(r.f.id, HEAD, signal);
+        if (signal.aborted) return;
+        bytes += buf.byteLength;
+        r.row.querySelector(".shape").textContent = know(r.f.id, shape(buf));
+      }
+    };
+    const later = () => { frame = frame || requestAnimationFrame(next); };
+    // fetches in flight are dropped, and their rows fetched again when next wanted
+    const stop = () => {
+      ctl.abort(); ctl = new AbortController(); running = asked = done = bytes = 0;
+      for (const r of rows) if (!r.done) r.asked = false;
+      tell();
+    };
     const reset = () => {
-      stop();
-      // the study on show's own thumbnails
+      stop(); rows = []; epoch++;
       const own = manifest?.driveThumbs ? base + manifest.driveThumbs : null;
       if (own !== dir) { dir = own; ready = null; }
       ready = ready || (dir ? fetch(dir + "index.json").then((r) => r.json()).then((ids) => new Set(ids)).catch(() => new Set()) : Promise.resolve(new Set()));
-      if (seen) seen.disconnect();
-      seen = new IntersectionObserver((es) => es.forEach((e) => {
-        if (!e.isIntersecting || !$("#drive-thumbs").checked) return;
-        seen.unobserve(e.target); waiting.push([e.target, e.target.file]); asked++; next();
-      }), { root: $("#drive-list") });
     };
-    const watch = async (pic, f) => {
-      const url = made.get(f.id) || readJSON(SAVED_THUMB + f.id, "") || f.preview;
-      if (url) return put(pic, url);
-      if (!$("#drive-thumbs").checked || !(await ready).has(f.id)) return;
-      pic.file = f; seen.observe(pic);
+    const watch = async (pic, f, at) => {
+      const url = made.get(f.id) || readJSON(SAVED_THUMB + f.id, "") || f.preview, of = epoch;
+      if (url) put(pic, url);
+      const holds = /\.tiff?$/i.test(f.name) && NorDrive.ready && !(f.id in readJSON(HOLDS)), thumb = !url && (await ready).has(f.id);
+      if (of !== epoch || !(thumb || holds)) return;
+      rows.push({ at, row: pic.closest(".item"), f, thumb, holds, asked: false, done: false }); later();
     };
-    return { reset, watch, stop };
+    $("#drive-list").addEventListener("scroll", later, { passive: true });
+    $("#drive-dlg").addEventListener("close", stop);
+    return { reset, watch, stop, later };
   })();
   $("#drive-open").onclick = () => chosen && enter(chosen);
   $("#drive-thumbs").checked = readJSON(THUMBS, "on") !== "off";
   $("#drive-thumbs").onchange = (e) => {
     writeJSON(THUMBS, e.target.checked ? "on" : "off");
-    if (!e.target.checked) thumbs.stop(); else if (trail.length) show();
+    if (!e.target.checked) thumbs.stop(); else thumbs.later();
   };
   $("#drive-autosave").checked = readJSON(AUTO_SAVE, "on") !== "off";
   $("#drive-autosave").onchange = (e) => writeJSON(AUTO_SAVE, e.target.checked ? "on" : "off");
   $("#drive-storage").onclick = storageDialog;
-  $("#drive-dlg").addEventListener("close", () => thumbs.stop());
   if (!NorDrive.ready) {
     const d = document.querySelector('#load-menu .item[data-src="drive"]');
     d.disabled = true; d.title = "Needs this site's Google API key (issue #234)";
@@ -490,13 +548,15 @@ function driveDialog() {
     trail = [{ id: ref.id, name: "Folder" }]; show();
   };
   $("#drive-go").onclick = open;
+  waitEnded = () => { if ($("#drive-dlg").open) open(); };
+  holdDrive();
   $("#drive-link").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); open(); } });
 }
 
 // the open image's thumbnail, every colour on show, for the Drive dialog to show next time without a download;
 // shrunk and brightened as the studies' ready-made ones are, and only the latest few hundred are kept
 function saveThumb(id, name) {
-  const SIDE = 96, GAIN = 2, KEEP = 100;
+  const SIDE = 96, GAIN = 2;
   const full = document.createElement("canvas"); full.width = st.W; full.height = st.H;
   const im = full.getContext("2d").createImageData(st.W, st.H), d = im.data, { r, g, b } = st.img;
   for (let i = 0, j = 0; i < st.W * st.H; i++, j += 4) { d[j] = r ? r[i] : 0; d[j + 1] = g ? g[i] : 0; d[j + 2] = b ? b[i] : 0; d[j + 3] = 255; }
@@ -510,12 +570,35 @@ function saveThumb(id, name) {
   const gain = Math.min(GAIN, 255 / Math.max(1, v[Math.floor(0.995 * (v.length - 1))]));
   for (let j = 0; j < p.length; j += 4) { p[j] *= gain; p[j + 1] *= gain; p[j + 2] *= gain; }
   x.putImageData(small, 0, 0);
+  keepThumb(id, name, c.toDataURL("image/jpeg", 0.85));
+}
+// a thumbnail for the Drive dialog to show from now on; only the latest KEEP are kept
+function keepThumb(id, name, url) {
+  const KEEP = 100;
   const kept = readJSON(SAVED_THUMBS, []).filter((i) => i !== id).concat(id);
   for (const old of kept.splice(0, Math.max(0, kept.length - KEEP))) try { localStorage.removeItem(SAVED_THUMB + old); } catch { /* nothing kept */ }
   const names = readJSON(THUMB_NAMES);
   for (const k of Object.keys(names)) if (!kept.includes(k)) delete names[k];
-  writeJSON(SAVED_THUMB + id, c.toDataURL("image/jpeg", 0.85)); writeJSON(SAVED_THUMBS, kept); writeJSON(THUMB_NAMES, { ...names, [id]: name });
+  writeJSON(SAVED_THUMB + id, url); writeJSON(SAVED_THUMBS, kept); writeJSON(THUMB_NAMES, { ...names, [id]: name });
   diskBar();
+}
+
+// what each Drive file holds, remembered so it is read once; the latest KEEP. Returns its words for the row.
+function know(id, s) {
+  const KEEP = 1000, said = holds(s), all = readJSON(HOLDS);
+  delete all[id]; all[id] = said;
+  const ids = Object.keys(all);
+  for (const old of ids.slice(0, Math.max(0, ids.length - KEEP))) delete all[old];
+  writeJSON(HOLDS, all);
+  return said;
+}
+// a Drive image about to open: what it holds is remembered, and a stack's 3D thumbnail is saved at once, drawn
+// from the bytes in hand; a flat image's waits until it shows
+function picture(id, name, bytes) {
+  const s = shape(bytes);
+  know(id, s); st.pictured = null;
+  const url = s && s.slices > 1 && stackPicture(bytes, s);
+  if (url) { keepThumb(id, name, url); st.pictured = id; }
 }
 
 // images downloaded from Drive, kept on this device while Auto-save images is on
@@ -547,7 +630,7 @@ async function showSaved() {
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
   [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link",
-  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off",
+  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off",
 };
 const GROUPS = [
   ["code", "Code kept for the next visit", "Python and its packages, so the page starts without downloading them again."],
