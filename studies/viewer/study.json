@@ -1,0 +1,51 @@
+{
+  "id": "viewer",
+  "title": "Image Viewer",
+  "listed": true,
+  "viewer": "image2d",
+  "python": {
+    "paths": [
+      "py/"
+    ],
+    "entry": "viewer",
+    "packages": [
+      "numpy",
+      "pillow"
+    ],
+    "wheels": [
+      "tifffile==2026.3.3"
+    ]
+  },
+  "web": {
+    "module": "web/viewer.js"
+  },
+  "files": {
+    "accept": ".tif,.tiff,.png",
+    "empty": "Load a TIFF or PNG to look at it, each channel in its own colour."
+  },
+  "channels": [
+    {
+      "key": "r",
+      "name": "Red",
+      "title": "The channels the file shows in red",
+      "shown": true
+    },
+    {
+      "key": "g",
+      "name": "Green",
+      "title": "The channels the file shows in green",
+      "shown": true
+    },
+    {
+      "key": "b",
+      "name": "Blue",
+      "title": "The channels the file shows in blue",
+      "shown": true
+    }
+  ],
+  "progress": {
+    "install": "Installing numpy…",
+    "load": "Loading the viewer…",
+    "open": "Reading the image…"
+  }
+}

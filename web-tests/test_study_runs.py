@@ -1,6 +1,7 @@
 """1.3, 1.4: the shell runs the fixture study, which shares none of the NoR study's words: its Python through
 the bridge in Pyodide under Node (study_bridge_driver.mjs), and the whole page, viewer and panels included,
-in headless Chromium with a stand-in worker (study_page_driver.mjs)."""
+in headless Chromium with a stand-in worker (study_page_driver.mjs). 1.10, 1.28: the header's switcher and
+the default study, in the same page."""
 import os
 import shutil
 import subprocess
@@ -51,4 +52,8 @@ def test_the_page_runs_the_study_it_is_asked_for(png, tmp_path):
     answers = tmp_path / 'answers.json'
     answers.write_text(json.dumps(dict(ready=dict(threshold=100), opened=json.loads(opened), count=json.loads(count),
                                        images=base64.b64encode(images).decode(), mask=base64.b64encode(mask).decode())))
-    run('study_page_driver.mjs', str(answers), png)
+    sys.path.insert(0, os.path.join(HERE, '..', 'dev', 'tools', 'build'))
+    import build
+    studies = tmp_path / 'studies.json'
+    studies.write_text(json.dumps(build.studies(os.path.join(HERE, '..'))))
+    run('study_page_driver.mjs', str(answers), png, str(studies))

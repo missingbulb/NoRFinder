@@ -21,18 +21,21 @@ def manifest(path):
 
 def test_there_are_studies_and_the_default_is_one():
     ids = [manifest(p)['id'] for p in STUDIES]
-    assert 'nor' in ids and 'fixture' in ids, ids
+    assert {'viewer', 'nor', 'fixture'} <= set(ids), ids
     assert all(os.path.basename(os.path.dirname(p)) == manifest(p)['id'] for p in STUDIES), 'a study\'s id is its folder'
 
 
 @pytest.mark.parametrize('path', STUDIES, ids=lambda p: os.path.basename(os.path.dirname(p)))
 def test_a_study_names_files_that_exist(path):
     m, base = manifest(path), os.path.dirname(path)
-    for key in ('id', 'title', 'viewer', 'python', 'web', 'files', 'channels', 'groundTruth'):
+    for key in ('id', 'title', 'listed', 'viewer', 'python', 'web', 'files', 'channels'):
         assert key in m, f'{key} missing'
+    assert isinstance(m['listed'], bool), 'listed says whether the header offers the study: true or false'
     assert os.path.exists(os.path.join(WEB, {'image2d': 'viewer2d.js'}[m['viewer']]))
+    assert 'module' in m['web']
     for key in ('module', 'panels', 'style'):
-        assert os.path.isfile(os.path.join(base, m['web'][key])), m['web'][key]
+        if key in m['web']:
+            assert os.path.isfile(os.path.join(base, m['web'][key])), m['web'][key]
     py = m['python']
     assert any(os.path.isfile(os.path.join(base, d, py['entry'] + '.py')) for d in py['paths']), py
     assert {c['key'] for c in m['channels']} <= {'r', 'g', 'b', 'w'}
@@ -48,6 +51,16 @@ def test_the_shell_names_no_study():
         for n, line in enumerate(open(f, encoding='utf8'), 1):
             found += [f'{os.path.basename(f)}:{n} {w}' for w in STUDY_WORDS.findall(line)]
     assert not found, 'the shell names a study\'s own words:\n' + '\n'.join(found)
+
+
+def test_the_header_offers_the_listed_studies_by_title(tmp_path):
+    import sys
+    sys.path.insert(0, os.path.join(ROOT, 'dev', 'tools', 'build'))
+    import build
+    for sid, title, listed in (('zeta', 'Zeta Counter', True), ('alpha', 'Alpha Viewer', True), ('test-only', 'A Fixture', False)):
+        os.makedirs(tmp_path / 'studies' / sid)
+        (tmp_path / 'studies' / sid / 'study.json').write_text(json.dumps(dict(id=sid, title=title, listed=listed)))
+    assert build.studies(str(tmp_path)) == [{'id': 'alpha', 'title': 'Alpha Viewer'}, {'id': 'zeta', 'title': 'Zeta Counter'}]
 
 
 def test_the_build_vendors_every_studys_wheels():

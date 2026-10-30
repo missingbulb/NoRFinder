@@ -52,7 +52,7 @@ const server = http.createServer((q, r) => {
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
-const url = `http://127.0.0.1:${server.address().port}/web/`;
+const url = `http://127.0.0.1:${server.address().port}/web/?study=nor`;
 
 const browser = await pw.chromium.launch();
 const ctx = await browser.newContext();

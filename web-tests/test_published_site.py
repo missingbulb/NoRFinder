@@ -28,7 +28,8 @@ def test_every_study_ships_its_manifest_page_part_and_python():
         m = json.load(open(os.path.join(ROOT, base, 'study.json')))
         assert f'{base}/study.json' in got
         for key in ('module', 'panels', 'style'):
-            assert f'{base}/{m["web"][key]}' in got, m['web'][key]
+            if key in m['web']:
+                assert f'{base}/{m["web"][key]}' in got, m['web'][key]
         for d in m['python']['paths']:
             for f in glob.glob(os.path.join(ROOT, base, d, '*.py')):
                 assert os.path.relpath(f, ROOT) in got, f

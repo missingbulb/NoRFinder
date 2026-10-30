@@ -1,5 +1,5 @@
 // The page's shell: it runs the study the address names (?study=<id>, the default when none is named),
-// and knows none of them. What it gives a study, as shell in mount(shell): loading images (from the
+// and knows none of them; the header's switcher offers the ones the build lists. What it gives a study, as shell in mount(shell): loading images (from the
 // computer or Google Drive), Python (the study's own, run in worker.js), the viewer the study asks for,
 // the status line and the busy screen, notices, the user's saved settings, downloads and ground-truth
 // submission; and around them the theme, side bars, foldable boxes, the memory popup and the version
@@ -19,7 +19,7 @@ import { viewer as viewer2d } from "./viewer2d.js";
 
 const $ = (s) => document.querySelector(s);
 const VIEWERS = { image2d: viewer2d };
-const DEFAULT_STUDY = "nor";
+const DEFAULT_STUDY = "viewer";
 // the browser keys the shell saves under; their names predate studies, and a user's saved state lives in them
 const THEME = "nor-theme"; // "dark" | "light"; absent = follow the system
 const BARS = "nor-bars-v1"; // {left, right}: side bar widths in pixels
@@ -174,8 +174,9 @@ function handle(m) {
     view.show(m.meta.W, m.meta.H, m.images);
     busy(false); statusBar();
     showImage(); fold(true); loadShine();
+    status("Image loaded."); // the study's opened hook says what comes next, if anything
     study.opened?.(m.meta);
-    if (st.source && st.source.kind === "local") notice(LOCAL_GT);
+    if (st.source && st.source.kind === "local" && manifest.groundTruth) notice(LOCAL_GT);
     if (st.source && st.source.kind === "drive") saveThumb(st.source.id, st.fileName);
   } else if (m.type === "result") {
     study.result?.(m.action, m.meta, m.bytes, m.echo);
@@ -710,9 +711,23 @@ const inView = new IntersectionObserver((seen) => { for (const e of seen) e.targ
 document.addEventListener("animationstart", (e) => inView.observe(e.target));
 
 // ---------- the study ----------
-// its panels go into the shell's slots, its stylesheet beside the shell's, then its module mounts
+// the header's switcher: every study the build lists, each a link to the page running it, the one on show ticked
+async function studyMenu(id) {
+  let listed = [];
+  try { listed = await (await fetch("studies.json", { cache: "no-cache" })).json(); } catch (e) { console.warn("no list of studies:", e); }
+  $("#study-list").replaceChildren(...listed.map((s) => {
+    const a = document.createElement("a");
+    a.href = s.id === DEFAULT_STUDY ? location.pathname : "?study=" + encodeURIComponent(s.id);
+    a.textContent = s.title;
+    if (s.id === id) a.setAttribute("aria-current", "page");
+    return a;
+  }));
+}
+// its panels go into the shell's slots, its stylesheet beside the shell's, then its module mounts; a side bar
+// it leaves empty gives its room to the image
 async function mountStudy() {
   const id = new URLSearchParams(location.search).get("study") || DEFAULT_STUDY;
+  studyMenu(id);
   if (!/^[\w-]+$/.test(id)) throw new Error(`no study "${id}"`);
   base = `../studies/${id}/`;
   const r = await fetch(base + "study.json");
@@ -720,10 +735,13 @@ async function mountStudy() {
   manifest = await r.json();
   document.title = manifest.title; $("#title").textContent = manifest.title;
   $("#file").accept = manifest.files.accept; $("#empty-text").textContent = manifest.files.empty;
-  const css = document.createElement("link"); css.rel = "stylesheet"; css.href = base + manifest.web.style; document.head.append(css);
-  const panels = new DOMParser().parseFromString(await (await fetch(base + manifest.web.panels)).text(), "text/html");
-  for (const t of panels.querySelectorAll("template[data-slot]")) $(`slot-here[data-slot-for="${t.dataset.slot}"]`).replaceWith(document.importNode(t.content, true));
+  if (manifest.web.style) { const css = document.createElement("link"); css.rel = "stylesheet"; css.href = base + manifest.web.style; document.head.append(css); }
+  if (manifest.web.panels) {
+    const panels = new DOMParser().parseFromString(await (await fetch(base + manifest.web.panels)).text(), "text/html");
+    for (const t of panels.querySelectorAll("template[data-slot]")) $(`slot-here[data-slot-for="${t.dataset.slot}"]`).replaceWith(document.importNode(t.content, true));
+  }
   document.querySelectorAll("slot-here").forEach((s) => s.remove());
+  $("#layout").classList.toggle("no-right", !$("#right").children.length);
   fold(false); // before the first paint with them, so they do not fold in view
   view = VIEWERS[manifest.viewer](shell, manifest.channels);
   const mod = await import(base + manifest.web.module);

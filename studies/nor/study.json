@@ -1,6 +1,7 @@
 {
   "id": "nor",
   "title": "NoR Finder",
+  "listed": true,
   "viewer": "image2d",
   "python": {
     "paths": [
