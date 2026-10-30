@@ -63,9 +63,9 @@
   "held": {
     "basics": "1.61009.1",
     "claude-code-web-users-support": "1.61012.1",
-    "cloudflare-site": "1.61009.1",
+    "cloudflare-site": "1.61020.2",
     "executable-requirements": "1.61004.1",
-    "git-github": "1.61013.1",
+    "git-github": "1.61027.1",
     "html": "1.61004.1",
     "numpy-image-processing": "1.61004.1",
     "product-wiki": "1.61021.1",
