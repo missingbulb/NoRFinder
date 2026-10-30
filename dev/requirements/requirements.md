@@ -100,8 +100,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
 
   The study's title, with a caret beside it, opens a "Switch study" list of every study whose
   `study.json` says `"listed": true`, by title, the one on show ticked. Each is a link to the page
-  running it: `?study=<id>`, and the bare address for the Image Viewer. Test:
-  `web-tests/test_study_runs.py`.
+  running it: `?study=<id>`, and the bare address for the Image Viewer. The header's spacing follows
+  GitHub's: 64 px tall, 16 px at the sides, a 32 px logo. Test: `web-tests/test_study_runs.py`.
   </details>
 
 - `1.11` Side bars drag wider or narrower (remembered; a double click restores one).

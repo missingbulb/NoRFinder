@@ -27,10 +27,10 @@
 /* a fixed frame: header, three columns and the footer fill the window; only the columns scroll */
 html, body { height: 100%; overflow: hidden; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, sans-serif;
-  display: grid; grid-template-rows: 52px minmax(0, 1fr) 1cm; }
-header { display: flex; gap: 14px; align-items: center; height: 52px; padding: 0 16px; border-bottom: 1px solid var(--line); }
+  display: grid; grid-template-rows: 64px minmax(0, 1fr) 1cm; }
+header { display: flex; gap: 8px; align-items: center; height: 64px; padding: 0 16px; border-bottom: 1px solid var(--line); }
 header > .grow { flex: 1; }
-#logo { height: 36px; width: auto; flex: none; }
+#logo { height: 32px; width: auto; flex: none; margin-right: 4px; }
 h1 { font-size: 16px; font-weight: 600; margin: 0; }
 /* the study switcher: the title and its caret, each a quiet button, opening a list with the current study ticked */
 #study-menu summary { display: flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; }
