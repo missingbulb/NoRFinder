@@ -43,6 +43,24 @@ def test_a_study_names_files_that_exist(path):
         assert os.path.isdir(os.path.join(base, m['driveThumbs']))
 
 
+@pytest.mark.parametrize('path', STUDIES, ids=lambda p: os.path.basename(os.path.dirname(p)))
+def test_a_study_names_its_stage_and_steps(path):
+    """1.30, 1.31: the stage and the study's own steps are stated, never assumed."""
+    m = manifest(path)
+    assert m.get('stage') in ('PreGT', 'GT', 'PostGT'), 'stage: PreGT, GT or PostGT'
+    if m['stage'] != 'PreGT':
+        assert m.get('groundTruth', {}).keys() >= {'label', 'button'}, 'a study that makes ground truth names its label and button'
+    assert isinstance(m.get('phases'), list), 'phases: the study\'s own steps, [] for none'
+    keys = [p['key'] for p in m['phases']]
+    assert len(set(keys)) == len(keys) and not {'load', 'submit'} & set(keys), 'a step\'s key is its own, and not one of the shell\'s'
+    assert all(p.get('name') for p in m['phases'])
+
+
+def test_the_viewer_is_pre_gt_and_nor_makes_ground_truth():
+    stage = {manifest(p)['id']: manifest(p)['stage'] for p in STUDIES}
+    assert stage['viewer'] == 'PreGT' and stage['nor'] == 'GT', stage
+
+
 def test_the_shell_names_no_study():
     shell = glob.glob(os.path.join(WEB, '*.*')) + glob.glob(os.path.join(ROOT, 'dev', 'tools', 'build', '*.py'))
     found, files = [], [f for f in sorted(shell) if f.endswith(('.js', '.html', '.css', '.py'))]

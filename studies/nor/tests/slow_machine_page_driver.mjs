@@ -79,7 +79,7 @@ const free = (page, id) => page.waitForFunction((id) => !$(id).classList.contain
   const { ctx, page } = await open(8);
   await check(!(await page.evaluate(() => $("#memory-dlg").open)), "no memory popup on a computer with 8 GB");
   const mem = await page.textContent("#sb-memory");
-  await check(/^Memory Usage \d+ MB$/.test(mem) && parseInt(mem.slice(13)) >= 570, `the status bar shows the memory in use: "${mem}"`);
+  await check(/^RAM \d+ MB$/.test(mem) && parseInt(mem.slice(4)) >= 570, `the status bar shows the memory in use: "${mem}"`);
   await shot(page, "status_memory", "#statusbar");
   await page.setInputFiles("#file", image);
   await page.waitForFunction(() => $("#load-main").classList.contains("working"));

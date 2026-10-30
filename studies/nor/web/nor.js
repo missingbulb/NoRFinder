@@ -147,7 +147,7 @@ export function mount(shell) {
 
   function detect() {
     const finder = $("#finder").value, overrides = detectOverrides(finder);
-    st.running = runKey(); st.runOverrides = overrides; $("#find").disabled = true; $("#find").classList.remove("shine");
+    st.running = runKey(); st.runOverrides = overrides; $("#find").disabled = true;
     busy(true, "Finding candidates…", "scan");
     shell.call("detect", { finder, overrides });
   }
@@ -490,13 +490,20 @@ export function mount(shell) {
     return o;
   }
   const runKey = () => JSON.stringify([$("#finder").value, detectOverrides($("#finder").value)]);
-  // Find Candidates shines while the finder or its settings differ from what the image was last searched with
   function updateFind() {
     const finder = $("#finder").value; if (!st.about[finder]) return;
-    const o = detectOverrides(finder), f = $("#find");
+    const o = detectOverrides(finder);
     $("#reset-detect").disabled = !Object.keys(o).length;
-    f.disabled = !st.img || !!st.running;
-    f.classList.toggle("shine", !f.disabled && runKey() !== st.lastRun);
+    $("#find").disabled = !st.img || !!st.running;
+    steps();
+  }
+  // the study's steps in the status bar: Run algorithm is done while the image was searched with the finder and
+  // settings now chosen (Find Candidates shines until then), Review all items while every finalist has a verdict
+  function steps() {
+    const ran = !!st.meta && runKey() === st.lastRun, finalists = (st.passes || []).filter((c) => !c.added);
+    const open = finalists.filter((c) => !st.forced.has(c.i)).length, name = $("#finder").selectedOptions[0]?.textContent.replace(/ \(.*\)$/, "");
+    shell.step("find", ran, ran ? `${name}: ${st.order.length} candidates, ${finalists.length} finalists` : st.lastRun ? "The finder or its settings changed since the last run." : "");
+    shell.step("review", ran && !open, `${finalists.length - open} of ${finalists.length} finalists have your verdict`);
   }
 
   // ---------- drawing ----------
@@ -515,7 +522,6 @@ export function mount(shell) {
       const k = d.dataset.key;
       d.querySelector(".n").innerHTML = st.alone ? `${THUMB} ${st.alone.only[k] ?? 0} (${st.alone.counts[k] ?? 0})` : "";
     });
-    $("#sb-counts").innerHTML = `<b>${st.order.length}</b> candidates · <b>${passes.length}</b> finalists`;
     $("#n-pass").textContent = passes.length; $("#n-fail").textContent = rejects.length;
     if (st.view === "items") renderList();
     renderSummary(); renderSelected(); placeRing(); downloads(true);
@@ -879,6 +885,7 @@ export function mount(shell) {
     const { state, items } = gtState(), open = items.filter((t) => t.grade && !t.ok);
     b.dataset.state = st.img ? state : "";
     b.title = (open.length ? open.map((t) => t.text + ".").join(" ") : "Every finalist has your verdict.") + " Click to export or submit.";
+    steps();
   }
   $("#dl-truth .gt-ico").innerHTML = ["done", "part", "todo"].map((n) => shell.icon(n).replace("<svg ", `<svg class="${n}" `)).join("");
   $("#dl-truth").onclick = () => shell.submitTruth({ doc: truth(), file: base() + "_ground_truth.json", items: gtState().items, issue: issue(truth()),
@@ -1119,5 +1126,6 @@ export function mount(shell) {
     capturesPointer: () => !!st.lasso,
     zoomed: placeRing,
     stored,
+    memory: () => (st.seg ? [{ name: "The candidates", what: `${st.cands.length} candidates' outlines`, size: st.seg.byteLength }] : []),
   };
 }

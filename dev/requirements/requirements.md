@@ -116,13 +116,16 @@ test fold under it. A study's research requirements, which no user sees, stay in
   A crop or picture narrower than its box shrinks as a whole (`studies/nor/tests/test_page_layout.py`).
   </details>
 
-- `1.13` A status bar shows the image name, the study's counts, the memory the tab holds and the version.
+- `1.13` The status bar: the study's stage and its steps at the left, the disk, memory and version at the right.
   <details>
 
-  The memory the tab holds ("Memory Usage", Python's, its files, the page's and an estimate for the
-  compiled code and the browser, which a page cannot read; amber past a quarter of the computer's
-  total where the browser says it, which the hover names), and the site's version (stamped by each
-  release). For the NoR study the counts are the candidates and the finalists.
+  From the left edge: the study's stage (`1.30`), then the breadcrumbs of its steps (`1.31`), then
+  the spinner and what the page is doing now (each stage of Python's loading, the study's progress,
+  an error in red) and the thumbnails' progress (`1.18`). From the right edge inward: the site's
+  version (stamped by each release; `1.14`, `1.23`), the memory (`1.32`) and the disk (`1.33`),
+  all three plain text with no border, alike. The image's name and the study's counts are in the
+  breadcrumbs' popups: Load image names the image, the study's own step gives its counts. Test:
+  `web-tests/test_status_bar_page.py`.
   </details>
 
 - `1.14` Clicking the version opens a Version history; a bubble points at it after an update.
@@ -291,6 +294,54 @@ test fold under it. A study's research requirements, which no user sees, stay in
   Choosing one opens the copy kept on this device (`1.7`), with no download, and downloads it again
   only when none is kept. Images from this computer are not listed: a web page cannot open a file
   on the computer again by itself. Test: `web-tests/test_storage_page.py`.
+  </details>
+
+- `1.30` A study declares its stage: PreGT, GT or PostGT.
+  <details>
+
+  Every `study.json` names its `stage`, and the status bar shows it first, its meaning on hover.
+  PreGT: the study's tools work but cannot make ground truth yet, so it offers no export: its
+  ground-truth button (`groundTruth.button`) is hidden and it has no Submit GT step. GT: the same,
+  with the ground truth exported and submitted (`1.26`). PostGT: GT with batch actions on top (none
+  yet). A GT or PostGT study names its ground truth's label and button. The Image Viewer is PreGT,
+  NoR Finder GT. Test: `web-tests/test_study_contract.py`, `web-tests/test_status_bar_page.py`.
+  </details>
+
+- `1.31` Breadcrumbs show the steps done so far, and the step to do now shines.
+  <details>
+
+  A study's steps are Load image, the study's own in order (its `study.json` `phases`; for NoR
+  Run algorithm and Review all items), then Submit GT in a GT or PostGT study. The status bar shows
+  the steps done, then the first one not done, which shines blue, and with it the button that does
+  that step (the `button` the step names; Load for Load image, the ground-truth button for Submit
+  GT); later steps do not show yet, and once every step is done none shines. Load image is done
+  once an image is open, Submit GT once its issue is opened (for a local image, once its file is
+  exported); the study says when its own steps are done (NoR: Run algorithm while the image was
+  searched with the finder and settings now chosen, Review all items while every finalist has a
+  verdict). Opening another image starts over. Hovering a crumb says what was done in that step
+  and when. The steps live in one state in the shell, and the crumbs and the shining buttons are
+  drawn from it alone. Test: `web-tests/test_status_bar_page.py`,
+  `studies/nor/tests/test_ground_truth_page.py`.
+  </details>
+
+- `1.32` The memory, "RAM 253 MB", opens what holds it and a Run GC button.
+  <details>
+
+  The memory the tab holds: Python's, its files, the page's (Chrome and Edge say it) and an estimate
+  for the compiled code and the browser, which a page cannot read; amber past a quarter of the
+  computer's total where the browser says it. Clicking it opens a popup listing each of those, and
+  within the page's share the image and the study's results, and the computer's total. Its Run GC
+  button has Python collect its garbage and says what Python then holds in use against what it has
+  reserved, which never shrinks; a page has no way to collect the browser's own. Test:
+  `web-tests/test_status_bar_page.py`.
+  </details>
+
+- `1.33` The disk, "Disk 1.4 GB", opens Manage storage.
+  <details>
+
+  What the site keeps on this device, the total Manage storage reports (`1.6`), kept current as the
+  page saves or the user deletes. Clicking it opens Manage storage. Test:
+  `web-tests/test_status_bar_page.py`.
   </details>
 
 ## `2` The repo's checks
