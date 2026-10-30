@@ -157,14 +157,22 @@ function makeSteps() {
     .map((p) => ({ ...p, done: false, info: "", at: null }));
   // a step's button shines only while it can be pressed
   stepsWatch.disconnect();
-  for (const p of steps) if (p.button && $(p.button)) stepsWatch.observe($(p.button), { attributes: true, attributeFilter: ["disabled", "hidden"] });
+  for (const p of steps) if (p.button && $(p.button)) {
+    stepsWatch.observe($(p.button), { attributes: true, attributeFilter: ["disabled", "hidden"] });
+    $(p.button).addEventListener("click", () => { p.pressed = true; }, { signal: lifetime.signal });
+  }
   drawSteps();
 }
 // a step done or not, and what was done in it (or how far it has got)
 function step(key, done, info) {
   const p = steps.find((x) => x.key === key);
   if (!p) return;
-  if (done && !p.done) p.at = new Date();
+  if (done && !p.done) {
+    p.at = new Date();
+    // the boxes follow what the user did, not a dial set back to the last run's
+    if (key === "load" || !p.button || p.pressed) foldFor(key);
+    p.pressed = false;
+  }
   p.done = !!done;
   if (info !== undefined) p.info = info;
   drawSteps();
@@ -269,7 +277,7 @@ function handle(m) {
     st.um = m.meta.um; fileInfo(m.meta.info);
     view.show(m.meta.W, m.meta.H, m.images);
     busy(false); statusBar();
-    showImage(); fold(true); loadDone();
+    showImage(); loadDone();
     step("load", true, `${st.fileName}, ${m.meta.W} × ${m.meta.H} px, from ${st.source?.kind === "drive" ? "Google Drive" : "this computer"}`);
     status("Image loaded."); // the study's opened hook says what comes next, if anything
     study.opened?.(m.meta);
@@ -297,7 +305,7 @@ function fileInfo(rows) {
 async function openBytes(name, bytes, source) {
   const opened = until("opened"); working($("#load-main"), () => opened);
   st.fileName = name; st.source = source;
-  for (const p of steps) Object.assign(p, { done: false, info: "", at: null });
+  for (const p of steps) Object.assign(p, { done: false, info: "", at: null, pressed: false });
   drawSteps();
   // a copy, for the next study to open: the bytes themselves go to Python
   st.kept = { name, source, bytes: bytes.slice(0) };
@@ -806,15 +814,26 @@ const hideHelp = (e) => { if (e.target.closest && e.target.closest("[data-help]"
 document.addEventListener("mouseover", helpTip); document.addEventListener("focusin", helpTip);
 document.addEventListener("mouseout", hideHelp); document.addEventListener("focusout", hideHelp);
 
-// ---------- boxes that fold: folded until there is an image ----------
-function fold(open) { document.querySelectorAll(".box.foldable").forEach((b) => b.classList.toggle("folded", !open)); }
+// ---------- boxes that fold with the steps ----------
+// A box's data-opens names the step after which it opens ("user": only its title opens it), and data-folds
+// the one after which it folds; one with neither is open from the start. Between steps a box stays as the
+// user left it.
+const boxes = () => document.querySelectorAll(".box.foldable");
+function unfoldFirst() { boxes().forEach((b) => b.classList.toggle("folded", b.hasAttribute("data-opens"))); }
+// a step just done: a new image folds every box waiting for a later step
+function foldFor(key) {
+  boxes().forEach((b) => {
+    if (b.dataset.opens === key) b.classList.remove("folded");
+    else if (b.dataset.folds === key || (key === "load" && b.hasAttribute("data-opens"))) b.classList.add("folded");
+  });
+}
 function foldable() {
-  document.querySelectorAll(".box.foldable > .sec-head h2, .box.foldable > h2").forEach((h) => {
+  document.querySelectorAll(".box.foldable > .sec-head h2").forEach((h) => {
     h.tabIndex = 0; h.setAttribute("role", "button");
     const flip = () => h.closest(".box").classList.toggle("folded");
     h.onclick = flip; h.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } };
   });
-  fold(false); loadDone();
+  unfoldFirst(); loadDone();
 }
 // the image back in view, from whichever of the study's views is on show
 function showImage() { study.showImage?.(); view.thumbView(); }
@@ -1043,7 +1062,7 @@ async function mountStudy(id) {
     }
   }
   $("#layout").classList.toggle("no-right", !$("#right").querySelector(":scope > :not(slot-here)"));
-  fold(false); // before the first paint with them, so they do not fold in view
+  unfoldFirst(); // before the first paint with them, so they do not fold in view
   view = viewers[manifest.viewer] ||= VIEWERS[manifest.viewer](shell);
   view.channels(manifest.channels);
   const mod = await import(base + manifest.web.module);

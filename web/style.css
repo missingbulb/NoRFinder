@@ -325,8 +325,9 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 
 /* a box that folds: its title opens and closes it */
 .box.foldable > .sec-head h2 { display: flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }
-.box.foldable.folded > :not(.sec-head) { display: none; }
-.box.foldable.folded > .sec-head button { display: none; }
+/* folding wins over any box's own layout for its parts */
+.box.foldable.folded > :not(.sec-head) { display: none !important; }
+.box.foldable.folded > .sec-head > :not(h2) { display: none; }
 
 #notice { position: fixed; z-index: 40; max-width: min(360px, calc(100vw - 16px)); background: var(--panel); color: var(--text); border: 1px solid var(--accent);
   border-radius: var(--r-ctl); padding: 12px 14px; box-shadow: 0 8px 24px #0007; display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
