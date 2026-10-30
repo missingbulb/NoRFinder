@@ -184,8 +184,12 @@ test fold under it. A study's research requirements, which no user sees, stay in
   size while the user moves between folders. A click only selects a row; Open (or a double click,
   or Enter) opens it: an image loads, a folder lists its contents. Thumbnails are never read from
   Drive, which answers a burst of reads by refusing the browser for a while, the next image
-  included. A study may ship ready-made thumbnails (its `driveThumbs`), each fetched once its row is
-  in view; an image opened from Drive saves its own in the browser (the latest 100), shown from then
+  included. A study may ship ready-made thumbnails (its `driveThumbs`), fetched for the rows in view
+  and the next 10 below them, more as the user scrolls; a row scrolled past before its turn is not
+  fetched. Each thumbnail lands in its own row whatever order they arrive in, and a folder's listing
+  is shown only while it is still the folder asked for. One fetched stays for the page's life:
+  closing the dialog stops the rest, and reopening it shows those at once and fetches what the rows
+  in view still lack. Test: `web-tests/test_drive_thumbs_page.py`. An image opened from Drive saves its own in the browser (the latest 100), shown from then
   on without a download; a PNG shows Drive's own. All are in the colours the page gives the
   channels. A checkbox at the bottom, "Show thumbnails" (on at first, remembered in the browser),
   turns the downloads off; beside it, and in the status bar while they load, how many have arrived
@@ -370,6 +374,35 @@ test fold under it. A study's research requirements, which no user sees, stay in
   What the site keeps on this device, the total Manage storage reports (`1.6`), kept current as the
   page saves or the user deletes. Clicking it opens Manage storage. Test:
   `web-tests/test_status_bar_page.py`.
+  </details>
+
+- `1.36` The Drive dialog tells a 3D stack from a flat image, and shows a stack in 3D once opened.
+  <details>
+
+  Each TIFF row in the Google Drive dialog says what the file holds, "3D · 24 slices" for a stack
+  ("3D · 30 slices · 2 channels" when it has more than one channel) and "2D · 3 channels" for a flat
+  image, read from the file's first 64 KB (its ImageJ header), for the
+  rows in view and the next 10 as the thumbnails are (`1.18`) and only while Show thumbnails is on.
+  What each file holds is remembered in the browser, so it is read once. A file whose header says
+  neither shows nothing. When a stack is opened from Drive, its thumbnail is a small 3D picture of
+  the whole stack, turned a little to show its depth, its channels in their own colours (two in green
+  and magenta), drawn from the file the page already has with
+  no further download; a flat image's stays the one `1.18` describes. Test:
+  `web-tests/test_drive_shapes_page.py`.
+  </details>
+
+- `1.37` When Google throttles the site's Drive downloads, the Drive dialog says so and waits 15 minutes.
+  <details>
+
+  Google answers a burst of downloads by refusing the site's for a while, with no word the page
+  can read, so the page knows it by a download failing while Drive still answers for the same
+  file's details (a failure where both fail is shown as the error it is). From then on, for 15
+  minutes, the Drive dialog shows a large notice, "Google is throttling this site's downloads. Try
+  again in 15 minutes.", with a red countdown from 15:00, and makes no call to Drive: its link, Go,
+  Open, the list, its thumbnails and badges all wait. The wait is kept in the browser, so reloading
+  the page does not end it. An image kept on this device (`1.7`) still opens, from the device. When
+  the countdown ends, the notice goes and the dialog lists its link again. Test:
+  `web-tests/test_drive_throttle_page.py`.
   </details>
 
 ## `2` The repo's checks
