@@ -44,3 +44,7 @@
 - **Mechanism:** Claude Code's `paths` frontmatter, `studies/nor/**`; the intake task links the file
   directly, so it still reads it.
 - **Landed:** #566
+
+## 2026-10-30 · reworded · the metrics file's path follows its move to web/ (#572)
+- **Reason:** finder_metrics.json moved into the study's published page part.
+- **Landed:** #572

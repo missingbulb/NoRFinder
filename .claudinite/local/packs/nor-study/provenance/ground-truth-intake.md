@@ -48,3 +48,10 @@
   reached by relative path, so the study depends on the repo pack and never the reverse.
 - **Rejected:** copying the GitHub helper into the study pack, which would need a drift guard.
 - **Landed:** #559
+
+## 2026-10-30 · policy-changed · the intake commit also stages web/finder_metrics.json (#572)
+- **Reason:** the baseline rewrite regenerates the metrics, which now live outside detection/lab/.
+- **Actor:** @missingbulb (owner).
+- **Model:** claude-opus-5-5
+- **Mechanism:** the same worker, one more path in its git add.
+- **Landed:** #572
