@@ -70,7 +70,7 @@ The full set (`python3 -m pytest web-tests studies`) also needs Node, Pyodide
 ```
 web/              the shell, the viewer, the Python runtime (worker.js, bridge.js)
 web-tests/        the shell's tests, run on the fixture study
-studies/nor/      the NoR Finder study: study.json, web/, detection/, src/, data/, docs/, tests/
+studies/nor/      the NoR Finder study: study.json, web/, detection/, data/, docs/, tests/
 studies/fixture/  the smallest study, for the shell's tests (`?study=fixture`)
 docs/             this map
 dev/requirements/ the page's one spec: the shell, the repo's checks, each study's page

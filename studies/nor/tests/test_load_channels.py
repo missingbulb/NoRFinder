@@ -2,7 +2,7 @@
 green-displayed channel, DAPI the other large-blob channel, Nav1.6 the rest. The display colour
 never decides DAPI or Nav: in the R,G,B files DAPI is displayed red.
 
-Run: python3 tests/test_load_channels.py   (checks whatever src/fetch_data.py has fetched)
+Run: python3 tests/test_load_channels.py   (checks whatever detection/fetch_data.py has fetched)
 """
 import glob
 import os

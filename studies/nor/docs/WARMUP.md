@@ -20,30 +20,13 @@ Three requirements, in order of dependency:
 Full specification, including the parts the overview leaves unstated:
 [`project-brief.md`](project-brief.md).
 
-## Where things stand — 2026-09-04
+## Where things stand
 
-**Literature review done, six sources read in full. Nothing else exists yet.**
-
-- ✅ Project overview ingested durably ([`project-brief.md`](project-brief.md) +
-  [`figures/`](figures/)) — the PDF upload path does not persist, these files are the record.
-- ✅ Literature review ([`literature/`](literature/README.md)), issues
-  [#5](https://github.com/missingbulb/NoRFinder/issues/5) and
-  [#8](https://github.com/missingbulb/NoRFinder/issues/8). Nothing is unreachable.
-- ✅ **Real sample data: 55 owner images**, fetched from Drive by `src/fetch_data.py` and pinned by
-  checksum in [`../data/sources.json`](../data/sources.json) — never committed (R6). Single-plane,
-  3-channel, 16-bit, 0.1746 µm/px read from the files. **Channel order varies between files** —
-  read [`../data/README.md`](../data/README.md) before touching them. The images in `figures/`
-  remain document illustrations — **no number may be measured off them.**
-- ❌ **No ground truth.** No annotated image, and no stated annotation convention.
-- ✅ **R1 — scale-free baseline detector + transform-invariance harness**
-  ([`results/`](results/README.md), #10). Tier-1 invariance is exact and pinned by
-  `tests/test_invariance.py`; the scale envelope is measured at ~0.85×–2.5×.
-- ❌ **No accuracy metric, and none is possible yet** — no ground truth. The harness measures the
-  detector against *itself*, which says nothing about whether it finds the right nodes.
-- ❌ **No scoring harness** (needs annotations), no z-stack handling, no µm output path.
+[`../detection/STATE.md`](../detection/STATE.md) holds the current state — the default finder, its
+scores, what to run — and is updated in every PR that changes it, so this file does not repeat it.
 
 Run the tests: `pip install -r requirements.txt && python3 studies/nor/detection/ground_truth.py fetch && python3 -m pytest web-tests studies` from the repo root (the page tests also need `npm i --prefix web-tests pyodide@314.0.7` and Playwright's Chromium). CI runs the fast set (`-m "not full"`, no Node or browser) on every PR (`.github/workflows/tests.yml`) and every test nightly and on each push to main (`.github/workflows/tests-full.yml`), where a green run wakes the site release.
-Fetch the raw data: `python3 studies/nor/src/fetch_data.py`
+Fetch the raw data: `python3 studies/nor/detection/fetch_data.py`
 
 ## What blocks starting
 
@@ -139,11 +122,14 @@ This study is one of the page's studies; the repo's own map, and what the shell 
 [`../../../docs/WARMUP.md`](../../../docs/WARMUP.md). Paths below are under `studies/nor/`.
 
 ```
-src/         nor.py (detector), harness.py (invariance), render.py (overlays)
+web/         the study's page: panels, script, style, finder_metrics.json
+detection/   the finders, nor.py (the R1 baseline), harness.py (invariance), fetch_data.py; STATE.md
+data/        sources.json: the Drive images by checksum (the images stay out of git)
 tests/       every requirement that can be executed; test_quality.py locks the finders (R9)
 docs/
   WARMUP.md                          this file
-  requirements.md                    standing constraints on HOW it is built — read with the brief
+  requirements.md                    standing constraints on HOW it is built, which no user sees;
+                                     what the page does is ../../../dev/requirements/requirements.md
   results/                           iteration notes; R1 is the first
   project-brief.md                   the specification, ingested from the owner's PDF
   project-overview-extracted-text.txt  verbatim PDF text, for wording questions
@@ -151,4 +137,5 @@ docs/
   literature/                        the review; start at its README
 ```
 
-`src/` is **the pipeline** — there are no spikes yet. When there are, this map says which is which.
+`detection/` is **the pipeline**: the finders the page runs, the R1 baseline they grew from, and
+the lab tooling around them; [`../detection/STATE.md`](../detection/STATE.md) says which file does what.

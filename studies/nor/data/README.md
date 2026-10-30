@@ -5,11 +5,11 @@ The microscope files are **not in this repository**. They live in the owner's Go
 
 ```
 pip install -r requirements.txt
-python3 src/fetch_data.py
+python3 detection/fetch_data.py
 ```
 
 To fetch only some files, pass one or more path globs:
-`python3 src/fetch_data.py -m 'Left Up- Edited/Slide2*'`.
+`python3 detection/fetch_data.py -m 'Left Up- Edited/Slide2*'`.
 
 They land in `data/raw/` (git-ignored, gone with the container). Every file is checked against
 the SHA-256 in `sources.json`; a mismatch stops the run. The first fetch of a new source runs with

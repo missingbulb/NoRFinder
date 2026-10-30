@@ -36,7 +36,7 @@ IN_CI = bool(os.environ.get('CI'))
 
 CORPUS = ground_truth.corpus()
 needs_images = pytest.mark.skipif(not all(os.path.exists(im['path']) for im in CORPUS),
-                                  reason='ground-truth images missing (src/fetch_data.py, detection/ground_truth.py fetch)')
+                                  reason='ground-truth images missing (detection/fetch_data.py, detection/ground_truth.py fetch)')
 
 
 def read_baseline():

@@ -10,7 +10,7 @@ Run: python3 tests/test_invariance.py
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'detection'))
 import nor
 import harness
 

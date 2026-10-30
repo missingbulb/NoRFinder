@@ -97,7 +97,7 @@ run("from PIL import Image, ImageDraw", "import PIL");
 run("import tifffile", "import tifffile");
 py.FS.mkdirTree("/repo");
 py.FS.mount(py.FS.filesystems.NODEFS, { root: repo }, "/repo");
-run("import sys, os; sys.path[:0] = ['/repo/detection', '/repo/src']; os.environ['NORFINDER_SRC'] = '/repo/src'; import interactive", "import the finders");
+run("import sys, os; sys.path[:0] = ['/repo/detection']; import interactive", "import the finders");
 py.FS.writeFile("/tmp/slide.tif", fs.readFileSync(tif));
 run("S = interactive.Session('/tmp/slide.tif'); _img = S.images(); del _img", "open slide + images()");
 run(`meta, seg = S.detect('${finder}', {})`, `detect ${finder}`);
