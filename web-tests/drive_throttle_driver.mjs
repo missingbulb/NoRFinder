@@ -118,6 +118,13 @@ try {
   await menu("#load-menu .recent:nth-of-type(1)");
   await page.waitForFunction(() => st.fileName === "b.png");
   check(calls.length === 0, "an image kept on this device opens while it waits, with no call to Drive");
+  // one no longer kept shows the notice instead of downloading
+  await page.evaluate(async () => { const c = await caches.open("nor-images-v1"); for (const q of await c.keys()) await c.delete(q); });
+  await menu("#load-menu .recent:nth-of-type(1)");
+  await page.waitForFunction(() => $("#drive-dlg").open && !$("#drive-throttle").hidden);
+  await page.waitForTimeout(300);
+  check(calls.length === 0, `a recent image no longer kept shows the notice, with no call to Drive: ${calls}`);
+  await page.click("#drive-dlg button[value=close]");
 
   // the countdown ends: the notice goes and the dialog lists its link again
   mode = "ok";

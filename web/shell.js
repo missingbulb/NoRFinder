@@ -321,7 +321,6 @@ function driveDialog() {
   const enter = (f) => (f.folder ? (trail.push(f), show()) : take(f.id, f.name, trail.slice(1).map((t) => t.name)));
   openRecent = (r) => take(r.id, r.name, r.path || []);
   const show = async () => {
-    if (throttled()) return holdDrive();
     const at = trail[trail.length - 1];
     $("#drive-path").innerHTML = trail.map((t, k) => `<button type="button" class="link" data-k="${k}">${esc(t.name)}</button>`).join(" / ");
     $("#drive-path").querySelectorAll("button").forEach((b) => (b.onclick = () => { trail = trail.slice(0, +b.dataset.k + 1); show(); }));
@@ -432,7 +431,6 @@ function driveDialog() {
     d.disabled = true; d.title = "Needs this site's Google API key (issue #234)";
   }
   const open = () => {
-    if (throttled()) return holdDrive();
     const link = $("#drive-link").value, ref = NorDrive.parse(link);
     $("#drive-list").replaceChildren(); $("#drive-path").replaceChildren(); choose(null);
     if (!ref) return msg("That does not look like a Google Drive link.", true);
