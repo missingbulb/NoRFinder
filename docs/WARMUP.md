@@ -14,7 +14,7 @@ Working on a study? Read its own warm-up next: [NoR Finder](../studies/nor/docs/
 |---|---|---|
 | Shell: loading (computer, Google Drive), the Python runtime, status and memory, notices, theme, side bars, version history, downloads, ground-truth submission | `web/` | — |
 | Viewer: shows the opened image and what a study draws over it, zoom, pan, the thumbnail, channel toggles | `web/viewer2d.js` | a study's `viewer` |
-| Study: its panels, its flow, its Python | `studies/<id>/` | `?study=<id>` |
+| Study: its panels, its flow, its Python | `studies/<id>/` | `/<id>` (rauntruth.com/nor) |
 
 A 3D viewer is a second module beside `viewer2d.js` with the same interface; a method shared by
 several studies (the NoR study's candidates-then-filters flow, say) is lifted out of its study once a
@@ -44,7 +44,9 @@ Its Python entry module offers `ready()` (JSON, what the page needs before any i
 `Session(path)` with `opened()` (JSON meta — `W`, `H`, `um`, `info` — and the viewer's image bytes,
 one plane per channel) and `call(action, args)` (JSON result and optional bytes). The shell forwards
 every call and knows none of their meanings. `mount(shell)` returns the study's hooks; the list, and
-what `shell` offers, heads `web/shell.js`, and the viewer's own heads `web/viewer2d.js`.
+what `shell` offers, heads `web/shell.js`, and the viewer's own heads `web/viewer2d.js`. The header's
+switcher swaps studies in place, in the same page and the same Python, so a study must be able to
+leave: every listener it adds outside its own panels takes `shell.signal` (requirement 1.29).
 `studies/fixture/` is the smallest study there is; the shell's own tests run on it.
 `studies/viewer/`, the Image Viewer the page opens on, is the study with nothing of its own: what the
 shell shows there is what every study gets.
@@ -59,11 +61,12 @@ page's files in those places, and everything else in the study is research that 
 pip install -r requirements.txt
 python3 -m pytest web-tests studies -m "not full"
 python3 dev/tools/build/build.py
-python3 -m http.server -d dev/build/site 8000
+python3 dev/tools/build/serve.py 8000
 ```
 
-then open `http://localhost:8000/` (the Image Viewer), `http://localhost:8000/?study=nor` or
-`http://localhost:8000/?study=fixture`.
+then open `http://localhost:8000/` (the Image Viewer), `http://localhost:8000/nor` or
+`http://localhost:8000/fixture`. `serve.py` serves `/nor` from the `nor.html` the build writes, as
+Cloudflare does; a plain file server would answer a reload there with a 404.
 The build assembles under `dev/build/site/` exactly what is published (requirement 1.8), with the
 page at the root as rauntruth.com serves it (requirement 1.27); serving the repo root instead and
 opening `/web/` shows the page with every file of every study reachable.
@@ -77,7 +80,7 @@ web/              the shell, the viewer, the Python runtime (worker.js, bridge.j
 web-tests/        the shell's tests, run on the fixture study
 studies/nor/      the NoR Finder study: study.json, web/, detection/, data/, docs/, tests/
 studies/viewer/   the Image Viewer, the page's default: any image, no analysis
-studies/fixture/  the smallest study, for the shell's tests (`?study=fixture`)
+studies/fixture/  the smallest study, for the shell's tests (`/fixture`)
 docs/             this map
 dev/requirements/ the page's one spec: the shell, the repo's checks, each study's page
 dev/tools/build/  the site build, the version history, the logo tracer and the tests' pytest hooks

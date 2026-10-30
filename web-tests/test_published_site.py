@@ -113,3 +113,33 @@ def test_the_wrangler_config_builds_and_publishes_the_site_tree():
     assert w['assets']['directory'] == './dev/build/site'
     assert w['build']['command'] == 'python3 dev/tools/build/build.py'
     assert {r['pattern'] for r in w['routes'] if r.get('custom_domain')} == {'rauntruth.com', 'www.rauntruth.com'}
+
+
+def listed_studies(tmp_path, *studies):
+    for sid, listed in studies:
+        os.makedirs(tmp_path / 'studies' / sid)
+        (tmp_path / 'studies' / sid / 'study.json').write_text(json.dumps(dict(id=sid, title=sid.title(), listed=listed)))
+    return str(tmp_path)
+
+
+def test_each_listed_study_is_published_under_its_own_path(tmp_path):
+    """1.2: rauntruth.com/<id> is the page, published again as <id>.html, which Cloudflare serves at /<id>."""
+    root = listed_studies(tmp_path, ('alpha', True), ('hidden', False))
+    assert build.study_pages(root, {'index.html', 'studies'}) == ['alpha.html']
+
+
+def test_a_study_whose_path_the_site_already_serves_is_refused(tmp_path):
+    root = listed_studies(tmp_path, ('vendor', True))
+    for taken in ({'vendor'}, {'vendor.html'}):
+        try:
+            build.study_pages(root, taken)
+        except ValueError as e:
+            assert 'vendor' in str(e)
+        else:
+            raise AssertionError(f'a study named vendor was published over {taken}')
+
+
+def test_the_repos_studies_take_no_path_the_site_serves():
+    top = {p.split('/')[0] for p in map(build.served, published())} | set(build.GENERATED)
+    assert len(top) >= 5, top
+    assert 'nor.html' in build.study_pages(ROOT, top)

@@ -6,17 +6,21 @@
 // The study's hooks it calls: pickAt(event) -> what was clicked, or null; pick(it) when a click, not a
 // drag, landed on it; step(dir) on a sideways swipe; capturesPointer() while the study's own tool (a
 // lasso, say) takes the pointer; zoomed() after every zoom.
-export function viewer(shell, channels) {
+export function viewer(shell) {
   const { $, state: st } = shell;
-  let hooks = {};
+  let hooks = {}, channels = [];
 
-  // the channel toggles: one per channel the study names, in the colour the viewer gives it
-  $("#channels").replaceChildren(...channels.map((c) => {
-    const l = document.createElement("label"), i = document.createElement("input");
-    l.title = c.title; i.type = "checkbox"; i.id = "show-" + c.key; i.className = "ch " + c.key; i.checked = c.shown;
-    i.onchange = () => (st.img ? draw() : st.peeked && st.peek.redraw());
-    l.append(i, c.name); return l;
-  }));
+  // the channel toggles: one per channel the study names, in the colour the viewer gives it; a study that
+  // comes in brings its own
+  function setChannels(list) {
+    channels = list;
+    $("#channels").replaceChildren(...channels.map((c) => {
+      const l = document.createElement("label"), i = document.createElement("input");
+      l.title = c.title; i.type = "checkbox"; i.id = "show-" + c.key; i.className = "ch " + c.key; i.checked = c.shown;
+      i.onchange = () => (st.img ? draw() : st.peeked && st.peek.redraw());
+      l.append(i, c.name); return l;
+    }));
+  }
   const shown = () => channels.map((c) => $("#show-" + c.key).checked);
 
   // planes: the channels' 8-bit pixels, H*W each, in the order the study names them; the viewer colours a
@@ -150,7 +154,7 @@ export function viewer(shell, channels) {
   function clear() { $("#overlay").innerHTML = ""; }
 
   return {
-    use(h) { hooks = h || {}; },
+    use(h) { hooks = h || {}; }, channels: setChannels,
     show, draw, setZoom, fit, focus, toImage, layer, thumbView, preview, clear, shown,
     get overlay() { return $("#overlay"); }, get scroller() { return $("#scroller"); },
   };

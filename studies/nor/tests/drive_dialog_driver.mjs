@@ -7,6 +7,7 @@
 // Prints what it measured; exits 1 when something is wrong, 2 when it cannot run. With SHOT, also saves a
 // screenshot of the dialog there.
 //   node tests/drive_dialog_driver.mjs SHOT|- THUMBS IMAGE...
+import { repoFile } from "../../../web-tests/repo_file.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -48,7 +49,7 @@ const server = http.createServer((q, r) => {
   }
   const ready = u.startsWith("/studies/nor/ready-thumbs/");
   if (ready && u.endsWith(".jpg")) thumbsServed++;
-  const f = ready ? path.join(thumbs, u.slice("/studies/nor/ready-thumbs/".length)) : path.join(repo, u);
+  const f = ready ? path.join(thumbs, u.slice("/studies/nor/ready-thumbs/".length)) : repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });

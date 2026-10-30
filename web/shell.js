@@ -1,5 +1,5 @@
-// The page's shell: it runs the study the address names (?study=<id>, the default when none is named),
-// and knows none of them; the header's switcher offers the ones the build lists. What it gives a study, as shell in mount(shell): loading images (from the
+// The page's shell: it runs the study the address names (/<id>, the default at the bare address), and knows
+// none of them; the header's switcher offers the ones the build lists and swaps one in without a reload. What it gives a study, as shell in mount(shell): loading images (from the
 // computer or Google Drive), Python (the study's own, run in worker.js), the viewer the study asks for,
 // the status line and the busy screen, notices, the user's saved settings, downloads and ground-truth
 // submission; and around them the theme, side bars, foldable boxes, the memory popup and the version
@@ -13,7 +13,8 @@
 // painter for an image's bytes as they arrive; showImage() when the shell brings the image back into
 // view; stored(key), what one of the study's browser keys holds, for the Manage storage dialog:
 // {group: "settings", what} or {group: "images", image, what}, null for a key not its own; and the viewer's
-// hooks (viewer2d.js).
+// hooks (viewer2d.js). A listener a study adds outside its own panels takes shell.signal, which ends it when
+// the study leaves.
 "use strict";
 import { viewer as viewer2d } from "./viewer2d.js";
 
@@ -56,7 +57,10 @@ const sizeText = (n) => (!n ? "0 KB" : n < 1048576 ? `${Math.max(1, Math.round(n
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 // the page's state: the shell's fields below, and whatever the study keeps beside them
-const st = { worker: null, H: 0, W: 0, um: null, img: null, plain: null, zoom: 2, fileName: "", sha: "", source: null, heap: null, files: 0 };
+const st = { worker: null, H: 0, W: 0, um: null, img: null, plain: null, zoom: 2, fileName: "", sha: "", source: null, heap: null, files: 0,
+  ready: false, queued: null, kept: null, reopening: false, busySince: 0, busyTimer: null, peeked: false, peek: null };
+// what a study leaving leaves of the state: the shell's own fields
+const SHELL_STATE = new Set(Object.keys(st));
 let study = {}, view = null, manifest = null, base = "";
 
 // ---------- status ----------
@@ -131,7 +135,7 @@ async function start() {
     } catch (e) { console.warn("no cache for third-party files:", e); }
   }
   status("Loading Python in the background…"); $("#spin").classList.add("on");
-  st.worker = new Worker("worker.js?study=" + encodeURIComponent(manifest.id), { type: "module" });
+  st.worker = new Worker("worker.js?study=" + encodeURIComponent(studyOf(location)), { type: "module" });
   st.worker.onmessage = (e) => onWorker(e.data);
   st.worker.onerror = (e) => onWorker({ type: "error", text: e.message || "Python stopped." });
   if (navigator.deviceMemory <= LOW_GB) memoryTip();
@@ -156,6 +160,8 @@ $("#memory-off").onchange = () => writeJSON(MEMORY_TIP, $("#memory-off").checked
 
 function onWorker(m) {
   if (m.heap != null) { st.heap = m.heap; st.files = m.files || 0; }
+  // a late answer for a study that has left, or a word from one still coming in
+  if (m.study && m.study !== manifest?.id) return statusBar();
   handle(m); settle(m); statusBar();
 }
 function handle(m) {
@@ -169,6 +175,7 @@ function handle(m) {
     study.ready?.(m.info); statusBar();
     status("Ready. Load an image.");
     if (st.queued) { const q = st.queued; st.queued = null; send(q.name, q.bytes); }
+    else if (st.kept) reopen();
   } else if (m.type === "opened") {
     st.um = m.meta.um; fileInfo(m.meta.info);
     view.show(m.meta.W, m.meta.H, m.images);
@@ -176,8 +183,9 @@ function handle(m) {
     showImage(); fold(true); loadShine();
     status("Image loaded."); // the study's opened hook says what comes next, if anything
     study.opened?.(m.meta);
-    if (st.source && st.source.kind === "local" && manifest.groundTruth) notice(LOCAL_GT);
-    if (st.source && st.source.kind === "drive") saveThumb(st.source.id, st.fileName);
+    if (!st.reopening && st.source && st.source.kind === "local" && manifest.groundTruth) notice(LOCAL_GT);
+    if (!st.reopening && st.source && st.source.kind === "drive") saveThumb(st.source.id, st.fileName);
+    st.reopening = false;
   } else if (m.type === "result") {
     study.result?.(m.action, m.meta, m.bytes, m.echo);
   }
@@ -197,6 +205,8 @@ function fileInfo(rows) {
 async function openBytes(name, bytes, source) {
   const opened = until("opened"); working($("#load-main"), () => opened);
   st.fileName = name; st.source = source;
+  // a copy, for the next study to open: the bytes themselves go to Python
+  st.kept = { name, source, bytes: bytes.slice(0) };
   study.opening?.(name, source);
   st.sha = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map((b) => b.toString(16).padStart(2, "0")).join("");
   $("#file-name").textContent = name; $("#file-name").classList.remove("dim"); fileInfo(null); statusBar();
@@ -208,6 +218,13 @@ async function openBytes(name, bytes, source) {
 function send(name, bytes) {
   busy(true, "Reading the image…", st.peeked && "peek");
   st.worker.postMessage({ type: "open", name, bytes }, [bytes]);
+}
+// the image on show, opened again in a study that has just come in
+function reopen() {
+  const { name, source, bytes } = st.kept, opened = until("opened");
+  working($("#load-main"), () => opened);
+  st.reopening = true; study.opening?.(name, source);
+  send(name, bytes.slice(0));
 }
 // a painter for the image's bytes as they arrive, shown until Python's own drawing replaces it; the study's,
 // when it has one
@@ -295,8 +312,8 @@ function driveDialog() {
   // fetched once its row scrolls into view; never read from Drive, which refuses a burst of reads and then
   // the image itself. Progress shows beside the checkbox and in the status bar.
   const thumbs = (() => {
-    const made = new Map(), waiting = [], AT_ONCE = 4, dir = manifest.driveThumbs ? base + manifest.driveThumbs : null;
-    let ctl = new AbortController(), running = 0, seen, ready, asked = 0, done = 0, bytes = 0;
+    const made = new Map(), waiting = [], AT_ONCE = 4;
+    let ctl = new AbortController(), running = 0, seen, ready, asked = 0, done = 0, bytes = 0, dir = null;
     const put = (pic, url) => { const i = new Image(); i.alt = ""; i.src = url; pic.replaceChildren(i); };
     const tell = () => {
       const t = asked ? `${done} of ${asked} · ${sizeText(bytes)}` : "";
@@ -317,6 +334,9 @@ function driveDialog() {
     const stop = () => { ctl.abort(); ctl = new AbortController(); running = 0; waiting.length = 0; asked = done = bytes = 0; tell(); };
     const reset = () => {
       stop();
+      // the study on show's own thumbnails
+      const own = manifest?.driveThumbs ? base + manifest.driveThumbs : null;
+      if (own !== dir) { dir = own; ready = null; }
       ready = ready || (dir ? fetch(dir + "index.json").then((r) => r.json()).then((ids) => new Set(ids)).catch(() => new Set()) : Promise.resolve(new Set()));
       if (seen) seen.disconnect();
       seen = new IntersectionObserver((es) => es.forEach((e) => {
@@ -711,51 +731,144 @@ const inView = new IntersectionObserver((seen) => { for (const e of seen) e.targ
 document.addEventListener("animationstart", (e) => inView.observe(e.target));
 
 // ---------- the study ----------
-// the header's switcher: every study the build lists, each a link to the page running it, the one on show ticked
-async function studyMenu(id) {
+// The page's own folder: a study's address is its id there, the default study's the folder itself. An
+// address from before paths, ?study=<id>, names the same study.
+const HOME = new URL("./", import.meta.url).pathname;
+function studyOf(loc) {
+  const rest = decodeURIComponent(loc.pathname.startsWith(HOME) ? loc.pathname.slice(HOME.length) : "").replace(/\.html$/, "");
+  return (rest && rest !== "index" ? rest : new URLSearchParams(loc.search).get("study")) || DEFAULT_STUDY;
+}
+const addressOf = (id) => (id === DEFAULT_STUDY ? HOME : HOME + encodeURIComponent(id));
+
+// The header's switcher, after GitHub's repository switcher: every study the build lists, each a link to its
+// address, found by typing; the arrow keys mark one, Enter opens it. A plain click swaps it in place.
+async function studyMenu() {
   let listed = [];
-  try { listed = await (await fetch("studies.json", { cache: "no-cache" })).json(); } catch (e) { console.warn("no list of studies:", e); }
+  try { listed = await (await fetch(HOME + "studies.json", { cache: "no-cache" })).json(); } catch (e) { console.warn("no list of studies:", e); }
+  const use = (n) => `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">${$(`#icons .${n}`).innerHTML}</svg>`;
   $("#study-list").replaceChildren(...listed.map((s) => {
     const a = document.createElement("a");
-    a.href = s.id === DEFAULT_STUDY ? location.pathname : "?study=" + encodeURIComponent(s.id);
-    a.textContent = s.title;
-    if (s.id === id) a.setAttribute("aria-current", "page");
+    a.href = addressOf(s.id); a.dataset.id = s.id;
+    a.innerHTML = `<span class="tick">${use("tick")}</span>${use("study")}<span class="name"></span>`;
+    a.querySelector(".name").textContent = s.title;
+    a.onclick = (e) => {
+      if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault(); goTo(s.id);
+    };
+    a.onmouseenter = () => mark(a);
     return a;
   }));
+  markCurrent();
 }
+const rows = () => [...$("#study-list").children].filter((a) => !a.hidden);
+function mark(a) { for (const r of $("#study-list").children) r.classList.toggle("active", r === a); }
+function markCurrent() {
+  for (const a of $("#study-list").children) {
+    if (a.dataset.id === manifest?.id) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+  }
+}
+function filterStudies() {
+  const q = $("#study-search").value.trim().toLowerCase();
+  for (const a of $("#study-list").children) a.hidden = !!q && !a.textContent.toLowerCase().includes(q);
+  $("#study-none").hidden = rows().length > 0;
+  mark(rows().find((a) => a.hasAttribute("aria-current")) || rows()[0]);
+}
+$("#study-menu").addEventListener("toggle", () => {
+  if (!$("#study-menu").open) return;
+  $("#study-menu .pop").style.left = $("#study-menu .caret").offsetLeft + "px";
+  $("#study-search").value = ""; filterStudies(); $("#study-search").focus();
+});
+$("#study-search").oninput = filterStudies;
+$("#study-search").onkeydown = (e) => {
+  const list = rows(), at = list.findIndex((a) => a.classList.contains("active"));
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    if (list.length) mark(list[(at + (e.key === "ArrowDown" ? 1 : list.length - 1)) % list.length]);
+  } else if (e.key === "Enter") {
+    e.preventDefault(); const a = list[at] || list[0]; if (a) goTo(a.dataset.id);
+  } else if (e.key === "Escape") {
+    $("#study-menu").open = false; $("#study-menu summary").focus();
+  }
+};
+
+// One study at a time: the one the address names. Switching pushes the new address and swaps the study in
+// place; Back and Forward swap too. Swaps run one after another, each to wherever the address is by then.
+let swapping = Promise.resolve();
+function goTo(id) {
+  $("#study-menu").open = false;
+  if (studyOf(location) === id) return;
+  history.pushState(null, "", addressOf(id));
+  swap();
+}
+addEventListener("popstate", () => swap());
+function swap() {
+  swapping = swapping.then(async () => {
+    const id = studyOf(location);
+    if (id === manifest?.id) return;
+    leaveStudy();
+    try {
+      await mountStudy(id);
+    } catch (e) { return status("Error: " + (e.message || e), true); }
+    // before Python has started, it starts on this study
+    if (!st.worker) return;
+    $("#spin").classList.add("on");
+    st.worker.postMessage({ type: "study", id });
+  });
+}
+
+// the study's panels, put into the shell's slots, and its stylesheet: what leaves with it
+let lifetime = new AbortController(), mounted = [], css = null;
 // its panels go into the shell's slots, its stylesheet beside the shell's, then its module mounts; a side bar
 // it leaves empty gives its room to the image
-async function mountStudy() {
-  const id = new URLSearchParams(location.search).get("study") || DEFAULT_STUDY;
-  studyMenu(id);
+async function mountStudy(id) {
   if (!/^[\w-]+$/.test(id)) throw new Error(`no study "${id}"`);
   base = `../studies/${id}/`;
   const r = await fetch(base + "study.json");
   if (!r.ok) throw new Error(`no study "${id}"`);
   manifest = await r.json();
-  document.title = manifest.title; $("#title").textContent = manifest.title;
+  document.title = manifest.title; $("#title").textContent = manifest.title; markCurrent();
   $("#file").accept = manifest.files.accept; $("#empty-text").textContent = manifest.files.empty;
-  if (manifest.web.style) { const css = document.createElement("link"); css.rel = "stylesheet"; css.href = base + manifest.web.style; document.head.append(css); }
+  if (manifest.web.style) { css = document.createElement("link"); css.rel = "stylesheet"; css.href = base + manifest.web.style; document.head.append(css); }
   if (manifest.web.panels) {
     const panels = new DOMParser().parseFromString(await (await fetch(base + manifest.web.panels)).text(), "text/html");
-    for (const t of panels.querySelectorAll("template[data-slot]")) $(`slot-here[data-slot-for="${t.dataset.slot}"]`).replaceWith(document.importNode(t.content, true));
+    for (const t of panels.querySelectorAll("template[data-slot]")) {
+      const nodes = [...document.importNode(t.content, true).childNodes];
+      $(`slot-here[data-slot-for="${t.dataset.slot}"]`).before(...nodes); mounted.push(...nodes);
+    }
   }
-  document.querySelectorAll("slot-here").forEach((s) => s.remove());
-  $("#layout").classList.toggle("no-right", !$("#right").children.length);
+  $("#layout").classList.toggle("no-right", !$("#right").querySelector(":scope > :not(slot-here)"));
   fold(false); // before the first paint with them, so they do not fold in view
-  view = VIEWERS[manifest.viewer](shell, manifest.channels);
+  view = viewers[manifest.viewer] ||= VIEWERS[manifest.viewer](shell);
+  view.channels(manifest.channels);
   const mod = await import(base + manifest.web.module);
   study = (await mod.mount(shell)) || {};
   view.use(study);
-  driveDialog(); foldable();
-  slow($("#gt-export"));
+  foldable();
+}
+const viewers = {};
+// The study on show leaves: its panels, stylesheet, drawing, listeners and state go, and its Python's late
+// answers are dropped; the image stays on show, to open again in the study that comes in.
+function leaveStudy() {
+  lifetime.abort(); lifetime = new AbortController();
+  for (const n of mounted.splice(0)) n.remove();
+  css?.remove(); css = null;
+  study = {}; manifest = null; view?.use({}); view?.clear();
+  for (const k of Object.keys(st)) if (!SHELL_STATE.has(k)) delete st[k];
+  st.ready = false;
+  for (const w of Object.values(waiting)) w.splice(0).forEach((x) => x.bad(new Error("the study left")));
+  busy(false); $("#sb-counts").textContent = ""; $("#notice").hidden = true; $("#tip").hidden = true;
+  $("#image-view").hidden = false; delete $("#view").dataset.view;
 }
 
 const shell = {
   $, state: st, status, busy, statusBar, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, showImage,
-  get viewer() { return view; }, get study() { return manifest; },
+  get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; },
 };
 // for the page's tests, which drive it from outside
 window.st = st; window.$ = $; window.shellForTests = { saveThumb };
 
-mountStudy().then(start).catch((e) => status("Error: " + (e.message || e), true));
+// an old address, ?study=<id> or index.html, becomes the study's own
+if (new URLSearchParams(location.search).has("study") || location.pathname.endsWith("/index.html")) history.replaceState(null, "", addressOf(studyOf(location)) + location.hash);
+studyMenu();
+driveDialog(); slow($("#gt-export"));
+mountStudy(studyOf(location)).then(start).catch((e) => status("Error: " + (e.message || e), true));

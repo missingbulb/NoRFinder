@@ -18,10 +18,12 @@
 <header>
   <img id="logo" src="logo.svg" alt="Sagol School of Neuroscience, Tel Aviv University">
   <details class="menu" id="study-menu">
-    <summary title="Switch study" aria-label="Switch study"><h1 id="title"></h1><span class="caret" aria-hidden="true"><svg viewBox="0 0 16 16" width="16" height="16"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></svg></span></summary>
-    <div class="pop">
-      <h2>Switch study</h2>
+    <summary aria-label="Switch study"><h1 id="title"></h1><span class="caret" title="Switch study"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z"/></svg></span></summary>
+    <div class="pop" role="dialog" aria-labelledby="study-menu-title">
+      <h2 id="study-menu-title">Switch study</h2>
+      <label class="search"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"/></svg><input id="study-search" type="search" placeholder="Search studies" autocomplete="off" spellcheck="false" aria-label="Search studies" aria-controls="study-list"></label>
       <nav id="study-list" aria-label="Studies"></nav>
+      <p id="study-none" class="dim" hidden>No study matches.</p>
     </div>
   </details>
   <span class="grow"></span>
@@ -148,7 +150,7 @@
   </form>
 </dialog>
 <div id="tip" hidden></div>
-<div id="icons" hidden><svg class="done" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg><svg class="part" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><svg class="todo" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></div>
+<div id="icons" hidden><svg class="tick" viewBox="0 0 16 16"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg><svg class="study" viewBox="0 0 16 16"><path d="M5 5.782V2.5h-.25a.75.75 0 0 1 0-1.5h6.5a.75.75 0 0 1 0 1.5H11v3.282l3.666 5.76C15.619 13.04 14.543 15 12.767 15H3.233c-1.776 0-2.852-1.96-1.899-3.458Zm-2.4 6.565a.75.75 0 0 0 .633 1.153h9.534a.75.75 0 0 0 .633-1.153L12.225 10.5h-8.45ZM9.5 2.5h-3V6c0 .143-.04.283-.117.403L4.73 9h6.54L9.617 6.403A.746.746 0 0 1 9.5 6Z"/></svg><svg class="done" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg><svg class="part" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><svg class="todo" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></div>
 <slot-here data-slot-for="body"></slot-here>
 <div id="notice" role="alertdialog" aria-labelledby="notice-text" hidden><p id="notice-text"></p><button id="notice-ok" class="primary" type="button">OK</button></div>
 <script src="config.js"></script>

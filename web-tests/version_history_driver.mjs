@@ -5,6 +5,7 @@
 // history that cannot be read says so. Optional SHOTS: a directory for screenshots.
 // Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/version_history_driver.mjs [SHOTS]
+import { repoFile } from "./repo_file.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -37,7 +38,7 @@ const server = http.createServer((q, r) => {
     if (!history) { r.writeHead(404); return r.end(); }
     r.writeHead(200, { "content-type": "application/json" }); return r.end(history);
   }
-  const f = path.join(repo, u);
+  const f = repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
