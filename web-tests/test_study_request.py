@@ -1,4 +1,4 @@
-"""1.30: the form Submit New Study Request opens asks for everything a new study needs."""
+"""1.31: the form Submit New Study Request opens asks for everything a new study needs."""
 import os
 
 import yaml

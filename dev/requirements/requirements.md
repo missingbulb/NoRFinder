@@ -150,6 +150,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
 
   The left bar holds the image: Load, with a dropdown for where from (this computer or Google
   Drive), filled and glowing until an image is open and a plain button with a blue border after.
+  Each place in the dropdown has a small icon: a computer for this computer, Drive's logo for
+  Google Drive. Test: `web-tests/test_storage_page.py`.
   </details>
 
 - `1.16` The image's name unfolds what the file says about the image, and nothing it does not say.
@@ -286,7 +288,18 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `studies/viewer/tests/test_viewer.py`, `web-tests/test_study_runs.py`.
   </details>
 
-- `1.29` Switching study happens in place: no reload, and the open image stays open.
+- `1.29` Load's dropdown lists the images opened from Google Drive lately, each one click away.
+  <details>
+
+  Below this computer and Google Drive, Load's dropdown lists the last 10 images opened from Drive,
+  newest first, each by its name and where it is in Drive (the folders under the link it was opened
+  from) beside Drive's small logo, as From Google Drive has one, so two files of one name stay apart; an image is one entry however often it is opened.
+  Choosing one opens the copy kept on this device (`1.7`), with no download, and downloads it again
+  only when none is kept. Images from this computer are not listed: a web page cannot open a file
+  on the computer again by itself. Test: `web-tests/test_storage_page.py`.
+  </details>
+
+- `1.30` Switching study happens in place: no reload, and the open image stays open.
   <details>
 
   Choosing a study in the switcher, or going back and forward between studies, changes the address
@@ -297,7 +310,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   dropped. Test: `web-tests/test_study_runs.py`.
   </details>
 
-- `1.30` The switcher ends with Submit New Study Request, a GitHub issue form for proposing a study.
+- `1.31` The switcher ends with Submit New Study Request, a GitHub issue form for proposing a study.
   <details>
 
   Below the studies, apart from the search, "Submit New Study Request" opens, in a new tab, a new

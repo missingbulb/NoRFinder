@@ -46,7 +46,7 @@ one plane per channel) and `call(action, args)` (JSON result and optional bytes)
 every call and knows none of their meanings. `mount(shell)` returns the study's hooks; the list, and
 what `shell` offers, heads `web/shell.js`, and the viewer's own heads `web/viewer2d.js`. The header's
 switcher swaps studies in place, in the same page and the same Python, so a study must be able to
-leave: every listener it adds outside its own panels takes `shell.signal` (requirement 1.29).
+leave: every listener it adds outside its own panels takes `shell.signal` (requirement 1.30).
 `studies/fixture/` is the smallest study there is; the shell's own tests run on it.
 `studies/viewer/`, the Image Viewer the page opens on, is the study with nothing of its own: what the
 shell shows there is what every study gets.
