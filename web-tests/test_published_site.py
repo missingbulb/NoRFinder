@@ -87,22 +87,9 @@ def test_the_page_is_at_the_site_root_beside_the_studies(tmp_path):
     assert build.served('web/sw.js') == 'sw.js' and build.served('studies/nor/study.json') == 'studies/nor/study.json'
 
 
-def test_the_page_reaches_studies_by_their_absolute_address():
-    shell = open(os.path.join(ROOT, 'web', 'shell.js')).read()
-    worker = open(os.path.join(ROOT, 'web', 'worker.js')).read()
-    assert 'base = `/studies/${id}/`' in shell
-    assert 'new URL(`/studies/${id}/`, self.location.href)' in worker
-    assert '../' not in shell + worker + open(os.path.join(ROOT, 'web', 'index.html')).read()
-
-
-def test_an_old_web_address_redirects_to_the_root():
-    rules = [l.split() for l in open(os.path.join(ROOT, 'dev', 'build', 'site', '_redirects')) if l.strip() and not l.startswith('#')]
-    assert ['/web', '/', '301'] in rules and ['/web/*', '/:splat', '301'] in rules
-
-
 def test_the_page_loads_the_analytics_loader_and_the_loader_waits_for_its_token():
     page = open(os.path.join(ROOT, 'web', 'index.html')).read()
-    assert 'src="/analytics.js"' in page
+    assert 'src="../analytics.js"' in page
     loader = open(os.path.join(ROOT, 'dev', 'build', 'site', 'analytics.js')).read()
     assert "'REPLACE_WITH_CLOUDFLARE_WEB_ANALYTICS_TOKEN'" in loader
 

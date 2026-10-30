@@ -257,10 +257,10 @@ test fold under it. A study's research requirements, which no user sees, stay in
   <details>
 
   The shell's page files are published at the top of the site, beside the studies' `studies/`
-  folder; the page reaches a study and the analytics loader by their absolute address, so it runs
-  the same at the site's root and at `/web/` in a preview of the repo itself. A `_redirects` rule
-  sends every `/web/…` address to the same address without `/web`. Test:
-  `web-tests/test_published_site.py`.
+  folder, so the page's `../studies/` resolves to the same folder at the root and at `/web/` in a
+  preview of the repo itself. A `_redirects` rule, which Cloudflare applies, sends every `/web/…`
+  address to the same address without `/web`. Test: `web-tests/test_published_site.py` (the
+  layout); the redirect is seen on the released site.
   </details>
 
 ## `2` The repo's checks
