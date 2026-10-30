@@ -19,7 +19,7 @@ labelled count for neither. The lab's labels were drawn from fill's and blobs' c
 (lab/mkpool.py), so until submitted ground truth (with its missing marks) covers an image, the
 finder stage's recall favours those two.
 
-    python3 detection/finder_metrics.py             write lab/finder_metrics.json
+    python3 detection/finder_metrics.py             write web/finder_metrics.json, which the page reads
     python3 detection/finder_metrics.py transfer    every finder scored with every finder's own filter values
 """
 import hashlib, json, os, sys
@@ -28,7 +28,7 @@ HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
 import ground_truth, interactive, nor_lab
 
 FORMAT = 'norfinder-finder-metrics/2'
-OUT = os.path.join(HERE, 'lab', 'finder_metrics.json')
+OUT = os.path.join(HERE, '..', 'web', 'finder_metrics.json')
 PRESETS = {'precise': 0.4, 'balanced': 0.0, 'recalling': -0.4}
 # the strict and loose ends of every filter value the page offers
 STRICT = dict(min_green_balance=0.5, min_snr=5.0, purity=0.1, min_opposite=140, max_off_u=0.5, max_axis_dev=10,

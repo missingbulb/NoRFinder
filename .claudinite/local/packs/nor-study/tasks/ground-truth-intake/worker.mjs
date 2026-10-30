@@ -28,7 +28,7 @@ async function paged(gh, path) {
 // engine, which holds the token and refuses anything touching the default branch.
 async function pushBranch(wt, branch, message) {
   const local = (...args) => execFileSync('git', ['-C', wt, ...args], { encoding: 'utf8' }).trim();
-  local('add', '--', 'studies/nor/detection/lab');
+  local('add', '--', 'studies/nor/detection/lab', 'studies/nor/web/finder_metrics.json');
   local('-c', 'user.name=claudinite', '-c', 'user.email=claudinite@users.noreply.github.com', '-c', 'commit.gpgsign=false',
     'commit', '--quiet', '-m', commitMessage(message));
   const sha = local('rev-parse', 'HEAD');

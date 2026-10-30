@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- The finder list shows each finder's precision and recall, and the Filters box opens with the Precise, Balanced and Recalling presets. (#572)
 - The page now opens at rauntruth.com/ itself; old /web/ links forward there. The Drive dialog no longer shows ready-made thumbnails of the lab's images, only of images you have opened. (#566)
 - The page has a new address, rauntruth.com; the old one forwards there. Settings and saved images stay with the old address, so set them again once. (#546)
 - The Drive dialog auto-saves the images you open, so they open again without a download (untick Auto-save images to stop); "Download thumbnails" is now "Show thumbnails", and the size beside them opens Manage storage, whose sections now start folded. (#446)

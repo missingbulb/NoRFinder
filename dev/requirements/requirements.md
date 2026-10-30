@@ -475,3 +475,13 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   malleable. At our settings, the page passes what the lab passes with the blue mask applied after
   finding.
   </details>
+
+- `3.21` On the released site each finder and each filter preset shows its precision and recall.
+  <details>
+
+  The finder list, the finder's note and the Filters box's presets read the study's measured
+  quality (`studies/nor/docs/requirements.md` R11), so that file ships with the page part
+  (`studies/nor/web/`), like everything else the page fetches. Test:
+  `web-tests/test_published_site.py`, which checks that every file a study's page module fetches is
+  published.
+  </details>

@@ -32,7 +32,7 @@ committed baseline (`studies/nor/detection/lab/quality_baseline.json`). On a bra
 just added, the baseline was re-recorded against it, so compare with the base branch's copy too
 (`git show origin/main:studies/nor/detection/lab/quality_baseline.json`): that difference is how each finder's
 standing changed under the better reference, and it opens your report. Each finder's precision and
-recall overall, at each filter preset, are in `studies/nor/detection/lab/finder_metrics.json` (diff it the same way).
+recall overall, at each filter preset, are in `studies/nor/web/finder_metrics.json` (diff it the same way).
 
 ## 2. Missing candidates first
 
@@ -60,7 +60,7 @@ one image only is overfitting.
   accept, never yours, so do not run `--accept` to clear one. Say in the PR which spots it would
   lose and why the change is still worth it, and leave the decision to them.
 - A gain is recorded by the local test run; commit the baseline it rewrote and the finder metrics
-  (`studies/nor/detection/lab/finder_metrics.json`, R11) rewritten with it.
+  (`studies/nor/web/finder_metrics.json`, R11) rewritten with it.
 - Log every attempt, kept or dropped, in `studies/nor/detection/lab/ledger.md`, and update `studies/nor/detection/STATE.md`.
 - The PR body leads with the score table (per finder, per image: before and after), then the
   missing marks recovered and still missed, then what was tried and dropped.

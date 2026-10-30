@@ -6,6 +6,7 @@ Run: python3 -m pytest web-tests/test_published_site.py
 import glob
 import json
 import os
+import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -45,6 +46,18 @@ def test_nothing_else_of_a_study_ships():
         python = rest.endswith('.py') and os.path.dirname(rest) in top
         page = rest.startswith('web/') and not rest.endswith('.py')
         assert rest == 'study.json' or python or page, p
+
+
+def test_every_file_a_study_page_fetches_is_published():
+    """3.21: a file the page reads beside its own module (new URL(..., import.meta.url)) must ship with it."""
+    got, fetched = published(), []
+    for module in glob.glob(os.path.join(ROOT, 'studies', '*', 'web', '*.js')):
+        rel = os.path.relpath(module, ROOT)
+        for target in re.findall(r'new URL\("([^"]+)", import\.meta\.url\)', open(module).read()):
+            fetched.append((rel, os.path.normpath(os.path.join(os.path.dirname(rel), target))))
+    assert len(fetched) >= 1, 'found no module-relative fetch: the sweep is not looking at the study pages'
+    missing = [f'{m} fetches {t}' for m, t in fetched if t not in got]
+    assert not missing, missing
 
 
 def test_research_files_stay_home():
