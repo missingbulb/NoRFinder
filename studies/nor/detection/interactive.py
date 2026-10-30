@@ -104,6 +104,7 @@ def reasons():
 class Session:
     def __init__(self, path):
         self.caspr, self.nav, self.um, dapi = nn_.load(path)
+        self.um_y = nn_.pixel_height(path)
         self.info = nn_.file_info(path)
         self.bm = nn_.blue_mask(dapi)
         self.dapi = dapi
@@ -113,7 +114,7 @@ class Session:
     def of(cls, caspr, nav, um, bm):
         """A session on channels already loaded (nor_lab.load), for the lab; it has no blue image to show."""
         s = cls.__new__(cls)
-        s.caspr, s.nav, s.um, s.bm, s.dapi = caspr, nav, um, bm, None
+        s.caspr, s.nav, s.um, s.um_y, s.bm, s.dapi = caspr, nav, um, None, bm, None
         s.cands, s.P, s.finder = [], {}, None
         return s
 
@@ -121,7 +122,7 @@ class Session:
         """The shell's answer to opening the file: its meta (size, scale, what the file says about
         itself) and the image bytes the viewer shows."""
         H, W = self.caspr.shape
-        return json.dumps(dict(H=H, W=W, um=self.um, info=self.info)), self.images()
+        return json.dumps(dict(H=H, W=W, um=self.um, um_y=self.um_y, info=self.info)), self.images()
 
     def call(self, action, args):
         """The page's requests: 'detect' {finder, overrides} -> (meta, segments); 'refilter' {spec} ->

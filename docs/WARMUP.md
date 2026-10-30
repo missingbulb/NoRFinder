@@ -41,7 +41,8 @@ A study is a folder with a `study.json`:
 - `driveThumbs` — optional, the folder of ready-made thumbnails for the Google Drive dialog.
 
 Its Python entry module offers `ready()` (JSON, what the page needs before any image) and
-`Session(path)` with `opened()` (JSON meta — `W`, `H`, `um`, `info` — and the viewer's image bytes,
+`Session(path)` with `opened()` (JSON meta — `W`, `H`, `um` and `um_y` (the pixel's width and
+height in µm, each null when the file does not say), `info` — and the viewer's image bytes,
 one plane per channel) and `call(action, args)` (JSON result and optional bytes). The shell forwards
 every call and knows none of their meanings. `mount(shell)` returns the study's hooks; the list, and
 what `shell` offers, heads `web/shell.js`, and the viewer's own heads `web/viewer2d.js`. The header's

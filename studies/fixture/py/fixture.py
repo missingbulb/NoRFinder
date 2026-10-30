@@ -43,7 +43,7 @@ class Session:
             self.W, self.H, self.px = read_png(f.read())
 
     def opened(self):
-        return json.dumps(dict(H=self.H, W=self.W, um=None, info=[['Pixels', f'{self.W} × {self.H}']])), self.px
+        return json.dumps(dict(H=self.H, W=self.W, um=None, um_y=None, info=[['Pixels', f'{self.W} × {self.H}']])), self.px
 
     def call(self, action, args):
         if action == 'count':

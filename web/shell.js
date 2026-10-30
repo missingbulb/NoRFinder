@@ -63,7 +63,7 @@ const sizeText = (n) => (!n ? "0 KB" : n < 1048576 ? `${Math.max(1, Math.round(n
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 // the page's state: the shell's fields below, and whatever the study keeps beside them
-const st = { worker: null, H: 0, W: 0, um: null, img: null, plain: null, zoom: 2, fileName: "", sha: "", source: null, heap: null, files: 0,
+const st = { worker: null, H: 0, W: 0, um: null, umY: null, img: null, plain: null, zoom: 2, fileName: "", sha: "", source: null, heap: null, files: 0,
   ready: false, queued: null, kept: null, reopening: false, busySince: 0, busyTimer: null, peeked: false, peek: null };
 // what a study leaving leaves of the state: the shell's own fields
 const SHELL_STATE = new Set(Object.keys(st));
@@ -266,7 +266,7 @@ function handle(m) {
     if (st.queued) { const q = st.queued; st.queued = null; send(q.name, q.bytes); }
     else if (st.kept) reopen();
   } else if (m.type === "opened") {
-    st.um = m.meta.um; fileInfo(m.meta.info);
+    st.um = m.meta.um; st.umY = m.meta.um_y; fileInfo(m.meta.info);
     view.show(m.meta.W, m.meta.H, m.images);
     busy(false); statusBar();
     showImage(); fold(true); loadDone();
