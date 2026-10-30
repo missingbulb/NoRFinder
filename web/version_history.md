@@ -10,7 +10,7 @@ nobody has to know the version a change will ship in; `python3 web/version_histo
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
-- The page has a new address, rauntruth.com; the old one forwards there. Settings and saved images stay with the old address, so set them again once. (#PR)
+- The page has a new address, rauntruth.com; the old one forwards there. Settings and saved images stay with the old address, so set them again once. (#546)
 - The Drive dialog auto-saves the images you open, so they open again without a download (untick Auto-save images to stop); "Download thumbnails" is now "Show thumbnails", and the size beside them opens Manage storage, whose sections now start folded. (#446)
 - Click your avatar, top right, and choose Manage storage to see and delete what the site keeps on this device. (#438)
 - Animations out of view pause, so they no longer keep the CPU busy; Memory Usage now comes close to Chrome's own count. (#377)
