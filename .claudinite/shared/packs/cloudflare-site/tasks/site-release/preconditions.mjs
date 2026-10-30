@@ -11,18 +11,12 @@
 // high-water mark, and only what sits above it is unreleased. That is the same guard
 // `[skip ci]` used to be, stated as a fact about the branch rather than as a flag on
 // a commit message — nothing can accidentally re-arm a release by rewording a commit.
-//
-// A repo that does not declare public-website has no version to advance, so its
-// release commits nothing and leaves no mark. The gate then degrades to "any commit
-// in the window": a change is deployed on the night it lands and, at most, once more
-// on the following night — a redundant redeploy of identical bytes, never a missed
-// one.
 
 // Which commits are the release's own, read structurally off the `Claudinite-Task:`
 // trailer every task-authored commit carries. The worker stamps it from the queue's
 // own `CLAUDINITE_PACK`/`CLAUDINITE_TASK`; the test holds this literal against the
 // two directory names those are derived from.
-export const RELEASE_TASK_ID = 'github-pages/site-release';
+export const RELEASE_TASK_ID = 'cloudflare-site/site-release';
 
 // The `commits` signal lists the window's default-branch commits NEWEST FIRST — the
 // order the GitHub commits API returns and the collector preserves — which is what

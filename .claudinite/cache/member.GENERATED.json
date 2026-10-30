@@ -37,7 +37,7 @@
         "id": "research-project"
       },
       {
-        "id": "github-pages"
+        "id": "cloudflare-site"
       },
       {
         "id": "public-website"
@@ -57,8 +57,8 @@
   "held": {
     "basics": "1.61009.1",
     "claude-code-web-users-support": "1.61012.1",
+    "cloudflare-site": "1.61009.1",
     "git-github": "1.61013.1",
-    "github-pages": "1.61009.1",
     "html": "1.61004.1",
     "node": "1.61004.1",
     "numpy-image-processing": "1.61004.1",

@@ -1,0 +1,34 @@
+{
+  "version": "1.61009.1",
+  "minEngineVersion": "1.61001.1",
+  "ruleRoutingGuidance": {
+    "belongs": "serving a static site from Cloudflare: the published tree, custom domains, the nightly release that uploads it",
+    "excludes": "Workers runtime and bindings — cloudflare-workers; the version scheme and the page stamp — public-website; markup — html"
+  },
+  "pitch": "Gives a site served from Cloudflare exactly one path to production. A nightly release task advances the version, uploads the published tree, and reports what the domain answered and whether it is serving that version, parking with a named reason when a person has to act. A skill covers releasing, forcing a release and rolling one back. A few rules and checks keep stray files out of the upload, links free of needless redirects, and any second publisher from quietly shipping around the release.",
+  "relevanceDetector": {
+    "about": "a near-root wrangler.json/.jsonc declaring assets.directory",
+    "paths": "^([^/]+/)?wrangler\\.jsonc?$",
+    "text": "\"assets\"\\s*:\\s*\\{[^}]*\"directory\"\\s*:\\s*\"[^\"\\s]",
+    "search": [
+      "assets"
+    ]
+  },
+  "adoptionHandover": [
+    {
+      "step": "Add the site's domain as a zone on the Cloudflare account, and point the registrar's nameservers at the two Cloudflare shows at the end of that flow — https://dash.cloudflare.com/?to=/:account/add-site",
+      "breaks": "the deploy fails outright — the wrangler config claims the domain as a custom domain, so every release parks at needs-human-action until the zone reads Active",
+      "done": "the zone reads Active on https://dash.cloudflare.com/?to=/:account/websites"
+    },
+    {
+      "step": "Add the Cloudflare Account ID (Overview, right-hand column) as the repository secret CLOUDFLARE_ACCOUNT_ID",
+      "breaks": "the release stops at its own gate, before it touches Cloudflare, parking with the missing secret named — nothing is left half-done",
+      "done": "a site-release run gets as far as wrangler"
+    },
+    {
+      "step": "Create an API token from the \"Edit Cloudflare Workers\" template (https://dash.cloudflare.com/profile/api-tokens) and add it as the repository secret CLOUDFLARE_API_TOKEN",
+      "breaks": "same gate as the account id; a token narrower than that template instead fails inside wrangler with a 10000-class error, which the worker parks as needs-human-action",
+      "done": "a site-release run uploads and the domain serves the site"
+    }
+  ]
+}

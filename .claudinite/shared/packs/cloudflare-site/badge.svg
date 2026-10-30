@@ -1,0 +1,12 @@
+<!-- A Claudinite pack badge. The colour and glyph below are this file's own — dev/tools/badges/render.mjs re-renders the template around them. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Claudinite pack: cloudflare-site">
+  <title>cloudflare-site</title>
+  <defs>
+    <linearGradient id="b-cloudflare-site" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6821f"/>
+      <stop offset="1" stop-color="#c06518"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="url(#b-cloudflare-site)"/>
+  <path d="M9 20h13a5 5 0 0 0-7.5-7A7 7 0 0 0 9 20" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

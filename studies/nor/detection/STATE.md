@@ -41,9 +41,8 @@ _Last updated 2026-10-06._
   than each finder's own on all five finders. Each finder still opens on its own values.
 - **Only one image has been processed.**
 - **Browser page** (the shell in `web/` running this study, requirement R8): open an image, detect once, then tune every filter
-  live. It runs `interactive.py` over the unchanged finders under Pyodide. It deploys to GitHub
-  Pages through the github-pages pack. Preview it locally with `python3 web/build.py` and then
-  `python3 -m http.server` from the repo root, opening `/web/`.
+  live. It runs `interactive.py` over the unchanged finders under Pyodide. How it is published
+  is the shell's business ([docs/WARMUP.md](../../../docs/WARMUP.md) says how to preview it).
   A finder's `MAIN` tuple names the settings the page shows first; adding a finder to
   `interactive.FINDERS` with a `MAIN` is all the page needs.
 

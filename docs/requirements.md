@@ -55,3 +55,18 @@ The Google Drive dialog's bottom row holds two remembered checkboxes, **Show thu
 text the bytes the thumbnails and saved images take on this device. While Auto-save images is on,
 an image downloaded from Drive is kept on this device; an image kept there opens from it, with no
 download, whatever the checkbox says. Test: `tests/test_storage_page.py`.
+
+## S8 — The shell decides what is published
+
+The published site is the shell's page and, from each study, only what its standard layout says the
+page loads: `study.json`, the study's page part under `web/` (never its Python), and the modules
+directly in the folders its Python is imported from (`python.paths`), which is all the page's
+importer can reach. A study's docs, data, tests and lab notes stay in the repo, and nothing in a
+study says how, where or whether it is published. The build (`web/build.py`) assembles the set
+under `site/`, the tree the release uploads. Test: `tests/test_published_site.py`.
+
+## S9 — Visits are counted without cookies
+
+The released site loads Cloudflare Web Analytics, which sets no cookies and stores nothing on the
+device. Its token is a repository variable the release writes into the uploaded copy, so a local
+preview or a fork counts nothing. Test: `tests/test_published_site.py`.

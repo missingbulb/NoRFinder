@@ -1,0 +1,18 @@
+{
+  "id": "site-release",
+  "description": "Cuts the next site version, stamps it into the published pages and uploads the site tree to Cloudflare so the claimed domain serves what the default branch says. The bump lands on the branch before the upload, so the repo never records a release that did not go out.",
+  "trigger": "schedule",
+  "preconditions": [
+    "schedule:at-most-daily",
+    "unreleased-commits"
+  ],
+  "expected_outcome": "no_code_changes",
+  "on_interrupt": "needs-human",
+  "code_worker_mjs": "worker.mjs",
+  "code_work_timeout": 900,
+  "code_work_required_secrets": [
+    "CLOUDFLARE_API_TOKEN",
+    "CLOUDFLARE_ACCOUNT_ID"
+  ],
+  "agent_model": "none"
+}

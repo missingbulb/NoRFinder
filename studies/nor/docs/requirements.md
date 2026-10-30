@@ -225,7 +225,7 @@ a question for the owner, shown with the objects that only that check rejects.
 
 ## R8 — The NoR Finder page: detect once, filter live, in the browser
 
-Set by the owner on 2026-09-28. The page is [`web/`](../web/), served from GitHub Pages with no
+Set by the owner on 2026-09-28. The page is the shell, [`web/`](../../../web/), running this study with no
 backend. Its engine is [`studies/nor/detection/interactive.py`](../detection/interactive.py), tested by
 [`studies/nor/tests/test_interactive.py`](../tests/test_interactive.py).
 
