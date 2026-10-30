@@ -300,12 +300,14 @@ test fold under it. A study's research requirements, which no user sees, stay in
 - `1.30` The Drive dialog tells a 3D stack from a flat image, and shows a stack in 3D once opened.
   <details>
 
-  Each TIFF row in the Google Drive dialog says what the file holds, "3D · 24 slices" for a stack and
-  "2D · 3 channels" for a flat image, read from the file's first 64 KB (its ImageJ header), for the
+  Each TIFF row in the Google Drive dialog says what the file holds, "3D · 24 slices" for a stack
+  ("3D · 30 slices · 2 channels" when it has more than one channel) and "2D · 3 channels" for a flat
+  image, read from the file's first 64 KB (its ImageJ header), for the
   rows in view and the next 10 as the thumbnails are (`1.18`) and only while Show thumbnails is on.
   What each file holds is remembered in the browser, so it is read once. A file whose header says
   neither shows nothing. When a stack is opened from Drive, its thumbnail is a small 3D picture of
-  the whole stack, turned a little to show its depth, drawn from the file the page already has with
+  the whole stack, turned a little to show its depth, its channels in their own colours (two in green
+  and magenta), drawn from the file the page already has with
   no further download; a flat image's stays the one `1.18` describes. Test:
   `web-tests/test_drive_shapes_page.py`.
   </details>
