@@ -1,6 +1,6 @@
 # NoRFinder
 
-**Open the site: [missingbulb.github.io/NoRFinder](https://missingbulb.github.io/NoRFinder/)**
+**Open the site: [rauntruth.com](https://rauntruth.com/)**
 
 Automated detection of Nodes of Ranvier
 

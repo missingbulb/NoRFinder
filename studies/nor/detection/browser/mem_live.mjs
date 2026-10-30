@@ -21,7 +21,7 @@ try { pw = require("playwright"); } catch { pw = require(path.join(execSync("npm
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const args = process.argv.slice(2);
-const url = args[0] && args[0].startsWith("http") ? args.shift() : "https://missingbulb.github.io/NoRFinder/web/";
+const url = args[0] && args[0].startsWith("http") ? args.shift() : "https://rauntruth.com/web/";
 const finder = args[0] || "tl";
 const tif = path.join(repo, "data", "raw", "Left Up- Edited", "Slide5_4AP_NoR.sld - Slice1_up_left2.tif");
 const MB = 1024;
