@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- The status bar shows the study's stage and the steps you've done, with the next one glowing; hover a step to see what was done. RAM opens what uses memory, with Run GC, and Disk opens Manage storage. (#587)
 - Load's dropdown now lists the images you opened lately from Google Drive, each opening at once from the copy kept on this device; a small Drive logo marks them and From Google Drive, and a computer marks From this computer. (#583)
 - The title at the top is now a menu for switching between studies. The page opens on a plain Image Viewer that shows any TIFF or PNG; NoR Finder is one pick away, at rauntruth.com/?study=nor. (#574)
 - The finder list shows each finder's precision and recall, and the Filters box opens with the Precise, Balanced and Recalling presets. (#572)
