@@ -1,7 +1,7 @@
 // Runs detection/bench.py under Pyodide (the page's runtime) for one finder per process, so the
 // WebAssembly heap it reports is that finder's own peak (wasm memory only grows, never shrinks).
 //   cd detection/browser && npm i --prefix . pyodide@314.0.7 && node bench_pyodide.mjs tl
-// Needs the reference slide in data/raw (python3 src/fetch_data.py -m '*up_left2*').
+// Needs the reference slide in data/raw (python3 detection/fetch_data.py -m '*up_left2*').
 import { loadPyodide } from "pyodide";
 import { fileURLToPath } from "node:url";
 import path from "node:path";

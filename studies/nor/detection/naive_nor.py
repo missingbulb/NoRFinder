@@ -9,7 +9,6 @@ import sys, os, math
 import numpy as np
 from scipy import ndimage as ndi
 from PIL import Image, ImageDraw
-sys.path.insert(0, os.environ.get('NORFINDER_SRC', os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src')))
 import nor
 
 def load(path):

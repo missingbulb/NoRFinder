@@ -5,10 +5,10 @@ record of them. A file is trusted only when its SHA-256 matches the manifest; a 
 means "never fetched yet", and `--pin` writes what was fetched back into the manifest.
 
     pip install gdown
-    python3 src/fetch_data.py            # fetch everything missing, verify everything
-    python3 src/fetch_data.py --pin      # also record checksums / folder listings still null
-    python3 src/fetch_data.py NAME ...   # only these sources
-    python3 src/fetch_data.py -m 'Left Up*/Slide2*'   # only files whose path matches a glob
+    python3 detection/fetch_data.py            # fetch everything missing, verify everything
+    python3 detection/fetch_data.py --pin      # also record checksums / folder listings still null
+    python3 detection/fetch_data.py NAME ...   # only these sources
+    python3 detection/fetch_data.py -m 'Left Up*/Slide2*'   # only files whose path matches a glob
 """
 import argparse
 import fnmatch

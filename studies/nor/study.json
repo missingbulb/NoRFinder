@@ -4,8 +4,7 @@
   "viewer": "image2d",
   "python": {
     "paths": [
-      "detection/",
-      "src/"
+      "detection/"
     ],
     "entry": "interactive",
     "packages": [

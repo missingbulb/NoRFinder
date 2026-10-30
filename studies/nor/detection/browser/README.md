@@ -2,7 +2,7 @@
 
 Question (Ariel, 2026-09-28): can the detection run in a browser? The code is Python
 (numpy, scipy.ndimage, a few scikit-image calls, Pillow), about 2,000 lines across
-`detection/*.py` and `src/nor.py`. Two routes were compared.
+`detection/*.py`. Two routes were compared.
 
 ## Measured: the unchanged Python under Pyodide
 `pyodide_check.mjs` loads Pyodide 314.0.7 in Node (the same WebAssembly runtime a browser uses),
