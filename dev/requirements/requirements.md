@@ -175,8 +175,12 @@ test fold under it. A study's research requirements, which no user sees, stay in
   size while the user moves between folders. A click only selects a row; Open (or a double click,
   or Enter) opens it: an image loads, a folder lists its contents. Thumbnails are never read from
   Drive, which answers a burst of reads by refusing the browser for a while, the next image
-  included. A study may ship ready-made thumbnails (its `driveThumbs`), each fetched once its row is
-  in view; an image opened from Drive saves its own in the browser (the latest 100), shown from then
+  included. A study may ship ready-made thumbnails (its `driveThumbs`), fetched for the rows in view
+  and the next 10 below them, more as the user scrolls; a row scrolled past before its turn is not
+  fetched. Each thumbnail lands in its own row whatever order they arrive in, and a folder's listing
+  is shown only while it is still the folder asked for. One fetched stays for the page's life:
+  closing the dialog stops the rest, and reopening it shows those at once and fetches what the rows
+  in view still lack. Test: `web-tests/test_drive_thumbs_page.py`. An image opened from Drive saves its own in the browser (the latest 100), shown from then
   on without a download; a PNG shows Drive's own. All are in the colours the page gives the
   channels. A checkbox at the bottom, "Show thumbnails" (on at first, remembered in the browser),
   turns the downloads off; beside it, and in the status bar while they load, how many have arrived
