@@ -49,9 +49,6 @@
         "id": "numpy-image-processing"
       },
       {
-        "id": "node"
-      },
-      {
         "id": "executable-requirements"
       },
       {
@@ -70,7 +67,6 @@
     "executable-requirements": "1.61004.1",
     "git-github": "1.61013.1",
     "html": "1.61004.1",
-    "node": "1.61004.1",
     "numpy-image-processing": "1.61004.1",
     "product-wiki": "1.61021.1",
     "public-website": "1.61005.1",

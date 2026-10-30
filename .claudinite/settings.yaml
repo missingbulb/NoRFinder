@@ -21,7 +21,6 @@ packs:
     - "public-website"
     - "html"
     - "numpy-image-processing"
-    - "node"
     - id: "executable-requirements"
       answers:
         ui_testing: "I'm actually leaning towards dropping this request. I'm not sure what the right way to do UI test for a pluggable system. Let's ignore this sections now."

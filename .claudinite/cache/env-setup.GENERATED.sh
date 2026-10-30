@@ -7,19 +7,6 @@ cd "$(dirname "$0")/../.." || exit 1
 npx --yes --prefer-offline @claudinite/setup@1.0.1 >/dev/null || echo 'cn env: the engine was not pre-warmed; SessionStart fetches it' >&2
 failed=0
 
-echo '=== Node dependencies (npm ci) (pack node) ==='
-if ! (
-( cd "." && npm ci ) || true
-); then
-  echo 'cn env: Node dependencies (npm ci) (pack node): setup failed' >&2
-  failed=1
-elif ! (
-[ -d "./node_modules" ]
-); then
-  echo 'cn env: Node dependencies (npm ci) (pack node): setup ran, but its probe still fails' >&2
-  failed=1
-fi
-
 echo '=== Python imaging stack (numpy, scipy, pillow, matplotlib) (pack local/nor-finder) ==='
 if ! (
 python3 -m pip install --quiet --root-user-action=ignore -r requirements.txt
