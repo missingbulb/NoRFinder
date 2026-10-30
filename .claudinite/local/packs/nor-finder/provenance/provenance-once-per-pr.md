@@ -28,3 +28,11 @@
 - **Mechanism:** the same work-scope advisory check, ported line for line to
   `checks/provenance_once_per_pr.go`; proven to fire on a branch adding two entries and to stay
   silent under a `Provenance: backfill` commit.
+
+## 2026-10-30 · retired · deleted at the owner's request (#563)
+- **Source:** the owner, after the check misread #559's moved provenance files as new entries:
+  "Delete provenance-once-per-pr."
+- **Reason:** its findings cost more review than the duplicate entries they guarded against.
+- **Actor:** @missingbulb (owner).
+- **Model:** claude-opus-5-5
+- **Landed:** #563
