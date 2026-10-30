@@ -74,13 +74,13 @@ test fold under it. A study's research requirements, which no user sees, stay in
   The Google Drive dialog's bottom row holds two remembered checkboxes, **Show thumbnails** and
   **Auto-save images** (both on at first), and beside them a link that opens Manage storage, its
   text the bytes the thumbnails and saved images take on this device. While Auto-save images is on,
-  an image downloaded from Drive is kept on this device; an image kept there opens from it, with no
-  download, whatever the checkbox says, once its SHA-256 matches the one Drive gives for the file now
-  (from the folder's listing, or from the file's details for a link or a recent image). When they
-  differ, the file changed on Drive: it is downloaded again, and kept in place of the old copy while
-  Auto-save images is on. When Drive gives no SHA-256, or cannot be asked (offline, or while it
-  throttles the site, `1.37`), the kept copy opens unchecked. Test: `web-tests/test_storage_page.py`,
-  `web-tests/test_drive_cache_page.py`.
+  an image downloaded from Drive is kept on this device. An image chosen from the recents (`1.29`)
+  opens from the copy kept here, with no call to Drive. One chosen from Drive itself, in the dialog's
+  list or by its link, opens from the kept copy, whatever the checkbox says, only once its SHA-256
+  matches the one Drive gives for the file now (from the folder's listing, or from the file's
+  details for a link); otherwise it is downloaded: when the two differ (the file changed on Drive),
+  and when Drive gives no SHA-256 or cannot be asked. A download replaces the kept copy while
+  Auto-save images is on. Test: `web-tests/test_storage_page.py`, `web-tests/test_drive_cache_page.py`.
   </details>
 
 - `1.8` The shell decides what is published.
