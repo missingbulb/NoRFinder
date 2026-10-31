@@ -36,7 +36,9 @@ The site is static files served by Cloudflare, with no build framework, and one 
 your name, email and picture, and nothing else. It keeps your session in one cookie, sent only to the
 site's `/api/`, and keeps a small record of your settings so they follow you to other devices: the
 theme, the tips you closed, where Load reads from, your last Drive link and the images you opened from
-Drive lately. Your images, results and ground truth never reach that server. Without signing in, nothing
+Drive lately. It also records when you were last seen, and logs each sign-in, sign-out and settings save
+under your Google id; nobody but you is ever served your record. Your images, results and ground truth
+never reach that server. Without signing in, nothing
 is kept anywhere but your browser. It counts
 visits with Cloudflare Web Analytics, which sets no cookies, stores nothing on your device and does
 not follow you across sites; it receives the page's address, the page that

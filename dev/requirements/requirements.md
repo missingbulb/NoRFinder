@@ -628,7 +628,10 @@ test fold under it. A study's research requirements, which no user sees, stay in
   name, email and picture and nothing else. Signed in, the avatar is the user's picture, the menu
   names them and offers Sign out. The site's server (`accounts/`, a Cloudflare Worker) checks
   Google's token, keeps a session in its own cookie for 30 days (HttpOnly, sent only to the site's
-  `/api/`), and keeps one settings record per user, at most 16 KB. These settings follow the user:
+  `/api/`), and keeps one settings record per user, at most 16 KB, in its D1 database, with when the
+  user was last seen. No address returns anything about a user except to that user's own session; who
+  was active in the last 24 hours is a query the owner runs against the database
+  (`accounts/active_users.sql`). Each sign-in, sign-out and save is logged by the user's Google id. These settings follow the user:
   dark or light, the tips closed, the version last seen, the low-memory popup turned off, where Load
   reads from, the last Drive link (in each study too), Show thumbnails, and the images opened from Drive lately. These
   stay with the device: the left bar's width, Auto-save images, and everything kept for images. On

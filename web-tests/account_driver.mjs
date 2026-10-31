@@ -1,5 +1,5 @@
 // Drives the page (web/) in headless Chromium, its /api/ answered by the site's real server (accounts/worker.js)
-// over a stand-in KV store, with a stand-in for Google's sign-in script, and checks 1.50: a visitor who never
+// over a stand-in D1 database (d1_double.mjs), with a stand-in for Google's sign-in script, and checks 1.50: a visitor who never
 // signs in sees the menu as before, loads nothing from Google and only asks the server whether they have a
 // session; signing in on one device shows the user and saves that device's settings that follow the user, not
 // the ones that stay; a change there is saved; signing in on a second device brings them, the theme at once,
@@ -17,6 +17,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import worker from "../accounts/worker.js";
+import { d1 } from "./d1_double.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -48,16 +49,9 @@ const GSI = (t) => `window.google = { accounts: { id: {
   disableAutoSelect() { window.autoSelectOff = true; },
 } } };`;
 
-const store = new Map();
-const env = {
-  GOOGLE_CLIENT_ID: CLIENT,
-  ACCOUNTS: {
-    get: async (k, type) => (store.has(k) ? (type === "json" ? JSON.parse(store.get(k)) : store.get(k)) : null),
-    put: async (k, v) => { store.set(k, v); },
-    delete: async (k) => { store.delete(k); },
-  },
-};
-const record = () => JSON.parse(store.get("settings:1001") || "null");
+const DB = d1();
+const env = { GOOGLE_CLIENT_ID: CLIENT, DB };
+const record = () => JSON.parse(DB.sqlite.prepare("SELECT settings FROM users WHERE id = '1001'").get()?.settings || "null");
 const api = []; // [method path] the page sent to the server
 const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "" }, drive: { defaultLink: "" } };`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
