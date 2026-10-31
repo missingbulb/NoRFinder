@@ -696,7 +696,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
 
   Set by the owner on 2026-10-31. Checked at first, it is kept as the user's setting for the next
   visit. Unchecked, nothing on the page moves to draw the eye: the minimap and the drawers change at
-  once, the photocopier's light does not sweep the image, no button shines or glows, the status
+  once, the photocopier's light does not sweep the image, no button shines or glows (one that would looks plain, with no light or
+  halo frozen on it), the status
   bar's digits change without rolling and a sharp rise does not flash. A spinner still turns, since
   it is what says the page is working rather than stuck. Test: `web-tests/test_status_bar_page.py`.
   </details>

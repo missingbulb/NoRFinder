@@ -637,3 +637,6 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 :root[data-motion="off"] *, :root[data-motion="off"] *::before, :root[data-motion="off"] *::after { animation: none !important; transition: none !important; }
 :root[data-motion="off"] .spin, :root[data-motion="off"] button.working::after { animation: spin .8s linear infinite !important; }
 :root[data-motion="off"] #busy.scan #scan-light { display: none; }
+/* still, a shining button looks plain: a frozen sweep and a halo read as a smudge */
+:root[data-motion="off"] .shine { box-shadow: none; }
+:root[data-motion="off"] .shine::after { display: none; }
