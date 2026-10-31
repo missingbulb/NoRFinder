@@ -143,5 +143,6 @@ export function account({ keys, menu, clientId, applied }) {
     },
     // the user is about to use Google Drive (Load): a token run out is renewed in their click, and the settings sync
     drive() { renew(); },
+    signedIn: () => !!(me && me.user),
   };
 }

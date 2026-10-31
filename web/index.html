@@ -37,6 +37,7 @@
     <div class="pop right">
       <div class="who"><b id="who-name">You</b><span class="dim" id="who-where">On this device, not signed in</span></div>
       <button class="item" id="sign-in" type="button" hidden>Sign in with Google…</button>
+      <button class="item" id="open-settings" type="button">Settings…</button>
       <button class="item" id="manage-storage" type="button">Manage storage…</button>
       <button class="item" id="sign-out" type="button" hidden>Sign out</button>
     </div>
@@ -189,8 +190,17 @@
   </div>
   <div class="drive-row end"><span id="split-msg" class="hint" role="status"></span><span class="grow"></span><button id="split-drive" type="button" disabled>Upload to Google Drive</button><button id="split-download" class="primary" type="button">Download all parts</button><button id="split-close" type="button">Close</button></div>
 </dialog>
-<dialog id="usage-dlg" aria-label="What this page uses">
+<dialog id="settings-dlg" aria-labelledby="settings-title">
   <form method="dialog">
+    <h2 id="settings-title">Settings</h2>
+    <p class="hint" id="settings-where"></p>
+    <div id="settings-list"></div>
+    <div class="drive-row end"><span class="grow"></span><button type="button" id="settings-cancel">Cancel</button><button type="button" id="settings-save" class="primary">Save</button></div>
+  </form>
+</dialog>
+<dialog id="usage-dlg" aria-labelledby="usage-title">
+  <form method="dialog">
+    <h2 id="usage-title">Resource Usage</h2>
     <div class="tab-row" role="tablist"><button type="button" role="tab" data-tab="storage">Storage</button><button type="button" role="tab" data-tab="memory">Memory</button><button type="button" role="tab" data-tab="network">Network</button><button type="button" role="tab" data-tab="cpu">CPU</button></div>
     <section role="tabpanel" data-tab="storage" hidden><p class="hint total" id="storage-total"></p><div id="storage-list" class="rows"></div></section>
     <section role="tabpanel" data-tab="memory" hidden><p class="hint total" id="ram-total"></p><div id="ram-list" class="rows"></div></section>

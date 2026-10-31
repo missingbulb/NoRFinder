@@ -145,6 +145,44 @@ try {
   await a.page.click("#theme");
   check(await until(() => file()?.["nor-theme"] === "light"), "switching to light while signed in saves it to the file");
 
+  // 1.52: Settings, from the avatar's menu
+  const openSettings = async (page) => {
+    await page.click("#user-menu summary");
+    await page.click("#open-settings");
+    await page.waitForFunction(() => document.querySelector("#settings-dlg").open);
+  };
+  await a.page.evaluate(() => localStorage.setItem("nor-drive-links", JSON.stringify({ nor: "https://drive.google.com/drive/folders/acmenor" })));
+  await openSettings(a.page);
+  const listed = await a.page.evaluate(() => {
+    const d = document.querySelector("#settings-dlg"), v = (sel) => d.querySelector(sel);
+    return { title: document.getElementById(d.getAttribute("aria-labelledby"))?.textContent, where: v("#settings-where").textContent,
+      theme: v('select[name="nor-theme"]').value, tip: v('input[name="nor-tips-closed"][value="recent-files"]')?.checked,
+      thumbs: v('input[name="nor-drive-thumbs"]')?.checked, memory: v('input[name="nor-memory-tip-off"]')?.checked, source: v('select[name="nor-load-source"]')?.value,
+      study: v('input[name="nor-drive-links"][data-study="nor"]')?.value, link: !!v('input[name="nor-drive-link"]'), seen: !!v('input[name="nor-seen-version"]') };
+  });
+  check(listed.title === "Settings" && /Google Drive/.test(listed.where), "Settings opens from the avatar's menu and says they are kept in the user's Google Drive", listed);
+  check(listed.theme === "light" && listed.tip === true && listed.thumbs === true && listed.memory === true && listed.source === "local"
+    && listed.study === "https://drive.google.com/drive/folders/acmenor" && listed.link && listed.seen,
+    "it lists every setting that follows the user, as this device holds it");
+  if (shots) await a.page.locator("#settings-dlg").screenshot({ path: path.join(shots, "settings.png") });
+  await a.page.selectOption('#settings-dlg select[name="nor-theme"]', "dark");
+  await a.page.uncheck('#settings-dlg input[name="nor-tips-closed"][value="recent-files"]');
+  await a.page.fill('#settings-dlg input[name="nor-drive-link"]', "https://drive.google.com/drive/folders/acmenew");
+  await a.page.click("#settings-save");
+  check(await until(() => file()?.["nor-theme"] === "dark" && file()["nor-tips-closed"] === "[]"
+    && file()["nor-drive-link"] === JSON.stringify("https://drive.google.com/drive/folders/acmenew")),
+    "Save writes what changed and saves the user's settings file");
+  check(await a.page.evaluate(() => document.documentElement.dataset.theme === "dark" && !document.querySelector("#settings-dlg").open), "the theme changes at once, and the dialog closes");
+  await openSettings(a.page);
+  await a.page.selectOption('#settings-dlg select[name="nor-theme"]', "light");
+  await a.page.click("#settings-cancel");
+  await pause(600);
+  check(await local(a.page, "nor-theme") === "dark" && file()["nor-theme"] === "dark", "Cancel changes nothing");
+  await a.page.click("#theme"); // back to light, as the rest of this test expects
+  await until(() => file()?.["nor-theme"] === "light");
+  // the tip closed again, as the rest of this test expects of the file
+  drive.file.body = JSON.stringify({ ...file(), "nor-tips-closed": JSON.stringify(["recent-files"]) });
+
   // device B: its own theme and left bar
   const b = await device({ "nor-theme": "dark", "nor-bars-v1": JSON.stringify({ left: 400 }) });
   check(await b.page.evaluate(() => document.documentElement.dataset.theme) === "dark", "a second device starts in its own theme");
@@ -218,6 +256,12 @@ try {
   await c.page.click("#user-menu summary");
   await pause(500);
   check(scriptLoads === loads && await c.page.isHidden("#sign-in") && await c.page.isVisible("#manage-storage"), "with no Google client, the menu offers no sign-in");
+  await c.page.click("#open-settings");
+  await c.page.waitForFunction(() => document.querySelector("#settings-dlg").open);
+  check(/this device/.test(await c.page.textContent("#settings-where")), "not signed in, Settings says they are kept on this device only");
+  await c.page.uncheck('#settings-dlg input[name="nor-drive-thumbs"]');
+  await c.page.click("#settings-save");
+  check(await until(async () => await local(c.page, "nor-drive-thumbs") === JSON.stringify("off")), "and Save keeps them there");
 
   const services = new Set(outside);
   const known = (u) => u === GSI || u === "https://openidconnect.googleapis.com/v1/userinfo"

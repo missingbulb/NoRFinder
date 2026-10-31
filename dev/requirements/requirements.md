@@ -519,7 +519,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   <details>
 
   Set by the owner on 2026-10-31. The disk, memory, network and CPU in the status bar each open
-  the same dialog on their own tab, and its tabs switch between them. Every tab is laid out the
+  the same dialog, titled Resource Usage, on their own tab, and its tabs switch between them. Every tab is laid out the
   same way: a line with the total, then rows of a name, what it is in grey beneath, and a size at
   the right, then a row of the tab's own buttons and Close. Test: `web-tests/test_status_bar_page.py`.
   </details>
@@ -658,6 +658,20 @@ test fold under it. A study's research requirements, which no user sees, stay in
   1 MB/s), its icon and number turn the warning colour for three seconds, then fade back. With
   reduced motion asked for, the digits change without rolling. Test:
   `web-tests/test_status_bar_page.py`.
+  </details>
+
+- `1.52` The avatar's menu opens Settings: every setting that follows the user, to change and save.
+  <details>
+
+  Set by the owner on 2026-10-31. Settings… in the avatar's menu opens a dialog listing each setting
+  that follows the user (`1.50`), whether or not they are signed in, each with a control to change it:
+  the theme (follow the system, dark or light); where Load reads from; Show thumbnails in the Drive
+  dialog; whether the low-memory popup shows; the last Google Drive link, and the last one in each
+  study; the tips closed, each with a tick to clear to see it again; the recent images from Google
+  Drive, each with a tick to clear to drop it; and the version seen last. A line says where they are
+  kept: in the user's Google Drive when signed in, else on this device only. Save writes what changed,
+  the theme at once, and when signed in saves the user's settings file; Cancel changes nothing. Test:
+  `web-tests/test_account_page.py`.
   </details>
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.

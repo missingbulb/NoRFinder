@@ -22,6 +22,7 @@ import { pageState } from "./page_state.js";
 import { shape, stackPicture, holds, drawVolume, TURN } from "./stack.js";
 import { PREVIEWS, readPreviews } from "./previews.js";
 import { account, SIGNED_IN } from "./account.js";
+import { settingsDialog } from "./settings_dialog.js";
 import { splitter, SPLIT_PATTERN } from "./split_dialog.js";
 
 const $ = (s) => document.querySelector(s);
@@ -1022,6 +1023,34 @@ async function storageTab(fresh) {
   $("#storage-total").textContent = `This site keeps ${sizeText(total)} on this device` + (est?.quota ? `; the browser allows it up to ${sizeText(est.quota)}.` : ".");
 }
 $("#manage-storage").onclick = () => { $("#user-menu").open = false; usage("storage"); };
+
+// Settings (1.52): the settings that follow the user, as the shell keeps them
+const settings = settingsDialog({
+  dialog: $("#settings-dlg"),
+  fields: () => [
+    { key: THEME, label: "Theme", kind: "choice", raw: true, fallback: "", options: [["", "Follow the system"], ["dark", "Dark"], ["light", "Light"]] },
+    { key: SOURCE, label: "Load reads from", kind: "choice", fallback: "local", options: [["local", "This computer"], ["drive", "Google Drive"]] },
+    { key: THUMBS, label: "Show thumbnails in the Google Drive dialog", kind: "toggle", on: "on", off: "off", fallback: "on" },
+    { key: MEMORY_TIP, label: "Show the low-memory popup", kind: "toggle", on: false, off: true, fallback: false },
+    { key: DRIVE_LINK, label: "Last Google Drive link", kind: "text" },
+    { key: DRIVE_LINKS, label: "Last Google Drive link in each study", kind: "map" },
+    { key: TIPS, label: "Tips you closed (clear one to see it again)", kind: "set" },
+    { key: RECENT, label: "Recent images from Google Drive (clear one to drop it)", kind: "list", name: (r) => (r.path ? `${r.path}/` : "") + r.name },
+    { key: SEEN_VERSION, label: "Version you saw last", kind: "text" },
+  ],
+  get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => {
+    try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* private mode: this page only */ }
+    signIn.changed(k);
+  },
+  where: () => (signIn.signedIn() ? "Kept in your Google Drive, so they follow you to every device." : "Kept on this device only. Sign in with Google to keep them with you."),
+  saved: () => {
+    let t = null;
+    try { t = localStorage.getItem(THEME); } catch { /* no storage */ }
+    if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+  },
+});
+$("#open-settings").onclick = () => { $("#user-menu").open = false; settings.open(); };
 $("#storage-reload").onclick = () => location.reload();
 $("#usage-dlg").addEventListener("close", () => { $("#storage-msg").textContent = ""; if ($("#drive-dlg").open) showSaved(); });
 

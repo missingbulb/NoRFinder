@@ -123,7 +123,8 @@ const stageIs = async (page, stage, light) => {
 const tabIs = async (page, tab) => {
   await page.waitForFunction((t) => document.querySelector("#usage-dlg").open && document.querySelector(`#usage-dlg [role=tab][data-tab=${t}]`).getAttribute("aria-selected") === "true"
     && !document.querySelector(`#usage-dlg [role=tabpanel][data-tab=${t}]`).hidden, tab);
-  await check(true, `the dialog is open on ${tab}`);
+  const title = await page.evaluate(() => { const d = document.querySelector("#usage-dlg"), h = document.getElementById(d.getAttribute("aria-labelledby")); return h && d.contains(h) && h.textContent; });
+  await check(title === "Resource Usage", `the dialog is open on ${tab}, titled Resource Usage`, title);
 };
 const loadImage = async (page) => { await page.setInputFiles("#file", image); await page.waitForFunction(() => !document.querySelector("#fx-count").disabled); };
 const count = async (page) => { await page.click("#fx-count"); await page.waitForFunction(() => /pixels/.test(document.querySelector("#fx-result").textContent)); };
