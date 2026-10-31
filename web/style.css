@@ -509,6 +509,9 @@ kbd { font: 12px ui-monospace, monospace; padding: 1px 5px; border: 1px solid va
 img.avatar { border-radius: 50%; object-fit: cover; }
 #user-menu .who { display: flex; flex-direction: column; padding-bottom: 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 #user-menu .who .dim { font-size: 12px; }
+#user-menu .legal { padding-top: 8px; border-top: 1px solid var(--line); font-size: 12px; color: var(--dim); white-space: nowrap; }
+#user-menu .legal a { color: inherit; }
+#user-menu .legal a:hover { color: var(--accent); }
 /* storage, memory, network and CPU: one dialog, a tab each, every tab a total and rows alike */
 #usage-dlg .grow { flex: 1; }
 #usage-dlg .tab-row { display: flex; gap: 4px; margin: -4px 0 10px; border-bottom: 1px solid var(--line); }

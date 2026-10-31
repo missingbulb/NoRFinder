@@ -674,6 +674,18 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `web-tests/test_account_page.py`.
   </details>
 
+- `1.53` The site publishes its privacy policy and terms of service, linked from the avatar's menu.
+  <details>
+
+  Set by the owner on 2026-10-31, for Google's sign-in consent screen, which links both and requires
+  them on the site's own domain, linked from its home page. rauntruth.com/privacy and /terms say who
+  runs the site and how to reach them. The privacy policy says what the page keeps on the device, what
+  reaches each outside service (Cloudflare, Google, jsDelivr, GitHub) and when, and, for signing in,
+  which Google user data the page reads, where it keeps it and that it shares none, under Google's
+  API Services User Data Policy and its Limited Use requirements. The avatar's menu links both. Test:
+  `web-tests/test_published_site.py`.
+  </details>
+
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.
   <details>
 

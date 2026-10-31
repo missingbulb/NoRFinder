@@ -1,5 +1,6 @@
 """1.8: the shell decides what is published, from the studies' standard layout; 1.9: visits are
-counted on the released site only; 1.27: the page is at the site's root.
+counted on the released site only; 1.27: the page is at the site's root; 1.53: the privacy policy and terms
+are published beside it and linked from it.
 
 Run: python3 -m pytest web-tests/test_published_site.py
 """
@@ -143,3 +144,17 @@ def test_the_repos_studies_take_no_path_the_site_serves():
     top = {p.split('/')[0] for p in map(build.served, published())} | set(build.GENERATED)
     assert len(top) >= 5, top
     assert 'nor.html' in build.study_pages(ROOT, top)
+
+
+def test_the_privacy_policy_and_terms_are_published_beside_the_page_and_linked_from_it(tmp_path):
+    build.assemble(ROOT, str(tmp_path), {})
+    index = (tmp_path / 'index.html').read_text()
+    for page in ('privacy', 'terms'):
+        text = (tmp_path / (page + '.html')).read_text()
+        # served at /privacy and /terms, linked without .html (Cloudflare redirects the .html form)
+        assert re.search(rf'<a [^>]*href="{page}"', index), f'the page does not link {page}'
+        assert re.search(r'<a [^>]*href="mailto:[^"]+@[^"]+"', text), f'{page} gives no way to reach whoever runs the site'
+        assert re.search(r'<a [^>]*href="(/|\./)"', text), f'{page} does not link back to the page'
+    privacy = (tmp_path / 'privacy.html').read_text()
+    # Google's consent screen requires the policy to say Google user data is used under its Limited Use rules
+    assert 'https://developers.google.com/terms/api-services-user-data-policy' in privacy and 'Limited Use' in privacy
