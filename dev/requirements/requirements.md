@@ -191,7 +191,9 @@ test fold under it. A study's research requirements, which no user sees, stay in
   corner. A ^ at one end of its header collapses it to the
   header, and the same spot then shows v, which opens it again, so a second click undoes the first;
   an X at the header's other end hides it. A Minimap button in the toolbar, beside the Grid, shows it
-  again or hides it, pressed while it shows; hovering over the button opens a popup choosing how
+  again or hides it, pressed while it shows; hiding it folds the minimap into that button, flying there
+  along an arc, and showing it unfolds it back out of the button (set by the owner on 2026-10-31; no
+  motion for a user who asks the system for reduced motion); hovering over the button opens a popup choosing how
   see-through it is at rest, opaque at first and always opaque under the pointer. Whether it shows and its opacity are kept as the user's settings for the
   next visit. Dragging moves the image, wherever it starts, a label or the ruler's length included:
   no drag selects or drags the page's text (set by the owner on 2026-10-31). Scrolling up and down zooms around the pointer in small steps;
@@ -493,8 +495,9 @@ test fold under it. A study's research requirements, which no user sees, stay in
   Image while no image is open (and again after Unload), folds once done to
   a small preview of the image, its name and what it holds ("2D", "3 channels", from the file;
   only "2D" when the file does not say), and opens as "Loaded Image". A study's drawer is done
-  when the study gives it a summary, and waits again when the study takes it back. Test:
-  `web-tests/test_left_bar_page.py`, `web-tests/test_study_contract.py`.
+  when the study gives it a summary, and waits again when the study takes it back. A drawer opening or
+  folding slides open or shut, and the drawers below it slide to their new places (set by the owner on
+  2026-10-31). Test: `web-tests/test_left_bar_page.py`, `web-tests/test_study_contract.py`.
   </details>
 
 - `1.42` A folder's `rauntruth-previews.tiff` gives every image it covers a preview at once, a stack turning on hover.
@@ -633,6 +636,16 @@ test fold under it. A study's research requirements, which no user sees, stay in
   1 MB/s), its icon and number turn the warning colour for three seconds, then fade back. With
   reduced motion asked for, the digits change without rolling. Test:
   `web-tests/test_status_bar_page.py`.
+  </details>
+
+- `1.50` An Animations checkbox in the resources dialog's CPU tab turns every animation on the page off.
+  <details>
+
+  Set by the owner on 2026-10-31. Checked at first, it is kept as the user's setting for the next
+  visit. Unchecked, nothing on the page moves to draw the eye: the minimap and the drawers change at
+  once, the photocopier's light does not sweep the image, no button shines or glows, the status
+  bar's digits change without rolling and a sharp rise does not flash. A spinner still turns, since
+  it is what says the page is working rather than stuck. Test: `web-tests/test_status_bar_page.py`.
   </details>
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.

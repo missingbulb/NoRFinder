@@ -47,6 +47,7 @@ const RECENT = "nor-drive-recent"; // [{id, name, path}], newest first: images o
 const IMAGES = "nor-images-v1", IMAGE_NAME = "x-nor-name", IMAGE_AT = "x-nor-saved-at";
 // Cache Storage, + Drive folder id: the folder's rauntruth-previews.tiff, its SHA-256 and the folder's name in the headers
 const FOLDER_PREVIEWS = "nor-previews-v1", PREVIEWS_SHA = "x-nor-sha256";
+const MOTION = "nor-motion"; // false: the user turned the page's animations off
 const SEEN_VERSION = "nor-seen-version"; // the site version the user last saw, to tell them what changed since
 const MEMORY_TIP = "nor-memory-tip-off"; // true: the user asked never to see the low-memory popup again
 // the page's memory with a study's Python loaded (studies/nor/detection/browser/MEMORY.md), and the device
@@ -166,7 +167,7 @@ $("#usage-dlg .tab-row").onclick = (e) => { const t = e.target.closest("[role=ta
 // the old character is the rolling one's data-from, so the number reads as its new value throughout.
 const SPIKE_MS = 3000, SHARP_CPU = 0.3, SHARP_RATE = 2 ** 20;
 function showNumber(item, text, spike) {
-  if (spike) {
+  if (spike && !still()) {
     item.classList.add("spike");
     clearTimeout(item.spikeTimer);
     item.spikeTimer = setTimeout(() => item.classList.remove("spike"), SPIKE_MS);
@@ -182,6 +183,15 @@ function showNumber(item, text, spike) {
     return roll;
   }));
 }
+
+// ---------- animations: on unless the user turned them off in the CPU tab, or asks the system for reduced motion ----------
+// Off, the stylesheet stops every animation and transition but the spinners'; motion the page starts itself asks still()
+const motion = $("#motion");
+motion.checked = readJSON(MOTION, true) !== false;
+const showMotion = () => { document.documentElement.dataset.motion = motion.checked ? "on" : "off"; };
+showMotion();
+motion.onchange = () => { writeJSON(MOTION, motion.checked); showMotion(); };
+function still() { return !motion.checked || matchMedia("(prefers-reduced-motion: reduce)").matches; }
 
 $("#sb-net").onclick = () => usage("network");
 $("#sb-cpu").onclick = () => usage("cpu");
@@ -904,7 +914,7 @@ async function showSaved() {
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
   [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
-  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts",
+  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off",
 };
 const GROUPS = [
   ["code", "Code kept for the next visit", "Python and its packages, so the page starts without downloading them again."],
@@ -1138,10 +1148,21 @@ function loadedSummary() {
   text.append(name, tags); n.append(pic, text);
   return n;
 }
+// A drawer opening or folding slides, and those below it slide to their new places: the stylesheet's motion, each
+// drawer a shape of its own, clipped to the left bar, so a browser that cannot clip one changes them at once
+function slide(change) {
+  if (still() || !document.startViewTransition || !CSS.supports("view-transition-group", "contain")) return change();
+  const root = document.documentElement, all = [...document.querySelectorAll("#left > .box")];
+  all.forEach((b, k) => { b.style.viewTransitionName = "drawer-" + k; });
+  root.dataset.drawers = "";
+  const t = document.startViewTransition(change);
+  t.ready.catch(() => {}); // cut short, the drawers have still moved: only the motion is lost
+  t.finished.finally(() => { all.forEach((b) => { b.style.viewTransitionName = ""; }); delete root.dataset.drawers; });
+}
 function foldable() {
   document.querySelectorAll(".box.foldable > .sec-head h2").forEach((h) => {
     h.tabIndex = 0; h.setAttribute("role", "button");
-    const flip = () => { h.closest(".box").classList.toggle("folded"); retitle(); };
+    const flip = () => slide(() => { h.closest(".box").classList.toggle("folded"); retitle(); });
     h.onclick = flip; h.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } };
   });
   unfoldFirst();
@@ -1396,7 +1417,7 @@ function leaveStudy() {
 }
 
 const shell = {
-  $, state: st, page, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, showImage, boxDone,
+  $, state: st, page, still, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, showImage, boxDone,
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; },
 };
 splitter(shell);
