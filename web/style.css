@@ -290,6 +290,13 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #sb-thumbs, #statusbar .grow ~ .sb-item { padding-left: 10px; border-left: 1px solid var(--line); }
 #sb-now { display: flex; align-items: center; gap: 10px; min-width: 0; }
 #sb-memory.warn { color: var(--warn); }
+#statusbar .sb-item, #statusbar .sb-item svg { transition: color 1s; }
+#statusbar .sb-item.spike, #statusbar .sb-item.spike svg { color: var(--warn); transition: none; }
+#statusbar .roll { display: inline-block; clip-path: inset(0); }
+#statusbar .roll > span { display: inline-block; position: relative; animation: roll .4s cubic-bezier(.2, .8, .3, 1.15); }
+#statusbar .roll > span::before { content: attr(data-from); position: absolute; left: 0; bottom: 100%; }
+@keyframes roll { from { transform: translateY(100%); } }
+@media (prefers-reduced-motion: reduce) { #statusbar .roll > span { animation: none; } }
 #sb-version.stale { color: var(--warn); font-weight: 600; }
 /* the stage, a traffic light: red PreGT, yellow GT, green PostGT */
 #sb-stage { outline: none; }

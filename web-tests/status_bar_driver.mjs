@@ -4,7 +4,8 @@
 // nothing else does; a popup on each crumb saying what was done; the shining crumb bringing its button into view
 // and pressing it; a new image starting over; a PreGT study with no Submit GT and its ground-truth button hidden;
 // switching study in place bringing its own stage and steps; the disk, memory, network and CPU as grey icons and
-// numbers, each opening its own tab of one dialog; a separator between every two items; no question-mark pointer.
+// numbers, each opening its own tab of one dialog, each rolling its changed characters to a new value, the CPU and
+// the network flashing on a sharp rise and rolling nothing when reduced motion is asked for; a separator between every two items; no question-mark pointer.
 // Optional SHOTS: a directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/status_bar_driver.mjs ANSWERS IMAGE.png STUDIES [SHOTS]
 import { createRequire } from "node:module";
@@ -23,16 +24,18 @@ try { pw = require("playwright"); } catch {
 const [answers, image, studies, shots] = process.argv.slice(2);
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const MB = 2 ** 20;
+const BIG = 6 * MB; // a download fast enough to flash the network
 
 // the fixture's answers, each saying how much memory Python holds and how long it has worked as the real worker
-// does; memory: what Python holds in use after a collection. A count keeps Python working for WORK ms.
+// does; memory: what Python holds in use after a collection. A count keeps Python working for WORK ms, and grows
+// Python's memory by 10 MB.
 const WORK = 1500;
 const STAND_IN = `
 const A = await (await fetch("answers.json")).json();
 const bytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-let ms = 0;
-const mem = () => ({ heap: ${60 * MB}, files: ${20 * MB}, busy: { ms, since: null } });
-const work = (n) => { postMessage({ type: "progress", text: "Counting…", ...mem(), busy: { ms, since: Date.now() } }); const t = Date.now(); while (Date.now() - t < n); ms += n; };
+let ms = 0, heap = ${60 * MB};
+const mem = () => ({ heap, files: ${20 * MB}, busy: { ms, since: null } });
+const work = (n) => { postMessage({ type: "progress", text: "Counting…", ...mem(), busy: { ms, since: Date.now() } }); const t = Date.now(); while (Date.now() - t < n); ms += n; heap += ${10 * MB}; };
 const first = new URL(location.href).searchParams.get("study");
 if (A.ready[first]) postMessage({ type: "ready", info: A.ready[first], ...mem() });
 onmessage = ({ data: m }) => {
@@ -50,6 +53,7 @@ const server = http.createServer((q, r) => {
     r.writeHead(200, { "content-type": "application/json" });
     return r.end(JSON.stringify({ ...JSON.parse(fs.readFileSync(path.join(repo, u))), stage }));
   }
+  if (u === "/big") { r.writeHead(200, { "content-type": "application/octet-stream", "cache-control": "no-store" }); return r.end(Buffer.alloc(BIG)); }
   if (u === "/web/vendor/wheels.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end("[]"); }
   const f = u === "/web/answers.json" ? answers : u === "/web/studies.json" ? studies : repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
@@ -70,6 +74,21 @@ async function open(study) {
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);
+  // what each of the four numbers did: rolled (each changed character wrapped to roll, the rolled ones' animations
+  // as computed), and flashed
+  await page.addInitScript(() => {
+    window.seen = {};
+    addEventListener("DOMContentLoaded", () => {
+      for (const id of ["sb-disk", "sb-memory", "sb-net", "sb-cpu"]) {
+        const e = document.getElementById(id), s = (window.seen[id] = { rolled: 0, anim: [], spiked: false });
+        new MutationObserver(() => {
+          const r = e.querySelectorAll(".v .roll > span");
+          if (r.length) { s.rolled++; s.anim.push(getComputedStyle(r[0]).animationName); s.text = e.querySelector(".v").textContent; }
+          if (e.classList.contains("spike")) s.spiked = true;
+        }).observe(e, { subtree: true, childList: true, attributes: true, attributeFilter: ["class"] });
+      }
+    });
+  });
   await page.goto(origin + "/web/" + (study || ""));
   await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
   return { ctx, page };
@@ -141,7 +160,7 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await check(right.slice(0, 4).every((e) => e.grey !== null && e.grey <= 12), "the four before the version each have a grey icon", right);
   await check(/^\d+(\.\d)? (KB|MB|GB)$/.test(right[0].text), 'the disk reads "1.4 MB", with no word', right[0].text);
   await check(/^\d+ MB$/.test(right[1].text), 'the memory reads "253 MB", with no word', right[1].text);
-  await check(/^\d+(\.\d)? (KB|MB|GB)$/.test(right[2].text), 'the network reads "52 MB"', right[2].text);
+  await check(/^\d+(\.\d)? (KB|MB|GB)\/s$/.test(right[2].text), 'the network reads "1.2 MB/s"', right[2].text);
   await check(/^\d+%$/.test(right[3].text), 'the CPU reads "12%"', right[3].text);
   const left = await page.evaluate(() => ["#sb-stage", "#sb-steps", "#status"].map((id) => document.querySelector(id).getBoundingClientRect().left));
   await check(left[0] < 40 && left[0] < left[1] && left[1] < left[2], "the stage, then the crumbs, then what the page is doing, from the left", left);
@@ -178,6 +197,13 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   // Python worked about WORK ms of the last two seconds
   await page.waitForFunction(() => parseInt(document.querySelector("#sb-cpu").textContent) >= 30, null, { timeout: 3000 }).catch(() => {});
   await check(parseInt(await page.textContent("#sb-cpu")) >= 30, "the CPU shows Python at work", await page.textContent("#sb-cpu"));
+  await page.waitForFunction(() => window.seen["sb-cpu"].spiked, null, { timeout: 3000 }).catch(() => {});
+  const cpuSeen = await page.evaluate(() => ({ ...window.seen["sb-cpu"], color: getComputedStyle(document.querySelector("#sb-cpu svg")).color,
+    warn: getComputedStyle(document.documentElement).getPropertyValue("--warn") }));
+  await check(cpuSeen.spiked, "the CPU's sharp rise flashes it", cpuSeen);
+  await check(cpuSeen.rolled > 0 && cpuSeen.anim.every((a) => a === "roll") && /^\d+%$/.test(cpuSeen.text), "the CPU rolls its changed digits, reading its number all the while", cpuSeen);
+  await page.waitForFunction(() => !document.querySelector("#sb-cpu").classList.contains("spike"), null, { timeout: 6000 }).catch(() => {});
+  await check(!(await page.evaluate(() => document.querySelector("#sb-cpu").classList.contains("spike"))), "and the flash fades after a few seconds");
   await steps(page, ["Load image", "Count", "Submit GT*"], ["#fx-truth", "#sb-submit"]);
   await check((await tip(page, "Count")).includes("400"), "the study's step says what it did");
   await shot(page, "2-submit");
@@ -201,7 +227,7 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await check(!/reserved for its next use/.test(await page.textContent("#usage-dlg")), "with no explanation of Python's memory");
   await page.click("#ram-gc");
   await page.waitForFunction(() => /in use/.test(document.querySelector("#ram-msg").textContent));
-  await check(/25 MB in use of 60 MB/.test(await page.textContent("#ram-msg")), "Run GC says what Python holds in use against its reserve", await page.textContent("#ram-msg"));
+  await check(/25 MB in use of \d+ MB/.test(await page.textContent("#ram-msg")), "Run GC says what Python holds in use against its reserve", await page.textContent("#ram-msg"));
   if (shots) await page.screenshot({ path: path.join(shots, "4-memory.png") });
   // the tabs look alike: the total, then rows of a name, what it is and a size, in the same type
   const look = (tab) => page.evaluate((t) => {
@@ -215,7 +241,8 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await tabIs(page, "network");
   const net = await page.evaluate(() => [...document.querySelectorAll("#net-list .entry .name")].map((n) => n.textContent));
   await check(["The page", "Python", "Google Drive"].every((n) => net.includes(n)), "the Network tab splits what was downloaded", net);
-  await check((await page.textContent("#net-total")).includes(await page.textContent("#sb-net")), "its total is the status bar's", [await page.textContent("#net-total"), await page.textContent("#sb-net")]);
+  const netTotal = await page.textContent("#net-total");
+  await check(/downloading \d+(\.\d)? (KB|MB|GB)\/s/.test(netTotal) && /downloaded \d+(\.\d)? (KB|MB|GB) since/.test(netTotal), "it gives the speed and the total", netTotal);
   if (shots) await page.screenshot({ path: path.join(shots, "5-network.png") });
   const netLook = await look("network");
   await page.click("#usage-dlg [role=tab][data-tab=cpu]");
@@ -226,7 +253,8 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   const cpuLook = await look("cpu");
   await page.keyboard.press("Escape");
 
-  // the disk opens the Storage tab, whose total it shows
+  // the disk opens the Storage tab, whose total it shows, counting what was kept since
+  await page.evaluate(() => localStorage.setItem("kept-since", "x".repeat(300000)));
   await page.click("#sb-disk");
   await tabIs(page, "storage");
   await page.waitForFunction(() => /keeps/.test(document.querySelector("#storage-total").textContent));
@@ -235,6 +263,20 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   for (const g of await page.$$("#storage-list .group > summary")) await g.click();
   if (shots) await page.screenshot({ path: path.join(shots, "7-storage.png") });
   const storeLook = await look("storage");
+  await page.keyboard.press("Escape");
+  // a fast download flashes the network; every one of the four has rolled to a new value by now
+  await page.evaluate((u) => fetch(u, { cache: "no-store" }).then((r) => r.arrayBuffer()), origin + "/big");
+  await page.waitForFunction(() => window.seen["sb-net"].spiked, null, { timeout: 4000 }).catch(() => {});
+  const all = await page.evaluate(() => window.seen);
+  await check(all["sb-net"].spiked, "a fast download flashes the network", all["sb-net"]);
+  await check(Object.values(all).every((x) => x.rolled > 0 && x.anim.every((a) => a === "roll")), "the disk, memory, network and CPU each rolled to a new value", all);
+  // with reduced motion asked for, a new value changes without rolling
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const before = all["sb-net"].rolled;
+  await page.evaluate((u) => fetch(u, { cache: "no-store" }).then((r) => r.arrayBuffer()), origin + "/big");
+  await page.waitForFunction((n) => window.seen["sb-net"].rolled > n, before, { timeout: 4000 }).catch(() => {});
+  const calm = await page.evaluate(() => window.seen["sb-net"]);
+  await check(calm.rolled > before && calm.anim.slice(-1)[0] === "none", "with reduced motion asked for, it changes without rolling", calm);
   const alike = (a, b) => a.total && b.total && a.name === b.name && a.size === b.size && (!a.what || !b.what || a.what === b.what);
   await check([memLook, netLook, cpuLook].every((l) => alike(l, storeLook) && alike(l, memLook)), "the four tabs look alike", [storeLook, memLook, netLook, cpuLook]);
   await ctx.close();
