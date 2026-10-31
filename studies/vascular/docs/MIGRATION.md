@@ -30,3 +30,41 @@ Every capability of [missingbulb/vascularColoring](https://github.com/missingbul
 | Skill: algorithm-ideation | — | open (D7) |
 | Eight Go checks (calibration, metric fields, overlay colour, render dirs, paper index) | — | open (D7) |
 | Python tests; model-edit and coverage Node tests | `tests/` | moved; the TIFF-reader test moves with `tiff.js` (D1) |
+
+## Decisions (owner, 2026-10-31)
+
+- **D1, the 3D viewer:** decoded in the study's Python. `opened()` adds `meta.Z` and `meta.spacing`
+  and returns C×Z 8-bit planes, channel-major. `web/viewer3d.js` ports the MicroViewer's ray-caster
+  behind viewer2d's interface and bins for the GPU itself. The approved view becomes defaults: black
+  point 0.63 becomes `black: 161` on the CD31 row; colour by depth, render mode, look and the 1 µm
+  spacing go in a new `study.json` `view` block, and the page says the spacing was stated, not read
+  from the file. Phases: contract (the Image Viewer and the fixture emit Z too), viewer3d with
+  channel rows, view controls, then overlays (D2).
+- **D4, ground truth:** stage GT, using the shell's Submit Ground Truth with label
+  `vascular-ground-truth`. This needs the shell's submit popup to stop counting NoR's `labels`.
+  An intake task follows once the first corrected model is submitted.
+- **D5, literature binaries:** none come into git. The READMEs keep linking to vascularColoring at
+  `54badaa`.
+- **D7, the pack:** port 5 Go checks with their roots under `studies/vascular/` (the three
+  calibration checks, locked-metric-fields, overlay-color-contrast, panel-scale-calibration).
+  Drop render-outputs-gitignored, rendered-overlays-untracked and paper-folder-indexed. Retire the
+  4 rules research-project already carries. `algorithm-ideation` goes to nor-finder.
+
+Taken on Fable's recommendation unless the owner says otherwise:
+
+- **D2:** the 3D viewer offers a low-level overlay API: `canvas`, `project`/`unproject`, `onDraw`,
+  `setMask`, `frame`. Vessel geometry, edits, review and colours stay study-side. Scene-graph
+  primitives come later, if a second user wants them.
+- **D3:** item cards stay in each study. Only the list and selection frame is lifted into the
+  shell, and only after the vascular cards render.
+- **D6:** `py/` holds what ships and `analysis/` holds research. Whether to lift one fetcher for
+  both studies is still undecided.
+- **D8:** ship the v5 drafts first. Extraction in the browser comes only after a measured run.
+
+Still the owner's call: **D9**, what becomes of the vascularColoring repo and its Pages site.
+
+Conflicts with existing requirements to resolve on the way:
+
+- The MicroViewer's right bar has to move into the left slots (1.11).
+- Requirement 1.3 promises a lasso that viewer2d does not own.
+- The study-words test (1.1) must learn this study's words.
