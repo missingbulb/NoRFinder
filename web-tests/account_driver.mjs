@@ -1,23 +1,23 @@
-// Drives the page (web/) in headless Chromium, its /api/ answered by the site's real server (accounts/worker.js)
-// over a stand-in D1 database (d1_double.mjs), with a stand-in for Google's sign-in script, and checks 1.50: a visitor who never
-// signs in sees the menu as before, loads nothing from Google and only asks the server whether they have a
-// session; signing in on one device shows the user and saves that device's settings that follow the user, not
-// the ones that stay; a change there is saved; signing in on a second device brings them, the theme at once,
-// and leaves its own left bar alone; a reload stays signed in; signing out keeps this device's settings; and a
-// server with no Google client offers no sign-in.
+// Drives the page (web/) in headless Chromium against stand-ins for Google's sign-in script, its account details
+// and the Drive API's app folder, and checks 1.50: a visitor who never signs in loads nothing from Google; signing
+// in asks Google for the user's name, email and picture and the app's own Drive folder, nothing else of their
+// Drive; the first sign-in starts the user's settings file from this device's settings that follow the user, not
+// the ones that stay; a change is saved; a second device signing in takes the file's settings, the theme at once,
+// and keeps its own left bar; a reload within the hour syncs with no click; once the token has run out nothing
+// reaches Drive until the next click, which renews it silently and saves what changed meanwhile; signing out
+// keeps this device's settings and saves nothing more; a site with no Google client offers no sign-in; and the
+// page reaches no address but these.
 // Optional SHOTS: a directory for screenshots.
 // Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/account_driver.mjs [SHOTS]
 import { repoFile } from "./repo_file.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
-import { generateKeyPairSync, createSign } from "node:crypto";
+import { isDeepStrictEqual as same } from "node:util";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
-import worker from "../accounts/worker.js";
-import { d1 } from "./d1_double.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -27,63 +27,72 @@ try { pw = require("playwright"); } catch {
 const [shots] = process.argv.slice(2);
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-// Google: its signing key, as the server fetches it, and a sign-in token for one user
 const CLIENT = "acme-client.apps.googleusercontent.com";
-const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
-const JWKS = { keys: [{ ...publicKey.export({ format: "jwk" }), kid: "k1", alg: "RS256", use: "sig" }] };
-const realFetch = globalThis.fetch;
-globalThis.fetch = async (url, init) => (String(url) === "https://www.googleapis.com/oauth2/v3/certs"
-  ? new Response(JSON.stringify(JWKS), { headers: { "content-type": "application/json" } }) : realFetch(url, init));
-const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
-let origin;
-const token = () => {
-  const now = Math.floor(Date.now() / 1000);
-  const head = b64({ alg: "RS256", kid: "k1", typ: "JWT" }) + "." + b64({ iss: "https://accounts.google.com", aud: CLIENT, sub: "1001",
-    email: "ada@acme.example", email_verified: true, name: "Ada Lovelace", picture: origin + "/web/logo.svg", iat: now, exp: now + 3600 });
-  return head + "." + createSign("RSA-SHA256").update(head).sign(privateKey).toString("base64url");
-};
-// Google's sign-in script: its button signs the user in at once
-const GSI = (t) => `window.google = { accounts: { id: {
-  initialize(o) { this.cb = o.callback; },
-  renderButton(el) { el.innerHTML = '<button type="button" id="gsi-stub">Sign in with Google</button>'; el.firstChild.onclick = () => this.cb({ credential: ${JSON.stringify(t)} }); },
-  disableAutoSelect() { window.autoSelectOff = true; },
-} } };`;
+const GSI = "https://accounts.google.com/gsi/client";
+let origin, clientId = CLIENT;
+// Google's script: its token client answers each request at once with a new token, recording what it was asked
+const SCRIPT = `window.google = { accounts: { oauth2: { initTokenClient(o) {
+  window.tokenClient = { client: o.client_id, scope: o.scope, asked: [] };
+  return { requestAccessToken(opts) { window.tokenClient.asked.push(opts || {}); setTimeout(() => o.callback({ access_token: "tok-" + Date.now(), expires_in: 3599 })); } };
+} } } };`;
 
-const DB = d1();
-const env = { GOOGLE_CLIENT_ID: CLIENT, DB };
-const record = () => JSON.parse(DB.sqlite.prepare("SELECT settings FROM users WHERE id = '1001'").get()?.settings || "null");
-const api = []; // [method path] the page sent to the server
-const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "" }, drive: { defaultLink: "" } };`;
+// the user's app folder in Drive: at most one file, and every request the page made to Google
+const drive = { file: null, nextId: 1 };
+const seen = [];
+const file = () => (drive.file ? JSON.parse(drive.file.body) : null);
+const CONFIG = () => `window.NOR_CONFIG = { google: { apiKey: "", clientId: ${JSON.stringify(clientId)} } };`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
-const server = http.createServer(async (q, r) => {
+const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
-  if (u.startsWith("/api/")) {
-    api.push(`${q.method} ${u}`);
-    const chunks = [];
-    for await (const c of q) chunks.push(c);
-    const body = chunks.length ? Buffer.concat(chunks) : undefined;
-    const res = await worker.fetch(new Request(origin + q.url, { method: q.method, headers: q.headers, body: ["GET", "HEAD"].includes(q.method) ? undefined : body }), env);
-    r.writeHead(res.status, Object.fromEntries(res.headers)); return r.end(Buffer.from(await res.arrayBuffer()));
-  }
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(""); }
-  if (u === "/web/config.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(CONFIG); }
+  if (u === "/web/config.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(CONFIG()); }
   const f = repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
-await new Promise((ok) => server.listen(0, "localhost", ok));
-origin = `http://localhost:${server.address().port}`;
+await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
+origin = `http://127.0.0.1:${server.address().port}`;
+
+const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, content-type", "access-control-allow-methods": "GET, POST, PATCH" };
+async function google(route) {
+  const q = route.request(), u = new URL(q.url());
+  if (q.method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
+  seen.push(`${q.method()} ${u.origin}${u.pathname}${u.search}`);
+  const json = (status, body) => route.fulfill({ status, headers: cors, contentType: "application/json", body: JSON.stringify(body) });
+  if (!/^Bearer tok-/.test(q.headers()["authorization"] || "")) return json(401, { error: "no token" });
+  if (u.href === "https://openidconnect.googleapis.com/v1/userinfo")
+    return json(200, { sub: "1001", name: "Ada Lovelace", email: "ada@acme.example", picture: origin + "/web/logo.svg" });
+  if (u.pathname === "/drive/v3/files" && q.method() === "GET")
+    return json(200, { files: u.searchParams.get("spaces") === "appDataFolder" && drive.file && u.searchParams.get("q").includes(drive.file.name) ? [{ id: drive.file.id }] : [] });
+  if (drive.file && u.pathname === `/drive/v3/files/${drive.file.id}` && u.searchParams.get("alt") === "media")
+    return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: drive.file.body });
+  if (u.pathname === "/upload/drive/v3/files" && q.method() === "POST") {
+    const body = q.postDataBuffer().toString("utf8");
+    const parts = body.split(/\r\n--[^\r\n]+/).map((p) => p.split("\r\n\r\n").slice(1).join("\r\n\r\n")).filter(Boolean);
+    const meta = JSON.parse(parts[0]);
+    drive.file = { id: "acmefile" + drive.nextId++, name: meta.name, parents: meta.parents, body: parts[1] };
+    return json(200, { id: drive.file.id });
+  }
+  if (drive.file && u.pathname === `/upload/drive/v3/files/${drive.file.id}` && q.method() === "PATCH") {
+    drive.file.body = q.postData(); return json(200, { id: drive.file.id });
+  }
+  return json(404, { error: "not a call this test knows" });
+}
 
 const browser = await pw.chromium.launch();
 let failed = false;
 const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: " + what); } else console.log("ok: " + what); };
 const until = async (fn, ms = 5000) => { for (const end = Date.now() + ms; Date.now() < end; await new Promise((ok) => setTimeout(ok, 50))) if (await fn()) return true; return false; };
+const pause = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
-let gsiLoads = 0;
+let scriptLoads = 0;
+const outside = []; // every address outside the page's own the browser was asked for
 async function device(seed) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
-  await ctx.route("https://accounts.google.com/gsi/client", (route) => { gsiLoads++; route.fulfill({ status: 200, contentType: "text/javascript", body: GSI(token()) }); });
-  await ctx.route((u) => !u.href.startsWith(origin) && u.href !== "https://accounts.google.com/gsi/client", (r) => r.abort());
+  ctx.on("request", (q) => { if (!q.url().startsWith(origin)) outside.push(new URL(q.url()).origin + new URL(q.url()).pathname); });
+  await ctx.route(GSI, (route) => { scriptLoads++; route.fulfill({ status: 200, contentType: "text/javascript", body: SCRIPT }); });
+  await ctx.route(/^https:\/\/(www|openidconnect)\.googleapis\.com\//, google);
+  await ctx.route((u) => !u.href.startsWith(origin) && u.href !== GSI && !/^https:\/\/(www|openidconnect)\.googleapis\.com\//.test(u.href), (r) => r.abort());
   await ctx.addInitScript((seed) => {
     delete Navigator.prototype.serviceWorker;
     if (sessionStorage.getItem("primed")) return;
@@ -99,8 +108,7 @@ async function device(seed) {
 }
 const signInVia = async (page) => {
   await page.click("#user-menu summary");
-  await page.waitForSelector("#gsi-stub");
-  await page.click("#gsi-stub");
+  await page.click("#sign-in");
   await page.waitForFunction(() => !document.querySelector("#sign-out").hidden);
 };
 const local = (page, k) => page.evaluate((k) => localStorage.getItem(k), k);
@@ -109,64 +117,92 @@ const shot = async (page, name) => { if (shots) await page.screenshot({ path: pa
 try {
   // device A: used before, never signed in
   const a = await device({ "nor-theme": "dark", "nor-tips-closed": JSON.stringify(["recent-files"]), "nor-bars-v1": JSON.stringify({ left: 300 }) });
-  await until(() => api.length);
-  await new Promise((ok) => setTimeout(ok, 300));
-  check(api.join() === "GET /api/session", "a visitor's page asks the server only whether they have a session");
-  check(gsiLoads === 0, "nothing is loaded from Google before the menu is opened");
+  await pause(300);
+  check(scriptLoads === 0 && outside.length === 0, "a visitor who never signs in loads nothing from Google");
   check(await a.page.textContent("#who-where") === "On this device, not signed in" && await a.page.isHidden("#sign-out"), "not signed in, the menu says so");
   await a.page.click("#user-menu summary");
-  await a.page.waitForSelector("#gsi-stub");
-  check(gsiLoads === 1 && await a.page.isVisible("#manage-storage"), "opening the menu offers Sign in with Google beside Manage storage");
+  await a.page.waitForFunction(() => window.tokenClient);
+  check(await a.page.isVisible("#sign-in") && await a.page.isVisible("#manage-storage"), "opening the menu offers Sign in with Google beside Manage storage");
+  const asked = await a.page.evaluate(() => window.tokenClient);
+  check(asked.client === CLIENT && asked.scope.split(" ").filter((s) => /drive/.test(s)).every((s) => s === "https://www.googleapis.com/auth/drive.appdata")
+    && ["email", "profile"].every((s) => asked.scope.split(" ").includes(s)),
+    "signing in asks for the user's name, email and picture and the app's own Drive folder, nothing else of their Drive");
   await shot(a.page, "account_signed_out");
-  await a.page.click("#gsi-stub");
+  await a.page.click("#sign-in");
   await a.page.waitForFunction(() => !document.querySelector("#sign-out").hidden);
   check(await a.page.textContent("#who-name") === "Ada Lovelace" && await a.page.textContent("#who-where") === "ada@acme.example",
     "signed in, the menu names the user");
   check(await a.page.evaluate(() => document.querySelector("#user-menu summary .avatar").tagName === "IMG" && document.querySelector("#sign-in").hidden),
     "the avatar is the user's picture, and Sign in is gone");
   await shot(a.page, "account_signed_in");
-  check(await until(() => record()?.["nor-theme"] === "dark"), "a first sign-in saves this device's settings");
-  check(record()?.["nor-tips-closed"] === JSON.stringify(["recent-files"]) && !("nor-bars-v1" in (record() || {})),
-    "the record holds the settings that follow the user, not the left bar's width");
+  check(await until(() => file()?.["nor-theme"] === "dark"), "a first sign-in starts the user's settings file from this device's");
+  check(same(drive.file.parents, ["appDataFolder"]), "the file is in the app's hidden folder in the user's Drive");
+  check(file()["nor-tips-closed"] === JSON.stringify(["recent-files"]) && !("nor-bars-v1" in file()),
+    "the file holds the settings that follow the user, not the left bar's width");
   await a.page.click("body", { position: { x: 700, y: 500 } });
   await a.page.click("#theme");
-  check(await until(() => record()?.["nor-theme"] === "light"), "switching to light while signed in saves it");
+  check(await until(() => file()?.["nor-theme"] === "light"), "switching to light while signed in saves it to the file");
 
   // device B: its own theme and left bar
-  api.length = 0;
   const b = await device({ "nor-theme": "dark", "nor-bars-v1": JSON.stringify({ left: 400 }) });
   check(await b.page.evaluate(() => document.documentElement.dataset.theme) === "dark", "a second device starts in its own theme");
   await signInVia(b.page);
-  check(await b.page.evaluate(() => document.documentElement.dataset.theme) === "light", "signing in there brings the user's theme at once");
+  check(await until(() => b.page.evaluate(() => document.documentElement.dataset.theme === "light")), "signing in there brings the user's theme at once");
   check(await local(b.page, "nor-tips-closed") === JSON.stringify(["recent-files"]), "and the tips they closed elsewhere");
   check(await local(b.page, "nor-bars-v1") === JSON.stringify({ left: 400 }), "and leaves this device's left bar alone");
-  check(record()?.["nor-theme"] === "light", "bringing the record does not overwrite it");
+  check(file()["nor-theme"] === "light", "bringing the file's settings does not overwrite the file");
 
+  // another device changes the file; a reload within the hour takes it with no click
+  drive.file.body = JSON.stringify({ ...file(), "nor-theme": "dark" });
+  const asks = await b.page.evaluate(() => window.tokenClient.asked.length);
   await b.page.reload();
   await b.page.waitForFunction(() => !document.querySelector("#sign-out").hidden);
-  check(await b.page.textContent("#who-name") === "Ada Lovelace", "a reload stays signed in");
+  check(await until(() => b.page.evaluate(() => document.documentElement.dataset.theme === "dark")), "a reload within the hour stays signed in and syncs with no click");
+  check(await b.page.evaluate(() => !window.tokenClient || window.tokenClient.asked.length === 0) && asks === 1, "and asks Google for no new token");
+
+  // the hour is up: nothing reaches Drive until a click, which renews the token silently and saves what changed
+  await b.page.evaluate(() => { const s = JSON.parse(localStorage.getItem("nor-google-sign-in")); s.until = Date.now() - 1; localStorage.setItem("nor-google-sign-in", JSON.stringify(s)); });
+  await b.page.reload();
+  await b.page.waitForFunction(() => !document.querySelector("#sign-out").hidden && window.tokenClient);
+  const before = seen.length;
+  await b.page.focus("#theme");
+  await b.page.keyboard.press("Enter"); // to light, through the shell, with no click
+  await pause(800);
+  check(await local(b.page, "nor-theme") === "light" && seen.length === before && file()["nor-theme"] === "dark",
+    "with the token run out, a change reaches Drive only after a click");
+  await b.page.click("#who-name", { force: true }).catch(() => b.page.mouse.click(700, 500));
+  check(await until(() => file()?.["nor-theme"] === "light"), "the next click renews the token and saves what this device changed meanwhile, over the file");
+  const renewal = (await b.page.evaluate(() => window.tokenClient.asked))[0];
+  check(renewal?.prompt === "" && renewal.login_hint === "ada@acme.example", "renewing asks Google silently, for the same user");
 
   await b.page.click("#user-menu summary");
   await b.page.click("#sign-out");
   await b.page.waitForFunction(() => document.querySelector("#sign-out").hidden);
   check(await b.page.textContent("#who-where") === "On this device, not signed in" && await b.page.evaluate(() => document.querySelector("#user-menu summary .avatar").tagName === "svg"),
     "signing out shows the device's own avatar again");
-  check(await local(b.page, "nor-theme") === "light", "and keeps this device's settings");
+  check(await local(b.page, "nor-theme") === "light" && await local(b.page, "nor-google-sign-in") === null, "and keeps this device's settings, forgetting the user and the token");
+  await b.page.click("body", { position: { x: 700, y: 500 } });
+  await b.page.click("#theme");
+  await pause(800);
+  check(file()["nor-theme"] === "light", "a change after signing out is not saved to the user's file");
   await b.page.reload();
   await b.page.waitForFunction(() => document.querySelector("#title").textContent);
-  await new Promise((ok) => setTimeout(ok, 300));
   check(await b.page.isHidden("#sign-out"), "a reload after signing out stays signed out");
-  await b.page.click("#theme");
-  await new Promise((ok) => setTimeout(ok, 800));
-  check(record()?.["nor-theme"] === "light", "a change after signing out is not saved for the user");
 
-  // a server with no Google client
-  env.GOOGLE_CLIENT_ID = "";
-  const loads = gsiLoads;
+  // a site with no Google client
+  clientId = "";
+  const loads = scriptLoads;
   const c = await device({});
   await c.page.click("#user-menu summary");
-  await new Promise((ok) => setTimeout(ok, 500));
-  check(gsiLoads === loads && await c.page.isHidden("#sign-in") && await c.page.isVisible("#manage-storage"), "with no Google client, the menu offers no sign-in");
+  await pause(500);
+  check(scriptLoads === loads && await c.page.isHidden("#sign-in") && await c.page.isVisible("#manage-storage"), "with no Google client, the menu offers no sign-in");
+
+  const services = new Set(outside);
+  const known = (u) => u === GSI || u === "https://openidconnect.googleapis.com/v1/userinfo"
+    || /^https:\/\/www\.googleapis\.com\/(upload\/)?drive\/v3\/files(\/acmefile\d+)?$/.test(u);
+  check(services.size >= 4 && [...services].every(known), `the page reached only Google's sign-in script, account details and the Drive API (${[...services].join(", ")})`);
+  check(seen.filter((s) => /drive\/v3\/files(\?|$)/.test(s) && s.startsWith("GET")).every((s) => /spaces=appDataFolder/.test(s)),
+    "every Drive listing it made looked only in the app's own folder");
 } catch (e) {
   failed = true; console.error("FAILED: " + (e.stack || e));
 } finally {

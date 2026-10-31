@@ -620,27 +620,29 @@ test fold under it. A study's research requirements, which no user sees, stay in
   by depth and the spacing it opens with. A study draws over the 3D view, over the stack or beside it
   in the same camera, picks and drags there, and can keep only the stack inside or outside a mask of
   its own. Test: `web-tests/test_viewer3d_page.py`, and the vascular study's `4.3`.
-- `1.50` Signing in with Google carries the user's settings to every device; not signing in changes nothing.
+- `1.50` Signing in with Google keeps the user's settings in their own Google Drive; not signing in changes nothing.
   <details>
 
-  Set by the owner on 2026-10-31. When the site has a Google sign-in client (`GOOGLE_CLIENT_ID` in
-  `wrangler.json`), the avatar's menu offers Sign in with Google, which asks Google for the user's
-  name, email and picture and nothing else. Signed in, the avatar is the user's picture, the menu
-  names them and offers Sign out. The site's server (`accounts/`, a Cloudflare Worker) checks
-  Google's token, keeps a session in its own cookie for 30 days (HttpOnly, sent only to the site's
-  `/api/`), and keeps one settings record per user, at most 16 KB, in its D1 database, with when the
-  user was last seen. No address returns anything about a user except to that user's own session; who
-  was active in the last 24 hours is a query the owner runs against the database
-  (`accounts/active_users.sql`). Each sign-in, sign-out and save is logged by the user's Google id. These settings follow the user:
-  dark or light, the tips closed, the version last seen, the low-memory popup turned off, where Load
-  reads from, the last Drive link (in each study too), Show thumbnails, and the images opened from Drive lately. These
-  stay with the device: the left bar's width, Auto-save images, and everything kept for images. On
-  signing in the record's settings replace this device's, the theme at once; a first sign-in, with
-  no record yet, saves this device's. While signed in, each change to a setting that follows the
-  user saves the whole record. Sign out ends the session and leaves this device's settings as they
-  are. A visitor who never signs in sees the page as before, and the server is asked only whether
-  this browser has a session. Test: `web-tests/test_accounts.py` (the server),
-  `web-tests/test_account_page.py` (the page).
+  Set by the owner on 2026-10-31. The site has no server of its own for this: Google signs the user
+  in, in Google's own window, and the page reads and writes their settings in their own Google Drive,
+  in the app's hidden folder (`drive.appdata`), as one small file it reads whole and replaces whole.
+  When the site has a Google client (the repository variable `GOOGLE_CLIENT_ID`, written into
+  `config.js` by the build), the avatar's menu offers Sign in with Google, which asks Google for the
+  user's name, email and picture and for the app's own folder in their Drive, nothing else of it.
+  Signed in, the avatar is the user's picture, the menu names them and offers Sign out. These
+  settings follow the user: dark or light, the tips closed, the version last seen, the low-memory
+  popup turned off, where Load reads from, the last Drive link (in each study too), Show thumbnails,
+  and the images opened from Drive lately. These stay with the device: the left bar's width,
+  Auto-save images, and everything kept for images. Google's token lasts about an hour and is kept on
+  this device for that hour; a new one needs a click, so once it has run out the page renews it on
+  the user's next click, with no question asked while Google still remembers the consent. Whenever
+  the page has a token it syncs: the file's settings replace this device's, the theme at once, unless
+  this device changed a setting that follows the user since it last synced, in which case this
+  device's are saved over the file; with no file yet, this device's start it. While it has a token,
+  each change to a setting that follows the user saves the whole file. Sign out forgets the user and
+  the token on this device and leaves its settings as they are. A visitor who never signs in sees the
+  page as before and loads nothing from Google for it. Test: `web-tests/test_account_page.py`,
+  `web-tests/test_site_config.py`.
   </details>
 
 ## `2` The repo's checks

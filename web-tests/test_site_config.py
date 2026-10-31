@@ -1,4 +1,4 @@
-"""1.18 — the deploy's repository variables reach the page through web/config.js.
+"""1.18, 1.50 — the deploy's repository variables reach the page through web/config.js.
 
 Run: python3 web-tests/test_site_config.py
 """
@@ -17,7 +17,9 @@ def settings(text):
 
 def test_the_deploy_variables_become_the_page_settings():
     got = settings(build.config_js({'GOOGLE_API_KEY': 'AIza"x'}))
-    assert got == {'google': {'apiKey': 'AIza"x'}}
+    assert got == {'google': {'apiKey': 'AIza"x', 'clientId': ''}}
+    got = settings(build.config_js({'GOOGLE_API_KEY': 'AIza"x', 'GOOGLE_CLIENT_ID': 'acme.apps.googleusercontent.com'}))
+    assert got == {'google': {'apiKey': 'AIza"x', 'clientId': 'acme.apps.googleusercontent.com'}}
 
 
 def test_a_local_preview_keeps_the_committed_settings():
