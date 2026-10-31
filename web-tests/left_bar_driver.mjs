@@ -64,7 +64,8 @@ const bar = () => page.evaluate(() => [...document.querySelectorAll("#left > .bo
   return `${mark ? mark.textContent : "?"} ${text} ${body && body.offsetParent ? "open" : "folded"}`;
 }));
 const boxes = async (want, what) => { const b = await bar(); await check(b.join("|") === want.join("|"), what, b); };
-const title = (k) => page.locator("#left > .box.foldable > .sec-head h2").nth(k).click();
+// a drawer slides open or shut: read once it has
+const title = async (k) => { await page.locator("#left > .box.foldable > .sec-head h2").nth(k).click(); await page.waitForFunction(() => !document.documentElement.hasAttribute("data-drawers")); };
 // the status line is cleared first, so the wait is for this image's load, not the last one's
 const loadImage = async () => {
   await page.evaluate(() => { document.querySelector("#status").textContent = ""; });
@@ -84,7 +85,11 @@ await check((await bars()).join() === "true,false,false,false,false", "the open 
 await loadImage();
 await boxes(["✓ [img] " + name + "2D folded", "2 Preprocessing open", "3 Threshold open", "4 Counted folded", "5 Notes folded"],
   "an image open: Load Image folds to its preview, name and what it holds, checked; the shell's Preprocessing and the drawer opening on it open");
+// a drawer slides open or shut, and the drawers below slide to their new places
+const slid = page.waitForFunction(() => document.getAnimations().filter((a) => /^::view-transition-group\(drawer-/.test(a.effect?.pseudoElement)).length >= 2).then(() => true, () => false);
 await title(0);
+await check(await slid, "a drawer slides open, and the drawers below it slide down");
+await page.waitForFunction(() => !document.getAnimations().some((a) => a.effect?.pseudoElement?.startsWith("::view-transition")));
 await boxes(["✓ Loaded Image open", "2 Preprocessing open", "3 Threshold open", "4 Counted folded", "5 Notes folded"], "its title opens a folded drawer, done: Loaded Image");
 await title(0);
 await boxes(["✓ [img] " + name + "2D folded", "2 Preprocessing open", "3 Threshold open", "4 Counted folded", "5 Notes folded"], "and folds it again");

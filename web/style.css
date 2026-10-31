@@ -263,6 +263,30 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #minimap .mm-body { position: relative; line-height: 0; background: #000; cursor: crosshair; }
 #minimap-canvas { width: 100%; height: auto; }
 #minimap-view { position: absolute; border: 1.5px solid #fff; border-radius: 2px; box-shadow: 0 0 0 1px #0008; pointer-events: none; }
+/* the minimap folding into its toolbar button and unfolding out of it: one shape morphing between the two
+   places along an arc, the minimap folding over its header like paper as it shrinks, the button lighting
+   up as it lands; the rest of the page holds still */
+:root[data-mm-fly] #minimap, :root[data-mm-fly] #minimap-btn[aria-pressed="false"] { view-transition-name: minimap; }
+:root[data-mm-fly]::view-transition-old(root), :root[data-mm-fly]::view-transition-new(root) { animation: none; }
+::view-transition-group(minimap) { animation-duration: .55s; animation-timing-function: cubic-bezier(.55, 0, .25, 1); }
+::view-transition-image-pair(minimap) { animation: mm-arc .55s cubic-bezier(.45, 0, .3, 1); perspective: 500px; }
+::view-transition-old(minimap), ::view-transition-new(minimap) { animation-duration: .55s; animation-fill-mode: both; transform-origin: 50% 0; }
+:root[data-mm-fly="fold"]::view-transition-old(minimap) { animation-name: mm-fold; animation-timing-function: cubic-bezier(.5, 0, .7, .4); }
+:root[data-mm-fly="fold"]::view-transition-new(minimap) { animation-name: mm-land; animation-timing-function: ease-out; }
+:root[data-mm-fly="unfold"]::view-transition-old(minimap) { animation-name: mm-land; animation-direction: reverse; animation-timing-function: ease-in; }
+:root[data-mm-fly="unfold"]::view-transition-new(minimap) { animation-name: mm-fold; animation-direction: reverse; animation-timing-function: cubic-bezier(.3, .6, .5, 1); }
+@keyframes mm-arc { 50% { translate: 0 -28px; } }
+@keyframes mm-fold {
+  0% { transform: none; opacity: 1; filter: none; }
+  45% { transform: rotateX(62deg) scale(.9); opacity: .95; }
+  85% { transform: rotateX(88deg) scale(.6); opacity: .3; filter: blur(1px) brightness(1.6); }
+  100% { transform: rotateX(90deg) scale(.5); opacity: 0; filter: blur(2px) brightness(2); }
+}
+@keyframes mm-land {
+  0%, 55% { transform: scale(.4); opacity: 0; filter: brightness(2.5); }
+  80% { transform: scale(1.25); opacity: 1; filter: brightness(1.6) drop-shadow(0 0 6px #fffc); }
+  100% { transform: none; opacity: 1; filter: none; }
+}
 #grid-pop label { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 #grid-colour { width: 32px; height: 22px; padding: 0 2px; }
 #grid-spacing { width: 70px; padding: 2px 6px; }
@@ -504,6 +528,9 @@ kbd { font: 12px ui-monospace, monospace; padding: 1px 5px; border: 1px solid va
 #usage-dlg [role=tab]:hover { color: var(--text); }
 #usage-dlg [role=tab][aria-selected=true] { color: var(--text); border-bottom-color: var(--accent); }
 #usage-dlg .total { margin: 0 0 6px; }
+#usage-dlg .motion { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+#usage-dlg .motion label { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+#usage-dlg .motion .hint { margin: 2px 0 0 24px; }
 #usage-dlg:not([data-tab=storage]) [data-for=storage], #usage-dlg:not([data-tab=memory]) [data-for=memory] { display: none; }
 .rows { max-height: min(62vh, 560px); overflow-y: auto; padding-right: 6px; }
 #storage-list .group { border-top: 1px solid var(--line); padding: 6px 0; }
@@ -579,3 +606,15 @@ kbd { font: 12px ui-monospace, monospace; padding: 1px 5px; border: 1px solid va
 #split-names { margin: 0; padding-left: 18px; font: 12px/1.5 ui-monospace, monospace; color: var(--dim); max-height: 7.5em; overflow-y: auto; }
 #split-msg.err { color: var(--err); }
 #split-dlg .grow { flex: 1; }
+
+/* the left bar's drawers sliding open or shut, those below sliding to their new places, all clipped to the bar */
+:root[data-drawers] #left { view-transition-name: left-bar; view-transition-group: contain; }
+:root[data-drawers]::view-transition-group-children(left-bar) { overflow: clip; }
+:root[data-drawers]::view-transition-old(root), :root[data-drawers]::view-transition-new(root) { animation: none; }
+:root[data-drawers]::view-transition-group(*) { animation-duration: .3s; animation-timing-function: cubic-bezier(.25, .8, .25, 1); overflow: clip; }
+:root[data-drawers]::view-transition-old(*), :root[data-drawers]::view-transition-new(*) { height: auto; animation-duration: .3s; }
+
+/* animations turned off (the CPU tab): nothing moves but a spinner, which says the page is working rather than stuck */
+:root[data-motion="off"] *, :root[data-motion="off"] *::before, :root[data-motion="off"] *::after { animation: none !important; transition: none !important; }
+:root[data-motion="off"] .spin, :root[data-motion="off"] button.working::after { animation: spin .8s linear infinite !important; }
+:root[data-motion="off"] #busy.scan #scan-light { display: none; }

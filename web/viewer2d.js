@@ -172,8 +172,20 @@ export function viewer(shell) {
     page.watch("minimapOpacity", (o) => { box.style.setProperty("--mm-opacity", o); pop.refill(); if (primed) keep(); });
     primed = true;
     fold.onclick = () => page.set({ minimap: page.get("minimap") === "open" ? "collapsed" : "open" });
-    $("#minimap-hide").onclick = () => page.set({ minimap: "hidden" });
-    btn.onclick = () => page.set({ minimap: page.get("minimap") === "hidden" ? "open" : "hidden" });
+    // hiding folds the minimap into the toolbar's button, and showing unfolds it from there; the motion is the
+    // stylesheet's, under the flight's name, between the two places only a snapshot of the page can know
+    const fly = (minimap) => {
+      const still = !document.startViewTransition || fits() || shell.still();
+      if (still) return page.set({ minimap });
+      const root = document.documentElement;
+      root.dataset.mmFly = minimap === "hidden" ? "fold" : "unfold";
+      const t = document.startViewTransition(() => page.set({ minimap }));
+      // a flight cut short, by the next click or a busy page, has still moved the minimap: only the motion is lost
+      t.ready.catch(() => {});
+      t.finished.finally(() => delete root.dataset.mmFly);
+    };
+    $("#minimap-hide").onclick = () => fly("hidden");
+    btn.onclick = () => fly(page.get("minimap") === "hidden" ? "open" : "hidden");
     range.addEventListener("input", () => page.set({ minimapOpacity: +range.value / 100 }));
     const go = (e) => {
       const t = cv.getBoundingClientRect(), sc = $("#scroller");
