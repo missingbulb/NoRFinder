@@ -541,7 +541,8 @@ function load(src) {
   holdDrive();
   if (!throttled() && NorDrive.parse($("#drive-link").value)?.kind === "folder") $("#drive-go").click();
 }
-$("#load-main").onclick = () => load(readJSON(SOURCE, "local"));
+$("#load-main").onclick = () => { signIn.drive(); load(readJSON(SOURCE, "local")); };
+$("#load-menu summary").addEventListener("click", () => signIn.drive());
 // Unload: no image open, the study starting over as one that has just come in, and Python letting the image go
 $("#unload").onclick = () => {
   if (!st.img || $("#load-main").classList.contains("working")) return;

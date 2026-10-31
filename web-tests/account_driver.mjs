@@ -3,8 +3,9 @@
 // in asks Google for the user's name, email and picture and the app's own Drive folder, nothing else of their
 // Drive; the first sign-in starts the user's settings file from this device's settings that follow the user, not
 // the ones that stay; a change is saved; a second device signing in takes the file's settings, the theme at once,
-// and keeps its own left bar; a reload within the hour syncs with no click; once the token has run out nothing
-// reaches Drive until the next click, which renews it silently and saves what changed meanwhile; signing out
+// and keeps its own left bar; a reload within the hour syncs with no click; once the token has run out a click
+// that needs nothing from Google opens nothing, while changing a setting or opening Load's dropdown renews it in
+// that click, silently, and syncs; signing out
 // keeps this device's settings and saves nothing more; a site with no Google client offers no sign-in; and the
 // page reaches no address but these.
 // Optional SHOTS: a directory for screenshots.
@@ -37,7 +38,7 @@ const SCRIPT = `window.google = { accounts: { oauth2: { initTokenClient(o) {
 } } } };`;
 
 // the user's app folder in Drive: at most one file, and every request the page made to Google
-const drive = { file: null, nextId: 1 };
+const drive = { file: null, nextId: 1, validFrom: 0 }; // validFrom: Google refuses a token issued before it (ms)
 const seen = [];
 const file = () => (drive.file ? JSON.parse(drive.file.body) : null);
 const CONFIG = () => `window.NOR_CONFIG = { google: { apiKey: "", clientId: ${JSON.stringify(clientId)} } };`;
@@ -59,7 +60,8 @@ async function google(route) {
   if (q.method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
   seen.push(`${q.method()} ${u.origin}${u.pathname}${u.search}`);
   const json = (status, body) => route.fulfill({ status, headers: cors, contentType: "application/json", body: JSON.stringify(body) });
-  if (!/^Bearer tok-/.test(q.headers()["authorization"] || "")) return json(401, { error: "no token" });
+  const issued = +((q.headers()["authorization"] || "").match(/^Bearer tok-(\d+)$/) || [])[1];
+  if (!issued || issued < drive.validFrom) return json(401, { error: "no live token" });
   if (u.href === "https://openidconnect.googleapis.com/v1/userinfo")
     return json(200, { sub: "1001", name: "Ada Lovelace", email: "ada@acme.example", picture: origin + "/web/logo.svg" });
   if (u.pathname === "/drive/v3/files" && q.method() === "GET")
@@ -160,31 +162,51 @@ try {
   check(await until(() => b.page.evaluate(() => document.documentElement.dataset.theme === "dark")), "a reload within the hour stays signed in and syncs with no click");
   check(await b.page.evaluate(() => !window.tokenClient || window.tokenClient.asked.length === 0) && asks === 1, "and asks Google for no new token");
 
-  // the hour is up: nothing reaches Drive until a click, which renews the token silently and saves what changed
-  await b.page.evaluate(() => { const s = JSON.parse(localStorage.getItem("nor-google-sign-in")); s.until = Date.now() - 1; localStorage.setItem("nor-google-sign-in", JSON.stringify(s)); });
-  await b.page.reload();
-  await b.page.waitForFunction(() => !document.querySelector("#sign-out").hidden && window.tokenClient);
+  // the hour is up: Google asks again only in a click that needs it, silently, for the same user
+  const expire = async () => {
+    drive.validFrom = Date.now();
+    await b.page.evaluate(() => {
+      const s = JSON.parse(localStorage.getItem("nor-google-sign-in")); s.until = Date.now() - 1; localStorage.setItem("nor-google-sign-in", JSON.stringify(s));
+      localStorage.removeItem("nor-seen-version"); // the page writes it again as it loads: a setting that changes with no click
+    });
+    await b.page.reload();
+    await b.page.waitForFunction(() => !document.querySelector("#sign-out").hidden && window.tokenClient);
+  };
+  const askedNow = () => b.page.evaluate(() => window.tokenClient.asked.length);
+  await expire();
   const before = seen.length;
-  await b.page.focus("#theme");
-  await b.page.keyboard.press("Enter"); // to light, through the shell, with no click
-  await pause(800);
-  check(await local(b.page, "nor-theme") === "light" && seen.length === before && file()["nor-theme"] === "dark",
-    "with the token run out, a change reaches Drive only after a click");
-  await b.page.click("#who-name", { force: true }).catch(() => b.page.mouse.click(700, 500));
-  check(await until(() => file()?.["nor-theme"] === "light"), "the next click renews the token and saves what this device changed meanwhile, over the file");
+  // to light, by a script, once the user activation a test's evaluate itself carries (5 s) is over
+  await b.page.evaluate(() => setTimeout(() => document.querySelector("#theme").click(), 5500));
+  await pause(6200);
+  check(await local(b.page, "nor-theme") === "light" && await askedNow() === 0 && file()["nor-theme"] === "dark", "a change no user made asks Google for nothing");
+  await b.page.mouse.click(700, 500);
+  await pause(500);
+  check(await askedNow() === 0 && seen.length === before, "with the token run out, neither the page's own writes nor a click that needs nothing from Google open anything or reach Drive");
+  await b.page.click("#theme"); // back to dark
+  await b.page.click("#theme"); // to light
+  check(await until(() => file()?.["nor-theme"] === "light"), "changing a setting renews the token in that click and saves it");
   const renewal = (await b.page.evaluate(() => window.tokenClient.asked))[0];
-  check(renewal?.prompt === "" && renewal.login_hint === "ada@acme.example", "renewing asks Google silently, for the same user");
+  check(await askedNow() === 1 && renewal?.prompt === "" && renewal.login_hint === "ada@acme.example", "renewing asks Google once, silently, for the same user");
+
+  drive.file.body = JSON.stringify({ ...file(), "nor-theme": "dark" }); // another device
+  await expire();
+  await b.page.click("#load-menu summary");
+  check(await until(() => b.page.evaluate(() => document.documentElement.dataset.theme === "dark")), "opening Load's dropdown renews the token and brings the file's settings");
+  check(await until(() => typeof file()?.["nor-seen-version"] === "string" && file()["nor-theme"] === "dark"),
+    "the setting this device changed meanwhile is saved beside the other device's, not over it");
+  await b.page.keyboard.press("Escape");
+  await b.page.mouse.click(700, 500);
 
   await b.page.click("#user-menu summary");
   await b.page.click("#sign-out");
   await b.page.waitForFunction(() => document.querySelector("#sign-out").hidden);
   check(await b.page.textContent("#who-where") === "On this device, not signed in" && await b.page.evaluate(() => document.querySelector("#user-menu summary .avatar").tagName === "svg"),
     "signing out shows the device's own avatar again");
-  check(await local(b.page, "nor-theme") === "light" && await local(b.page, "nor-google-sign-in") === null, "and keeps this device's settings, forgetting the user and the token");
+  check(await local(b.page, "nor-theme") === "dark" && await local(b.page, "nor-google-sign-in") === null, "and keeps this device's settings, forgetting the user and the token");
   await b.page.click("body", { position: { x: 700, y: 500 } });
   await b.page.click("#theme");
   await pause(800);
-  check(file()["nor-theme"] === "light", "a change after signing out is not saved to the user's file");
+  check(file()["nor-theme"] === "dark", "a change after signing out is not saved to the user's file");
   await b.page.reload();
   await b.page.waitForFunction(() => document.querySelector("#title").textContent);
   check(await b.page.isHidden("#sign-out"), "a reload after signing out stays signed out");

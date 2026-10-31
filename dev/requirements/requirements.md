@@ -634,11 +634,13 @@ test fold under it. A study's research requirements, which no user sees, stay in
   popup turned off, where Load reads from, the last Drive link (in each study too), Show thumbnails,
   and the images opened from Drive lately. These stay with the device: the left bar's width,
   Auto-save images, and everything kept for images. Google's token lasts about an hour and is kept on
-  this device for that hour; a new one needs a click, so once it has run out the page renews it on
-  the user's next click, with no question asked while Google still remembers the consent. Whenever
-  the page has a token it syncs: the file's settings replace this device's, the theme at once, unless
-  this device changed a setting that follows the user since it last synced, in which case this
-  device's are saved over the file; with no file yet, this device's start it. While it has a token,
+  this device for that hour. A new one can be asked for only in the user's own click or key press, so
+  once it has run out the page asks only in one that needs Google: a change to a setting that follows
+  the user, or opening Load or its dropdown. Google's window then opens and closes by itself while
+  Google still remembers the consent; any other click opens nothing. Whenever
+  the page has a token it syncs: the file's settings replace this device's, the theme at once, except
+  each one this device changed since it last synced, which is kept and saved over the file's; with no
+  file yet, this device's start it. While it has a token,
   each change to a setting that follows the user saves the whole file. Sign out forgets the user and
   the token on this device and leaves its settings as they are. A visitor who never signs in sees the
   page as before and loads nothing from Google for it. Test: `web-tests/test_account_page.py`,

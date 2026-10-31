@@ -13,8 +13,8 @@ const FILE_NAME = "rauntruth-settings.json";
 // a token this close to running out is renewed rather than used
 const MARGIN_MS = 60 * 1000;
 const SAVE_AFTER_MS = 400;
-// who is signed in on this device: {user: {name, email, picture}, token, until (ms), fileId, changed}, changed
-// true while this device has a setting that follows the user that Drive does not have yet
+// who is signed in on this device: {user: {name, email, picture}, token, until (ms), fileId, changed}, changed the
+// keys whose settings this device changed since Drive last had them
 export const SIGNED_IN = "nor-google-sign-in";
 
 // keys: the browser keys whose settings follow the user; applied(): runs once Drive's settings have replaced them
@@ -42,7 +42,7 @@ export function account({ keys, menu, clientId, applied }) {
   // a call to Google with the user's token; a refused token is forgotten, to be renewed on the next click
   async function google(url, init = {}) {
     const r = await fetch(url, { ...init, headers: { ...init.headers, authorization: "Bearer " + me.token } });
-    if (r.status === 401) { me.token = null; keep(); waitForClick(); throw new Error("Google refused the token"); }
+    if (r.status === 401) { me.token = null; keep(); throw new Error("Google refused the token"); }
     if (!r.ok) throw new Error(`Google answered ${r.status}`);
     return r;
   }
@@ -61,13 +61,17 @@ export function account({ keys, menu, clientId, applied }) {
       form.append("file", new Blob([body], { type: "application/json" }));
       me.fileId = (await (await google(`${UPLOAD}?uploadType=multipart&fields=id`, { method: "POST", body: form })).json()).id;
     }
-    me.changed = false; keep();
+    me.changed = []; keep();
   }
-  // Drive's file wins, unless this device changed a setting since it last synced; with no file, this device's start it
+  // Drive's file replaces this device's settings, but for those this device changed since, which are saved over it;
+  // with no file, this device's start it
   async function sync() {
     const id = await fileId();
-    if (!id || me.changed) return save();
-    apply(await (await google(`${FILES}/${id}?alt=media`)).json());
+    if (!id) return save();
+    const record = await (await google(`${FILES}/${id}?alt=media`)).json(), mine = here(), changed = me.changed || [];
+    for (const k of changed) { if (k in mine) record[k] = mine[k]; else delete record[k]; }
+    apply(record);
+    if (changed.length) return save();
     keep();
   }
   const syncing = () => sync().catch((e) => console.warn("settings not synced with Google Drive:", e.message));
@@ -107,16 +111,13 @@ export function account({ keys, menu, clientId, applied }) {
       });
     })
     .catch((e) => { script = null; console.warn("Google sign-in did not load:", e); }));
-  // a token must be asked for in a click: once it has run out, the user's next click anywhere asks, silently
-  // while Google still remembers their consent
-  function waitForClick() {
-    ready();
-    document.addEventListener("pointerdown", function renew() {
-      if (!me || live()) return;
-      if (client) client.requestAccessToken({ prompt: "", login_hint: me.user.email });
-      else document.addEventListener("pointerdown", renew, { once: true, capture: true });
-    }, { once: true, capture: true });
-  }
+  // a token can be asked for only in the user's own click or key press: Google's window opens, and closes by itself
+  // while Google still remembers their consent; the new token syncs at once
+  const renew = () => {
+    if (!me || live() || !client || !navigator.userActivation?.isActive) return false;
+    client.requestAccessToken({ prompt: "", login_hint: me.user.email });
+    return true;
+  };
 
   $("#sign-in").onclick = () => { if (client) client.requestAccessToken(); };
   menu.addEventListener("toggle", () => { if (menu.open && clientId && !me) ready(); });
@@ -128,16 +129,19 @@ export function account({ keys, menu, clientId, applied }) {
   if (!clientId) me = null;
   show();
   if (live()) syncing();
-  else if (me) waitForClick();
+  else if (me) ready(); // so a click that needs Google can ask at once
 
   return {
-    // a setting the shell just wrote: saved to Drive now, or at the next sync when there is no token
+    // a setting the shell just wrote: saved to Drive now; with no token, a token is asked for when the user just
+    // made the change, else it waits for the next sync
     changed(key) {
       if (!me || !keys.includes(key)) return;
-      me.changed = true; keep();
-      if (!live()) return;
+      me.changed = [...new Set([...(me.changed || []), key])]; keep();
+      if (!live()) return void renew();
       clearTimeout(saving);
       saving = setTimeout(() => save().catch((e) => console.warn("settings not saved to Google Drive:", e.message)), SAVE_AFTER_MS);
     },
+    // the user is about to use Google Drive (Load): a token run out is renewed in their click, and the settings sync
+    drive() { renew(); },
   };
 }
