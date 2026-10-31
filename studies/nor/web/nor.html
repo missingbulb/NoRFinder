@@ -1,7 +1,8 @@
 <template data-slot="left">
     <section class="box foldable" id="preprocessing-box" data-opens="load" data-folds="find">
       <div class="sec-head"><h2>Preprocessing</h2></div>
-      <p class="hint">No preprocessing steps yet: Find Candidates works on the image as loaded.</p>
+      <p class="hint">Find Candidates works on the image as loaded. A large image is quicker to annotate in parts: split it, then open each part on its own.</p>
+      <button id="split-open" disabled title="Cut the image into 4 or 9 parts, each its own TIFF, for annotating one at a time">Split into parts…</button>
     </section>
 
     <section class="box foldable" id="finder-box" data-opens="load" data-folds="find">

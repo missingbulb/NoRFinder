@@ -161,6 +161,24 @@
     <div class="drive-row end"><span class="grow"></span><button value="close" class="primary" autofocus>Close</button></div>
   </form>
 </dialog>
+<dialog id="split-dlg" aria-labelledby="split-title">
+  <h2 id="split-title">Split into parts</h2>
+  <p class="hint">Smaller parts are quicker to annotate, and can be shared out. Each part is a TIFF that keeps the image's scale and channels, and records where it lay in this image.</p>
+  <div class="split-body">
+    <div id="split-view"><canvas id="split-canvas"></canvas><svg id="split-grid" aria-label="The parts: drag a line to move it, click a part to leave it out"></svg></div>
+    <div class="split-side">
+      <div class="split-field"><span class="split-label">Parts</span><div class="tabs" id="split-n" role="group" aria-label="Parts"><button type="button" data-n="2">2 × 2</button><button type="button" data-n="3">3 × 3</button></div></div>
+      <p class="hint">Drag a line to move it. Click a part to leave it out, and again to keep it.</p>
+      <fieldset id="split-channels"><legend>Channels</legend><div id="split-channel-list"></div></fieldset>
+      <fieldset id="split-slices"><legend>Slices</legend><label>from <input type="number" id="split-z0" min="1" step="1"></label> <label>to <input type="number" id="split-z1" min="1" step="1"></label> <span class="hint" id="split-z-of"></span></fieldset>
+      <p class="hint" id="split-frames" hidden></p>
+      <label class="split-field" for="split-pattern"><span class="split-label">File names</span><input id="split-pattern" type="text" spellcheck="false" autocomplete="off"></label>
+      <p class="hint">Added to the image's name: {row} {col} {n} {x} {y} {rows} {cols}, or {name} for the name itself.</p>
+      <ul id="split-names"></ul>
+    </div>
+  </div>
+  <div class="drive-row end"><span id="split-msg" class="hint" role="status"></span><span class="grow"></span><button id="split-drive" type="button" disabled>Upload to Google Drive</button><button id="split-download" class="primary" type="button">Download all parts</button><button id="split-close" type="button">Close</button></div>
+</dialog>
 <dialog id="usage-dlg" aria-label="What this page uses">
   <form method="dialog">
     <div class="tab-row" role="tablist"><button type="button" role="tab" data-tab="storage">Storage</button><button type="button" role="tab" data-tab="memory">Memory</button><button type="button" role="tab" data-tab="network">Network</button><button type="button" role="tab" data-tab="cpu">CPU</button></div>
