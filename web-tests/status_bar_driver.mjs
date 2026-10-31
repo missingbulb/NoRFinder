@@ -153,7 +153,7 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
       return [a.id, b.id, getComputedStyle(a).borderRightWidth === "1px" || getComputedStyle(b).borderLeftWidth === "1px"];
     });
   });
-  await check(seps.every((x) => x[2]), "a vertical bar between every two items", seps);
+  await check(seps.length >= 7 && seps.every((x) => x[2]), "a vertical bar between every two of the eight items on show", seps);
   const pointers = await page.evaluate(() => [...document.querySelectorAll("#statusbar, #statusbar *")].map((e) => getComputedStyle(e).cursor).filter((c) => c === "help"));
   await check(!pointers.length, "nothing in the status bar shows a question-mark pointer", pointers);
 
