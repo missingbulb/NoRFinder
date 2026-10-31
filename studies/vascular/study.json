@@ -1,7 +1,7 @@
 {
   "id": "vascular",
   "title": "Vascular Measurements",
-  "listed": false,
+  "listed": true,
   "stage": "PreGT",
   "phases": [],
   "viewer": "image3d",

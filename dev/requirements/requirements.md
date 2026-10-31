@@ -825,7 +825,7 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 ## `4` The Vascular Measurements page: cerebral vessels in CD31 z-stacks
 
 Migrated from [missingbulb/vascularColoring](https://github.com/missingbulb/vascularColoring) on
-2026-10-31; the study is unlisted until its vessel model can be reviewed on the page. Its research requirements, the
+2026-10-31, at rauntruth.com/vascular. Its research requirements, the
 owner's decisions on the stacks and the vessel model, are
 [`studies/vascular/docs/3D-STACKS.md`](../../studies/vascular/docs/3D-STACKS.md) and
 [`studies/vascular/docs/WORKING-GUIDE.md`](../../studies/vascular/docs/WORKING-GUIDE.md).

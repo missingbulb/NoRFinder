@@ -94,7 +94,7 @@ The full set (`python3 -m pytest web-tests studies`) also needs Node, Pyodide
 web/              the shell, the viewer, the Python runtime (worker.js, bridge.js)
 web-tests/        the shell's tests, run on the fixture study
 studies/nor/      the NoR Finder study: study.json, web/, detection/, data/, docs/, tests/
-studies/vascular/ the Vascular Measurements study (unlisted): study.json, py/, web/, analysis/, data/, docs/, tests/
+studies/vascular/ the Vascular Measurements study: study.json, py/, web/, analysis/, data/, docs/, tests/
 studies/viewer/   the Image Viewer, the page's default: any image, no analysis
 studies/fixture/  the smallest study, for the shell's tests (`/fixture`)
 docs/             this map
