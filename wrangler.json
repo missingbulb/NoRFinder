@@ -1,13 +1,18 @@
 {
   "name": "norfinder",
   "compatibility_date": "2026-09-13",
+  "main": "accounts/worker.js",
   "build": {
     "command": "python3 dev/tools/build/build.py",
     "watch_dir": ["web", "studies", "dev/tools/build"]
   },
   "assets": {
-    "directory": "./dev/build/site"
+    "directory": "./dev/build/site",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
   },
+  "kv_namespaces": [{ "binding": "ACCOUNTS" }],
+  "vars": { "GOOGLE_CLIENT_ID": "" },
   "routes": [
     { "pattern": "rauntruth.com", "custom_domain": true },
     { "pattern": "www.rauntruth.com", "custom_domain": true }

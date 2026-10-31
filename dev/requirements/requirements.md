@@ -57,7 +57,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
 - `1.6` The user sees, and can clear, what this device keeps.
   <details>
 
-  With no sign-in, the user is whoever opened the page on this device. An avatar at the right of
+  Not signed in (`1.48`), the user is whoever opened the page on this device. An avatar at the right of
   the header opens a menu whose **Manage storage** opens the Storage tab of the resources dialog
   (`1.43`), which lists everything the site keeps on this device, each with its size, in six groups, each folded when the dialog opens: the code kept for
   the next visit (Python and its packages, by file); image thumbnails, by the image's full name (by
@@ -566,6 +566,26 @@ test fold under it. A study's research requirements, which no user sees, stay in
   from its place: red, green and blue, then more colours, a lone channel grey; a channel the file
   colours but does not name is named for its colour. The rows start over with every image. Test:
   `web-tests/test_image_box_page.py`, `studies/viewer/tests/test_viewer.py`.
+  </details>
+
+- `1.48` Signing in with Google carries the user's settings to every device; not signing in changes nothing.
+  <details>
+
+  Set by the owner on 2026-10-31. When the site has a Google sign-in client (`GOOGLE_CLIENT_ID` in
+  `wrangler.json`), the avatar's menu offers Sign in with Google, which asks Google for the user's
+  name, email and picture and nothing else. Signed in, the avatar is the user's picture, the menu
+  names them and offers Sign out. The site's server (`accounts/`, a Cloudflare Worker) checks
+  Google's token, keeps a session in its own cookie for 30 days (HttpOnly, sent only to the site's
+  `/api/`), and keeps one settings record per user, at most 16 KB. These settings follow the user:
+  dark or light, the tips closed, the version last seen, the low-memory popup turned off, where Load
+  reads from, the last Drive link, Show thumbnails, and the images opened from Drive lately. These
+  stay with the device: the left bar's width, Auto-save images, and everything kept for images. On
+  signing in the record's settings replace this device's, the theme at once; a first sign-in, with
+  no record yet, saves this device's. While signed in, each change to a setting that follows the
+  user saves the whole record. Sign out ends the session and leaves this device's settings as they
+  are. A visitor who never signs in sees the page as before, and the server is asked only whether
+  this browser has a session. Test: `web-tests/test_accounts.py` (the server),
+  `web-tests/test_account_page.py` (the page).
   </details>
 
 ## `2` The repo's checks

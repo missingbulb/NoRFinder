@@ -31,7 +31,13 @@ with numpy, scipy and scikit-image, inside a Web Worker so the page stays respon
 bridge passes the image in and the candidates and filter results back out. The JavaScript does
 everything that isn't image analysis: drawing the image and its overlays, the item views, the
 measurement editors, the summary statistics, the CSVs, the Drive browser and your saved settings.
-The site is plain static files served by Cloudflare, with no server and no build framework. It counts
+The site is static files served by Cloudflare, with no build framework, and one small server
+(`accounts/`, a Cloudflare Worker) for signing in, which is optional. Signing in with Google asks Google for
+your name, email and picture, and nothing else. It keeps your session in one cookie, sent only to the
+site's `/api/`, and keeps a small record of your settings so they follow you to other devices: the
+theme, the tips you closed, where Load reads from, your last Drive link and the images you opened from
+Drive lately. Your images, results and ground truth never reach that server. Without signing in, nothing
+is kept anywhere but your browser. It counts
 visits with Cloudflare Web Analytics, which sets no cookies, stores nothing on your device and does
 not follow you across sites; it receives the page's address, the page that
 linked to it and your browser's details, never your images or results. Python and

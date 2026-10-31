@@ -20,6 +20,7 @@ import { viewer as viewer2d, GRID, MINIMAP } from "./viewer2d.js";
 import { pageState } from "./page_state.js";
 import { shape, stackPicture, holds, drawVolume, TURN } from "./stack.js";
 import { PREVIEWS, readPreviews } from "./previews.js";
+import { account } from "./account.js";
 
 const $ = (s) => document.querySelector(s);
 const VIEWERS = { image2d: viewer2d };
@@ -57,12 +58,23 @@ const REPO = "missingbulb/NoRFinder";
 const LOCAL_GT = "Ground truth cannot be sent from local files, only from Google Drive.";
 // the issue form a proposal for a new study is written on
 const STUDY_REQUEST = "new-study.yml";
+// signing in (1.48): these settings follow the user to every device; the rest stay with this one
+const signIn = account({
+  keys: [THEME, TIPS, SEEN_VERSION, MEMORY_TIP, SOURCE, DRIVE_LINK, THUMBS, RECENT],
+  menu: $("#user-menu"),
+  applied: () => {
+    let t = null;
+    try { t = localStorage.getItem(THEME); } catch { /* no storage */ }
+    if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+  },
+});
 
 function readJSON(key, fallback = {}) {
   try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
 }
 function writeJSON(key, v) {
   try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* private mode: lasts for this page only */ }
+  signIn.changed(key);
 }
 const sizeText = (n) => (!n ? "0 KB" : n < 1048576 ? `${Math.max(1, Math.round(n / 1024))} KB` : n < 2 ** 30 ? `${(n / 1048576).toFixed(1)} MB` : `${(n / 2 ** 30).toFixed(1)} GB`);
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -1134,6 +1146,7 @@ $("#theme").onclick = () => {
   const t = theme() === "dark" ? "light" : "dark";
   document.documentElement.dataset.theme = t;
   try { localStorage.setItem(THEME, t); } catch { /* private mode: lasts for this page only */ }
+  signIn.changed(THEME);
 };
 // a dropdown closes when the user clicks anywhere else
 document.addEventListener("click", (e) => { document.querySelectorAll("details.menu[open]").forEach((m) => { if (!m.contains(e.target)) m.open = false; }); });
