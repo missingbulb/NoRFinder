@@ -401,7 +401,31 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 #drive-msg { margin: 0; }
 
 /* a box that folds: its title opens and closes it */
-.box.foldable > .sec-head h2 { display: flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }
+.box.foldable > .sec-head h2 { display: flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; min-width: 0; }
+/* the left bar's boxes are drawers stacked in one panel: a compact title row each, behind its step's number
+   (a check once done), and an accent bar on the open ones */
+#left > .box.foldable { margin: 0; padding: 0 12px; border-width: 0 1px 1px; border-radius: 0; }
+#left > .box.foldable:first-of-type { border-top-width: 1px; border-radius: var(--r-panel) var(--r-panel) 0 0; }
+#left > .box.foldable:last-of-type { border-radius: 0 0 var(--r-panel) var(--r-panel); }
+#left > .box.foldable:first-of-type:last-of-type { border-radius: var(--r-panel); }
+#left > .box.foldable:not(.folded) { padding-bottom: 12px; box-shadow: inset 3px 0 0 var(--accent); }
+#left > .box.foldable > .sec-head { min-height: 38px; margin: 0 -12px; padding: 4px 12px; box-sizing: border-box; border-bottom: 1px solid transparent; }
+#left > .box.foldable:not(.folded) > .sec-head { margin-bottom: 10px; border-bottom-color: var(--line); }
+#left > .box.foldable > .sec-head h2 { font-size: 14px; }
+#left > .box.foldable > .sec-head h2::before { display: none; }
+.step-mark { flex: none; display: grid; place-items: center; width: 18px; height: 18px; box-sizing: border-box; border-radius: 50%;
+  border: 1.5px solid var(--dim); color: var(--dim); font-size: 11px; font-weight: 600; line-height: 1; }
+.box.foldable:not(.folded) .step-mark { border-color: var(--accent); color: var(--accent); }
+.box.foldable.done .step-mark { border-color: var(--yes); background: var(--yes); color: #fff; }
+.sec-head h2 .title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* Load Image done and folded: the image's preview, name and what it holds */
+.loaded { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.loaded .pic { flex: none; width: 28px; height: 28px; border-radius: 4px; background: #000; }
+.loaded .what { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.loaded .name { font-size: 13px; overflow: hidden; text-overflow: ellipsis; }
+.loaded .tags { display: flex; gap: 4px; }
+.loaded .tag { font-size: 10.5px; font-weight: 500; padding: 0 5px; border-radius: 4px; color: var(--dim);
+  background: color-mix(in srgb, var(--text) 12%, transparent); }
 /* folding wins over any box's own layout for its parts */
 .box.foldable.folded > :not(.sec-head) { display: none !important; }
 .box.foldable.folded > .sec-head > :not(h2) { display: none; }

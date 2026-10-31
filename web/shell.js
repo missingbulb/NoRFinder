@@ -1,7 +1,7 @@
 // The page's shell: it runs the study the address names (/<id>, the default at the bare address), and knows
 // none of them; the header's switcher offers the ones the build lists and swaps one in without a reload. What it gives a study, as shell in mount(shell): loading images (from the
 // computer or Google Drive), Python (the study's own, run in worker.js), the viewer the study asks for,
-// the page's state its controls are drawn from (page: get, set, watch(key, fn, {signal})), the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own), notices, the user's saved settings, downloads and ground-truth
+// the page's state its controls are drawn from (page: get, set, watch(key, fn, {signal})), the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own) and the boxes' titles (boxDone(box, summary) once a box's task is done), notices, the user's saved settings, downloads and ground-truth
 // submission; and around them the theme, the left bar, foldable boxes, the resources dialog (storage, memory,
 // network and CPU) and the version history.
 //
@@ -405,6 +405,7 @@ function handle(m) {
       info: m.meta.info, planes: m.images, channels: m.meta.channels || null } });
     busy(false); statusBar();
     showImage();
+    boxDone($("#image-box"), loadedSummary());
     step("load", true, `${st.fileName}, ${m.meta.W} × ${m.meta.H} px, from ${st.source?.kind === "drive" ? "Google Drive" : "this computer"}`);
     status("Image loaded."); // the study's opened hook says what comes next, if anything
     study.opened?.(m.meta);
@@ -442,7 +443,7 @@ async function openBytes(name, bytes, source) {
   const opened = until("opened"); working($("#load-main"), () => opened);
   st.fileName = name; st.source = source;
   for (const p of steps) Object.assign(p, { done: false, info: "", at: null, pressed: false });
-  drawSteps();
+  drawSteps(); boxes().forEach((b) => summaries.delete(b)); retitle();
   // a copy, for the next study to open: the bytes themselves go to Python
   st.kept = { name, source, bytes: bytes.slice(0) };
   study.opening?.(name, source);
@@ -494,7 +495,7 @@ $("#unload").onclick = () => {
     const { ready, readyInfo } = st, id = manifest.id;
     Object.assign(st, { kept: null, queued: null, fileName: "", source: null, sha: "", um: null, umY: null });
     if (ready) st.worker.postMessage({ type: "close" });
-    page.set({ image: null, opening: null });
+    page.set({ image: null, opening: null }); boxDone($("#image-box"), null);
     leaveStudy();
     try { await mountStudy(id); } catch (e) { return status("Error: " + (e.message || e), true); }
     if (ready) { st.ready = true; $("#ram-gc").disabled = false; study.ready?.(readyInfo); }
@@ -1048,18 +1049,58 @@ document.addEventListener("mouseout", hideHelp); document.addEventListener("focu
 // the one after which it folds; one with neither is open from the start. Between steps a box stays as the
 // user left it.
 const boxes = () => document.querySelectorAll(".box.foldable");
-function unfoldFirst() { boxes().forEach((b) => b.classList.toggle("folded", b.hasAttribute("data-opens"))); }
+function unfoldFirst() { boxes().forEach((b) => b.classList.toggle("folded", b.hasAttribute("data-opens"))); retitle(); }
 // a step just done: a new image folds every box waiting for a later step
 function foldFor(key) {
   boxes().forEach((b) => {
     if (b.dataset.opens === key) b.classList.remove("folded");
     else if (b.dataset.folds === key || (key === "load" && b.hasAttribute("data-opens"))) b.classList.add("folded");
   });
+  retitle();
+}
+// A box's title: its step's number, or a check once its task is done, and its name while the task waits; done,
+// the folded box sums up what was done and the open one shows its data-done-name, else its name.
+const summaries = new WeakMap(); // box -> its summary: text, or a node
+function retitle() {
+  [...boxes()].forEach((b, k) => {
+    const h = b.querySelector(":scope > .sec-head h2");
+    if (!h.querySelector(".title")) {
+      h.dataset.name ||= h.textContent.trim();
+      h.replaceChildren(Object.assign(document.createElement("span"), { className: "step-mark" }), Object.assign(document.createElement("span"), { className: "title" }));
+    }
+    const sum = summaries.get(b), done = sum != null, t = h.querySelector(".title");
+    b.classList.toggle("done", done);
+    h.querySelector(".step-mark").textContent = done ? "✓" : String(k + 1);
+    const want = done && b.classList.contains("folded") ? sum : done ? h.dataset.doneName || h.dataset.name : h.dataset.name;
+    if (typeof want === "string") { if (t.textContent !== want || t.children.length) t.textContent = want; }
+    else if (t.firstChild !== want) t.replaceChildren(want);
+  });
+}
+// a box's task done, summed up (text, or a node), or waiting again (null)
+function boxDone(box, summary) {
+  if (summary == null) summaries.delete(box); else summaries.set(box, summary);
+  retitle();
+}
+// Load Image done: a small preview of the image, its name, and what the file says it holds
+function loadedSummary() {
+  const n = document.createElement("span"); n.className = "loaded";
+  const pic = document.createElement("img"); pic.className = "pic"; pic.alt = "";
+  const t = $("#base"), c = document.createElement("canvas"), side = 56, k = Math.max(side / t.width, side / t.height);
+  c.width = c.height = side;
+  c.getContext("2d").drawImage(t, (side - t.width * k) / 2, (side - t.height * k) / 2, t.width * k, t.height * k);
+  pic.src = c.toDataURL();
+  const text = document.createElement("span"); text.className = "what";
+  const name = document.createElement("span"); name.className = "name"; name.textContent = st.fileName;
+  const tags = document.createElement("span"); tags.className = "tags";
+  let said = ""; try { const k = st.kept.bytes; said = holds(shape(k.buffer || k)); } catch (e) { console.warn("cannot read what the image holds:", e); }
+  for (const w of (said || "2D").split(" · ")) tags.append(Object.assign(document.createElement("span"), { className: "tag", textContent: w }));
+  text.append(name, tags); n.append(pic, text);
+  return n;
 }
 function foldable() {
   document.querySelectorAll(".box.foldable > .sec-head h2").forEach((h) => {
     h.tabIndex = 0; h.setAttribute("role", "button");
-    const flip = () => h.closest(".box").classList.toggle("folded");
+    const flip = () => { h.closest(".box").classList.toggle("folded"); retitle(); };
     h.onclick = flip; h.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } };
   });
   unfoldFirst();
@@ -1310,7 +1351,7 @@ function leaveStudy() {
 }
 
 const shell = {
-  $, state: st, page, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, showImage,
+  $, state: st, page, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, showImage, boxDone,
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; },
 };
 // for the page's tests, which drive it from outside

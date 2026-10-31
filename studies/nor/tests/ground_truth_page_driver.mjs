@@ -136,6 +136,20 @@ async function markAndVote(page) {
   const ran = await crumbs(page);
   await check(ran === "Load image › Run algorithm › Review all items* | #sb-review", `once it has run, Review all items is: ${ran}`);
   await check(await gtColour(page) === "todo", "with no verdict the Ground truth button is red");
+  // the filters rejecting every finalist, with nothing voted on: the crumb waits on what the button waits on;
+  // their answer lands, is read and is taken back in one turn of the page, so no real answer interleaves
+  const none = await page.evaluate(() => {
+    const land = (fails) => st.worker.onmessage({ data: { type: "result", action: "refilter", meta: { fails, alone: st.alone }, echo: st.seq } });
+    const kept = st.fails, why = Object.values(kept).find((f) => f !== null), all = JSON.parse(JSON.stringify(kept));
+    for (const k of Object.keys(all)) all[k] = why;
+    land(all);
+    const seen = { finalists: st.passes.filter((c) => !c.added).length, button: $("#dl-truth").dataset.state,
+      crumbs: [...document.querySelectorAll("#sb-steps .crumb")].map((c) => c.textContent + (c.classList.contains("now") ? "*" : "")).join(" › ") };
+    land(kept);
+    return seen;
+  });
+  await check(none.finalists === 0 && none.button === "todo" && none.crumbs === "Load image › Run algorithm › Review all items*",
+    `every finalist filtered out and none voted on: the button stays red and Review all items stays the step to do: ${JSON.stringify(none)}`);
   const m = await middle(page);
   await page.mouse.click(m.sx, m.sy, { button: "right" });
   await check(await page.isVisible("#ctx") && (await page.textContent("#ctx button")) === "Add a NoR Here", "a right click on the image offers Add a NoR Here");

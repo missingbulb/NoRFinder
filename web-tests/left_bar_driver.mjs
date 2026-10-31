@@ -1,8 +1,9 @@
 // Drives the page (web/) in headless Chromium on the fixture study, with a stand-in worker answering from
-// ANSWERS (tests/test_study_runs.py), and checks that the left bar's boxes fold with the steps: the Image box
-// open until an image opens; each study box opening after its step and folding again after the one it names;
-// a box only its title opens staying folded; a title opening and closing its box; another image starting
-// over. Exits 1 on a failed check, 2 when it cannot run.
+// ANSWERS (tests/test_study_runs.py), and checks the left bar's drawers: stacked with no gap, numbered, the
+// open one marked; folding with the steps (Load Image open until an image opens; each study drawer opening
+// after its step and folding again after the one it names; one only its title opens staying folded); their
+// titles (a done drawer folded sums up what was done, open names itself, a waiting one says its task); and
+// another image, or Unload, starting over. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/left_bar_driver.mjs ANSWERS IMAGE.png STUDIES
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
@@ -53,32 +54,51 @@ page.setDefaultTimeout(10000);
 await page.goto(origin + "/web/fixture");
 await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
 
-// the left bar's boxes by title, each open or folded as the user sees it: its contents shown or not
+// the left bar's drawers as the user sees them: the step mark, the title (a picture in it as "[img]") and
+// open or folded, by its contents shown or not
 const bar = () => page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].map((b) => {
-  const body = b.querySelector(":scope > :not(.sec-head)");
-  return b.querySelector(".sec-head h2").textContent + (body && body.offsetParent ? " open" : " folded");
+  const body = b.querySelector(":scope > :not(.sec-head)"), h = b.querySelector(".sec-head h2");
+  const mark = h.querySelector(".step-mark"), t = h.querySelector(".title");
+  const text = [...(t?.querySelectorAll("img, canvas") || [])].map(() => "[img] ").join("") + (t ? t.textContent.trim() : h.textContent);
+  return `${mark ? mark.textContent : "?"} ${text} ${body && body.offsetParent ? "open" : "folded"}`;
 }));
-const boxes = async (want, what) => { const b = await bar(); await check(b.join() === want.join(), what, b); };
-const title = (name) => page.click(`#left > .box.foldable > .sec-head h2 >> text=${name}`);
+const boxes = async (want, what) => { const b = await bar(); await check(b.join("|") === want.join("|"), what, b); };
+const title = (k) => page.locator("#left > .box.foldable > .sec-head h2").nth(k).click();
 // the status line is cleared first, so the wait is for this image's load, not the last one's
 const loadImage = async () => {
   await page.evaluate(() => { document.querySelector("#status").textContent = ""; });
   await page.setInputFiles("#file", image);
   await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded." && !document.querySelector("#fx-count").disabled);
 };
+const name = path.basename(image);
 
-await boxes(["Image open", "Threshold folded", "Counted folded", "Notes folded"], "before an image only Image is open");
+// drawers, not boxes: each touches the one above it
+const gaps = await page.evaluate(() => { const r = [...document.querySelectorAll("#left > .box.foldable")].map((b) => b.getBoundingClientRect());
+  return r.slice(1).map((x, k) => Math.round(x.top - r[k].bottom)); });
+await check(gaps.every((g) => g <= 0), "the drawers stack with no gap between them", gaps);
+const bars = () => page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].map((b) => getComputedStyle(b).boxShadow !== "none"));
+
+await boxes(["1 Load Image open", "2 Threshold folded", "3 Counted folded", "4 Notes folded"], "before an image only Load Image is open, each drawer numbered");
+await check((await bars()).join() === "true,false,false,false", "the open drawer, and only it, carries the accent bar", await bars());
 await loadImage();
-await boxes(["Image folded", "Threshold open", "Counted folded", "Notes folded"], "an image open: Image folds, the box opening on it opens");
-await title("Image");
-await boxes(["Image open", "Threshold open", "Counted folded", "Notes folded"], "its title opens a folded box");
-await title("Image");
-await boxes(["Image folded", "Threshold open", "Counted folded", "Notes folded"], "and folds it again");
+await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted folded", "4 Notes folded"],
+  "an image open: Load Image folds to its preview, name and what it holds, checked; the drawer opening on it opens");
+await title(0);
+await boxes(["✓ Loaded Image open", "2 Threshold open", "3 Counted folded", "4 Notes folded"], "its title opens a folded drawer, done: Loaded Image");
+await title(0);
+await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted folded", "4 Notes folded"], "and folds it again");
 await page.click("#fx-count");
 await page.waitForFunction(() => /pixels/.test(document.querySelector("#fx-result").textContent));
-await boxes(["Image folded", "Threshold folded", "Counted open", "Notes folded"], "Count done: Threshold folds, Counted opens, Notes waits for its title");
-await title("Notes");
-await boxes(["Image folded", "Threshold folded", "Counted open", "Notes open"], "Notes opens from its title");
+await boxes(["✓ [img] " + name + "2D folded", "✓ Counted at 100 folded", "3 Counted open", "4 Notes folded"],
+  "Count done: Threshold folds to the study's summary of it, Counted opens, Notes waits for its title");
+await title(1);
+await boxes(["✓ [img] " + name + "2D folded", "✓ Threshold open", "3 Counted open", "4 Notes folded"], "a done drawer open names itself");
+await title(1);
+await title(3);
+await boxes(["✓ [img] " + name + "2D folded", "✓ Counted at 100 folded", "3 Counted open", "4 Notes open"], "Notes opens from its title");
 await loadImage();
-await boxes(["Image folded", "Threshold open", "Counted folded", "Notes folded"], "another image starts over");
+await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted folded", "4 Notes folded"], "another image starts over: the study's drawers wait again");
+await title(0); await page.click("#unload");
+await page.waitForFunction(() => document.querySelector("#unload").hidden && document.querySelectorAll("#left > .box.foldable .step-mark").length === 4);
+await boxes(["1 Load Image open", "2 Threshold folded", "3 Counted folded", "4 Notes folded"], "Unload: every drawer waits again, as at first");
 await done(0);
