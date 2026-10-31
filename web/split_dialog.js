@@ -1,4 +1,4 @@
-// The Split into parts dialog, opened on the image open (shell.splitImage): the image small with the grid's lines
+// The Split into parts dialog, opened on the image open from the shell's Preprocessing drawer: the image small with the grid's lines
 // over it, 2 × 2 or 3 × 3, each line dragged where the user wants it and each part clicked to leave it out; the
 // channels and slices the parts keep, and the pattern their file names take. Download all parts gives one ZIP of
 // them (split.js writes them); Upload to Google Drive waits for a Google sign-in the page does not have.
@@ -164,8 +164,9 @@ export function splitter(shell) {
     } finally { btn.disabled = false; }
   };
   $("#split-close").onclick = () => dlg.close();
-  // an image unloaded or another opened takes the dialog away
-  shell.page.watch("image", (im) => { if (!im && dlg.open) dlg.close(); });
+  // Preprocessing's button opens it on the image open; an image unloaded takes it away
+  $("#split-open").onclick = () => open();
+  shell.page.watch("image", (im) => { $("#split-open").disabled = !im; if (!im && dlg.open) dlg.close(); });
 
   return { open };
 }
