@@ -85,6 +85,11 @@ try {
   await page.setInputFiles("#file", { name: "stack.tif", mimeType: "image/tiff", buffer: Buffer.from([0x49, 0x49, 42, 0]) });
   await page.waitForFunction(() => !$("#v3-stage").hidden);
   check(await page.isVisible("#v3-switch"), "a stack opens on the 3D view, with the 2D/3D switch in the toolbar");
+  const tools = await page.evaluate(() => ["#v3-render-btn", "#v3-depth", "#v3-look-btn", "#v3-slices-btn"].map((s) => {
+    const b = document.querySelector(s); return !!b && b.matches(".toolbar button.tool") && b.offsetParent !== null;
+  }));
+  check(tools.every(Boolean) && !(await page.$("#v3-stage #v3-tools")), `the 3D tools are toolbar buttons like the 2D ones, not a panel over the stack: ${tools}`);
+  check(await page.isHidden("#ruler-btn") && await page.isHidden("#zoom-in"), "the 2D tools step aside in 3D");
   const rows = await page.evaluate(() => [...document.querySelectorAll("#channels .channel")].map((r) => r.querySelector("label").textContent));
   check(rows.join() === "CD31,DAPI", `the channel rows are the stack's: ${rows}`);
   await level(0, "black", 0);
@@ -101,18 +106,18 @@ try {
   check(dark.r < all.r * 0.5, `raising CD31's black point darkens it in 3D: red ${all.r.toFixed(1)} → ${dark.r.toFixed(1)}`);
   await level(0, "black", 0);
 
-  const depthOn = await page.isChecked("#v3-depth");
-  await page.setChecked("#v3-depth", !depthOn);
+  const depthOn = await page.getAttribute("#v3-depth", "aria-pressed") === "true";
+  await page.click("#v3-depth");
   const other = await picture();
   const plain = depthOn ? other : all, byDepth = depthOn ? all : other;
   check(byDepth.g > plain.g + 1, `Colour by depth paints the tubes in depth colours, not CD31's red: green ${plain.g.toFixed(1)} → ${byDepth.g.toFixed(1)}`);
-  await page.setChecked("#v3-depth", false);
+  if (!depthOn) await page.click("#v3-depth");
 
   const top = await picture();
-  await page.click('#v3-look [data-look="side"]');
+  await page.hover("#v3-look-btn"); await page.click('#v3-look [data-look="side"]');
   const side = await picture();
   check(Math.abs(side.lit - top.lit) > top.lit * 0.2, `Side turns the view: ${top.lit} → ${side.lit} lit pixels`);
-  await page.click('#v3-look [data-look="top"]');
+  await page.hover("#v3-look-btn"); await page.click('#v3-look [data-look="top"]');
 
   await page.evaluate(() => { const s = $("#v3-z1"); s.value = 0; s.dispatchEvent(new Event("input", { bubbles: true })); });
   const slab = await picture();

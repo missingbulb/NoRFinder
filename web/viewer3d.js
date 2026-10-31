@@ -7,6 +7,7 @@
 // The stack reaches it as the page's image: its flattened planes (C of W × H), then, for a stack (Z > 1), every
 // slice of every channel, channel by channel.
 "use strict";
+import { hoverPop } from "./viewer2d.js";
 
 const MAX_SIDE = 640; // the GPU's budget: a ray samples every voxel it crosses, so a wider volume is binned to this
 const CHANNELS = 4;   // the most channels the 3D view adds together
@@ -167,18 +168,34 @@ export function viewer3d(shell, flat) {
   const b2 = html("button", { id: "v3-2d", type: "button", textContent: "2D", title: "The stack flattened: each pixel the brightest of the slices shown" });
   const b3 = html("button", { id: "v3-3d", type: "button", textContent: "3D", title: "The stack in 3D: drag to turn it, the wheel zooms, shift-drag pans" });
   sw.append(b2, b3);
-  const tools = html("div", { id: "v3-tools", hidden: true });
-  tools.innerHTML = `<select id="v3-mode" aria-label="Render"><option value="0">Brightest</option><option value="1">Surface</option></select>
-    <label class="v3-iso" hidden>Level <input id="v3-iso" type="range" min="0.02" max="1" step="0.01"></label>
-    <label><input id="v3-depth" type="checkbox"> Colour by depth</label>
-    <span id="v3-look" role="group" aria-label="Look from">${Object.keys(LOOKS).map((k) => `<button type="button" data-look="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join("")}</span>
-    <label>Slices <input id="v3-z0" type="range" min="0" step="1" aria-label="First slice shown"> to <input id="v3-z1" type="range" min="0" step="1" aria-label="Last slice shown"> <span id="v3-slices"></span></label>
-    <label>Spacing <input id="v3-zs" type="number" min="0.05" max="50" step="0.05" aria-label="Spacing between slices, µm"> µm</label>`;
+  // the 3D tools, as the 2D ones are: toolbar buttons, each opening its settings while the pointer is over it
+  const icon = (paths) => `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">${paths}</g></svg>`;
+  const tools = html("div", { id: "v3-tools", className: "group", hidden: true });
+  tools.innerHTML = `
+    <button id="v3-render-btn" class="tool" type="button" title="Render: hover to choose Brightest or Surface" aria-label="Render">${icon('<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>')}</button>
+    <div id="v3-render-pop" class="v3-pop" popover aria-label="Render">
+      <label><input type="radio" name="v3-mode" value="0"> Brightest: the brightest point along each ray</label>
+      <label><input type="radio" name="v3-mode" value="1"> Surface: a lit surface where the signal crosses a level</label>
+      <label class="v3-iso" hidden>Level <input id="v3-iso" type="range" min="0.02" max="1" step="0.01"></label>
+    </div>
+    <button id="v3-depth" class="tool" type="button" aria-pressed="false" title="Colour by depth: paint each point by its depth, so crossings at different depths read apart" aria-label="Colour by depth"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3" y="4" width="18" height="4" fill="#2f6fe0"/><rect x="3" y="10" width="18" height="4" fill="#2fb344"/><rect x="3" y="16" width="18" height="4" fill="#e53935"/></svg></button>
+    <button id="v3-look-btn" class="tool" type="button" title="Look from: hover to put the view back, from above, tilted, the side or the front" aria-label="Look from">${icon('<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/>')}</button>
+    <div id="v3-look-pop" class="v3-pop" popover aria-label="Look from">
+      <div id="v3-look" role="group" aria-label="Look from">${Object.keys(LOOKS).map((k) => `<button type="button" data-look="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join("")}</div>
+    </div>
+    <button id="v3-slices-btn" class="tool" type="button" title="Slices: hover to show part of the depth and set the spacing between slices" aria-label="Slices">${icon('<path d="M12 4l9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4M3 16l9 4 9-4"/>')}</button>
+    <div id="v3-slices-pop" class="v3-pop" popover aria-label="Slices">
+      <label>From <input id="v3-z0" type="range" min="0" step="1" aria-label="First slice shown"></label>
+      <label>To <input id="v3-z1" type="range" min="0" step="1" aria-label="Last slice shown"></label>
+      <span id="v3-slices" class="dim"></span>
+      <label>Spacing <input id="v3-zs" type="number" min="0.05" max="50" step="0.05" aria-label="Spacing between slices, µm"> µm</label>
+    </div>`;
   const bar = $("#view .toolbar"), zoom = $("#zoom-out").parentElement;
   bar.insertBefore(sw, zoom.parentElement === bar ? zoom : bar.firstChild);
+  bar.insertBefore(tools, sw);
   const stage = html("div", { id: "v3-stage", hidden: true });
   const cv = html("canvas", { id: "v3-gl" }), hudCv = html("canvas", { id: "v3-hud" }), note = html("p", { id: "v3-note" });
-  stage.append(cv, hudCv, tools, note);
+  stage.append(cv, hudCv, note);
   $("#scroller").after(stage);
 
   // ---------- GL ----------
@@ -355,17 +372,20 @@ export function viewer3d(shell, flat) {
 
   // ---------- the tools ----------
   const ui = (id) => tools.querySelector("#" + id);
+  const pops = [["v3-render-btn", "v3-render-pop"], ["v3-look-btn", "v3-look-pop"], ["v3-slices-btn", "v3-slices-pop"]]
+    .map(([b, p]) => hoverPop(ui(b), ui(p), () => {}));
   function sync() {
-    ui("v3-mode").value = S.mode; ui("v3-depth").checked = !!S.depth; ui("v3-iso").value = S.iso;
+    for (const r of tools.querySelectorAll('[name="v3-mode"]')) r.checked = +r.value === S.mode;
+    ui("v3-depth").setAttribute("aria-pressed", String(!!S.depth)); ui("v3-iso").value = S.iso;
     tools.querySelector(".v3-iso").hidden = S.mode !== 1;
     ui("v3-z0").value = S.z0; ui("v3-z1").value = S.z1; ui("v3-zs").value = S.zs;
     ui("v3-slices").textContent = `${S.z0 + 1}–${S.z1 + 1} of ${vol ? vol.Z : 0}`;
     if (vol) geometry();
     redraw();
   }
-  ui("v3-mode").onchange = (e) => { S.mode = +e.target.value; sync(); };
+  for (const r of tools.querySelectorAll('[name="v3-mode"]')) r.onchange = () => { S.mode = +r.value; sync(); pops[0].refill(); };
   ui("v3-iso").oninput = (e) => { S.iso = +e.target.value; sync(); };
-  ui("v3-depth").onchange = (e) => { S.depth = e.target.checked ? 1 : 0; sync(); };
+  ui("v3-depth").onclick = () => { S.depth = S.depth ? 0 : 1; sync(); };
   ui("v3-z0").oninput = (e) => { S.z0 = Math.min(+e.target.value, S.z1); sync(); };
   ui("v3-z1").oninput = (e) => { S.z1 = Math.max(+e.target.value, S.z0); sync(); };
   ui("v3-zs").oninput = (e) => { if (+e.target.value > 0) { S.zs = +e.target.value; spacingNote("you"); sync(); spacingHeard.forEach((fn) => fn()); } };
