@@ -7,6 +7,12 @@
 window.NorDrive = (() => {
   const key = ((window.NOR_CONFIG && window.NOR_CONFIG.google) || {}).apiKey || "";
   const API = "https://www.googleapis.com/drive/v3/files";
+  // the bytes Drive's answers have brought, for the status bar's network: Google does not let a page read their size
+  let received = 0;
+  const get = async (url, init) => {
+    const r = await fetch(url, init);
+    return r.body ? new Response(r.body.pipeThrough(new TransformStream({ transform(c, out) { received += c.byteLength; out.enqueue(c); } })), r) : r;
+  };
 
   // {kind: "file" | "folder", id} from any Drive link; a bare id is looked up
   function parse(link) {
@@ -29,8 +35,8 @@ window.NorDrive = (() => {
   async function download(id, init = {}) {
     const at = `${API}/${encodeURIComponent(id)}`;
     let r;
-    try { r = await fetch(`${at}?alt=media&key=${key}`, init); } catch (e) {
-      if (e.name !== "AbortError" && (await fetch(`${at}?fields=id&key=${key}`, { signal: init.signal }).then((d) => d.ok, () => false))) throw throttled();
+    try { r = await get(`${at}?alt=media&key=${key}`, init); } catch (e) {
+      if (e.name !== "AbortError" && (await get(`${at}?fields=id&key=${key}`, { signal: init.signal }).then((d) => d.ok, () => false))) throw throttled();
       throw e;
     }
     if (r.status === 403 && /rateLimitExceeded|downloadQuotaExceeded/.test(await r.clone().text())) throw throttled();
@@ -44,7 +50,7 @@ window.NorDrive = (() => {
     need();
     const at = `${API}/${encodeURIComponent(id)}`;
     if (!name) {
-      const r = await fetch(`${at}?fields=name,mimeType&key=${key}`);
+      const r = await get(`${at}?fields=name,mimeType&key=${key}`);
       if (!r.ok) throw refused(r, "file");
       const f = await r.json();
       if (f.mimeType === "application/vnd.google-apps.folder") return { folder: true, id, name: f.name };
@@ -77,7 +83,7 @@ window.NorDrive = (() => {
   // a file's SHA-256 as Drive gives it, null when it gives none
   async function checksum(id) {
     need();
-    const r = await fetch(`${API}/${encodeURIComponent(id)}?fields=sha256Checksum&key=${key}`);
+    const r = await get(`${API}/${encodeURIComponent(id)}?fields=sha256Checksum&key=${key}`);
     if (!r.ok) throw refused(r, "file");
     return (await r.json()).sha256Checksum || null;
   }
@@ -89,7 +95,7 @@ window.NorDrive = (() => {
   async function list(id) {
     need();
     const q = encodeURIComponent(`'${id}' in parents and trashed = false`);
-    const r = await fetch(`${API}?q=${q}&fields=files(id,name,mimeType,size,createdTime,thumbnailLink,sha256Checksum)&pageSize=1000&orderBy=folder,name&key=${key}`);
+    const r = await get(`${API}?q=${q}&fields=files(id,name,mimeType,size,createdTime,thumbnailLink,sha256Checksum)&pageSize=1000&orderBy=folder,name&key=${key}`);
     if (!r.ok) throw refused(r, "folder");
     return (await r.json()).files
       .map((f) => ({ id: f.id, name: f.name, folder: f.mimeType === "application/vnd.google-apps.folder",
@@ -98,5 +104,5 @@ window.NorDrive = (() => {
       .filter((f) => f.folder || /\.(tiff?|png)$/i.test(f.name));
   }
 
-  return { parse, file, head, checksum, list, ready: !!key };
+  return { parse, file, head, checksum, list, ready: !!key, received: () => received };
 })();

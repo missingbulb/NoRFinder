@@ -115,12 +115,12 @@ try {
   check(await page.isVisible("#manage-storage"), "clicking it shows Manage storage");
   await shot("user_menu", "body");
   await page.click("#manage-storage");
-  await page.waitForFunction(() => $("#storage-dlg").open && !/Reading/.test($("#storage-list").textContent));
+  await page.waitForFunction(() => $("#usage-dlg").open && !/Reading/.test($("#storage-list").textContent));
   check(await page.evaluate(() => document.querySelectorAll("#storage-list .group").length === 6 && !document.querySelector("#storage-list .group[open]")),
     "every group starts folded");
-  await shot("storage_folded", "#storage-dlg");
+  await shot("storage_folded", "#usage-dlg");
   for (const s of await page.$$("#storage-list .group > summary")) await s.click();
-  await shot("storage_dialog", "#storage-dlg");
+  await shot("storage_dialog", "#usage-dlg");
 
   // each group's rows: name, what is kept, size
   const groups = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#storage-list .group")].map((g) => [g.dataset.group,
@@ -169,7 +169,7 @@ try {
     shellForTests.saveThumb("ID3", "new slide.tif");
   });
   check((await page.evaluate(() => JSON.parse(localStorage.getItem("nor-drive-thumb-names")).ID3)) === "new slide.tif", "a thumbnail saved now keeps its image's name");
-  await page.click("#storage-dlg button[value=close]");
+  await page.click("#usage-dlg button[value=close]");
 
   // ---- 1.7: the Drive dialog's options, and images kept on this device ----
   const drive = async () => {
@@ -197,10 +197,10 @@ try {
 
   await drive();
   await page.click("#drive-storage");
-  await page.waitForFunction(() => $("#storage-dlg").open && !/Reading/.test($("#storage-list").textContent));
+  await page.waitForFunction(() => $("#usage-dlg").open && !/Reading/.test($("#storage-list").textContent));
   g = await groups();
   check(names("files").join() === DRIVE[0].name && /\d/.test(g.files[0].size), `the link opens Manage storage, which lists the saved image: ${JSON.stringify(g.files)}`);
-  await page.click("#storage-dlg button[value=close]");
+  await page.click("#usage-dlg button[value=close]");
 
   await page.uncheck("#drive-autosave");
   await page.reload(); await page.waitForFunction(() => $("#title").textContent);

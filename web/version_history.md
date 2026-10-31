@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- The status bar's disk and memory are small grey icons now, joined by what this tab downloaded and how busy it is; each opens its own tab of one dialog (Storage, Memory, Network, CPU). The study's stage is a traffic light (red PreGT, yellow GT, green PostGT): hover it to see the stages and what comes next. Clicking the glowing step takes you to its button and presses it. (#610)
 - A Drive folder can carry a rauntruth-previews.tiff: the dialog then shows every image it covers at once, with no download each, and a stack turns while you point at it. (#605)
 - An image you pick from Google Drive opens from the copy on this device only if it is still the same file on Drive; otherwise it is downloaded. Recent files open from this device at once, and a tip by Load's arrow points them out. (#595)
 - The left bar is now Load Image, Preprocessing, Algorithms, Post-processing and Summary (moved from the right). Each box opens once it is useful and folds again when its step is done; Post-processing opens only when you click its title. (#597)

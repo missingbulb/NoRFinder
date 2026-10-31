@@ -1,10 +1,11 @@
 // Drives the page (web/) in headless Chromium on the fixture study, with a stand-in worker answering from
-// ANSWERS (tests/test_study_runs.py), and checks the status bar: the study's stage first; breadcrumbs of the
-// steps done and the one to do now, which shines with its button and nothing else does; a popup on each crumb
-// saying what was done; a new image starting over; a PreGT study with no Submit GT and its ground-truth button
-// hidden; switching study in place bringing its own stage and steps; the memory as "RAM … MB" opening what holds it, with Run GC; the disk as "Disk …" matching Manage
-// storage, which it opens; the version, memory and disk at the right, plain. Optional SHOTS: a directory for
-// screenshots. Exits 1 on a failed check, 2 when it cannot run.
+// ANSWERS (tests/test_study_runs.py), and checks the status bar: the study's stage first, a traffic light whose
+// popup lists the stages; breadcrumbs of the steps done and the one to do now, which shines with its button and
+// nothing else does; a popup on each crumb saying what was done; the shining crumb bringing its button into view
+// and pressing it; a new image starting over; a PreGT study with no Submit GT and its ground-truth button hidden;
+// switching study in place bringing its own stage and steps; the disk, memory, network and CPU as grey icons and
+// numbers, each opening its own tab of one dialog; a separator between every two items; no question-mark pointer.
+// Optional SHOTS: a directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/status_bar_driver.mjs ANSWERS IMAGE.png STUDIES [SHOTS]
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
@@ -23,19 +24,22 @@ const [answers, image, studies, shots] = process.argv.slice(2);
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const MB = 2 ** 20;
 
-// the fixture's answers, each saying how much memory Python holds as the real worker does; memory: what
-// Python holds in use after a collection
+// the fixture's answers, each saying how much memory Python holds and how long it has worked as the real worker
+// does; memory: what Python holds in use after a collection. A count keeps Python working for WORK ms.
+const WORK = 1500;
 const STAND_IN = `
 const A = await (await fetch("answers.json")).json();
 const bytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-const mem = { heap: ${60 * MB}, files: ${20 * MB} };
+let ms = 0;
+const mem = () => ({ heap: ${60 * MB}, files: ${20 * MB}, busy: { ms, since: null } });
+const work = (n) => { postMessage({ type: "progress", text: "Counting…", ...mem(), busy: { ms, since: Date.now() } }); const t = Date.now(); while (Date.now() - t < n); ms += n; };
 const first = new URL(location.href).searchParams.get("study");
-if (A.ready[first]) postMessage({ type: "ready", info: A.ready[first], ...mem });
+if (A.ready[first]) postMessage({ type: "ready", info: A.ready[first], ...mem() });
 onmessage = ({ data: m }) => {
-  if (m.type === "study") postMessage({ type: "ready", info: A.ready[m.id], ...mem });
-  else if (m.type === "open") { const images = bytes(A.images); postMessage({ type: "opened", meta: A.opened, images, ...mem }, [images.buffer]); }
-  else if (m.type === "call") { const b = bytes(A.mask); postMessage({ type: "result", action: m.action, meta: A.count, bytes: b, echo: m.echo, ...mem }, [b.buffer]); }
-  else if (m.type === "memory") postMessage({ type: "memory", used: ${25 * MB}, objects: 1000, ...mem });
+  if (m.type === "study") postMessage({ type: "ready", info: A.ready[m.id], ...mem() });
+  else if (m.type === "open") { const images = bytes(A.images); postMessage({ type: "opened", meta: A.opened, images, ...mem() }, [images.buffer]); }
+  else if (m.type === "call") { work(${WORK}); const b = bytes(A.mask); postMessage({ type: "result", action: m.action, meta: A.count, bytes: b, echo: m.echo, ...mem() }, [b.buffer]); }
+  else if (m.type === "memory") postMessage({ type: "memory", used: ${25 * MB}, objects: 1000, ...mem() });
 };`;
 let stage = null; // the fixture's stage as served; null: as committed
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
@@ -88,35 +92,92 @@ const tip = async (page, name) => {
   await page.mouse.move(700, 300);
   return t;
 };
+// the stage: a traffic light lit in its colour, with no words
+const stageIs = async (page, stage, light) => {
+  const s = await page.evaluate(() => {
+    const e = document.querySelector("#sb-stage"), lit = e.querySelector(".lit");
+    return { stage: e.dataset.stage, text: e.textContent.trim(), lit: lit && lit.dataset.light, svg: !!e.querySelector("svg") };
+  });
+  await check(s.stage === stage && s.svg && s.lit === light && !s.text, `the stage, ${stage}, is a traffic light lit ${light}`, s);
+};
+// the one dialog, open on a tab
+const tabIs = async (page, tab) => {
+  await page.waitForFunction((t) => document.querySelector("#usage-dlg").open && document.querySelector(`#usage-dlg [role=tab][data-tab=${t}]`).getAttribute("aria-selected") === "true"
+    && !document.querySelector(`#usage-dlg [role=tabpanel][data-tab=${t}]`).hidden, tab);
+  await check(true, `the dialog is open on ${tab}`);
+};
 const loadImage = async (page) => { await page.setInputFiles("#file", image); await page.waitForFunction(() => !document.querySelector("#fx-count").disabled); };
 const count = async (page) => { await page.click("#fx-count"); await page.waitForFunction(() => /pixels/.test(document.querySelector("#fx-result").textContent)); };
 
 // ---- a GT study: Load image, its Count, Submit GT ----
 {
   const { ctx, page } = await open("fixture");
-  const s = await page.evaluate(() => [document.querySelector("#sb-stage").textContent, document.querySelector("#sb-stage").title]);
-  await check(s[0] === "GT" && /export/i.test(s[1]), "the stage is first, its meaning on hover", s);
+  await stageIs(page, "GT", "yellow");
+  // hovering the stage lists the stages, its own highlighted and the ones before it crossed out
+  await page.hover("#sb-stage");
+  await page.waitForFunction(() => document.querySelector("#stage-pop").matches(":popover-open"));
+  const stages = await page.evaluate(() => [...document.querySelectorAll("#stage-pop li")].map((li) => ({
+    name: li.querySelector(".name").textContent, now: li.classList.contains("now"), crossed: getComputedStyle(li.querySelector(".name")).textDecorationLine,
+  })));
+  await check(stages.map((x) => x.name).join() === "PreGT,GT,PostGT" && stages[1].now && !stages[0].now && !stages[2].now,
+    "the stage's popup lists PreGT, GT and PostGT, GT highlighted", stages);
+  await check(stages[0].crossed === "line-through" && stages[1].crossed === "none" && stages[2].crossed === "none", "the stage before it is crossed out", stages);
+  await check(/next|move on/i.test(await page.textContent("#stage-pop")), "and says what moves the study on", await page.textContent("#stage-pop"));
+  if (shots) await page.screenshot({ path: path.join(shots, "0-stages.png") });
+  await page.mouse.move(700, 300);
+  await page.waitForFunction(() => !document.querySelector("#stage-pop").matches(":popover-open"));
   await steps(page, ["Load image*"], ["#load-main", "#sb-load"]);
   await shot(page, "1-start");
-  // the right side: from the edge, version, memory, disk; all plain
-  await page.waitForFunction(() => /^Disk /.test(document.querySelector("#sb-disk").textContent));
-  const right = await page.evaluate(() => ["#sb-disk", "#sb-memory", "#sb-version"].map((id) => {
-    const e = document.querySelector(id), cs = getComputedStyle(e);
-    return { id, right: e.getBoundingClientRect().right, border: cs.borderTopWidth, text: e.textContent };
-  }));
-  await check(right[0].right < right[1].right && right[1].right < right[2].right && right[2].right > 1300, "disk, memory and version sit at the right, version at the edge", right);
-  await check(right.every((e) => e.border === "0px"), "none has a border", right);
-  await check(/^RAM \d+ MB$/.test(right[1].text), 'the memory reads "RAM … MB"', right[1].text);
-  await page.waitForFunction(() => /^Disk /.test(document.querySelector("#sb-disk").textContent));
-  const disk = await page.textContent("#sb-disk");
-  await check(/^Disk \d+(\.\d)? (KB|MB|GB)$/.test(disk), 'the disk reads "Disk …"', disk);
+  // the right side: from the edge, version, CPU, network, memory, disk; each but the version a grey icon and its number
+  const ITEMS = ["#sb-disk", "#sb-memory", "#sb-net", "#sb-cpu", "#sb-version"];
+  await page.waitForFunction(() => /\d/.test(document.querySelector("#sb-disk").textContent));
+  const right = await page.evaluate((ids) => ids.map((id) => {
+    const e = document.querySelector(id), cs = getComputedStyle(e), svg = e.querySelector("svg");
+    const grey = svg && getComputedStyle(svg).color.match(/\d+/g).slice(0, 3).map(Number);
+    return { id, right: e.getBoundingClientRect().right, box: cs.borderTopWidth + " " + cs.backgroundColor, text: e.textContent, grey: grey && Math.max(...grey) - Math.min(...grey) };
+  }), ITEMS);
+  await check(right.every((e, k) => k === 0 || right[k - 1].right < e.right) && right[4].right > 1300, "disk, memory, network, CPU and version sit at the right, version at the edge", right);
+  await check(right.every((e) => e.box === "0px rgba(0, 0, 0, 0)"), "none has a box", right);
+  await check(right.slice(0, 4).every((e) => e.grey !== null && e.grey <= 12), "the four before the version each have a grey icon", right);
+  await check(/^\d+(\.\d)? (KB|MB|GB)$/.test(right[0].text), 'the disk reads "1.4 MB", with no word', right[0].text);
+  await check(/^\d+ MB$/.test(right[1].text), 'the memory reads "253 MB", with no word', right[1].text);
+  await check(/^\d+(\.\d)? (KB|MB|GB)$/.test(right[2].text), 'the network reads "52 MB"', right[2].text);
+  await check(/^\d+%$/.test(right[3].text), 'the CPU reads "12%"', right[3].text);
   const left = await page.evaluate(() => ["#sb-stage", "#sb-steps", "#status"].map((id) => document.querySelector(id).getBoundingClientRect().left));
   await check(left[0] < 40 && left[0] < left[1] && left[1] < left[2], "the stage, then the crumbs, then what the page is doing, from the left", left);
+  // a mild bar between every two items on show
+  const seps = await page.evaluate(() => {
+    const shown = [...document.querySelectorAll("#statusbar > *")].filter((e) => e.offsetWidth && !e.matches(".grow, #whats-new"));
+    return shown.slice(1).map((e, k) => {
+      const a = shown[k], b = e;
+      return [a.id, b.id, getComputedStyle(a).borderRightWidth === "1px" || getComputedStyle(b).borderLeftWidth === "1px"];
+    });
+  });
+  await check(seps.length >= 7 && seps.every((x) => x[2]), "a vertical bar between every two of the eight items on show", seps);
+  const pointers = await page.evaluate(() => [...document.querySelectorAll("#statusbar, #statusbar *")].map((e) => getComputedStyle(e).cursor).filter((c) => c === "help"));
+  await check(!pointers.length, "nothing in the status bar shows a question-mark pointer", pointers);
+
+  // the shining crumb is a way to its button: Load image opens the file chooser, as Load does
+  const chooser = page.waitForEvent("filechooser", { timeout: 3000 }).catch(() => null);
+  await page.click("#sb-load");
+  await check(!!(await chooser), "clicking the shining Load image presses Load");
 
   await loadImage(page);
   await steps(page, ["Load image", "Count*"], ["#fx-count", "#sb-count"]);
   await check((await tip(page, "Load image")).includes("squares.png"), "Load image's popup names the image");
-  await count(page);
+  // Count's box folded and scrolled away: its crumb unfolds it, scrolls to Count and presses it
+  await page.evaluate(() => { document.querySelector("#fx-box").classList.add("folded"); document.querySelector("#left").scrollTop = 1e6; });
+  await page.click("#sb-count");
+  const shown = await page.evaluate(() => {
+    const b = document.querySelector("#fx-count"), r = b.getBoundingClientRect(), l = document.querySelector("#left").getBoundingClientRect();
+    return { unfolded: !document.querySelector("#fx-box").classList.contains("folded"), inView: r.height > 0 && r.top >= l.top && r.bottom <= l.bottom };
+  });
+  await check(shown.unfolded && shown.inView, "the shining crumb unfolds Count's box and brings Count into view", shown);
+  await page.waitForFunction(() => /pixels/.test(document.querySelector("#fx-result").textContent));
+  await check(true, "and presses Count");
+  // Python worked about WORK ms of the last two seconds
+  await page.waitForFunction(() => parseInt(document.querySelector("#sb-cpu").textContent) >= 30, null, { timeout: 3000 }).catch(() => {});
+  await check(parseInt(await page.textContent("#sb-cpu")) >= 30, "the CPU shows Python at work", await page.textContent("#sb-cpu"));
   await steps(page, ["Load image", "Count", "Submit GT*"], ["#fx-truth", "#sb-submit"]);
   await check((await tip(page, "Count")).includes("400"), "the study's step says what it did");
   await shot(page, "2-submit");
@@ -132,22 +193,50 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await loadImage(page);
   await steps(page, ["Load image", "Count*"], ["#fx-count", "#sb-count"]);
 
-  // the memory popup and Run GC
+  // the memory opens its tab of the one dialog, with Run GC and no essay on Python's memory
   await page.click("#sb-memory");
-  await page.waitForFunction(() => document.querySelector("#ram-pop").matches(":popover-open"));
+  await tabIs(page, "memory");
   const rows = await page.evaluate(() => [...document.querySelectorAll("#ram-list .entry .name")].map((n) => n.textContent));
-  await check(["Python", "Python's files", "The image"].every((n) => rows.includes(n)), "the memory popup lists what holds it", rows);
+  await check(["Python", "Python's files", "The image"].every((n) => rows.includes(n)), "the Memory tab lists what holds it", rows);
+  await check(!/reserved for its next use/.test(await page.textContent("#usage-dlg")), "with no explanation of Python's memory");
   await page.click("#ram-gc");
   await page.waitForFunction(() => /in use/.test(document.querySelector("#ram-msg").textContent));
   await check(/25 MB in use of 60 MB/.test(await page.textContent("#ram-msg")), "Run GC says what Python holds in use against its reserve", await page.textContent("#ram-msg"));
-  if (shots) await page.screenshot({ path: path.join(shots, "4-ram.png") });
+  if (shots) await page.screenshot({ path: path.join(shots, "4-memory.png") });
+  // the tabs look alike: the total, then rows of a name, what it is and a size, in the same type
+  const look = (tab) => page.evaluate((t) => {
+    const p = document.querySelector(`#usage-dlg [role=tabpanel][data-tab=${t}]`), cs = (x) => x && getComputedStyle(x);
+    return { total: !!p.querySelector(".total")?.textContent, name: cs(p.querySelector(".entry .name")).fontSize, size: cs(p.querySelector(".entry .size")).fontSize + " " + cs(p.querySelector(".entry .size")).color,
+      what: cs(p.querySelector(".entry .what"))?.fontSize };
+  }, tab);
+  const memLook = await look("memory");
+  // the network tab, by its tab: the page's files, Python and Google Drive, adding up to the status bar's
+  await page.click("#usage-dlg [role=tab][data-tab=network]");
+  await tabIs(page, "network");
+  const net = await page.evaluate(() => [...document.querySelectorAll("#net-list .entry .name")].map((n) => n.textContent));
+  await check(["The page", "Python", "Google Drive"].every((n) => net.includes(n)), "the Network tab splits what was downloaded", net);
+  await check((await page.textContent("#net-total")).includes(await page.textContent("#sb-net")), "its total is the status bar's", [await page.textContent("#net-total"), await page.textContent("#sb-net")]);
+  if (shots) await page.screenshot({ path: path.join(shots, "5-network.png") });
+  const netLook = await look("network");
+  await page.click("#usage-dlg [role=tab][data-tab=cpu]");
+  await tabIs(page, "cpu");
+  const cpu = await page.evaluate(() => [...document.querySelectorAll("#cpu-list .entry .name")].map((n) => n.textContent));
+  await check(["The page", "Python"].every((n) => cpu.includes(n)), "the CPU tab splits the page's thread from Python's", cpu);
+  if (shots) await page.screenshot({ path: path.join(shots, "6-cpu.png") });
+  const cpuLook = await look("cpu");
   await page.keyboard.press("Escape");
 
-  // the disk opens Manage storage, whose total it shows
+  // the disk opens the Storage tab, whose total it shows
   await page.click("#sb-disk");
-  await page.waitForFunction(() => document.querySelector("#storage-dlg").open && /keeps/.test(document.querySelector("#storage-total").textContent));
+  await tabIs(page, "storage");
+  await page.waitForFunction(() => /keeps/.test(document.querySelector("#storage-total").textContent));
   const total = (await page.textContent("#storage-total")).match(/keeps (.+?) on/)[1];
-  await check((await page.textContent("#sb-disk")) === "Disk " + total, "the disk is Manage storage's total", [total, await page.textContent("#sb-disk")]);
+  await check((await page.textContent("#sb-disk")) === total, "the disk is the Storage tab's total", [total, await page.textContent("#sb-disk")]);
+  for (const g of await page.$$("#storage-list .group > summary")) await g.click();
+  if (shots) await page.screenshot({ path: path.join(shots, "7-storage.png") });
+  const storeLook = await look("storage");
+  const alike = (a, b) => a.total && b.total && a.name === b.name && a.size === b.size && (!a.what || !b.what || a.what === b.what);
+  await check([memLook, netLook, cpuLook].every((l) => alike(l, storeLook) && alike(l, memLook)), "the four tabs look alike", [storeLook, memLook, netLook, cpuLook]);
   await ctx.close();
 }
 
@@ -155,7 +244,7 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
 {
   stage = "PreGT";
   const { ctx, page } = await open("fixture");
-  await check(await page.textContent("#sb-stage") === "PreGT", "a PreGT study says so");
+  await stageIs(page, "PreGT", "red");
   await check(await page.evaluate(() => document.querySelector("#fx-truth").offsetParent === null), "its ground-truth button is hidden");
   await loadImage(page); await count(page);
   await steps(page, ["Load image", "Count"], []);
@@ -166,14 +255,14 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
 // ---- the Image Viewer: Load image alone ----
 {
   const { ctx, page } = await open(null);
-  await check(await page.textContent("#sb-stage") === "PreGT", "the Image Viewer is PreGT");
+  await stageIs(page, "PreGT", "red");
   await steps(page, ["Load image*"], ["#load-main", "#sb-load"]);
   await page.setInputFiles("#file", image);
   await steps(page, ["Load image"], []);
   // switching study in place: its stage and steps come with it, the image open in it already
   await page.click("#study-menu summary");
   await page.click("#study-list a >> text=NoR Finder");
-  await page.waitForFunction(() => document.querySelector("#sb-stage").textContent === "GT");
+  await page.waitForFunction(() => document.querySelector("#sb-stage").dataset.stage === "GT");
   await steps(page, ["Load image", "Run algorithm*"], ["#find", "#sb-find"]);
   await ctx.close();
 }

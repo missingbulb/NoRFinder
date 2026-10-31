@@ -2,8 +2,8 @@
 // none of them; the header's switcher offers the ones the build lists and swaps one in without a reload. What it gives a study, as shell in mount(shell): loading images (from the
 // computer or Google Drive), Python (the study's own, run in worker.js), the viewer the study asks for,
 // the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own), notices, the user's saved settings, downloads and ground-truth
-// submission; and around them the theme, side bars, foldable boxes, the memory popup and the version
-// history.
+// submission; and around them the theme, side bars, foldable boxes, the resources dialog (storage, memory,
+// network and CPU) and the version history.
 //
 // The study's hooks, all optional, returned from mount: ready(info) once its Python is loaded;
 // opening(name, source) when an image starts to load; opened(meta) once it is shown; result(action,
@@ -11,9 +11,9 @@
 // work still running, holds(message) while a result is not the last of its kind, and idle() once a held
 // button is free again; painter, a preview
 // painter for an image's bytes as they arrive; showImage() when the shell brings the image back into
-// view; stored(key), what one of the study's browser keys holds, for the Manage storage dialog:
+// view; stored(key), what one of the study's browser keys holds, for the Storage tab:
 // {group: "settings", what} or {group: "images", image, what}, null for a key not its own; memory(), the
-// study's own large holdings for the memory popup, [{name, what, size}]; and the viewer's hooks (viewer2d.js).
+// study's own large holdings for the Memory tab, [{name, what, size}]; and the viewer's hooks (viewer2d.js).
 // A listener a study adds outside its own panels takes shell.signal, which ends it when the study leaves.
 "use strict";
 import { viewer as viewer2d, GRID } from "./viewer2d.js";
@@ -94,11 +94,11 @@ function busy(on, text, look) {
 // page's own scripts, plus an estimate of what a page cannot read
 function statusBar() {
   const { js, total } = memoryNow(), gb = navigator.deviceMemory, el = $("#sb-memory");
-  el.textContent = total == null ? "" : `RAM ${mbOf(total)} MB`;
+  el.querySelector(".v").textContent = total == null ? "" : `${mbOf(total)} MB`;
   el.classList.toggle("warn", !!gb && total > gb * 2 ** 30 / 4);
   el.title = total == null ? "" : `Python ${mbOf(st.heap)} MB, its files ${mbOf(st.files)} MB` + (js ? `, the page ${mbOf(js)} MB` : "") +
     `, and an estimated ${UNREAD_MB} MB for Python's compiled code and the browser. Click for more.`;
-  if (ramOpen()) ramList();
+  if (tabOn("memory")) ramList();
 }
 function memoryNow() {
   const js = performance.memory?.usedJSHeapSize;
@@ -106,9 +106,7 @@ function memoryNow() {
 }
 const mbOf = (n) => Math.round(n / 2 ** 20);
 
-// a browser without popovers has no such selector
-const ramOpen = () => { try { return $("#ram-pop").matches(":popover-open"); } catch { return false; } };
-// the memory popup: what holds the tab's memory, the image and the study's results within the page's share
+// the Memory tab: what holds the tab's memory, the image and the study's results within the page's share
 function ramList() {
   const { js, total } = memoryNow(), gb = navigator.deviceMemory;
   const image = Object.values(st.img || {}).reduce((a, c) => a + (c?.byteLength || 0), 0);
@@ -121,18 +119,16 @@ function ramList() {
     ["Compiled code and the browser", "An estimate: a page cannot read it", UNREAD_MB * 2 ** 20],
   ];
   $("#ram-total").textContent = total == null ? "Python is still loading." : `This tab holds about ${mbOf(total)} MB` + (gb ? ` of this computer's ${gb} GB.` : ".");
-  $("#ram-list").replaceChildren(...rows.map(([name, what, size, within]) => {
-    const row = document.createElement("div"); row.className = "entry" + (within ? " within" : "");
-    row.innerHTML = `<span class="label"><span class="name"></span><span class="what"></span></span><span class="size">${size == null ? "–" : sizeText(size)}</span>`;
-    row.querySelector(".name").textContent = name; row.querySelector(".what").textContent = what;
-    return row;
-  }));
+  $("#ram-list").replaceChildren(...rows.map(([name, what, size, within]) => entry(name, what, size == null ? "–" : sizeText(size), within)));
 }
-$("#ram-pop").addEventListener("beforetoggle", (e) => {
-  if (e.newState !== "open") return;
-  ramList(); $("#ram-msg").textContent = "";
-  $("#ram-pop").style.right = Math.max(8, innerWidth - $("#sb-memory").getBoundingClientRect().right) + "px";
-});
+// a row of a tab: a name, what it is beneath, and a size
+function entry(name, what, size, within) {
+  const row = document.createElement("div"); row.className = "entry" + (within ? " within" : "");
+  row.innerHTML = '<span class="label"><span class="name"></span><span class="what"></span></span><span class="size"></span>';
+  row.querySelector(".name").textContent = name; row.querySelector(".what").textContent = what; row.querySelector(".size").textContent = size;
+  return row;
+}
+$("#sb-memory").onclick = () => { $("#ram-msg").textContent = ""; usage("memory"); };
 $("#ram-gc").onclick = () => working($("#ram-gc"), () => { const told = until("memory"); st.worker.postMessage({ type: "memory" }); return told; });
 
 // the disk: what the site keeps on this device, as Manage storage counts it
@@ -140,15 +136,125 @@ async function diskBar() {
   const { out, extra } = await inventory();
   showDisk(Object.entries(out).reduce((a, [g, items]) => a + items.reduce((b, e) => b + e.size, 0) + (extra[g] || 0), 0));
 }
-const showDisk = (n) => { $("#sb-disk").textContent = "Disk " + sizeText(n); };
-$("#sb-disk").onclick = () => storageDialog();
+const showDisk = (n) => { $("#sb-disk .v").textContent = sizeText(n); };
+$("#sb-disk").onclick = () => usage("storage");
+
+// ---------- the resources dialog: storage, memory, network and CPU, a tab each ----------
+let usageTab = null;
+const tabOn = (t) => $("#usage-dlg").open && usageTab === t;
+function usage(tab) {
+  const d = $("#usage-dlg"), again = tabOn(tab);
+  usageTab = tab; d.dataset.tab = tab;
+  for (const b of d.querySelectorAll("[role=tab]")) b.setAttribute("aria-selected", b.dataset.tab === tab);
+  for (const p of d.querySelectorAll("[role=tabpanel]")) p.hidden = p.dataset.tab !== tab;
+  if (!d.open) d.showModal();
+  if (tab === "storage") storageTab(!again);
+  else if (tab === "memory") ramList();
+  else usageNow();
+}
+$("#usage-dlg .tab-row").onclick = (e) => { const t = e.target.closest("[role=tab]"); if (t) usage(t.dataset.tab); };
+$("#sb-net").onclick = () => usage("network");
+$("#sb-cpu").onclick = () => usage("cpu");
+
+// ---------- what this tab downloads ----------
+// A browser gives a page no total, so it is summed from three places. The page's and Python's own timings,
+// which give 0 for what the service worker answered and for a site that keeps its sizes from other pages;
+// the service worker's, for what it fetched for this page and for its Python (sw.js); and Drive's, which
+// counts its own (drive.js). From the browser's caches nothing is downloaded and nothing counts.
+const net = { page: 0, worker: 0, sw: {} };
+try {
+  net.page = performance.getEntriesByType("navigation")[0]?.transferSize || 0;
+  new PerformanceObserver((l) => { for (const e of l.getEntries()) net.page += e.transferSize || 0; }).observe({ type: "resource", buffered: true });
+} catch { /* no timings: the service worker's and Drive's counts alone */ }
+// the service worker's counts, by client: a count lower than the last is a new service worker counting from 0
+function swCounted({ page, workers }) {
+  for (const [id, n, role] of [[page.id, page.bytes, "page"], ...Object.entries(workers).map(([id, n]) => [id, n, "worker"])]) {
+    const c = net.sw[id] ||= { role, last: 0, before: 0 };
+    if (n < c.last) c.before += c.last;
+    c.last = n;
+  }
+}
+navigator.serviceWorker?.addEventListener("message", (e) => { if (e.data?.type === "net") swCounted(e.data); });
+const askSw = () => navigator.serviceWorker?.controller?.postMessage({ type: "net", workers: Object.keys(net.sw).filter((id) => net.sw[id].role === "worker") });
+function netNow() {
+  const sw = (role) => Object.values(net.sw).filter((c) => c.role === role).reduce((a, c) => a + c.before + c.last, 0);
+  const page = net.page + sw("page"), python = net.worker + sw("worker"), drive = window.NorDrive?.received() || 0;
+  return { page, python, drive, total: page + python + drive };
+}
+function netList(n) {
+  $("#net-total").textContent = `This tab has downloaded ${sizeText(n.total)} since it opened.`;
+  $("#net-list").replaceChildren(
+    entry("The page", "Its own files; what this browser had kept counts nothing", sizeText(n.page)),
+    entry("Python", "Python, its packages and the study's Python", sizeText(n.python)),
+    entry("Google Drive", "Images and folder lists; not Google's small pictures of images", sizeText(n.drive)));
+}
+
+// ---------- how busy this tab's threads are ----------
+// The page's thread: its long tasks, which only Chrome and Edge report (null elsewhere: unknown). Python's: the
+// time it has spent working, as its last message said ({ms, since}, since set while it works), sampled each
+// second. Each is a share of one core over the last CPU_MS.
+const CPU_MS = 2000;
+const cpu = { long: PerformanceObserver.supportedEntryTypes?.includes("longtask") ? [] : null, py: { ms: 0, since: null }, samples: [] };
+if (cpu.long) new PerformanceObserver((l) => { for (const e of l.getEntries()) cpu.long.push([e.startTime, e.startTime + e.duration]); }).observe({ type: "longtask" });
+function cpuNow() {
+  const now = performance.now(), from = now - CPU_MS;
+  let page = null;
+  if (cpu.long) {
+    cpu.long = cpu.long.filter(([, end]) => end > from);
+    page = cpu.long.reduce((a, [start, end]) => a + end - Math.max(start, from), 0) / CPU_MS;
+  }
+  const t = Date.now(), worked = cpu.py.ms + (cpu.py.since ? t - cpu.py.since : 0);
+  cpu.samples.push([t, worked]);
+  while (cpu.samples.length > 1 && cpu.samples[1][0] <= t - CPU_MS) cpu.samples.shift();
+  const [t0, w0] = cpu.samples[0], python = t > t0 ? Math.min(1, (worked - w0) / (t - t0)) : 0;
+  return { page, python, total: (page || 0) + python };
+}
+const pct = (x) => (x == null ? "–" : Math.round(x * 100) + "%");
+function cpuList(c) {
+  $("#cpu-total").textContent = `This tab's threads are using about ${pct(c.total)} of one core.`;
+  $("#cpu-list").replaceChildren(
+    entry("The page", c.page == null ? "Unknown: only Chrome and Edge report it" : "Its long tasks: an estimate", pct(c.page)),
+    entry("Python", "The time it spent working", pct(c.python)));
+}
+
+// each second: the network and CPU in the status bar, and in their tabs when open
+function usageNow() {
+  const n = netNow(), c = cpuNow();
+  $("#sb-net .v").textContent = sizeText(n.total); $("#sb-cpu .v").textContent = pct(c.total);
+  if (tabOn("network")) netList(n);
+  if (tabOn("cpu")) cpuList(c);
+}
+setInterval(usageNow, 1000);
+setInterval(askSw, 2000);
+askSw(); usageNow();
 
 // ---------- the study's stage and steps ----------
+// in order, each with its traffic light, what it means, and what moves a study on from it
 const STAGES = {
-  PreGT: "PreGT: this study's tools work, but cannot make ground truth yet, so there is nothing to export.",
-  GT: "GT: this study's tools make ground truth, to export and submit.",
-  PostGT: "PostGT: this study makes ground truth, and has batch actions too.",
+  PreGT: { light: "red", what: "Its tools work, but cannot make ground truth yet, so there is nothing to export.",
+    next: "To move on to GT, the study needs a way to make ground truth: an export of what you confirm, to submit." },
+  GT: { light: "yellow", what: "Its tools make ground truth, to export and submit.",
+    next: "To move on to PostGT, the study needs batch actions: its tools run over many images at once." },
+  PostGT: { light: "green", what: "It makes ground truth, and has batch actions too.", next: "This is the last stage." },
 };
+function showStage() {
+  const now = Object.keys(STAGES).indexOf(manifest.stage), e = $("#sb-stage");
+  e.dataset.stage = manifest.stage; e.setAttribute("aria-label", "Stage: " + manifest.stage);
+  e.querySelectorAll("circle").forEach((c) => c.classList.toggle("lit", c.dataset.light === STAGES[manifest.stage].light));
+  $("#stage-list").replaceChildren(...Object.entries(STAGES).map(([name, s], k) => {
+    const li = document.createElement("li"); li.className = k < now ? "past" : k === now ? "now" : "";
+    li.innerHTML = `<span class="dot" data-light="${s.light}"></span><span class="name">${name}</span><span class="what">${esc(s.what)}</span>`;
+    return li;
+  }));
+  $("#stage-next").textContent = STAGES[manifest.stage].next;
+}
+// the stages pop up while the stage is hovered or focused
+{
+  const pop = $("#stage-pop"), e = $("#sb-stage");
+  const show = (on) => { try { on ? pop.showPopover() : pop.hidePopover(); } catch { /* already so, or no popovers */ } };
+  e.addEventListener("mouseenter", () => show(true)); e.addEventListener("mouseleave", () => show(false));
+  e.addEventListener("focus", () => show(true)); e.addEventListener("blur", () => show(false));
+}
 const makesTruth = () => manifest.stage !== "PreGT";
 // The study's steps, in order, in one state that the breadcrumbs and the shining buttons are drawn from:
 // [{key, name, button, done, info, at}]. Load image and Submit GT are the shell's, the study's own come from its
@@ -192,6 +298,16 @@ function drawSteps() {
   }));
   steps.forEach((p, k) => { const b = p.button && $(p.button); if (b) b.classList.toggle("shine", k === now && !b.disabled && !b.hidden); });
 }
+// the shining crumb leads to its button: the box it is in unfolds, it scrolls into view, and it is pressed
+function goToStep(e) {
+  const c = e.target.closest(".crumb.now"), p = c && steps.find((x) => "sb-" + x.key === c.id), b = p?.button && $(p.button);
+  if (!b || b.hidden) return;
+  b.closest(".box.foldable")?.classList.remove("folded");
+  b.scrollIntoView({ block: "nearest" });
+  if (!b.disabled) b.click();
+}
+$("#sb-steps").onclick = goToStep;
+$("#sb-steps").onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goToStep(e); } };
 
 // ---------- buttons whose action takes a while: disabled, with a small spinner, until the action is done ----------
 // the worker's next message of a kind ("opened", or "result:<action>"), or its error
@@ -260,6 +376,8 @@ $("#memory-off").onchange = () => writeJSON(MEMORY_TIP, $("#memory-off").checked
 
 function onWorker(m) {
   if (m.heap != null) { st.heap = m.heap; st.files = m.files || 0; }
+  if (m.busy) cpu.py = m.busy;
+  if (m.net != null) net.worker = m.net;
   // a late answer for a study that has left, or a word from one still coming in
   if (m.study && m.study !== manifest?.id) return statusBar();
   handle(m); settle(m); statusBar();
@@ -591,7 +709,7 @@ function driveDialog() {
   };
   $("#drive-autosave").checked = readJSON(AUTO_SAVE, "on") !== "off";
   $("#drive-autosave").onchange = (e) => writeJSON(AUTO_SAVE, e.target.checked ? "on" : "off");
-  $("#drive-storage").onclick = storageDialog;
+  $("#drive-storage").onclick = () => usage("storage");
   if (!NorDrive.ready) {
     const d = document.querySelector('#load-menu .item[data-src="drive"]');
     d.disabled = true; d.title = "Needs this site's Google API key (issue #234)";
@@ -784,17 +902,17 @@ async function inventory() {
   for (const list of Object.values(out)) list.sort((a, b) => a.name.localeCompare(b.name));
   return { out, extra };
 }
-async function storageDialog() {
-  // every group opens folded; a redraw after a deletion keeps what the user unfolded
-  const list = $("#storage-list"), fresh = !$("#storage-dlg").open, open = new Set(fresh ? [] : [...list.querySelectorAll(".group[open]")].map((g) => g.dataset.group));
-  if (fresh) { list.textContent = "Reading what this device keeps…"; $("#storage-total").textContent = ""; $("#storage-dlg").showModal(); }
+// the Storage tab; fresh: just opened, every group folded, where a redraw after a deletion keeps what the user unfolded
+async function storageTab(fresh) {
+  const list = $("#storage-list"), open = new Set(fresh ? [] : [...list.querySelectorAll(".group[open]")].map((g) => g.dataset.group));
+  if (fresh) { list.textContent = "Reading what this device keeps…"; $("#storage-total").textContent = ""; }
   const { out, extra } = await inventory();
   const held = () => { $("#storage-reload").hidden = false; $("#storage-msg").textContent = "The page still holds what you deleted until it reloads."; };
   const act = async (items, ask) => {
     if (ask && !confirm(ask)) return;
     for (const e of items) await e.del();
     if (items.some((e) => e.held)) held();
-    storageDialog();
+    storageTab(false);
   };
   let total = 0;
   list.replaceChildren(...GROUPS.map(([g, title, about]) => {
@@ -824,9 +942,9 @@ async function storageDialog() {
   showDisk(total);
   $("#storage-total").textContent = `This site keeps ${sizeText(total)} on this device` + (est?.quota ? `; the browser allows it up to ${sizeText(est.quota)}.` : ".");
 }
-$("#manage-storage").onclick = () => { $("#user-menu").open = false; storageDialog(); };
+$("#manage-storage").onclick = () => { $("#user-menu").open = false; usage("storage"); };
 $("#storage-reload").onclick = () => location.reload();
-$("#storage-dlg").addEventListener("close", () => { $("#storage-msg").textContent = ""; if ($("#drive-dlg").open) showSaved(); });
+$("#usage-dlg").addEventListener("close", () => { $("#storage-msg").textContent = ""; if ($("#drive-dlg").open) showSaved(); });
 
 // ---------- downloads and ground truth ----------
 function saveFile(name, text, type) {
@@ -1156,7 +1274,7 @@ async function mountStudy(id) {
   const mod = await import(base + manifest.web.module);
   study = (await mod.mount(shell)) || {};
   view.use(study);
-  $("#sb-stage").textContent = manifest.stage; $("#sb-stage").title = STAGES[manifest.stage];
+  showStage();
   if (!makesTruth() && manifest.groundTruth?.button) $(manifest.groundTruth.button).hidden = true;
   makeSteps();
   foldable();
