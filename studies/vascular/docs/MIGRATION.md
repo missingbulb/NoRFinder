@@ -17,9 +17,9 @@ Every capability of [missingbulb/vascularColoring](https://github.com/missingbul
 | Vessel-model/2 format and edits (`model.js`), review tube (`coverage.js`), the four v5 draft models | `web/` | moved, tested |
 | 3D viewer: WebGL2 ray-caster, Brightest/Surface, colour by depth, slab, slice spacing, look-from, Flattened and Depth-profile views (`viewer.js`, `stack.js`) | `web/viewer3d.js` (shell) | moved: every shown channel in its row's colour and points; Flattened is the 2D view; the single-slice picture and Depth profile not yet |
 | Stack reader in the browser (`tiff.js`: ImageJ/OME, LZW/Deflate/PackBits) | `py/vascular.py` (tifffile) | replaced: decoded in Python (D1) |
-| Model over or beside the stack, editing in 3D, Detected/Missed review, draw a missed vessel, lasso damaged areas (`modelview.js`) | — | open (D2) |
-| Item cards for junctions and vessels (`items.js`) | — | open (D3) |
-| Download corrected model | — | open (D4): the shell's submission now takes any study's document; the button comes with the model view |
+| Model over or beside the stack, editing in 3D, Detected/Missed review, draw a missed vessel, lasso damaged areas (`modelview.js`) | `web/model_view.js`, on the shell's `viewer3d` `three` | moved (D2) |
+| Item cards for junctions and vessels (`items.js`) | `web/items.js`, the Item View | moved (D3) |
+| Download corrected model | Submit Ground Truth | moved (D4); the intake task follows the first submission |
 | Page shell: load from computer/Drive, drop, busy screen, notices, theme, resizable bars, foldable boxes, version check (`shell.js`, `drive.js`, `build.mjs`) | `web/` | exceeded |
 | Drive default folder from `sources.json` | `study.json` `files.drive` | moved, as a shell feature for every study |
 | GitHub Pages deploy, `site.config`, root redirect | Cloudflare release | exceeded; retiring the old site is open (D9) |

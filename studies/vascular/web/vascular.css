@@ -1,0 +1,50 @@
+/* The vascular study's panels: the vessel model's boxes, its right-click menu and the item cards. */
+.col { display: flex; flex-direction: column; gap: 8px; }
+.note { font-size: 12px; color: var(--dim); margin: 0; }
+.note.err { color: var(--err); }
+.seg { display: flex; border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; }
+.seg button { flex: 1; border: 0; border-radius: 0; border-right: 1px solid var(--line); background: transparent; padding: 5px 4px; font-size: 13px; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.views { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.views button { padding: 4px 10px; font-size: 13px; }
+.views button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+.check, #model-set .row { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+#review-box .row { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+#mcv { cursor: grab; touch-action: none; }
+#mcv.over-point { cursor: move; }
+#mcv.connecting { cursor: crosshair; }
+#v3-stage.split #mcv { background: #000; }
+#v3-stage:not(.split) #mcv { background: transparent; }
+
+#ctx { position: fixed; top: 0; left: 0; z-index: 30; display: flex; flex-direction: column; padding: 4px 8px; background: var(--panel);
+  border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px #0006; }
+#ctx[hidden] { display: none; }
+#ctx .item { text-align: left; border: 0; background: none; padding: 6px 4px; white-space: nowrap; }
+#ctx .item:hover, #ctx .item:focus-visible { color: var(--accent); }
+#ctx .note { padding: 4px; }
+
+#items-view { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#items-view[hidden] { display: none; }
+.items-bar { display: flex; gap: 10px; align-items: center; padding: 8px var(--pad); border-bottom: 1px solid var(--line); font-size: 13px; }
+.items-scroll { flex: 1; overflow: auto; padding: var(--pad); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: var(--pad); }
+.card { display: flex; gap: 10px; padding: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-ctl); cursor: pointer; min-height: 186px; }
+.card.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.card:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.card.state-rejected { opacity: .6; }
+.card canvas { flex: none; width: 168px; height: 168px; background: #000; border-radius: var(--r-chip); image-rendering: pixelated; }
+.card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.card-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.card dl { display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; margin: 2px 0 0; font-size: 12px; font-variant-numeric: tabular-nums; }
+.card dt { color: var(--dim); }
+.card dd { margin: 0; }
+.card dd.warn { color: var(--warn); }
+.card-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: auto; }
+.card-actions button { padding: 2px 8px; font-size: 12px; }
+.card-actions button.yes { border-color: var(--yes); color: var(--yes); }
+.card-actions button.no { border-color: var(--no); color: var(--no); }
+.chip { padding: 0 6px; border-radius: var(--r-chip); font-size: 11px; border: 1px solid var(--line); color: var(--dim); }
+.chip.candidate { border-color: var(--warn); color: var(--warn); }
+.chip.accepted { border-color: var(--yes); color: var(--yes); }
+.chip.rejected { border-color: var(--no); color: var(--no); }

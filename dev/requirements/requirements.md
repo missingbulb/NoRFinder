@@ -849,3 +849,41 @@ owner's decisions on the stacks and the vessel model, are
 
   `files.drive` in the study's `study.json`, under `1.18`'s rule.
   </details>
+
+- `4.3` A stack's vessel model opens beside it or over it, to correct by hand.
+  <details>
+
+  Moved from the 3D MicroViewer (`studies/vascular/docs/3D-STACKS.md`, the owner's decisions of
+  2026-10-03 to 10-29). A stack the study ships a draft for (`web/models/`, matched by name without
+  case, spaces or punctuation) opens with it; any `vessel-model/2` file loads too. Side by side
+  shows the model as white tubes in a view of its own that turns with the stack's; Overlay draws it
+  in magenta over the stack; Hide takes it away. On the model: drag a point to move it, right-click
+  a segment or a point to delete it, add or remove a bend or split a junction into vessels that
+  cross, right-drag from one piece to another to connect them, and click a faded low-confidence
+  vessel to approve or decline it. Review keeps only the signal within reach of the model's
+  vessels (Detected) or away from them (Missed), within a reach that is a share of each vessel's
+  own width; Draw a missed vessel adds one a click at a time; Mark a damaged area lassos an area to
+  leave out. Every edit can be undone, and the edits stay in the browser until the model is
+  submitted. Test: `studies/vascular/tests/test_model_page.py`.
+  </details>
+
+- `4.4` Item View shows each junction and vessel of the model as a card.
+  <details>
+
+  A card for each junction (three or more live branches) and each vessel (junction or tip to the
+  next): the stack around it flattened over the slices shown, the rest of the model thin in magenta
+  and the item in white, with its numbers (a vessel's length along its curve, its width and depth
+  span; a junction's depth, width and how many junctions lie within 20 µm). Filters show the ones
+  worth a look and the declined vessels; sorting brings the shortest, widest, most branched or most
+  crowded first. A card approves, declines or deletes a vessel, splits a junction, or shows its
+  item in 3D. Test: `studies/vascular/tests/test_model_page.py`.
+  </details>
+
+- `4.5` The corrected model is the study's ground truth.
+  <details>
+
+  Submit Ground Truth (`1.26`) exports the corrected `vessel-model/2` file, `status` corrected and
+  its corrections counted, labelled `vascular-ground-truth`; it is off until the model carries a
+  correction, and its checklist says how many low-confidence vessels still wait for a verdict.
+  Test: `studies/vascular/tests/test_model_page.py`.
+  </details>

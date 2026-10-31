@@ -2,7 +2,7 @@
   "id": "vascular",
   "title": "Vascular Measurements",
   "listed": true,
-  "stage": "PreGT",
+  "stage": "GT",
   "phases": [],
   "viewer": "image3d",
   "python": {
@@ -18,7 +18,9 @@
     ]
   },
   "web": {
-    "module": "web/vascular.js"
+    "module": "web/vascular.js",
+    "panels": "web/vascular.html",
+    "style": "web/vascular.css"
   },
   "files": {
     "accept": ".tif,.tiff",
@@ -50,5 +52,9 @@
     "depthColour": true,
     "spacing": 1.0,
     "spacingSource": "the owner (2026-10-29)"
+  },
+  "groundTruth": {
+    "label": "vascular-ground-truth",
+    "button": "#vm-truth"
   }
 }

@@ -1,0 +1,80 @@
+<template data-slot="left">
+    <section class="box foldable" id="model-set" data-opens="load">
+      <div class="sec-head"><h2>Vessel model</h2></div>
+      <div class="col">
+        <div class="views">
+          <button type="button" id="model-draft" hidden>Reload the draft model for this stack</button>
+          <button type="button" id="model-load">Load a model file</button>
+        </div>
+        <input id="model-file" type="file" accept=".json,application/json" hidden>
+        <div id="model-on" class="col" hidden>
+          <div class="seg" id="model-mode">
+            <button type="button" data-v="side" aria-pressed="true">Side by side</button>
+            <button type="button" data-v="overlay" aria-pressed="false">Overlay</button>
+            <button type="button" data-v="off" aria-pressed="false">Hide</button>
+          </div>
+          <label class="check" id="m-candidates-row"><input type="checkbox" id="m-candidates" checked> Show low-confidence vessels (faded)</label>
+          <label class="check"><input type="checkbox" id="m-widths" checked> Show vessel widths</label>
+          <p class="note" id="model-facts"></p>
+          <div class="views">
+            <button type="button" id="m-undo">Undo</button>
+            <button type="button" id="m-redo">Redo</button>
+            <button type="button" id="m-reset">Discard edits</button>
+          </div>
+        </div>
+        <p class="note" id="model-msg"></p>
+      </div>
+    </section>
+    <section class="box foldable" id="review-box" data-opens="load" hidden>
+      <div class="sec-head"><h2>Review</h2></div>
+      <div class="col">
+        <div class="seg" id="review-mode">
+          <button type="button" data-v="all" aria-pressed="true">Everything</button>
+          <button type="button" data-v="detected" aria-pressed="false">Detected</button>
+          <button type="button" data-v="missed" aria-pressed="false">Missed</button>
+        </div>
+        <p class="note" id="review-note">The whole stack.</p>
+        <label class="row" id="reach-row" hidden>Reach beyond the vessel wall <output id="reach-o"></output><input type="range" id="reach" min="0" max="200" step="5" value="50"></label>
+        <div class="views"><button type="button" id="m-draw" aria-pressed="false">Draw a missed vessel</button></div>
+        <p class="note" id="draw-note"></p>
+        <div class="views"><button type="button" id="m-lasso" aria-pressed="false">Mark a damaged area</button></div>
+        <p class="note" id="lasso-note"></p>
+      </div>
+    </section>
+</template>
+<template data-slot="toolbar">
+      <button id="item-switch" class="big" type="button" disabled>Item View <span class="count" id="items-count"></span></button>
+</template>
+<template data-slot="views">
+    <div id="items-view" hidden>
+      <div class="items-bar">
+        <div class="seg" id="item-kind">
+          <button type="button" data-v="junctions" aria-pressed="true">Junctions <span class="count"></span></button>
+          <button type="button" data-v="vessels" aria-pressed="false">Vessels <span class="count"></span></button>
+        </div>
+        <select id="item-filter" aria-label="Which items">
+          <option value="all" data-for="junctions vessels">All</option>
+          <option value="review" data-for="junctions vessels">Worth a look</option>
+          <option value="declined" data-for="vessels">Declined</option>
+        </select>
+        <select id="item-sort" aria-label="Order">
+          <option value="file" data-for="junctions vessels">In file order</option>
+          <option value="short" data-for="vessels">Shortest first</option>
+          <option value="wide" data-for="vessels">Widest first</option>
+          <option value="branches" data-for="junctions">Most branches first</option>
+          <option value="crowd" data-for="junctions">Most crowded first</option>
+        </select>
+        <span class="dim" id="items-note"></span>
+      </div>
+      <div class="items-scroll">
+        <p class="hint" id="items-empty">Load a vessel model to review it item by item: a card for each junction and each vessel.</p>
+        <div class="cards" id="item-list"></div>
+      </div>
+    </div>
+</template>
+<template data-slot="toolbar-end">
+    <button id="vm-truth" type="button" disabled>Submit Ground Truth</button>
+</template>
+<template data-slot="body">
+<div id="ctx" class="pop" role="menu" hidden></div>
+</template>
