@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- A minimap now hovers over the image: collapse it, hide it, bring it back from the toolbar, and hover that button to set how see-through it is. Each channel has its own brightness slider (black and white points), its name and a (?) explaining it; the Image Viewer uses the names and colours the file gives its channels. Load moved to the bottom of the Image box, and Unload beside it clears the page. (#612)
 - A Drive folder can carry a rauntruth-previews.tiff: the dialog then shows every image it covers at once, with no download each, and a stack turns while you point at it. (#605)
 - An image you pick from Google Drive opens from the copy on this device only if it is still the same file on Drive; otherwise it is downloaded. Recent files open from this device at once, and a tip by Load's arrow points them out. (#595)
 - The left bar is now Load Image, Preprocessing, Algorithms, Post-processing and Summary (moved from the right). Each box opens once it is useful and folds again when its step is done; Post-processing opens only when you click its title. (#597)
