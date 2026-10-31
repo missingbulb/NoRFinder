@@ -193,7 +193,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
   an X at the header's other end hides it. A Minimap button in the toolbar, beside the Grid, shows it
   again or hides it, pressed while it shows; hovering over the button opens a popup choosing how
   see-through it is at rest, opaque at first and always opaque under the pointer. Whether it shows and its opacity are kept as the user's settings for the
-  next visit. Dragging moves the image; scrolling up and down zooms around the pointer in small steps;
+  next visit. Dragging moves the image, wherever it starts, a label or the ruler's length included:
+  no drag selects or drags the page's text (set by the owner on 2026-10-31). Scrolling up and down zooms around the pointer in small steps;
   scrolling sideways steps to the study's previous or next item (for NoR, the candidate). The main
   area's toolbar holds the zoom at its right, and its tools wait for an image. Test:
   `web-tests/test_image_box_page.py`.
@@ -631,7 +632,10 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   candidate. Cards the user voted up or down have their own border colours. In the item views the
   selected candidate's card is outlined, clicking a card selects it, and switching to the item
   views opens the tab that lists the selected candidate and scrolls its card into sight; the
-  previous and next buttons step through that tab's cards.
+  previous and next buttons step through that tab's cards. Set by the owner on 2026-10-31: double
+  clicking a candidate on the image selects it and opens the item views at its card, and double
+  clicking a card selects it and shows it on the image, as its go-to button does. Test:
+  `studies/nor/tests/test_item_view_page.py`.
   </details>
 
 - `3.5` Filters are live dials: each can be switched off, and every marking follows it at once.
@@ -801,4 +805,13 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   (`studies/nor/web/`), like everything else the page fetches. Test:
   `web-tests/test_published_site.py`, which checks that every file a study's page module fetches is
   published.
+  </details>
+
+- `3.22` The item views draw only the cards near the view, so a long list opens at once.
+  <details>
+
+  Set by the owner on 2026-10-31. Every card takes its place in the list at once as an empty
+  outline; only those in view and the two rows past it either way are drawn in full, together in
+  one go per frame rather than card by card, and the rest are drawn as scrolling brings them near.
+  Test: `studies/nor/tests/test_item_view_page.py`.
   </details>
