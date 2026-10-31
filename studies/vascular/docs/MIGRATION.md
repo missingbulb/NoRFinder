@@ -24,11 +24,11 @@ Every capability of [missingbulb/vascularColoring](https://github.com/missingbul
 | Drive default folder from `sources.json` | `study.json` `files.drive` | moved, as a shell feature for every study |
 | GitHub Pages deploy, `site.config`, root redirect | Cloudflare release | exceeded; retiring the old site is open (D9) |
 | Pack rules: locked-metric-definitions, ask-before-unknown | `vascular-study` | moved |
-| Pack rules: never-self-validate, progress-visual-assertion, trustworthy-numbers, per-paper-rollup | — | open (D7): research-project already covers them |
+| Pack rules: never-self-validate, progress-visual-assertion, trustworthy-numbers, per-paper-rollup | research-project | exceeded |
 | Skills: paper-intake, vessel-overlay-review | `vascular-study` | moved |
 | Skill: image-algorithm-development | nor-finder's | exceeded (nor-finder's is a superset) |
-| Skill: algorithm-ideation | — | open (D7) |
-| Eight Go checks (calibration, metric fields, overlay colour, render dirs, paper index) | — | open (D7) |
+| Skill: algorithm-ideation | nor-finder | moved, for every study |
+| Eight Go checks (calibration, metric fields, overlay colour, render dirs, paper index) | `vascular-study` | four moved, scoped to the study; panel-scale-calibration waits for panels in git; render-dir and paper-index checks dropped |
 | Python tests; model-edit and coverage Node tests | `tests/` | moved; the TIFF-reader test moves with `tiff.js` (D1) |
 
 ## Decisions (owner, 2026-10-31)

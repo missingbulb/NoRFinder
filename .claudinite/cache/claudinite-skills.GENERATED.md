@@ -26,6 +26,7 @@ and an edit made another way is caught at Stop.
 |---|---|---|
 | `adopt-claudinite` | claudinite | Adopt Claudinite into a repo with cn adopt, choosing the packs from the owner's technologies. Use when asked to adopt or set up Claudinite. |
 | `adopt-pack` | claudinite | Add packs to a repo already running Claudinite: declare, interview, re-vendor, scaffold, land. Use when asked to adopt, add, enable or declare a pack. |
+| `algorithm-ideation` | nor-finder | Finding a genuinely new direction before building a study's next algorithm version - when the current one plateaus, or the owner asks for a new approach. |
 | `backfilling-provenance` | claudinite | Filling a pack's empty provenance files from its history. Use when a pack carries empty provenance files, or when asked to backfill a pack's provenance. |
 | `bug-investigation` | basics | Pinning down a bug's root cause. Use when investigating a bug report, when a fix didn't hold or a bug recurs, or when a report doesn't reproduce. |
 | `ci-performance-evaluation` | basics | Finding where a repo's CI time goes and what is worth fixing. Use when CI feels slow, on a runtime regression, or on a ci-performance finding. |

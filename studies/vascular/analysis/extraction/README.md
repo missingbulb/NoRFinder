@@ -4,7 +4,7 @@ Several extraction algorithms live here side by side, the way NOR Finder keeps i
 version is one `vN_*.py` file, none is deleted when a newer one wins, and every version is run and
 scored the same way. Every direction tried, kept or dropped, and every idea not yet tried, is in
 [LEDGER.md](LEDGER.md). Before starting a new version, follow the
-[algorithm-ideation](https://github.com/missingbulb/vascularColoring/blob/54badaa922556913bed2e51834440b5419b940ca/.claudinite/local/packs/vascular-coloring/skills/algorithm-ideation/SKILL.md)
+[algorithm-ideation](../../../../.claudinite/local/packs/nor-finder/skills/algorithm-ideation/SKILL.md)
 skill.
 
 _Last updated 2026-10-29._
