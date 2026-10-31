@@ -33,8 +33,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
 
   The image a study works on is shown by a viewer the study names (`viewer` in `study.json`),
   behind one interface: show the opened image, draw the study's layers over it, report a pick and a
-  lasso in image coordinates, zoom and pan. A 3D viewer is a second implementation of that
-  interface, not a change to the shell or to the studies that keep the 2D one.
+  lasso in image coordinates, zoom and pan. The 3D viewer (`1.48`) keeps that interface and adds
+  a 3D view beside the 2D one, with no change to the studies that keep the 2D viewer.
   </details>
 
 - `1.4` Python is reached through one generic call.
@@ -567,6 +567,23 @@ test fold under it. A study's research requirements, which no user sees, stay in
   from its place: red, green and blue, then more colours, a lone channel grey; a channel the file
   colours but does not name is named for its colour. The rows start over with every image. Test:
   `web-tests/test_image_box_page.py`, `studies/viewer/tests/test_viewer.py`.
+  </details>
+
+- `1.48` A study whose viewer is `image3d` shows a z-stack in 3D, turning it by mouse; its channel rows drive it.
+  <details>
+
+  Set by the owner on 2026-10-31, moving the 3D MicroViewer into the shell. The study's Python
+  returns a stack as its flattened planes, which the 2D view shows unchanged, followed by every
+  slice of every channel (`Z` in its meta). A 2D/3D switch in the toolbar opens the 3D view, which
+  a stack opens on: it casts rays through the stack in the browser (WebGL2), looking straight down
+  as the microscope does. Dragging turns it, the wheel zooms, shift-drag pans, and Top, Tilted,
+  Side and Front put the view back. Brightest shows the brightest point along each ray, Surface a lit
+  surface where the signal crosses a level, and Colour by depth paints by the depth of that point
+  so crossings at different depths read apart. Slices *a*–*b* show part of the depth. The slice
+  spacing comes from the file, else from the study (`view.spacing`, saying who stated it), else
+  1 µm, called a guess. Every shown channel is drawn in its colour between the black and white
+  points of its row, which redraw the 3D view as they move. The study's `view` sets the render, Colour
+  by depth and the spacing it opens with. Test: `web-tests/test_viewer3d_page.py`.
   </details>
 
 ## `2` The repo's checks

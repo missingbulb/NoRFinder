@@ -76,6 +76,8 @@ export function viewer(shell) {
   }
   const shown = () => chans.map((c) => c.on);
   const redraw = () => (st.img ? draw() : st.peeked && st.peek.redraw());
+  // who hears each redraw of the channels: the 3D viewer, which draws from the same rows
+  const drawnHeard = [];
   let frame = 0;
   const later = () => { frame = frame || requestAnimationFrame(() => { frame = 0; redraw(); }); };
 
@@ -120,6 +122,7 @@ export function viewer(shell) {
     // for its own crops
     if (!st.plain) st.plain = composite(atFirst((ch) => ch.shown));
     minimap.draw(c);
+    for (const fn of drawnHeard) fn();
   }
   // every channel at its first points, for a picture of the image
   const picture = () => composite(atFirst(() => true));
@@ -349,6 +352,8 @@ export function viewer(shell) {
 
   return {
     use(h) { hooks = h || {}; }, channels: setChannels,
+    // the rows as they stand, [{on, colour, black, white}] in plane order, and a listener for every redraw of them
+    levels: () => chans, onDrawn: (fn) => drawnHeard.push(fn),
     draw, setZoom, fit, focus, toImage, layer, minimapView: () => minimap.place(), preview, clear, shown, picture,
     get overlay() { return $("#overlay"); }, get scroller() { return $("#scroller"); },
   };

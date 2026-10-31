@@ -32,7 +32,7 @@ def test_a_study_names_files_that_exist(path):
     for key in ('id', 'title', 'listed', 'viewer', 'python', 'web', 'files', 'channels'):
         assert key in m, f'{key} missing'
     assert isinstance(m['listed'], bool), 'listed says whether the header offers the study: true or false'
-    assert os.path.exists(os.path.join(WEB, {'image2d': 'viewer2d.js'}[m['viewer']]))
+    assert os.path.exists(os.path.join(WEB, {'image2d': 'viewer2d.js', 'image3d': 'viewer3d.js'}[m['viewer']]))
     assert 'module' in m['web']
     for key in ('module', 'panels', 'style'):
         if key in m['web']:

@@ -13,10 +13,10 @@ Working on a study? Read its own warm-up next: [NoR Finder](../studies/nor/docs/
 | Layer | Where | Swapped by |
 |---|---|---|
 | Shell: loading (computer, Google Drive), the Python runtime, status and memory, notices, theme, side bars, version history, downloads, ground-truth submission | `web/` | — |
-| Viewer: shows the opened image and what a study draws over it, zoom, pan, the minimap, each channel's row and its black and white points (`web/channels.js`) | `web/viewer2d.js` | a study's `viewer` |
+| Viewer: shows the opened image and what a study draws over it, zoom, pan, the minimap, each channel's row and its black and white points (`web/channels.js`) | `web/viewer2d.js`; `web/viewer3d.js` adds a 3D view of a z-stack | a study's `viewer` |
 | Study: its panels, its flow, its Python | `studies/<id>/` | `/<id>` (rauntruth.com/nor) |
 
-A 3D viewer is a second module beside `viewer2d.js` with the same interface; a method shared by
+The 3D viewer (`image3d`) keeps the 2D viewer's interface and adds a 3D view beside it; a method shared by
 several studies (the NoR study's candidates-then-filters flow, say) is lifted out of its study once a
 second study needs it, not before.
 
@@ -25,7 +25,10 @@ second study needs it, not before.
 A study is a folder with a `study.json`:
 
 - `listed` — whether the header's study switcher offers it (`true` or `false`; the fixture is not).
-- `viewer` — the viewer it is shown in (`image2d`).
+- `viewer` — the viewer it is shown in (`image2d`, or `image3d` for z-stacks: the 2D view of the flattened
+  stack plus a 3D one), and optionally `view`, what the 3D view opens with: `render` (`brightest` or
+  `surface`), `depthColour`, `spacing` (µm between slices when the file does not say) and
+  `spacingSource` (who stated it).
 - `python` — `paths` (folders, relative to the study, its modules are imported from), `entry` (the
   module the page imports), `packages` (from Pyodide's own set) and `wheels` (from PyPI, vendored
   by `dev/tools/build/build.py`).
@@ -54,7 +57,7 @@ Its Python entry module offers `ready()` (JSON, what the page needs before any i
 `Session(path)` with `opened()` (JSON meta — `W`, `H`, `um` and `um_y` (the pixel's width and
 height in µm, each null when the file does not say), `info`, and optionally `channels`, what the file
 says of each channel, `[{name, colour}]` — and the viewer's image bytes, one 8-bit plane per channel:
-as many as `channels` lists, else as the study's `channels`, any bytes after them the study's own) and `call(action, args)` (JSON result and optional bytes). The shell forwards
+as many as `channels` lists, else as the study's `channels`; for a stack in `image3d`, `Z` in the meta and every slice of every channel after those planes, channel by channel, and `spacing`, µm between slices or null; any bytes after them the study's own) and `call(action, args)` (JSON result and optional bytes). The shell forwards
 every call and knows none of their meanings; Unload has it let the open image go. `mount(shell)` returns the study's hooks; the list, and
 what `shell` offers, heads `web/shell.js`, and the viewer's own heads `web/viewer2d.js`. The header's
 switcher swaps studies in place, in the same page and the same Python, so a study must be able to

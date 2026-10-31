@@ -17,12 +17,14 @@
 // A listener a study adds outside its own panels takes shell.signal, which ends it when the study leaves.
 "use strict";
 import { viewer as viewer2d, GRID, MINIMAP } from "./viewer2d.js";
+import { viewer3d } from "./viewer3d.js";
 import { pageState } from "./page_state.js";
 import { shape, stackPicture, holds, drawVolume, TURN } from "./stack.js";
 import { PREVIEWS, readPreviews } from "./previews.js";
 
 const $ = (s) => document.querySelector(s);
-const VIEWERS = { image2d: viewer2d };
+// image3d is the 2D viewer of a stack's flattened planes with a 3D view beside it, sharing the one 2D viewer
+const VIEWERS = { image2d: viewer2d, image3d: (shell) => viewer3d(shell, viewers.image2d ||= viewer2d(shell)) };
 const DEFAULT_STUDY = "viewer";
 // the browser keys the shell saves under; their names predate studies, and a user's saved state lives in them
 const THEME = "nor-theme"; // "dark" | "light"; absent = follow the system
@@ -72,7 +74,7 @@ const esc = (t) => String(t).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 const st = { worker: null, H: 0, W: 0, um: null, umY: null, img: null, plain: null, zoom: 2, fileName: "", sha: "", source: null, heap: null, files: 0,
   ready: false, readyInfo: null, queued: null, kept: null, reopening: false, busySince: 0, busyTimer: null, peeked: false, peek: null };
 // What the shell's controls are drawn from (page_state.js): image, the image open ({name, source, W, H, um, umY,
-// info, planes, channels}) or null; opening, the one being read ({name}) or null; and the viewer's own fields.
+// info, planes, channels, Z, spacing}: Z slices, spacing µm between them or null) or null; opening, the one being read ({name}) or null; and the viewer's own fields.
 const page = pageState({ image: null, opening: null });
 // what a study leaving leaves of the state: the shell's own fields
 const SHELL_STATE = new Set(Object.keys(st));
@@ -403,7 +405,7 @@ function handle(m) {
   } else if (m.type === "opened") {
     st.um = m.meta.um; st.umY = m.meta.um_y;
     page.set({ opening: null, image: { name: st.fileName, source: st.source, W: m.meta.W, H: m.meta.H, um: st.um, umY: st.umY,
-      info: m.meta.info, planes: m.images, channels: m.meta.channels || null } });
+      info: m.meta.info, planes: m.images, channels: m.meta.channels || null, Z: m.meta.Z || 1, spacing: m.meta.spacing ?? null } });
     busy(false); statusBar();
     showImage();
     boxDone($("#image-box"), loadedSummary());
@@ -1328,6 +1330,7 @@ async function mountStudy(id) {
   }
   unfoldFirst(); // before the first paint with them, so they do not fold in view
   view = viewers[manifest.viewer] ||= VIEWERS[manifest.viewer](shell);
+  for (const v of new Set(Object.values(viewers))) v.active?.(v === view);
   view.channels(manifest.channels);
   const mod = await import(base + manifest.web.module);
   study = (await mod.mount(shell)) || {};
