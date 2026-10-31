@@ -323,7 +323,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `studies/viewer/tests/test_viewer.py`, `web-tests/test_study_runs.py`.
   </details>
 
-- `1.29` Load's dropdown lists the images opened from Google Drive lately, each one click away.
+- `1.29` Load's dropdown lists the images opened from Google Drive lately, each one click away; the dropdown stays inside the left bar, a long name cut short.
   <details>
 
   Below this computer and Google Drive, Load's dropdown lists the last 10 images opened from Drive,
