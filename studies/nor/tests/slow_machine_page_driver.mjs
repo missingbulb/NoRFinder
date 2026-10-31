@@ -82,7 +82,7 @@ const unfold = (page, box) => page.evaluate((b) => { const e = $(b); if (e.class
   const { ctx, page } = await open(8);
   await check(!(await page.evaluate(() => $("#memory-dlg").open)), "no memory popup on a computer with 8 GB");
   const mem = await page.textContent("#sb-memory");
-  await check(/^RAM \d+ MB$/.test(mem) && parseInt(mem.slice(4)) >= 570, `the status bar shows the memory in use: "${mem}"`);
+  await check(/^\d+ MB$/.test(mem) && parseInt(mem) >= 570, `the status bar shows the memory in use: "${mem}"`);
   await shot(page, "status_memory", "#statusbar");
   await page.setInputFiles("#file", image);
   await page.waitForFunction(() => $("#load-main").classList.contains("working"));

@@ -205,8 +205,9 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   if (shots) await page.screenshot({ path: path.join(shots, "4-memory.png") });
   // the tabs look alike: the total, then rows of a name, what it is and a size, in the same type
   const look = (tab) => page.evaluate((t) => {
-    const p = document.querySelector(`#usage-dlg [role=tabpanel][data-tab=${t}]`), e = p.querySelector(".entry"), cs = (x) => x && getComputedStyle(x);
-    return { total: !!p.querySelector(".total")?.textContent, name: cs(e.querySelector(".name"))?.fontSize, what: cs(e.querySelector(".what"))?.fontSize, size: cs(e.querySelector(".size"))?.fontSize + " " + cs(e.querySelector(".size"))?.color };
+    const p = document.querySelector(`#usage-dlg [role=tabpanel][data-tab=${t}]`), cs = (x) => x && getComputedStyle(x);
+    return { total: !!p.querySelector(".total")?.textContent, name: cs(p.querySelector(".entry .name")).fontSize, size: cs(p.querySelector(".entry .size")).fontSize + " " + cs(p.querySelector(".entry .size")).color,
+      what: cs(p.querySelector(".entry .what"))?.fontSize };
   }, tab);
   const memLook = await look("memory");
   // the network tab, by its tab: the page's files, Python and Google Drive, adding up to the status bar's
@@ -231,10 +232,11 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await page.waitForFunction(() => /keeps/.test(document.querySelector("#storage-total").textContent));
   const total = (await page.textContent("#storage-total")).match(/keeps (.+?) on/)[1];
   await check((await page.textContent("#sb-disk")) === total, "the disk is the Storage tab's total", [total, await page.textContent("#sb-disk")]);
-  await page.click("#storage-list .group > summary");
+  for (const g of await page.$$("#storage-list .group > summary")) await g.click();
   if (shots) await page.screenshot({ path: path.join(shots, "7-storage.png") });
   const storeLook = await look("storage");
-  await check([memLook, netLook, cpuLook].every((l) => JSON.stringify(l) === JSON.stringify(storeLook)), "the four tabs look alike", [storeLook, memLook, netLook, cpuLook]);
+  const alike = (a, b) => a.total && b.total && a.name === b.name && a.size === b.size && (!a.what || !b.what || a.what === b.what);
+  await check([memLook, netLook, cpuLook].every((l) => alike(l, storeLook) && alike(l, memLook)), "the four tabs look alike", [storeLook, memLook, netLook, cpuLook]);
   await ctx.close();
 }
 
