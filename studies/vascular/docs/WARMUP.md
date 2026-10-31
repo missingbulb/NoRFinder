@@ -12,10 +12,9 @@ Detect and quantify cerebral blood vessels in CD31 confocal images: **categorize
   `analysis/stack_view/`) are the earlier spikes.
 
 Migrated from [missingbulb/vascularColoring](https://github.com/missingbulb/vascularColoring)
-on 2026-10-31 ([`MIGRATION.md`](MIGRATION.md) lists every capability and where it stands). Still there, not yet here: the 3D MicroViewer page (its ray-caster, TIFF reader,
-model editing view and item cards), which comes over as the shell's 3D viewer plus this study's
-panels; the figure and PDF files the literature's READMEs show (they link to that repo for now);
-the pack's Go checks.
+on 2026-10-31 ([`MIGRATION.md`](MIGRATION.md) lists every capability and where it stands). Still there, not yet here: the MicroViewer's model view (the vessel
+model over or beside the stack, its edits and the Detected/Missed review) and its item cards; the
+figure and PDF files the literature's READMEs show (they link to that repo, by the owner's choice).
 
 ## Read next
 
@@ -44,7 +43,7 @@ python3 -m pytest tests
 
 ## The page
 
-`py/vascular.py` is what the browser runs: for now a stack is shown flattened in the 2D viewer
-(requirement `4.1`). The draft vessel models the 3D viewer will open are `web/models/`, and the
+`py/vascular.py` is what the browser runs: it hands the shell's 3D viewer the stack, flattened and
+slice by slice (requirement `4.1`). The draft vessel models the model view will open are `web/models/`, and the
 model's format and edits are `web/model.js` (`web/coverage.js` the review's tube), both pinned by
 `tests/test_model_js.py` and, against the Python fit, `tests/test_vessel_model_curve.py`.

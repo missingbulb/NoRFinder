@@ -4,7 +4,7 @@
   "listed": false,
   "stage": "PreGT",
   "phases": [],
-  "viewer": "image2d",
+  "viewer": "image3d",
   "python": {
     "paths": [
       "py/"
@@ -22,13 +22,33 @@
   },
   "files": {
     "accept": ".tif,.tiff",
-    "empty": "Load a confocal z-stack (a multi-page TIFF of CD31, or CD31 and DAPI) to see it flattened, each pixel the brightest over every slice.",
+    "empty": "Load a confocal z-stack (a multi-page TIFF of CD31, or CD31 and DAPI) to turn it in 3D.",
     "drive": "https://drive.google.com/drive/folders/1AH4EVGT-ECPZvhHiHMwUzrMLLtljs1Pd"
   },
-  "channels": [],
+  "channels": [
+    {
+      "name": "CD31",
+      "colour": "#ff0000",
+      "shown": true,
+      "black": 161,
+      "about": "CD31 (PECAM-1), a protein on the surface of the endothelial cells that line every blood vessel, so it outlines the vessel network: capillaries as thin tubes, arterioles and venules wider. The study traces, counts and measures what it marks. Its first black point is the view the owner approved on their stacks. Shown red, or in depth colours in 3D."
+    },
+    {
+      "name": "DAPI",
+      "colour": "#0000ff",
+      "shown": false,
+      "about": "DAPI, a dye that binds DNA and marks cell nuclei. It plays no part in tracing vessels; it shows where cells lie, and helps tell a vessel from a bright nucleus beside it. Hidden at first. Shown blue."
+    }
+  ],
   "progress": {
     "install": "Installing numpy…",
     "load": "Loading the stack reader…",
-    "open": "Reading the stack and flattening it…"
+    "open": "Reading the stack…"
+  },
+  "view": {
+    "render": "brightest",
+    "depthColour": true,
+    "spacing": 1.0,
+    "spacingSource": "the owner (2026-10-29)"
   }
 }

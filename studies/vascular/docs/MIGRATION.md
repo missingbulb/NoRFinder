@@ -15,11 +15,11 @@ Every capability of [missingbulb/vascularColoring](https://github.com/missingbul
 | Literature: 10 digests, METHODS-SYNTHESIS, BIOLOGY-INVARIANTS, figure READMEs, `crop_panels.py`, `_tools/`, Rust's macros | `docs/literature/` | moved |
 | Literature binaries: PDFs (~36 MB), figures and panels (~88 MB) | linked at vascularColoring | open (D5) |
 | Vessel-model/2 format and edits (`model.js`), review tube (`coverage.js`), the four v5 draft models | `web/` | moved, tested |
-| 3D viewer: WebGL2 ray-caster, Brightest/Surface, colour by depth, slab, slice spacing, look-from, Flattened and Depth-profile views (`viewer.js`, `stack.js`) | — | open (D1): becomes the shell's `viewer3d.js` |
-| Stack reader in the browser (`tiff.js`: ImageJ/OME, LZW/Deflate/PackBits) | — | open (D1) |
+| 3D viewer: WebGL2 ray-caster, Brightest/Surface, colour by depth, slab, slice spacing, look-from, Flattened and Depth-profile views (`viewer.js`, `stack.js`) | `web/viewer3d.js` (shell) | moved: every shown channel in its row's colour and points; Flattened is the 2D view; the single-slice picture and Depth profile not yet |
+| Stack reader in the browser (`tiff.js`: ImageJ/OME, LZW/Deflate/PackBits) | `py/vascular.py` (tifffile) | replaced: decoded in Python (D1) |
 | Model over or beside the stack, editing in 3D, Detected/Missed review, draw a missed vessel, lasso damaged areas (`modelview.js`) | — | open (D2) |
 | Item cards for junctions and vessels (`items.js`) | — | open (D3) |
-| Download corrected model | — | open (D4): the shell's ground-truth submission |
+| Download corrected model | — | open (D4): the shell's submission now takes any study's document; the button comes with the model view |
 | Page shell: load from computer/Drive, drop, busy screen, notices, theme, resizable bars, foldable boxes, version check (`shell.js`, `drive.js`, `build.mjs`) | `web/` | exceeded |
 | Drive default folder from `sources.json` | `study.json` `files.drive` | moved, as a shell feature for every study |
 | GitHub Pages deploy, `site.config`, root redirect | Cloudflare release | exceeded; retiring the old site is open (D9) |
@@ -29,7 +29,7 @@ Every capability of [missingbulb/vascularColoring](https://github.com/missingbul
 | Skill: image-algorithm-development | nor-finder's | exceeded (nor-finder's is a superset) |
 | Skill: algorithm-ideation | nor-finder | moved, for every study |
 | Eight Go checks (calibration, metric fields, overlay colour, render dirs, paper index) | `vascular-study` | four moved, scoped to the study; panel-scale-calibration waits for panels in git; render-dir and paper-index checks dropped |
-| Python tests; model-edit and coverage Node tests | `tests/` | moved; the TIFF-reader test moves with `tiff.js` (D1) |
+| Python tests; model-edit and coverage Node tests | `tests/` | moved; the TIFF-reader test went with `tiff.js` |
 
 ## Decisions (owner, 2026-10-31)
 
