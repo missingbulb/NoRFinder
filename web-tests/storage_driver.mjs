@@ -248,6 +248,17 @@ try {
   await pick(3, DRIVE[1].id);
   for (let t = 0; t < 50 && downloads[DRIVE[1].id] < 2; t++) await page.waitForTimeout(100);
   check(downloads[DRIVE[1].id] === 2, "a recent image not kept is downloaded again");
+  // each study lists only the images opened in it
+  const inStudy = async (id) => {
+    await page.goto(origin + "/web/index.html?study=" + id);
+    // the steps are drawn once the study has mounted, as the recents are
+    await page.waitForFunction(() => document.querySelector("#sb-steps .crumb"));
+    return page.evaluate(() => ({ hidden: $("#recent").hidden, n: document.querySelectorAll("#load-menu .recent").length }));
+  };
+  const other = await inStudy("viewer");
+  check(other.hidden && other.n === 0, `another study lists none of the images opened in this one: ${JSON.stringify(other)}`);
+  const back = await inStudy("nor");
+  check(!back.hidden && back.n === 3, `back in the study, its own are listed again: ${JSON.stringify(back)}`);
 } catch (e) {
   failed = true; console.error("FAILED: " + e.message);
 }

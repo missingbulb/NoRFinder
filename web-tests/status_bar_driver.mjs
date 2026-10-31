@@ -287,11 +287,21 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   const still = await page.evaluate(() => {
     const cs = (sel, pseudo) => getComputedStyle(document.querySelector(sel), pseudo);
     const b = document.createElement("button"); b.className = "shine"; document.body.append(b);
-    const out = { shine: getComputedStyle(b, "::after").animationName, gt: cs("#sb-cpu svg").transitionDuration, spin: cs(".spin").animationName };
+    const out = { shine: getComputedStyle(b, "::after").animationName, gt: cs("#sb-cpu svg").transitionDuration, spin: cs(".spin").animationName,
+      sweep: getComputedStyle(b, "::after").display, halo: getComputedStyle(b).boxShadow };
     b.className = "working"; b.disabled = true; out.working = getComputedStyle(b, "::after").animationName; b.remove();
     return out;
   });
   await check(still.shine === "none" && still.gt === "0s", "nothing shines or fades", still);
+  await check(still.sweep === "none" && still.halo === "none", "a button that would shine looks plain: no light frozen on it, no halo", still);
+  {
+    const again = await ctx.newPage();
+    await again.goto(page.url());
+    await again.waitForFunction(() => document.querySelector("#title").textContent);
+    const kept = await again.evaluate(() => ({ box: document.querySelector("#motion").checked, motion: document.documentElement.dataset.motion }));
+    await check(!kept.box && kept.motion === "off", "the next visit opens with the animations still off", kept);
+    await again.close();
+  }
   await check(still.spin === "spin" && still.working === "spin", "but a spinner still turns", still);
   await page.waitForFunction(() => !document.querySelector("#sb-net").classList.contains("spike"), null, { timeout: 6000 });
   const net0 = await page.evaluate(() => { const s = window.seen["sb-net"]; s.spiked = false; return s.rolled; });

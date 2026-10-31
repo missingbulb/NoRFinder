@@ -43,7 +43,7 @@ const THUMB_NAMES = "nor-drive-thumb-names"; // {Drive id: file name}: the image
 const HOLDS = "nor-drive-holds"; // {Drive id: what the file holds, "3D · 8 slices" or "" when it cannot tell}, oldest first
 const TIPS = "nor-tips-closed"; // [tip id]: the tips the user closed, never shown again
 const THROTTLE = "nor-drive-throttled-until"; // when the wait after Google throttled the site's downloads ends, in ms
-const RECENT = "nor-drive-recent"; // [{id, name, path}], newest first: images opened from Drive, path their folders under the link
+const RECENT = "nor-drive-recent"; // [{id, name, path, study}], newest first: images opened from Drive, path their folders under the link, study the one it was opened in
 // Cache Storage, + Drive id: an image downloaded from Drive, its file name (URI-encoded) and when it was saved
 // in the headers
 const IMAGES = "nor-images-v1", IMAGE_NAME = "x-nor-name", IMAGE_AT = "x-nor-saved-at";
@@ -66,14 +66,10 @@ const LOCAL_GT = "Ground truth cannot be sent from local files, only from Google
 const STUDY_REQUEST = "new-study.yml";
 // signing in (1.50): these settings follow the user to every device, in their own Google Drive; the rest stay with this one
 const signIn = account({
-  keys: [THEME, TIPS, SEEN_VERSION, MEMORY_TIP, SOURCE, DRIVE_LINK, DRIVE_LINKS, THUMBS, RECENT],
+  keys: [THEME, TIPS, SEEN_VERSION, MEMORY_TIP, SOURCE, DRIVE_LINK, DRIVE_LINKS, THUMBS, RECENT, MOTION],
   menu: $("#user-menu"),
   clientId: ((window.NOR_CONFIG && window.NOR_CONFIG.google) || {}).clientId || "",
-  applied: () => {
-    let t = null;
-    try { t = localStorage.getItem(THEME); } catch { /* no storage */ }
-    if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
-  },
+  applied: () => reapply(),
 });
 
 function readJSON(key, fallback = {}) {
@@ -201,8 +197,12 @@ function showNumber(item, text, spike) {
 // ---------- animations: on unless the user turned them off in the CPU tab, or asks the system for reduced motion ----------
 // Off, the stylesheet stops every animation and transition but the spinners'; motion the page starts itself asks still()
 const motion = $("#motion");
-motion.checked = readJSON(MOTION, true) !== false;
-const showMotion = () => { document.documentElement.dataset.motion = motion.checked ? "on" : "off"; };
+const showMotion = () => {
+  let kept = null;
+  try { kept = localStorage.getItem(MOTION); } catch { /* no storage */ }
+  motion.checked = kept !== "false";
+  document.documentElement.dataset.motion = motion.checked ? "on" : "off";
+};
 showMotion();
 motion.onchange = () => { writeJSON(MOTION, motion.checked); showMotion(); };
 function still() { return !motion.checked || matchMedia("(prefers-reduced-motion: reduce)").matches; }
@@ -593,16 +593,19 @@ function closeTip(id) {
 // the dropdown is what the recent-files tip asks the user to open
 $("#load-menu").addEventListener("toggle", () => { if ($("#load-menu").open) closeTip("recent-files"); });
 
-// the images opened from Drive lately, in Load's dropdown; a Drive id names one file wherever it is, so two of
-// one name stay apart. openRecent is the Drive dialog's, which opens the copy kept on this device when there is one.
+// the images opened from Drive lately in the study on show, in Load's dropdown; a Drive id names one file wherever
+// it is, so two of one name stay apart; one kept from before recents had a study belongs to none. openRecent is the Drive dialog's, which opens the copy kept on this device when there is one.
 const RECENT_KEEP = 10;
 let openRecent = () => {};
+const recentHere = (list) => list.filter((r) => r.study === manifest?.id);
 function remember(id, name, path) {
-  writeJSON(RECENT, [{ id, name, path }, ...readJSON(RECENT, []).filter((r) => r.id !== id)].slice(0, RECENT_KEEP));
+  const study = manifest.id, rest = readJSON(RECENT, []).filter((r) => r.study && !(r.id === id && r.study === study));
+  const mine = [{ id, name, path, study }, ...rest.filter((r) => r.study === study)].slice(0, RECENT_KEEP);
+  writeJSON(RECENT, [...mine, ...rest.filter((r) => r.study !== study)]);
   showRecent();
 }
 function showRecent() {
-  const list = readJSON(RECENT, []), box = $("#recent");
+  const list = recentHere(readJSON(RECENT, [])), box = $("#recent");
   box.hidden = !list.length;
   box.replaceChildren(box.firstElementChild, ...list.map((r) => {
     const b = document.createElement("button"), where = ["Google Drive", ...(r.path || [])].join(" / ");
@@ -612,7 +615,6 @@ function showRecent() {
     return b;
   }));
 }
-showRecent();
 
 // once Google throttles the site's downloads the Drive dialog waits WAIT, with a notice and a countdown, and
 // calls Drive for nothing; the end is kept in the browser, so a reload does not cut it short. waitEnded is the
@@ -1045,7 +1047,8 @@ const settings = settingsDialog({
     { key: DRIVE_LINK, label: "Last Google Drive link", kind: "text" },
     { key: DRIVE_LINKS, label: "Last Google Drive link in each study", kind: "map" },
     { key: TIPS, label: "Tips you closed (clear one to see it again)", kind: "set" },
-    { key: RECENT, label: "Recent images from Google Drive (clear one to drop it)", kind: "list", name: (r) => (r.path ? `${r.path}/` : "") + r.name },
+    { key: RECENT, label: "Recent images from Google Drive (clear one to drop it)", kind: "list", name: (r) => (r.study ? `${r.study}: ` : "") + (r.path?.length ? `${r.path.join("/")}/` : "") + r.name },
+    { key: MOTION, label: "Animations", kind: "toggle", on: true, off: false, fallback: true },
     { key: SEEN_VERSION, label: "Version you saw last", kind: "text" },
   ],
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
@@ -1054,12 +1057,15 @@ const settings = settingsDialog({
     signIn.changed(k);
   },
   where: () => (signIn.signedIn() ? "Kept in your Google Drive, so they follow you to every device." : "Kept on this device only. Sign in with Google to keep them with you."),
-  saved: () => {
-    let t = null;
-    try { t = localStorage.getItem(THEME); } catch { /* no storage */ }
-    if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
-  },
+  saved: () => reapply(),
 });
+// the settings that follow the user, drawn again once Drive's or the Settings dialog's have replaced this device's
+function reapply() {
+  let t = null;
+  try { t = localStorage.getItem(THEME); } catch { /* no storage */ }
+  if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+  showMotion(); showRecent();
+}
 $("#open-settings").onclick = () => { $("#user-menu").open = false; settings.open(); };
 $("#storage-reload").onclick = () => location.reload();
 $("#usage-dlg").addEventListener("close", () => { $("#storage-msg").textContent = ""; if ($("#drive-dlg").open) showSaved(); });
@@ -1444,6 +1450,7 @@ async function mountStudy(id) {
   if (!makesTruth() && manifest.groundTruth?.button) $(manifest.groundTruth.button).hidden = true;
   makeSteps();
   foldable();
+  showRecent();
 }
 const viewers = {};
 // The study on show leaves: its panels, stylesheet, drawing, listeners and state go, and its Python's late

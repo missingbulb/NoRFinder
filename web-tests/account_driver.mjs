@@ -158,11 +158,11 @@ try {
     return { title: document.getElementById(d.getAttribute("aria-labelledby"))?.textContent, where: v("#settings-where").textContent,
       theme: v('select[name="nor-theme"]').value, tip: v('input[name="nor-tips-closed"][value="recent-files"]')?.checked,
       thumbs: v('input[name="nor-drive-thumbs"]')?.checked, memory: v('input[name="nor-memory-tip-off"]')?.checked, source: v('select[name="nor-load-source"]')?.value,
-      study: v('input[name="nor-drive-links"][data-study="nor"]')?.value, link: !!v('input[name="nor-drive-link"]'), seen: !!v('input[name="nor-seen-version"]') };
+      study: v('input[name="nor-drive-links"][data-study="nor"]')?.value, motion: v('input[name="nor-motion"]')?.checked, link: !!v('input[name="nor-drive-link"]'), seen: !!v('input[name="nor-seen-version"]') };
   });
   check(listed.title === "Settings" && /Google Drive/.test(listed.where), "Settings opens from the avatar's menu and says they are kept in the user's Google Drive", listed);
   check(listed.theme === "light" && listed.tip === true && listed.thumbs === true && listed.memory === true && listed.source === "local"
-    && listed.study === "https://drive.google.com/drive/folders/acmenor" && listed.link && listed.seen,
+    && listed.study === "https://drive.google.com/drive/folders/acmenor" && listed.motion === true && listed.link && listed.seen,
     "it lists every setting that follows the user, as this device holds it");
   if (shots) await a.page.locator("#settings-dlg").screenshot({ path: path.join(shots, "settings.png") });
   await a.page.selectOption('#settings-dlg select[name="nor-theme"]', "dark");
@@ -182,6 +182,8 @@ try {
   await until(() => file()?.["nor-theme"] === "light");
   // the tip closed again, as the rest of this test expects of the file
   drive.file.body = JSON.stringify({ ...file(), "nor-tips-closed": JSON.stringify(["recent-files"]) });
+  // animations turned off on another device
+  drive.file.body = JSON.stringify({ ...file(), "nor-motion": "false" });
 
   // device B: its own theme and left bar
   const b = await device({ "nor-theme": "dark", "nor-bars-v1": JSON.stringify({ left: 400 }) });
@@ -189,6 +191,8 @@ try {
   await signInVia(b.page);
   check(await until(() => b.page.evaluate(() => document.documentElement.dataset.theme === "light")), "signing in there brings the user's theme at once");
   check(await local(b.page, "nor-tips-closed") === JSON.stringify(["recent-files"]), "and the tips they closed elsewhere");
+  check(await b.page.evaluate(() => document.documentElement.dataset.motion === "off" && !document.querySelector("#motion").checked),
+    "and their animations turned off elsewhere, at once");
   check(await local(b.page, "nor-bars-v1") === JSON.stringify({ left: 400 }), "and leaves this device's left bar alone");
   check(file()["nor-theme"] === "light", "bringing the file's settings does not overwrite the file");
 
