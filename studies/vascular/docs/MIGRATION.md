@@ -61,7 +61,11 @@ Taken on Fable's recommendation unless the owner says otherwise:
   both studies is still undecided.
 - **D8:** ship the v5 drafts first. Extraction in the browser comes only after a measured run.
 
-Still the owner's call: **D9**, what becomes of the vascularColoring repo and its Pages site.
+- **Listing:** the study is listed now (owner, 2026-10-31), with the 3D viewer alone; it stays PreGT until
+  the model view brings Submit Ground Truth.
+- **D9:** decided once the model view lands here. Until then the old site stays the place to correct
+  vessel models. After that: redirect its page to rauntruth.com/vascular, stop its scheduled
+  Claudinite runs, and archive the repo.
 
 Conflicts with existing requirements to resolve on the way:
 
