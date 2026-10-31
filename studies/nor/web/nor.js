@@ -897,8 +897,11 @@ export function mount(shell) {
     steps();
   }
   $("#dl-truth .gt-ico").innerHTML = ["done", "part", "todo"].map((n) => shell.icon(n).replace("<svg ", `<svg class="${n}" `)).join("");
-  $("#dl-truth").onclick = () => shell.submitTruth({ doc: truth(), file: base() + "_ground_truth.json", items: gtState().items, issue: issue(truth()),
-    empty: "Vote on candidates with the thumbs, or right-click the image to add a NoR the finder missed." });
+  $("#dl-truth").onclick = () => {
+    const doc = truth();
+    shell.submitTruth({ doc, count: doc.labels.length, file: base() + "_ground_truth.json", items: gtState().items, issue: issue(doc),
+      empty: "Vote on candidates with the thumbs, or right-click the image to add a NoR the finder missed." });
+  };
 
 
   // ---------- the summary mask: areas lassoed on the image, combined by exclusive or ----------

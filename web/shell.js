@@ -981,11 +981,11 @@ function saveFile(name, text, type) {
 // the shell's icons, by name, as SVG markup: done, part, todo
 const icon = (name) => `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">${$(`#icons .${name}`).innerHTML}</svg>`;
 // The ground-truth dialog: a checklist of what is still open, the file to export, and a new GitHub issue,
-// labelled for the study's intake, to attach it to. gt: {doc, file, items: [{level, ok, text}], empty,
-// issue: {title, body}}; an image from the computer can be exported but not sent.
+// labelled for the study's intake, to attach it to. gt: {doc, count, file, items: [{level, ok, text}], empty,
+// issue: {title, body}}, count how many of its marks the document holds, nothing to send at 0; an image from the computer can be exported but not sent.
 function submitTruth(gt) {
   if (!makesTruth()) return;
-  const local = !st.source || st.source.kind !== "drive", n = gt.doc.labels.length;
+  const local = !st.source || st.source.kind !== "drive", n = gt.count;
   $("#gt-problems").replaceChildren(...gt.items.map((t) => {
     const li = document.createElement("li"); li.className = t.ok ? "ok" : t.level;
     li.innerHTML = icon(t.ok ? "done" : t.level === "error" ? "todo" : "part") + `<span>${esc(t.text)}</span>`;

@@ -9,7 +9,7 @@ export function mount(shell) {
   };
   $("#fx-truth").onclick = () => {
     const name = shell.state.fileName.replace(/\.[^.]*$/, "");
-    shell.submitTruth({ doc: { labels: counted ? [counted] : [] }, file: name + "_gt.json", items: [], issue: { title: "Ground truth: " + name, body: "" },
+    shell.submitTruth({ doc: { labels: counted ? [counted] : [] }, count: counted ? 1 : 0, file: name + "_gt.json", items: [], issue: { title: "Ground truth: " + name, body: "" },
       empty: "Count first." });
   };
   return {
