@@ -354,7 +354,7 @@ export function viewer(shell) {
 
   return {
     use(h) { hooks = h || {}; }, channels: setChannels,
-    draw, setZoom, fit, focus, toImage, layer, minimapView: () => minimap.place(), preview, clear, shown, picture,
+    draw, setZoom, fit, focus, toImage, layer, channelList: () => chans.map(({ name, colour }) => ({ name, colour })), minimapView: () => minimap.place(), preview, clear, shown, picture,
     get overlay() { return $("#overlay"); }, get scroller() { return $("#scroller"); },
   };
 }
