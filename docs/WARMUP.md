@@ -96,7 +96,7 @@ studies/viewer/   the Image Viewer, the page's default: any image, no analysis
 studies/fixture/  the smallest study, for the shell's tests (`/fixture`)
 docs/             this map
 dev/requirements/ the page's one spec: the shell, the repo's checks, each study's page
-dev/tools/build/  the site build, the version history, the logo tracer and the tests' pytest hooks
+dev/tools/build/  the site build, the version history and the tests' pytest hooks
 dev/build/site/   the published tree: the build assembles the shell (at its root) and the studies'
                   published parts here; wrangler.json uploads it to Cloudflare (rauntruth.com)
 ```

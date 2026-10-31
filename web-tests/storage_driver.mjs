@@ -9,6 +9,7 @@
 // Optional SHOTS: a directory for screenshots.
 // Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/storage_driver.mjs [SHOTS]
+import { noisePng } from "./png_fixture.mjs";
 import { repoFile } from "./repo_file.mjs";
 import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
@@ -28,7 +29,7 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const ROOT = "acmefolder0000000001";
 // two images in a folder; their bytes need only be a real picture, which the worker never reads
-const PNG = fs.readFileSync(path.join(repo, "dev", "tools", "build", "logo_source.png"));
+const PNG = noisePng();
 const DRIVE = [{ id: "acmeimage00000000001", name: "acme one.png" }, { id: "acmeimage00000000002", name: "acme two.png" }];
 // a subfolder, listed after the images, holding an image named as the first one
 const SUB = { id: "acmefolder0000000002", name: "sub" }, TWIN = { id: "acmeimage00000000003", name: "acme one.png" };
