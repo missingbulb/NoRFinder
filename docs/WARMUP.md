@@ -13,7 +13,7 @@ Working on a study? Read its own warm-up next: [NoR Finder](../studies/nor/docs/
 | Layer | Where | Swapped by |
 |---|---|---|
 | Shell: loading (computer, Google Drive), the Python runtime, status and memory, notices, theme, side bars, version history, downloads, ground-truth submission | `web/` | — |
-| Viewer: shows the opened image and what a study draws over it, zoom, pan, the thumbnail, channel toggles | `web/viewer2d.js` | a study's `viewer` |
+| Viewer: shows the opened image and what a study draws over it, zoom, pan, the minimap, each channel's row and its black and white points (`web/channels.js`) | `web/viewer2d.js` | a study's `viewer` |
 | Study: its panels, its flow, its Python | `studies/<id>/` | `/<id>` (rauntruth.com/nor) |
 
 A 3D viewer is a second module beside `viewer2d.js` with the same interface; a method shared by
@@ -35,18 +35,24 @@ A study is a folder with a `study.json`:
   with the steps: its `data-opens` names the step (`load`, one of its `phases`, `submit`) after which it
   opens, or `user` for one only its title opens, and `data-folds` the step after which it folds again.
 - `files` — what Load accepts, and the text the empty view shows.
-- `channels` — the image's channels as the viewer shows them: key (`r`, `g`, `b`), name, title,
-  whether shown at first.
+- `channels` — what the study says of the image's channels, by place: `name`, `colour` (`#rrggbb`),
+  `shown` at first, and optionally `about` (the (?)'s description, at most 100 words) and `black` and
+  `white` (its first points, 0–255). A channel it leaves out takes what the file says, then its place
+  (red, green, blue…); the Image Viewer names none.
 - `progress` — the status line while Python installs (`install`), loads the study (`load`), opens an
   image (`open`) and runs each action (by its name).
 - `groundTruth.label` — optional, the GitHub issue label its submissions carry.
 - `driveThumbs` — optional, the folder of ready-made thumbnails for the Google Drive dialog.
 
+The shell's controls draw from one page state (`web/page_state.js`: the image open, the minimap) and
+change only it, never each other; a study reaches it as `shell.page`.
+
 Its Python entry module offers `ready()` (JSON, what the page needs before any image) and
 `Session(path)` with `opened()` (JSON meta — `W`, `H`, `um` and `um_y` (the pixel's width and
-height in µm, each null when the file does not say), `info` — and the viewer's image bytes,
-one plane per channel) and `call(action, args)` (JSON result and optional bytes). The shell forwards
-every call and knows none of their meanings. `mount(shell)` returns the study's hooks; the list, and
+height in µm, each null when the file does not say), `info`, and optionally `channels`, what the file
+says of each channel, `[{name, colour}]` — and the viewer's image bytes, one 8-bit plane per channel:
+as many as `channels` lists, else as the study's `channels`, any bytes after them the study's own) and `call(action, args)` (JSON result and optional bytes). The shell forwards
+every call and knows none of their meanings; Unload has it let the open image go. `mount(shell)` returns the study's hooks; the list, and
 what `shell` offers, heads `web/shell.js`, and the viewer's own heads `web/viewer2d.js`. The header's
 switcher swaps studies in place, in the same page and the same Python, so a study must be able to
 leave: every listener it adds outside its own panels takes `shell.signal` (requirement 1.30).

@@ -1066,7 +1066,7 @@ export function mount(shell) {
     $("#view").dataset.view = v;
     $("#switch").textContent = v === "image" ? "Item View" : "Image View";
     if (v === "items" && st.meta) { renderList(); revealSelected("center"); }
-    if (v === "image") shell.viewer.thumbView();
+    if (v === "image") shell.viewer.minimapView();
   }
   $("#switch").onclick = () => showView(st.view === "image" ? "items" : "image");
   showView("image");

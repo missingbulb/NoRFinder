@@ -136,7 +136,7 @@ if (!asked[files[0].id].whole) await done(1, "Open did not load the image");
 console.log("select, double click and Open all work");
 
 // an opened image keeps its thumbnail in the browser, shown next time without a download
-await page.evaluate((id) => { st.W = 8; st.H = 8; const v = (k) => Uint8Array.from({ length: 64 }, (_, i) => (i * k) % 256); st.img = { r: v(3), g: v(5), b: v(7) }; shellForTests.saveThumb(id); }, stranger.id);
+await page.evaluate((id) => { st.W = 8; st.H = 8; const v = (k) => Uint8Array.from({ length: 64 }, (_, i) => (i * k) % 256); st.img = { planes: Uint8Array.from([...v(3), ...v(5), ...v(7)]), n: 3 }; shellForTests.saveThumb(id); }, stranger.id);
 
 // "Download thumbnails" is on at first, and once unticked it is remembered and nothing is downloaded
 const fresh = await ctx.newPage();

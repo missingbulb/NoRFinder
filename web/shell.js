@@ -1,7 +1,7 @@
 // The page's shell: it runs the study the address names (/<id>, the default at the bare address), and knows
 // none of them; the header's switcher offers the ones the build lists and swaps one in without a reload. What it gives a study, as shell in mount(shell): loading images (from the
 // computer or Google Drive), Python (the study's own, run in worker.js), the viewer the study asks for,
-// the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own), notices, the user's saved settings, downloads and ground-truth
+// the page's state its controls are drawn from (page: get, set, watch(key, fn, {signal})), the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own), notices, the user's saved settings, downloads and ground-truth
 // submission; and around them the theme, side bars, foldable boxes, the memory popup and the version
 // history.
 //
@@ -16,7 +16,8 @@
 // study's own large holdings for the memory popup, [{name, what, size}]; and the viewer's hooks (viewer2d.js).
 // A listener a study adds outside its own panels takes shell.signal, which ends it when the study leaves.
 "use strict";
-import { viewer as viewer2d, GRID } from "./viewer2d.js";
+import { viewer as viewer2d, GRID, MINIMAP } from "./viewer2d.js";
+import { pageState } from "./page_state.js";
 import { shape, stackPicture, holds, drawVolume, TURN } from "./stack.js";
 import { PREVIEWS, readPreviews } from "./previews.js";
 
@@ -68,7 +69,10 @@ const esc = (t) => String(t).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 
 // the page's state: the shell's fields below, and whatever the study keeps beside them
 const st = { worker: null, H: 0, W: 0, um: null, umY: null, img: null, plain: null, zoom: 2, fileName: "", sha: "", source: null, heap: null, files: 0,
-  ready: false, queued: null, kept: null, reopening: false, busySince: 0, busyTimer: null, peeked: false, peek: null };
+  ready: false, readyInfo: null, queued: null, kept: null, reopening: false, busySince: 0, busyTimer: null, peeked: false, peek: null };
+// What the shell's controls are drawn from (page_state.js): image, the image open ({name, source, W, H, um, umY,
+// info, planes, channels}) or null; opening, the one being read ({name}) or null; and the viewer's own fields.
+const page = pageState({ image: null, opening: null });
 // what a study leaving leaves of the state: the shell's own fields
 const SHELL_STATE = new Set(Object.keys(st));
 let study = {}, view = null, manifest = null, base = "";
@@ -271,17 +275,18 @@ function handle(m) {
     study.error?.();
     status("Error: " + m.text, true); if (OUT_OF_MEMORY.test(m.text)) memoryTip(true);
   } else if (m.type === "ready") {
-    st.ready = true; $("#spin").classList.remove("on");
+    st.ready = true; st.readyInfo = m.info; $("#spin").classList.remove("on");
     study.ready?.(m.info); statusBar(); diskBar();
     $("#ram-gc").disabled = false;
     status("Ready. Load an image.");
     if (st.queued) { const q = st.queued; st.queued = null; send(q.name, q.bytes); }
     else if (st.kept) reopen();
   } else if (m.type === "opened") {
-    st.um = m.meta.um; st.umY = m.meta.um_y; fileInfo(m.meta.info);
-    view.show(m.meta.W, m.meta.H, m.images);
+    st.um = m.meta.um; st.umY = m.meta.um_y;
+    page.set({ opening: null, image: { name: st.fileName, source: st.source, W: m.meta.W, H: m.meta.H, um: st.um, umY: st.umY,
+      info: m.meta.info, planes: m.images, channels: m.meta.channels || null } });
     busy(false); statusBar();
-    showImage(); loadDone();
+    showImage();
     step("load", true, `${st.fileName}, ${m.meta.W} × ${m.meta.H} px, from ${st.source?.kind === "drive" ? "Google Drive" : "this computer"}`);
     status("Image loaded."); // the study's opened hook says what comes next, if anything
     study.opened?.(m.meta);
@@ -304,6 +309,15 @@ function fileInfo(rows) {
   $("#file-box").classList.toggle("empty", !rows);
   if (!rows) $("#file-box").open = false;
 }
+// the Image box draws from the page's state: the image's name and what its file says, Load filled until an
+// image is open and plain after, and Unload once one is
+function imageBox() {
+  const opening = page.get("opening"), im = page.get("image"), name = opening?.name || im?.name;
+  $("#file-name").textContent = name || "No image loaded"; $("#file-name").classList.toggle("dim", !name);
+  fileInfo(opening ? null : im?.info || null);
+  $("#load").classList.toggle("done", !!im); $("#unload").hidden = !im;
+}
+page.watch("image", imageBox); page.watch("opening", imageBox);
 
 // source: where the image came from, {kind: "local"} or {kind: "drive", id}
 async function openBytes(name, bytes, source) {
@@ -315,7 +329,7 @@ async function openBytes(name, bytes, source) {
   st.kept = { name, source, bytes: bytes.slice(0) };
   study.opening?.(name, source);
   st.sha = await sha256(bytes);
-  $("#file-name").textContent = name; $("#file-name").classList.remove("dim"); fileInfo(null); statusBar();
+  page.set({ opening: { name } }); statusBar();
   view.clear();
   if (st.ready) return send(name, bytes);
   // Python is still loading: the image opens the moment it is ready
@@ -341,8 +355,6 @@ function peek() {
   st.peeked = false;
   return study.painter ? view.preview(study.painter) : () => false;
 }
-// Load is filled until an image is open, then steps back to a plain button
-const loadDone = () => $("#load").classList.toggle("done", !!st.img);
 $("#file").onchange = async (e) => {
   const f = e.target.files[0]; if (!f) return;
   const bytes = await f.arrayBuffer(); peek()(bytes, bytes.byteLength);
@@ -357,6 +369,20 @@ function load(src) {
   if (!throttled() && NorDrive.parse($("#drive-link").value)?.kind === "folder") $("#drive-go").click();
 }
 $("#load-main").onclick = () => load(readJSON(SOURCE, "local"));
+// Unload: no image open, the study starting over as one that has just come in, and Python letting the image go
+$("#unload").onclick = () => {
+  if (!st.img || $("#load-main").classList.contains("working")) return;
+  swapping = swapping.then(async () => {
+    const { ready, readyInfo } = st, id = manifest.id;
+    Object.assign(st, { kept: null, queued: null, fileName: "", source: null, sha: "", um: null, umY: null });
+    if (ready) st.worker.postMessage({ type: "close" });
+    page.set({ image: null, opening: null });
+    leaveStudy();
+    try { await mountStudy(id); } catch (e) { return status("Error: " + (e.message || e), true); }
+    if (ready) { st.ready = true; $("#ram-gc").disabled = false; study.ready?.(readyInfo); }
+    statusBar(); status(ready ? "Ready. Load an image." : "Loading Python in the background…");
+  });
+};
 document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => load(b.dataset.src)));
 
 // a tip: a bubble below its anchor, pointing at it, until the user closes it, after which it never shows again
@@ -614,10 +640,7 @@ function driveDialog() {
 // shrunk and brightened as the studies' ready-made ones are, and only the latest few hundred are kept
 function saveThumb(id, name) {
   const SIDE = 96, GAIN = 2;
-  const full = document.createElement("canvas"); full.width = st.W; full.height = st.H;
-  const im = full.getContext("2d").createImageData(st.W, st.H), d = im.data, { r, g, b } = st.img;
-  for (let i = 0, j = 0; i < st.W * st.H; i++, j += 4) { d[j] = r ? r[i] : 0; d[j + 1] = g ? g[i] : 0; d[j + 2] = b ? b[i] : 0; d[j + 3] = 255; }
-  full.getContext("2d").putImageData(im, 0, 0);
+  const full = view.picture();
   const k = SIDE / Math.max(st.W, st.H), c = document.createElement("canvas");
   c.width = Math.round(st.W * k); c.height = Math.round(st.H * k);
   const x = c.getContext("2d"); x.imageSmoothingQuality = "high"; x.drawImage(full, 0, 0, c.width, c.height);
@@ -721,7 +744,7 @@ async function showSaved() {
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
   [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link",
-  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [GRID]: "Grid colour and spacing",
+  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through",
 };
 const GROUPS = [
   ["code", "Code kept for the next visit", "Python and its packages, so the page starts without downloading them again."],
@@ -921,10 +944,10 @@ function foldable() {
     const flip = () => h.closest(".box").classList.toggle("folded");
     h.onclick = flip; h.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } };
   });
-  unfoldFirst(); loadDone();
+  unfoldFirst();
 }
 // the image back in view, from whichever of the study's views is on show
-function showImage() { study.showImage?.(); view.thumbView(); }
+function showImage() { study.showImage?.(); view.minimapView(); }
 
 // ---------- side bars and theme ----------
 // the side bars take the width they are dragged to; a double click puts one back
@@ -941,12 +964,12 @@ function showImage() { study.showImage?.(); view.thumbView(); }
       g.setPointerCapture(e.pointerId); document.body.classList.add("resizing");
       const move = (ev) => {
         const r = lay.getBoundingClientRect(), w = side === "left" ? ev.clientX - r.left : r.right - ev.clientX;
-        saved[side] = w; set(side, w); view?.thumbView();
+        saved[side] = w; set(side, w); view?.minimapView();
       };
       const up = () => { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); document.body.classList.remove("resizing"); writeJSON(BARS, saved); };
       g.addEventListener("pointermove", move); g.addEventListener("pointerup", up);
     });
-    g.addEventListener("dblclick", () => { delete saved[side]; set(side, null); writeJSON(BARS, saved); view?.thumbView(); });
+    g.addEventListener("dblclick", () => { delete saved[side]; set(side, null); writeJSON(BARS, saved); view?.minimapView(); });
   }
 }
 
@@ -1177,11 +1200,11 @@ function leaveStudy() {
 }
 
 const shell = {
-  $, state: st, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, showImage,
+  $, state: st, page, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, showImage,
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; },
 };
 // for the page's tests, which drive it from outside
-window.st = st; window.$ = $; window.shellForTests = { saveThumb };
+window.st = st; window.$ = $; window.shellForTests = { saveThumb, page };
 
 // an old address, ?study=<id> or index.html, becomes the study's own
 if (new URLSearchParams(location.search).has("study") || location.pathname.endsWith("/index.html")) history.replaceState(null, "", addressOf(studyOf(location)) + location.hash);

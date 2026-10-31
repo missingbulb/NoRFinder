@@ -43,22 +43,22 @@
   },
   "channels": [
     {
-      "key": "r",
       "name": "Nav1.6",
-      "title": "Nav1.6: sodium channels at the node (shown red)",
-      "shown": true
+      "colour": "#ff0000",
+      "shown": true,
+      "about": "Nav1.6, the voltage-gated sodium channel that clusters in the node of Ranvier itself, the short gap in the myelin where the action potential is regenerated. In a healthy node it is one tight, bright spot, a micrometre or two long, sitting exactly between the two Caspr paranodes. A Nav1.6 spot with no Caspr on either side is usually not a node; a node whose Nav1.6 has spread or split is a sign of injury. Shown red."
     },
     {
-      "key": "g",
       "name": "Caspr",
-      "title": "Caspr: the paranodes either side of the node (shown green)",
-      "shown": true
+      "colour": "#00ff00",
+      "shown": true,
+      "about": "Caspr (contactin-associated protein), which marks the paranodes: the junctions where the myelin's loops attach to the axon on either side of the node. A node appears as two Caspr bars with the Nav1.6 spot in the gap between them, and the finders look for that Caspr–Nav1.6–Caspr triplet. The length between the two bars is the node's length. A lone Caspr bar is a heminode or a node seen at an angle. Shown green."
     },
     {
-      "key": "b",
       "name": "DAPI",
-      "title": "DAPI: cell nuclei (shown blue)",
-      "shown": false
+      "colour": "#0000ff",
+      "shown": false,
+      "about": "DAPI, a dye that binds DNA and marks cell nuclei. It plays no part in finding nodes; it shows where cells lie, so a bright Nav1.6 or Caspr spot over a nucleus can be told from a node on an axon, and it helps judge how dense the tissue is. Hidden at first, as it hides the fine node signals beneath it. Shown blue."
     }
   ],
   "progress": {

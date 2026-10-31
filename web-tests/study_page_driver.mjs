@@ -113,6 +113,7 @@ try {
     file: document.querySelector("#file-name").textContent, fixture: !!document.querySelector("#fx-box, #fx-result"),
     css: [...document.querySelectorAll("link[rel=stylesheet]")].map((l) => l.getAttribute("href")).filter((h) => h.includes("studies/")),
     channels: [...document.querySelectorAll("#channels label")].map((l) => l.textContent).join(),
+    noHelp: !document.querySelector("#channels .help"),
   }));
   await page.click("#study-menu summary");
   const focused = await page.waitForFunction(() => document.activeElement?.type === "search").then(() => true, () => false);
@@ -128,7 +129,8 @@ try {
   if (inViewer.path !== "/web/") problems.push("the Image Viewer's address is not the bare one: " + inViewer.path);
   if (inViewer.image !== "80,60" || inViewer.file !== "squares.png") problems.push("the open image did not stay open: " + inViewer.image + " " + inViewer.file);
   if (inViewer.fixture || inViewer.css.length) problems.push("the fixture left its panels or stylesheet behind: " + inViewer.css);
-  if (inViewer.channels !== "Red,Green,Blue") problems.push("the channels are still the old study's: " + inViewer.channels);
+  // the Image Viewer names no channels: the fixture's one plane, named by nothing, is grey
+  if (inViewer.channels !== "Grey" || !inViewer.noHelp) problems.push("the channels are still the old study's: " + inViewer.channels);
   // the last row asks GitHub for a new study, on the form the repo carries
   const request = await page.evaluate(() => {
     const a = document.querySelector("#study-request"), rows = [...document.querySelectorAll("#study-menu .pop a")];

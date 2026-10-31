@@ -1,7 +1,7 @@
 // The page's requests, answered by the study's Python (its study.json entry, imported as `study`) inside a
 // Pyodide runtime that has already imported it and json. The worker runs it; the tests drive it outside a
 // browser. It knows none of the study's actions: it opens a file with study.Session and forwards every call.
-// Messages in: open {name, bytes}, call {action, args, echo}, memory.
+// Messages in: open {name, bytes}, call {action, args, echo}, close (the image open is let go), memory.
 // Messages out: progress {text}, opened {meta, images}, result {action, meta, bytes, echo},
 // memory {used, heap, objects}.
 // progress: the status line for each step while it runs, {open, <action>: text}, from study.json.
@@ -34,6 +34,8 @@ export function bridge(py, post, progress = {}) {
       py.globals.set("args", JSON.stringify(m.args ?? {}));
       const { meta, bytes } = pair(py.runPython("S.call(action, json.loads(args))"));
       post({ type: "result", action: m.action, meta, bytes, echo: m.echo, secs: (performance.now() - t0) / 1000 }, bytes ? [bytes.buffer] : []);
+    } else if (m.type === "close") {
+      py.runPython("globals().pop('S', None)");
     } else if (m.type === "memory") {
       // what Python holds after a collection: bytes in use by malloc, and live objects the collector
       // tracks; heap is the WebAssembly memory, which only ever grows to the high-water mark

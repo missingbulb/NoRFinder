@@ -1,5 +1,5 @@
 // Drives the page (web/) in headless Chromium on the fixture study, with a stand-in worker answering from
-// ANSWERS (tests/test_study_runs.py), and checks that the left bar's boxes fold with the steps: Load Image
+// ANSWERS (tests/test_study_runs.py), and checks that the left bar's boxes fold with the steps: the Image box
 // open until an image opens; each study box opening after its step and folding again after the one it names;
 // a box only its title opens staying folded; a title opening and closing its box; another image starting
 // over. Exits 1 on a failed check, 2 when it cannot run.
@@ -67,18 +67,18 @@ const loadImage = async () => {
   await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded." && !document.querySelector("#fx-count").disabled);
 };
 
-await boxes(["Load Image open", "Threshold folded", "Counted folded", "Notes folded"], "before an image only Load Image is open");
+await boxes(["Image open", "Threshold folded", "Counted folded", "Notes folded"], "before an image only Image is open");
 await loadImage();
-await boxes(["Load Image folded", "Threshold open", "Counted folded", "Notes folded"], "an image open: Load Image folds, the box opening on it opens");
-await title("Load Image");
-await boxes(["Load Image open", "Threshold open", "Counted folded", "Notes folded"], "its title opens a folded box");
-await title("Load Image");
-await boxes(["Load Image folded", "Threshold open", "Counted folded", "Notes folded"], "and folds it again");
+await boxes(["Image folded", "Threshold open", "Counted folded", "Notes folded"], "an image open: Image folds, the box opening on it opens");
+await title("Image");
+await boxes(["Image open", "Threshold open", "Counted folded", "Notes folded"], "its title opens a folded box");
+await title("Image");
+await boxes(["Image folded", "Threshold open", "Counted folded", "Notes folded"], "and folds it again");
 await page.click("#fx-count");
 await page.waitForFunction(() => /pixels/.test(document.querySelector("#fx-result").textContent));
-await boxes(["Load Image folded", "Threshold folded", "Counted open", "Notes folded"], "Count done: Threshold folds, Counted opens, Notes waits for its title");
+await boxes(["Image folded", "Threshold folded", "Counted open", "Notes folded"], "Count done: Threshold folds, Counted opens, Notes waits for its title");
 await title("Notes");
-await boxes(["Load Image folded", "Threshold folded", "Counted open", "Notes open"], "Notes opens from its title");
+await boxes(["Image folded", "Threshold folded", "Counted open", "Notes open"], "Notes opens from its title");
 await loadImage();
-await boxes(["Load Image folded", "Threshold open", "Counted folded", "Notes folded"], "another image starts over");
+await boxes(["Image folded", "Threshold open", "Counted folded", "Notes folded"], "another image starts over");
 await done(0);

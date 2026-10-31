@@ -39,7 +39,15 @@ def test_a_study_names_files_that_exist(path):
             assert os.path.isfile(os.path.join(base, m['web'][key])), m['web'][key]
     py = m['python']
     assert any(os.path.isfile(os.path.join(base, d, py['entry'] + '.py')) for d in py['paths']), py
-    assert {c['key'] for c in m['channels']} <= {'r', 'g', 'b', 'w'}
+    for c in m['channels']:
+        # what the viewer can draw (web/channels.js): a name, a #rrggbb colour, shown or not, a description short
+        # enough for its (?), and black and white points on the 8-bit planes
+        assert isinstance(c.get('name'), str) and c['name'], c
+        assert re.fullmatch(r'#[0-9a-fA-F]{6}', c.get('colour', '')), c
+        assert isinstance(c.get('shown'), bool), c
+        assert len(c.get('about', '').split()) <= 100, f"{c['name']}: about runs past 100 words"
+        black, white = c.get('black', 0), c.get('white', 255)
+        assert 0 <= black < white <= 255, c
     if 'driveThumbs' in m:
         assert os.path.isdir(os.path.join(base, m['driveThumbs']))
 

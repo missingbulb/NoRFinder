@@ -153,13 +153,18 @@ test fold under it. A study's research requirements, which no user sees, stay in
   (`web-tests/test_version_history.py`, `web-tests/test_version_history_page.py`).
   </details>
 
-- `1.15` Load opens an image from this computer or Google Drive, and shines until one is open.
+- `1.15` Load opens an image from this computer or Google Drive, and shines until one is open; Unload beside it closes it.
   <details>
 
-  The left bar's Load Image box holds the image: Load, with a dropdown for where from (this computer or Google
-  Drive), filled and glowing until an image is open and a plain button with a blue border after.
-  Each place in the dropdown has a small icon: a computer for this computer, Drive's logo for
-  Google Drive. Test: `web-tests/test_storage_page.py`.
+  The left bar's Image box holds the image: its name and what the file says (`1.16`), its channels
+  (`1.44`), and at its foot Load, with a dropdown for where from (this computer or Google Drive),
+  filled and glowing until an image is open and a plain button with a blue border after. Load sits at
+  the foot, not in the box's title, so the title keeps its place whether the box is folded or open.
+  Each place in the dropdown has a small icon: a computer for this computer, Drive's logo for Google
+  Drive. Once an image is open, Unload stands beside Load and clears the page back to before any image:
+  no image, no minimap, the steps starting over at Load image, the boxes folded as at first, and the
+  study starting over too, its panels as they were before any image; Python lets the image go. Test:
+  `web-tests/test_storage_page.py`, `web-tests/test_image_box_page.py`.
   </details>
 
 - `1.16` The image's name unfolds what the file says about the image, and nothing it does not say.
@@ -170,14 +175,21 @@ test fold under it. A study's research requirements, which no user sees, stay in
   so), and the software that saved it (`studies/nor/tests/test_file_info.py`).
   </details>
 
-- `1.17` A thumbnail of the part in view, a checkbox per colour layer, and drag, zoom and step by mouse.
+- `1.17` A minimap hovers over the image, showing the part in view; drag, zoom and step by mouse.
   <details>
 
-  Below the image's name a thumbnail shows the part in view, and moves the view when clicked; a
-  checkbox per colour layer, in that layer's colour when on, blue off at first. Dragging moves the
-  image; scrolling up and down zooms around the pointer in small steps; scrolling sideways steps to
-  the study's previous or next item (for NoR, the candidate). The main area's toolbar holds the zoom
-  at its right.
+  Set by the owner on 2026-10-31. The minimap (a small picture of the whole image, the part in view
+  outlined; never called a thumbnail, which is a file's picture in a list) hovers over the image's top
+  right corner, headed "Minimap", a little see-through until the pointer is over it, then opaque; a
+  click or a drag on it moves the view there. An X in its header collapses it to the header, and the
+  same spot then shows Expand, which opens it again, so a second click undoes the first; collapsed, a
+  second X beside it hides the header too. A Minimap button in the toolbar, beside the Grid, shows it
+  again or hides it, pressed while it shows; hovering over the button opens a popup choosing how
+  see-through it is at rest. Whether it shows and its opacity are kept as the user's settings for the
+  next visit. Dragging moves the image; scrolling up and down zooms around the pointer in small steps;
+  scrolling sideways steps to the study's previous or next item (for NoR, the candidate). The main
+  area's toolbar holds the zoom at its right, and its tools wait for an image. Test:
+  `web-tests/test_image_box_page.py`.
   </details>
 
 - `1.18` Google Drive: paste a shared link, no sign-in; browse folders; open on Open, double click or Enter.
@@ -293,9 +305,10 @@ test fold under it. A study's research requirements, which no user sees, stay in
   <details>
 
   A study with no panels and no actions (`studies/viewer/`): it loads any TIFF or PNG and shows each
-  channel in the colour the file displays it in (an ImageJ LUT, mixed colours included), else red,
-  green and blue in order, a grey image grey; the image box says what the file states, its scale
-  only when the file gives one in µm. A side bar it leaves empty gives its room to the image, and it
+  channel, up to 8, under the name the file gives it (an OME channel name, an ImageJ label, never
+  ImageJ's own made-up "c:1/3 - …") and in the colour the file displays it in (an ImageJ LUT, mixed
+  colours included), leaving what the file does not say to `1.44`; the image box says what the file
+  states, its scale only when the file gives one in µm. A side bar it leaves empty gives its room to the image, and it
   has no ground truth, so a local image earns no notice about sending one. Test:
   `studies/viewer/tests/test_viewer.py`, `web-tests/test_study_runs.py`.
   </details>
@@ -448,8 +461,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
   <details>
 
   Set by the owner on 2026-10-30. Every box in the left bar folds under its title, and clicking the
-  title opens or closes it. The first is the shell's Load Image (Load, the image's details, its
-  thumbnail and colour layers): open until an image opens, then folded. Each of a study's boxes
+  title opens or closes it. The first is the shell's Image box (the image's details, its channels, Load
+  and Unload): open until an image opens, then folded. Each of a study's boxes
   names the step (`1.33`) after which it opens, or that only its title opens it, and may name the
   step after which it folds again. When a step is done by the user (an image opening, or the
   step's button pressed, never a dial set back to the last run's) its boxes open and the boxes it
@@ -474,6 +487,33 @@ test fold under it. A study's research requirements, which no user sees, stay in
   read as without the file (`1.18`, `1.36`). The download waits, like every other, while Drive
   throttles the site (`1.37`). Manage storage lists each folder's file among the thumbnails. Test:
   `web-tests/test_drive_previews_page.py`.
+  </details>
+
+- `1.43` The shell's controls are drawn from one page state, and change only it.
+  <details>
+
+  Set by the owner on 2026-10-31. Which image is open (or being read), and the minimap's mode and
+  opacity, live in one page state in the shell (`web/page_state.js`). Loading and unloading an image
+  change that state, and every control showing a part of it (Load and Unload, the image's name and
+  details, the channels, the view, the minimap and its toolbar button) redraws from it; no control
+  reaches into another to change it. The steps (`1.33`) are a state of the same kind. Test:
+  `web-tests/test_image_box_page.py`.
+  </details>
+
+- `1.44` Each channel has its row: shown or not, its black and white points, its name and its description.
+  <details>
+
+  Set by the owner on 2026-10-31. One row per channel of the image: a checkbox in the channel's
+  colour that shows or hides it, its name, a (?) whose hover shows the study's description of it (at
+  most 100 words), the file's own name for it when the study names it otherwise, and one slider
+  holding two points: at or below the black point the channel is dark, at or above the white point
+  its full colour, in proportion between; the black point stays below the white. A double click on
+  the slider puts the points back. The channels are added together, each in its colour. A channel's
+  name, colour, description, whether it shows at first and its first points come from the study's
+  `channels` for the channel at that place, else from what the file says (the study's Python), else
+  from its place: red, green and blue, then more colours, a lone channel grey; a channel the file
+  colours but does not name is named for its colour. The rows start over with every image. Test:
+  `web-tests/test_image_box_page.py`, `studies/viewer/tests/test_viewer.py`.
   </details>
 
 ## `2` The repo's checks
@@ -503,10 +543,10 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   finding again.
   </details>
 
-- `3.2` The left bar holds Load Image, Preprocessing, Algorithms, Post-processing and Summary; the right bar the selected candidate and the ground truth.
+- `3.2` The left bar holds Image, Preprocessing, Algorithms, Post-processing and Summary; the right bar the selected candidate and the ground truth.
   <details>
 
-  Changed by the owner on 2026-10-30. Below Load Image (`1.41`) the left bar holds Preprocessing,
+  Changed by the owner on 2026-10-30. Below the Image box (`1.41`) the left bar holds Preprocessing,
   which has no steps yet and says so, open from the image's opening until Find Candidates; Algorithms,
   the candidates finder (its "how it works" and its settings fold away), open over the same span;
   Post-processing, the filters, which only its title opens; and Summary, which opens once the

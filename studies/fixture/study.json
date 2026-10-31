@@ -30,9 +30,9 @@
   },
   "channels": [
     {
-      "key": "w",
       "name": "Grey",
-      "title": "The image itself",
+      "colour": "#ffffff",
+      "about": "The image itself: one grey channel, its pixels the brightness the Count compares with the threshold.",
       "shown": true
     }
   ],
