@@ -56,16 +56,27 @@ export function stackPicture(buf, s, SIDE = 96) {
       if (q > out[k]) out[k] = q;
     }
   }
-  // depth in sampled pixels: the slice spacing over the pixel size when the file gives both, else one pixel a
-  // slice; a thin stack is drawn at least a quarter as deep as it is wide, so its depth still shows
-  const zs = s.spacing && s.um ? s.spacing / s.um : 1, D = Math.max(2, Math.round(Math.max((Z * zs) / step, n / 4)));
-  const a = (30 * Math.PI) / 180, b = (20 * Math.PI) / 180, ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b);
+  // depth in sampled pixels: the slice spacing over the pixel size when the file gives both, else one pixel a slice
+  const zs = s.spacing && s.um ? s.spacing / s.um : 1;
+  return drawVolume({ vol, Z, n, m, depth: (Z * zs) / step }, TURN, SIDE).toDataURL("image/jpeg", 0.85);
+}
+
+// the turn a still picture of a stack is drawn at, in radians about the vertical axis
+export const TURN = (30 * Math.PI) / 180;
+
+// a canvas, at most SIDE pixels a side, of a volume: per channel, Z planes of n × m (vol[c], plane-major), its
+// depth in the planes' pixels, and optionally each channel's colour as [r, g, b] of 0 or 1. Turned by `turn` about the vertical axis and tilted a little, each channel drawn
+// brightest-first along each line of sight in its own colour, with the volume's edges faint. A thin volume is
+// drawn at least a quarter as deep as it is wide, so its depth still shows; the canvas is the same size at every
+// turn.
+export function drawVolume({ vol, Z, n, m, depth, colours }, turn, SIDE = 96) {
+  const C = vol.length, D = Math.max(2, Math.round(Math.max(depth, n / 4)));
+  const b = (20 * Math.PI) / 180, ca = Math.cos(turn), sa = Math.sin(turn), cb = Math.cos(b), sb = Math.sin(b);
   const at = (x, y, d) => { const x1 = x * ca + d * sa, z1 = -x * sa + d * ca; return [x1, y * cb - z1 * sb]; };
-  const corners = [0, n].flatMap((x) => [0, m].flatMap((y) => [0, D].map((d) => at(x - n / 2, y - m / 2, d - D / 2))));
-  const x0 = Math.min(...corners.map((p) => p[0])), y0 = Math.min(...corners.map((p) => p[1]));
-  const k = SIDE / Math.max(Math.max(...corners.map((p) => p[0])) - x0, Math.max(...corners.map((p) => p[1])) - y0);
-  const OW = Math.max(1, Math.ceil((Math.max(...corners.map((p) => p[0])) - x0) * k)), OH = Math.max(1, Math.ceil((Math.max(...corners.map((p) => p[1])) - y0) * k));
-  const COLOURS = C === 1 ? [[1, 1, 1]] : C === 2 ? [[0, 1, 0], [1, 0, 1]] : [[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 1, 1], [1, 0, 1], [1, 1, 0]];
+  // bounds that hold at every turn: the footprint's diagonal across, and the tilt's reach down
+  const R = Math.hypot(n, D) / 2, W = 2 * R, H = m * cb + 2 * R * sb, x0 = -R, y0 = -(m / 2) * cb - R * sb;
+  const k = SIDE / Math.max(W, H), OW = Math.max(1, Math.ceil(W * k)), OH = Math.max(1, Math.ceil(H * k));
+  const COLOURS = colours || (C === 1 ? [[1, 1, 1]] : C === 2 ? [[0, 1, 0], [1, 0, 1]] : [[1, 0, 0], [0, 1, 0], [0, 0, 1], [0, 1, 1], [1, 0, 1], [1, 1, 0]]);
   const img = new Float32Array(OW * OH * 3);
   for (let c = 0; c < C; c++) {
     const src = vol[c], sorted = Float32Array.from(src).sort();
@@ -86,7 +97,6 @@ export function stackPicture(buf, s, SIDE = 96) {
   const g = cv.getContext("2d"), data = g.createImageData(OW, OH);
   for (let i = 0; i < OW * OH; i++) { for (let j = 0; j < 3; j++) data.data[4 * i + j] = Math.min(255, 255 * img[3 * i + j]); data.data[4 * i + 3] = 255; }
   g.putImageData(data, 0, 0);
-  // the stack's edges, faintly, so its depth reads
   g.strokeStyle = "rgba(255,255,255,0.35)"; g.lineWidth = 1; g.beginPath();
   const p = (x, y, d) => { const [u, w] = at(x - n / 2, y - m / 2, d - D / 2); return [(u - x0) * k, (w - y0) * k]; };
   for (const [e1, e2] of [[[0, 0, 0], [n, 0, 0]], [[0, m, 0], [n, m, 0]], [[0, 0, D], [n, 0, D]], [[0, m, D], [n, m, D]], [[0, 0, 0], [0, m, 0]], [[n, 0, 0], [n, m, 0]],
@@ -94,7 +104,7 @@ export function stackPicture(buf, s, SIDE = 96) {
     g.moveTo(...p(...e1)); g.lineTo(...p(...e2));
   }
   g.stroke();
-  return cv.toDataURL("image/jpeg", 0.85);
+  return cv;
 }
 
 // what a row in the Drive dialog says the file holds: "3D · 8 slices", "3D · 30 slices · 2 channels",
