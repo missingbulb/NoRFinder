@@ -12,3 +12,11 @@
 - **Rejected:** carrying vascular-coloring's four rules that research-project already holds
   (never-self-validate, progress-visual-assertion, trustworthy-numbers, per-paper-rollup) and its
   eight Go checks, pending the owner's call.
+
+## 2026-10-31 · reworded · four checks ported; panel-scale-calibration left behind
+- **Source:** the owner's call (D7, #620).
+- **Reason:** panel-scale-calibration holds every VESSEL_*.png panel to a scale, and the owner chose
+  to keep no binaries in git (D5), so here it would scan nothing.
+- **Actor:** @missingbulb (owner).
+- **Model:** claude-opus-5-5
+- **Retire when:** the panels come into the repo; port it then.
