@@ -129,19 +129,18 @@ export function viewer(shell) {
 
   // ---------- the minimap ----------
   // Over the image's corner, a little see-through until the pointer is on it: the whole image, the part in view
-  // outlined, and a click or a drag moves the view there. Its header's X collapses it to the header, and the
-  // same spot then expands it again; collapsed, a second X hides it, and the toolbar's button brings it back.
+  // outlined, and a click or a drag moves the view there. Its header's ^ collapses it to the header, and the
+  // same spot, now v, expands it again; the X across the title hides it, and the toolbar's button brings it back.
   // Its mode and opacity are the page's state, kept for the next visit.
   const minimap = (() => {
     const box = $("#minimap"), cv = $("#minimap-canvas"), btn = $("#minimap-btn"), fold = $("#minimap-fold"), range = $("#minimap-opacity");
-    const saved = { mode: "open", opacity: 0.75, ...shell.readJSON(MINIMAP) };
+    const saved = { mode: "open", opacity: 1, ...shell.readJSON(MINIMAP) };
     page.set({ minimap: ["open", "collapsed", "hidden"].includes(saved.mode) ? saved.mode : "open", minimapOpacity: saved.opacity });
     const keep = () => shell.writeJSON(MINIMAP, { mode: page.get("minimap"), opacity: page.get("minimapOpacity") });
     function place() {
       const mode = page.get("minimap");
       box.hidden = !st.img || mode === "hidden"; box.classList.toggle("collapsed", mode === "collapsed");
       btn.setAttribute("aria-pressed", mode !== "hidden");
-      $("#minimap-hide").hidden = mode !== "collapsed";
       fold.ariaLabel = fold.title = mode === "open" ? "Collapse the minimap" : "Expand the minimap";
       view();
     }

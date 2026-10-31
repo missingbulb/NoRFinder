@@ -111,7 +111,7 @@ const unfold = (page, box) => page.evaluate((b) => { const e = $(b); if (e.class
   await free(page, "#switch");
   await check(await page.evaluate(() => st.view === "items"), "Item View switches views and lets go");
   const playing = () => page.evaluate(() => $("#far").getAnimations({ subtree: true })[0].playState);
-  await page.evaluate(() => $("#right").insertAdjacentHTML("beforeend", '<div style="height:3000px"></div><div id="far" class="shine">x</div>'));
+  await page.evaluate(() => $("#left").insertAdjacentHTML("beforeend", '<div style="height:3000px"></div><div id="far" class="shine">x</div>'));
   await page.waitForFunction(() => $("#far").classList.contains("offscreen"));
   await check(await playing() === "paused", "an animation scrolled out of view is paused");
   await page.evaluate(() => $("#far").scrollIntoView());

@@ -98,14 +98,11 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 #recent .where { color: var(--dim); font-size: 11px; }
 
 /* three columns of panels; the gutters between them are the handles that resize the side bars */
-#layout { --lw: 320px; --rw: 400px; display: grid; grid-template-columns: var(--lw) var(--pad) minmax(0, 1fr) var(--pad) var(--rw);
+#layout { --lw: 320px; display: grid; grid-template-columns: var(--lw) var(--pad) minmax(0, 1fr) var(--pad);
   grid-template-rows: minmax(0, 1fr); min-height: 0; }
 /* the scrollbar's room is kept even when nothing scrolls, so folding a box never changes the bar's width */
 aside { overflow-y: auto; scrollbar-gutter: stable; scrollbar-width: thin; padding: var(--pad); }
 #left { padding-right: 0; }
-#layout.no-right { grid-template-columns: var(--lw) var(--pad) minmax(0, 1fr) var(--pad) 0; }
-#layout.no-right #right, #layout.no-right #gutter-right { visibility: hidden; padding: 0; }
-#right { padding-left: 0; }
 .gutter { cursor: col-resize; position: relative; }
 .gutter::after { content: ""; position: absolute; top: 50%; left: 50%; width: 3px; height: 36px; margin: -18px 0 0 -1.5px; border-radius: 2px; background: var(--line); opacity: 0; transition: opacity .15s; }
 .gutter:hover::after, body.resizing .gutter::after { opacity: 1; }
@@ -245,20 +242,21 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #minimap-pop label { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 #minimap-pop .hint { margin: 0; }
 #minimap-opacity-text { min-width: 3em; text-align: right; font-variant-numeric: tabular-nums; }
-/* the minimap: hovering over the image's top right corner, a little see-through until the pointer is on it */
+/* the minimap: hovering over the image's top left corner, framed in white to stand apart from any image;
+   opaque at first, and under the pointer whatever opacity the user chose for it at rest */
 #image-view { position: relative; }
-#minimap { position: absolute; top: 12px; right: 24px; z-index: 5; width: 200px; border: 1px solid var(--line); border-radius: var(--r-ctl);
-  background: var(--panel); box-shadow: 0 4px 14px #0006; overflow: hidden; opacity: var(--mm-opacity, .75); transition: opacity .15s; }
+#minimap { position: absolute; top: 12px; left: 12px; z-index: 5; width: 200px; border: 2px solid #fff; border-radius: var(--r-ctl);
+  background: var(--panel); box-shadow: 0 4px 14px #0008; overflow: hidden; opacity: var(--mm-opacity, 1); transition: opacity .15s; }
 #minimap:hover, #minimap:focus-within { opacity: 1; }
 #minimap[hidden] { display: none; }
-#minimap .mm-head { display: flex; align-items: center; gap: 2px; height: 24px; padding: 0 2px 0 8px; font-size: 12px; font-weight: 600; color: var(--dim); user-select: none; }
+#minimap .mm-head { display: flex; align-items: center; gap: 4px; height: 24px; padding: 0 2px; font-size: 12px; font-weight: 600; color: var(--dim); user-select: none; }
 #minimap .mm-title { flex: 1; }
 .mm-btn { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: var(--r-chip); background: none; color: var(--dim); }
 .mm-btn[hidden] { display: none; }
 .mm-btn:not(:disabled):hover { background: var(--bg); color: var(--text); }
 .mm-btn svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-#minimap-fold .expand, #minimap.collapsed #minimap-fold .x { display: none; }
-#minimap.collapsed #minimap-fold .expand { display: block; }
+#minimap-fold .down, #minimap.collapsed #minimap-fold .up { display: none; }
+#minimap.collapsed #minimap-fold .down { display: block; }
 #minimap.collapsed .mm-body { display: none; }
 #minimap .mm-body { position: relative; line-height: 0; background: #000; cursor: crosshair; }
 #minimap-canvas { width: 100%; height: auto; }
@@ -334,7 +332,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #tip { position: fixed; pointer-events: none; background: var(--tipbg); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 8px 10px; font-size: 12px; max-width: 320px; z-index: 10; white-space: pre-line; }
 
 @media (max-width: 1300px) {
-  #layout { --lw: 260px; --rw: 300px; }
+  #layout { --lw: 260px; }
 }
 
 .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: var(--pink); border-radius: 50%; animation: spin .8s linear infinite; visibility: hidden; }

@@ -77,17 +77,14 @@
       <div id="list"></div>
     </div>
 </template>
-<template data-slot="right">
-    <section class="box" id="selected-box">
-      <div class="sec-head"><h2>Selected</h2>
-        <div class="stepper"><button id="sel-prev" title="Previous candidate" aria-label="Previous candidate" disabled>‹</button><button id="sel-next" title="Next candidate" aria-label="Next candidate" disabled>›</button></div>
-      </div>
-      <div id="selected" class="dim">Click a candidate on the image.</div>
+<template data-slot="over-image">
+    <section id="selected-box" hidden aria-label="The selected candidate">
+      <div class="stepper" id="sel-step"><button id="sel-prev" title="Previous candidate" aria-label="Previous candidate" disabled>‹</button><button id="sel-next" title="Next candidate" aria-label="Next candidate" disabled>›</button></div>
+      <div id="selected"></div>
     </section>
-    <section class="box" id="downloads">
-      <h2>Ground Truth</h2>
-      <button id="dl-truth" disabled><span class="gt-ico" aria-hidden="true"></span>Submit new GT to GitHub</button>
-    </section>
+</template>
+<template data-slot="toolbar-end">
+    <button id="dl-truth" disabled><span class="gt-ico" aria-hidden="true"></span>Submit Ground Truth</button>
 </template>
 <template data-slot="body">
 <div id="ctx" class="pop" role="menu" hidden><button class="item" role="menuitem" type="button"></button></div>

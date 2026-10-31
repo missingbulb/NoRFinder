@@ -94,11 +94,11 @@ await shot("image_box", "#image-box");
 
 const mm = await box("#minimap"), sc = await box("#scroller");
 await check(mm && mm.x >= sc.x && mm.y >= sc.y && mm.x + mm.w <= sc.x + sc.w && mm.y + mm.h <= sc.y + sc.h, "the minimap hovers over the image", [mm, sc]);
+await check(mm.x - sc.x < 40 && mm.y - sc.y < 40, "in its top left corner", [mm, sc]);
+await check(await page.$eval("#minimap", (m) => { const s = getComputedStyle(m); return s.borderTopStyle === "solid" && parseFloat(s.borderTopWidth) >= 2 && s.borderTopColor === "rgb(255, 255, 255)"; }), "framed by a solid white border");
 await check(await page.textContent("#minimap .mm-head") === "Minimap" || (await page.textContent("#minimap .mm-title")) === "Minimap", "its header says Minimap");
 await page.mouse.move(5, 5); await page.waitForTimeout(250);
-const rest = await opacity();
-await page.hover("#minimap canvas"); await page.waitForTimeout(250);
-await check(rest < 1 && rest > 0 && (await opacity()) === 1, "a little see-through at rest, opaque under the pointer", [rest, await opacity()]);
+await check((await opacity()) === 1, "opaque at first", await opacity());
 await shot("minimap", "#view");
 
 // the view moves where the minimap is clicked
@@ -109,17 +109,19 @@ await page.mouse.click(c.x + c.w * 0.9, c.y + c.h * 0.9);
 const after = await page.evaluate(() => [document.querySelector("#scroller").scrollLeft, document.querySelector("#scroller").scrollTop]);
 await check(after[0] > before[0] && after[1] > before[1], "a click on the minimap moves the view there", [before, after]);
 
-// collapse, and the same spot expands again; collapsed, a second button hides it
-const fold = await box("#minimap-fold");
+// ^ collapses it and the same spot, now v, expands it again; an X across the title hides it
+const glyph = () => page.$eval("#minimap-fold", (b) => [...b.querySelectorAll("svg")].find((g) => getComputedStyle(g).display !== "none").dataset.glyph);
+const fold = await box("#minimap-fold"), hide = await box("#minimap-hide"), name = await box("#minimap .mm-title");
+await check(await glyph() === "up" && /collapse/i.test(await page.getAttribute("#minimap-fold", "aria-label")), "open, its button is ^, to collapse it");
+await check(hide && (hide.x + hide.w <= name.x) !== (fold.x + fold.w <= name.x), "its X, which hides it, is across the title from ^", [hide, name, fold]);
 await page.mouse.click(fold.x + fold.w / 2, fold.y + fold.h / 2);
-await check(!(await visible("#minimap canvas")) && (await visible("#minimap .mm-head")), "its X collapses it to its header");
+await check(!(await visible("#minimap canvas")) && (await visible("#minimap .mm-head")), "^ collapses it to its header");
 const expand = await box("#minimap-fold");
-await check(expand.x === fold.x && expand.y === fold.y && /expand/i.test(await page.getAttribute("#minimap-fold", "aria-label")), "the X becomes Expand, in the same spot", [fold, expand]);
-await check(await visible("#minimap-hide"), "and a second X shows, to hide the header too");
+await check(expand.x === fold.x && expand.y === fold.y && (await glyph()) === "down" && /expand/i.test(await page.getAttribute("#minimap-fold", "aria-label")), "^ becomes v, Expand, in the same spot", [fold, expand]);
 await shot("minimap_collapsed", "#minimap");
 await page.mouse.click(fold.x + fold.w / 2, fold.y + fold.h / 2);
-await check((await visible("#minimap canvas")) && !(await visible("#minimap-hide")), "a second click on the same spot undoes the first");
-await page.click("#minimap-fold"); await page.click("#minimap-hide");
+await check(await visible("#minimap canvas"), "a second click on the same spot undoes the first");
+await page.click("#minimap-hide");
 await check(!(await visible("#minimap")) && (await page.getAttribute("#minimap-btn", "aria-pressed")) === "false", "hidden: the minimap goes, and its toolbar button is up");
 await page.click("#minimap-btn");
 await check((await visible("#minimap canvas")) && (await page.getAttribute("#minimap-btn", "aria-pressed")) === "true", "the toolbar button opens it again");
@@ -130,12 +132,19 @@ await page.waitForFunction(() => document.querySelector("#minimap-pop").matches(
 await page.$eval("#minimap-opacity", (i) => { i.value = 40; i.dispatchEvent(new Event("input", { bubbles: true })); });
 await page.mouse.move(5, 5); await page.waitForTimeout(500);
 await check(Math.abs((await opacity()) - 0.4) < 0.01, "its popup sets the minimap's opacity at rest", await opacity());
+await page.hover("#minimap canvas"); await page.waitForTimeout(250);
+await check((await opacity()) === 1, "and it is opaque under the pointer", await opacity());
+await page.mouse.move(5, 5);
 await check(await page.evaluate(() => JSON.parse(localStorage.getItem("nor-minimap")).opacity) === 0.4, "and the opacity is kept for the next visit");
 
 // the minimap and its button follow the page's state, whoever changes it
 await page.evaluate(() => shellForTests.page.set({ minimap: "hidden" }));
 await check(!(await visible("#minimap")) && (await page.getAttribute("#minimap-btn", "aria-pressed")) === "false", "the page's state hides the minimap and raises its button");
 await page.evaluate(() => shellForTests.page.set({ minimap: "open" }));
+
+// ---- the study's ground-truth button at the toolbar's right end; no right bar ----
+const bar = await page.evaluate(() => { const t = [...document.querySelector(".toolbar").children].filter((e) => e.offsetParent && e.tagName !== "SLOT-HERE"); return { last: t[t.length - 1]?.id, right: !!document.querySelector("#right, #gutter-right") }; });
+await check(bar.last === "fx-truth" && !bar.right, "the ground-truth button ends the toolbar, and there is no right bar", bar);
 
 // ---- the channel: the study's name and description, its black and white points, its checkbox ----
 const rows = () => page.$$eval("#channels .channel", (rs) => rs.map((r) => ({ name: r.querySelector("label").textContent, colour: r.dataset.colour,

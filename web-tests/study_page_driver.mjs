@@ -81,12 +81,12 @@ try {
   await page.evaluate(() => { window.stayed = true; });
   const menu = () => page.evaluate(() => ({
     items: [...document.querySelectorAll("#study-list a")].map((a) => a.textContent + (a.getAttribute("aria-current") ? "*" : "")),
-    noRight: document.querySelector("#layout").classList.contains("no-right"),
+    right: !!document.querySelector("#right, #gutter-right"),
   }));
   const fixtureMenu = await menu();
   console.log(JSON.stringify(fixtureMenu));
   if (fixtureMenu.items.join() !== "Image Viewer,NoR Finder") problems.push("the switcher does not list the listed studies, or ticks one not on show: " + fixtureMenu.items);
-  if (fixtureMenu.noRight) problems.push("a study with a right-hand panel lost its right bar");
+  if (fixtureMenu.right) problems.push("the page still has a right bar");
   await page.setInputFiles("#file", image);
   await page.waitForFunction(() => !document.querySelector("#fx-count").disabled);
   const base = await page.evaluate(() => [document.querySelector("#base").width, document.querySelector("#base").height]);
@@ -142,7 +142,6 @@ try {
   else if (!form || !fs.existsSync(path.join(repo, ".github", "ISSUE_TEMPLATE", form))) problems.push("Submit New Study Request opens a form the repo does not carry: " + request.href);
   const viewerMenu = await menu();
   if (viewerMenu.items.join() !== "Image Viewer*,NoR Finder") problems.push("the switcher does not tick the study on show: " + viewerMenu.items);
-  if (!viewerMenu.noRight) problems.push("a study with nothing on the right still keeps the right bar");
 
   // into NoR Finder by a click, then back: NoR's panels and listeners leave with it
   await page.click("#study-menu summary");

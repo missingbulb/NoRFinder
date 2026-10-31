@@ -115,10 +115,12 @@ test fold under it. A study's research requirements, which no user sees, stay in
   GitHub's: 64 px tall, 16 px at the sides, a 32 px logo. Test: `web-tests/test_study_runs.py`.
   </details>
 
-- `1.11` Side bars drag wider or narrower (remembered; a double click restores one).
+- `1.11` The left bar drags wider or narrower (remembered; a double click restores it); there is no right bar.
   <details>
 
-  Folding or unfolding a box never changes a bar's width.
+  Folding or unfolding a box never changes the bar's width. Set by the owner on 2026-10-31: the page
+  has no right bar; what a study once put there goes over the image (its `over-image` slot) or at
+  the toolbar's right end (its `toolbar-end` slot).
   </details>
 
 - `1.12` No image is ever drawn out of its proportions.
@@ -183,12 +185,12 @@ test fold under it. A study's research requirements, which no user sees, stay in
 
   Set by the owner on 2026-10-31. The minimap (a small picture of the whole image, the part in view
   outlined; never called a thumbnail, which is a file's picture in a list) hovers over the image's top
-  right corner, headed "Minimap", a little see-through until the pointer is over it, then opaque; a
-  click or a drag on it moves the view there. An X in its header collapses it to the header, and the
-  same spot then shows Expand, which opens it again, so a second click undoes the first; collapsed, a
-  second X beside it hides the header too. A Minimap button in the toolbar, beside the Grid, shows it
+  left corner, headed "Minimap" and framed by a solid white border that sets it apart from any image;
+  a click or a drag on it moves the view there. A ^ at one end of its header collapses it to the
+  header, and the same spot then shows v, which opens it again, so a second click undoes the first;
+  an X at the header's other end hides it. A Minimap button in the toolbar, beside the Grid, shows it
   again or hides it, pressed while it shows; hovering over the button opens a popup choosing how
-  see-through it is at rest. Whether it shows and its opacity are kept as the user's settings for the
+  see-through it is at rest, opaque at first and always opaque under the pointer. Whether it shows and its opacity are kept as the user's settings for the
   next visit. Dragging moves the image; scrolling up and down zooms around the pointer in small steps;
   scrolling sideways steps to the study's previous or next item (for NoR, the candidate). The main
   area's toolbar holds the zoom at its right, and its tools wait for an image. Test:
@@ -579,7 +581,7 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   finding again.
   </details>
 
-- `3.2` The left bar holds Image, Preprocessing, Algorithms, Post-processing and Summary; the right bar the selected candidate and the ground truth.
+- `3.2` The left bar holds Image, Preprocessing, Algorithms, Post-processing and Summary; the selected candidate is over the image, Submit Ground Truth in the toolbar.
   <details>
 
   Changed by the owner on 2026-10-30. Below the Image box (`1.41`) the left bar holds Preprocessing,
@@ -587,7 +589,9 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   the candidates finder (its "how it works" and its settings fold away), open over the same span;
   Post-processing, the filters, which only its title opens; and Summary, which opens once the
   candidates are found. The main area has a toolbar over two views: the image and the
-  individual items, with the button that switches between them at its left.
+  individual items, with the button that switches between them at its left and Submit Ground Truth
+  (`3.13`) at its right end, in both views. Changed by the owner on 2026-10-31: there is no right bar
+  (`1.11`).
   </details>
 
 - `3.3` The Show menu switches each kind of marking on and off (remembered).
@@ -600,8 +604,10 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 - `3.4` One selected candidate, decided on its card with a thumbs up or down.
   <details>
 
-  Clicking a candidate selects it (a thin white ring) and clicking it again deselects it. Its card
-  sits in the right bar with buttons to the previous and next candidate by number. Decisions are
+  Clicking a candidate selects it (a thin white ring) and clicking it again deselects it. Changed by
+  the owner on 2026-10-31: its card alone, with no title, hovers over the image's top right corner
+  while a candidate is selected, and only then; buttons to the previous and next candidate by number
+  hover over the bottom of its crop. Decisions are
   made on cards, not by clicking the image, with a thumbs up (a real NoR, with the lengths shown)
   and a thumbs down (not one) at the card's top, each saying what it does in its tooltip; pressing
   the chosen one again undoes it and lets the filters decide. Pressing either also selects that
@@ -665,7 +671,7 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   and shows or hides the NoR borders, the measurement bars, the lengths on the crop, the lengths on
   the card and the measurement adjusters. The finalists open with a 4 px padding and everything on
   but the lengths on the card; the rejected open with a 10 px padding and only the NoR borders on.
-  The selected card in the right bar uses the options of the view that lists it.
+  The selected card over the image uses the options of the view that lists it.
   </details>
 
 - `3.11` A card's adjusters correct its lengths and width by dragging.
@@ -687,13 +693,14 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   shaded, and the mean, SD and n written above it, with no separate table.
   </details>
 
-- `3.13` Download Candidates and Download Summary give CSVs; Submit new GT to GitHub gives the ground truth.
+- `3.13` Download Candidates and Download Summary give CSVs; Submit Ground Truth gives the ground truth.
   <details>
 
   Moved by the owner on 2026-10-07. At the bottom of the Summary box, side by side across its width,
   Download Candidates gives the candidates as CSV (every candidate, its status, its reasons, the
-  user's decision and its measurements) and Download Summary the summary as CSV. In the box below
-  it, titled Ground Truth, the Submit new GT to GitHub button gives the ground truth
+  user's decision and its measurements) and Download Summary the summary as CSV. Submit Ground
+  Truth, at the right end of the main area's toolbar (moved there by the owner on 2026-10-31, and
+  shown only in a GT or PostGT study, `1.32`), gives the ground truth
   (`norfinder-ground-truth/2`): a JSON file naming the image (its SHA-256, and where it was loaded
   from: its Google Drive id and link, or "local") that lists only what the user marked: every
   candidate voted up (label 1, with its lengths and length lines, marked adjusted or approved) or
@@ -706,8 +713,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 - `3.14` The submit button's icon says how finished the work is; its popup lists what is left.
   <details>
 
-  Changed by the owner on 2026-10-06 and twice on 2026-10-07. A small icon beside the Submit new GT
-  to GitHub button's text says how finished the work is: a green check when every finalist has the
+  Changed by the owner on 2026-10-06 and twice on 2026-10-07. A small icon beside the Submit Ground
+  Truth button's text says how finished the work is: a green check when every finalist has the
   user's verdict, an orange warning when some candidates have one but a finalist does not, and a red
   error when no candidate has one yet or a candidate the user added still waits for a verdict; the
   warning and the error pulse gently. Any animation scrolled out of view is paused, since Chrome

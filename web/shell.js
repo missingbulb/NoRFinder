@@ -2,7 +2,7 @@
 // none of them; the header's switcher offers the ones the build lists and swaps one in without a reload. What it gives a study, as shell in mount(shell): loading images (from the
 // computer or Google Drive), Python (the study's own, run in worker.js), the viewer the study asks for,
 // the page's state its controls are drawn from (page: get, set, watch(key, fn, {signal})), the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own), notices, the user's saved settings, downloads and ground-truth
-// submission; and around them the theme, side bars, foldable boxes, the resources dialog (storage, memory,
+// submission; and around them the theme, the left bar, foldable boxes, the resources dialog (storage, memory,
 // network and CPU) and the version history.
 //
 // The study's hooks, all optional, returned from mount: ready(info) once its Python is loaded;
@@ -26,7 +26,7 @@ const VIEWERS = { image2d: viewer2d };
 const DEFAULT_STUDY = "viewer";
 // the browser keys the shell saves under; their names predate studies, and a user's saved state lives in them
 const THEME = "nor-theme"; // "dark" | "light"; absent = follow the system
-const BARS = "nor-bars-v1"; // {left, right}: side bar widths in pixels
+const BARS = "nor-bars-v1"; // {left}: the left bar's width in pixels (a right bar's, from before it went, is ignored)
 const SOURCE = "nor-load-source"; // "local" | "drive": where Load reads from
 const DRIVE_LINK = "nor-drive-link"; // the last Google Drive link pasted
 const THUMBS = "nor-drive-thumbs"; // "on" | "off": whether the Drive dialog shows thumbnails
@@ -1067,28 +1067,22 @@ function foldable() {
 // the image back in view, from whichever of the study's views is on show
 function showImage() { study.showImage?.(); view.minimapView(); }
 
-// ---------- side bars and theme ----------
-// the side bars take the width they are dragged to; a double click puts one back
+// ---------- the left bar and theme ----------
+// the left bar takes the width it is dragged to; a double click puts it back
 {
-  const lay = $("#layout"), saved = readJSON(BARS);
-  const set = (side, w) => {
-    if (w == null) { lay.style.removeProperty(side === "left" ? "--lw" : "--rw"); return; }
-    lay.style.setProperty(side === "left" ? "--lw" : "--rw", Math.round(Math.max(200, Math.min(w, innerWidth * 0.4))) + "px");
+  const lay = $("#layout"), saved = readJSON(BARS), g = $("#gutter-left");
+  const set = (w) => {
+    if (w == null) { lay.style.removeProperty("--lw"); return; }
+    lay.style.setProperty("--lw", Math.round(Math.max(200, Math.min(w, innerWidth * 0.4))) + "px");
   };
-  set("left", saved.left); set("right", saved.right);
-  for (const side of ["left", "right"]) {
-    const g = $("#gutter-" + side);
-    g.addEventListener("pointerdown", (e) => {
-      g.setPointerCapture(e.pointerId); document.body.classList.add("resizing");
-      const move = (ev) => {
-        const r = lay.getBoundingClientRect(), w = side === "left" ? ev.clientX - r.left : r.right - ev.clientX;
-        saved[side] = w; set(side, w); view?.minimapView();
-      };
-      const up = () => { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); document.body.classList.remove("resizing"); writeJSON(BARS, saved); };
-      g.addEventListener("pointermove", move); g.addEventListener("pointerup", up);
-    });
-    g.addEventListener("dblclick", () => { delete saved[side]; set(side, null); writeJSON(BARS, saved); view?.minimapView(); });
-  }
+  set(saved.left);
+  g.addEventListener("pointerdown", (e) => {
+    g.setPointerCapture(e.pointerId); document.body.classList.add("resizing");
+    const move = (ev) => { saved.left = ev.clientX - lay.getBoundingClientRect().left; set(saved.left); view?.minimapView(); };
+    const up = () => { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); document.body.classList.remove("resizing"); writeJSON(BARS, saved); };
+    g.addEventListener("pointermove", move); g.addEventListener("pointerup", up);
+  });
+  g.addEventListener("dblclick", () => { delete saved.left; set(null); writeJSON(BARS, saved); view?.minimapView(); });
 }
 
 function theme() {
@@ -1272,8 +1266,7 @@ function swap() {
 
 // the study's panels, put into the shell's slots, and its stylesheet: what leaves with it
 let lifetime = new AbortController(), mounted = [], css = null;
-// its panels go into the shell's slots, its stylesheet beside the shell's, then its module mounts; a side bar
-// it leaves empty gives its room to the image
+// its panels go into the shell's slots, its stylesheet beside the shell's, then its module mounts
 async function mountStudy(id) {
   if (!/^[\w-]+$/.test(id)) throw new Error(`no study "${id}"`);
   base = `../studies/${id}/`;
@@ -1290,7 +1283,6 @@ async function mountStudy(id) {
       $(`slot-here[data-slot-for="${t.dataset.slot}"]`).before(...nodes); mounted.push(...nodes);
     }
   }
-  $("#layout").classList.toggle("no-right", !$("#right").querySelector(":scope > :not(slot-here)"));
   unfoldFirst(); // before the first paint with them, so they do not fold in view
   view = viewers[manifest.viewer] ||= VIEWERS[manifest.viewer](shell);
   view.channels(manifest.channels);

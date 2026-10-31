@@ -85,6 +85,7 @@
       <div class="for-image zoom" role="group" aria-label="Zoom">
         <button id="zoom-out" title="Zoom out" aria-label="Zoom out">−</button><span id="zoom-label">100%</span><button id="zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
       </div>
+      <slot-here data-slot-for="toolbar-end"></slot-here>
     </div>
     <div id="busy" hidden><div id="scan-light"></div><span class="spin big"></span><div id="busy-text"></div><div id="busy-time"></div></div>
 
@@ -96,18 +97,14 @@
         <div id="stage" hidden><canvas id="base"></canvas><svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg><svg id="grid" xmlns="http://www.w3.org/2000/svg"></svg><svg id="ruler" xmlns="http://www.w3.org/2000/svg"></svg></div>
       </div>
       <div id="minimap" hidden>
-        <div class="mm-head"><span class="mm-title">Minimap</span><button id="minimap-hide" class="mm-btn" type="button" hidden aria-label="Hide the minimap" title="Hide the minimap"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button><button id="minimap-fold" class="mm-btn" type="button"><svg class="x" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg><svg class="expand" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6"/></svg></button></div>
+        <div class="mm-head"><button id="minimap-hide" class="mm-btn" type="button" aria-label="Hide the minimap" title="Hide the minimap"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button><span class="mm-title">Minimap</span><button id="minimap-fold" class="mm-btn" type="button"><svg class="up" data-glyph="up" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M3.5 10l4.5-4.5L12.5 10"/></svg><svg class="down" data-glyph="down" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6"/></svg></button></div>
         <div class="mm-body"><canvas id="minimap-canvas"></canvas><div id="minimap-view"></div></div>
       </div>
+      <slot-here data-slot-for="over-image"></slot-here>
     </div>
 
     <slot-here data-slot-for="views"></slot-here>
   </main>
-  <div class="gutter" id="gutter-right" title="Drag to resize"></div>
-
-  <aside id="right">
-    <slot-here data-slot-for="right"></slot-here>
-  </aside>
 </div>
 
 <footer id="statusbar">

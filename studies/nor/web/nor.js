@@ -728,10 +728,14 @@ export function mount(shell) {
     const d = $(`#list .card[data-i="${st.sel}"]`);
     if (d) d.scrollIntoView({ block, behavior: block === "center" ? "auto" : "smooth" });
   }
+  // the selected candidate's card over the image's corner, shown only while one is selected, its previous and
+  // next buttons over the bottom of its crop
   function renderSelected() {
     const c = candOf(st.sel);
-    $("#selected").classList.toggle("dim", !c);
-    $("#selected").replaceChildren(c ? card(c, "selected") : "Click a candidate on the image.");
+    $("#selected-box").hidden = !c;
+    $("#selected-box").append($("#sel-step")); // out of the card it is in before that card goes
+    $("#selected").replaceChildren(...(c ? [card(c, "selected")] : []));
+    if (c) $("#selected .crop-wrap").append($("#sel-step"));
     $("#sel-prev").disabled = $("#sel-next").disabled = !st.order.length && !st.added.length;
   }
   function placeRing() {

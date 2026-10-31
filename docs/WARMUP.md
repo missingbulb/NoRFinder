@@ -31,7 +31,9 @@ A study is a folder with a `study.json`:
   by `dev/tools/build/build.py`).
 - `web` — `module`, an ES module exporting `mount(shell)`; optionally `panels`, an HTML file of
   `<template data-slot="…">` elements the shell puts into its slots before mounting, and `style`, its
-  stylesheet. A study with nothing on the right loses the right bar. A `box foldable` section folds
+  stylesheet. The slots: `left` (the left bar, below the Image box), `toolbar` (the main area's
+  toolbar, at its left), `toolbar-end` (its right end), `view-top`, `views` (beside the image view),
+  `over-image` (floating over the image) and `body`; there is no right bar. A `box foldable` section folds
   with the steps: its `data-opens` names the step (`load`, one of its `phases`, `submit`) after which it
   opens, or `user` for one only its title opens, and `data-folds` the step after which it folds again.
 - `files` — what Load accepts, and the text the empty view shows.
