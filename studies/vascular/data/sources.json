@@ -1,0 +1,71 @@
+{
+  "sources": [
+    {
+      "name": "owner-stacks",
+      "drive_id": "1AH4EVGT-ECPZvhHiHMwUzrMLLtljs1Pd",
+      "kind": "folder",
+      "z_step_um": 1.0,
+      "z_step_source": "the owner, in the project thread on 2026-10-29; the TIFF exports do not store it",
+      "skip": [
+        "*.zip",
+        "4.2.26.sld*"
+      ],
+      "files": [
+        {
+          "path": "cd31_ca1_x20_r_1_slices13-30.tif",
+          "drive_id": "11qVsq-PTC9Z2wv8_pVf-DhyZ9TRqYhf8",
+          "sha256": "a25e94ce1a8018df10e30a28765607bdce4e8791b49b5729a8eac56e79adc0b9"
+        },
+        {
+          "path": "cd31_ca1_x20_r_2_slices1-24.tif",
+          "drive_id": "1htQj9j2I027zi-h_K3fULtFrjy9-jnL3",
+          "sha256": "9c9ee12ef7f07b49d13137357f08a75f7c5e9d1a2a578a9fefb8bb793b54c7a7"
+        },
+        {
+          "path": "cd31_frontal_x20_r_1_slices1-12.tif",
+          "drive_id": "1wNx8OWiyaQZROq5-2WXSEdJsMVYW6Ag8",
+          "sha256": "cd0751375503d1bfe1e4d1f8330393cdd435ae87db850d4add092ad4a9fb48a8"
+        },
+        {
+          "path": "cd31_frontal_x20_r_2_slices6-29.tif",
+          "drive_id": "1lSP6zMPN34JjC8QYFL5vkLQD_YIJINR1",
+          "sha256": "3d89d38992080e9228ecd1603d76f5d320c3355c09f6f985207503e1b56058df"
+        }
+      ]
+    },
+    {
+      "name": "owner-stacks-originals",
+      "drive_id": "1AH4EVGT-ECPZvhHiHMwUzrMLLtljs1Pd",
+      "kind": "folder",
+      "z_step_um": 1.0,
+      "z_step_source": "the owner, in the project thread on 2026-10-29; the TIFF exports do not store it",
+      "skip": [
+        "*.zip",
+        "cd31_*"
+      ],
+      "files": [
+        {
+          "path": "Originals uncropped/4.2.26.sld - cd31_ca1_x20 r 1.tif",
+          "drive_id": "120fa23B63UriSMZ12agbi3W7DJrmcPUI",
+          "sha256": "8921bebf3808e1deb197d513e5cc48b7b502cfa5986e1a386edc65de2fb9dca4"
+        },
+        {
+          "path": "Originals uncropped/4.2.26.sld - cd31_ca1_x20 r 2.tif",
+          "drive_id": "1js2WFdh3JfGp8EpiekjTzT_f96tl84RC",
+          "sha256": "5a30395abbb6c220f2c624ceafe6d5f74b1be07121361a9b3f75b3bba8e39498"
+        },
+        {
+          "path": "Originals uncropped/4.2.26.sld - cd31_frontal_x20 r 1.tif",
+          "drive_id": "1Zzp1GuClB4hGamxaEhlaLZwT0O8P6Jxr",
+          "sha256": "0017fb3cb8d9c5e817c75ff8df146b9dcddff99c18ae265b6ac393a533fc3d3e"
+        },
+        {
+          "path": "Originals uncropped/4.2.26.sld - cd31_frontal_x20 r 2.tif",
+          "drive_id": "1GGJ3uAzUjm9Db8J6WIlKIpveViD8QsfV",
+          "sha256": "666e18bb2d9a6674c305866c1617955fe22d0607ef4a980fee4e80619a403a5f"
+        }
+      ],
+      "on_demand": true
+    }
+  ]
+}

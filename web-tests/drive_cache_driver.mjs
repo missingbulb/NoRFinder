@@ -7,6 +7,7 @@
 // a tip at Load's dropdown arrow; its × closes it for good, after a reload too, and opening the dropdown does too.
 // Optional SHOTS: a directory for a screenshot. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/drive_cache_driver.mjs [SHOTS]
+import { noisePng } from "./png_fixture.mjs";
 import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
 import { execSync } from "node:child_process";
@@ -26,11 +27,11 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ROOT = "cachefolder000000001";
 // the folder's link, which the dialog remembers until a file's link is opened in its place
 const FOLDER = `https://drive.google.com/drive/folders/${ROOT}`;
-const PNG = fs.readFileSync(path.join(repo, "dev", "tools", "build", "logo_source.png"));
+const PNG = noisePng();
 // a.png's bytes on Drive; changed later to the same picture with a byte appended after its end
 const FILE = { id: "cacheimage0000000001", name: "a.png", bytes: PNG };
 const sha = (b) => createHash("sha256").update(b).digest("hex");
-const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in" }, drive: { defaultLink: "" } };`;
+const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in" } };`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);

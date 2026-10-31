@@ -12,7 +12,7 @@ writes the version history the page shows (version_history.py) and the studies i
 (studies.json); publishes the page again as <id>.html for each of them, which Cloudflare serves at
 /<id>; and writes the deployment's
 settings into the published web/config.js from the repository variables: GOOGLE_API_KEY turns on
-loading from Google Drive, and DRIVE_DEFAULT_FOLDER is the link its dialog opens on.
+loading from Google Drive. The folder its dialog opens on is each study's own (files.drive in its study.json).
 """
 import glob, json, os, shutil, subprocess, sys
 
@@ -56,8 +56,8 @@ def config_js(env):
     """The page's settings from the deploy's variables; None without a key, keeping the committed file."""
     if not env.get('GOOGLE_API_KEY'):
         return None
-    settings = {'google': {'apiKey': env['GOOGLE_API_KEY']}, 'drive': {'defaultLink': env.get('DRIVE_DEFAULT_FOLDER', '')}}
-    return ('// written by dev/tools/build/build.py from the repository variables GOOGLE_API_KEY and DRIVE_DEFAULT_FOLDER\n'
+    settings = {'google': {'apiKey': env['GOOGLE_API_KEY']}}
+    return ('// written by dev/tools/build/build.py from the repository variable GOOGLE_API_KEY\n'
             f'window.NOR_CONFIG = {json.dumps(settings)};\n')
 
 

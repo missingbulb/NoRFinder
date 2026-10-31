@@ -33,8 +33,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
 
   The image a study works on is shown by a viewer the study names (`viewer` in `study.json`),
   behind one interface: show the opened image, draw the study's layers over it, report a pick and a
-  lasso in image coordinates, zoom and pan. A 3D viewer is a second implementation of that
-  interface, not a change to the shell or to the studies that keep the 2D one.
+  lasso in image coordinates, zoom and pan. The 3D viewer (`1.49`) keeps that interface and adds
+  a 3D view beside the 2D one, with no change to the studies that keep the 2D viewer.
   </details>
 
 - `1.4` Python is reached through one generic call.
@@ -220,8 +220,10 @@ test fold under it. A study's research requirements, which no user sees, stay in
   turns the downloads off; beside it, and in the status bar while they load, how many have arrived
   and their size. It needs the site's Google API key, kept in the repository variable
   `GOOGLE_API_KEY` and written into `web/config.js` at deploy; without one the option is off
-  (`web-tests/test_site_config.py`). The dialog opens on the last link pasted, or else on the lab's
-  folder (the repository variable `DRIVE_DEFAULT_FOLDER`), and lists a folder link at once. Nothing
+  (`web-tests/test_site_config.py`). The dialog opens on the link last pasted in this study, else on
+  the study's own folder (`files.drive` in its `study.json`), else on the link last pasted in any
+  study, and lists a folder link at once; opening on a link is not pasting it
+  (`web-tests/test_drive_folder_page.py`). Nothing
   else read from Drive is kept, apart from the image files Auto-save images keeps (`1.6`, `1.7`;
   `studies/nor/tests/test_drive_dialog.py`).
   </details>
@@ -601,6 +603,25 @@ test fold under it. A study's research requirements, which no user sees, stay in
   BigTIFF, and a part over 4 GB. Test: `web-tests/test_split.py`, `web-tests/test_split_page.py`, `web-tests/test_left_bar_page.py`.
   </details>
 
+- `1.49` A study whose viewer is `image3d` shows a z-stack in 3D, turning it by mouse; its channel rows drive it.
+  <details>
+
+  Set by the owner on 2026-10-31, moving the 3D MicroViewer into the shell. The study's Python
+  returns a stack as its flattened planes, which the 2D view shows unchanged, followed by every
+  slice of every channel (`Z` in its meta). A 2D/3D switch in the toolbar opens the 3D view, which
+  a stack opens on: it casts rays through the stack in the browser (WebGL2), looking straight down
+  as the microscope does. Dragging turns it, the wheel zooms, shift-drag pans, and Top, Tilted,
+  Side and Front put the view back. Brightest shows the brightest point along each ray, Surface a lit
+  surface where the signal crosses a level, and Colour by depth paints by the depth of that point
+  so crossings at different depths read apart. Slices *a*–*b* show part of the depth. The slice
+  spacing comes from the file, else from the study (`view.spacing`, saying who stated it), else
+  1 µm, called a guess. Every shown channel is drawn in its colour between the black and white
+  points of its row, which redraw the 3D view as they move. The study's `view` sets the render, Colour
+  by depth and the spacing it opens with. A study draws over the 3D view, over the stack or beside it
+  in the same camera, picks and drags there, and can keep only the stack inside or outside a mask of
+  its own. Test: `web-tests/test_viewer3d_page.py`, and the vascular study's `4.3`.
+  </details>
+
 ## `2` The repo's checks
 
 - `1.48` The status bar's numbers roll to each new value, and a sharp rise in the CPU or network flashes.
@@ -859,4 +880,68 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   outline; only those in view and the two rows past it either way are drawn in full, together in
   one go per frame rather than card by card, and the rest are drawn as scrolling brings them near.
   Test: `studies/nor/tests/test_item_view_page.py`.
+  </details>
+
+## `4` The Vascular Measurements page: cerebral vessels in CD31 z-stacks
+
+Migrated from [missingbulb/vascularColoring](https://github.com/missingbulb/vascularColoring) on
+2026-10-31, at rauntruth.com/vascular. Its research requirements, the
+owner's decisions on the stacks and the vessel model, are
+[`studies/vascular/docs/3D-STACKS.md`](../../studies/vascular/docs/3D-STACKS.md) and
+[`studies/vascular/docs/WORKING-GUIDE.md`](../../studies/vascular/docs/WORKING-GUIDE.md).
+
+- `4.1` A z-stack opens in 3D in the owner's approved view; 2D shows it flattened.
+  <details>
+
+  Any multi-page TIFF (an ImageJ hyperstack or plain pages in depth) opens in the 3D viewer
+  (`1.49`), every channel scaled by one window over the whole stack, so signal that fades with depth
+  still looks faded; 2D shows its brightest-over-depth picture. CD31 is always the first channel: a
+  one-channel stack is CD31, and a two-channel one, DAPI then CD31 as the owner's originals are, is
+  shown CD31 first. It opens in the view the owner approved on 2026-09-29: CD31 alone, coloured by
+  depth, black point 0.63 of the window (161), slices 1 µm apart as the owner stated on 2026-10-29.
+  Test: `studies/vascular/tests/test_stack_page.py`.
+  </details>
+
+- `4.2` Load from Google Drive opens on the owner's stacks folder.
+  <details>
+
+  `files.drive` in the study's `study.json`, under `1.18`'s rule.
+  </details>
+
+- `4.3` A stack's vessel model opens beside it or over it, to correct by hand.
+  <details>
+
+  Moved from the 3D MicroViewer (`studies/vascular/docs/3D-STACKS.md`, the owner's decisions of
+  2026-10-03 to 10-29). A stack the study ships a draft for (`web/models/`, matched by name without
+  case, spaces or punctuation) opens with it; any `vessel-model/2` file loads too. Side by side
+  shows the model as white tubes in a view of its own that turns with the stack's; Overlay draws it
+  in magenta over the stack; Hide takes it away. On the model: drag a point to move it, right-click
+  a segment or a point to delete it, add or remove a bend or split a junction into vessels that
+  cross, right-drag from one piece to another to connect them, and click a faded low-confidence
+  vessel to approve or decline it. Review keeps only the signal within reach of the model's
+  vessels (Detected) or away from them (Missed), within a reach that is a share of each vessel's
+  own width; Draw a missed vessel adds one a click at a time; Mark a damaged area lassos an area to
+  leave out. Every edit can be undone, and the edits stay in the browser until the model is
+  submitted. Test: `studies/vascular/tests/test_model_page.py`.
+  </details>
+
+- `4.4` Item View shows each junction and vessel of the model as a card.
+  <details>
+
+  A card for each junction (three or more live branches) and each vessel (junction or tip to the
+  next): the stack around it flattened over the slices shown, the rest of the model thin in magenta
+  and the item in white, with its numbers (a vessel's length along its curve, its width and depth
+  span; a junction's depth, width and how many junctions lie within 20 µm). Filters show the ones
+  worth a look and the declined vessels; sorting brings the shortest, widest, most branched or most
+  crowded first. A card approves, declines or deletes a vessel, splits a junction, or shows its
+  item in 3D. Test: `studies/vascular/tests/test_model_page.py`.
+  </details>
+
+- `4.5` The corrected model is the study's ground truth.
+  <details>
+
+  Submit Ground Truth (`1.26`), in the Item View and only there, exports the corrected `vessel-model/2` file, `status` corrected and
+  its corrections counted, labelled `vascular-ground-truth`; it is off until the model carries a
+  correction, and its checklist says how many low-confidence vessels still wait for a verdict.
+  Test: `studies/vascular/tests/test_model_page.py`.
   </details>

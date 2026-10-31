@@ -26,6 +26,7 @@ and an edit made another way is caught at Stop.
 |---|---|---|
 | `adopt-claudinite` | claudinite | Adopt Claudinite into a repo with cn adopt, choosing the packs from the owner's technologies. Use when asked to adopt or set up Claudinite. |
 | `adopt-pack` | claudinite | Add packs to a repo already running Claudinite: declare, interview, re-vendor, scaffold, land. Use when asked to adopt, add, enable or declare a pack. |
+| `algorithm-ideation` | nor-finder | Finding a genuinely new direction before building a study's next algorithm version - when the current one plateaus, or the owner asks for a new approach. |
 | `backfilling-provenance` | claudinite | Filling a pack's empty provenance files from its history. Use when a pack carries empty provenance files, or when asked to backfill a pack's provenance. |
 | `bug-investigation` | basics | Pinning down a bug's root cause. Use when investigating a bug report, when a fix didn't hold or a bug recurs, or when a report doesn't reproduce. |
 | `ci-performance-evaluation` | basics | Finding where a repo's CI time goes and what is worth fixing. Use when CI feels slow, on a runtime regression, or on a ci-performance finding. |
@@ -45,6 +46,7 @@ and an edit made another way is caught at Stop.
 | `improve-on-ground-truth` | nor-study | Improving the NoR finders when new ground truth joins studies/nor/detection/lab/ground_truth/, or when asked to improve them on the ground truth. |
 | `learning-a-technology` | claudinite | Teach a repo a technology nobody there has used yet. Use when asked to host, send or publish through something new, or to research it and create a skill. |
 | `merge-to-main` | git-github | Merge the change in front of the owner into main. Use when the owner approves the current branch or PR, or asks to merge or land it into main. |
+| `paper-intake` | vascular-study | Take a research paper PDF into studies/vascular/docs/literature/. Use whenever a new article is added to this repo, or an existing one needs re-processing. |
 | `production-retrospective` | basics | Design and file the review that comes back once a larger element has lived in production. Use when designing such an element, or when its merge completes it. |
 | `prose-to-checks` | claudinite | Mine pack prose for always-testable rules never converted to checks, and convert the strongest. Use when auditing packs for convertible rules, or over prose a growth run just wrote. |
 | `repo-text-sweeps` | basics | Mechanics for grep/sed sweeps, renames, and path relocations across a repo. Use before a bulk find-replace, a rename, or moving files — and after one, to catch silently broken references. |
@@ -52,4 +54,5 @@ and an edit made another way is caught at Stop.
 | `searching-for-a-tool` | basics | Finding a harness tool by name — the select form for a deferred tool, and what an empty search means. Use before any ToolSearch, and when a search finds nothing. |
 | `triaging-usage-findings` | claudinite | Turn a lasting usage-review finding into a proposed change, written as the edit itself. Use on a usage-triage run, or when asked what to do about a finding. |
 | `unattended-agents` | claudinite | Architecture and practices for unattended, automation-invoked agents and recurring routines. Use when building, structuring, or running an AI agent, a scheduled routine, or a multi-stage agent pipeline. |
+| `vessel-overlay-review` | vascular-study | Show extraction results as an annotated overlay with explicit visual assertions. Use whenever proposing, revising, or reporting on the segmentation/measurement pipeline in this repo — before quoting numbers. |
 | `writing-handover-issues` | basics | How to write a task list a person will execute. Use when filing or editing an issue that asks a human to click, set, register or copy something. |

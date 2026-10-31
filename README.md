@@ -50,3 +50,4 @@ how to add a study.
   the shell's part, the repo's checks, each study's page
 - [studies/nor/](studies/nor/docs/WARMUP.md) — the NoR Finder study: its brief, literature, finders
   and ground truth
+- [studies/vascular/](studies/vascular/docs/WARMUP.md) — Vascular Measurements, cerebral vessels in CD31 images and z-stacks: its literature, extraction lab and data

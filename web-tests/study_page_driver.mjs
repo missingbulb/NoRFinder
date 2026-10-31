@@ -30,6 +30,8 @@ try { pyodide = path.dirname(require.resolve("pyodide/pyodide.mjs", { paths: [pa
   console.error("no pyodide: npm i --prefix web-tests pyodide@314.0.7"); process.exit(2);
 }
 let stub = true;
+// the switcher's titles, as the build lists the studies
+const titles = JSON.parse(fs.readFileSync(studies, "utf8")).map((m) => m.title);
 
 // answers every request the way web/worker.js does with the fixture's Python, from answers.json
 const STAND_IN = `
@@ -85,7 +87,7 @@ try {
   }));
   const fixtureMenu = await menu();
   console.log(JSON.stringify(fixtureMenu));
-  if (fixtureMenu.items.join() !== "Image Viewer,NoR Finder") problems.push("the switcher does not list the listed studies, or ticks one not on show: " + fixtureMenu.items);
+  if (fixtureMenu.items.join() !== titles.join()) problems.push("the switcher does not list the listed studies, or ticks one not on show: " + fixtureMenu.items);
   if (fixtureMenu.right) problems.push("the page still has a right bar");
   await page.setInputFiles("#file", image);
   await page.waitForFunction(() => !document.querySelector("#fx-count").disabled);
@@ -141,7 +143,7 @@ try {
   if (!request || request.text !== "Submit New Study Request" || !request.last || request.target !== "_blank") problems.push("no Submit New Study Request at the end of the switcher: " + JSON.stringify(request));
   else if (!form || !fs.existsSync(path.join(repo, ".github", "ISSUE_TEMPLATE", form))) problems.push("Submit New Study Request opens a form the repo does not carry: " + request.href);
   const viewerMenu = await menu();
-  if (viewerMenu.items.join() !== "Image Viewer*,NoR Finder") problems.push("the switcher does not tick the study on show: " + viewerMenu.items);
+  if (viewerMenu.items.join() !== titles.map((t) => (t === "Image Viewer" ? t + "*" : t)).join()) problems.push("the switcher does not tick the study on show: " + viewerMenu.items);
 
   // into NoR Finder by a click, then back: NoR's panels and listeners leave with it
   await page.click("#study-menu summary");

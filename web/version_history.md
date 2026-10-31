@@ -10,6 +10,9 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- Vascular Measurements opens the draft vessel model drawn for a stack, beside it or over it: drag its points, delete or join pieces, approve or decline faded vessels, keep only the signal near the model (Detected) or away from it (Missed) to find what it missed, draw a missed vessel, and mark damaged areas. Item View shows every junction and vessel as a card, and Submit Ground Truth sends the corrected model. (#620)
+- A new study, Vascular Measurements (rauntruth.com/vascular), opens confocal z-stacks of blood vessels in 3D: drag to turn the stack, switch between Brightest and Surface, colour by depth so crossings at different depths read apart, show only some slices, and switch to 2D for the flattened picture. Each channel's row sets its brightness in both views. (#620)
+- Load from Google Drive opens on each study's own folder, and remembers the last link you pasted in each study separately. (#620)
 - The status bar's numbers roll to each new value like a clock, and the CPU or network flashes when it jumps. The network now shows how fast the page is downloading; its tab still gives the total. (#628)
 - Preprocessing, with Split into parts, is now in every study, the Image Viewer included, right below the image. (#627)
 - Preprocessing has Split into parts: cut a large image into 4 or 9 TIFFs to annotate one at a time. Drag the cut lines, click a part to leave it out, drop channels or slices, name the files, and download them all as one ZIP. Each part keeps the image's scale and colours, and remembers where it lay in the image. (#621)

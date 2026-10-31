@@ -1,0 +1,24 @@
+{
+  "format": "vessel-model/2",
+  "_about": "nodes are junctions and tips only. Each edge is a smooth curve from node a to node b that passes through its 'via' points in order (centripetal Catmull-Rom). x, y and r (radius) in µm from the image's top-left corner; z in slices until z_step_um is known. Radius varies smoothly between the points that carry it.",
+  "status": "draft",
+  "source": "cd31_frontal_x20_r_1_slices1-12.tif",
+  "slices": 12,
+  "size_px": [1200, 1200],
+  "um_per_px": 0.55,
+  "z_step_um": null,
+  "nodes": [
+    {"id": 1, "x": 120.7, "y": 0.0,  "z": 4.0, "r": 3.1},
+    {"id": 2, "x": 131.0, "y": 61.5, "z": 5.2, "r": 2.9},
+    {"id": 3, "x": 133.4, "y": 95.8, "z": 6.0, "r": 2.8},
+    {"id": 4, "x": 181.9, "y": 74.0, "z": 7.1, "r": 1.4}
+  ],
+  "edges": [
+    {"id": 1, "a": 1, "b": 2, "vessel": 1, "via": [{"x": 126.1, "y": 30.2, "z": 4.6, "r": 3.0}]},
+    {"id": 2, "a": 2, "b": 3, "vessel": 1, "via": []},
+    {"id": 3, "a": 2, "b": 4, "vessel": 2, "via": [{"x": 158.2, "y": 66.3, "z": 5.5, "r": 1.6}]}
+  ],
+  "reviewed_regions": [
+    {"x": [100, 200], "y": [0, 120], "z": [0, 11], "by": "Ariel", "on": "2026-10-27"}
+  ]
+}

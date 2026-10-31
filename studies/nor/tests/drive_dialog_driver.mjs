@@ -35,7 +35,7 @@ const folders = {
   [ROOT]: [{ id: SUB, name: "More slides", mimeType: "application/vnd.google-apps.folder" }, ...[...files, stranger].map((f) => ({ ...f, mimeType: "image/tiff" }))],
   [SUB]: [{ ...files[0], mimeType: "image/tiff" }],
 };
-const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in" }, drive: { defaultLink: "https://drive.google.com/drive/folders/${ROOT}" } };`;
+const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in" } };`;
 const TYPES = { ".jpg": "image/jpeg", ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 let thumbsServed = 0;
 const server = http.createServer((q, r) => {
@@ -45,7 +45,7 @@ const server = http.createServer((q, r) => {
   if (u === "/studies/nor/study.json") {
     const manifest = JSON.parse(fs.readFileSync(path.join(repo, u), "utf8"));
     r.writeHead(200, { "content-type": "application/json" });
-    return r.end(JSON.stringify({ ...manifest, driveThumbs: "ready-thumbs/" }));
+    return r.end(JSON.stringify({ ...manifest, driveThumbs: "ready-thumbs/", files: { ...manifest.files, drive: `https://drive.google.com/drive/folders/${ROOT}` } }));
   }
   const ready = u.startsWith("/studies/nor/ready-thumbs/");
   if (ready && u.endsWith(".jpg")) thumbsServed++;
