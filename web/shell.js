@@ -43,7 +43,7 @@ const THUMB_NAMES = "nor-drive-thumb-names"; // {Drive id: file name}: the image
 const HOLDS = "nor-drive-holds"; // {Drive id: what the file holds, "3D · 8 slices" or "" when it cannot tell}, oldest first
 const TIPS = "nor-tips-closed"; // [tip id]: the tips the user closed, never shown again
 const THROTTLE = "nor-drive-throttled-until"; // when the wait after Google throttled the site's downloads ends, in ms
-const RECENT = "nor-drive-recent"; // [{id, name, path}], newest first: images opened from Drive, path their folders under the link
+const RECENT = "nor-drive-recent"; // [{id, name, path, study}], newest first: images opened from Drive, path their folders under the link, study the one it was opened in
 // Cache Storage, + Drive id: an image downloaded from Drive, its file name (URI-encoded) and when it was saved
 // in the headers
 const IMAGES = "nor-images-v1", IMAGE_NAME = "x-nor-name", IMAGE_AT = "x-nor-saved-at";
@@ -593,16 +593,19 @@ function closeTip(id) {
 // the dropdown is what the recent-files tip asks the user to open
 $("#load-menu").addEventListener("toggle", () => { if ($("#load-menu").open) closeTip("recent-files"); });
 
-// the images opened from Drive lately, in Load's dropdown; a Drive id names one file wherever it is, so two of
-// one name stay apart. openRecent is the Drive dialog's, which opens the copy kept on this device when there is one.
+// the images opened from Drive lately in the study on show, in Load's dropdown; a Drive id names one file wherever
+// it is, so two of one name stay apart; one kept from before recents had a study belongs to none. openRecent is the Drive dialog's, which opens the copy kept on this device when there is one.
 const RECENT_KEEP = 10;
 let openRecent = () => {};
+const recentHere = (list) => list.filter((r) => r.study === manifest?.id);
 function remember(id, name, path) {
-  writeJSON(RECENT, [{ id, name, path }, ...readJSON(RECENT, []).filter((r) => r.id !== id)].slice(0, RECENT_KEEP));
+  const study = manifest.id, rest = readJSON(RECENT, []).filter((r) => r.study && !(r.id === id && r.study === study));
+  const mine = [{ id, name, path, study }, ...rest.filter((r) => r.study === study)].slice(0, RECENT_KEEP);
+  writeJSON(RECENT, [...mine, ...rest.filter((r) => r.study !== study)]);
   showRecent();
 }
 function showRecent() {
-  const list = readJSON(RECENT, []), box = $("#recent");
+  const list = recentHere(readJSON(RECENT, [])), box = $("#recent");
   box.hidden = !list.length;
   box.replaceChildren(box.firstElementChild, ...list.map((r) => {
     const b = document.createElement("button"), where = ["Google Drive", ...(r.path || [])].join(" / ");
@@ -612,7 +615,6 @@ function showRecent() {
     return b;
   }));
 }
-showRecent();
 
 // once Google throttles the site's downloads the Drive dialog waits WAIT, with a notice and a countdown, and
 // calls Drive for nothing; the end is kept in the browser, so a reload does not cut it short. waitEnded is the
@@ -1045,7 +1047,7 @@ const settings = settingsDialog({
     { key: DRIVE_LINK, label: "Last Google Drive link", kind: "text" },
     { key: DRIVE_LINKS, label: "Last Google Drive link in each study", kind: "map" },
     { key: TIPS, label: "Tips you closed (clear one to see it again)", kind: "set" },
-    { key: RECENT, label: "Recent images from Google Drive (clear one to drop it)", kind: "list", name: (r) => (r.path ? `${r.path}/` : "") + r.name },
+    { key: RECENT, label: "Recent images from Google Drive (clear one to drop it)", kind: "list", name: (r) => (r.study ? `${r.study}: ` : "") + (r.path?.length ? `${r.path.join("/")}/` : "") + r.name },
     { key: SEEN_VERSION, label: "Version you saw last", kind: "text" },
   ],
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
@@ -1444,6 +1446,7 @@ async function mountStudy(id) {
   if (!makesTruth() && manifest.groundTruth?.button) $(manifest.groundTruth.button).hidden = true;
   makeSteps();
   foldable();
+  showRecent();
 }
 const viewers = {};
 // The study on show leaves: its panels, stylesheet, drawing, listeners and state go, and its Python's late
