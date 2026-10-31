@@ -191,7 +191,9 @@ test fold under it. A study's research requirements, which no user sees, stay in
   corner. A ^ at one end of its header collapses it to the
   header, and the same spot then shows v, which opens it again, so a second click undoes the first;
   an X at the header's other end hides it. A Minimap button in the toolbar, beside the Grid, shows it
-  again or hides it, pressed while it shows; hovering over the button opens a popup choosing how
+  again or hides it, pressed while it shows; hiding it folds the minimap into that button, flying there
+  along an arc, and showing it unfolds it back out of the button (set by the owner on 2026-10-31; no
+  motion for a user who asks the system for reduced motion); hovering over the button opens a popup choosing how
   see-through it is at rest, opaque at first and always opaque under the pointer. Whether it shows and its opacity are kept as the user's settings for the
   next visit. Dragging moves the image, wherever it starts, a label or the ruler's length included:
   no drag selects or drags the page's text (set by the owner on 2026-10-31). Scrolling up and down zooms around the pointer in small steps;
@@ -323,7 +325,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `studies/viewer/tests/test_viewer.py`, `web-tests/test_study_runs.py`.
   </details>
 
-- `1.29` Load's dropdown lists the images opened from Google Drive lately, each one click away.
+- `1.29` Load's dropdown lists the images opened from Google Drive lately, each one click away; the dropdown stays inside the left bar, a long name cut short.
   <details>
 
   Below this computer and Google Drive, Load's dropdown lists the last 10 images opened from Drive,
@@ -493,8 +495,9 @@ test fold under it. A study's research requirements, which no user sees, stay in
   Image while no image is open (and again after Unload), folds once done to
   a small preview of the image, its name and what it holds ("2D", "3 channels", from the file;
   only "2D" when the file does not say), and opens as "Loaded Image". A study's drawer is done
-  when the study gives it a summary, and waits again when the study takes it back. Test:
-  `web-tests/test_left_bar_page.py`, `web-tests/test_study_contract.py`.
+  when the study gives it a summary, and waits again when the study takes it back. A drawer opening or
+  folding slides open or shut, and the drawers below it slide to their new places (set by the owner on
+  2026-10-31). Test: `web-tests/test_left_bar_page.py`, `web-tests/test_study_contract.py`.
   </details>
 
 - `1.42` A folder's `rauntruth-previews.tiff` gives every image it covers a preview at once, a stack turning on hover.
@@ -620,6 +623,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
   by depth and the spacing it opens with. A study draws over the 3D view, over the stack or beside it
   in the same camera, picks and drags there, and can keep only the stack inside or outside a mask of
   its own. Test: `web-tests/test_viewer3d_page.py`, and the vascular study's `4.3`.
+  </details>
+
 - `1.50` Signing in with Google keeps the user's settings in their own Google Drive; not signing in changes nothing.
   <details>
 
@@ -684,6 +689,16 @@ test fold under it. A study's research requirements, which no user sees, stay in
   which Google user data the page reads, where it keeps it and that it shares none, under Google's
   API Services User Data Policy and its Limited Use requirements. The avatar's menu links both. Test:
   `web-tests/test_published_site.py`.
+  </details>
+
+- `1.54` An Animations checkbox in the resources dialog's CPU tab turns every animation on the page off.
+  <details>
+
+  Set by the owner on 2026-10-31. Checked at first, it is kept as the user's setting for the next
+  visit. Unchecked, nothing on the page moves to draw the eye: the minimap and the drawers change at
+  once, the photocopier's light does not sweep the image, no button shines or glows, the status
+  bar's digits change without rolling and a sharp rise does not flash. A spinner still turns, since
+  it is what says the page is working rather than stuck. Test: `web-tests/test_status_bar_page.py`.
   </details>
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.

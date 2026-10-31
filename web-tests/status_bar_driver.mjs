@@ -278,6 +278,28 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await page.waitForFunction((n) => window.seen["sb-net"].rolled > n, before, { timeout: 4000 }).catch(() => {});
   const calm = await page.evaluate(() => window.seen["sb-net"]);
   await check(calm.rolled > before && calm.anim.slice(-1)[0] === "none", "with reduced motion asked for, it changes without rolling", calm);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  // the CPU tab's Animations checkbox, checked at first, turns every animation off but the spinners'
+  await page.click("#sb-cpu"); await tabIs(page, "cpu");
+  await check(await page.isChecked("#motion"), "the CPU tab's Animations checkbox is checked at first");
+  await page.uncheck("#motion"); await page.keyboard.press("Escape");
+  await check(await page.evaluate(() => JSON.parse(localStorage.getItem("nor-motion"))) === false, "unchecked, it is kept for the next visit");
+  const still = await page.evaluate(() => {
+    const cs = (sel, pseudo) => getComputedStyle(document.querySelector(sel), pseudo);
+    const b = document.createElement("button"); b.className = "shine"; document.body.append(b);
+    const out = { shine: getComputedStyle(b, "::after").animationName, gt: cs("#sb-cpu svg").transitionDuration, spin: cs(".spin").animationName };
+    b.className = "working"; b.disabled = true; out.working = getComputedStyle(b, "::after").animationName; b.remove();
+    return out;
+  });
+  await check(still.shine === "none" && still.gt === "0s", "nothing shines or fades", still);
+  await check(still.spin === "spin" && still.working === "spin", "but a spinner still turns", still);
+  await page.waitForFunction(() => !document.querySelector("#sb-net").classList.contains("spike"), null, { timeout: 6000 });
+  const net0 = await page.evaluate(() => { const s = window.seen["sb-net"]; s.spiked = false; return s.rolled; });
+  await page.evaluate((u) => fetch(u, { cache: "no-store" }).then((r) => r.arrayBuffer()), origin + "/big");
+  await page.waitForFunction((n) => window.seen["sb-net"].rolled > n, net0, { timeout: 4000 }).catch(() => {});
+  await page.waitForTimeout(1200);
+  const quiet = await page.evaluate(() => window.seen["sb-net"]);
+  await check(quiet.rolled > net0 && quiet.anim.slice(-1)[0] === "none" && !quiet.spiked, "a fast download neither rolls nor flashes the network", quiet);
   const alike = (a, b) => a.total && b.total && a.name === b.name && a.size === b.size && (!a.what || !b.what || a.what === b.what);
   await check([memLook, netLook, cpuLook].every((l) => alike(l, storeLook) && alike(l, memLook)), "the four tabs look alike", [storeLook, memLook, netLook, cpuLook]);
   await ctx.close();

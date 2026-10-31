@@ -72,7 +72,7 @@ const visible = async (sel) => !!(await box(sel));
 // the base canvas's pixel, red green blue
 const pixel = (x, y) => page.evaluate(([x, y]) => [...document.querySelector("#base").getContext("2d").getImageData(x, y, 1, 1).data].slice(0, 3), [x, y]);
 const opacity = () => page.evaluate(() => Number(getComputedStyle(document.querySelector("#minimap")).opacity));
-const title = () => page.click("#image-box > .sec-head h2");
+const title = async () => { await page.click("#image-box > .sec-head h2"); await page.waitForFunction(() => !document.documentElement.hasAttribute("data-drawers")); };
 
 // ---- the box before an image: its title alone in its head, Load at its foot ----
 const head = () => page.evaluate(() => { const h = document.querySelector("#image-box > .sec-head"); return [h.children.length, h.querySelector("h2 .title").textContent]; });
@@ -124,9 +124,16 @@ await check(expand.x === fold.x && expand.y === fold.y && (await glyph()) === "d
 await shot("minimap_collapsed", "#minimap");
 await page.mouse.click(fold.x + fold.w / 2, fold.y + fold.h / 2);
 await check(await visible("#minimap canvas"), "a second click on the same spot undoes the first");
+// hiding folds the minimap into its toolbar button, and showing unfolds it back out of it
+const flight = () => page.waitForFunction(() => document.getAnimations().some((a) => a.effect?.pseudoElement === "::view-transition-group(minimap)"));
+const landed = () => page.waitForFunction(() => !document.getAnimations().some((a) => a.effect?.pseudoElement?.startsWith("::view-transition")));
 await page.click("#minimap-hide");
+await check(await flight().then(() => true, () => false), "hiding flies the minimap into its toolbar button");
+await landed();
 await check(!(await visible("#minimap")) && (await page.getAttribute("#minimap-btn", "aria-pressed")) === "false", "hidden: the minimap goes, and its toolbar button is up");
 await page.click("#minimap-btn");
+await check(await flight().then(() => true, () => false), "and showing flies it back out of the button");
+await landed();
 await check((await visible("#minimap canvas")) && (await page.getAttribute("#minimap-btn", "aria-pressed")) === "true", "the toolbar button opens it again");
 
 // hovering the toolbar button opens its opacity
