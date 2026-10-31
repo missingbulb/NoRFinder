@@ -77,6 +77,10 @@ button:disabled { opacity: .45; cursor: default; }
 button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 /* Load: a button with a dropdown beside it for where to load from */
 .split { display: inline-flex; }
+/* the dropdown spans the panel's width under the button: the panel scrolls, so anything wider is cut off */
+#image-foot { position: relative; }
+#load .menu { position: static; }
+#load .pop { right: 0; }
 .split > button { border-radius: var(--r-ctl) 0 0 var(--r-ctl); font-weight: 600; padding: 4px 14px; }
 .split .menu summary { border-radius: 0 var(--r-ctl) var(--r-ctl) 0; padding: 4px 8px; border-left: 1px solid #ffffff55; height: 100%; }
 .split .menu summary.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
@@ -92,7 +96,7 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 #recent { display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--line); padding-top: 8px; }
 #recent[hidden] { display: none; }
 #recent .recent-head { color: var(--dim); font-size: 12px; }
-#recent .item { max-width: 280px; }
+#recent .item { max-width: 100%; }
 #recent .item > span { display: flex; flex-direction: column; min-width: 0; }
 #recent .name, #recent .where { overflow: hidden; text-overflow: ellipsis; }
 #recent .where { color: var(--dim); font-size: 11px; }

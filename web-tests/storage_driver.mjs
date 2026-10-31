@@ -222,6 +222,11 @@ try {
   check(r.map((e) => e.name).join() === `${DRIVE[1].name},${DRIVE[0].name}`, `the dropdown lists the images opened, newest first, once each: ${JSON.stringify(r)}`);
   check(r.every((e) => e.logo) && (await page.$('#load-menu .item[data-src="drive"] svg.drive-logo')), "each recent, and From Google Drive, shows Drive's logo");
   check(!!(await page.$('#load-menu .item[data-src="local"] svg.computer-logo')), "1.15: From this computer shows a computer");
+  await page.click("#load-menu summary");
+  const fit = await page.evaluate(() => { const p = $("#load-menu .pop").getBoundingClientRect(), bar = $("#left"), b = bar.getBoundingClientRect();
+    return { pop: [Math.round(p.left), Math.round(p.right)], bar: [Math.round(b.left), Math.round(b.left + bar.clientWidth)], scrolls: bar.scrollWidth > bar.clientWidth }; });
+  await page.click("#load-menu summary");
+  check(fit.pop[0] >= fit.bar[0] && fit.pop[1] <= fit.bar[1] && !fit.scrolls, `the dropdown stays inside the left bar: ${JSON.stringify(fit)}`);
   await page.click("#load-menu summary"); await shot("load_recents", "#load-menu .pop"); await page.click("#load-menu summary");
   await drive();
   await page.check("#drive-autosave");
