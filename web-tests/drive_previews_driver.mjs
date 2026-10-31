@@ -131,7 +131,7 @@ try {
   await page.click("#drive-dlg button[value=close]");
 
   await page.click("#user-menu summary"); await page.click("#manage-storage");
-  await page.waitForFunction(() => $("#storage-dlg").open && !/Reading/.test($("#storage-list").textContent));
+  await page.waitForFunction(() => $("#usage-dlg").open && !/Reading/.test($("#storage-list").textContent));
   const thumbs = await page.evaluate(() => [...document.querySelectorAll("#storage-list .group[data-group=thumbs] .entry .name")].map((e) => e.textContent));
   check(thumbs.includes("Previews of Folder"), `Manage storage lists it among the thumbnails: ${thumbs}`);
 } catch (e) {

@@ -58,8 +58,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
   <details>
 
   With no sign-in, the user is whoever opened the page on this device. An avatar at the right of
-  the header opens a menu whose **Manage storage** dialog lists everything the site keeps on this
-  device, each with its size, in six groups, each folded when the dialog opens: the code kept for
+  the header opens a menu whose **Manage storage** opens the Storage tab of the resources dialog
+  (`1.43`), which lists everything the site keeps on this device, each with its size, in six groups, each folded when the dialog opens: the code kept for
   the next visit (Python and its packages, by file); image thumbnails, by the image's full name (by
   its Drive id for one saved before names were kept); image files saved from Google Drive, by name;
   settings, the shell's and the study's; the study's selections per image, by image name; and
@@ -127,14 +127,17 @@ test fold under it. A study's research requirements, which no user sees, stay in
   A crop or picture narrower than its box shrinks as a whole (`studies/nor/tests/test_page_layout.py`).
   </details>
 
-- `1.13` The status bar: the study's stage and its steps at the left, the disk, memory and version at the right.
+- `1.13` The status bar: the study's stage and its steps at the left, the disk, memory, network, CPU and version at the right.
   <details>
 
   From the left edge: the study's stage (`1.32`), then the breadcrumbs of its steps (`1.33`), then
   the spinner and what the page is doing now (each stage of Python's loading, the study's progress,
   an error in red) and the thumbnails' progress (`1.18`). From the right edge inward: the site's
-  version (stamped by each release; `1.14`, `1.23`), the memory (`1.34`) and the disk (`1.35`),
-  all three plain text with no border, alike. The image's name and the study's counts are in the
+  version (stamped by each release; `1.14`, `1.23`), the CPU (`1.45`), the network (`1.44`), the
+  memory (`1.34`) and the disk (`1.35`). Each of the four before the version is a small grey icon
+  and its number, with no word naming it; all five are plain, with no box, alike. A mild vertical
+  bar separates each item from the next. Nothing in the status bar turns the pointer into a
+  question mark. The image's name and the study's counts are in the
   breadcrumbs' popups: Load image names the image, the study's own step gives its counts. Test:
   `web-tests/test_status_bar_page.py`.
   </details>
@@ -157,7 +160,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   <details>
 
   The left bar's Image box holds the image: its name and what the file says (`1.16`), its channels
-  (`1.44`), and at its foot Load, with a dropdown for where from (this computer or Google Drive),
+  (`1.47`), and at its foot Load, with a dropdown for where from (this computer or Google Drive),
   filled and glowing until an image is open and a plain button with a blue border after. Load sits at
   the foot, not in the box's title, so the title keeps its place whether the box is folded or open.
   Each place in the dropdown has a small icon: a computer for this computer, Drive's logo for Google
@@ -307,7 +310,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   A study with no panels and no actions (`studies/viewer/`): it loads any TIFF or PNG and shows each
   channel, up to 8, under the name the file gives it (an OME channel name, an ImageJ label, never
   ImageJ's own made-up "c:1/3 - …") and in the colour the file displays it in (an ImageJ LUT, mixed
-  colours included), leaving what the file does not say to `1.44`; the image box says what the file
+  colours included), leaving what the file does not say to `1.47`; the image box says what the file
   states, its scale only when the file gives one in µm. A side bar it leaves empty gives its room to the image, and it
   has no ground truth, so a local image earns no notice about sending one. Test:
   `studies/viewer/tests/test_viewer.py`, `web-tests/test_study_runs.py`.
@@ -349,7 +352,10 @@ test fold under it. A study's research requirements, which no user sees, stay in
 - `1.32` A study declares its stage: PreGT, GT or PostGT.
   <details>
 
-  Every `study.json` names its `stage`, and the status bar shows it first, its meaning on hover.
+  Every `study.json` names its `stage`, and the status bar shows it first as a traffic light, its
+  name in no words: red for PreGT, yellow for GT, green for PostGT. Hovering it opens a popup
+  listing the three stages in order with what each means, the study's own highlighted and the
+  ones before it crossed out, and what the study needs to move on to the next.
   PreGT: the study's tools work but cannot make ground truth yet, so it offers no export: its
   ground-truth button (`groundTruth.button`) is hidden and it has no Submit GT step. GT: the same,
   with the ground truth exported and submitted (`1.26`). PostGT: GT with batch actions on top (none
@@ -369,28 +375,30 @@ test fold under it. A study's research requirements, which no user sees, stay in
   exported); the study says when its own steps are done (NoR: Run algorithm while the image was
   searched with the finder and settings now chosen, Review all items while every finalist has a
   verdict). Opening another image, or switching study (`1.30`), starts over. Hovering a crumb says what was done in that step
-  and when. The steps live in one state in the shell, and the crumbs and the shining buttons are
+  and when. Clicking the crumb that shines brings its button into view, unfolding the box it is in
+  (`1.41`) and scrolling to it, and presses it: a way there, a lesson in where it is, and a
+  shortcut. The steps live in one state in the shell, and the crumbs and the shining buttons are
   drawn from it alone. Test: `web-tests/test_status_bar_page.py`,
   `studies/nor/tests/test_ground_truth_page.py`.
   </details>
 
-- `1.34` The memory, "RAM 253 MB", opens what holds it and a Run GC button.
+- `1.34` The memory, a memory-chip icon and "253 MB", opens what holds it and a Run GC button.
   <details>
 
   The memory the tab holds: Python's, its files, the page's (Chrome and Edge say it) and an estimate
   for the compiled code and the browser, which a page cannot read; amber past a quarter of the
-  computer's total where the browser says it. Clicking it opens a popup listing each of those, and
-  within the page's share the image and the study's results, and the computer's total. Its Run GC
-  button has Python collect its garbage and says what Python then holds in use against what it has
-  reserved, which never shrinks; a page has no way to collect the browser's own. Test:
+  computer's total where the browser says it. Clicking it opens the Memory tab (`1.43`) listing each
+  of those, and within the page's share the image and the study's results, and the computer's
+  total. Its Run GC button has Python collect its garbage and says what Python then holds in use
+  against what it has reserved; the tab carries no essay on how Python's memory grows. Test:
   `web-tests/test_status_bar_page.py`.
   </details>
 
-- `1.35` The disk, "Disk 1.4 GB", opens Manage storage.
+- `1.35` The disk, a drive icon and "1.4 GB", opens the Storage tab.
   <details>
 
-  What the site keeps on this device, the total Manage storage reports (`1.6`), kept current as the
-  page saves or the user deletes. Clicking it opens Manage storage. Test:
+  What the site keeps on this device, the total the Storage tab reports (`1.6`), kept current as the
+  page saves or the user deletes. Clicking it opens the Storage tab (`1.43`). Test:
   `web-tests/test_status_bar_page.py`.
   </details>
 
@@ -489,7 +497,35 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `web-tests/test_drive_previews_page.py`.
   </details>
 
-- `1.43` The shell's controls are drawn from one page state, and change only it.
+- `1.43` Storage, memory, network and CPU are four tabs of one dialog, alike.
+  <details>
+
+  Set by the owner on 2026-10-31. The disk, memory, network and CPU in the status bar each open
+  the same dialog on their own tab, and its tabs switch between them. Every tab is laid out the
+  same way: a line with the total, then rows of a name, what it is in grey beneath, and a size at
+  the right, then a row of the tab's own buttons and Close. Test: `web-tests/test_status_bar_page.py`.
+  </details>
+
+- `1.44` The network, a download icon and "52 MB", is what this tab has downloaded since it opened.
+  <details>
+
+  Set by the owner on 2026-10-31. Its tab splits it into the page's own files, Python with its
+  packages and the study's Python, and Google Drive. What comes from this browser's caches counts
+  nothing; Google's small pictures of images in the Drive dialog are not counted, since Google does
+  not let a page read their size. Test: `web-tests/test_status_bar_page.py`.
+  </details>
+
+- `1.45` The CPU, a processor icon and "12%", is how busy this tab's threads are now.
+  <details>
+
+  Set by the owner on 2026-10-31. The page's own thread and Python's, each as a share of one core
+  over the last two seconds, their sum in the status bar, as a browser's task manager counts it.
+  An estimate, which its tab says: Python's share is the time it spent working; the page's is its
+  long tasks, which only Chrome and Edge report (elsewhere it shows as unknown); the browser's own
+  work, its drawing included, is not counted. Test: `web-tests/test_status_bar_page.py`.
+  </details>
+
+- `1.46` The shell's controls are drawn from one page state, and change only it.
   <details>
 
   Set by the owner on 2026-10-31. Which image is open (or being read), and the minimap's mode and
@@ -500,7 +536,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `web-tests/test_image_box_page.py`.
   </details>
 
-- `1.44` Each channel has its row: shown or not, its black and white points, its name and its description.
+- `1.47` Each channel has its row: shown or not, its black and white points, its name and its description.
   <details>
 
   Set by the owner on 2026-10-31. One row per channel of the image: a checkbox in the channel's
@@ -741,4 +777,3 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   `web-tests/test_published_site.py`, which checks that every file a study's page module fetches is
   published.
   </details>
-

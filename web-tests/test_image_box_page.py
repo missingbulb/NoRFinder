@@ -1,4 +1,4 @@
-"""1.15, 1.17, 1.43, 1.44: the Image box (Load and Unload at its foot, each channel's row and levels), the
+"""1.15, 1.17, 1.46, 1.47: the Image box (Load and Unload at its foot, each channel's row and levels), the
 minimap over the image and the page state the shell's controls are drawn from, on the fixture study in
 headless Chromium with a stand-in worker (image_box_driver.mjs); and how each channel's words and colour are
 chosen (channels_driver.mjs)."""

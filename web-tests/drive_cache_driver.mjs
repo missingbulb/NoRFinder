@@ -191,7 +191,7 @@ try {
   check((await tip()) === null && (await page.evaluate(() => JSON.parse(localStorage.getItem("nor-tips-closed")) || [])).includes("recent-files"), "opening the dropdown closes it for good");
 
   await page.click("#user-menu summary"); await page.click("#manage-storage");
-  await page.waitForFunction(() => $("#storage-dlg").open && !/Reading/.test($("#storage-list").textContent));
+  await page.waitForFunction(() => $("#usage-dlg").open && !/Reading/.test($("#storage-list").textContent));
   check(await page.evaluate(() => [...document.querySelectorAll("#storage-list .group[data-group=settings] .entry .name")].some((e) => e.textContent === "Tips you closed")), "Manage storage lists the closed tips among the settings");
 } catch (e) {
   failed = true; console.error("FAILED: " + e.message);

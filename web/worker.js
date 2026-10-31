@@ -47,14 +47,16 @@ async function loadStudy(id) {
   stage = "Downloading packages";
   const bufs = await wheels;
   if (bufs.length) say(m.progress?.install || "Installing Python's packages…");
-  const site = py.runPython("import sysconfig; sysconfig.get_path('purelib')");
-  for (const { url, buf } of bufs) { py.unpackArchive(buf, "wheel", { extractDir: site }); unpacked.add(url); }
+  working(() => {
+    const site = py.runPython("import sysconfig; sysconfig.get_path('purelib')");
+    for (const { url, buf } of bufs) { py.unpackArchive(buf, "wheel", { extractDir: site }); unpacked.add(url); }
+  });
   say(m.progress?.load || "Loading the study…");
   // the study's Python modules are read straight from the repo's layout as they are imported: a new module
   // in one of its folders ships with no list to update
   py.globals.set("bases", py.toPy(m.python.paths.map((b) => new URL(b, studyBase).href)));
   py.globals.set("entry", m.python.entry);
-  py.runPython(`
+  working(() => py.runPython(`
 import sys, os, gc, importlib, importlib.util
 from js import XMLHttpRequest
 
@@ -83,7 +85,7 @@ globals().pop('S', None)
 gc.collect()
 import json
 study = importlib.import_module(entry)
-`);
+`));
   files = py.runPython("sum(os.path.getsize(os.path.join(d, f)) for top in ('/lib', '/py') for d, _, fs in os.walk(top) for f in fs)");
   post({ type: "ready", info: JSON.parse(py.runPython("study.ready()")), secs: (performance.now() - t0) / 1000 });
 }
@@ -115,14 +117,23 @@ async function fetchWheel({ url, sha256 }) {
 
 // every message names the study it is from, so the page can drop a late answer for a study that left;
 // every answer says how large Python's memory has grown, which never shrinks and is most of the tab's, and
-// what Python's files take: the file system, Python's own library and the packages installed, is in memory
-let files = 0;
-const post = (m, transfer) => postMessage({ ...m, study: current, ...(py && { heap: py._module.HEAPU8.byteLength, files }) }, transfer);
+// what Python's files take: the file system, Python's own library and the packages installed, is in memory.
+// Each also says, for the status bar, how long Python has spent working (busy: {ms, since}, since set while it
+// works) and what this thread downloaded that the service worker did not answer, which its timings give as 0.
+let files = 0, downloaded = 0;
+const busy = { ms: 0, since: null };
+try { new PerformanceObserver((l) => { for (const e of l.getEntries()) downloaded += e.transferSize || 0; }).observe({ type: "resource", buffered: true }); } catch { /* no timings */ }
+const post = (m, transfer) => postMessage({ ...m, study: current, busy, net: downloaded, ...(py && { heap: py._module.HEAPU8.byteLength, files }) }, transfer);
+// Python's work holds this thread, so the page hears when it starts and when it ends
+function working(fn) {
+  busy.since = Date.now(); post({ type: "busy" });
+  try { return fn(); } finally { busy.ms += Date.now() - busy.since; busy.since = null; post({ type: "busy" }); }
+}
 let answer;
 async function handle(m) {
   if (m.type === "study") return loadStudy(m.id);
   answer ||= bridge(py, post, manifest.progress);
-  answer(m);
+  working(() => answer(m));
 }
 
 // a message waits for the one before it: the first study loads before anything is asked of it

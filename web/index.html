@@ -111,23 +111,19 @@
 </div>
 
 <footer id="statusbar">
-  <span id="sb-stage" class="sb-item"></span>
+  <span id="sb-stage" class="sb-item" tabindex="0"><svg viewBox="0 0 12 26" width="10" height="22" aria-hidden="true"><rect class="housing" x="0.5" y="0.5" width="11" height="25" rx="3"/><circle data-light="red" cx="6" cy="6" r="3.2"/><circle data-light="yellow" cx="6" cy="13" r="3.2"/><circle data-light="green" cx="6" cy="20" r="3.2"/></svg></span>
   <nav id="sb-steps" aria-label="Steps"></nav>
-  <span class="spin" id="spin"></span><span id="status">Starting…</span>
+  <span id="sb-now"><span class="spin" id="spin"></span><span id="status">Starting…</span></span>
   <span id="sb-thumbs"></span>
   <span class="grow"></span>
-  <button id="sb-disk" class="sb-item" type="button" title="What this site keeps on this device. Click to manage it."></button>
-  <button id="sb-memory" class="sb-item" type="button" popovertarget="ram-pop"></button>
+  <button id="sb-disk" class="sb-item" type="button" title="What this site keeps on this device. Click to manage it." aria-label="Storage"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="13" height="8" rx="1.5"/><path d="M4 9.5h4"/><circle cx="11.5" cy="9.5" r=".4"/></svg><span class="v"></span></button>
+  <button id="sb-memory" class="sb-item" type="button" aria-label="Memory"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="13" height="6.5" rx="1"/><path d="M4.5 6.5v1.5M7 6.5v1.5M9 6.5v1.5M11.5 6.5v1.5M3.5 10.5v2M6 10.5v2M8 10.5v2M10 10.5v2M12.5 10.5v2"/></svg><span class="v"></span></button>
+  <button id="sb-net" class="sb-item" type="button" title="What this tab has downloaded since it opened. Click for more." aria-label="Network"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8.5M4.5 7 8 10.5 11.5 7M2.5 13.5h11"/></svg><span class="v"></span></button>
+  <button id="sb-cpu" class="sb-item" type="button" title="How busy this tab's threads are now, as a share of one core. Click for more." aria-label="CPU"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="8" height="8" rx="1"/><rect x="6.5" y="6.5" width="3" height="3"/><path d="M6 1.5V4M10 1.5V4M6 12v2.5M10 12v2.5M1.5 6H4M1.5 10H4M12 6h2.5M12 10h2.5"/></svg><span class="v"></span></button>
   <button id="sb-version" class="sb-item" type="button"></button>
   <div id="whats-new" role="status" hidden><button id="whats-new-open" type="button"></button><button id="whats-new-x" class="x" type="button" aria-label="Close">×</button></div>
 </footer>
-<div id="ram-pop" popover aria-labelledby="ram-title">
-  <h2 id="ram-title">Memory</h2>
-  <p class="hint" id="ram-total"></p>
-  <div id="ram-list"></div>
-  <p class="hint">Python's share only ever grows: memory it frees stays reserved for its next use. Run GC has Python collect what it no longer needs; a page cannot collect the browser's own.</p>
-  <div class="drive-row end"><span id="ram-msg" class="hint"></span><span class="grow"></span><button id="ram-gc" type="button" disabled>Run GC</button></div>
-</div>
+<div id="stage-pop" popover="manual" aria-labelledby="stage-title"><h2 id="stage-title">The study's stage</h2><ol id="stage-list"></ol><p id="stage-next"></p></div>
 
 <dialog id="drive-dlg">
   <form method="dialog">
@@ -168,12 +164,14 @@
     <div class="drive-row end"><span class="grow"></span><button value="close" class="primary" autofocus>Close</button></div>
   </form>
 </dialog>
-<dialog id="storage-dlg" aria-labelledby="storage-title">
+<dialog id="usage-dlg" aria-label="What this page uses">
   <form method="dialog">
-    <h2 id="storage-title">Manage storage</h2>
-    <p class="hint" id="storage-total"></p>
-    <div id="storage-list"></div>
-    <div class="drive-row end"><span id="storage-msg" class="hint"></span><span class="grow"></span><button id="storage-reload" type="button" hidden>Reload the page</button><button value="close" class="primary">Close</button></div>
+    <div class="tab-row" role="tablist"><button type="button" role="tab" data-tab="storage">Storage</button><button type="button" role="tab" data-tab="memory">Memory</button><button type="button" role="tab" data-tab="network">Network</button><button type="button" role="tab" data-tab="cpu">CPU</button></div>
+    <section role="tabpanel" data-tab="storage" hidden><p class="hint total" id="storage-total"></p><div id="storage-list" class="rows"></div></section>
+    <section role="tabpanel" data-tab="memory" hidden><p class="hint total" id="ram-total"></p><div id="ram-list" class="rows"></div></section>
+    <section role="tabpanel" data-tab="network" hidden><p class="hint total" id="net-total"></p><div id="net-list" class="rows"></div></section>
+    <section role="tabpanel" data-tab="cpu" hidden><p class="hint total" id="cpu-total"></p><div id="cpu-list" class="rows"></div></section>
+    <div class="drive-row end"><span id="storage-msg" class="hint" data-for="storage"></span><span id="ram-msg" class="hint" data-for="memory"></span><span class="grow"></span><button id="storage-reload" type="button" data-for="storage" hidden>Reload the page</button><button id="ram-gc" type="button" data-for="memory" disabled>Run GC</button><button value="close" class="primary">Close</button></div>
   </form>
 </dialog>
 <div id="tip" hidden></div>
