@@ -98,9 +98,10 @@ const crumbs = (page) => page.evaluate(() => [...document.querySelectorAll("#sb-
 const idle = (page) => page.waitForFunction(() => !document.querySelector("button.working"));
 
 // the middle of the view, as a point on the screen and on the image
+// the middle of the part of the image in view, which a wide view may leave room beside
 const middle = (page) => page.evaluate(() => {
   const v = $("#scroller").getBoundingClientRect(), b = $("#base").getBoundingClientRect();
-  const sx = v.left + v.width / 2, sy = v.top + v.height / 2;
+  const sx = (Math.max(v.left, b.left) + Math.min(v.right, b.right)) / 2, sy = (Math.max(v.top, b.top) + Math.min(v.bottom, b.bottom)) / 2;
   return { sx, sy, x: (sx - b.left) / st.zoom, y: (sy - b.top) / st.zoom };
 });
 

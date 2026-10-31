@@ -164,8 +164,7 @@ try {
 
   // a thumbnail saved from now on keeps its image's name
   await page.evaluate(() => {
-    const px = new Uint8Array(16).fill(100);
-    Object.assign(st, { W: 4, H: 4, img: { r: px, g: px, b: px } });
+    Object.assign(st, { W: 4, H: 4, img: { planes: new Uint8Array(48).fill(100), n: 3 } });
     shellForTests.saveThumb("ID3", "new slide.tif");
   });
   check((await page.evaluate(() => JSON.parse(localStorage.getItem("nor-drive-thumb-names")).ID3)) === "new slide.tif", "a thumbnail saved now keeps its image's name");

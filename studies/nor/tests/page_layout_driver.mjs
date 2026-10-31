@@ -1,7 +1,8 @@
 // Drives the page (web/) in headless Chromium with a stand-in worker that answers from ANSWERS, a folder
 // of real results written by tests/test_memory.py, and checks that no image is drawn out of its own
-// proportions when the side bars are narrow: the thumbnail, the image, the cards in both item views and
-// the selected card. Prints what it measured; exits 1 on a skewed image, 2 when it cannot run.
+// proportions when the side bar is narrow: the minimap, the image, the cards in both item views and the
+// selected card; and where the selected card and Submit Ground Truth sit, with no right bar. Prints what it
+// measured; exits 1 on a skewed image or a misplaced part, 2 when it cannot run.
 //   node tests/page_layout_driver.mjs ANSWERS IMAGE
 import { repoFile } from "../../../web-tests/repo_file.mjs";
 import { createRequire } from "node:module";
@@ -69,14 +70,37 @@ for (const width of [1000, 1600]) {
   await page.waitForFunction(() => !document.querySelector("#find").disabled);
   await page.click("#find");
   await page.waitForFunction(() => st.alone && $("#busy").hidden);
-  await page.click("#sel-next");
+    // ---- the selected card over the image's top right corner, only while one is selected; Submit Ground
+  // Truth at the toolbar's right end; no right bar (3.2, 3.4, 3.13) ----
+  const fail = async (what, seen) => { console.error("FAILED: " + what + ": " + JSON.stringify(seen)); await done(1); };
+  if (await page.isVisible("#selected-box")) await fail("the selected card shows with nothing selected", true);
+  const sc = await page.locator("#scroller").boundingBox();
+  await page.mouse.move(sc.x + sc.width / 2, sc.y + sc.height / 2);
+  await page.mouse.wheel(200, 0); // a sideways swipe steps to the first candidate
+  await page.waitForSelector("#selected-box", { state: "visible" });
+  const layout = await page.evaluate(() => {
+    const box = (s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return { l: r.left, t: r.top, r: r.right, b: r.bottom }; };
+    const tools = [...document.querySelector(".toolbar").children].filter((e) => e.offsetParent && e.tagName !== "SLOT-HERE");
+    return { sel: box("#selected-box"), view: box("#image-view"), mm: box("#minimap"), crop: box("#selected .crop-wrap canvas, #selected .crop-wrap img"),
+      prev: box("#sel-prev"), next: box("#sel-next"), title: document.querySelector("#selected-box h2")?.textContent || "",
+      stepIn: !!document.querySelector("#selected .crop-wrap #sel-prev"), right: !!document.querySelector("#right"),
+      gt: document.querySelector("#dl-truth").textContent.trim(), gtLast: tools[tools.length - 1]?.id };
+  });
+  console.log(JSON.stringify(layout));
+  if (layout.title) await fail("the selected card has a title", layout.title);
+  if (Math.abs(layout.sel.r - layout.view.r) > 40 || Math.abs(layout.sel.t - layout.view.t) > 40) await fail("the selected card is not at the image's top right corner", layout);
+  if (layout.mm && layout.mm.r > layout.sel.l) await fail("the minimap and the selected card overlap", layout);
+  if (!layout.stepIn || layout.prev.b > layout.crop.b + 1 || layout.prev.t < layout.crop.t || layout.next.l < layout.prev.r - 1) await fail("previous and next do not hover side by side over the bottom of the selected crop", layout);
+  if (layout.gt !== "Submit Ground Truth" || layout.gtLast !== "dl-truth") await fail("Submit Ground Truth is not the toolbar's last button", layout);
+  if (layout.right) await fail("the right bar is still there", layout);
+  if (process.env.SHOTS) { await page.evaluate(() => { $("#notice").hidden = true; }); await page.mouse.move(5, 5); await page.screenshot({ path: `${process.env.SHOTS}/${width}_image.png` }); }
   const views = [["image", async () => {}], ["finalists", () => page.click("#switch")], ["rejected", () => page.click("#tab-fail")]];
   for (const [view, go] of views) {
     await go(); await page.waitForFunction(() => !document.querySelector("button.working"));
     const got = await measure(page);
     const cards = got.filter((g) => g.where === "list").length, selected = got.filter((g) => g.where === "selected").length;
     console.log(`${width}px ${view}: ${got.length} images, ${cards} cards, ${selected} selected`);
-    if (!selected) { console.error("no selected card drawn"); await done(1); }
+    if (!selected !== (view !== "image")) { console.error(view === "image" ? "no selected card drawn" : `the selected card shows over the ${view}`); await done(1); }
     if (view !== "image" && !cards) { console.error(`no ${view} cards drawn`); await done(1); }
     seen += got.length;
     // the rejected are never turned level, so their Options menu does not offer it

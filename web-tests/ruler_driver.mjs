@@ -56,7 +56,9 @@ async function open(um) {
   scale = um || [null, null];
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   await ctx.route((u) => !u.href.startsWith(origin), (r) => r.abort());
-  await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
+  // the minimap hidden, as a user would put it away: it hovers over the image's top left corner, where these
+  // checks point and click
+  await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; localStorage.setItem("nor-minimap", JSON.stringify({ mode: "hidden" })); });
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);

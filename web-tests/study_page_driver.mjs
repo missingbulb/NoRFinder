@@ -81,12 +81,12 @@ try {
   await page.evaluate(() => { window.stayed = true; });
   const menu = () => page.evaluate(() => ({
     items: [...document.querySelectorAll("#study-list a")].map((a) => a.textContent + (a.getAttribute("aria-current") ? "*" : "")),
-    noRight: document.querySelector("#layout").classList.contains("no-right"),
+    right: !!document.querySelector("#right, #gutter-right"),
   }));
   const fixtureMenu = await menu();
   console.log(JSON.stringify(fixtureMenu));
   if (fixtureMenu.items.join() !== "Image Viewer,NoR Finder") problems.push("the switcher does not list the listed studies, or ticks one not on show: " + fixtureMenu.items);
-  if (fixtureMenu.noRight) problems.push("a study with a right-hand panel lost its right bar");
+  if (fixtureMenu.right) problems.push("the page still has a right bar");
   await page.setInputFiles("#file", image);
   await page.waitForFunction(() => !document.querySelector("#fx-count").disabled);
   const base = await page.evaluate(() => [document.querySelector("#base").width, document.querySelector("#base").height]);
@@ -113,6 +113,7 @@ try {
     file: document.querySelector("#file-name").textContent, fixture: !!document.querySelector("#fx-box, #fx-result"),
     css: [...document.querySelectorAll("link[rel=stylesheet]")].map((l) => l.getAttribute("href")).filter((h) => h.includes("studies/")),
     channels: [...document.querySelectorAll("#channels label")].map((l) => l.textContent).join(),
+    noHelp: !document.querySelector("#channels .help"),
   }));
   await page.click("#study-menu summary");
   const focused = await page.waitForFunction(() => document.activeElement?.type === "search").then(() => true, () => false);
@@ -128,7 +129,8 @@ try {
   if (inViewer.path !== "/web/") problems.push("the Image Viewer's address is not the bare one: " + inViewer.path);
   if (inViewer.image !== "80,60" || inViewer.file !== "squares.png") problems.push("the open image did not stay open: " + inViewer.image + " " + inViewer.file);
   if (inViewer.fixture || inViewer.css.length) problems.push("the fixture left its panels or stylesheet behind: " + inViewer.css);
-  if (inViewer.channels !== "Red,Green,Blue") problems.push("the channels are still the old study's: " + inViewer.channels);
+  // the Image Viewer names no channels: the fixture's one plane, named by nothing, is grey
+  if (inViewer.channels !== "Grey" || !inViewer.noHelp) problems.push("the channels are still the old study's: " + inViewer.channels);
   // the last row asks GitHub for a new study, on the form the repo carries
   const request = await page.evaluate(() => {
     const a = document.querySelector("#study-request"), rows = [...document.querySelectorAll("#study-menu .pop a")];
@@ -140,7 +142,6 @@ try {
   else if (!form || !fs.existsSync(path.join(repo, ".github", "ISSUE_TEMPLATE", form))) problems.push("Submit New Study Request opens a form the repo does not carry: " + request.href);
   const viewerMenu = await menu();
   if (viewerMenu.items.join() !== "Image Viewer*,NoR Finder") problems.push("the switcher does not tick the study on show: " + viewerMenu.items);
-  if (!viewerMenu.noRight) problems.push("a study with nothing on the right still keeps the right bar");
 
   // into NoR Finder by a click, then back: NoR's panels and listeners leave with it
   await page.click("#study-menu summary");

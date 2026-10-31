@@ -115,10 +115,12 @@ test fold under it. A study's research requirements, which no user sees, stay in
   GitHub's: 64 px tall, 16 px at the sides, a 32 px logo. Test: `web-tests/test_study_runs.py`.
   </details>
 
-- `1.11` Side bars drag wider or narrower (remembered; a double click restores one).
+- `1.11` The left bar drags wider or narrower (remembered; a double click restores it); there is no right bar.
   <details>
 
-  Folding or unfolding a box never changes a bar's width.
+  Folding or unfolding a box never changes the bar's width. Set by the owner on 2026-10-31: the page
+  has no right bar; what a study once put there goes over the image (its `over-image` slot) or at
+  the toolbar's right end (its `toolbar-end` slot).
   </details>
 
 - `1.12` No image is ever drawn out of its proportions.
@@ -156,13 +158,18 @@ test fold under it. A study's research requirements, which no user sees, stay in
   (`web-tests/test_version_history.py`, `web-tests/test_version_history_page.py`).
   </details>
 
-- `1.15` Load opens an image from this computer or Google Drive, and shines until one is open.
+- `1.15` Load opens an image from this computer or Google Drive, and shines until one is open; Unload beside it closes it.
   <details>
 
-  The left bar's Load Image box holds the image: Load, with a dropdown for where from (this computer or Google
-  Drive), filled and glowing until an image is open and a plain button with a blue border after.
-  Each place in the dropdown has a small icon: a computer for this computer, Drive's logo for
-  Google Drive. Test: `web-tests/test_storage_page.py`.
+  The left bar's Image box holds the image: its name and what the file says (`1.16`), its channels
+  (`1.47`), and at its foot Load, with a dropdown for where from (this computer or Google Drive),
+  filled and glowing until an image is open and a plain button with a blue border after. Load sits at
+  the foot, not in the box's title, so the title keeps its place whether the box is folded or open.
+  Each place in the dropdown has a small icon: a computer for this computer, Drive's logo for Google
+  Drive. Once an image is open, Unload stands beside Load and clears the page back to before any image:
+  no image, no minimap, the steps starting over at Load image, the boxes folded as at first, and the
+  study starting over too, its panels as they were before any image; Python lets the image go. Test:
+  `web-tests/test_storage_page.py`, `web-tests/test_image_box_page.py`.
   </details>
 
 - `1.16` The image's name unfolds what the file says about the image, and nothing it does not say.
@@ -173,14 +180,23 @@ test fold under it. A study's research requirements, which no user sees, stay in
   so), and the software that saved it (`studies/nor/tests/test_file_info.py`).
   </details>
 
-- `1.17` A thumbnail of the part in view, a checkbox per colour layer, and drag, zoom and step by mouse.
+- `1.17` A minimap hovers over the image, showing the part in view; drag, zoom and step by mouse.
   <details>
 
-  Below the image's name a thumbnail shows the part in view, and moves the view when clicked; a
-  checkbox per colour layer, in that layer's colour when on, blue off at first. Dragging moves the
-  image; scrolling up and down zooms around the pointer in small steps; scrolling sideways steps to
-  the study's previous or next item (for NoR, the candidate). The main area's toolbar holds the zoom
-  at its right.
+  Set by the owner on 2026-10-31. The minimap (a small picture of the whole image, the part in view
+  outlined; never called a thumbnail, which is a file's picture in a list) hovers over the image's top
+  left corner, headed "Minimap" and framed by a solid white border that sets it apart from any image;
+  a click or a drag on it moves the view there. It shows only while the image is larger than the view:
+  with the whole image in view there is nothing to navigate, and it would only cover the image's
+  corner. A ^ at one end of its header collapses it to the
+  header, and the same spot then shows v, which opens it again, so a second click undoes the first;
+  an X at the header's other end hides it. A Minimap button in the toolbar, beside the Grid, shows it
+  again or hides it, pressed while it shows; hovering over the button opens a popup choosing how
+  see-through it is at rest, opaque at first and always opaque under the pointer. Whether it shows and its opacity are kept as the user's settings for the
+  next visit. Dragging moves the image; scrolling up and down zooms around the pointer in small steps;
+  scrolling sideways steps to the study's previous or next item (for NoR, the candidate). The main
+  area's toolbar holds the zoom at its right, and its tools wait for an image. Test:
+  `web-tests/test_image_box_page.py`.
   </details>
 
 - `1.18` Google Drive: paste a shared link, no sign-in; browse folders; open on Open, double click or Enter.
@@ -296,9 +312,10 @@ test fold under it. A study's research requirements, which no user sees, stay in
   <details>
 
   A study with no panels and no actions (`studies/viewer/`): it loads any TIFF or PNG and shows each
-  channel in the colour the file displays it in (an ImageJ LUT, mixed colours included), else red,
-  green and blue in order, a grey image grey; the image box says what the file states, its scale
-  only when the file gives one in µm. A side bar it leaves empty gives its room to the image, and it
+  channel, up to 8, under the name the file gives it (an OME channel name, an ImageJ label, never
+  ImageJ's own made-up "c:1/3 - …") and in the colour the file displays it in (an ImageJ LUT, mixed
+  colours included), leaving what the file does not say to `1.47`; the image box says what the file
+  states, its scale only when the file gives one in µm. A side bar it leaves empty gives its room to the image, and it
   has no ground truth, so a local image earns no notice about sending one. Test:
   `studies/viewer/tests/test_viewer.py`, `web-tests/test_study_runs.py`.
   </details>
@@ -456,8 +473,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
   <details>
 
   Set by the owner on 2026-10-30. Every box in the left bar folds under its title, and clicking the
-  title opens or closes it. The first is the shell's Load Image (Load, the image's details, its
-  thumbnail and colour layers): open until an image opens, then folded. Each of a study's boxes
+  title opens or closes it. The first is the shell's Image box (the image's details, its channels, Load
+  and Unload): open until an image opens, then folded. Each of a study's boxes
   names the step (`1.33`) after which it opens, or that only its title opens it, and may name the
   step after which it folds again. When a step is done by the user (an image opening, or the
   step's button pressed, never a dial set back to the last run's) its boxes open and the boxes it
@@ -512,6 +529,33 @@ test fold under it. A study's research requirements, which no user sees, stay in
   work, its drawing included, is not counted. Test: `web-tests/test_status_bar_page.py`.
   </details>
 
+- `1.46` The shell's controls are drawn from one page state, and change only it.
+  <details>
+
+  Set by the owner on 2026-10-31. Which image is open (or being read), and the minimap's mode and
+  opacity, live in one page state in the shell (`web/page_state.js`). Loading and unloading an image
+  change that state, and every control showing a part of it (Load and Unload, the image's name and
+  details, the channels, the view, the minimap and its toolbar button) redraws from it; no control
+  reaches into another to change it. The steps (`1.33`) are a state of the same kind. Test:
+  `web-tests/test_image_box_page.py`.
+  </details>
+
+- `1.47` Each channel has its row: shown or not, its black and white points, its name and its description.
+  <details>
+
+  Set by the owner on 2026-10-31. One row per channel of the image: a checkbox in the channel's
+  colour that shows or hides it, its name, a (?) whose hover shows the study's description of it (at
+  most 100 words), the file's own name for it when the study names it otherwise, and one slider
+  holding two points: at or below the black point the channel is dark, at or above the white point
+  its full colour, in proportion between; the black point stays below the white. A double click on
+  the slider puts the points back. The channels are added together, each in its colour. A channel's
+  name, colour, description, whether it shows at first and its first points come from the study's
+  `channels` for the channel at that place, else from what the file says (the study's Python), else
+  from its place: red, green and blue, then more colours, a lone channel grey; a channel the file
+  colours but does not name is named for its colour. The rows start over with every image. Test:
+  `web-tests/test_image_box_page.py`, `studies/viewer/tests/test_viewer.py`.
+  </details>
+
 ## `2` The repo's checks
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.
@@ -539,15 +583,17 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   finding again.
   </details>
 
-- `3.2` The left bar holds Load Image, Preprocessing, Algorithms, Post-processing and Summary; the right bar the selected candidate and the ground truth.
+- `3.2` The left bar holds Image, Preprocessing, Algorithms, Post-processing and Summary; the selected candidate is over the image, Submit Ground Truth in the toolbar.
   <details>
 
-  Changed by the owner on 2026-10-30. Below Load Image (`1.41`) the left bar holds Preprocessing,
+  Changed by the owner on 2026-10-30. Below the Image box (`1.41`) the left bar holds Preprocessing,
   which has no steps yet and says so, open from the image's opening until Find Candidates; Algorithms,
   the candidates finder (its "how it works" and its settings fold away), open over the same span;
   Post-processing, the filters, which only its title opens; and Summary, which opens once the
   candidates are found. The main area has a toolbar over two views: the image and the
-  individual items, with the button that switches between them at its left.
+  individual items, with the button that switches between them at its left and Submit Ground Truth
+  (`3.13`) at its right end, in both views. Changed by the owner on 2026-10-31: there is no right bar
+  (`1.11`).
   </details>
 
 - `3.3` The Show menu switches each kind of marking on and off (remembered).
@@ -560,8 +606,10 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 - `3.4` One selected candidate, decided on its card with a thumbs up or down.
   <details>
 
-  Clicking a candidate selects it (a thin white ring) and clicking it again deselects it. Its card
-  sits in the right bar with buttons to the previous and next candidate by number. Decisions are
+  Clicking a candidate selects it (a thin white ring) and clicking it again deselects it. Changed by
+  the owner on 2026-10-31: its card alone, with no title, hovers over the image's top right corner
+  while a candidate is selected, and only then; buttons to the previous and next candidate by number
+  hover over the bottom of its crop. Decisions are
   made on cards, not by clicking the image, with a thumbs up (a real NoR, with the lengths shown)
   and a thumbs down (not one) at the card's top, each saying what it does in its tooltip; pressing
   the chosen one again undoes it and lets the filters decide. Pressing either also selects that
@@ -625,7 +673,7 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   and shows or hides the NoR borders, the measurement bars, the lengths on the crop, the lengths on
   the card and the measurement adjusters. The finalists open with a 4 px padding and everything on
   but the lengths on the card; the rejected open with a 10 px padding and only the NoR borders on.
-  The selected card in the right bar uses the options of the view that lists it.
+  The selected card over the image uses the options of the view that lists it.
   </details>
 
 - `3.11` A card's adjusters correct its lengths and width by dragging.
@@ -647,13 +695,14 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   shaded, and the mean, SD and n written above it, with no separate table.
   </details>
 
-- `3.13` Download Candidates and Download Summary give CSVs; Submit new GT to GitHub gives the ground truth.
+- `3.13` Download Candidates and Download Summary give CSVs; Submit Ground Truth gives the ground truth.
   <details>
 
   Moved by the owner on 2026-10-07. At the bottom of the Summary box, side by side across its width,
   Download Candidates gives the candidates as CSV (every candidate, its status, its reasons, the
-  user's decision and its measurements) and Download Summary the summary as CSV. In the box below
-  it, titled Ground Truth, the Submit new GT to GitHub button gives the ground truth
+  user's decision and its measurements) and Download Summary the summary as CSV. Submit Ground
+  Truth, at the right end of the main area's toolbar (moved there by the owner on 2026-10-31, and
+  shown only in a GT or PostGT study, `1.32`), gives the ground truth
   (`norfinder-ground-truth/2`): a JSON file naming the image (its SHA-256, and where it was loaded
   from: its Google Drive id and link, or "local") that lists only what the user marked: every
   candidate voted up (label 1, with its lengths and length lines, marked adjusted or approved) or
@@ -666,8 +715,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 - `3.14` The submit button's icon says how finished the work is; its popup lists what is left.
   <details>
 
-  Changed by the owner on 2026-10-06 and twice on 2026-10-07. A small icon beside the Submit new GT
-  to GitHub button's text says how finished the work is: a green check when every finalist has the
+  Changed by the owner on 2026-10-06 and twice on 2026-10-07. A small icon beside the Submit Ground
+  Truth button's text says how finished the work is: a green check when every finalist has the
   user's verdict, an orange warning when some candidates have one but a finalist does not, and a red
   error when no candidate has one yet or a candidate the user added still waits for a verdict; the
   warning and the error pulse gently. Any animation scrolled out of view is paused, since Chrome

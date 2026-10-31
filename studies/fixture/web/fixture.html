@@ -6,13 +6,16 @@
   </section>
   <section class="box foldable" data-opens="count">
     <div class="sec-head"><h2>Counted</h2></div>
-    <p class="hint">The count is on the right.</p>
+    <p class="hint">The count is in the Result box.</p>
   </section>
   <section class="box foldable" data-opens="user">
     <div class="sec-head"><h2>Notes</h2></div>
     <p class="hint">Opened only by its title.</p>
   </section>
 </template>
-<template data-slot="right">
-  <section class="box"><h2>Result</h2><div id="fx-result" class="dim">Nothing counted yet.</div><button id="fx-truth" disabled>Submit ground truth</button></section>
+<template data-slot="left">
+  <section class="box"><h2>Result</h2><div id="fx-result" class="dim">Nothing counted yet.</div></section>
+</template>
+<template data-slot="toolbar-end">
+  <button id="fx-truth" disabled>Submit ground truth</button>
 </template>

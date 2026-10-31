@@ -44,8 +44,10 @@
 <div id="layout">
   <aside id="left">
     <section class="box foldable" id="image-box" data-folds="load">
-      <div class="sec-head">
-        <h2>Load Image</h2>
+      <div class="sec-head"><h2>Image</h2></div>
+      <details id="file-box" class="empty"><summary id="file-name" class="dim">No image loaded</summary><dl id="file-info"></dl></details>
+      <div id="channels"></div>
+      <div id="image-foot">
         <div class="split" id="load">
           <button id="load-main" class="primary">Load</button><details class="menu" id="load-menu"><summary class="primary" aria-label="Where to load from"></summary>
             <div class="pop right">
@@ -55,12 +57,10 @@
             </div>
           </details>
         </div>
+        <button id="unload" type="button" hidden title="Close the image and clear the page">Unload</button>
         <input id="file" type="file" hidden>
         <svg hidden><symbol id="drive-logo" viewBox="0 0 24 21"><path fill="#0f9d58" d="M8 0l4 7-8 14-4-7z"/><path fill="#ffba00" d="M8 0h8l8 14h-8z"/><path fill="#4285f4" d="M8 14h16l-4 7H4z"/></symbol><symbol id="computer-logo" viewBox="0 0 24 21"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2" y="1" width="20" height="14" rx="2"/><path d="M8 20h8M12 15v5"/></g></symbol></svg>
       </div>
-      <details id="file-box" class="empty"><summary id="file-name" class="dim">No image loaded</summary><dl id="file-info"></dl></details>
-      <div id="thumb-wrap" hidden><canvas id="thumb"></canvas><div id="thumb-view"></div></div>
-      <div class="layers" id="channels"></div>
     </section>
 
     <slot-here data-slot-for="left"></slot-here>
@@ -77,9 +77,15 @@
         <label>Colour <input id="grid-colour" type="color"></label>
         <label>Lines every <input id="grid-spacing" type="number" min="0" step="any"> <span id="grid-unit"></span></label>
       </div>
+      <button id="minimap-btn" class="for-image tool" type="button" aria-pressed="false" title="Minimap: a small picture of the whole image over it, showing the part in view. Hover to choose how see-through it is." aria-label="Minimap"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><rect x="12" y="11" width="6" height="6" rx=".5"/></g></svg></button>
+      <div id="minimap-pop" popover aria-label="Minimap">
+        <label>Opacity <input id="minimap-opacity" type="range" min="10" max="100" step="5"> <span id="minimap-opacity-text"></span></label>
+        <p class="hint">Opaque while the pointer is over it.</p>
+      </div>
       <div class="for-image zoom" role="group" aria-label="Zoom">
         <button id="zoom-out" title="Zoom out" aria-label="Zoom out">−</button><span id="zoom-label">100%</span><button id="zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
       </div>
+      <slot-here data-slot-for="toolbar-end"></slot-here>
     </div>
     <div id="busy" hidden><div id="scan-light"></div><span class="spin big"></span><div id="busy-text"></div><div id="busy-time"></div></div>
 
@@ -90,15 +96,15 @@
           Python, which runs the analysis, loads in the background meanwhile: about 50 MB on the first visit, then from this browser's cache for 30 days.</div>
         <div id="stage" hidden><canvas id="base"></canvas><svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg><svg id="grid" xmlns="http://www.w3.org/2000/svg"></svg><svg id="ruler" xmlns="http://www.w3.org/2000/svg"></svg></div>
       </div>
+      <div id="minimap" hidden>
+        <div class="mm-head"><button id="minimap-hide" class="mm-btn" type="button" aria-label="Hide the minimap" title="Hide the minimap"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button><span class="mm-title">Minimap</span><button id="minimap-fold" class="mm-btn" type="button"><svg class="up" data-glyph="up" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M3.5 10l4.5-4.5L12.5 10"/></svg><svg class="down" data-glyph="down" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6"/></svg></button></div>
+        <div class="mm-body"><canvas id="minimap-canvas"></canvas><div id="minimap-view"></div></div>
+      </div>
+      <slot-here data-slot-for="over-image"></slot-here>
     </div>
 
     <slot-here data-slot-for="views"></slot-here>
   </main>
-  <div class="gutter" id="gutter-right" title="Drag to resize"></div>
-
-  <aside id="right">
-    <slot-here data-slot-for="right"></slot-here>
-  </aside>
 </div>
 
 <footer id="statusbar">

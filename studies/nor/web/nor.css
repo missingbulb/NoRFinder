@@ -108,13 +108,18 @@
 .card td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
 .card td { color: var(--dim); } .card td:last-child { color: var(--text); }
 
-#selected .card { background: var(--bg); }
-.stepper { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; }
+/* the selected candidate: its card alone, over the image's top right corner, with previous and next hovering
+   over the bottom of its crop */
+#selected-box { position: absolute; top: 12px; right: 24px; z-index: 5; max-width: calc(100% - 260px); box-shadow: 0 4px 14px #0008; border-radius: var(--r-ctl); }
+#selected-box[hidden] { display: none; }
+#selected .card { background: var(--panel); margin: 0; }
+.stepper { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; background: var(--panel); }
 .stepper button { border: 0; border-radius: 0; background: transparent; width: 32px; padding: 2px 0; font-size: 16px; line-height: 1.2; }
 .stepper button + button { border-left: 1px solid var(--line); }
 .stepper button:not(:disabled):hover { background: var(--bg); }
-#downloads { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-#downloads h2 { flex-basis: 100%; margin-bottom: 2px; }
+#selected .crop-wrap .stepper { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); opacity: .85; box-shadow: 0 2px 8px #0008; }
+#selected .crop-wrap .stepper:hover { opacity: 1; }
+#selected-box > .stepper { display: none; }
 #summary .hists { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
 #summary .hist { font-size: 12px; color: var(--dim); width: 100%; }
 #summary .hist svg { display: block; width: 100%; height: auto; }

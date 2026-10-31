@@ -98,14 +98,11 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 #recent .where { color: var(--dim); font-size: 11px; }
 
 /* three columns of panels; the gutters between them are the handles that resize the side bars */
-#layout { --lw: 320px; --rw: 400px; display: grid; grid-template-columns: var(--lw) var(--pad) minmax(0, 1fr) var(--pad) var(--rw);
+#layout { --lw: 320px; display: grid; grid-template-columns: var(--lw) var(--pad) minmax(0, 1fr) var(--pad);
   grid-template-rows: minmax(0, 1fr); min-height: 0; }
 /* the scrollbar's room is kept even when nothing scrolls, so folding a box never changes the bar's width */
 aside { overflow-y: auto; scrollbar-gutter: stable; scrollbar-width: thin; padding: var(--pad); }
 #left { padding-right: 0; }
-#layout.no-right { grid-template-columns: var(--lw) var(--pad) minmax(0, 1fr) var(--pad) 0; }
-#layout.no-right #right, #layout.no-right #gutter-right { visibility: hidden; padding: 0; }
-#right { padding-left: 0; }
 .gutter { cursor: col-resize; position: relative; }
 .gutter::after { content: ""; position: absolute; top: 50%; left: 50%; width: 3px; height: 36px; margin: -18px 0 0 -1.5px; border-radius: 2px; background: var(--line); opacity: 0; transition: opacity .15s; }
 .gutter:hover::after, body.resizing .gutter::after { opacity: 1; }
@@ -114,10 +111,9 @@ body.resizing { cursor: col-resize; user-select: none; }
 .box + .box { margin-top: var(--pad); }
 .box h2 { margin-bottom: 10px; }
 .box select { width: 100%; }
-#thumb-wrap { position: relative; margin-bottom: 8px; border-radius: var(--r-ctl); overflow: hidden; background: #000; cursor: crosshair; line-height: 0; }
-#thumb-wrap[hidden] { display: none; }
-#thumb { width: 100%; height: auto; }
-#thumb-view { position: absolute; border: 1.5px solid #fff; border-radius: 2px; box-shadow: 0 0 0 1px #0008; pointer-events: none; }
+/* the Image box's foot: Load and, once an image is open, Unload */
+#image-foot { display: flex; gap: 8px; align-items: stretch; margin-top: 12px; }
+#unload[hidden] { display: none; }
 #file-box { margin: 0 0 10px; }
 #file-name { display: flex; align-items: center; gap: 7px; word-break: break-all; font-size: 13px; cursor: pointer; list-style: none; }
 #file-name::-webkit-details-marker { display: none; }
@@ -130,11 +126,29 @@ body.resizing { cursor: col-resize; user-select: none; }
 #file-info dt { color: var(--dim); }
 #file-info dd { margin: 0; overflow-wrap: anywhere; }
 #file-info dd.none { grid-column: 1 / -1; margin-top: 2px; }
-.layers { display: flex; gap: 14px; font-size: 13px; white-space: nowrap; }
-.layers label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
-/* a channel's checkbox takes the channel's colour when it is on */
-input.ch { width: 15px; height: 15px; margin: 0; cursor: pointer; }
-input.ch.r { accent-color: #f33; } input.ch.g { accent-color: #2fb344; } input.ch.b { accent-color: #3d6bff; }
+/* a row per channel: its checkbox in the channel's colour, its name, its description behind a (?), the file's own
+   name for it, and one slider holding its black and white points over a ramp from black to its colour */
+#channels { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+#channels:empty { display: none; }
+.channel .ch-head { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.channel label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; }
+.channel input[type=checkbox] { width: 15px; height: 15px; margin: 0; cursor: pointer; accent-color: var(--ch); }
+.channel .from-file { margin-left: auto; color: var(--dim); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.levels { position: relative; height: 16px; margin: 4px 0 0 21px; }
+.levels::before { content: ""; position: absolute; left: 0; right: 0; top: 5px; height: 6px; border-radius: 3px;
+  background: linear-gradient(90deg, #000, var(--ch)); box-shadow: inset 0 0 0 1px var(--line); }
+.channel.off .levels { opacity: .4; }
+.levels input[type=range] { position: absolute; inset: 0; width: 100%; height: 16px; margin: 0; padding: 0; border: 0; background: none;
+  pointer-events: none; -webkit-appearance: none; appearance: none; }
+.levels input[type=range]::-webkit-slider-runnable-track { background: none; height: 16px; }
+.levels input[type=range]::-moz-range-track { background: none; }
+.levels input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; cursor: ew-resize; width: 8px; height: 16px;
+  border-radius: 2px; border: 1px solid var(--dim); }
+.levels input[type=range]::-moz-range-thumb { pointer-events: auto; cursor: ew-resize; width: 6px; height: 14px; border-radius: 2px; border: 1px solid var(--dim); }
+.levels input.black::-webkit-slider-thumb { background: #000; } .levels input.black::-moz-range-thumb { background: #000; }
+.levels input.white::-webkit-slider-thumb { background: var(--ch); } .levels input.white::-moz-range-thumb { background: var(--ch); }
+.levels input:focus-visible { outline: none; }
+.levels input:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--accent); }
 .row { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; }
 /* a button shines while it is the next thing to press */
 .shine { position: relative; overflow: hidden; box-shadow: 0 0 10px var(--accent); }
@@ -222,7 +236,31 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #grid { position: absolute; left: 0; top: 0; pointer-events: none; }
 #grid-pop { position: fixed; inset: auto; margin: 0; padding: 10px 14px; flex-direction: column; gap: 8px; font-size: 13px;
   background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px #0004; }
-#grid-pop:popover-open { display: flex; }
+#grid-pop:popover-open, #minimap-pop:popover-open { display: flex; }
+#minimap-pop { position: fixed; inset: auto; margin: 0; padding: 10px 14px; flex-direction: column; gap: 4px; font-size: 13px;
+  background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px #0004; }
+#minimap-pop label { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+#minimap-pop .hint { margin: 0; }
+#minimap-opacity-text { min-width: 3em; text-align: right; font-variant-numeric: tabular-nums; }
+/* the minimap: hovering over the image's top left corner, framed in white to stand apart from any image;
+   opaque at first, and under the pointer whatever opacity the user chose for it at rest */
+#image-view { position: relative; }
+#minimap { position: absolute; top: 12px; left: 12px; z-index: 5; width: 200px; border: 2px solid #fff; border-radius: var(--r-ctl);
+  background: var(--panel); box-shadow: 0 4px 14px #0008; overflow: hidden; opacity: var(--mm-opacity, 1); transition: opacity .15s; }
+#minimap:hover, #minimap:focus-within { opacity: 1; }
+#minimap[hidden] { display: none; }
+#minimap .mm-head { display: flex; align-items: center; gap: 4px; height: 24px; padding: 0 2px; font-size: 12px; font-weight: 600; color: var(--dim); user-select: none; }
+#minimap .mm-title { flex: 1; }
+.mm-btn { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: var(--r-chip); background: none; color: var(--dim); }
+.mm-btn[hidden] { display: none; }
+.mm-btn:not(:disabled):hover { background: var(--bg); color: var(--text); }
+.mm-btn svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+#minimap-fold .down, #minimap.collapsed #minimap-fold .up { display: none; }
+#minimap.collapsed #minimap-fold .down { display: block; }
+#minimap.collapsed .mm-body { display: none; }
+#minimap .mm-body { position: relative; line-height: 0; background: #000; cursor: crosshair; }
+#minimap-canvas { width: 100%; height: auto; }
+#minimap-view { position: absolute; border: 1.5px solid #fff; border-radius: 2px; box-shadow: 0 0 0 1px #0008; pointer-events: none; }
 #grid-pop label { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 #grid-colour { width: 32px; height: 22px; padding: 0 2px; }
 #grid-spacing { width: 70px; padding: 2px 6px; }
@@ -294,7 +332,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #tip { position: fixed; pointer-events: none; background: var(--tipbg); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 8px 10px; font-size: 12px; max-width: 320px; z-index: 10; white-space: pre-line; }
 
 @media (max-width: 1300px) {
-  #layout { --lw: 260px; --rw: 300px; }
+  #layout { --lw: 260px; }
 }
 
 .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: var(--pink); border-radius: 50%; animation: spin .8s linear infinite; visibility: hidden; }
