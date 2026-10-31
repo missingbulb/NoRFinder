@@ -304,7 +304,7 @@ run("Analyze Particles...", "size=20-Infinity show=Masks");   // remove small ar
 
 Same pre-processing, then tile the binary into **15 × 15** rectangles, `Measure` the mean of each,
 invert it (`255 - mean`) and `Fill` the rectangle with that grey value; finally apply a LUT.
-The authors' own LUT is included as `supplementary/hm_stroke.lut`. This is the concrete recipe
+The authors' own LUT, `hm_stroke.lut`, is kept in [vascularColoring](https://github.com/missingbulb/vascularColoring/blob/54badaa922556913bed2e51834440b5419b940ca/references/rust-2020-fiji-vascular-analysis/supplementary/hm_stroke.lut). This is the concrete recipe
 behind the recommendation in [`../METHODS-SYNTHESIS.md`](../METHODS-SYNTHESIS.md) §4.4.
 
 ### 7.3 `supplementary/Representative_Image.tif` — the best single input we have ⭐
