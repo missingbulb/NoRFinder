@@ -59,7 +59,8 @@ height in µm, each null when the file does not say), `info`, and optionally `ch
 says of each channel, `[{name, colour}]` — and the viewer's image bytes, one 8-bit plane per channel:
 as many as `channels` lists, else as the study's `channels`; for a stack in `image3d`, `Z` in the meta and every slice of every channel after those planes, channel by channel, and `spacing`, µm between slices or null; any bytes after them the study's own) and `call(action, args)` (JSON result and optional bytes). The shell forwards
 every call and knows none of their meanings; Unload has it let the open image go. `mount(shell)` returns the study's hooks; the list, and
-what `shell` offers, heads `web/shell.js`, and the viewer's own heads `web/viewer2d.js`. The header's
+what `shell` offers, heads `web/shell.js`, and the viewer's own heads `web/viewer2d.js`; a study draws over the 3D
+view through `shell.viewer.three` (its camera, the stack's place in it and its hooks, listed where `web/viewer3d.js` builds it). The header's
 switcher swaps studies in place, in the same page and the same Python, so a study must be able to
 leave: every listener it adds outside its own panels takes `shell.signal` (requirement 1.30).
 `studies/fixture/` is the smallest study there is; the shell's own tests run on it.

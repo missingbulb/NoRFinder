@@ -583,7 +583,9 @@ test fold under it. A study's research requirements, which no user sees, stay in
   spacing comes from the file, else from the study (`view.spacing`, saying who stated it), else
   1 µm, called a guess. Every shown channel is drawn in its colour between the black and white
   points of its row, which redraw the 3D view as they move. The study's `view` sets the render, Colour
-  by depth and the spacing it opens with. Test: `web-tests/test_viewer3d_page.py`.
+  by depth and the spacing it opens with. A study draws over the 3D view, over the stack or beside it
+  in the same camera, picks and drags there, and can keep only the stack inside or outside a mask of
+  its own. Test: `web-tests/test_viewer3d_page.py`, and the vascular study's `4.3`.
   </details>
 
 ## `2` The repo's checks

@@ -57,8 +57,8 @@ in vec2 aPos; out vec2 vNdc;
 void main(){ vNdc = aPos; gl_Position = vec4(aPos, 0., 1.); }`;
 const FS = `#version 300 es
 precision highp float; precision highp sampler3D;
-uniform sampler3D uV0; uniform sampler3D uV1; uniform sampler3D uV2; uniform sampler3D uV3;
-uniform mat4 uInvVP; uniform vec3 uHalf; uniform vec2 uZc; uniform vec3 uTexel;
+uniform sampler3D uV0; uniform sampler3D uV1; uniform sampler3D uV2; uniform sampler3D uV3; uniform sampler3D uMask;
+uniform mat4 uInvVP; uniform vec3 uHalf; uniform vec2 uZc; uniform vec4 uClip; uniform vec3 uTexel; uniform int uKeep;
 uniform int uMode; uniform int uDepth; uniform float uIso; uniform float uStep;
 uniform float uOn[4]; uniform vec3 uCol[4]; uniform float uLo[4]; uniform float uHi[4];
 in vec2 vNdc; out vec4 o;
@@ -69,7 +69,9 @@ vec3 turbo(float x){
   const vec4 kB=vec4(0.10667330,12.64194608,-60.58204836,110.36276771); const vec2 kB2=vec2(-89.90310912,27.34824973);
   x = mix(.12, .92, clamp(x,0.,1.)); vec4 v4=vec4(1.,x,x*x,x*x*x); vec2 v2=v4.zw*v4.z;
   return clamp(vec3(dot(v4,kR)+dot(v2,kR2), dot(v4,kG)+dot(v2,kG2), dot(v4,kB)+dot(v2,kB2)),0.,1.); }
-vec4 raw(vec3 tc){ return vec4(texture(uV0,tc).r, texture(uV1,tc).r, texture(uV2,tc).r, texture(uV3,tc).r); }
+// a mask keeps the stack inside it (1) or outside it (2), or all of it (0)
+float keep(vec3 tc){ if (uKeep == 0) return 1.; float k = smoothstep(.3, .7, texture(uMask,tc).r); return uKeep == 1 ? k : 1. - k; }
+vec4 raw(vec3 tc){ return vec4(texture(uV0,tc).r, texture(uV1,tc).r, texture(uV2,tc).r, texture(uV3,tc).r) * keep(tc); }
 float win(int k, float v){ return uOn[k] * clamp((v-uLo[k])/max(uHi[k]-uLo[k],1e-4), 0., 1.); }
 vec4 wins(vec4 v){ return vec4(win(0,v.x), win(1,v.y), win(2,v.z), win(3,v.w)); }
 float field(vec3 tc){ vec4 w = wins(raw(tc)); return max(max(w.x,w.y), max(w.z,w.w)); }
@@ -78,7 +80,7 @@ void main(){
   vec4 a = uInvVP*vec4(vNdc,-1.,1.), b = uInvVP*vec4(vNdc,1.,1.);
   vec3 ro = a.xyz/a.w, rd = normalize(b.xyz/b.w - ro);
   rd = mix(rd, vec3(1e-6), vec3(equal(rd, vec3(0.))));
-  vec3 bmin = vec3(-uHalf.xy, uHalf.z*(1.-2.*uZc.y)), bmax = vec3(uHalf.xy, uHalf.z*(1.-2.*uZc.x));
+  vec3 bmin = vec3(uClip.xy, uHalf.z*(1.-2.*uZc.y)), bmax = vec3(uClip.zw, uHalf.z*(1.-2.*uZc.x));
   vec3 inv = 1./rd, t0 = (bmin-ro)*inv, t1 = (bmax-ro)*inv, tn = min(t0,t1), tf = max(t0,t1);
   float tN = max(max(tn.x,tn.y), max(tn.z,0.)), tF = min(min(tf.x,tf.y), tf.z);
   if (tF <= tN) { o = vec4(0.,0.,0.,1.); return; }
@@ -123,6 +125,14 @@ void main(){
 }`;
 
 const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+// the depth colours, as the shader's turbo
+function turbo(x) {
+  x = 0.12 + 0.8 * Math.min(Math.max(x, 0), 1);
+  const p = (k, k2) => k[0] + k[1] * x + k[2] * x * x + k[3] * x ** 3 + k2[0] * x ** 4 + k2[1] * x ** 5;
+  return [p([0.13572138, 4.6153926, -42.66032258, 132.13108234], [-152.94239396, 59.28637943]),
+    p([0.09140261, 2.19418839, 4.84296658, -14.18503333], [4.27729857, 2.82956604]),
+    p([0.1066733, 12.64194608, -60.58204836, 110.36276771], [-89.90310912, 27.34824973])].map((v) => Math.min(Math.max(v, 0), 1));
+}
 
 // planes: C channel volumes of Z × H × W, channel by channel, binned in x and y by `bin` (block mean), slice by slice
 function binned(planes, at, C, Z, W, H, bin) {
@@ -144,7 +154,11 @@ export function viewer3d(shell, flat) {
   const { $, page } = shell;
   const html = (tag, props) => Object.assign(document.createElement(tag), props);
   let active = false, gl = null, U = {}, tex = [], dirty = true, vol = null, mode3d = false;
-  const S = { mode: 0, depth: 1, iso: 0.35, z0: 0, z1: 0, zs: 1, yaw: 0, pitch: 0, dist: FIT_DIST, pivot: [0, 0, 0], dragging: false };
+  // clip: [x0, y0, x1, y1] in world units, the part of the stack shown, or null for all; spot: {x, y, r}, the part of the
+  // screen kept clear while the rest dims (x and y fractions of the width and height, r of the height), or null
+  const S = { mode: 0, depth: 1, iso: 0.35, z0: 0, z1: 0, zs: 1, yaw: 0, pitch: 0, dist: FIT_DIST, pivot: [0, 0, 0], dragging: false, clip: null, spot: null };
+  let mask = null, keepSide = 0;
+  const drawers = [], spacingHeard = [];
   let half = [1, 1, 0.1];
 
   // ---------- the page's parts: the switch in the toolbar, the stage beside the 2D one with its tools over it ----------
@@ -179,24 +193,27 @@ export function viewer3d(shell, flat) {
     gl.linkProgram(prog);
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
     gl.useProgram(prog);
-    for (const n of ["uInvVP", "uHalf", "uZc", "uTexel", "uMode", "uDepth", "uIso", "uStep", "uOn", "uCol", "uLo", "uHi"]) U[n] = gl.getUniformLocation(prog, n);
+    for (const n of ["uInvVP", "uHalf", "uZc", "uClip", "uTexel", "uKeep", "uMode", "uDepth", "uIso", "uStep", "uOn", "uCol", "uLo", "uHi"]) U[n] = gl.getUniformLocation(prog, n);
     const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
     const loc = gl.getAttribLocation(prog, "aPos"); gl.enableVertexAttribArray(loc);
     gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
     for (let k = 0; k < CHANNELS; k++) gl.uniform1i(gl.getUniformLocation(prog, "uV" + k), k);
+    gl.uniform1i(gl.getUniformLocation(prog, "uMask"), CHANNELS);
     return gl;
   }
+  function texture(unit, data) {
+    if (tex[unit]) gl.deleteTexture(tex[unit]);
+    const t = (tex[unit] = gl.createTexture());
+    gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_3D, t); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    if (data) gl.texImage3D(gl.TEXTURE_3D, 0, gl.R8, vol.X, vol.Y, vol.Z, 0, gl.RED, gl.UNSIGNED_BYTE, data);
+    else gl.texImage3D(gl.TEXTURE_3D, 0, gl.R8, 1, 1, 1, 0, gl.RED, gl.UNSIGNED_BYTE, new Uint8Array(1));
+    for (const [p, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR],
+      [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_3D, p, v);
+  }
   function upload() {
-    for (let k = 0; k < CHANNELS; k++) {
-      if (tex[k]) gl.deleteTexture(tex[k]);
-      const t = (tex[k] = gl.createTexture()), data = vol.vols[k];
-      gl.activeTexture(gl.TEXTURE0 + k); gl.bindTexture(gl.TEXTURE_3D, t); gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-      if (data) gl.texImage3D(gl.TEXTURE_3D, 0, gl.R8, vol.X, vol.Y, vol.Z, 0, gl.RED, gl.UNSIGNED_BYTE, data);
-      else gl.texImage3D(gl.TEXTURE_3D, 0, gl.R8, 1, 1, 1, 0, gl.RED, gl.UNSIGNED_BYTE, new Uint8Array(1));
-      for (const [p, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR],
-        [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_3D, p, v);
-    }
+    for (let k = 0; k < CHANNELS; k++) texture(k, vol.vols[k]);
+    mask = null; keepSide = 0; texture(CHANNELS, null);
   }
 
   // ---------- the camera: it turns about `pivot`, the world point at the centre of the screen ----------
@@ -208,9 +225,9 @@ export function viewer3d(shell, flat) {
   }
   const pan = (dx, dy) => { const { right, up } = screenAxes(); S.pivot = S.pivot.map((v, i) => v + dx * right[i] + dy * up[i]); };
   const perPx = (h) => (2 * TAN_HALF_FOV * S.dist) / h;
-  function zoomAt(x, y, to) {
+  function zoomAt(el, x, y, to) {
     to = Math.min(Math.max(to, MIN_DIST), 12);
-    const r = cv.getBoundingClientRect(), k = TAN_HALF_FOV * (S.dist - to);
+    const r = el.getBoundingClientRect(), k = TAN_HALF_FOV * (S.dist - to);
     pan(((x - r.left) / r.width * 2 - 1) * (r.width / r.height) * k, (1 - ((y - r.top) / r.height) * 2) * k);
     S.dist = to;
   }
@@ -232,6 +249,7 @@ export function viewer3d(shell, flat) {
     gl.uniformMatrix4fv(U.uInvVP, false, new Float32Array(M.inv(vp)));
     gl.uniform3f(U.uHalf, ...half);
     gl.uniform2f(U.uZc, S.z0 / vol.Z, (S.z1 + 1) / vol.Z);
+    gl.uniform4f(U.uClip, ...(S.clip || [-half[0], -half[1], half[0], half[1]])); gl.uniform1i(U.uKeep, keepSide);
     gl.uniform3f(U.uTexel, 1 / vol.X, 1 / vol.Y, 1 / vol.Z);
     gl.uniform1i(U.uMode, S.mode); gl.uniform1i(U.uDepth, S.depth); gl.uniform1f(U.uIso, S.iso);
     gl.uniform1f(U.uStep, ((2 * half[0]) / vol.X) * (S.dragging ? 1.6 : 0.7));
@@ -244,6 +262,7 @@ export function viewer3d(shell, flat) {
     gl.uniform1fv(U.uOn, on); gl.uniform3fv(U.uCol, col); gl.uniform1fv(U.uLo, lo); gl.uniform1fv(U.uHi, hi);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     hud(vp);
+    for (const fn of drawers) fn();
   }
   // the stack's box and its size, and its three axes through the pivot, the one point that stays put while it turns
   function hud(vp) {
@@ -251,22 +270,35 @@ export function viewer3d(shell, flat) {
     hudCv.width = W * dpr; hudCv.height = H * dpr;
     const c = hudCv.getContext("2d"); c.scale(dpr, dpr);
     const P = (p) => { const v = M.xf(vp, p); return [((v[0] / v[3] + 1) / 2) * W, ((1 - v[1] / v[3]) / 2) * H, v[3]]; };
-    const [hx, hy, hz] = half, za = hz * (1 - (2 * S.z0) / vol.Z), zb = hz * (1 - (2 * (S.z1 + 1)) / vol.Z);
-    const corners = []; for (const x of [-hx, hx]) for (const y of [-hy, hy]) for (const z of [za, zb]) corners.push([x, y, z]);
+    const hz = half[2], za = hz * (1 - (2 * S.z0) / vol.Z), zb = hz * (1 - (2 * (S.z1 + 1)) / vol.Z);
+    const [x0, y0, x1, y1] = S.clip || [-half[0], -half[1], half[0], half[1]];
+    const corners = []; for (const x of [x0, x1]) for (const y of [y0, y1]) for (const z of [za, zb]) corners.push([x, y, z]);
     const pc = corners.map(P);
     if (pc.some((p) => p[2] <= 0)) return;
     c.strokeStyle = "rgba(79,209,217,.45)"; c.lineWidth = 1; c.beginPath();
     for (const [a, b] of [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]]) { c.moveTo(pc[a][0], pc[a][1]); c.lineTo(pc[b][0], pc[b][1]); }
     c.stroke();
-    const um = page.get("image")?.um, L = 34 * perPx(H), o = S.pivot;
+    const um = page.get("image")?.um;
     c.font = "11px monospace"; c.fillStyle = "rgba(216,225,231,.85)";
-    c.fillText(um ? `${Math.round(vol.X * vol.bin * um)} µm` : `${vol.X * vol.bin} px`, (pc[1][0] + pc[5][0]) / 2 + 4, (pc[1][1] + pc[5][1]) / 2 + 14);
+    if (!S.clip) c.fillText(um ? `${Math.round(vol.X * vol.bin * um)} µm` : `${vol.X * vol.bin} px`, (pc[1][0] + pc[5][0]) / 2 + 4, (pc[1][1] + pc[5][1]) / 2 + 14);
+    if (S.spot) {
+      const x = S.spot.x * W, y = S.spot.y * H, r = S.spot.r * H, g = c.createRadialGradient(x, y, r * 0.8, x, y, r * 1.5);
+      g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,.7)"); c.fillStyle = g; c.fillRect(0, 0, W, H);
+    }
+    axes(c, vp, W, H);
+  }
+  // the stack's three axes through the pivot, a fixed size on the screen, dark under light so they read over any signal
+  function axes(c, vp, W, H) {
+    const P = (p) => { const v = M.xf(vp, p); return [((v[0] / v[3] + 1) / 2) * W, ((1 - v[1] / v[3]) / 2) * H, v[3]]; };
+    const L = 34 * perPx(H), o = S.pivot;
+    c.save(); c.font = "10px monospace"; c.fillStyle = "rgba(225,232,238,.8)"; c.lineCap = "round";
     const ends = [["x", [L, 0, 0]], ["y", [0, -L, 0]], ["z", [0, 0, -L]]].map(([t, d]) => [t, P(o.map((v, i) => v - d[i])), P(o.map((v, i) => v + d[i]))]);
-    if (ends.some(([, a, b]) => a[2] <= 0 || b[2] <= 0)) return;
+    if (ends.some(([, a, b]) => a[2] <= 0 || b[2] <= 0)) { c.restore(); return; }
     for (const [w, s] of [[3, "rgba(0,0,0,.55)"], [1.2, "rgba(225,232,238,.8)"]]) {
       c.lineWidth = w; c.strokeStyle = s; c.beginPath(); for (const [, a, b] of ends) { c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); } c.stroke();
     }
     for (const [t, , b] of ends) c.fillText(t, b[0] + 3, b[1] - 3);
+    c.restore();
   }
   const redraw = () => { dirty = true; };
   const loop = () => { if (dirty) render(); requestAnimationFrame(loop); };
@@ -275,33 +307,51 @@ export function viewer3d(shell, flat) {
   flat.onDrawn(redraw);
 
   // ---------- turning, zooming and panning: drag turns, shift-drag or right-drag pans, wheel or pinch zooms ----------
-  {
-    const pts = new Map();
+  // on any canvas that shows the stack's camera; grab(e), when given, sees each press first and may take that pointer
+  // for its own drag by returning {move(e), up(e), cancel()}; click(e) hears a left press let go where it began
+  function controls(el, grab, click) {
+    const pts = new Map(), own = new Map(), down = new Map();
     let last = null;
-    cv.addEventListener("pointerdown", (e) => { cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); S.dragging = true; last = null; });
-    const end = (e) => { pts.delete(e.pointerId); if (!pts.size) { S.dragging = false; redraw(); } last = null; };
-    cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
-    cv.addEventListener("pointermove", (e) => {
+    el.addEventListener("pointerdown", (e) => {
+      el.setPointerCapture(e.pointerId);
+      const g = grab && !pts.size ? grab(e) : null;
+      if (g) { own.set(e.pointerId, g); return; }
+      if (e.button === 0 && !pts.size) down.set(e.pointerId, [e.clientX, e.clientY]); else down.clear();
+      pts.set(e.pointerId, [e.clientX, e.clientY]); S.dragging = true; last = null;
+    });
+    const end = (e) => {
+      const g = own.get(e.pointerId);
+      if (g) { own.delete(e.pointerId); if (e.type === "pointerup") g.up(e); else g.cancel?.(); return; }
+      const d = down.get(e.pointerId); down.delete(e.pointerId);
+      pts.delete(e.pointerId); if (!pts.size) { S.dragging = false; redraw(); } last = null;
+      if (click && d && e.type === "pointerup" && Math.hypot(e.clientX - d[0], e.clientY - d[1]) < CLICK_PX) click(e);
+    };
+    el.addEventListener("pointerup", end); el.addEventListener("pointercancel", end);
+    el.addEventListener("pointermove", (e) => {
+      const g = own.get(e.pointerId);
+      if (g) return g.move(e);
       if (!pts.has(e.pointerId)) return;
       const prev = pts.get(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]);
-      const dx = e.clientX - prev[0], dy = e.clientY - prev[1], k = 2.2 / cv.clientHeight;
+      const dx = e.clientX - prev[0], dy = e.clientY - prev[1], k = 2.2 / el.clientHeight;
       if (pts.size === 2) {
         const [a, b] = [...pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
-        if (last) zoomAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (S.dist * last) / d);
+        if (last) zoomAt(el, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (S.dist * last) / d);
         last = d; pan((-dx * k * S.dist) / 6, (dy * k * S.dist) / 6);
       } else if (e.shiftKey || e.buttons === 2) pan((-dx * k * S.dist) / 3, (dy * k * S.dist) / 3);
       else { S.yaw -= dx * 0.008; S.pitch = Math.min(Math.max(S.pitch + dy * 0.008, -Math.PI / 2 + 0.001), Math.PI / 2 - 0.001); }
       redraw();
     });
-    cv.addEventListener("contextmenu", (e) => e.preventDefault());
-    cv.addEventListener("wheel", (e) => {
+    el.addEventListener("contextmenu", (e) => e.preventDefault());
+    el.addEventListener("wheel", (e) => {
       e.preventDefault();
       const line = e.deltaMode === 1 ? WHEEL_LINE_PX : 1;
-      if (e.deltaY) zoomAt(e.clientX, e.clientY, S.dist * Math.exp(e.deltaY * line * 0.001));
-      if (e.deltaX) pan(e.deltaX * line * perPx(cv.clientHeight), 0);
+      if (e.deltaY) zoomAt(el, e.clientX, e.clientY, S.dist * Math.exp(e.deltaY * line * 0.001));
+      if (e.deltaX) pan(e.deltaX * line * perPx(el.clientHeight), 0);
       redraw();
     }, { passive: false });
+    new ResizeObserver(redraw).observe(el);
   }
+  controls(cv);
 
   // ---------- the tools ----------
   const ui = (id) => tools.querySelector("#" + id);
@@ -318,11 +368,11 @@ export function viewer3d(shell, flat) {
   ui("v3-depth").onchange = (e) => { S.depth = e.target.checked ? 1 : 0; sync(); };
   ui("v3-z0").oninput = (e) => { S.z0 = Math.min(+e.target.value, S.z1); sync(); };
   ui("v3-z1").oninput = (e) => { S.z1 = Math.max(+e.target.value, S.z0); sync(); };
-  ui("v3-zs").oninput = (e) => { if (+e.target.value > 0) { S.zs = +e.target.value; spacingNote("you"); sync(); } };
+  ui("v3-zs").oninput = (e) => { if (+e.target.value > 0) { S.zs = +e.target.value; spacingNote("you"); sync(); spacingHeard.forEach((fn) => fn()); } };
   ui("v3-look").onclick = (e) => {
     const b = e.target.closest("[data-look]"); if (!b) return;
     const [yaw, pitch] = LOOKS[b.dataset.look];
-    Object.assign(S, { yaw, pitch, pivot: [0, 0, 0], dist: Math.max(S.dist, 2) }); redraw();
+    Object.assign(S, { yaw, pitch, pivot: [0, 0, 0], clip: null, dist: Math.max(S.dist, 2) }); redraw();
   };
   function spacingNote(from) {
     note.textContent = from === "file" ? `${S.zs} µm between slices, as the file records.`
@@ -349,7 +399,7 @@ export function viewer3d(shell, flat) {
     vol = { vols, X, Y, Z: im.Z, bin };
     const v = shell.study?.view || {};
     Object.assign(S, { mode: v.render === "surface" ? 1 : 0, depth: v.depthColour ? 1 : 0, z0: 0, z1: im.Z - 1,
-      yaw: 0, pitch: 0, dist: FIT_DIST, pivot: [0, 0, 0] });
+      yaw: 0, pitch: 0, dist: FIT_DIST, pivot: [0, 0, 0], clip: null, spot: null });
     ui("v3-z0").max = ui("v3-z1").max = im.Z - 1;
     if (im.spacing) { S.zs = im.spacing; spacingNote("file"); }
     else if (v.spacing) { S.zs = v.spacing; spacingNote(v.spacingSource || "the study"); }
@@ -358,8 +408,84 @@ export function viewer3d(shell, flat) {
   }
   page.watch("image", take);
 
+  // ---------- what a study draws over the 3D view with: the camera, the stack's place in it, and the view's hooks ----------
+  // World coordinates put the stack's middle at the origin, its longest side from -1 to 1; x right, y up the picture
+  // (image rows run down), z towards the viewer (slice 0 nearest). shape is the volume drawn, [Z, Y, X], binned.
+  const hear = (list, fn, signal) => { list.push(fn); signal?.addEventListener("abort", () => list.splice(list.indexOf(fn), 1)); };
+  const first = () => { const rows = flat.levels(); const k = rows.findIndex((c, i) => c.on && i < vol.vols.length); return k < 0 ? 0 : k; };
+  const three = {
+    M, S, FIT_DIST,
+    get meta() { return vol ? { shape: [vol.Z, vol.Y, vol.X], um_per_px: (page.get("image")?.um || 1) * vol.bin } : null; },
+    get half() { return half; },
+    get stage() { return stage; },
+    camera, redraw, controls, axes,
+    // a listener for every frame drawn, or every change of the slice spacing, until signal (the study's) ends it
+    onDraw: (fn, signal) => hear(drawers, fn, signal),
+    onSpacing: (fn, signal) => hear(spacingHeard, fn, signal),
+    // a canvas of the study's in the stack's camera: over the stack, or beside it (the stage split in two); null for none
+    place(el, beside) {
+      stage.classList.toggle("split", !!(el && beside));
+      for (const o of stage.querySelectorAll(".v3-side")) if (o !== el) o.remove();
+      if (el) { el.classList.add("v3-side"); stage.append(el); }
+      redraw();
+    },
+    // a mask over the volume's voxels, 255 inside, and which side of it to show: "inside", "outside", or all of it
+    setMask(m, side) {
+      mask = m && vol && m.length === vol.Z * vol.Y * vol.X ? m : null;
+      keepSide = mask ? ({ inside: 1, outside: 2 }[side] || 0) : 0;
+      if (gl && vol) texture(CHANNELS, mask);
+      redraw();
+    },
+    inClip: (w) => !S.clip || (w[0] >= S.clip[0] && w[0] <= S.clip[2] && w[1] >= S.clip[1] && w[1] <= S.clip[3]),
+    // a small box around a world point seen from the side, looking level across the direction `along` (radians in the
+    // image plane), so what lies above or below the point in depth shows beside it
+    focus(at, halfWidth, along) {
+      const h = Math.min(halfWidth, half[0], half[1]);
+      let p = along + Math.PI / 2;
+      p = Math.atan2(Math.sin(p), Math.cos(p)); if (p > Math.PI / 2) p -= Math.PI; if (p < -Math.PI / 2) p += Math.PI;
+      p = Math.min(Math.max(p, -Math.PI / 2 + 0.001), Math.PI / 2 - 0.001);
+      Object.assign(S, { yaw: Math.PI / 2, pitch: p, clip: [at[0] - h, at[1] - h, at[0] + h, at[1] + h], pivot: [...at], dist: Math.max(MIN_DIST, h * 5) });
+      redraw();
+    },
+    // the brightest shown voxel of the first shown channel on the line of sight through a canvas point (ndc -1..1) of
+    // aspect asp: the world point under the pointer in depth, or null
+    brightestOnRay(nx, ny, asp) {
+      if (!vol) return null;
+      const iv = M.inv(camera(asp)), { X, Y, Z } = vol;
+      const a = M.xf(iv, [nx, ny, -1]), b = M.xf(iv, [nx, ny, 1]);
+      const ro = a.slice(0, 3).map((v) => v / a[3]), far = b.slice(0, 3).map((v) => v / b[3]);
+      const rd = far.map((v, k) => v - ro[k]), l = Math.hypot(...rd); for (let k = 0; k < 3; k++) rd[k] = rd[k] / l || 1e-6;
+      const c = S.clip || [-half[0], -half[1], half[0], half[1]];
+      const lo = [c[0], c[1], half[2] * (1 - (2 * (S.z1 + 1)) / Z)], hi = [c[2], c[3], half[2] * (1 - (2 * S.z0) / Z)];
+      let tN = 0, tF = Infinity;
+      for (let k = 0; k < 3; k++) { const t0 = (lo[k] - ro[k]) / rd[k], t1 = (hi[k] - ro[k]) / rd[k]; tN = Math.max(tN, Math.min(t0, t1)); tF = Math.min(tF, Math.max(t0, t1)); }
+      if (!(tF > tN)) return null;
+      const A = vol.vols[first()], step = half[0] / X;
+      const kept = (i) => (!keepSide ? 1 : (mask[i] > 127) === (keepSide === 1) ? 1 : 0);
+      let best = -1, at = null;
+      for (let t = tN; t <= tF; t += step) {
+        const p = ro.map((v, k) => v + rd[k] * t);
+        const x = Math.min(X - 1, Math.floor(((p[0] / half[0] + 1) / 2) * X)), y = Math.min(Y - 1, Math.floor(((1 - p[1] / half[1]) / 2) * Y));
+        const z = Math.min(Z - 1, Math.floor(((1 - p[2] / half[2]) / 2) * Z));
+        if (x < 0 || y < 0 || z < 0) continue;
+        const i = (z * Y + y) * X + x, v = A[i] * kept(i);
+        if (v > best) { best = v; at = p; }
+      }
+      return at;
+    },
+    // the first shown channel's volume, slices of Y rows of X, and its colour for a value at a depth (0..1 through the
+    // slices shown), as the 3D view paints it: [r, g, b] of 0 to 255
+    volume: () => vol && vol.vols[first()],
+    lut2d(v, z) {
+      const c = flat.levels()[first()], w = Math.min(Math.max((v - c.black) / Math.max(1, c.white - c.black), 0), 1);
+      const col = S.depth ? turbo(z) : rgb(c.colour);
+      return col.map((x) => Math.round(x * w * 255));
+    },
+  };
+
   return {
     ...flat,
+    three,
     // the shell says whether this is the viewer of the study on the page; the 3D parts go when it is not
     active(on) { active = on; take(on ? page.get("image") : null); },
     get overlay() { return flat.overlay; }, get scroller() { return flat.scroller; },
