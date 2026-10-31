@@ -57,6 +57,9 @@
 #overlay .forced path { stroke-dasharray: 2 1; stroke-opacity: 1; }
 #overlay .red, #overlay .lines { pointer-events: none; }
 #list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--pad); align-items: start; }
+/* a card not yet drawn: its outline alone; a drawn card far from the view is skipped by the browser's rendering */
+#list .card.stub { cursor: default; }
+#list .card { content-visibility: auto; contain-intrinsic-size: auto 230px; }
 .card { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 10px; font-size: 12px; }
 .card .crop { position: relative; width: max-content; max-width: 100%; margin: 0 auto 8px; line-height: 0; }
 /* a crop narrower than its box shrinks as a whole: its height follows its width */

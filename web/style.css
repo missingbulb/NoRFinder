@@ -227,7 +227,9 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
   :root:not([data-theme]) #theme .sun { display: none; }
   :root:not([data-theme]) #theme .moon { display: inline; }
 }
-#scroller { flex: 1; overflow: auto; position: relative; background: var(--bg); cursor: grab; touch-action: none; }
+/* a drag anywhere on the image pans it: the labels over it are never selected or dragged as text */
+#scroller { flex: 1; overflow: auto; position: relative; background: var(--bg); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+#scroller canvas, #scroller img { -webkit-user-drag: none; }
 #scroller.dragging, #scroller.dragging #overlay g[data-i] { cursor: grabbing; }
 #empty { color: var(--dim); padding: 40px; text-align: center; }
 #stage { position: relative; }

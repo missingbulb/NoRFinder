@@ -671,11 +671,15 @@ export function mount(shell) {
       acts.insertAdjacentHTML("beforeend", `<button type="button" class="remove" title="Remove this NoR you added" aria-label="Remove this NoR you added">×</button>`);
       acts.lastChild.onclick = (e) => { e.stopPropagation(); removeAdded(c.k); };
     }
-    if (where === "list") d.onclick = () => select(c.i);
+    if (where === "list") {
+      d.onclick = () => select(c.i);
+      d.ondblclick = (e) => { if (!e.target.closest("button, .handle")) { getSelection().removeAllRanges(); show(); } };
+    }
     const wrap = document.createElement("div"); wrap.className = "crop-wrap";
     wrap.append(crop(c, where === "selected" ? 320 : 170));
     wrap.insertAdjacentHTML("beforeend", `<button class="goto" title="Show it on the image" aria-label="Show it on the image">${GOTO}</button>`);
-    wrap.querySelector(".goto").onclick = () => { select(c.i); showView("image"); focusOn(c); };
+    const show = () => { select(c.i); showView("image"); focusOn(c); };
+    wrap.querySelector(".goto").onclick = show;
     d.append(wrap);
     const e = st.edits.get(c.i) || {};
     if (e.length || e.red || e.width) {
@@ -709,10 +713,42 @@ export function mount(shell) {
   $("#sort").onchange = () => { st.sort[st.tab] = $("#sort").value; writeJSON(SORT, st.sort); if (st.meta) renderList(); };
   showSort();
 
+  // Every card takes its place in the list at once, but as an empty outline the height its card last had;
+  // those in view and two rows past it are drawn, each batch the observer reports in one go, as scrolling
+  // brings them near. Cards drawn a moment ago near the view are drawn at once when the list is redrawn.
+  const lazy = { seen: null, near: new Set(), tall: new Map(), of: new WeakMap() };
   function renderList() {
-    const items = listed();
-    $("#list").replaceChildren(...items.map((c) => card(c, "list")));
-    if (!items.length) $("#list").innerHTML = `<p class="dim">${st.tab === "pass" ? "No finalists. Right-click the image to add a NoR the finder missed." : "Nothing rejected."}</p>`;
+    lazy.seen?.disconnect();
+    const items = listed(), near = lazy.near; lazy.near = new Set();
+    if (!items.length) {
+      $("#list").innerHTML = `<p class="dim">${st.tab === "pass" ? "No finalists. Right-click the image to add a NoR the finder missed." : "Nothing rejected."}</p>`;
+      return;
+    }
+    const known = [...lazy.tall.values()], guess = known.length ? known.reduce((a, b) => a + b, 0) / known.length : 230;
+    const gap = parseFloat(getComputedStyle($("#list")).rowGap) || 0;
+    lazy.seen = new IntersectionObserver(drawNear, { root: $("#items-view"), rootMargin: `${Math.round(2 * (guess + gap))}px 0px` });
+    const nodes = items.map((c) => {
+      if (near.has(String(c.i))) return card(c, "list");
+      const d = document.createElement("div");
+      d.className = "card stub" + (c.i === st.sel ? " selected" : ""); d.dataset.i = c.i;
+      d.style.height = (lazy.tall.get(String(c.i)) ?? guess) + "px"; lazy.of.set(d, c);
+      return d;
+    });
+    $("#list").replaceChildren(...nodes);
+    for (const d of nodes) lazy.seen.observe(d);
+  }
+  function drawNear(entries) {
+    const made = [];
+    for (const e of entries) {
+      const i = e.target.dataset.i;
+      if (!e.isIntersecting) { lazy.near.delete(i); continue; }
+      lazy.near.add(i);
+      const c = lazy.of.get(e.target);
+      if (!c || !e.target.isConnected) continue;
+      const d = card(c, "list");
+      lazy.seen.unobserve(e.target); e.target.replaceWith(d); lazy.seen.observe(d); made.push(d);
+    }
+    for (const d of made) lazy.tall.set(d.dataset.i, d.offsetHeight);
   }
 
   // ---------- selection ----------
@@ -1070,7 +1106,7 @@ export function mount(shell) {
     $("#view").dataset.view = v;
     $("#switch").textContent = v === "image" ? "Item View" : "Image View";
     if (v === "items" && st.meta) { renderList(); revealSelected("center"); }
-    if (v === "image") shell.viewer.minimapView();
+    if (v === "image") { lazy.seen?.disconnect(); lazy.near.clear(); $("#list").replaceChildren(); shell.viewer.minimapView(); }
   }
   $("#switch").onclick = () => showView(st.view === "image" ? "items" : "image");
   showView("image");
@@ -1128,6 +1164,7 @@ export function mount(shell) {
     showImage: () => showView("image"),
     pickAt: candAt,
     pick: (c) => select(st.sel === c.i ? null : c.i),
+    open: (c) => { select(c.i); showView("items"); },
     step,
     capturesPointer: () => !!st.lasso,
     zoomed: placeRing,
