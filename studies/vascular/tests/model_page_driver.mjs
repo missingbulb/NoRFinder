@@ -2,7 +2,7 @@
 // under the name of a stack the study ships a draft model for, so the real draft opens with it. Checks 4.3 to 4.5:
 // the draft opens side by side and goes over the stack; Detected keeps only the signal near the model; Item View
 // shows its cards and approves a low-confidence vessel from one; Submit Ground Truth stays off until the model carries
-// a correction and then exports the corrected model; undo takes the approval back; the model's canvas leaves the 3D
+// a correction and then exports the corrected model, from the Item View only; undo takes the approval back; the model's canvas leaves the 3D
 // view with the study. Exits 1 on a failed check, 2 when it cannot run.
 //   node studies/vascular/tests/model_page_driver.mjs
 import { repoFile } from "../../../web-tests/repo_file.mjs";
@@ -88,11 +88,13 @@ try {
   check(detected < all * 0.8, `Detected keeps only the signal near the model's vessels: ${all.toFixed(2)} → ${detected.toFixed(2)}`);
   await page.click('#review-mode [data-v="all"]');
 
+  check(await page.isHidden("#vm-truth"), "Submit Ground Truth is not in the image view");
+  await page.click("#item-switch");
+  check(await page.isVisible("#vm-truth"), "Submit Ground Truth is in the Item View");
   await page.click("#vm-truth");
   check(await page.evaluate(() => $("#gt-dlg").open && $("#gt-export").disabled), "Submit Ground Truth has nothing to export before a correction");
   await page.click("#gt-close");
 
-  await page.click("#item-switch");
   await page.click('#item-kind [data-v="vessels"]');
   await page.selectOption("#item-filter", "review");
   await page.waitForSelector("#item-list .card:not(.placeholder) button.yes");
@@ -101,7 +103,6 @@ try {
   await page.click("#item-list .card:not(.placeholder) button.yes");
   check(/1 approved/.test(await facts()), "a card's Approve approves the vessel");
 
-  await page.click("#item-switch");
   await page.click("#vm-truth");
   check(await page.evaluate(() => !$("#gt-export").disabled), "with a correction, the model can be exported");
   const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#gt-export")]);
@@ -110,6 +111,7 @@ try {
     `the export is the corrected model: ${dl.suggestedFilename()}, status ${doc.status}, ${doc.corrections} correction`);
   await page.click("#gt-close");
 
+  await page.click("#item-switch");
   await page.click("#m-undo");
   check(/0 approved/.test(await facts()), "Undo takes the approval back");
 

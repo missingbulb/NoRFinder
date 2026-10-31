@@ -882,7 +882,7 @@ owner's decisions on the stacks and the vessel model, are
 - `4.5` The corrected model is the study's ground truth.
   <details>
 
-  Submit Ground Truth (`1.26`) exports the corrected `vessel-model/2` file, `status` corrected and
+  Submit Ground Truth (`1.26`), in the Item View and only there, exports the corrected `vessel-model/2` file, `status` corrected and
   its corrections counted, labelled `vascular-ground-truth`; it is off until the model carries a
   correction, and its checklist says how many low-confidence vessels still wait for a verdict.
   Test: `studies/vascular/tests/test_model_page.py`.
