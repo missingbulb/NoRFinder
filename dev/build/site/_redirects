@@ -1,3 +1,4 @@
 # The page moved from /web/ to the site's root.
+# Each study is served at its own path, /<id>, by the build, not by a rule here.
 /web /  301
 /web/* /:splat 301
