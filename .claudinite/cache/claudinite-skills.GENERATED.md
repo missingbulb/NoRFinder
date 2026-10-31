@@ -45,6 +45,7 @@ and an edit made another way is caught at Stop.
 | `improve-on-ground-truth` | nor-study | Improving the NoR finders when new ground truth joins studies/nor/detection/lab/ground_truth/, or when asked to improve them on the ground truth. |
 | `learning-a-technology` | claudinite | Teach a repo a technology nobody there has used yet. Use when asked to host, send or publish through something new, or to research it and create a skill. |
 | `merge-to-main` | git-github | Merge the change in front of the owner into main. Use when the owner approves the current branch or PR, or asks to merge or land it into main. |
+| `paper-intake` | vascular-study | Take a research paper PDF into studies/vascular/docs/literature/. Use whenever a new article is added to this repo, or an existing one needs re-processing. |
 | `production-retrospective` | basics | Design and file the review that comes back once a larger element has lived in production. Use when designing such an element, or when its merge completes it. |
 | `prose-to-checks` | claudinite | Mine pack prose for always-testable rules never converted to checks, and convert the strongest. Use when auditing packs for convertible rules, or over prose a growth run just wrote. |
 | `repo-text-sweeps` | basics | Mechanics for grep/sed sweeps, renames, and path relocations across a repo. Use before a bulk find-replace, a rename, or moving files — and after one, to catch silently broken references. |
@@ -52,4 +53,5 @@ and an edit made another way is caught at Stop.
 | `searching-for-a-tool` | basics | Finding a harness tool by name — the select form for a deferred tool, and what an empty search means. Use before any ToolSearch, and when a search finds nothing. |
 | `triaging-usage-findings` | claudinite | Turn a lasting usage-review finding into a proposed change, written as the edit itself. Use on a usage-triage run, or when asked what to do about a finding. |
 | `unattended-agents` | claudinite | Architecture and practices for unattended, automation-invoked agents and recurring routines. Use when building, structuring, or running an AI agent, a scheduled routine, or a multi-stage agent pipeline. |
+| `vessel-overlay-review` | vascular-study | Show extraction results as an annotated overlay with explicit visual assertions. Use whenever proposing, revising, or reporting on the segmentation/measurement pipeline in this repo — before quoting numbers. |
 | `writing-handover-issues` | basics | How to write a task list a person will execute. Use when filing or editing an issue that asks a human to click, set, register or copy something. |

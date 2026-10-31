@@ -8,4 +8,5 @@
 @../shared/packs/research-project/RULES.md
 @../local/packs/nor-finder/RULES.md
 @../local/packs/nor-study/RULES.md
+@../local/packs/vascular-study/RULES.md
 @../temp/packs/current_user/RULES.md
