@@ -505,6 +505,7 @@ export function mount(shell) {
     const ran = !!st.meta && runKey() === st.lastRun, finalists = (st.passes || []).filter((c) => !c.added);
     const open = finalists.filter((c) => !st.forced.has(c.i)).length, name = $("#finder").selectedOptions[0]?.textContent.replace(/ \(.*\)$/, "");
     shell.step("find", ran, ran ? `${name}: ${st.order.length} candidates, ${finalists.length} finalists` : st.lastRun ? "The finder or its settings changed since the last run." : "");
+    shell.boxDone($("#finder-box"), ran ? `${name} executed` : null);
     shell.step("review", ran && !open, `${finalists.length - open} of ${finalists.length} finalists have your verdict`);
   }
 

@@ -23,6 +23,7 @@ export function mount(shell) {
       counted = { threshold: +$("#fx-threshold").value, count: meta.count };
       $("#fx-result").textContent = `${meta.count} pixels above the threshold`; $("#fx-truth").disabled = false;
       shell.step("count", true, `${meta.count} pixels above ${counted.threshold}`);
+      shell.boxDone($("#fx-box"), `Counted at ${counted.threshold}`);
       const { W } = shell.state, g = shell.viewer.layer("fx");
       let d = "";
       for (let i = 0; i < bytes.length; i++) if (bytes[i]) d += `M${i % W} ${Math.floor(i / W)}h1v1h-1z`;

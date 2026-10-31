@@ -75,7 +75,8 @@ const opacity = () => page.evaluate(() => Number(getComputedStyle(document.query
 const title = () => page.click("#image-box > .sec-head h2");
 
 // ---- the box before an image: its title alone in its head, Load at its foot ----
-await check(await page.textContent("#image-box > .sec-head") === "Image", "the box is titled Image, with nothing else in its head", await page.textContent("#image-box > .sec-head"));
+const head = () => page.evaluate(() => { const h = document.querySelector("#image-box > .sec-head"); return [h.children.length, h.querySelector("h2 .title").textContent]; });
+await check(JSON.stringify(await head()) === '[1,"Load Image"]', "the box is titled Load Image, with nothing else in its head", await head());
 const order = await page.evaluate(() => [...document.querySelector("#image-box").children].map((e) => e.id || e.className));
 await check(order[order.length - 1] === "image-foot" && (await page.$("#image-foot #load")) && (await page.$("#image-foot #unload")), "Load and Unload sit at the box's foot", order);
 await check(!(await page.$("#left canvas")), "the left bar holds no picture of the image");
