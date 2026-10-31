@@ -1,0 +1,34 @@
+{
+  "id": "vascular",
+  "title": "Vascular Measurements",
+  "listed": false,
+  "stage": "PreGT",
+  "phases": [],
+  "viewer": "image2d",
+  "python": {
+    "paths": [
+      "py/"
+    ],
+    "entry": "vascular",
+    "packages": [
+      "numpy"
+    ],
+    "wheels": [
+      "tifffile==2026.3.3"
+    ]
+  },
+  "web": {
+    "module": "web/vascular.js"
+  },
+  "files": {
+    "accept": ".tif,.tiff",
+    "empty": "Load a confocal z-stack (a multi-page TIFF of CD31, or CD31 and DAPI) to see it flattened, each pixel the brightest over every slice.",
+    "drive": "https://drive.google.com/drive/folders/1AH4EVGT-ECPZvhHiHMwUzrMLLtljs1Pd"
+  },
+  "channels": [],
+  "progress": {
+    "install": "Installing numpy…",
+    "load": "Loading the stack reader…",
+    "open": "Reading the stack and flattening it…"
+  }
+}

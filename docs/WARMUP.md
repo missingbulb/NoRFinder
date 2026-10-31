@@ -6,7 +6,7 @@ GitHub. A study (`studies/<id>/`) is one piece of research: its data, its algori
 on the page, its ground truth and its docs. The shell knows no study; a study knows the shell only
 through the contract below. [`dev/requirements/requirements.md`](../dev/requirements/requirements.md) states what the page must do, the shell's part and each study's.
 
-Working on a study? Read its own warm-up next: [NoR Finder](../studies/nor/docs/WARMUP.md).
+Working on a study? Read its own warm-up next: [NoR Finder](../studies/nor/docs/WARMUP.md), [Vascular Measurements](../studies/vascular/docs/WARMUP.md).
 
 ## Layers
 
@@ -91,6 +91,7 @@ The full set (`python3 -m pytest web-tests studies`) also needs Node, Pyodide
 web/              the shell, the viewer, the Python runtime (worker.js, bridge.js)
 web-tests/        the shell's tests, run on the fixture study
 studies/nor/      the NoR Finder study: study.json, web/, detection/, data/, docs/, tests/
+studies/vascular/ the Vascular Measurements study (unlisted): study.json, py/, web/, analysis/, data/, docs/, tests/
 studies/viewer/   the Image Viewer, the page's default: any image, no analysis
 studies/fixture/  the smallest study, for the shell's tests (`/fixture`)
 docs/             this map

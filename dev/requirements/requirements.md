@@ -804,3 +804,27 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   `web-tests/test_published_site.py`, which checks that every file a study's page module fetches is
   published.
   </details>
+
+## `4` The Vascular Measurements page: cerebral vessels in CD31 z-stacks
+
+Migrated from [missingbulb/vascularColoring](https://github.com/missingbulb/vascularColoring) on
+2026-10-31; the study is unlisted until the shell's 3D viewer lands. Its research requirements, the
+owner's decisions on the stacks and the vessel model, are
+[`studies/vascular/docs/3D-STACKS.md`](../../studies/vascular/docs/3D-STACKS.md) and
+[`studies/vascular/docs/WORKING-GUIDE.md`](../../studies/vascular/docs/WORKING-GUIDE.md).
+
+- `4.1` A z-stack opens flattened: each pixel the brightest of every slice, each channel by its place.
+  <details>
+
+  Any multi-page TIFF (an ImageJ hyperstack or plain pages in depth) opens in the 2D viewer as its
+  brightest-over-depth picture, every channel scaled by one window over the whole stack, so signal
+  that fades with depth still looks faded. A one-channel stack is CD31; a two-channel one is DAPI
+  then CD31, as the owner's originals are. The image box says how many slices it flattened. Test:
+  `studies/vascular/tests/test_flattened_page.py`.
+  </details>
+
+- `4.2` Load from Google Drive opens on the owner's stacks folder.
+  <details>
+
+  `files.drive` in the study's `study.json`, under `1.18`'s rule.
+  </details>
