@@ -642,7 +642,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
 
 ## `2` The repo's checks
 
-- `1.48` The status bar's numbers roll to each new value, and a sharp rise in the CPU or network flashes.
+- `1.51` The status bar's numbers roll to each new value, and a sharp rise in the CPU or network flashes.
   <details>
 
   Set by the owner on 2026-10-31. Whenever the disk, memory, network or CPU changes, each

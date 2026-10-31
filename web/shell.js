@@ -62,7 +62,7 @@ const REPO = "missingbulb/NoRFinder";
 const LOCAL_GT = "Ground truth cannot be sent from local files, only from Google Drive.";
 // the issue form a proposal for a new study is written on
 const STUDY_REQUEST = "new-study.yml";
-// signing in (1.48): these settings follow the user to every device; the rest stay with this one
+// signing in (1.50): these settings follow the user to every device; the rest stay with this one
 const signIn = account({
   keys: [THEME, TIPS, SEEN_VERSION, MEMORY_TIP, SOURCE, DRIVE_LINK, DRIVE_LINKS, THUMBS, RECENT],
   menu: $("#user-menu"),

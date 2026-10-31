@@ -1,4 +1,4 @@
-// The site's server (1.48): every address outside /api/ is the site's own files; under /api/ it signs a
+// The site's server (1.50): every address outside /api/ is the site's own files; under /api/ it signs a
 // user in with the token Google's sign-in gives the page, keeps their session in a cookie, and keeps one
 // settings record per user. Its KV store (ACCOUNTS) holds "session:<id>" → the user, and
 // "settings:<Google id>" → their record, {browser key: the string the page keeps under it}.

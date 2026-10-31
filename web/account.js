@@ -1,4 +1,4 @@
-// Signing in with Google (1.48), from the avatar's menu: the site's server (/api/) says whether this browser
+// Signing in with Google (1.50), from the avatar's menu: the site's server (/api/) says whether this browser
 // has a session and which Google client signs in, and keeps the signed-in user's one settings record, the
 // strings this device keeps under the browser keys that follow the user. Google's sign-in script is loaded
 // only when a visitor who is not signed in opens the menu.
