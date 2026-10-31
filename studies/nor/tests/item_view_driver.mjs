@@ -143,7 +143,7 @@ if (shown !== other) await fail("a double click on a card did not select it on t
 // a narrow, short window puts the corner's few cards in many rows
 await page.setViewportSize({ width: 760, height: 420 });
 await page.click("#switch");
-let checked = 0;
+let checked = 0, near = 0;
 for (const tab of ["#tab-pass", "#tab-fail"]) {
   await page.click(tab); await page.evaluate(() => { $("#items-view").scrollTop = 0; }); await settled();
   const rows = () => page.evaluate(() => {
@@ -160,6 +160,7 @@ for (const tab of ["#tab-pass", "#tab-fail"]) {
     const far = (k) => where === "at the top" && firstBelow >= 0 && k >= firstBelow + 3;
     console.log(`${tab} ${where}: ${R.length} rows, drawn per row ${R.map((r) => r.drawn + "/" + r.n).join(" ")}`);
     for (const [k, r] of R.entries()) {
+      if (want(k)) near++;
       if (want(k) && r.drawn !== r.n) await fail(`${tab} ${where}: row ${k}, in view or within two rows of it, is not drawn`, R);
       if (far(k) && r.drawn) await fail(`${tab} ${where}: row ${k}, far from the view, is drawn`, R);
       if (far(k)) checked++;
@@ -170,4 +171,6 @@ for (const tab of ["#tab-pass", "#tab-fail"]) {
   await check("at the bottom");
 }
 if (!checked) await fail("no list long enough to leave a row undrawn");
+// two tabs, two places each, at least the row in view at each
+if (near < 4) await fail("too few rows near the view were checked", near);
 await done(0);
