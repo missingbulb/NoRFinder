@@ -12,7 +12,7 @@ Detect and quantify cerebral blood vessels in CD31 confocal images: **categorize
   `analysis/stack_view/`) are the earlier spikes.
 
 Migrated from [missingbulb/vascularColoring](https://github.com/missingbulb/vascularColoring)
-on 2026-10-31. Still there, not yet here: the 3D MicroViewer page (its ray-caster, TIFF reader,
+on 2026-10-31 ([`MIGRATION.md`](MIGRATION.md) lists every capability and where it stands). Still there, not yet here: the 3D MicroViewer page (its ray-caster, TIFF reader,
 model editing view and item cards), which comes over as the shell's 3D viewer plus this study's
 panels; the figure and PDF files the literature's READMEs show (they link to that repo for now);
 the pack's Go checks.
