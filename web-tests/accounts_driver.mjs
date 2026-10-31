@@ -6,6 +6,7 @@
 // Exits 1 on a failed check.
 //   node web-tests/accounts_driver.mjs
 import { generateKeyPairSync, createSign } from "node:crypto";
+import { isDeepStrictEqual as same } from "node:util";
 import worker from "../accounts/worker.js";
 
 let failed = false;
@@ -92,8 +93,10 @@ try {
     "settings sent from another site are refused");
   check((await call("PUT", "/api/settings", { body: SETTINGS, cookie: session, origin: null })).status === 403,
     "settings sent with no origin are refused");
-  check((await call("PUT", "/api/settings", { body: { big: "x".repeat(17 * 1024) }, cookie: session })).status === 413,
-    "a settings record over 16 KB is refused");
+  const sized = (n) => ({ big: "x".repeat(n - '{"big":""}'.length) }); // a record of exactly n bytes
+  check((await call("PUT", "/api/settings", { body: sized(16 * 1024), cookie: session })).status === 200, "a settings record of exactly 16 KB is saved");
+  check((await call("PUT", "/api/settings", { body: sized(16 * 1024 + 1), cookie: session })).status === 413,
+    "a settings record one byte over 16 KB is refused");
   for (const bad of [[1, 2], "light", { n: 1 }])
     check((await call("PUT", "/api/settings", { body: bad, cookie: session })).status === 400, `a settings record that is ${JSON.stringify(bad)} is refused`);
   check((await call("PUT", "/api/settings", { body: "{", raw: true, cookie: session })).status === 400, "a settings record that is not JSON is refused");
@@ -101,14 +104,14 @@ try {
   r = await call("PUT", "/api/settings", { body: SETTINGS, cookie: session });
   check(r.status === 200, "the signed-in user's settings are saved");
   got = await json(await call("GET", "/api/session", { cookie: session }));
-  check(JSON.stringify(got?.settings) === JSON.stringify(SETTINGS), "the session brings back the saved settings");
+  check(same(got?.settings, SETTINGS), "the session brings back the saved settings");
   await call("PUT", "/api/settings", { body: { "nor-theme": "dark" }, cookie: session });
   got = await json(await call("GET", "/api/session", { cookie: session }));
-  check(JSON.stringify(got?.settings) === JSON.stringify({ "nor-theme": "dark" }), "each save replaces the whole record");
+  check(same(got?.settings, { "nor-theme": "dark" }), "each save replaces the whole record");
 
   r = await call("POST", "/api/session", { body: { credential: token() } });
   got = await json(r);
-  check(JSON.stringify(got?.settings) === JSON.stringify({ "nor-theme": "dark" }), "signing in on another device brings the same record");
+  check(same(got?.settings, { "nor-theme": "dark" }), "signing in on another device brings the same record");
   const other = (r.headers.get("set-cookie") || "").split(";")[0];
 
   r = await call("DELETE", "/api/session", { cookie: session });
