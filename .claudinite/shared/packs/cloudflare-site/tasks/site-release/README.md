@@ -51,9 +51,12 @@ the queue instead of from YAML.
 **`unreleased-commits`** ([`preconditions.mjs`](preconditions.mjs)) is the task's own
 term because no built-in asks a release's question. The file says why the two nearest
 built-ins are both wrong here. A commit counts only when it touches a path the deploy ships:
-the wrangler config, the published tree, the folder holding the Worker's `main` and
-the package manifests. A commit with no file list, or a repo whose config the gate
-cannot read, always counts.
+the wrangler config, the published tree, the folder holding the Worker's `main`, the
+package manifests and, when the config has a `build.command`, every path its
+`build.watch_dir` names. A commit with no file list, or a repo whose config the gate
+cannot read, always counts; so does every commit in a repo whose build names no
+`watch_dir`, since nothing else says what the build reads. A site whose build reads from
+outside the published tree sets `watch_dir` to those inputs, the build script among them.
 
 **`on_interrupt: needs-human`** because a release is a one-shot external effect: a
 reclaimed claim must not re-run it, spend a second version number and re-upload.

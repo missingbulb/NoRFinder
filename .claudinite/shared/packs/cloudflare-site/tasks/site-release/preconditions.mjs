@@ -62,7 +62,7 @@ function repoRoot() {
 export function shipsSomething(commit, paths) {
   const files = commit?.files;
   if (!paths || !Array.isArray(files) || !files.length) return true;
-  return files.some((f) => paths.some((p) => (p.endsWith('/') ? f.startsWith(p) : f === p)));
+  return files.some((f) => paths.some((p) => (p.endsWith('/') ? f.startsWith(p) : f === p || f.startsWith(`${p}/`))));
 }
 
 export const terms = {
