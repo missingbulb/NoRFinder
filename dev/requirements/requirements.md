@@ -377,8 +377,10 @@ test fold under it. A study's research requirements, which no user sees, stay in
   GT); later steps do not show yet, and once every step is done none shines. Load image is done
   once an image is open, Submit GT once its issue is opened (for a local image, once its file is
   exported); the study says when its own steps are done (NoR: Run algorithm while the image was
-  searched with the finder and settings now chosen, Review all items while every finalist has a
-  verdict). Opening another image, or switching study (`1.30`), starts over. Hovering a crumb says what was done in that step
+  searched with the finder and settings now chosen, Review all items while the Submit Ground Truth
+  button (`3.13`) says the ground truth is complete: some vote cast, every added NoR and every
+  finalist decided; corrected by the owner on 2026-10-31, so the filters rejecting every finalist
+  never moves the step on while the button still says what is missing). Opening another image, or switching study (`1.30`), starts over. Hovering a crumb says what was done in that step
   and when. Clicking the crumb that shines brings its button into view, unfolding the box it is in
   (`1.41`) and scrolling to it, and presses it: a way there, a lesson in where it is, and a
   shortcut. The steps live in one state in the shell, and the crumbs and the shining buttons are

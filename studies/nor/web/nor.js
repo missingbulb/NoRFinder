@@ -500,13 +500,15 @@ export function mount(shell) {
     steps();
   }
   // the study's steps in the status bar: Run algorithm is done while the image was searched with the finder and
-  // settings now chosen (Find Candidates shines until then), Review all items while every finalist has a verdict
+  // settings now chosen (Find Candidates shines until then), Review all items while the Submit Ground Truth button
+  // says the ground truth is complete, so the crumb never moves on while the button says it cannot
   function steps() {
     const ran = !!st.meta && runKey() === st.lastRun, finalists = (st.passes || []).filter((c) => !c.added);
-    const open = finalists.filter((c) => !st.forced.has(c.i)).length, name = $("#finder").selectedOptions[0]?.textContent.replace(/ \(.*\)$/, "");
+    const name = $("#finder").selectedOptions[0]?.textContent.replace(/ \(.*\)$/, "");
     shell.step("find", ran, ran ? `${name}: ${st.order.length} candidates, ${finalists.length} finalists` : st.lastRun ? "The finder or its settings changed since the last run." : "");
     shell.boxDone($("#finder-box"), ran ? `${name} executed` : null);
-    shell.step("review", ran && !open, `${finalists.length - open} of ${finalists.length} finalists have your verdict`);
+    const gt = gtState(), left = gt.items.filter((t) => t.grade && !t.ok).map((t) => t.text + ".");
+    shell.step("review", ran && gt.state === "done", left.length ? left.join(" ") : "Every finalist has your verdict.");
   }
 
   // ---------- drawing ----------
