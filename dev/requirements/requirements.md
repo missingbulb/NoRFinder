@@ -522,10 +522,13 @@ test fold under it. A study's research requirements, which no user sees, stay in
   the right, then a row of the tab's own buttons and Close. Test: `web-tests/test_status_bar_page.py`.
   </details>
 
-- `1.44` The network, a download icon and "52 MB", is what this tab has downloaded since it opened.
+- `1.44` The network, a download icon and "1.2 MB/s", is how fast this tab is downloading now.
   <details>
 
-  Set by the owner on 2026-10-31. Its tab splits it into the page's own files, Python with its
+  Set by the owner on 2026-10-31; a speed rather than a total since 2026-10-31, so a burst shows
+  as one. The speed is what was downloaded over the last two seconds, as the CPU's share is
+  (`1.45`). Its tab gives the speed and what this tab has downloaded since it opened, and splits
+  that total into the page's own files, Python with its
   packages and the study's Python, and Google Drive. What comes from this browser's caches counts
   nothing; Google's small pictures of images in the Drive dialog are not counted, since Google does
   not let a page read their size. Test: `web-tests/test_status_bar_page.py`.
@@ -599,6 +602,17 @@ test fold under it. A study's research requirements, which no user sees, stay in
   </details>
 
 ## `2` The repo's checks
+
+- `1.48` The status bar's numbers roll to each new value, and a sharp rise in the CPU or network flashes.
+  <details>
+
+  Set by the owner on 2026-10-31. Whenever the disk, memory, network or CPU changes, each
+  character that changed rolls up to its new one, like a clock's digits. When the CPU or the
+  network speed at least doubles in one update and rises by a sharp step (30 points of a core;
+  1 MB/s), its icon and number turn the warning colour for three seconds, then fade back. With
+  reduced motion asked for, the digits change without rolling. Test:
+  `web-tests/test_status_bar_page.py`.
+  </details>
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.
   <details>

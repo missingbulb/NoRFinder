@@ -99,7 +99,7 @@ function busy(on, text, look) {
 // page's own scripts, plus an estimate of what a page cannot read
 function statusBar() {
   const { js, total } = memoryNow(), gb = navigator.deviceMemory, el = $("#sb-memory");
-  el.querySelector(".v").textContent = total == null ? "" : `${mbOf(total)} MB`;
+  showNumber(el, total == null ? "" : `${mbOf(total)} MB`);
   el.classList.toggle("warn", !!gb && total > gb * 2 ** 30 / 4);
   el.title = total == null ? "" : `Python ${mbOf(st.heap)} MB, its files ${mbOf(st.files)} MB` + (js ? `, the page ${mbOf(js)} MB` : "") +
     `, and an estimated ${UNREAD_MB} MB for Python's compiled code and the browser. Click for more.`;
@@ -141,7 +141,7 @@ async function diskBar() {
   const { out, extra } = await inventory();
   showDisk(Object.entries(out).reduce((a, [g, items]) => a + items.reduce((b, e) => b + e.size, 0) + (extra[g] || 0), 0));
 }
-const showDisk = (n) => { $("#sb-disk .v").textContent = sizeText(n); };
+const showDisk = (n) => showNumber($("#sb-disk"), sizeText(n));
 $("#sb-disk").onclick = () => usage("storage");
 
 // ---------- the resources dialog: storage, memory, network and CPU, a tab each ----------
@@ -158,6 +158,28 @@ function usage(tab) {
   else usageNow();
 }
 $("#usage-dlg .tab-row").onclick = (e) => { const t = e.target.closest("[role=tab]"); if (t) usage(t.dataset.tab); };
+// ---------- the status bar's numbers: each changed character rolls up to its new one ----------
+// Characters are paired from the right, so "9%" to "12%" rolls the 9 to a 2 and brings the 1 in from nothing;
+// the old character is the rolling one's data-from, so the number reads as its new value throughout.
+const SPIKE_MS = 3000, SHARP_CPU = 0.3, SHARP_RATE = 2 ** 20;
+function showNumber(item, text, spike) {
+  if (spike) {
+    item.classList.add("spike");
+    clearTimeout(item.spikeTimer);
+    item.spikeTimer = setTimeout(() => item.classList.remove("spike"), SPIKE_MS);
+  }
+  const v = item.querySelector(".v"), was = v.textContent;
+  if (text === was) return;
+  if (!was) { v.textContent = text; return; }
+  v.replaceChildren(...[...text].map((ch, i) => {
+    const from = was[was.length - text.length + i] ?? "";
+    if (from === ch || ch === " ") return ch;
+    const roll = document.createElement("span"), d = document.createElement("span");
+    roll.className = "roll"; d.dataset.from = from; d.textContent = ch; roll.append(d);
+    return roll;
+  }));
+}
+
 $("#sb-net").onclick = () => usage("network");
 $("#sb-cpu").onclick = () => usage("cpu");
 
@@ -186,8 +208,18 @@ function netNow() {
   const page = net.page + sw("page"), python = net.worker + sw("worker"), drive = window.NorDrive?.received() || 0;
   return { page, python, drive, total: page + python + drive };
 }
-function netList(n) {
-  $("#net-total").textContent = `This tab has downloaded ${sizeText(n.total)} since it opened.`;
+// how fast: what was downloaded over the last CPU_MS, as the CPU's share is counted
+const netSamples = [];
+function netRate(total) {
+  const t = Date.now();
+  netSamples.push([t, total]);
+  while (netSamples.length > 1 && netSamples[1][0] <= t - CPU_MS) netSamples.shift();
+  const [t0, n0] = netSamples[0];
+  return t > t0 ? ((total - n0) * 1000) / (t - t0) : 0;
+}
+const speedText = (r) => `${sizeText(r)}/s`;
+function netList(n, rate) {
+  $("#net-total").textContent = `This tab is downloading ${speedText(rate)} and has downloaded ${sizeText(n.total)} since it opened.`;
   $("#net-list").replaceChildren(
     entry("The page", "Its own files; what this browser had kept counts nothing", sizeText(n.page)),
     entry("Python", "Python, its packages and the study's Python", sizeText(n.python)),
@@ -222,11 +254,15 @@ function cpuList(c) {
     entry("Python", "The time it spent working", pct(c.python)));
 }
 
-// each second: the network and CPU in the status bar, and in their tabs when open
+// each second: the network and CPU in the status bar, and in their tabs when open; a sharp rise flashes
+const last = { rate: 0, cpu: 0 };
+const sharp = (now, was, step) => now >= 2 * was && now - was >= step;
 function usageNow() {
-  const n = netNow(), c = cpuNow();
-  $("#sb-net .v").textContent = sizeText(n.total); $("#sb-cpu .v").textContent = pct(c.total);
-  if (tabOn("network")) netList(n);
+  const n = netNow(), c = cpuNow(), rate = netRate(n.total);
+  showNumber($("#sb-net"), speedText(rate), sharp(rate, last.rate, SHARP_RATE));
+  showNumber($("#sb-cpu"), pct(c.total), sharp(c.total, last.cpu, SHARP_CPU));
+  last.rate = rate; last.cpu = c.total;
+  if (tabOn("network")) netList(n, rate);
   if (tabOn("cpu")) cpuList(c);
 }
 setInterval(usageNow, 1000);
