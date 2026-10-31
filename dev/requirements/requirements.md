@@ -568,6 +568,33 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `web-tests/test_image_box_page.py`, `studies/viewer/tests/test_viewer.py`.
   </details>
 
+- `1.48` Split into parts: an image cut into 4 or 9 TIFFs for ground truth, each recording where it lay.
+  <details>
+
+  Set by the owner on 2026-10-31. A large image is hard to annotate in one sitting; its parts can be
+  annotated one at a time, by several people at once, and give the finders smaller samples to tune on.
+  A study offers the shell's Split into parts dialog on the image open (NoR: in Preprocessing, `3.2`).
+  The dialog shows the image small, cut 2 × 2 or 3 × 3 into evenly spaced parts numbered as `{n}` counts
+  them; dragging a line moves its cut, never closer than a twentieth of the image to the next one, and
+  clicking a part leaves it out, clicking again keeping it. It lists the image's channels by the names and
+  colours the page gives them, each kept or dropped, and for a stack the slices kept, from one to another.
+  The parts' file names are the image's name and a pattern (`_r{row}c{col}` at first, kept as the user's
+  setting; `{row}` `{col}` `{n}` `{x}` `{y}` `{rows}` `{cols}`, `{name}` for the image's name), listed as
+  they will be; a pattern giving two parts one name, no channel kept, slices out of range or every part left
+  out holds the download and says why. Download all parts gives one ZIP of the parts. Upload to Google
+  Drive is shown, off, and says it needs a Google sign-in the page does not have.
+  Each part is an ImageJ TIFF (uncompressed, little-endian) of the channels and slices kept, every time point
+  kept, its pixels the image's own, bit for bit at its own bit depth: the image's scale, unit, slice spacing,
+  channel colours (the file's LUTs, else the page's colours), names, display ranges and Info are kept, and
+  its Info gains a line `rauntruth.split={…}`: the image it came from (name, SHA-256, Drive id, size,
+  channels, slices, frames), the grid's cuts, the part's row, column, number, x, y, width and height, the
+  channels and slices kept (from 0), and for a part of a part where it lies in the first image (`root`).
+  That record is enough to join the parts' ground truth back into the whole image's. It reads ImageJ
+  hyperstacks, OME-TIFFs in one file and plain TIFFs (strips or tiles; uncompressed, LZW, Deflate or
+  PackBits, either byte order; 8, 16, 32 or 64 bits), and a PNG as the browser decodes it; it refuses a
+  BigTIFF, and a part over 4 GB. Test: `web-tests/test_split.py`, `studies/nor/tests/test_split_page.py`.
+  </details>
+
 ## `2` The repo's checks
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.
@@ -599,7 +626,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   <details>
 
   Changed by the owner on 2026-10-30 and 2026-10-31. Below the Image box (`1.41`) the left bar holds
-  Preprocessing, which has no steps yet and says so, open from the image's opening until Find
+  Preprocessing, which holds Split into parts (`1.48`) and says Find Candidates works on the image as
+  loaded, open from the image's opening until Find
   Candidates (once a step marks the parts of the image to leave out, its folded title says how much,
   "14% imperfections"); Processing, the candidates finder (its "how it works" and its settings fold
   away; its "restore defaults" sits with the settings, not in the title row), open over the same
