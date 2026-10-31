@@ -1,11 +1,11 @@
-"""1.48, 3.2: Preprocessing's Split into parts on the NoR page, in headless Chromium with a stand-in worker
+"""1.48: the shell's Preprocessing drawer and its Split into parts, on the Image Viewer, a study with nothing of its
+own, in headless Chromium with a stand-in worker
 (split_page_driver.mjs): the dialog's grid, lines, parts left out, channels, slices and file names, then the ZIP
 it downloads, each part read back with tifffile as the crop of the image the dialog showed."""
 import json
 import os
 import shutil
 import subprocess
-import sys
 import zipfile
 
 import numpy as np
@@ -21,10 +21,8 @@ LUTS = [np.stack([np.arange(256) * k for k in rgb]).astype(np.uint8) for rgb in 
 
 @pytest.mark.skipif(not NODE, reason='node missing')
 def test_the_dialog_splits_the_image_into_the_parts_chosen(tmp_path):
-    sys.path.insert(0, os.path.join(HERE, '..', 'detection'))
-    import interactive
     ready = tmp_path / 'ready.json'
-    ready.write_text(interactive.ready())
+    ready.write_text('{}')
     rng = np.random.default_rng(11)
     a = rng.integers(0, 4095, (4, 3, 60, 80), dtype=np.uint16)
     image = str(tmp_path / 'stack.tif')

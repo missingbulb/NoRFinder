@@ -1,12 +1,12 @@
-// Drives the page (web/) in headless Chromium on the NoR study, with a stand-in worker answering READY (the
-// study's ready()) and an image of IMAGE's size, and checks Preprocessing's Split into parts: the button waits
-// for an image and opens the dialog on it; 2 × 2 and 3 × 3 draw their parts; a line dragged moves its cut; a part
+// Drives the page (web/) in headless Chromium on the Image Viewer, a study with nothing of its own, with a stand-in
+// worker answering READY (the study's ready()) and an image of IMAGE's size, and checks the shell's Preprocessing
+// drawer: it opens with the image, and its Split into parts waits for an image and opens the dialog on it; 2 × 2 and 3 × 3 draw their parts; a line dragged moves its cut; a part
 // clicked is left out and clicked again kept; the channels and slices chosen, and the file-name pattern, name the
 // parts, a pattern giving two parts one name holds the download; Upload to Google Drive is off and says why; the
 // pattern outlives a reload. Download all parts saves the ZIP to OUT/parts.zip, and prints the cuts it was made
 // with as JSON. Optional SHOTS: a directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
-//   node studies/nor/tests/split_page_driver.mjs READY IMAGE W H OUT [SHOTS]
-import { repoFile } from "../../../web-tests/repo_file.mjs";
+//   node web-tests/split_page_driver.mjs READY IMAGE W H OUT [SHOTS]
+import { repoFile } from "./repo_file.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -20,17 +20,18 @@ try { pw = require("playwright"); } catch {
   try { pw = require(path.join(execSync("npm root -g").toString().trim(), "playwright")); } catch { console.error("no playwright: npm i -g playwright"); process.exit(2); }
 }
 const [ready, image, W, H, out, shots] = process.argv.slice(2);
-const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-// three channels of gradients and the blue mask, as the study's Python answers them
+// three channels of gradients, named and coloured as a file would
 const STAND_IN = `
 const R = await (await fetch("ready.json")).json(), W = ${+W}, H = ${+H};
 postMessage({ type: "ready", info: R, secs: 0 });
 onmessage = ({ data: m }) => {
   if (m.type !== "open") return;
-  const images = new Uint8Array(W * H * 4);
+  const images = new Uint8Array(W * H * 3);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = y * W + x; images[i] = x * 3; images[W * H + i] = y * 4; images[2 * W * H + i] = (x + y) & 64 ? 200 : 0; }
-  postMessage({ type: "opened", meta: { H, W, um: 0.25 }, images, secs: 0 }, [images.buffer]);
+    const channels = [{ name: "Nav1.6", colour: "#ff0000" }, { name: "Caspr", colour: "#00ff00" }, { name: "DAPI", colour: "#0000ff" }];
+  postMessage({ type: "opened", meta: { H, W, um: 0.25, channels }, images, secs: 0 }, [images.buffer]);
 };`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
@@ -55,13 +56,14 @@ await ctx.route((u) => !u.href.startsWith(origin), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
 const page = await ctx.newPage();
 page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
-await page.goto(origin + "/web/?study=nor");
+await page.goto(origin + "/web/?study=viewer");
 await page.waitForFunction(() => document.querySelector("#split-open"));
 
 await check(await page.isDisabled("#split-open"), "Split into parts waits for an image");
 await page.setInputFiles("#file", image);
 await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Image loaded."), null, { timeout: 8000 }).catch(async () => { await check(false, "the image loads", await page.evaluate(() => document.querySelector("#status").textContent)); });
 await page.waitForFunction(() => !document.querySelector("#split-open").disabled);
+await check(await page.evaluate(() => !document.querySelector("#preprocessing-box").classList.contains("folded")), "the Preprocessing drawer opens with the image");
 await page.click("#split-open");
 await page.waitForFunction(() => document.querySelector("#split-dlg").open);
 
