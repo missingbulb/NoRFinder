@@ -60,7 +60,12 @@ const bar = () => page.evaluate(() => [...document.querySelectorAll("#left > .bo
 }));
 const boxes = async (want, what) => { const b = await bar(); await check(b.join() === want.join(), what, b); };
 const title = (name) => page.click(`#left > .box.foldable > .sec-head h2 >> text=${name}`);
-const loadImage = async () => { await page.setInputFiles("#file", image); await page.waitForFunction(() => !document.querySelector("#fx-count").disabled); };
+// the status line is cleared first, so the wait is for this image's load, not the last one's
+const loadImage = async () => {
+  await page.evaluate(() => { document.querySelector("#status").textContent = ""; });
+  await page.setInputFiles("#file", image);
+  await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded." && !document.querySelector("#fx-count").disabled);
+};
 
 await boxes(["Load Image open", "Threshold folded", "Counted folded", "Notes folded"], "before an image only Load Image is open");
 await loadImage();

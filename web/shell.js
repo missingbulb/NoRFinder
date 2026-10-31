@@ -502,6 +502,8 @@ function driveDialog() {
     // rows: the listing's image rows that await a ready-made thumbnail or what the file holds, in the list's
     // order, each {at, row, f, thumb, holds, asked, done}, at its place in the list; epoch: which listing they
     // belong to; dir: the study on show's ready-made thumbnails
+    // asked, done and bytes count the thumbnails, which the note beside the checkbox reports; a header read for
+    // what a file holds is not one
     let ctl = new AbortController(), running = 0, rows = [], epoch = 0, ready, frame = 0, asked = 0, done = 0, bytes = 0, dir = null;
     const put = (pic, url) => { const i = new Image(); i.alt = ""; i.src = url; pic.replaceChildren(i); };
     const tell = () => {
@@ -523,9 +525,9 @@ function driveDialog() {
       frame = 0;
       for (const want = wanted(); running < AT_ONCE && want.length; ) {
         const r = want.shift(), signal = ctl.signal;
-        r.asked = true; running++; asked++;
+        r.asked = true; running++; if (r.thumb) asked++;
         job(r, signal).catch((e) => { if (e.throttled) throttle(); })
-          .finally(() => { if (signal.aborted) return; r.done = true; running--; done++; tell(); next(); });
+          .finally(() => { if (signal.aborted) return; r.done = true; running--; if (r.thumb) done++; tell(); next(); });
       }
       tell();
     };
@@ -537,7 +539,6 @@ function driveDialog() {
       if (r.holds) {
         const buf = await NorDrive.head(r.f.id, HEAD, signal);
         if (signal.aborted) return;
-        bytes += buf.byteLength;
         r.row.querySelector(".shape").textContent = know(r.f.id, shape(buf));
       }
     };
