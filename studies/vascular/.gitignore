@@ -1,0 +1,7 @@
+# rendered overlays (regenerate: python3 analysis/measure_vessels.py --overlays, python3 analysis/annotate_overlays.py)
+/analysis/overlays/
+/analysis/annotated/
+# raw confocal stacks, fetched from Drive (python3 analysis/stack_sources.py), never committed
+/data/raw
+# extraction lab runs (regenerate: python3 analysis/extraction/lab.py cmp)
+/analysis/extraction/runs/

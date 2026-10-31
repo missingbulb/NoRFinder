@@ -1,6 +1,7 @@
 // Drives the page (web/) in headless Chromium on the fixture study, with a stand-in worker answering from
 // ANSWERS (tests/test_study_runs.py), and checks the left bar's drawers: stacked with no gap, numbered, the
-// open one marked; folding with the steps (Load Image open until an image opens; each study drawer opening
+// open one marked; folding with the steps (Load Image open until an image opens; the shell's Preprocessing open
+// from then until the study's first step; each study drawer opening
 // after its step and folding again after the one it names; one only its title opens staying folded); their
 // titles (a done drawer folded sums up what was done, open names itself, a waiting one says its task); and
 // another image, or Unload, starting over. Exits 1 on a failed check, 2 when it cannot run.
@@ -78,27 +79,27 @@ const gaps = await page.evaluate(() => { const r = [...document.querySelectorAll
 await check(gaps.every((g) => g <= 0), "the drawers stack with no gap between them", gaps);
 const bars = () => page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].map((b) => getComputedStyle(b).boxShadow !== "none"));
 
-await boxes(["1 Load Image open", "2 Threshold folded", "3 Counted folded", "4 Notes folded"], "before an image only Load Image is open, each drawer numbered");
-await check((await bars()).join() === "true,false,false,false", "the open drawer, and only it, carries the accent bar", await bars());
+await boxes(["1 Load Image open", "2 Preprocessing folded", "3 Threshold folded", "4 Counted folded", "5 Notes folded"], "before an image only Load Image is open, each drawer numbered");
+await check((await bars()).join() === "true,false,false,false,false", "the open drawer, and only it, carries the accent bar", await bars());
 await loadImage();
-await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted folded", "4 Notes folded"],
-  "an image open: Load Image folds to its preview, name and what it holds, checked; the drawer opening on it opens");
+await boxes(["✓ [img] " + name + "2D folded", "2 Preprocessing open", "3 Threshold open", "4 Counted folded", "5 Notes folded"],
+  "an image open: Load Image folds to its preview, name and what it holds, checked; the shell's Preprocessing and the drawer opening on it open");
 await title(0);
-await boxes(["✓ Loaded Image open", "2 Threshold open", "3 Counted folded", "4 Notes folded"], "its title opens a folded drawer, done: Loaded Image");
+await boxes(["✓ Loaded Image open", "2 Preprocessing open", "3 Threshold open", "4 Counted folded", "5 Notes folded"], "its title opens a folded drawer, done: Loaded Image");
 await title(0);
-await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted folded", "4 Notes folded"], "and folds it again");
+await boxes(["✓ [img] " + name + "2D folded", "2 Preprocessing open", "3 Threshold open", "4 Counted folded", "5 Notes folded"], "and folds it again");
 await page.click("#fx-count");
 await page.waitForFunction(() => /pixels/.test(document.querySelector("#fx-result").textContent));
-await boxes(["✓ [img] " + name + "2D folded", "✓ Counted at 100 folded", "3 Counted open", "4 Notes folded"],
-  "Count done: Threshold folds to the study's summary of it, Counted opens, Notes waits for its title");
-await title(1);
-await boxes(["✓ [img] " + name + "2D folded", "✓ Threshold open", "3 Counted open", "4 Notes folded"], "a done drawer open names itself");
-await title(1);
-await title(3);
-await boxes(["✓ [img] " + name + "2D folded", "✓ Counted at 100 folded", "3 Counted open", "4 Notes open"], "Notes opens from its title");
+await boxes(["✓ [img] " + name + "2D folded", "2 Preprocessing folded", "✓ Counted at 100 folded", "4 Counted open", "5 Notes folded"],
+  "Count done: Preprocessing folds after the study's first step, Threshold folds to the study's summary of it, Counted opens, Notes waits for its title");
+await title(2);
+await boxes(["✓ [img] " + name + "2D folded", "2 Preprocessing folded", "✓ Threshold open", "4 Counted open", "5 Notes folded"], "a done drawer open names itself");
+await title(2);
+await title(4);
+await boxes(["✓ [img] " + name + "2D folded", "2 Preprocessing folded", "✓ Counted at 100 folded", "4 Counted open", "5 Notes open"], "Notes opens from its title");
 await loadImage();
-await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted folded", "4 Notes folded"], "another image starts over: the study's drawers wait again");
+await boxes(["✓ [img] " + name + "2D folded", "2 Preprocessing open", "3 Threshold open", "4 Counted folded", "5 Notes folded"], "another image starts over: the study's drawers wait again");
 await title(0); await page.click("#unload");
-await page.waitForFunction(() => document.querySelector("#unload").hidden && document.querySelectorAll("#left > .box.foldable .step-mark").length === 4);
-await boxes(["1 Load Image open", "2 Threshold folded", "3 Counted folded", "4 Notes folded"], "Unload: every drawer waits again, as at first");
+await page.waitForFunction(() => document.querySelector("#unload").hidden && document.querySelectorAll("#left > .box.foldable .step-mark").length === 5);
+await boxes(["1 Load Image open", "2 Preprocessing folded", "3 Threshold folded", "4 Counted folded", "5 Notes folded"], "Unload: every drawer waits again, as at first");
 await done(0);

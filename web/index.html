@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title></title>
-<meta name="version" id="site-version" title="version 0.11031.65">
+<meta name="version" id="site-version" title="version 0.11031.66">
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="style.css">
 <!-- cookieless visit counts (Cloudflare Web Analytics), on the released site only -->
@@ -65,6 +65,14 @@
       </div>
     </section>
 
+    <section class="box foldable" id="preprocessing-box" data-opens="load">
+      <div class="sec-head"><h2>Preprocessing</h2></div>
+      <div class="steps">
+        <slot-here data-slot-for="preprocessing"></slot-here>
+        <button id="split-open" type="button" disabled title="Cut the image into 4 or 9 parts, each its own TIFF, to annotate one at a time">Split into parts…</button>
+      </div>
+    </section>
+
     <slot-here data-slot-for="left"></slot-here>
   </aside>
   <div class="gutter" id="gutter-left" title="Drag to resize"></div>
@@ -117,7 +125,7 @@
   <span class="grow"></span>
   <button id="sb-disk" class="sb-item" type="button" title="What this site keeps on this device. Click to manage it." aria-label="Storage"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="13" height="8" rx="1.5"/><path d="M4 9.5h4"/><circle cx="11.5" cy="9.5" r=".4"/></svg><span class="v"></span></button>
   <button id="sb-memory" class="sb-item" type="button" aria-label="Memory"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="13" height="6.5" rx="1"/><path d="M4.5 6.5v1.5M7 6.5v1.5M9 6.5v1.5M11.5 6.5v1.5M3.5 10.5v2M6 10.5v2M8 10.5v2M10 10.5v2M12.5 10.5v2"/></svg><span class="v"></span></button>
-  <button id="sb-net" class="sb-item" type="button" title="What this tab has downloaded since it opened. Click for more." aria-label="Network"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8.5M4.5 7 8 10.5 11.5 7M2.5 13.5h11"/></svg><span class="v"></span></button>
+  <button id="sb-net" class="sb-item" type="button" title="How fast this tab is downloading now. Click for more." aria-label="Network"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8.5M4.5 7 8 10.5 11.5 7M2.5 13.5h11"/></svg><span class="v"></span></button>
   <button id="sb-cpu" class="sb-item" type="button" title="How busy this tab's threads are now, as a share of one core. Click for more." aria-label="CPU"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="8" height="8" rx="1"/><rect x="6.5" y="6.5" width="3" height="3"/><path d="M6 1.5V4M10 1.5V4M6 12v2.5M10 12v2.5M1.5 6H4M1.5 10H4M12 6h2.5M12 10h2.5"/></svg><span class="v"></span></button>
   <button id="sb-version" class="sb-item" type="button"></button>
   <div id="whats-new" role="status" hidden><button id="whats-new-open" type="button"></button><button id="whats-new-x" class="x" type="button" aria-label="Close">×</button></div>
@@ -162,6 +170,24 @@
     <div id="history-list"></div>
     <div class="drive-row end"><span class="grow"></span><button value="close" class="primary" autofocus>Close</button></div>
   </form>
+</dialog>
+<dialog id="split-dlg" aria-labelledby="split-title">
+  <h2 id="split-title">Split into parts</h2>
+  <p class="hint">Smaller parts are quicker to annotate, and can be shared out. Each part is a TIFF that keeps the image's scale and channels, and records where it lay in this image.</p>
+  <div class="split-body">
+    <div id="split-view"><canvas id="split-canvas"></canvas><svg id="split-grid" aria-label="The parts: drag a line to move it, click a part to leave it out"></svg></div>
+    <div class="split-side">
+      <div class="split-field"><span class="split-label">Parts</span><div class="tabs" id="split-n" role="group" aria-label="Parts"><button type="button" data-n="2">2 × 2</button><button type="button" data-n="3">3 × 3</button></div></div>
+      <p class="hint">Drag a line to move it. Click a part to leave it out, and again to keep it.</p>
+      <fieldset id="split-channels"><legend>Channels</legend><div id="split-channel-list"></div></fieldset>
+      <fieldset id="split-slices"><legend>Slices</legend><label>from <input type="number" id="split-z0" min="1" step="1"></label> <label>to <input type="number" id="split-z1" min="1" step="1"></label> <span class="hint" id="split-z-of"></span></fieldset>
+      <p class="hint" id="split-frames" hidden></p>
+      <label class="split-field" for="split-pattern"><span class="split-label">File names</span><input id="split-pattern" type="text" spellcheck="false" autocomplete="off"></label>
+      <p class="hint">Added to the image's name: {row} {col} {n} {x} {y} {rows} {cols}, or {name} for the name itself.</p>
+      <ul id="split-names"></ul>
+    </div>
+  </div>
+  <div class="drive-row end"><span id="split-msg" class="hint" role="status"></span><span class="grow"></span><button id="split-drive" type="button" disabled>Upload to Google Drive</button><button id="split-download" class="primary" type="button">Download all parts</button><button id="split-close" type="button">Close</button></div>
 </dialog>
 <dialog id="usage-dlg" aria-label="What this page uses">
   <form method="dialog">

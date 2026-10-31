@@ -28,6 +28,8 @@ packs:
         market: "Microscopy image analysis. Desktop tools: Fiji/ImageJ, napari, QuPath, CellProfiler, ilastik; commercial: Imaris, arivis, Huygens; learned segmenters: Cellpose, StarDist; manual counting in ImageJ as the incumbent for node counting; plus web viewers and platforms (OMERO, Viv/Avivator, vizarr) as the browser-side alternatives."
     - id: "nor-study"
       source: "local"
+    - id: "vascular-study"
+      source: "local"
   sources:
     - "missingbulb/Shepherd"
   manager:

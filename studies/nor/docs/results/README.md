@@ -53,9 +53,7 @@ arrives, precisely because a single image is what overfitting looks like.
 
 ## Result 1 — Tier 1 is exact, after the harness found two defects
 
-![invariance](invariance-visual.png)
-
-*Original, transpose, rotated 34°, scaled 0.5×. Each panel shows that panel's own detections;
+*The figure, kept in this folder's git history up to #620, showed: original, transpose, rotated 34°, scaled 0.5×. Each panel shows that panel's own detections;
 the caption reports agreement with the 1× detection after inverse mapping. Overlay hue is chosen
 against the data's own colours at render time and asserted rare — see `pick_overlay` in
 `detection/render.py`.*
@@ -96,7 +94,7 @@ transforms. The test asserts this with no tolerance, and reverting either fix tu
 
 ## Result 2 — the scale envelope, measured
 
-![scale response](scale-response.png)
+*The scale-response plot is in this folder's git history up to #620.*
 
 **Directly answering "should it work at 2× and at 0.5×":**
 

@@ -33,8 +33,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
 
   The image a study works on is shown by a viewer the study names (`viewer` in `study.json`),
   behind one interface: show the opened image, draw the study's layers over it, report a pick and a
-  lasso in image coordinates, zoom and pan. A 3D viewer is a second implementation of that
-  interface, not a change to the shell or to the studies that keep the 2D one.
+  lasso in image coordinates, zoom and pan. The 3D viewer (`1.49`) keeps that interface and adds
+  a 3D view beside the 2D one, with no change to the studies that keep the 2D viewer.
   </details>
 
 - `1.4` Python is reached through one generic call.
@@ -57,7 +57,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
 - `1.6` The user sees, and can clear, what this device keeps.
   <details>
 
-  Not signed in (`1.48`), the user is whoever opened the page on this device. An avatar at the right of
+  Not signed in (`1.50`), the user is whoever opened the page on this device. An avatar at the right of
   the header opens a menu whose **Manage storage** opens the Storage tab of the resources dialog
   (`1.43`), which lists everything the site keeps on this device, each with its size, in six groups, each folded when the dialog opens: the code kept for
   the next visit (Python and its packages, by file); image thumbnails, by the image's full name (by
@@ -220,8 +220,10 @@ test fold under it. A study's research requirements, which no user sees, stay in
   turns the downloads off; beside it, and in the status bar while they load, how many have arrived
   and their size. It needs the site's Google API key, kept in the repository variable
   `GOOGLE_API_KEY` and written into `web/config.js` at deploy; without one the option is off
-  (`web-tests/test_site_config.py`). The dialog opens on the last link pasted, or else on the lab's
-  folder (the repository variable `DRIVE_DEFAULT_FOLDER`), and lists a folder link at once. Nothing
+  (`web-tests/test_site_config.py`). The dialog opens on the link last pasted in this study, else on
+  the study's own folder (`files.drive` in its `study.json`), else on the link last pasted in any
+  study, and lists a folder link at once; opening on a link is not pasting it
+  (`web-tests/test_drive_folder_page.py`). Nothing
   else read from Drive is kept, apart from the image files Auto-save images keeps (`1.6`, `1.7`;
   `studies/nor/tests/test_drive_dialog.py`).
   </details>
@@ -522,10 +524,13 @@ test fold under it. A study's research requirements, which no user sees, stay in
   the right, then a row of the tab's own buttons and Close. Test: `web-tests/test_status_bar_page.py`.
   </details>
 
-- `1.44` The network, a download icon and "52 MB", is what this tab has downloaded since it opened.
+- `1.44` The network, a download icon and "1.2 MB/s", is how fast this tab is downloading now.
   <details>
 
-  Set by the owner on 2026-10-31. Its tab splits it into the page's own files, Python with its
+  Set by the owner on 2026-10-31; a speed rather than a total since 2026-10-31, so a burst shows
+  as one. The speed is what was downloaded over the last two seconds, as the CPU's share is
+  (`1.45`). Its tab gives the speed and what this tab has downloaded since it opened, and splits
+  that total into the page's own files, Python with its
   packages and the study's Python, and Google Drive. What comes from this browser's caches counts
   nothing; Google's small pictures of images in the Drive dialog are not counted, since Google does
   not let a page read their size. Test: `web-tests/test_status_bar_page.py`.
@@ -568,7 +573,54 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `web-tests/test_image_box_page.py`, `studies/viewer/tests/test_viewer.py`.
   </details>
 
-- `1.48` Signing in with Google carries the user's settings to every device; not signing in changes nothing.
+- `1.48` Preprocessing, in every study, splits an image into 4 or 9 TIFFs for ground truth, each recording where it lay.
+  <details>
+
+  Set by the owner on 2026-10-31. A large image is hard to annotate in one sitting; its parts can be
+  annotated one at a time, by several people at once, and give the finders smaller samples to tune on.
+  Changed by the owner on 2026-10-31: it is the shell's, in every study, the Image Viewer included. Below
+  the Image box the shell's Preprocessing drawer opens with the image and folds once the study's first step
+  is done (a study with no steps leaves it as the user left it); a study adds its own preprocessing steps
+  to it through its `preprocessing` slot. Its Split into parts button, off until an image is open, opens
+  the dialog. The dialog shows the image small, cut 2 × 2 or 3 × 3 into evenly spaced parts numbered as `{n}` counts
+  them; dragging a line moves its cut, never closer than a twentieth of the image to the next one, and
+  clicking a part leaves it out, clicking again keeping it. It lists the image's channels by the names and
+  colours the page gives them, each kept or dropped, and for a stack the slices kept, from one to another.
+  The parts' file names are the image's name and a pattern (`_r{row}c{col}` at first, kept as the user's
+  setting; `{row}` `{col}` `{n}` `{x}` `{y}` `{rows}` `{cols}`, `{name}` for the image's name), listed as
+  they will be; a pattern giving two parts one name, no channel kept, slices out of range or every part left
+  out holds the download and says why. Download all parts gives one ZIP of the parts. Upload to Google
+  Drive is shown, off, and says it needs a Google sign-in the page does not have.
+  Each part is an ImageJ TIFF (uncompressed, little-endian) of the channels and slices kept, every time point
+  kept, its pixels the image's own, bit for bit at its own bit depth: the image's scale, unit, slice spacing,
+  channel colours (the file's LUTs, else the page's colours), names, display ranges and Info are kept, and
+  its Info gains a line `rauntruth.split={…}`: the image it came from (name, SHA-256, Drive id, size,
+  channels, slices, frames), the grid's cuts, the part's row, column, number, x, y, width and height, the
+  channels and slices kept (from 0), and for a part of a part where it lies in the first image (`root`).
+  That record is enough to join the parts' ground truth back into the whole image's. It reads ImageJ
+  hyperstacks, OME-TIFFs in one file and plain TIFFs (strips or tiles; uncompressed, LZW, Deflate or
+  PackBits, either byte order; 8, 16, 32 or 64 bits), and a PNG as the browser decodes it; it refuses a
+  BigTIFF, and a part over 4 GB. Test: `web-tests/test_split.py`, `web-tests/test_split_page.py`, `web-tests/test_left_bar_page.py`.
+  </details>
+
+- `1.49` A study whose viewer is `image3d` shows a z-stack in 3D, turning it by mouse; its channel rows drive it.
+  <details>
+
+  Set by the owner on 2026-10-31, moving the 3D MicroViewer into the shell. The study's Python
+  returns a stack as its flattened planes, which the 2D view shows unchanged, followed by every
+  slice of every channel (`Z` in its meta). A 2D/3D switch in the toolbar opens the 3D view, which
+  a stack opens on: it casts rays through the stack in the browser (WebGL2), looking straight down
+  as the microscope does. Dragging turns it, the wheel zooms, shift-drag pans, and Top, Tilted,
+  Side and Front put the view back. Brightest shows the brightest point along each ray, Surface a lit
+  surface where the signal crosses a level, and Colour by depth paints by the depth of that point
+  so crossings at different depths read apart. Slices *a*–*b* show part of the depth. The slice
+  spacing comes from the file, else from the study (`view.spacing`, saying who stated it), else
+  1 µm, called a guess. Every shown channel is drawn in its colour between the black and white
+  points of its row, which redraw the 3D view as they move. The study's `view` sets the render, Colour
+  by depth and the spacing it opens with. A study draws over the 3D view, over the stack or beside it
+  in the same camera, picks and drags there, and can keep only the stack inside or outside a mask of
+  its own. Test: `web-tests/test_viewer3d_page.py`, and the vascular study's `4.3`.
+- `1.50` Signing in with Google carries the user's settings to every device; not signing in changes nothing.
   <details>
 
   Set by the owner on 2026-10-31. When the site has a Google sign-in client (`GOOGLE_CLIENT_ID` in
@@ -578,7 +630,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   Google's token, keeps a session in its own cookie for 30 days (HttpOnly, sent only to the site's
   `/api/`), and keeps one settings record per user, at most 16 KB. These settings follow the user:
   dark or light, the tips closed, the version last seen, the low-memory popup turned off, where Load
-  reads from, the last Drive link, Show thumbnails, and the images opened from Drive lately. These
+  reads from, the last Drive link (in each study too), Show thumbnails, and the images opened from Drive lately. These
   stay with the device: the left bar's width, Auto-save images, and everything kept for images. On
   signing in the record's settings replace this device's, the theme at once; a first sign-in, with
   no record yet, saves this device's. While signed in, each change to a setting that follows the
@@ -589,6 +641,17 @@ test fold under it. A study's research requirements, which no user sees, stay in
   </details>
 
 ## `2` The repo's checks
+
+- `1.48` The status bar's numbers roll to each new value, and a sharp rise in the CPU or network flashes.
+  <details>
+
+  Set by the owner on 2026-10-31. Whenever the disk, memory, network or CPU changes, each
+  character that changed rolls up to its new one, like a clock's digits. When the CPU or the
+  network speed at least doubles in one update and rises by a sharp step (30 points of a core;
+  1 MB/s), its icon and number turn the warning colour for three seconds, then fade back. With
+  reduced motion asked for, the digits change without rolling. Test:
+  `web-tests/test_status_bar_page.py`.
+  </details>
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.
   <details>
@@ -619,7 +682,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   <details>
 
   Changed by the owner on 2026-10-30 and 2026-10-31. Below the Image box (`1.41`) the left bar holds
-  Preprocessing, which has no steps yet and says so, open from the image's opening until Find
+  the shell's Preprocessing (`1.48`), to which the study adds that Find Candidates works on the image as
+  loaded, open from the image's opening until Find
   Candidates (once a step marks the parts of the image to leave out, its folded title says how much,
   "14% imperfections"); Processing, the candidates finder (its "how it works" and its settings fold
   away; its "restore defaults" sits with the settings, not in the title row), open over the same
@@ -834,4 +898,68 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   outline; only those in view and the two rows past it either way are drawn in full, together in
   one go per frame rather than card by card, and the rest are drawn as scrolling brings them near.
   Test: `studies/nor/tests/test_item_view_page.py`.
+  </details>
+
+## `4` The Vascular Measurements page: cerebral vessels in CD31 z-stacks
+
+Migrated from [missingbulb/vascularColoring](https://github.com/missingbulb/vascularColoring) on
+2026-10-31, at rauntruth.com/vascular. Its research requirements, the
+owner's decisions on the stacks and the vessel model, are
+[`studies/vascular/docs/3D-STACKS.md`](../../studies/vascular/docs/3D-STACKS.md) and
+[`studies/vascular/docs/WORKING-GUIDE.md`](../../studies/vascular/docs/WORKING-GUIDE.md).
+
+- `4.1` A z-stack opens in 3D in the owner's approved view; 2D shows it flattened.
+  <details>
+
+  Any multi-page TIFF (an ImageJ hyperstack or plain pages in depth) opens in the 3D viewer
+  (`1.49`), every channel scaled by one window over the whole stack, so signal that fades with depth
+  still looks faded; 2D shows its brightest-over-depth picture. CD31 is always the first channel: a
+  one-channel stack is CD31, and a two-channel one, DAPI then CD31 as the owner's originals are, is
+  shown CD31 first. It opens in the view the owner approved on 2026-09-29: CD31 alone, coloured by
+  depth, black point 0.63 of the window (161), slices 1 µm apart as the owner stated on 2026-10-29.
+  Test: `studies/vascular/tests/test_stack_page.py`.
+  </details>
+
+- `4.2` Load from Google Drive opens on the owner's stacks folder.
+  <details>
+
+  `files.drive` in the study's `study.json`, under `1.18`'s rule.
+  </details>
+
+- `4.3` A stack's vessel model opens beside it or over it, to correct by hand.
+  <details>
+
+  Moved from the 3D MicroViewer (`studies/vascular/docs/3D-STACKS.md`, the owner's decisions of
+  2026-10-03 to 10-29). A stack the study ships a draft for (`web/models/`, matched by name without
+  case, spaces or punctuation) opens with it; any `vessel-model/2` file loads too. Side by side
+  shows the model as white tubes in a view of its own that turns with the stack's; Overlay draws it
+  in magenta over the stack; Hide takes it away. On the model: drag a point to move it, right-click
+  a segment or a point to delete it, add or remove a bend or split a junction into vessels that
+  cross, right-drag from one piece to another to connect them, and click a faded low-confidence
+  vessel to approve or decline it. Review keeps only the signal within reach of the model's
+  vessels (Detected) or away from them (Missed), within a reach that is a share of each vessel's
+  own width; Draw a missed vessel adds one a click at a time; Mark a damaged area lassos an area to
+  leave out. Every edit can be undone, and the edits stay in the browser until the model is
+  submitted. Test: `studies/vascular/tests/test_model_page.py`.
+  </details>
+
+- `4.4` Item View shows each junction and vessel of the model as a card.
+  <details>
+
+  A card for each junction (three or more live branches) and each vessel (junction or tip to the
+  next): the stack around it flattened over the slices shown, the rest of the model thin in magenta
+  and the item in white, with its numbers (a vessel's length along its curve, its width and depth
+  span; a junction's depth, width and how many junctions lie within 20 µm). Filters show the ones
+  worth a look and the declined vessels; sorting brings the shortest, widest, most branched or most
+  crowded first. A card approves, declines or deletes a vessel, splits a junction, or shows its
+  item in 3D. Test: `studies/vascular/tests/test_model_page.py`.
+  </details>
+
+- `4.5` The corrected model is the study's ground truth.
+  <details>
+
+  Submit Ground Truth (`1.26`), in the Item View and only there, exports the corrected `vessel-model/2` file, `status` corrected and
+  its corrections counted, labelled `vascular-ground-truth`; it is off until the model carries a
+  correction, and its checklist says how many low-confidence vessels still wait for a verdict.
+  Test: `studies/vascular/tests/test_model_page.py`.
   </details>

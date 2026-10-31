@@ -191,6 +191,6 @@ const clear = await page.evaluate(() => ({ stage: document.querySelector("#stage
 await check(clear.stage && clear.empty && !clear.minimap && !clear.unload && !clear.img, "Unload clears the image, the minimap and itself", clear);
 await check(clear.shine && !clear.done && clear.crumbs === "Load image", "Load shines again, and the steps start over", clear);
 await check(clear.fx === "Nothing counted yet." && !clear.overlay && clear.status.startsWith("Ready"), "the study starts over too", clear);
-await check(await page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].map((b) => b.classList.contains("folded")).join()) === "false,true,true,true", "and the boxes fold as before any image");
+await check(await page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].map((b) => b.classList.contains("folded")).join()) === "false,true,true,true,true", "and the boxes fold as before any image");
 await check((await rows()).map((r) => r.name).join() === "Grey", "and the channels are the study's again");
 await done(0);

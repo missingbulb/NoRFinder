@@ -1,0 +1,792 @@
+<meta charset="utf-8">
+<title>CD31 Stack Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --ground: #0b0f12;
+    --panel: #131a1f;
+    --line: #25313a;
+    --text: #d8e1e7;
+    --muted: #82929d;
+    --accent: #4fd1d9;
+    --warn: #e8b04a;
+    --mark: #ff4fd8;
+    --sans: "IBM Plex Sans", system-ui, sans-serif;
+    --cond: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  html, body { height: 100%; }
+  body { background: var(--ground); color: var(--text); font: 14px/1.5 var(--sans); padding-inline: 16px; padding-block: 12px 24px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin-bottom: 10px; }
+  h1 { font: 600 22px/1.2 var(--cond); margin: 0; letter-spacing: .01em; text-wrap: balance; }
+  .facts { display: flex; flex-wrap: wrap; gap: 4px 14px; font: 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .facts b { color: var(--text); font-weight: 500; }
+  .guess { color: var(--warn); }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 14px; align-items: start; }
+  @media (max-width: 820px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  .stage { position: relative; background: #000; border: 1px solid var(--line); border-radius: 4px; aspect-ratio: 4 / 3; max-width: 100%; overflow: hidden; touch-action: none; }
+  .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #gl { cursor: grab; }
+  #gl:active { cursor: grabbing; }
+  #hud { pointer-events: none; }
+  .hint { position: absolute; left: 10px; bottom: 8px; font: 11px var(--mono); color: var(--muted); pointer-events: none; }
+  #status { position: absolute; inset: 0; display: grid; place-items: center; font: 13px var(--mono); color: var(--muted); padding: 16px; text-align: center; }
+  aside { display: flex; flex-direction: column; gap: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px; }
+  fieldset { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+  legend { font: 600 11px var(--cond); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 4px; padding: 0; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+  .seg button { flex: 1; background: transparent; color: var(--text); border: 0; border-right: 1px solid var(--line); padding: 6px 4px; font: 12px var(--sans); cursor: pointer; }
+  .seg button:last-child { border-right: 0; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #062326; font-weight: 500; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  label.row { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 12px; color: var(--muted); }
+  label.row output { font: 12px var(--mono); color: var(--text); font-variant-numeric: tabular-nums; }
+  label.row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); margin: 0; }
+  label.check { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+  label.check input { accent-color: var(--accent); }
+  .views { display: flex; gap: 6px; flex-wrap: wrap; }
+  .views button { background: transparent; color: var(--text); border: 1px solid var(--line); border-radius: 3px; padding: 4px 9px; font: 12px var(--sans); cursor: pointer; }
+  .views button:hover { border-color: var(--accent); }
+  .note { font-size: 12px; color: var(--muted); margin: 0; }
+  .note.warn { color: var(--warn); }
+  h2 { font: 600 16px/1.3 var(--cond); margin: 22px 0 8px; letter-spacing: .01em; }
+  .flat { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+  @media (max-width: 820px) { .flat { grid-template-columns: minmax(0, 1fr); } }
+  .flat canvas { width: 100%; max-width: 100%; aspect-ratio: 1; image-rendering: pixelated; background: #000; border: 1px solid var(--line); border-radius: 4px; display: block; }
+  .cap { font: 12px var(--mono); color: var(--muted); margin-top: 4px; }
+  .depth svg { width: 100%; height: auto; display: block; }
+  .depth { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .legend-bar { height: 8px; border-radius: 2px; background: linear-gradient(90deg, #3e4fb8, #29a8e6, #2fe0a0, #b7f23a, #f7b92a, #e8551a); }
+  .legend-ends { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--muted); }
+  p.lede { max-width: 72ch; color: var(--muted); margin: 0 0 12px; }
+  .review[hidden] { display: none; }
+  .verdicts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .verdicts button, .tool { background: transparent; color: var(--text); border: 1px solid var(--line); border-radius: 3px; padding: 6px 4px; font: 12px var(--sans); cursor: pointer; }
+  .verdicts button[aria-pressed="true"] { background: var(--text); color: var(--ground); font-weight: 500; }
+  .tool[aria-pressed="true"] { border-color: var(--mark); color: var(--mark); }
+  .verdicts button:disabled { opacity: .4; cursor: default; }
+  #sel { font: 12px/1.5 var(--mono); color: var(--text); min-height: 3em; margin: 0; }
+  #sel-note { width: 100%; background: var(--ground); color: var(--text); border: 1px solid var(--line); border-radius: 3px; padding: 5px 6px; font: 12px var(--sans); }
+  .progress { font: 12px var(--mono); color: var(--muted); }
+  .key { display: flex; flex-wrap: wrap; gap: 4px 12px; font: 11px var(--mono); color: var(--muted); }
+  .key i { display: inline-block; width: 16px; height: 0; vertical-align: middle; margin-right: 4px; border-top: 2px solid #fff; }
+  .edges-wrap { max-height: 320px; overflow: auto; border: 1px solid var(--line); border-radius: 4px; }
+  table.edges { width: 100%; border-collapse: collapse; font: 12px var(--mono); font-variant-numeric: tabular-nums; }
+  table.edges th { position: sticky; top: 0; background: var(--panel); text-align: right; font-weight: 500; color: var(--muted); padding: 5px 8px; border-bottom: 1px solid var(--line); }
+  table.edges td { text-align: right; padding: 3px 8px; border-bottom: 1px solid #172026; cursor: pointer; }
+  table.edges th:first-child, table.edges td:first-child, table.edges td:last-child, table.edges th:last-child { text-align: left; }
+  table.edges tr.on td { background: #1d2a31; }
+  .flat-stage { position: relative; }
+  #flat-all.picking { cursor: crosshair; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header>
+  <h1>CD31 stack in 3D</h1>
+  <div class="facts" id="facts"><span>loading…</span></div>
+</header>
+<p class="lede">Each of the 30 confocal slices is stacked at its depth. Drag to turn the stack; the view opens looking straight down, as the microscope does, which is the same picture as flattening every slice into one. Tilt it to see which crossings are real junctions and which are vessels passing over each other at different depths.</p>
+
+<div class="layout">
+  <div>
+    <div class="stage" id="stage">
+      <canvas id="gl"></canvas>
+      <canvas id="hud"></canvas>
+      <div class="hint">drag: rotate · shift-drag or two fingers: pan · wheel or pinch: zoom</div>
+      <div id="status">Loading the stack…</div>
+    </div>
+  </div>
+  <aside>
+    <fieldset class="review" id="review" hidden>
+      <legend>Your review of the draft</legend>
+      <label class="check"><input type="checkbox" id="show-graph" checked> Show traced vessels</label>
+      <p id="sel">Click a line or a junction circle in either picture to review it.</p>
+      <div class="verdicts" id="verdicts">
+        <button type="button" data-v="right" disabled>Right</button>
+        <button type="button" data-v="wrong" disabled>Wrong</button>
+        <button type="button" data-v="unsure" disabled>Unsure</button>
+      </div>
+      <input type="text" id="sel-note" placeholder="Note on this item (optional)" disabled>
+      <button type="button" class="tool" id="miss-del" hidden>Remove this missed mark</button>
+      <button type="button" class="tool" id="miss-mode" aria-pressed="false">Mark missed vessels</button>
+      <p class="note" id="miss-note">Turn this on, then click a vessel the draft missed in the flattened picture below.</p>
+      <p class="progress" id="progress"></p>
+      <p class="note warn" id="save-note"></p>
+    </fieldset>
+    <fieldset>
+      <legend>Render</legend>
+      <div class="seg" id="mode">
+        <button type="button" id="mode-mip" data-v="0" aria-pressed="true">Brightest</button>
+        <button type="button" id="mode-surf" data-v="1" aria-pressed="false">Surface</button>
+      </div>
+      <p class="note" id="mode-note">Each ray shows the brightest point it passes through.</p>
+    </fieldset>
+    <fieldset>
+      <legend>Channel</legend>
+      <div class="seg" id="chan">
+        <button type="button" id="chan-cd31" data-v="0" aria-pressed="true">CD31</button>
+        <button type="button" id="chan-dapi" data-v="1" aria-pressed="false">DAPI</button>
+        <button type="button" id="chan-both" data-v="2" aria-pressed="false">Both</button>
+      </div>
+      <label class="check"><input type="checkbox" id="depth" checked> Colour by depth</label>
+    </fieldset>
+    <fieldset>
+      <legend>Brightness</legend>
+      <label class="row">Black point <output id="lo-o"></output><input type="range" id="lo" min="0" max="1" step="0.005" value="0.63"></label>
+      <label class="row">White point <output id="hi-o"></output><input type="range" id="hi" min="0" max="1" step="0.005" value="1"></label>
+      <label class="row" id="iso-row">Surface level <output id="iso-o"></output><input type="range" id="iso" min="0" max="1" step="0.005" value="0.35"></label>
+    </fieldset>
+    <fieldset>
+      <legend>Depth</legend>
+      <label class="row">Show slices from <output id="z0-o"></output><input type="range" id="z0" min="0" max="29" step="1" value="0"></label>
+      <label class="row">to <output id="z1-o"></output><input type="range" id="z1" min="0" max="29" step="1" value="29"></label>
+      <label class="row">Spacing between slices <output id="zs-o"></output><input type="range" id="zs" min="0.25" max="10" step="0.05" value="1"></label>
+      <p class="note warn" id="zs-note"></p>
+    </fieldset>
+    <fieldset>
+      <legend>Look from</legend>
+      <div class="views">
+        <button type="button" id="v-top">Top</button>
+        <button type="button" id="v-tilt">Tilted</button>
+        <button type="button" id="v-side">Side</button>
+        <button type="button" id="v-front">Front</button>
+      </div>
+    </fieldset>
+  </aside>
+</div>
+
+<h2>Flattened against one slice</h2>
+<div class="flat">
+  <div>
+    <canvas id="flat-all"></canvas>
+    <div class="cap" id="cap-all">All shown slices, brightest value per pixel</div>
+  </div>
+  <div>
+    <canvas id="flat-one"></canvas>
+    <label class="row" style="margin-top:6px">Single slice <output id="sl-o"></output><input type="range" id="sl" min="0" max="29" step="1" value="15"></label>
+  </div>
+</div>
+
+<section class="review" id="edges-sec" hidden>
+  <h2>Traced vessels</h2>
+  <div class="key" style="margin-bottom:8px"><span><i style="border-top-style:dashed"></i>not reviewed</span><span><i></i>right</span><span><i style="border-color:var(--mark)"></i>wrong</span><span><i style="border-color:var(--mark);border-top-style:dashed"></i>unsure</span><span><i style="border-color:var(--mark);width:8px"></i>+ missed</span><span>○ junction</span><span>× crossing</span></div>
+  <div class="edges-wrap"><table class="edges"><thead><tr><th>Edge</th><th>Nodes</th><th>Length µm</th><th>Width µm</th><th>± sd</th><th id="depth-col">Depth µm</th><th>Your mark</th></tr></thead><tbody id="edge-rows"></tbody></table></div>
+  <p class="note" style="margin-top:8px"><span id="edges-note">Length runs along the traced 3D centerline; width is twice the distance from it to the traced edge, so the 20× axial blur widens vessels running through depth. Depth uses the guessed slice spacing.</span> <button type="button" class="tool" id="dl" hidden>Download the graph with your marks</button></p>
+</section>
+
+<h2>Signal through the depth</h2>
+<div class="depth">
+  <svg id="spark" viewBox="0 0 1100 170" role="img" aria-label="Per-slice brightness"></svg>
+  <div class="facts"><span style="color:#e8b04a">━ brightest 1% of pixels (vessels)</span><span>━ median pixel (background)</span><span style="color:#4fd1d9">┆ single slice shown above</span></div>
+  <div id="depth-legend" hidden>
+    <div class="legend-bar"></div>
+    <div class="legend-ends"><span>first slice</span><span>depth colour</span><span>last slice</span></div>
+  </div>
+  <p class="note" id="drift-note"></p>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = (id) => document.getElementById(id);
+const status = (t) => { const s = $('status'); s.textContent = t; s.hidden = !t; };
+
+// ---------- small matrix kit (column-major, as WebGL expects) ----------
+const M = {
+  persp(fovy, asp, n, f) { const t = 1 / Math.tan(fovy / 2), r = 1 / (n - f);
+    return [t / asp,0,0,0, 0,t,0,0, 0,0,(n + f) * r,-1, 0,0,2 * n * f * r,0]; },
+  look(e, c, u) {
+    const sub = (a, b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]];
+    const nrm = (a) => { const l = Math.hypot(...a); return a.map(x => x / l); };
+    const cr = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+    const z = nrm(sub(e, c)), x = nrm(cr(u, z)), y = cr(z, x);
+    const d = (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+    return [x[0],y[0],z[0],0, x[1],y[1],z[1],0, x[2],y[2],z[2],0, -d(x,e),-d(y,e),-d(z,e),1]; },
+  mul(a, b) { const o = new Array(16).fill(0);
+    for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) for (let k = 0; k < 4; k++) o[c*4+r] += a[k*4+r] * b[c*4+k];
+    return o; },
+  inv(m) { const i = new Array(16);
+    i[0]=m[5]*m[10]*m[15]-m[5]*m[11]*m[14]-m[9]*m[6]*m[15]+m[9]*m[7]*m[14]+m[13]*m[6]*m[11]-m[13]*m[7]*m[10];
+    i[4]=-m[4]*m[10]*m[15]+m[4]*m[11]*m[14]+m[8]*m[6]*m[15]-m[8]*m[7]*m[14]-m[12]*m[6]*m[11]+m[12]*m[7]*m[10];
+    i[8]=m[4]*m[9]*m[15]-m[4]*m[11]*m[13]-m[8]*m[5]*m[15]+m[8]*m[7]*m[13]+m[12]*m[5]*m[11]-m[12]*m[7]*m[9];
+    i[12]=-m[4]*m[9]*m[14]+m[4]*m[10]*m[13]+m[8]*m[5]*m[14]-m[8]*m[6]*m[13]-m[12]*m[5]*m[10]+m[12]*m[6]*m[9];
+    i[1]=-m[1]*m[10]*m[15]+m[1]*m[11]*m[14]+m[9]*m[2]*m[15]-m[9]*m[3]*m[14]-m[13]*m[2]*m[11]+m[13]*m[3]*m[10];
+    i[5]=m[0]*m[10]*m[15]-m[0]*m[11]*m[14]-m[8]*m[2]*m[15]+m[8]*m[3]*m[14]+m[12]*m[2]*m[11]-m[12]*m[3]*m[10];
+    i[9]=-m[0]*m[9]*m[15]+m[0]*m[11]*m[13]+m[8]*m[1]*m[15]-m[8]*m[3]*m[13]-m[12]*m[1]*m[11]+m[12]*m[3]*m[9];
+    i[13]=m[0]*m[9]*m[14]-m[0]*m[10]*m[13]-m[8]*m[1]*m[14]+m[8]*m[2]*m[13]+m[12]*m[1]*m[10]-m[12]*m[2]*m[9];
+    i[2]=m[1]*m[6]*m[15]-m[1]*m[7]*m[14]-m[5]*m[2]*m[15]+m[5]*m[3]*m[14]+m[13]*m[2]*m[7]-m[13]*m[3]*m[6];
+    i[6]=-m[0]*m[6]*m[15]+m[0]*m[7]*m[14]+m[4]*m[2]*m[15]-m[4]*m[3]*m[14]-m[12]*m[2]*m[7]+m[12]*m[3]*m[6];
+    i[10]=m[0]*m[5]*m[15]-m[0]*m[7]*m[13]-m[4]*m[1]*m[15]+m[4]*m[3]*m[13]+m[12]*m[1]*m[7]-m[12]*m[3]*m[5];
+    i[14]=-m[0]*m[5]*m[14]+m[0]*m[6]*m[13]+m[4]*m[1]*m[14]-m[4]*m[2]*m[13]-m[12]*m[1]*m[6]+m[12]*m[2]*m[5];
+    i[3]=-m[1]*m[6]*m[11]+m[1]*m[7]*m[10]+m[5]*m[2]*m[11]-m[5]*m[3]*m[10]-m[9]*m[2]*m[7]+m[9]*m[3]*m[6];
+    i[7]=m[0]*m[6]*m[11]-m[0]*m[7]*m[10]-m[4]*m[2]*m[11]+m[4]*m[3]*m[10]+m[8]*m[2]*m[7]-m[8]*m[3]*m[6];
+    i[11]=-m[0]*m[5]*m[11]+m[0]*m[7]*m[9]+m[4]*m[1]*m[11]-m[4]*m[3]*m[9]-m[8]*m[1]*m[7]+m[8]*m[3]*m[5];
+    i[15]=m[0]*m[5]*m[10]-m[0]*m[6]*m[9]-m[4]*m[1]*m[10]+m[4]*m[2]*m[9]+m[8]*m[1]*m[6]-m[8]*m[2]*m[5];
+    const det = m[0]*i[0] + m[1]*i[4] + m[2]*i[8] + m[3]*i[12];
+    return i.map(x => x / det); },
+  xf(m, p) { const v = [0,0,0,0];
+    for (let r = 0; r < 4; r++) v[r] = m[r]*p[0] + m[4+r]*p[1] + m[8+r]*p[2] + m[12+r];
+    return v; },
+};
+
+// ---------- shaders ----------
+const VS = `#version 300 es
+in vec2 aPos; out vec2 vNdc;
+void main(){ vNdc = aPos; gl_Position = vec4(aPos, 0., 1.); }`;
+const FS = `#version 300 es
+precision highp float; precision highp sampler3D;
+uniform sampler3D uA; uniform sampler3D uB;
+uniform mat4 uInvVP; uniform vec3 uHalf; uniform vec2 uZc; uniform vec3 uTexel;
+uniform int uMode; uniform int uChan; uniform int uDepth;
+uniform float uLo; uniform float uHi; uniform float uIso; uniform float uStep;
+in vec2 vNdc; out vec4 o;
+const vec3 BG = vec3(0.);
+vec3 toTc(vec3 p){ return vec3((p.x/uHalf.x+1.)*.5, (1.-p.y/uHalf.y)*.5, (1.-p.z/uHalf.z)*.5); }
+vec3 turbo(float x){
+  const vec4 kR=vec4(0.13572138,4.61539260,-42.66032258,132.13108234); const vec2 kR2=vec2(-152.94239396,59.28637943);
+  const vec4 kG=vec4(0.09140261,2.19418839,4.84296658,-14.18503333); const vec2 kG2=vec2(4.27729857,2.82956604);
+  const vec4 kB=vec4(0.10667330,12.64194608,-60.58204836,110.36276771); const vec2 kB2=vec2(-89.90310912,27.34824973);
+  x = mix(.12, .92, clamp(x,0.,1.)); vec4 v4=vec4(1.,x,x*x,x*x*x); vec2 v2=v4.zw*v4.z;
+  return clamp(vec3(dot(v4,kR)+dot(v2,kR2), dot(v4,kG)+dot(v2,kG2), dot(v4,kB)+dot(v2,kB2)),0.,1.); }
+vec3 hot(float v){ return clamp(vec3(v*2.2, v*2.2-.9, v*3.2-2.2), 0., 1.); }
+vec3 blue(float v){ return clamp(vec3(v*.35, v*.6, v*1.4), 0., 1.); }
+float win(float v){ return clamp((v-uLo)/max(uHi-uLo,1e-4), 0., 1.); }
+float val(vec3 tc){ return uChan==1 ? texture(uB,tc).r : texture(uA,tc).r; }
+void main(){
+  vec4 a = uInvVP*vec4(vNdc,-1.,1.), b = uInvVP*vec4(vNdc,1.,1.);
+  vec3 ro = a.xyz/a.w, rd = normalize(b.xyz/b.w - ro);
+  rd = mix(rd, vec3(1e-6), vec3(equal(rd, vec3(0.))));
+  vec3 bmin = vec3(-uHalf.xy, uHalf.z*(1.-2.*uZc.y)), bmax = vec3(uHalf.xy, uHalf.z*(1.-2.*uZc.x));
+  vec3 inv = 1./rd, t0 = (bmin-ro)*inv, t1 = (bmax-ro)*inv, tn = min(t0,t1), tf = max(t0,t1);
+  float tN = max(max(tn.x,tn.y), max(tn.z,0.)), tF = min(min(tf.x,tf.y), tf.z);
+  if (tF <= tN) { o = vec4(BG,1.); return; }
+  float jit = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898,78.233)))*43758.5453);
+  if (uMode == 0) {
+    float mA = 0., zA = 0., mB = 0.;
+    for (int i = 0; i < 4096; i++) {
+      float t = tN + (float(i)+jit)*uStep; if (t > tF) break;
+      vec3 tc = toTc(ro + rd*t);
+      float va = uChan==1 ? texture(uB,tc).r : texture(uA,tc).r;
+      if (va > mA) { mA = va; zA = tc.z; }
+      if (uChan == 2) mB = max(mB, texture(uB,tc).r);
+    }
+    float zn = (zA - uZc.x) / max(uZc.y - uZc.x, 1e-4);
+    vec3 c = uDepth==1 ? turbo(zn)*win(mA) : (uChan==1 ? blue(win(mA))*1.6 : hot(win(mA)));
+    if (uChan == 2) c += blue(win(mB));
+    o = vec4(min(c, 1.), 1.);
+    return;
+  }
+  float prev = tN;
+  for (int i = 0; i < 4096; i++) {
+    float t = tN + (float(i)+jit)*uStep; if (t > tF) break;
+    if (val(toTc(ro + rd*t)) >= uIso) {
+      float lo = prev, hi = t;
+      for (int k = 0; k < 6; k++) { float m = .5*(lo+hi); if (val(toTc(ro+rd*m)) >= uIso) hi = m; else lo = m; }
+      vec3 p = ro + rd*hi, tc = toTc(p);
+      vec3 g = vec3(val(tc+vec3(uTexel.x,0,0)) - val(tc-vec3(uTexel.x,0,0)),
+                    val(tc+vec3(0,uTexel.y,0)) - val(tc-vec3(0,uTexel.y,0)),
+                    val(tc+vec3(0,0,uTexel.z)) - val(tc-vec3(0,0,uTexel.z)));
+      g = g / (2.*uTexel) * vec3(.5/uHalf.x, -.5/uHalf.y, -.5/uHalf.z);
+      vec3 n = length(g) > 1e-6 ? -normalize(g) : -rd;
+      float d = abs(dot(n, -rd)), s = pow(max(dot(reflect(rd, n), -rd), 0.), 24.);
+      float zn = (tc.z - uZc.x) / max(uZc.y - uZc.x, 1e-4);
+      vec3 base = uDepth==1 ? turbo(zn) : (uChan==1 ? vec3(.45,.6,1.) : vec3(.95,.52,.32));
+      o = vec4(base*(.22+.78*d) + .25*s, 1.);
+      return;
+    }
+    prev = t;
+  }
+  o = vec4(BG,1.);
+}`;
+
+// ---------- state ----------
+// The owner's approved view (frontal r1, 2026-09-29); change it only when they ask.
+const S = { mode: 0, chan: 0, depth: 1, lo: .63, hi: 1, iso: .35, z0: 0, z1: 29, zs: 1, slice: 15,
+            yaw: 0, pitch: 0, dist: 4.4, pan: [0, 0], dragging: false };
+let meta, gl, prog, U = {}, vols = {}, half = [1, 1, .1], dirty = true;
+// review of a traced draft graph (graph.json beside the volumes, when the export has one)
+const R = { graph: null, show: true, marks: {}, missed: {}, sel: null, missMode: false, db: null, base: '',
+            pick: { edges: [], nodes: [], missed: [] }, readOnly: false };
+
+async function loadVol(file) {
+  const r = await fetch(file);
+  if (!r.ok) throw new Error(`${file}: HTTP ${r.status}`);
+  const img = await createImageBitmap(await r.blob(), { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
+  const c = new OffscreenCanvas(img.width, img.height), cx = c.getContext('2d', { willReadFrequently: true });
+  cx.drawImage(img, 0, 0);
+  const rgba = cx.getImageData(0, 0, img.width, img.height).data, buf = new Uint8Array(img.width * img.height);
+  for (let i = 0; i < buf.length; i++) buf[i] = rgba[i * 4];
+  return buf;
+}
+
+function texture(unit, data) {
+  const [Z, Y, X] = meta.shape, t = gl.createTexture();
+  gl.activeTexture(gl.TEXTURE0 + unit);
+  gl.bindTexture(gl.TEXTURE_3D, t);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+  gl.texImage3D(gl.TEXTURE_3D, 0, gl.R8, X, Y, Z, 0, gl.RED, gl.UNSIGNED_BYTE, data);
+  for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR],
+      [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE]])
+    gl.texParameteri(gl.TEXTURE_3D, k, v);
+}
+
+function initGL() {
+  gl = $('gl').getContext('webgl2', { antialias: false, preserveDrawingBuffer: true });
+  if (!gl) throw new Error('This browser has no WebGL2, which the 3D view needs.');
+  const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+  prog = gl.createProgram();
+  gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+  gl.useProgram(prog);
+  for (const n of ['uA','uB','uInvVP','uHalf','uZc','uTexel','uMode','uChan','uDepth','uLo','uHi','uIso','uStep'])
+    U[n] = gl.getUniformLocation(prog, n);
+  const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(prog, 'aPos'); gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  gl.uniform1i(U.uA, 0); gl.uniform1i(U.uB, 1);
+}
+
+function geometry() {
+  const [Z, Y, X] = meta.shape, um = meta.um_per_px || 1;
+  const ext = [X * um, Y * um, Z * S.zs], m = Math.max(...ext);
+  half = ext.map(e => e / m);
+}
+
+function camera(asp) {
+  const cp = Math.cos(S.pitch), e = [S.dist * cp * Math.sin(S.yaw), S.dist * Math.sin(S.pitch), S.dist * cp * Math.cos(S.yaw)];
+  const right = [Math.cos(S.yaw), 0, -Math.sin(S.yaw)];
+  const up = [-Math.sin(S.pitch) * Math.sin(S.yaw), Math.cos(S.pitch), -Math.sin(S.pitch) * Math.cos(S.yaw)];
+  const tgt = [S.pan[0] * right[0] + S.pan[1] * up[0], S.pan[0] * right[1] + S.pan[1] * up[1], S.pan[0] * right[2] + S.pan[1] * up[2]];
+  const eye = e.map((v, i) => v + tgt[i]);
+  return M.mul(M.persp(30 * Math.PI / 180, asp, 0.05, 50), M.look(eye, tgt, up));
+}
+
+function render() {
+  dirty = false;
+  const cv = $('gl'), dpr = Math.min(window.devicePixelRatio || 1, 1.5) * (S.dragging ? .6 : 1);
+  const w = Math.round(cv.clientWidth * dpr), h = Math.round(cv.clientHeight * dpr);
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  gl.viewport(0, 0, w, h);
+  const [Z, Y, X] = meta.shape, vp = camera(w / h);
+  gl.uniformMatrix4fv(U.uInvVP, false, new Float32Array(M.inv(vp)));
+  gl.uniform3f(U.uHalf, ...half);
+  gl.uniform2f(U.uZc, S.z0 / Z, (S.z1 + 1) / Z);
+  gl.uniform3f(U.uTexel, 1 / X, 1 / Y, 1 / Z);
+  gl.uniform1i(U.uMode, S.mode); gl.uniform1i(U.uChan, S.chan); gl.uniform1i(U.uDepth, S.depth);
+  gl.uniform1f(U.uLo, S.lo); gl.uniform1f(U.uHi, S.hi); gl.uniform1f(U.uIso, S.iso);
+  gl.uniform1f(U.uStep, (2 * half[0] / X) * (S.dragging ? 1.6 : .7));
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  hud(vp);
+}
+
+function hud(vp) {
+  const cv = $('hud'), dpr = window.devicePixelRatio || 1;
+  cv.width = cv.clientWidth * dpr; cv.height = cv.clientHeight * dpr;
+  const c = cv.getContext('2d'); c.scale(dpr, dpr);
+  const W = cv.clientWidth, H = cv.clientHeight;
+  const P = (p) => { const v = M.xf(vp, p); return [(v[0] / v[3] + 1) / 2 * W, (1 - v[1] / v[3]) / 2 * H, v[3]]; };
+  const [hx, hy, hz] = half, Z = meta.shape[0];
+  const za = hz * (1 - 2 * S.z0 / Z), zb = hz * (1 - 2 * (S.z1 + 1) / Z);
+  const corners = []; for (const x of [-hx, hx]) for (const y of [-hy, hy]) for (const z of [za, zb]) corners.push([x, y, z]);
+  const edges = [[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,7]];
+  c.strokeStyle = 'rgba(79,209,217,.45)'; c.lineWidth = 1;
+  const pc = corners.map(P);
+  if (pc.some(p => p[2] <= 0)) return;
+  c.beginPath(); for (const [a, b] of edges) { c.moveTo(pc[a][0], pc[a][1]); c.lineTo(pc[b][0], pc[b][1]); } c.stroke();
+  c.font = '11px "IBM Plex Mono", monospace'; c.fillStyle = 'rgba(216,225,231,.85)';
+  const um = meta.um_per_px, X = meta.shape[2];
+  const mid = (a, b) => [(pc[a][0] + pc[b][0]) / 2, (pc[a][1] + pc[b][1]) / 2];
+  const [xm, ym] = mid(1, 5);
+  c.fillText(um ? `${Math.round(X * um)} µm` : `${X} px`, xm + 4, ym + 14);
+  const [zx, zy] = mid(4, 5);
+  const n = S.z1 - S.z0 + 1;
+  const zt = `${n} slices · ${(n * S.zs).toFixed(0)} µm${meta.z_step_um ? '' : ' (spacing guessed)'}`;
+  c.fillText(zt, Math.min(Math.max(zx + 6, 4), W - c.measureText(zt).width - 4), Math.min(Math.max(zy, 14), H - 24));
+  if (R.graph && R.show) drawGraph(c, (zyx) => P(world(zyx)), 1, true);
+}
+
+// ---------- the traced draft: drawing ----------
+const MARK = '#ff4fd8';   // no colour the depth palette or the signal uses
+function world(zyx) {
+  const [Z, Y, X] = meta.shape, um = R.graph.um_per_px, zi = R.graph.flat ? zyx[0] : zyx[0] / R.graph.z_step_um;
+  return [(2 * (zyx[2] / um + .5) / X - 1) * half[0], (1 - 2 * (zyx[1] / um + .5) / Y) * half[1], half[2] * (1 - 2 * (zi + .5) / Z)];
+}
+const inSlab = (zyx) => { if (R.graph.flat) return true; const zi = zyx[0] / R.graph.z_step_um; return zi >= S.z0 - .5 && zi <= S.z1 + .5; };
+function look(key) {
+  const v = R.marks[key] && R.marks[key].verdict;
+  return v === 'right' ? ['#ffffff', []] : v === 'wrong' ? [MARK, []] : v === 'unsure' ? [MARK, [4, 3]] : ['#ffffff', [4, 3]];
+}
+// Draws every traced edge, junction, crossing and missed mark with `proj` (zyx µm -> [x, y, w]); `k`
+// scales line widths to the target canvas. Records screen positions for picking when `record` is
+// set, which is the 3D view: there a flattened draft is placed at the depth its signal sits.
+function drawGraph(c, proj, k, record) {
+  const at = (o) => record && R.graph.flat ? o.at3 : o.zyx_um;
+  const pick = { edges: [], nodes: [], missed: [] };
+  c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
+  const labels = [];
+  for (const e of R.graph.edges) {
+    const key = 'e' + e.id, on = R.sel && R.sel.key === key, [col, dash] = look(key);
+    const runs = []; let run = [];
+    for (const q of record && R.graph.flat ? e.path3 : e.path_zyx_um) {
+      if (!inSlab(q)) { if (run.length > 1) runs.push(run); run = []; continue; }
+      const p = proj(q); if (p[2] <= 0) { run = []; continue; } run.push(p);
+    }
+    if (run.length > 1) runs.push(run);
+    if (!runs.length) continue;
+    for (const [w, st, d] of [[(on ? 5 : 3) * k, 'rgba(0,0,0,.65)', []], [(on ? 3 : 1.4) * k, col, dash]]) {
+      c.lineWidth = w; c.strokeStyle = st; c.setLineDash(d.map(x => x * k));
+      c.beginPath(); for (const r of runs) { c.moveTo(r[0][0], r[0][1]); for (const p of r.slice(1)) c.lineTo(p[0], p[1]); } c.stroke();
+    }
+    const all = runs.flat(), m = all[Math.floor(all.length / 2)];
+    labels.push([String(e.id), m[0], m[1], on]);
+    pick.edges.push([key, all]);
+  }
+  c.setLineDash([]);
+  for (const n of R.graph.nodes) {
+    if (n.kind !== 'junction' || !inSlab(n.zyx_um)) continue;
+    const p = proj(at(n)); if (p[2] <= 0) continue;
+    const key = 'n' + n.id, on = R.sel && R.sel.key === key, [col, dash] = look(key);
+    c.beginPath(); c.arc(p[0], p[1], (on ? 6 : 4) * k, 0, 7);
+    c.lineWidth = 3 * k; c.strokeStyle = 'rgba(0,0,0,.65)'; c.stroke();
+    c.lineWidth = (on ? 2.5 : 1.5) * k; c.strokeStyle = col; c.setLineDash(dash.map(x => x * k)); c.stroke(); c.setLineDash([]);
+    pick.nodes.push([key, p[0], p[1]]);
+  }
+  for (const x of R.graph.crossings || []) {
+    const p = proj(at(x)); if (p[2] <= 0) continue;
+    const key = 'c' + x.id, on = R.sel && R.sel.key === key, [col, dash] = look(key), r = (on ? 7 : 5) * k;
+    c.beginPath(); c.moveTo(p[0] - r, p[1] - r); c.lineTo(p[0] + r, p[1] + r); c.moveTo(p[0] - r, p[1] + r); c.lineTo(p[0] + r, p[1] - r);
+    c.lineWidth = 3.5 * k; c.strokeStyle = 'rgba(0,0,0,.65)'; c.stroke();
+    c.lineWidth = (on ? 2.5 : 1.8) * k; c.strokeStyle = col; c.setLineDash(dash.map(v => v * k)); c.stroke(); c.setLineDash([]);
+    pick.nodes.push([key, p[0], p[1]]);
+  }
+  for (const [id, m] of Object.entries(R.missed)) {
+    if (!inSlab(m.zyx_um)) continue;
+    const p = proj(m.zyx_um); if (p[2] <= 0) continue;
+    const r = (R.sel && R.sel.key === 'm' + id ? 8 : 6) * k;
+    c.lineWidth = 3.5 * k; c.strokeStyle = 'rgba(0,0,0,.65)';
+    c.beginPath(); c.moveTo(p[0] - r, p[1]); c.lineTo(p[0] + r, p[1]); c.moveTo(p[0], p[1] - r); c.lineTo(p[0], p[1] + r); c.stroke();
+    c.lineWidth = 2 * k; c.strokeStyle = MARK; c.stroke();
+    pick.missed.push(['m' + id, p[0], p[1]]);
+  }
+  c.font = `${10 * k}px "IBM Plex Mono", monospace`; c.lineWidth = 3 * k; c.strokeStyle = 'rgba(0,0,0,.8)';
+  for (const [t, x, y, on] of labels) { c.strokeText(t, x + 4 * k, y - 4 * k); c.fillStyle = on ? MARK : '#fff'; c.fillText(t, x + 4 * k, y - 4 * k); }
+  c.restore();
+  if (record) R.pick3d = pick; else R.pick2d = pick;
+}
+function nearest(pick, x, y, tol) {
+  let best = null, bd = tol;
+  for (const [key, px, py] of [...pick.missed, ...pick.nodes]) { const d = Math.hypot(px - x, py - y); if (d < bd) { bd = d; best = key; } }
+  if (best) return best;
+  for (const [key, pts] of pick.edges) for (let i = 1; i < pts.length; i++) {
+    const [ax, ay] = pts[i - 1], [bx, by] = pts[i], dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy;
+    const t = L ? Math.min(Math.max(((x - ax) * dx + (y - ay) * dy) / L, 0), 1) : 0;
+    const d = Math.hypot(ax + t * dx - x, ay + t * dy - y); if (d < bd) { bd = d; best = key; }
+  }
+  return best;
+}
+
+function lut2d(v, z, chan, v2) {
+  const w = (x) => Math.min(Math.max((x / 255 - S.lo) / Math.max(S.hi - S.lo, 1e-4), 0), 1);
+  const a = w(v);
+  let r, g, b;
+  if (S.depth && z >= 0) { const t = turbo(z); r = t[0] * a; g = t[1] * a; b = t[2] * a; }
+  else if (chan === 1) { r = a * .56; g = a * .96; b = Math.min(a * 2.24, 1); }
+  else { r = Math.min(a * 2.2, 1); g = Math.min(Math.max(a * 2.2 - .9, 0), 1); b = Math.min(Math.max(a * 3.2 - 2.2, 0), 1); }
+  if (chan === 2) { const bb = w(v2); r += bb * .35; g += bb * .6; b += bb * 1.4; }
+  return [Math.min(r, 1) * 255, Math.min(g, 1) * 255, Math.min(b, 1) * 255];
+}
+function turbo(x) {
+  x = .12 + .8 * Math.min(Math.max(x, 0), 1);
+  const p = (k, k2) => k[0] + k[1]*x + k[2]*x*x + k[3]*x*x*x + k2[0]*x**4 + k2[1]*x**5;
+  return [p([0.13572138,4.61539260,-42.66032258,132.13108234], [-152.94239396,59.28637943]),
+          p([0.09140261,2.19418839,4.84296658,-14.18503333], [4.27729857,2.82956604]),
+          p([0.10667330,12.64194608,-60.58204836,110.36276771], [-89.90310912,27.34824973])].map(v => Math.min(Math.max(v, 0), 1));
+}
+
+function flat() {
+  const [Z, Y, X] = meta.shape, A = S.chan === 1 ? vols.dapi : vols.cd31, B = vols.dapi;
+  for (const [id, z0, z1] of [['flat-all', S.z0, S.z1], ['flat-one', S.slice, S.slice]]) {
+    const cv = $(id); cv.width = X; cv.height = Y;
+    const c = cv.getContext('2d'), img = c.createImageData(X, Y), d = img.data, n = X * Y;
+    for (let i = 0; i < n; i++) {
+      let m = -1, mz = 0, m2 = 0;
+      for (let z = z0; z <= z1; z++) { const v = A[z * n + i]; if (v > m) { m = v; mz = z; } if (S.chan === 2) m2 = Math.max(m2, B[z * n + i]); }
+      const zn = z1 > z0 ? (mz - S.z0) / Math.max(S.z1 - S.z0, 1) : (S.slice - S.z0) / Math.max(S.z1 - S.z0, 1);
+      const [r, g, b] = lut2d(m, zn, S.chan, m2);
+      d[4*i] = r; d[4*i+1] = g; d[4*i+2] = b; d[4*i+3] = 255;
+    }
+    c.putImageData(img, 0, 0);
+    if (id === 'flat-all' && R.graph && R.show) {
+      const F = 2, tmp = document.createElement('canvas'); tmp.width = X; tmp.height = Y; tmp.getContext('2d').putImageData(img, 0, 0);
+      cv.width = X * F; cv.height = Y * F;
+      const c2 = cv.getContext('2d'); c2.imageSmoothingEnabled = false; c2.drawImage(tmp, 0, 0, X * F, Y * F);
+      const um = R.graph.um_per_px;
+      drawGraph(c2, (q) => [(q[2] / um + .5) * F, (q[1] / um + .5) * F, 1], F * X / Math.max(cv.clientWidth, 1) * 1.2, false);
+    }
+  }
+  $('cap-all').textContent = `Slices ${S.z0 + 1}–${S.z1 + 1} flattened: brightest value per pixel`;
+  $('sl-o').value = `${S.slice + 1} of ${Z}`;
+  spark();
+}
+
+function spark() {
+  const svg = $('spark'), Z = meta.shape[0], W = 1100, H = 170, L = 34, R = 10, T = 12, Bm = 26;
+  const ch = meta.channels[S.chan === 1 ? 'dapi' : 'cd31'];
+  const x = (i) => L + (W - L - R) * i / Math.max(Z - 1, 1), y = (v) => T + (H - T - Bm) * (1 - v / 255);
+  const line = (a) => a.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+  let s = '';
+  for (const v of [0, 128, 255]) s += `<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="#25313a"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="10" fill="#82929d" font-family="IBM Plex Mono, monospace">${v}</text>`;
+  s += `<rect x="${x(S.z0)}" y="${T}" width="${Math.max(x(S.z1) - x(S.z0), 1)}" height="${H-T-Bm}" fill="rgba(79,209,217,.07)"/>`;
+  s += `<path d="${line(ch.slice_p99)}" fill="none" stroke="#e8b04a" stroke-width="1.5"/>`;
+  s += `<path d="${line(ch.slice_p50)}" fill="none" stroke="#82929d" stroke-width="1.5"/>`;
+  s += `<line x1="${x(S.slice)}" x2="${x(S.slice)}" y1="${T}" y2="${H-Bm}" stroke="#4fd1d9" stroke-dasharray="3 3"/>`;
+  for (const i of [0, Math.floor((Z-1)/2), Z-1]) s += `<text x="${x(i)}" y="${H-8}" text-anchor="${i === 0 ? 'start' : i === Z-1 ? 'end' : 'middle'}" font-size="10" fill="#82929d" font-family="IBM Plex Mono, monospace">slice ${i+1}</text>`;
+  svg.innerHTML = s;
+  $('depth-legend').hidden = !S.depth;
+}
+
+function sync() {
+  const f2 = (v) => v.toFixed(2);
+  $('lo-o').value = f2(S.lo); $('hi-o').value = f2(S.hi); $('iso-o').value = f2(S.iso);
+  $('z0-o').value = S.z0 + 1; $('z1-o').value = S.z1 + 1;
+  $('zs-o').value = `${S.zs.toFixed(2)} µm`;
+  $('iso-row').hidden = S.mode !== 1;
+  $('mode-note').textContent = S.mode === 0
+    ? 'Each ray shows the brightest point it passes through.'
+    : 'A solid surface wherever the signal crosses the surface level. Slide the level to see where a vessel breaks up.';
+  for (const g of ['mode', 'chan']) for (const b of $(g).querySelectorAll('button'))
+    b.setAttribute('aria-pressed', String(+b.dataset.v === (g === 'mode' ? S.mode : S.chan)));
+  geometry(); dirty = true;
+}
+
+function bind() {
+  const onFlat = () => { sync(); flat(); };
+  for (const g of ['mode', 'chan']) $(g).addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    S[g] = +b.dataset.v; g === 'chan' ? onFlat() : sync(); });
+  $('depth').addEventListener('change', (e) => { S.depth = e.target.checked ? 1 : 0; onFlat(); });
+  for (const k of ['lo', 'hi']) $(k).addEventListener('input', (e) => { S[k] = +e.target.value; onFlat(); });
+  $('iso').addEventListener('input', (e) => { S.iso = +e.target.value; sync(); });
+  $('z0').addEventListener('input', (e) => { S.z0 = Math.min(+e.target.value, S.z1); e.target.value = S.z0; onFlat(); });
+  $('z1').addEventListener('input', (e) => { S.z1 = Math.max(+e.target.value, S.z0); e.target.value = S.z1; onFlat(); });
+  $('zs').addEventListener('input', (e) => { S.zs = +e.target.value; sync(); });
+  $('sl').addEventListener('input', (e) => { S.slice = +e.target.value; flat(); });
+  const view = (yaw, pitch) => () => { S.yaw = yaw; S.pitch = pitch; S.pan = [0, 0]; dirty = true; };
+  $('v-top').onclick = view(0, 0); $('v-tilt').onclick = view(-.5, -.6);
+  $('v-side').onclick = view(Math.PI / 2, 0); $('v-front').onclick = view(0, Math.PI / 2 - .001);
+
+  const cv = $('gl'), pts = new Map();
+  let last = null;
+  let down = null;
+  cv.addEventListener('pointerdown', (e) => { cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); S.dragging = true; last = null;
+    down = pts.size === 1 ? [e.clientX, e.clientY] : null; });
+  const end = (e) => {
+    if (e.type === 'pointerup' && down && R.graph && R.pick3d && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 4) {
+      const r = cv.getBoundingClientRect(); select(nearest(R.pick3d, e.clientX - r.left, e.clientY - r.top, 8));
+    }
+    down = null; pts.delete(e.pointerId); if (!pts.size) { S.dragging = false; dirty = true; } last = null; };
+  cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+  cv.addEventListener('pointermove', (e) => {
+    if (!pts.has(e.pointerId)) return;
+    const prev = pts.get(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]);
+    const dx = e.clientX - prev[0], dy = e.clientY - prev[1], k = 2.2 / cv.clientHeight;
+    if (pts.size === 2) {
+      const [a, b] = [...pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      if (last) S.dist = Math.min(Math.max(S.dist * last / d, .6), 12);
+      last = d; S.pan[0] -= dx * k * S.dist / 6; S.pan[1] += dy * k * S.dist / 6;
+    } else if (e.shiftKey || e.buttons === 2) { S.pan[0] -= dx * k * S.dist / 3; S.pan[1] += dy * k * S.dist / 3; }
+    else { S.yaw -= dx * .008; S.pitch = Math.min(Math.max(S.pitch + dy * .008, -Math.PI / 2 + .001), Math.PI / 2 - .001); }
+    dirty = true;
+  });
+  cv.addEventListener('contextmenu', (e) => e.preventDefault());
+  cv.addEventListener('wheel', (e) => { e.preventDefault(); S.dist = Math.min(Math.max(S.dist * Math.exp(e.deltaY * .001), .6), 12); dirty = true; }, { passive: false });
+  new ResizeObserver(() => { dirty = true; }).observe(cv);
+  const loop = () => { if (dirty) render(); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+}
+
+// ---------- the traced draft: review ----------
+const edgeOf = (id) => R.graph.edges.find(e => e.id === id), nodeOf = (id) => R.graph.nodes.find(n => n.id === id);
+const f1 = (v) => v.toFixed(1);
+function redraw() { dirty = true; flat(); reviewPanel(); }
+function select(key) { R.sel = key ? { key } : null; redraw(); }
+function reviewPanel() {
+  const g = R.graph, k = R.sel && R.sel.key, mk = k && R.marks[k];
+  let t = g.flat ? 'Click a line, a junction circle or a crossing × in either picture to review it.' : 'Click a line or a junction circle in either picture to review it.';
+  if (k && k[0] === 'e') {
+    const e = edgeOf(+k.slice(1)), z = e.path_zyx_um.map(p => p[0]);
+    t = `Edge ${e.id}: junction/end ${e.from} to ${e.to}\n${f1(e.length_um)} µm long, ${f1(e.width_um_mean)} ± ${f1(e.width_um_sd)} µm wide ` +
+        `(${f1(e.width_um_min)} to ${f1(e.width_um_max)})` + (g.flat ? '' : `\ndepth ${f1(Math.min(...z))} to ${f1(Math.max(...z))} µm`);
+  } else if (k && k[0] === 'n') {
+    const n = nodeOf(+k.slice(1)), es = g.edges.filter(e => e.from === n.id || e.to === n.id).map(e => e.id);
+    t = `Junction ${n.id}: ${n.degree} edges meet (${es.join(', ')})` + (g.flat ? '' : `\nat depth ${f1(n.zyx_um[0])} µm`) +
+        (n.at_region_edge ? '\non the region edge' : '');
+  } else if (k && k[0] === 'c') {
+    const x = R.graph.crossings.find(c => c.id === +k.slice(1));
+    t = `Crossing ${x.id}: the draft reads these as vessels passing at different depths ` +
+        `(slices ${x.branch_depths_slices.map(d => d.map(f1).join(', ')).join(' / ')}), not meeting.\n` +
+        (x.decided_by === 'depth' ? 'Decided by depth: no single slice shows these branches.' : 'Decided by the slices: no single slice shows them joined.') +
+        '\nRight: they cross. Wrong: they really join here.';
+  } else if (k && k[0] === 'm') {
+    t = g.flat ? 'A vessel you marked as missed' :
+      `A vessel you marked as missed\nat depth ${f1(R.missed[k.slice(1)].zyx_um[0])} µm (brightest point under your click)`;
+  }
+  $('sel').textContent = t;
+  const judged = k && k[0] !== 'm';
+  for (const b of $('verdicts').querySelectorAll('button')) {
+    b.disabled = !judged || R.readOnly; b.setAttribute('aria-pressed', String(!!(judged && mk && mk.verdict === b.dataset.v)));
+  }
+  $('miss-del').hidden = !(k && k[0] === 'm') || R.readOnly;
+  const note = $('sel-note'); note.disabled = !k || R.readOnly;
+  if (document.activeElement !== note) note.value = k ? ((k[0] === 'm' ? R.missed[k.slice(1)] : mk) || {}).note || '' : '';
+  const J = g.nodes.filter(n => n.kind === 'junction'), done = (arr, p) => arr.filter(x => R.marks[p + x.id] && R.marks[p + x.id].verdict).length;
+  const C = g.crossings || [];
+  $('progress').textContent = `Reviewed ${done(g.edges, 'e')} of ${g.edges.length} edges, ${done(J, 'n')} of ${J.length} junctions` +
+    (C.length ? ` and ${done(C, 'c')} of ${C.length} crossings` : '') + ' · ' +
+    `${Object.keys(R.missed).length} missed ${Object.keys(R.missed).length === 1 ? 'vessel' : 'vessels'} marked`;
+  edgeRows();
+}
+function edgeRows() {
+  const rows = R.graph.edges.map(e => {
+    const z = e.path_zyx_um.map(p => p[0]), v = (R.marks['e' + e.id] || {}).verdict || '';
+    return `<tr data-k="e${e.id}" class="${R.sel && R.sel.key === 'e' + e.id ? 'on' : ''}"><td>${e.id}</td><td>${e.from}–${e.to}</td>` +
+      `<td>${f1(e.length_um)}</td><td>${f1(e.width_um_mean)}</td><td>${f1(e.width_um_sd)}</td>` +
+      (R.graph.flat ? '' : `<td>${f1(Math.min(...z))}–${f1(Math.max(...z))}</td>`) + `<td>${v}</td></tr>`;
+  });
+  $('edge-rows').innerHTML = rows.join('');
+}
+async function save(key, body) {
+  const miss = key[0] === 'm', local = miss ? R.missed : R.marks, id = miss ? key.slice(1) : key;
+  if (body) local[id] = body; else delete local[id];
+  redraw();
+  if (!R.db) return;
+  try {
+    const ref = R.db.doc(`${R.base}/${miss ? 'missed' : 'marks'}/${id}`);
+    await (body ? ref.set(body) : ref.delete());
+  } catch (err) {
+    if (err && err.code === 'invalid_argument') { R.readOnly = true; reviewPanel(); }
+    $('save-note').textContent = R.readOnly ? 'You can look at the marks here but not change them.' : 'That mark did not save; try again.';
+  }
+}
+function missAt(xi, yi) {
+  const [Z, Y, X] = meta.shape, n = X * Y, i = Math.round(yi) * X + Math.round(xi);
+  let best = -1, bz = S.z0;
+  for (let z = S.z0; z <= S.z1; z++) if (vols.cd31[z * n + i] > best) { best = vols.cd31[z * n + i]; bz = z; }
+  const um = R.graph.um_per_px, depth = R.graph.flat ? 0 : +(bz * R.graph.z_step_um).toFixed(2);
+  save('m' + Math.random().toString(36).slice(2, 10),
+       { zyx_um: [depth, +(yi * um).toFixed(2), +(xi * um).toFixed(2)], note: '', at: new Date().toISOString() });
+}
+function bindReview() {
+  $('show-graph').addEventListener('change', (e) => { R.show = e.target.checked; redraw(); });
+  $('verdicts').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b || !R.sel) return;
+    const k = R.sel.key, cur = R.marks[k] || {};
+    save(k, { verdict: cur.verdict === b.dataset.v ? null : b.dataset.v, note: cur.note || '', at: new Date().toISOString() });
+  });
+  $('sel-note').addEventListener('change', (e) => {
+    if (!R.sel) return;
+    const k = R.sel.key, cur = (k[0] === 'm' ? R.missed[k.slice(1)] : R.marks[k]) || {};
+    save(k, { ...cur, note: e.target.value.slice(0, 500), at: new Date().toISOString() });
+  });
+  $('miss-del').addEventListener('click', () => { if (R.sel && R.sel.key[0] === 'm') { const k = R.sel.key; R.sel = null; save(k, null); } });
+  $('miss-mode').addEventListener('click', (e) => {
+    R.missMode = !R.missMode; e.target.setAttribute('aria-pressed', String(R.missMode)); $('flat-all').classList.toggle('picking', R.missMode);
+  });
+  $('flat-all').addEventListener('click', (e) => {
+    const cv = $('flat-all'), r = cv.getBoundingClientRect(), [, Y, X] = meta.shape;
+    const x = (e.clientX - r.left) * cv.width / r.width, y = (e.clientY - r.top) * cv.height / r.height;
+    const key = R.pick2d && nearest(R.pick2d, x, y, 8 * cv.width / r.width);
+    if (R.missMode && !(key && key[0] === 'm')) { if (!R.readOnly) missAt(x * X / cv.width - .5, y * Y / cv.height - .5); return; }
+    select(key);
+  });
+  $('edge-rows').addEventListener('click', (e) => { const tr = e.target.closest('tr'); if (tr) select(tr.dataset.k); });
+  document.addEventListener('keydown', (e) => {
+    if (!R.sel || R.readOnly || e.target.matches('input, textarea') || e.metaKey || e.ctrlKey) return;
+    const v = { r: 'right', w: 'wrong', u: 'unsure' }[e.key]; if (!v || R.sel.key[0] === 'm') return;
+    $('verdicts').querySelector(`[data-v=${v}]`).click();
+  });
+}
+async function initReview() {
+  const r = await fetch('graph.json');
+  if (!r.ok) return;
+  R.graph = await r.json();
+  R.base = `reviews/${R.graph.draft_id}`;
+  for (const id of ['review', 'edges-sec']) $(id).hidden = false;
+  document.querySelector('h1').textContent = 'Draft vessel graph to review';
+  if (R.graph.flat) {
+    document.querySelector('h1').textContent = 'Flattened draft vessel graph to review';
+    $('depth-col').remove();
+    for (const e of R.graph.edges) e.path3 = e.path_zyx_um.map((q, i) => [e.depth_slices[i], q[1], q[2]]);
+    for (const o of [...R.graph.nodes, ...(R.graph.crossings || [])]) o.at3 = [o.depth_slice, o.zyx_um[1], o.zyx_um[2]];
+    $('edges-note').textContent = 'Traced on the flattened picture: length runs along the centerline in the image plane, and width is twice the ' +
+      'distance from it to the traced edge. Depth is used only to tell crossing vessels (×) from joining ones; the 3D view draws each line at the depth its signal sits.';
+  }
+  bindReview(); redraw();
+  const cl = window.claude;
+  const [db, dl] = cl && cl.use ? await Promise.all([cl.use('db').catch(() => null), cl.use('downloads').catch(() => null)]) : [null, null];
+  if (!db) { $('save-note').textContent = 'Marks made here are not saved: this copy of the page has no store.'; return; }
+  R.db = db;
+  const live = (name, into) => db.collection(`${R.base}/${name}`).onSnapshot((snap) => {
+    for (const k of Object.keys(into)) delete into[k];
+    for (const d of snap.docs) into[d.id] = d.data();
+    redraw();
+  }, () => { $('save-note').textContent = 'Saved marks could not be loaded.'; });
+  live('marks', R.marks); live('missed', R.missed);
+  if (dl) {
+    const b = $('dl'); b.hidden = false;
+    b.onclick = () => {
+      const g = JSON.parse(JSON.stringify(R.graph));
+      for (const e of g.edges) e.review = R.marks['e' + e.id] || null;
+      for (const n of g.nodes) n.review = R.marks['n' + n.id] || null;
+      for (const x of g.crossings || []) x.review = R.marks['c' + x.id] || null;
+      for (const e of g.edges) delete e.path3;
+      for (const o of [...g.nodes, ...(g.crossings || [])]) delete o.at3;
+      g.missed = Object.values(R.missed);
+      dl.save({ filename: `${g.draft_id}.json`, data: JSON.stringify(g, null, 1) }).catch(() => {});
+    };
+  }
+}
+
+async function main() {
+  try {
+    meta = await (await fetch('meta.json')).json();
+    const [Z, Y, X] = meta.shape;
+    S.z1 = Z - 1; S.slice = Math.floor(Z / 2);
+    for (const id of ['z0', 'z1', 'sl']) $(id).max = Z - 1;
+    $('z1').value = S.z1; $('sl').value = S.slice;
+    if (meta.z_step_um) S.zs = meta.z_step_um;
+    const c = meta.channels.cd31, con = c.slice_p99.map((v, i) => v - c.slice_p50[i]);
+    S.slice = con.indexOf(Math.max(...con)); $('sl').value = S.slice;
+    $('zs').value = S.zs;
+    $('zs-note').textContent = meta.z_step_um ? '' :
+      'The file does not record the spacing between slices. Until the lab supplies it, depth is drawn at a guessed spacing: slide it and judge the shapes, not the depth in µm.';
+    const um = meta.um_per_px;
+    $('facts').innerHTML = `<span><b>${meta.source}</b></span><span>${X} × ${Y} px × ${Z} slices</span>` +
+      `<span>${um ? um.toFixed(2) + ' µm/px (from the file)' : 'pixel size unknown'}</span>` +
+      `<span class="${meta.z_step_um ? '' : 'guess'}">${meta.z_step_um ? 'slice spacing ' + meta.z_step_um + ' µm' : 'slice spacing unknown'}</span>`;
+    const drift = meta.drift_px || [];
+    const mags = drift.slice(1).map(d => Math.hypot(d[0], d[1])).sort((a, b) => a - b);
+    const med = mags.length ? mags[Math.floor(mags.length / 2)] : 0, worst = mags.length ? mags[mags.length - 1] : 0;
+    const f = (v) => `${v.toFixed(1)} px` + (um ? ` (${(v * um).toFixed(1)} µm)` : '');
+    $('drift-note').textContent = mags.length ? `Apparent shift between neighbouring slices: median ${f(med)}, largest ${f(worst)}. ` +
+      'Vessels that run obliquely through depth also move from slice to slice, so this is an upper bound on how far the stage drifted.' : '';
+    status('Loading the volume…');
+    initGL();
+    [vols.cd31, vols.dapi] = await Promise.all([loadVol(meta.channels.cd31.file), loadVol(meta.channels.dapi.file)]);
+    texture(0, vols.cd31); texture(1, vols.dapi);
+    status('');
+    sync(); bind(); flat();
+    await initReview();
+  } catch (err) {
+    status(`Could not open the stack: ${err.message}`);
+    console.error(err);
+  }
+}
+main();
+})();
+</script>

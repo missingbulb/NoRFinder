@@ -1,0 +1,6 @@
+[
+  {"source": "cd31_frontal_x20_r_1_slices1-12.tif", "file": "cd31_frontal_x20_r_1_slices1-12.vessels.json"},
+  {"source": "cd31_frontal_x20_r_2_slices6-29.tif", "file": "cd31_frontal_x20_r_2_slices6-29.vessels.json"},
+  {"source": "cd31_ca1_x20_r_1_slices13-30.tif", "file": "cd31_ca1_x20_r_1_slices13-30.vessels.json"},
+  {"source": "cd31_ca1_x20_r_2_slices1-24.tif", "file": "cd31_ca1_x20_r_2_slices1-24.vessels.json"}
+]

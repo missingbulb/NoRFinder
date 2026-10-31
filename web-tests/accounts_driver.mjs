@@ -1,5 +1,5 @@
 // Runs the site's server (accounts/worker.js) in Node against a stand-in KV store and a stand-in Google, and
-// checks 1.48: a valid Google token opens a session in an HttpOnly cookie; a token Google did not sign, for
+// checks 1.50: a valid Google token opens a session in an HttpOnly cookie; a token Google did not sign, for
 // another site, expired, from another issuer or for an unverified email opens none; the session reads and
 // replaces the user's one settings record, refused without a session, from another site, over 16 KB or not
 // an object; signing out ends it; and every address outside /api/ is the site's own files.

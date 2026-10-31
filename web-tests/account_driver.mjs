@@ -1,5 +1,5 @@
 // Drives the page (web/) in headless Chromium, its /api/ answered by the site's real server (accounts/worker.js)
-// over a stand-in KV store, with a stand-in for Google's sign-in script, and checks 1.48: a visitor who never
+// over a stand-in KV store, with a stand-in for Google's sign-in script, and checks 1.50: a visitor who never
 // signs in sees the menu as before, loads nothing from Google and only asks the server whether they have a
 // session; signing in on one device shows the user and saves that device's settings that follow the user, not
 // the ones that stay; a change there is saved; signing in on a second device brings them, the theme at once,

@@ -1,4 +1,4 @@
-"""1.48: the site's server signs a user in with Google and keeps their one settings record
+"""1.50: the site's server signs a user in with Google and keeps their one settings record
 (accounts_driver.mjs, in Node, against a stand-in Google and KV store)."""
 import os
 import shutil

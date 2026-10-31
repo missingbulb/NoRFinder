@@ -1,4 +1,4 @@
-"""1.48: signing in with Google from the avatar's menu carries the user's settings to every device
+"""1.50: signing in with Google from the avatar's menu carries the user's settings to every device
 (account_driver.mjs, in headless Chromium, against the site's real server)."""
 import os
 import shutil
