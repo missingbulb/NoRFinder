@@ -168,7 +168,9 @@
 @keyframes gt-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(.9); } }
 @media (prefers-reduced-motion: reduce) { #dl-truth .gt-ico { animation: none !important; } }
 /* the summary mask: its borders as a pulsing dashed line; its inside tinted only when areas overlap or nest */
-.mask-btns { display: inline-flex; gap: 6px; }
+.mask-btns { display: flex; gap: 6px; margin-bottom: 10px; }
+.mask-btns button { padding: 3px 10px; font-size: 12px; }
+#settings-box .reset-row { display: flex; justify-content: flex-end; margin-top: 4px; }
 .mask-btns button[hidden] { display: none; }
 #overlay .mask-marks { pointer-events: none; }
 #overlay .mask-marks .edge { fill: none; stroke: #fff; stroke-width: 1.5; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke;

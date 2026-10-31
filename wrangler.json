@@ -2,7 +2,8 @@
   "name": "norfinder",
   "compatibility_date": "2026-09-13",
   "build": {
-    "command": "python3 dev/tools/build/build.py"
+    "command": "python3 dev/tools/build/build.py",
+    "watch_dir": ["web", "studies", "dev/tools/build"]
   },
   "assets": {
     "directory": "./dev/build/site"

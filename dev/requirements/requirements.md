@@ -378,8 +378,10 @@ test fold under it. A study's research requirements, which no user sees, stay in
   GT); later steps do not show yet, and once every step is done none shines. Load image is done
   once an image is open, Submit GT once its issue is opened (for a local image, once its file is
   exported); the study says when its own steps are done (NoR: Run algorithm while the image was
-  searched with the finder and settings now chosen, Review all items while every finalist has a
-  verdict). Opening another image, or switching study (`1.30`), starts over. Hovering a crumb says what was done in that step
+  searched with the finder and settings now chosen, Review all items while the Submit Ground Truth
+  button (`3.13`) says the ground truth is complete: some vote cast, every added NoR and every
+  finalist decided; corrected by the owner on 2026-10-31, so the filters rejecting every finalist
+  never moves the step on while the button still says what is missing). Opening another image, or switching study (`1.30`), starts over. Hovering a crumb says what was done in that step
   and when. Clicking the crumb that shines brings its button into view, unfolding the box it is in
   (`1.41`) and scrolling to it, and presses it: a way there, a lesson in where it is, and a
   shortcut. The steps live in one state in the shell, and the crumbs and the shining buttons are
@@ -480,8 +482,17 @@ test fold under it. A study's research requirements, which no user sees, stay in
   step after which it folds again. When a step is done by the user (an image opening, or the
   step's button pressed, never a dial set back to the last run's) its boxes open and the boxes it
   closes fold; opening another image also folds every box waiting for a later step. Between those moments a box
-  stays as the user left it; switching study (`1.30`) starts over. A box's title shows only its
-  name while folded. Test: `web-tests/test_left_bar_page.py`, `web-tests/test_study_contract.py`.
+  stays as the user left it; switching study (`1.30`) starts over.
+  Changed by the owner on 2026-10-31. The boxes are drawers stacked in one panel, no gap between
+  them, each title on a compact row behind the step's number in a circle, which turns into a green
+  check once the drawer's task is done; the open drawers carry an accent bar at their left. A
+  drawer's title describes its task while the task waits, open or folded; once it is done, the
+  folded title sums up what was done and the open one names the drawer. The Image box, titled Load
+  Image while no image is open (and again after Unload), folds once done to
+  a small preview of the image, its name and what it holds ("2D", "3 channels", from the file;
+  only "2D" when the file does not say), and opens as "Loaded Image". A study's drawer is done
+  when the study gives it a summary, and waits again when the study takes it back. Test:
+  `web-tests/test_left_bar_page.py`, `web-tests/test_study_contract.py`.
   </details>
 
 - `1.42` A folder's `rauntruth-previews.tiff` gives every image it covers a preview at once, a stack turning on hover.
@@ -584,14 +595,18 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   finding again.
   </details>
 
-- `3.2` The left bar holds Image, Preprocessing, Algorithms, Post-processing and Summary; the selected candidate is over the image, Submit Ground Truth in the toolbar.
+- `3.2` The left bar holds Load Image, Preprocessing, Processing, Postprocessing and Summary; the selected candidate is over the image, Submit Ground Truth in the toolbar.
   <details>
 
-  Changed by the owner on 2026-10-30. Below the Image box (`1.41`) the left bar holds Preprocessing,
-  which has no steps yet and says so, open from the image's opening until Find Candidates; Algorithms,
-  the candidates finder (its "how it works" and its settings fold away), open over the same span;
-  Post-processing, the filters, which only its title opens; and Summary, which opens once the
-  candidates are found. The main area has a toolbar over two views: the image and the
+  Changed by the owner on 2026-10-30 and 2026-10-31. Below the Image box (`1.41`) the left bar holds
+  Preprocessing, which has no steps yet and says so, open from the image's opening until Find
+  Candidates (once a step marks the parts of the image to leave out, its folded title says how much,
+  "14% imperfections"); Processing, the candidates finder (its "how it works" and its settings fold
+  away; its "restore defaults" sits with the settings, not in the title row), open over the same
+  span and, folded once Find Candidates has run with the finder and
+  settings now chosen, titled "<finder> executed"; Postprocessing, the filters, which only its title
+  opens; and Summary, which opens once the candidates are found. Postprocessing and Summary keep
+  their names whatever is done. The main area has a toolbar over two views: the image and the
   individual items, with the button that switches between them at its left and Submit Ground Truth
   (`3.13`) at its right end, in both views. Changed by the owner on 2026-10-31: there is no right bar
   (`1.11`).
@@ -737,7 +752,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 - `3.15` A lassoed summary mask limits the summary and the CSVs to the candidates inside it.
   <details>
 
-  Set by the owner on 2026-10-06. Add mask, at the top of the Summary box, switches to the image
+  Set by the owner on 2026-10-06. Add mask, on its own row below the Summary box's title (moved
+  there by the owner on 2026-10-31), switches to the image
   view, zooms out to show the whole image and lets the user lasso an area by dragging (Esc
   cancels). The summary then counts only the candidates whose centre is inside the mask, and the
   Candidates and Summary CSVs hold only those; the ground truth ignores the mask. Lassoing again
@@ -784,7 +800,7 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 - `3.21` On the released site each finder and each filter preset shows its precision and recall.
   <details>
 
-  The finder list, the finder's note and the Post-processing box's presets read the study's measured
+  The finder list, the finder's note and the Postprocessing box's presets read the study's measured
   quality (`studies/nor/docs/requirements.md` R11), so that file ships with the page part
   (`studies/nor/web/`), like everything else the page fetches. Test:
   `web-tests/test_published_site.py`, which checks that every file a study's page module fetches is
