@@ -36,7 +36,8 @@ A study is a folder with a `study.json`:
   `over-image` (floating over the image) and `body`; there is no right bar. A `box foldable` section folds
   with the steps: its `data-opens` names the step (`load`, one of its `phases`, `submit`) after which it
   opens, or `user` for one only its title opens, and `data-folds` the step after which it folds again.
-- `files` — what Load accepts, and the text the empty view shows.
+- `files` — what Load accepts, the text the empty view shows, and optionally `drive`, the Google Drive
+  folder the Drive dialog opens on in this study.
 - `channels` — what the study says of the image's channels, by place: `name`, `colour` (`#rrggbb`),
   `shown` at first, and optionally `about` (the (?)'s description, at most 100 words) and `black` and
   `white` (its first points, 0–255). A channel it leaves out takes what the file says, then its place

@@ -28,7 +28,8 @@ const DEFAULT_STUDY = "viewer";
 const THEME = "nor-theme"; // "dark" | "light"; absent = follow the system
 const BARS = "nor-bars-v1"; // {left}: the left bar's width in pixels (a right bar's, from before it went, is ignored)
 const SOURCE = "nor-load-source"; // "local" | "drive": where Load reads from
-const DRIVE_LINK = "nor-drive-link"; // the last Google Drive link pasted
+const DRIVE_LINK = "nor-drive-link"; // the last Google Drive link pasted, in any study
+const DRIVE_LINKS = "nor-drive-links"; // {study id: the last Google Drive link pasted in that study}
 const THUMBS = "nor-drive-thumbs"; // "on" | "off": whether the Drive dialog shows thumbnails
 const AUTO_SAVE = "nor-drive-autosave"; // "on" | "off": whether an image downloaded from Drive is kept on this device
 const SAVED_THUMB = "nor-drive-thumb:"; // + Drive id: a JPEG data URL of the image, saved when it was opened
@@ -479,11 +480,12 @@ $("#file").onchange = async (e) => {
   const bytes = await f.arrayBuffer(); peek()(bytes, bytes.byteLength);
   openBytes(f.name, bytes, { kind: "local" }); e.target.value = "";
 };
+// the link the Drive dialog opened on: listing it is not pasting it
+let driveFrom = "";
 function load(src) {
   writeJSON(SOURCE, src); $("#load-menu").open = false;
   if (src === "local") return $("#file").click();
-  const home = ((window.NOR_CONFIG || {}).drive || {}).defaultLink || "";
-  $("#drive-link").value = readJSON(DRIVE_LINK, "") || home; $("#drive-dlg").showModal(); $("#drive-link").select(); showSaved();
+  driveFrom = $("#drive-link").value = readJSON(DRIVE_LINKS)[manifest.id] || manifest.files.drive || readJSON(DRIVE_LINK, ""); $("#drive-dlg").showModal(); $("#drive-link").select(); showSaved();
   holdDrive();
   if (!throttled() && NorDrive.parse($("#drive-link").value)?.kind === "folder") $("#drive-go").click();
 }
@@ -745,7 +747,7 @@ function driveDialog() {
     const link = $("#drive-link").value, ref = NorDrive.parse(link);
     $("#drive-list").replaceChildren(); $("#drive-path").replaceChildren(); choose(null);
     if (!ref) return msg("That does not look like a Google Drive link.", true);
-    writeJSON(DRIVE_LINK, link);
+    if (link !== driveFrom) { writeJSON(DRIVE_LINK, link); writeJSON(DRIVE_LINKS, { ...readJSON(DRIVE_LINKS), [manifest.id]: link }); driveFrom = link; }
     if (ref.kind === "file") return take(ref.id, undefined, []);
     trail = [{ id: ref.id, name: "Folder" }]; show();
   };
@@ -862,7 +864,7 @@ async function showSaved() {
 // ---------- the user: whoever opened the page on this device, and what the site keeps here ----------
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
-  [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link",
+  [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
   [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through",
 };
 const GROUPS = [

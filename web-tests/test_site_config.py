@@ -16,13 +16,13 @@ def settings(text):
 
 
 def test_the_deploy_variables_become_the_page_settings():
-    got = settings(build.config_js({'GOOGLE_API_KEY': 'AIza"x', 'DRIVE_DEFAULT_FOLDER': 'https://drive.google.com/drive/folders/abc'}))
-    assert got == {'google': {'apiKey': 'AIza"x'}, 'drive': {'defaultLink': 'https://drive.google.com/drive/folders/abc'}}
+    got = settings(build.config_js({'GOOGLE_API_KEY': 'AIza"x'}))
+    assert got == {'google': {'apiKey': 'AIza"x'}}
 
 
 def test_a_local_preview_keeps_the_committed_settings():
     assert build.config_js({}) is None
-    assert build.config_js({'DRIVE_DEFAULT_FOLDER': 'https://drive.google.com/drive/folders/abc'}) is None
+    assert build.config_js({'GOOGLE_API_KEY': ''}) is None
 
 
 def main():

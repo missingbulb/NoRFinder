@@ -55,7 +55,7 @@ const MORE = tiff(256, 256, 5, "ImageJ=1.54f\nimages=5\nslices=5\n", tube);
 for (const f of FILES) f.bytes = f.bytes || MORE;
 const ROOT = "shapefolder000000001";
 
-const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in" }, drive: { defaultLink: "" } };`;
+const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in" } };`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);

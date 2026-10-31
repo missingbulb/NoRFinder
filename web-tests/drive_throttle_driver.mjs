@@ -25,7 +25,7 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ROOT = "throttlefolder000001";
 const PNG = fs.readFileSync(path.join(repo, "dev", "tools", "build", "logo_source.png"));
 const FILES = [{ id: "throttleimage0000001", name: "a.png" }, { id: "throttleimage0000002", name: "b.png" }, { id: "throttleimage0000003", name: "c.tif" }];
-const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in" }, drive: { defaultLink: "" } };`;
+const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in" } };`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);

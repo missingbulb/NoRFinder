@@ -32,7 +32,7 @@ const PNG = fs.readFileSync(path.join(repo, "dev", "tools", "build", "logo_sourc
 const DRIVE = [{ id: "acmeimage00000000001", name: "acme one.png" }, { id: "acmeimage00000000002", name: "acme two.png" }];
 // a subfolder, listed after the images, holding an image named as the first one
 const SUB = { id: "acmefolder0000000002", name: "sub" }, TWIN = { id: "acmeimage00000000003", name: "acme one.png" };
-const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in" }, drive: { defaultLink: "" } };`;
+const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in" } };`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);

@@ -43,7 +43,7 @@ onmessage = async ({ data: m }) => {
     postMessage({ type: "result", action: "refilter", meta: A.filtered[finder][0], echo: m.echo, ms: 0 });
   }
 };`;
-const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "test-key" }, drive: { defaultLink: "" } };`;
+const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "test-key" } };`;
 
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {

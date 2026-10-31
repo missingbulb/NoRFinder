@@ -30,7 +30,7 @@ const PNG = fs.readFileSync(path.join(repo, "dev", "tools", "build", "logo_sourc
 // a.png's bytes on Drive; changed later to the same picture with a byte appended after its end
 const FILE = { id: "cacheimage0000000001", name: "a.png", bytes: PNG };
 const sha = (b) => createHash("sha256").update(b).digest("hex");
-const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in" }, drive: { defaultLink: "" } };`;
+const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in" } };`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);

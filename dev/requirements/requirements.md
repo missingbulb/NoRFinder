@@ -219,8 +219,10 @@ test fold under it. A study's research requirements, which no user sees, stay in
   turns the downloads off; beside it, and in the status bar while they load, how many have arrived
   and their size. It needs the site's Google API key, kept in the repository variable
   `GOOGLE_API_KEY` and written into `web/config.js` at deploy; without one the option is off
-  (`web-tests/test_site_config.py`). The dialog opens on the last link pasted, or else on the lab's
-  folder (the repository variable `DRIVE_DEFAULT_FOLDER`), and lists a folder link at once. Nothing
+  (`web-tests/test_site_config.py`). The dialog opens on the link last pasted in this study, else on
+  the study's own folder (`files.drive` in its `study.json`), else on the link last pasted in any
+  study, and lists a folder link at once; opening on a link is not pasting it
+  (`web-tests/test_drive_folder_page.py`). Nothing
   else read from Drive is kept, apart from the image files Auto-save images keeps (`1.6`, `1.7`;
   `studies/nor/tests/test_drive_dialog.py`).
   </details>
