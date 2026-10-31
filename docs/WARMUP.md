@@ -12,7 +12,7 @@ Working on a study? Read its own warm-up next: [NoR Finder](../studies/nor/docs/
 
 | Layer | Where | Swapped by |
 |---|---|---|
-| Shell: loading (computer, Google Drive), the Python runtime, status and memory, notices, theme, side bars, version history, downloads, ground-truth submission | `web/` | — |
+| Shell: loading (computer, Google Drive), the Python runtime, status and memory, notices, theme, side bars, version history, downloads, ground-truth submission, splitting an image into parts (`web/split.js`, its dialog `web/split_dialog.js`) | `web/` | — |
 | Viewer: shows the opened image and what a study draws over it, zoom, pan, the minimap, each channel's row and its black and white points (`web/channels.js`) | `web/viewer2d.js`; `web/viewer3d.js` adds a 3D view of a z-stack | a study's `viewer` |
 | Study: its panels, its flow, its Python | `studies/<id>/` | `/<id>` (rauntruth.com/nor) |
 
@@ -34,7 +34,7 @@ A study is a folder with a `study.json`:
   by `dev/tools/build/build.py`).
 - `web` — `module`, an ES module exporting `mount(shell)`; optionally `panels`, an HTML file of
   `<template data-slot="…">` elements the shell puts into its slots before mounting, and `style`, its
-  stylesheet. The slots: `left` (the left bar, below the Image box), `toolbar` (the main area's
+  stylesheet. The slots: `preprocessing` (the shell's Preprocessing drawer, above its Split into parts), `left` (the left bar, below Preprocessing), `toolbar` (the main area's
   toolbar, at its left), `toolbar-end` (its right end), `view-top`, `views` (beside the image view),
   `over-image` (floating over the image) and `body`; there is no right bar. A `box foldable` section folds
   with the steps: its `data-opens` names the step (`load`, one of its `phases`, `submit`) after which it

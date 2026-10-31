@@ -97,6 +97,8 @@ for (const width of [1000, 1600]) {
   const views = [["image", async () => {}], ["finalists", () => page.click("#switch")], ["rejected", () => page.click("#tab-fail")]];
   for (const [view, go] of views) {
     await go(); await page.waitForFunction(() => !document.querySelector("button.working"));
+    // the cards near the view are drawn as the list's observer reports them (3.22)
+    if (view !== "image") await page.waitForFunction(() => document.querySelector("#list .card canvas"));
     const got = await measure(page);
     const cards = got.filter((g) => g.where === "list").length, selected = got.filter((g) => g.where === "selected").length;
     console.log(`${width}px ${view}: ${got.length} images, ${cards} cards, ${selected} selected`);

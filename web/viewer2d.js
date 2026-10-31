@@ -5,7 +5,7 @@
 // viewer (3D, say) is a module with the same interface.
 //
 // The study's hooks it calls: pickAt(event) -> what was clicked, or null; pick(it) when a click, not a
-// drag, landed on it; step(dir) on a sideways swipe; capturesPointer() while the study's own tool (a
+// drag, landed on it; open(it) when a double click did; step(dir) on a sideways swipe; capturesPointer() while the study's own tool (a
 // lasso, say) takes the pointer; zoomed() after every zoom.
 import { resolve, ramp } from "./channels.js";
 
@@ -243,6 +243,11 @@ export function viewer(shell) {
       drag = null; sc.classList.remove("dragging");
     };
     sc.addEventListener("pointerup", end); sc.addEventListener("pointercancel", () => { drag = null; sc.classList.remove("dragging"); });
+    sc.addEventListener("dblclick", (e) => {
+      if (!st.img || hooks.capturesPointer?.() || ruler.armed) return;
+      const it = hooks.pickAt?.(e);
+      if (it != null) hooks.open?.(it);
+    });
     let acc = 0, quietUntil = 0;
     sc.addEventListener("wheel", (e) => {
       if (!st.img) return;
@@ -355,7 +360,7 @@ export function viewer(shell) {
     use(h) { hooks = h || {}; }, channels: setChannels,
     // the rows as they stand, [{on, colour, black, white}] in plane order, and a listener for every redraw of them
     levels: () => chans, onDrawn: (fn) => drawnHeard.push(fn),
-    draw, setZoom, fit, focus, toImage, layer, minimapView: () => minimap.place(), preview, clear, shown, picture,
+    draw, setZoom, fit, focus, toImage, layer, channelList: () => chans.map(({ name, colour }) => ({ name, colour })), minimapView: () => minimap.place(), preview, clear, shown, picture,
     get overlay() { return $("#overlay"); }, get scroller() { return $("#scroller"); },
   };
 }

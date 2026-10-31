@@ -1,4 +1,4 @@
-"""1.48: a study in the image3d viewer shows a z-stack in 3D, driven by its channel rows (viewer3d_driver.mjs, in
+"""1.49: a study in the image3d viewer shows a z-stack in 3D, driven by its channel rows (viewer3d_driver.mjs, in
 headless Chromium with a stand-in worker)."""
 import os
 import shutil

@@ -2,7 +2,7 @@
 // none of them; the header's switcher offers the ones the build lists and swaps one in without a reload. What it gives a study, as shell in mount(shell): loading images (from the
 // computer or Google Drive), Python (the study's own, run in worker.js), the viewer the study asks for,
 // the page's state its controls are drawn from (page: get, set, watch(key, fn, {signal})), the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own) and the boxes' titles (boxDone(box, summary) once a box's task is done), notices, the user's saved settings, downloads and ground-truth
-// submission; and around them the theme, the left bar, foldable boxes, the resources dialog (storage, memory,
+// submission; and around them the theme, the left bar, foldable boxes, Preprocessing (Split into parts, and a study's own steps in its slot), the resources dialog (storage, memory,
 // network and CPU) and the version history.
 //
 // The study's hooks, all optional, returned from mount: ready(info) once its Python is loaded;
@@ -21,6 +21,7 @@ import { viewer3d } from "./viewer3d.js";
 import { pageState } from "./page_state.js";
 import { shape, stackPicture, holds, drawVolume, TURN } from "./stack.js";
 import { PREVIEWS, readPreviews } from "./previews.js";
+import { splitter, SPLIT_PATTERN } from "./split_dialog.js";
 
 const $ = (s) => document.querySelector(s);
 // image3d is the 2D viewer of a stack's flattened planes with a 3D view beside it, sharing the one 2D viewer
@@ -101,7 +102,7 @@ function busy(on, text, look) {
 // page's own scripts, plus an estimate of what a page cannot read
 function statusBar() {
   const { js, total } = memoryNow(), gb = navigator.deviceMemory, el = $("#sb-memory");
-  el.querySelector(".v").textContent = total == null ? "" : `${mbOf(total)} MB`;
+  showNumber(el, total == null ? "" : `${mbOf(total)} MB`);
   el.classList.toggle("warn", !!gb && total > gb * 2 ** 30 / 4);
   el.title = total == null ? "" : `Python ${mbOf(st.heap)} MB, its files ${mbOf(st.files)} MB` + (js ? `, the page ${mbOf(js)} MB` : "") +
     `, and an estimated ${UNREAD_MB} MB for Python's compiled code and the browser. Click for more.`;
@@ -143,7 +144,7 @@ async function diskBar() {
   const { out, extra } = await inventory();
   showDisk(Object.entries(out).reduce((a, [g, items]) => a + items.reduce((b, e) => b + e.size, 0) + (extra[g] || 0), 0));
 }
-const showDisk = (n) => { $("#sb-disk .v").textContent = sizeText(n); };
+const showDisk = (n) => showNumber($("#sb-disk"), sizeText(n));
 $("#sb-disk").onclick = () => usage("storage");
 
 // ---------- the resources dialog: storage, memory, network and CPU, a tab each ----------
@@ -160,6 +161,28 @@ function usage(tab) {
   else usageNow();
 }
 $("#usage-dlg .tab-row").onclick = (e) => { const t = e.target.closest("[role=tab]"); if (t) usage(t.dataset.tab); };
+// ---------- the status bar's numbers: each changed character rolls up to its new one ----------
+// Characters are paired from the right, so "9%" to "12%" rolls the 9 to a 2 and brings the 1 in from nothing;
+// the old character is the rolling one's data-from, so the number reads as its new value throughout.
+const SPIKE_MS = 3000, SHARP_CPU = 0.3, SHARP_RATE = 2 ** 20;
+function showNumber(item, text, spike) {
+  if (spike) {
+    item.classList.add("spike");
+    clearTimeout(item.spikeTimer);
+    item.spikeTimer = setTimeout(() => item.classList.remove("spike"), SPIKE_MS);
+  }
+  const v = item.querySelector(".v"), was = v.textContent;
+  if (text === was) return;
+  if (!was) { v.textContent = text; return; }
+  v.replaceChildren(...[...text].map((ch, i) => {
+    const from = was[was.length - text.length + i] ?? "";
+    if (from === ch || ch === " ") return ch;
+    const roll = document.createElement("span"), d = document.createElement("span");
+    roll.className = "roll"; d.dataset.from = from; d.textContent = ch; roll.append(d);
+    return roll;
+  }));
+}
+
 $("#sb-net").onclick = () => usage("network");
 $("#sb-cpu").onclick = () => usage("cpu");
 
@@ -188,8 +211,18 @@ function netNow() {
   const page = net.page + sw("page"), python = net.worker + sw("worker"), drive = window.NorDrive?.received() || 0;
   return { page, python, drive, total: page + python + drive };
 }
-function netList(n) {
-  $("#net-total").textContent = `This tab has downloaded ${sizeText(n.total)} since it opened.`;
+// how fast: what was downloaded over the last CPU_MS, as the CPU's share is counted
+const netSamples = [];
+function netRate(total) {
+  const t = Date.now();
+  netSamples.push([t, total]);
+  while (netSamples.length > 1 && netSamples[1][0] <= t - CPU_MS) netSamples.shift();
+  const [t0, n0] = netSamples[0];
+  return t > t0 ? ((total - n0) * 1000) / (t - t0) : 0;
+}
+const speedText = (r) => `${sizeText(r)}/s`;
+function netList(n, rate) {
+  $("#net-total").textContent = `This tab is downloading ${speedText(rate)} and has downloaded ${sizeText(n.total)} since it opened.`;
   $("#net-list").replaceChildren(
     entry("The page", "Its own files; what this browser had kept counts nothing", sizeText(n.page)),
     entry("Python", "Python, its packages and the study's Python", sizeText(n.python)),
@@ -224,11 +257,15 @@ function cpuList(c) {
     entry("Python", "The time it spent working", pct(c.python)));
 }
 
-// each second: the network and CPU in the status bar, and in their tabs when open
+// each second: the network and CPU in the status bar, and in their tabs when open; a sharp rise flashes
+const last = { rate: 0, cpu: 0 };
+const sharp = (now, was, step) => now >= 2 * was && now - was >= step;
 function usageNow() {
-  const n = netNow(), c = cpuNow();
-  $("#sb-net .v").textContent = sizeText(n.total); $("#sb-cpu .v").textContent = pct(c.total);
-  if (tabOn("network")) netList(n);
+  const n = netNow(), c = cpuNow(), rate = netRate(n.total);
+  showNumber($("#sb-net"), speedText(rate), sharp(rate, last.rate, SHARP_RATE));
+  showNumber($("#sb-cpu"), pct(c.total), sharp(c.total, last.cpu, SHARP_CPU));
+  last.rate = rate; last.cpu = c.total;
+  if (tabOn("network")) netList(n, rate);
   if (tabOn("cpu")) cpuList(c);
 }
 setInterval(usageNow, 1000);
@@ -867,7 +904,7 @@ async function showSaved() {
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
   [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
-  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through",
+  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts",
 };
 const GROUPS = [
   ["code", "Code kept for the next visit", "Python and its packages, so the page starts without downloading them again."],
@@ -1328,6 +1365,9 @@ async function mountStudy(id) {
       $(`slot-here[data-slot-for="${t.dataset.slot}"]`).before(...nodes); mounted.push(...nodes);
     }
   }
+  // Preprocessing comes before the study's own work: it folds once the study's first step is done
+  const first = manifest.phases[0]?.key;
+  if (first) $("#preprocessing-box").dataset.folds = first; else delete $("#preprocessing-box").dataset.folds;
   unfoldFirst(); // before the first paint with them, so they do not fold in view
   view = viewers[manifest.viewer] ||= VIEWERS[manifest.viewer](shell);
   for (const v of new Set(Object.values(viewers))) v.active?.(v === view);
@@ -1359,6 +1399,7 @@ const shell = {
   $, state: st, page, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, showImage, boxDone,
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; },
 };
+splitter(shell);
 // for the page's tests, which drive it from outside
 window.st = st; window.$ = $; window.shellForTests = { saveThumb, page };
 

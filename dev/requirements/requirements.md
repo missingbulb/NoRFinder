@@ -33,7 +33,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
 
   The image a study works on is shown by a viewer the study names (`viewer` in `study.json`),
   behind one interface: show the opened image, draw the study's layers over it, report a pick and a
-  lasso in image coordinates, zoom and pan. The 3D viewer (`1.48`) keeps that interface and adds
+  lasso in image coordinates, zoom and pan. The 3D viewer (`1.49`) keeps that interface and adds
   a 3D view beside the 2D one, with no change to the studies that keep the 2D viewer.
   </details>
 
@@ -193,7 +193,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
   an X at the header's other end hides it. A Minimap button in the toolbar, beside the Grid, shows it
   again or hides it, pressed while it shows; hovering over the button opens a popup choosing how
   see-through it is at rest, opaque at first and always opaque under the pointer. Whether it shows and its opacity are kept as the user's settings for the
-  next visit. Dragging moves the image; scrolling up and down zooms around the pointer in small steps;
+  next visit. Dragging moves the image, wherever it starts, a label or the ruler's length included:
+  no drag selects or drags the page's text (set by the owner on 2026-10-31). Scrolling up and down zooms around the pointer in small steps;
   scrolling sideways steps to the study's previous or next item (for NoR, the candidate). The main
   area's toolbar holds the zoom at its right, and its tools wait for an image. Test:
   `web-tests/test_image_box_page.py`.
@@ -523,10 +524,13 @@ test fold under it. A study's research requirements, which no user sees, stay in
   the right, then a row of the tab's own buttons and Close. Test: `web-tests/test_status_bar_page.py`.
   </details>
 
-- `1.44` The network, a download icon and "52 MB", is what this tab has downloaded since it opened.
+- `1.44` The network, a download icon and "1.2 MB/s", is how fast this tab is downloading now.
   <details>
 
-  Set by the owner on 2026-10-31. Its tab splits it into the page's own files, Python with its
+  Set by the owner on 2026-10-31; a speed rather than a total since 2026-10-31, so a burst shows
+  as one. The speed is what was downloaded over the last two seconds, as the CPU's share is
+  (`1.45`). Its tab gives the speed and what this tab has downloaded since it opened, and splits
+  that total into the page's own files, Python with its
   packages and the study's Python, and Google Drive. What comes from this browser's caches counts
   nothing; Google's small pictures of images in the Drive dialog are not counted, since Google does
   not let a page read their size. Test: `web-tests/test_status_bar_page.py`.
@@ -569,7 +573,37 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `web-tests/test_image_box_page.py`, `studies/viewer/tests/test_viewer.py`.
   </details>
 
-- `1.48` A study whose viewer is `image3d` shows a z-stack in 3D, turning it by mouse; its channel rows drive it.
+- `1.48` Preprocessing, in every study, splits an image into 4 or 9 TIFFs for ground truth, each recording where it lay.
+  <details>
+
+  Set by the owner on 2026-10-31. A large image is hard to annotate in one sitting; its parts can be
+  annotated one at a time, by several people at once, and give the finders smaller samples to tune on.
+  Changed by the owner on 2026-10-31: it is the shell's, in every study, the Image Viewer included. Below
+  the Image box the shell's Preprocessing drawer opens with the image and folds once the study's first step
+  is done (a study with no steps leaves it as the user left it); a study adds its own preprocessing steps
+  to it through its `preprocessing` slot. Its Split into parts button, off until an image is open, opens
+  the dialog. The dialog shows the image small, cut 2 × 2 or 3 × 3 into evenly spaced parts numbered as `{n}` counts
+  them; dragging a line moves its cut, never closer than a twentieth of the image to the next one, and
+  clicking a part leaves it out, clicking again keeping it. It lists the image's channels by the names and
+  colours the page gives them, each kept or dropped, and for a stack the slices kept, from one to another.
+  The parts' file names are the image's name and a pattern (`_r{row}c{col}` at first, kept as the user's
+  setting; `{row}` `{col}` `{n}` `{x}` `{y}` `{rows}` `{cols}`, `{name}` for the image's name), listed as
+  they will be; a pattern giving two parts one name, no channel kept, slices out of range or every part left
+  out holds the download and says why. Download all parts gives one ZIP of the parts. Upload to Google
+  Drive is shown, off, and says it needs a Google sign-in the page does not have.
+  Each part is an ImageJ TIFF (uncompressed, little-endian) of the channels and slices kept, every time point
+  kept, its pixels the image's own, bit for bit at its own bit depth: the image's scale, unit, slice spacing,
+  channel colours (the file's LUTs, else the page's colours), names, display ranges and Info are kept, and
+  its Info gains a line `rauntruth.split={…}`: the image it came from (name, SHA-256, Drive id, size,
+  channels, slices, frames), the grid's cuts, the part's row, column, number, x, y, width and height, the
+  channels and slices kept (from 0), and for a part of a part where it lies in the first image (`root`).
+  That record is enough to join the parts' ground truth back into the whole image's. It reads ImageJ
+  hyperstacks, OME-TIFFs in one file and plain TIFFs (strips or tiles; uncompressed, LZW, Deflate or
+  PackBits, either byte order; 8, 16, 32 or 64 bits), and a PNG as the browser decodes it; it refuses a
+  BigTIFF, and a part over 4 GB. Test: `web-tests/test_split.py`, `web-tests/test_split_page.py`, `web-tests/test_left_bar_page.py`.
+  </details>
+
+- `1.49` A study whose viewer is `image3d` shows a z-stack in 3D, turning it by mouse; its channel rows drive it.
   <details>
 
   Set by the owner on 2026-10-31, moving the 3D MicroViewer into the shell. The study's Python
@@ -589,6 +623,17 @@ test fold under it. A study's research requirements, which no user sees, stay in
   </details>
 
 ## `2` The repo's checks
+
+- `1.48` The status bar's numbers roll to each new value, and a sharp rise in the CPU or network flashes.
+  <details>
+
+  Set by the owner on 2026-10-31. Whenever the disk, memory, network or CPU changes, each
+  character that changed rolls up to its new one, like a clock's digits. When the CPU or the
+  network speed at least doubles in one update and rises by a sharp step (30 points of a core;
+  1 MB/s), its icon and number turn the warning colour for three seconds, then fade back. With
+  reduced motion asked for, the digits change without rolling. Test:
+  `web-tests/test_status_bar_page.py`.
+  </details>
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.
   <details>
@@ -619,7 +664,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   <details>
 
   Changed by the owner on 2026-10-30 and 2026-10-31. Below the Image box (`1.41`) the left bar holds
-  Preprocessing, which has no steps yet and says so, open from the image's opening until Find
+  the shell's Preprocessing (`1.48`), to which the study adds that Find Candidates works on the image as
+  loaded, open from the image's opening until Find
   Candidates (once a step marks the parts of the image to leave out, its folded title says how much,
   "14% imperfections"); Processing, the candidates finder (its "how it works" and its settings fold
   away; its "restore defaults" sits with the settings, not in the title row), open over the same
@@ -652,7 +698,10 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   candidate. Cards the user voted up or down have their own border colours. In the item views the
   selected candidate's card is outlined, clicking a card selects it, and switching to the item
   views opens the tab that lists the selected candidate and scrolls its card into sight; the
-  previous and next buttons step through that tab's cards.
+  previous and next buttons step through that tab's cards. Set by the owner on 2026-10-31: double
+  clicking a candidate on the image selects it and opens the item views at its card, and double
+  clicking a card selects it and shows it on the image, as its go-to button does. Test:
+  `studies/nor/tests/test_item_view_page.py`.
   </details>
 
 - `3.5` Filters are live dials: each can be switched off, and every marking follows it at once.
@@ -824,6 +873,15 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   published.
   </details>
 
+- `3.22` The item views draw only the cards near the view, so a long list opens at once.
+  <details>
+
+  Set by the owner on 2026-10-31. Every card takes its place in the list at once as an empty
+  outline; only those in view and the two rows past it either way are drawn in full, together in
+  one go per frame rather than card by card, and the rest are drawn as scrolling brings them near.
+  Test: `studies/nor/tests/test_item_view_page.py`.
+  </details>
+
 ## `4` The Vascular Measurements page: cerebral vessels in CD31 z-stacks
 
 Migrated from [missingbulb/vascularColoring](https://github.com/missingbulb/vascularColoring) on
@@ -836,7 +894,7 @@ owner's decisions on the stacks and the vessel model, are
   <details>
 
   Any multi-page TIFF (an ImageJ hyperstack or plain pages in depth) opens in the 3D viewer
-  (`1.48`), every channel scaled by one window over the whole stack, so signal that fades with depth
+  (`1.49`), every channel scaled by one window over the whole stack, so signal that fades with depth
   still looks faded; 2D shows its brightest-over-depth picture. CD31 is always the first channel: a
   one-channel stack is CD31, and a two-channel one, DAPI then CD31 as the owner's originals are, is
   shown CD31 first. It opens in the view the owner approved on 2026-09-29: CD31 alone, coloured by

@@ -1,6 +1,6 @@
 // Drives the 3D viewer (web/viewer3d.js) in headless Chromium, in the vascular study (viewer image3d), against a
 // stand-in worker that opens a drawn stack: two channels, the first a bright tube climbing through depth and a
-// second one level across it, the second a blob. Checks 1.48: a stack opens on the 3D view, which draws it; the
+// second one level across it, the second a blob. Checks 1.49: a stack opens on the 3D view, which draws it; the
 // channel rows drive it (hiding a channel or raising its black point darkens it); Colour by depth paints by
 // depth; Side turns the view; the depth slab hides slices; the spacing says where it came from; a 2D study
 // shows no switch. Exits 1 on a failed check, 2 when it cannot run.

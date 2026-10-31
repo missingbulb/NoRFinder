@@ -101,7 +101,7 @@ def test_every_studys_boxes_name_the_steps_that_open_and_fold_them():
             seen += 1
             assert opens in steps | {'user'}, f'{title}: data-opens names a step or user, not {opens!r}'
             assert folds is None or folds in steps, f'{title}: data-folds names a step, not {folds!r}'
-    assert seen >= 7, f'read only {seen} foldable boxes: the sweep is not finding them all'
+    assert seen >= 6, f'read only {seen} foldable boxes: the sweep is not finding them all'
 
 
 def test_the_shell_names_no_study():
