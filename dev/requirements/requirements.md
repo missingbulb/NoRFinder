@@ -57,7 +57,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
 - `1.6` The user sees, and can clear, what this device keeps.
   <details>
 
-  With no sign-in, the user is whoever opened the page on this device. An avatar at the right of
+  Not signed in (`1.50`), the user is whoever opened the page on this device. An avatar at the right of
   the header opens a menu whose **Manage storage** opens the Storage tab of the resources dialog
   (`1.43`), which lists everything the site keeps on this device, each with its size, in six groups, each folded when the dialog opens: the code kept for
   the next visit (Python and its packages, by file); image thumbnails, by the image's full name (by
@@ -522,7 +522,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   <details>
 
   Set by the owner on 2026-10-31. The disk, memory, network and CPU in the status bar each open
-  the same dialog on their own tab, and its tabs switch between them. Every tab is laid out the
+  the same dialog, titled Resource Usage, on their own tab, and its tabs switch between them. Every tab is laid out the
   same way: a line with the total, then rows of a name, what it is in grey beneath, and a size at
   the right, then a row of the tab's own buttons and Close. Test: `web-tests/test_status_bar_page.py`.
   </details>
@@ -625,9 +625,36 @@ test fold under it. A study's research requirements, which no user sees, stay in
   its own. Test: `web-tests/test_viewer3d_page.py`, and the vascular study's `4.3`.
   </details>
 
+- `1.50` Signing in with Google keeps the user's settings in their own Google Drive; not signing in changes nothing.
+  <details>
+
+  Set by the owner on 2026-10-31. The site has no server of its own for this: Google signs the user
+  in, in Google's own window, and the page reads and writes their settings in their own Google Drive,
+  in the app's hidden folder (`drive.appdata`), as one small file it reads whole and replaces whole.
+  When the site has a Google client (the repository variable `GOOGLE_CLIENT_ID`, written into
+  `config.js` by the build), the avatar's menu offers Sign in with Google, which asks Google for the
+  user's name, email and picture and for the app's own folder in their Drive, nothing else of it.
+  Signed in, the avatar is the user's picture, the menu names them and offers Sign out. These
+  settings follow the user: dark or light, the tips closed, the version last seen, the low-memory
+  popup turned off, where Load reads from, the last Drive link (in each study too), Show thumbnails,
+  and the images opened from Drive lately. These stay with the device: the left bar's width,
+  Auto-save images, and everything kept for images. Google's token lasts about an hour and is kept on
+  this device for that hour. A new one can be asked for only in the user's own click or key press, so
+  once it has run out the page asks only in one that needs Google: a change to a setting that follows
+  the user, or opening Load or its dropdown. Google's window then opens and closes by itself while
+  Google still remembers the consent; any other click opens nothing. Whenever
+  the page has a token it syncs: the file's settings replace this device's, the theme at once, except
+  each one this device changed since it last synced, which is kept and saved over the file's; with no
+  file yet, this device's start it. While it has a token,
+  each change to a setting that follows the user saves the whole file. Sign out forgets the user and
+  the token on this device and leaves its settings as they are. A visitor who never signs in sees the
+  page as before and loads nothing from Google for it. Test: `web-tests/test_account_page.py`,
+  `web-tests/test_site_config.py`.
+  </details>
+
 ## `2` The repo's checks
 
-- `1.48` The status bar's numbers roll to each new value, and a sharp rise in the CPU or network flashes.
+- `1.51` The status bar's numbers roll to each new value, and a sharp rise in the CPU or network flashes.
   <details>
 
   Set by the owner on 2026-10-31. Whenever the disk, memory, network or CPU changes, each
@@ -638,7 +665,33 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `web-tests/test_status_bar_page.py`.
   </details>
 
-- `1.50` An Animations checkbox in the resources dialog's CPU tab turns every animation on the page off.
+- `1.52` The avatar's menu opens Settings: every setting that follows the user, to change and save.
+  <details>
+
+  Set by the owner on 2026-10-31. Settings… in the avatar's menu opens a dialog listing each setting
+  that follows the user (`1.50`), whether or not they are signed in, each with a control to change it:
+  the theme (follow the system, dark or light); where Load reads from; Show thumbnails in the Drive
+  dialog; whether the low-memory popup shows; the last Google Drive link, and the last one in each
+  study; the tips closed, each with a tick to clear to see it again; the recent images from Google
+  Drive, each with a tick to clear to drop it; and the version seen last. A line says where they are
+  kept: in the user's Google Drive when signed in, else on this device only. Save writes what changed,
+  the theme at once, and when signed in saves the user's settings file; Cancel changes nothing. Test:
+  `web-tests/test_account_page.py`.
+  </details>
+
+- `1.53` The site publishes its privacy policy and terms of service, linked from the avatar's menu.
+  <details>
+
+  Set by the owner on 2026-10-31, for Google's sign-in consent screen, which links both and requires
+  them on the site's own domain, linked from its home page. rauntruth.com/privacy and /terms say who
+  runs the site and how to reach them. The privacy policy says what the page keeps on the device, what
+  reaches each outside service (Cloudflare, Google, jsDelivr, GitHub) and when, and, for signing in,
+  which Google user data the page reads, where it keeps it and that it shares none, under Google's
+  API Services User Data Policy and its Limited Use requirements. The avatar's menu links both. Test:
+  `web-tests/test_published_site.py`.
+  </details>
+
+- `1.54` An Animations checkbox in the resources dialog's CPU tab turns every animation on the page off.
   <details>
 
   Set by the owner on 2026-10-31. Checked at first, it is kept as the user's setting for the next

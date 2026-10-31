@@ -21,6 +21,8 @@ import { viewer3d } from "./viewer3d.js";
 import { pageState } from "./page_state.js";
 import { shape, stackPicture, holds, drawVolume, TURN } from "./stack.js";
 import { PREVIEWS, readPreviews } from "./previews.js";
+import { account, SIGNED_IN } from "./account.js";
+import { settingsDialog } from "./settings_dialog.js";
 import { splitter, SPLIT_PATTERN } from "./split_dialog.js";
 
 const $ = (s) => document.querySelector(s);
@@ -62,12 +64,24 @@ const REPO = "missingbulb/NoRFinder";
 const LOCAL_GT = "Ground truth cannot be sent from local files, only from Google Drive.";
 // the issue form a proposal for a new study is written on
 const STUDY_REQUEST = "new-study.yml";
+// signing in (1.50): these settings follow the user to every device, in their own Google Drive; the rest stay with this one
+const signIn = account({
+  keys: [THEME, TIPS, SEEN_VERSION, MEMORY_TIP, SOURCE, DRIVE_LINK, DRIVE_LINKS, THUMBS, RECENT],
+  menu: $("#user-menu"),
+  clientId: ((window.NOR_CONFIG && window.NOR_CONFIG.google) || {}).clientId || "",
+  applied: () => {
+    let t = null;
+    try { t = localStorage.getItem(THEME); } catch { /* no storage */ }
+    if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+  },
+});
 
 function readJSON(key, fallback = {}) {
   try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
 }
 function writeJSON(key, v) {
   try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* private mode: lasts for this page only */ }
+  signIn.changed(key);
 }
 const sizeText = (n) => (!n ? "0 KB" : n < 1048576 ? `${Math.max(1, Math.round(n / 1024))} KB` : n < 2 ** 30 ? `${(n / 1048576).toFixed(1)} MB` : `${(n / 2 ** 30).toFixed(1)} GB`);
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -538,7 +552,8 @@ function load(src) {
   holdDrive();
   if (!throttled() && NorDrive.parse($("#drive-link").value)?.kind === "folder") $("#drive-go").click();
 }
-$("#load-main").onclick = () => load(readJSON(SOURCE, "local"));
+$("#load-main").onclick = () => { signIn.drive(); load(readJSON(SOURCE, "local")); };
+$("#load-menu summary").addEventListener("click", () => signIn.drive());
 // Unload: no image open, the study starting over as one that has just come in, and Python letting the image go
 $("#unload").onclick = () => {
   if (!st.img || $("#load-main").classList.contains("working")) return;
@@ -914,7 +929,7 @@ async function showSaved() {
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
   [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
-  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off",
+  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off",
 };
 const GROUPS = [
   ["code", "Code kept for the next visit", "Python and its packages, so the page starts without downloading them again."],
@@ -1018,6 +1033,34 @@ async function storageTab(fresh) {
   $("#storage-total").textContent = `This site keeps ${sizeText(total)} on this device` + (est?.quota ? `; the browser allows it up to ${sizeText(est.quota)}.` : ".");
 }
 $("#manage-storage").onclick = () => { $("#user-menu").open = false; usage("storage"); };
+
+// Settings (1.52): the settings that follow the user, as the shell keeps them
+const settings = settingsDialog({
+  dialog: $("#settings-dlg"),
+  fields: () => [
+    { key: THEME, label: "Theme", kind: "choice", raw: true, fallback: "", options: [["", "Follow the system"], ["dark", "Dark"], ["light", "Light"]] },
+    { key: SOURCE, label: "Load reads from", kind: "choice", fallback: "local", options: [["local", "This computer"], ["drive", "Google Drive"]] },
+    { key: THUMBS, label: "Show thumbnails in the Google Drive dialog", kind: "toggle", on: "on", off: "off", fallback: "on" },
+    { key: MEMORY_TIP, label: "Show the low-memory popup", kind: "toggle", on: false, off: true, fallback: false },
+    { key: DRIVE_LINK, label: "Last Google Drive link", kind: "text" },
+    { key: DRIVE_LINKS, label: "Last Google Drive link in each study", kind: "map" },
+    { key: TIPS, label: "Tips you closed (clear one to see it again)", kind: "set" },
+    { key: RECENT, label: "Recent images from Google Drive (clear one to drop it)", kind: "list", name: (r) => (r.path ? `${r.path}/` : "") + r.name },
+    { key: SEEN_VERSION, label: "Version you saw last", kind: "text" },
+  ],
+  get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => {
+    try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* private mode: this page only */ }
+    signIn.changed(k);
+  },
+  where: () => (signIn.signedIn() ? "Kept in your Google Drive, so they follow you to every device." : "Kept on this device only. Sign in with Google to keep them with you."),
+  saved: () => {
+    let t = null;
+    try { t = localStorage.getItem(THEME); } catch { /* no storage */ }
+    if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+  },
+});
+$("#open-settings").onclick = () => { $("#user-menu").open = false; settings.open(); };
 $("#storage-reload").onclick = () => location.reload();
 $("#usage-dlg").addEventListener("close", () => { $("#storage-msg").textContent = ""; if ($("#drive-dlg").open) showSaved(); });
 
@@ -1196,6 +1239,7 @@ $("#theme").onclick = () => {
   const t = theme() === "dark" ? "light" : "dark";
   document.documentElement.dataset.theme = t;
   try { localStorage.setItem(THEME, t); } catch { /* private mode: lasts for this page only */ }
+  signIn.changed(THEME);
 };
 // a dropdown closes when the user clicks anywhere else
 document.addEventListener("click", (e) => { document.querySelectorAll("details.menu[open]").forEach((m) => { if (!m.contains(e.target)) m.open = false; }); });

@@ -1,6 +1,6 @@
 """The vascular study's Python entry (py/vascular.py) returns a z-stack for the shell's 3D viewer: each channel
 flattened (the brightest value over every slice), then every slice, CD31 first, each channel scaled by one window
-over the whole stack (requirements 4.1, 1.48)."""
+over the whole stack (requirements 4.1, 1.49)."""
 import json
 import os
 import sys
