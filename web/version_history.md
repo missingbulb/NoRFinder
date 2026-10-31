@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- Hiding the minimap folds it into its toolbar button, and the button unfolds it again; the left bar's drawers slide open and shut. An Animations checkbox in the CPU tab turns every animation on the page off. (#630)
 - Vascular Measurements opens the draft vessel model drawn for a stack, beside it or over it: drag its points, delete or join pieces, approve or decline faded vessels, keep only the signal near the model (Detected) or away from it (Missed) to find what it missed, draw a missed vessel, and mark damaged areas. Item View shows every junction and vessel as a card, and Submit Ground Truth sends the corrected model. (#620)
 - A new study, Vascular Measurements (rauntruth.com/vascular), opens confocal z-stacks of blood vessels in 3D: drag to turn the stack, switch between Brightest and Surface, colour by depth so crossings at different depths read apart, show only some slices, and switch to 2D for the flattened picture. Each channel's row sets its brightness in both views. (#620)
 - Load from Google Drive opens on each study's own folder, and remembers the last link you pasted in each study separately. (#620)
