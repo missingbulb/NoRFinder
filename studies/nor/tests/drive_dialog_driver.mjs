@@ -75,11 +75,12 @@ await ctx.route("https://www.googleapis.com/**", (route) => {
   // a file's details, as Drive answers them
   if (u.searchParams.get("alt") !== "media")
     return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ id, name: f.name, mimeType: f.mimeType }) });
-  if (q.headers()["range"]) { asked[id].pieces++; return route.fulfill({ status: 403, body: "refused" }); }
+  // a piece, as Drive answers a Range: the page reads a TIFF's header for what it holds (1.36)
+  const range = (q.headers()["range"] || "").match(/^bytes=(\d+)-(\d+)$/);
+  if (range) { asked[id].pieces++; return route.fulfill({ status: 206, headers: cors, contentType: "image/tiff", body: f.bytes.subarray(+range[1], +range[2] + 1) }); }
   asked[id].whole++;
   return route.fulfill({ status: 200, headers: cors, contentType: "image/tiff", body: f.bytes });
 });
-const fromDrive = () => Object.values(asked).reduce((n, a) => n + a.whole + a.pieces, 0);
 await ctx.route((u) => !u.href.startsWith(origin) && !u.href.startsWith("https://www.googleapis.com/"), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; localStorage.setItem("nor-load-source", JSON.stringify("drive")); });
 const page = await ctx.newPage();
@@ -98,7 +99,7 @@ await page.waitForFunction((n) => document.querySelector("#drive-thumbs-note").t
 const pics = await page.$$eval("#drive-list .item .pic", (ps) => ps.map((p) => (p.querySelector("img") ? p.querySelector("img").naturalWidth : 0)));
 console.log("thumbnail widths:", JSON.stringify(pics), "· beside the checkbox:", await page.textContent("#drive-thumbs-note"));
 if (pics[pics.length - 1]) await done(1, "an image the lab's list lacks has a thumbnail");
-if (fromDrive()) await done(1, "thumbnails were read from Drive");
+if (Object.values(asked).some((a) => a.whole)) await done(1, "thumbnails were read from Drive");
 // a colour thumbnail: its three colours differ
 const colour = await page.$eval("#drive-list .item .pic img", (i) => {
   const c = document.createElement("canvas"); c.width = i.naturalWidth; c.height = i.naturalHeight;

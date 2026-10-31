@@ -135,6 +135,7 @@ async function measure(page, [x1, y1], [x2, y2], during) {
   await check(r.pressed === "true" && r.paths === 0, "a click with no drag measures nothing and keeps the ruler armed", r);
 
   await measure(page, [10, 10], [40, 30]);
+  await page.evaluate(() => { document.querySelector("#status").textContent = ""; });
   await page.setInputFiles("#file", image);
   await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded.");
   r = await ruler(page);

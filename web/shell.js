@@ -17,7 +17,8 @@
 // A listener a study adds outside its own panels takes shell.signal, which ends it when the study leaves.
 "use strict";
 import { viewer as viewer2d, GRID } from "./viewer2d.js";
-import { shape, stackPicture, holds } from "./stack.js";
+import { shape, stackPicture, holds, drawVolume, TURN } from "./stack.js";
+import { PREVIEWS, readPreviews } from "./previews.js";
 
 const $ = (s) => document.querySelector(s);
 const VIEWERS = { image2d: viewer2d };
@@ -39,6 +40,8 @@ const RECENT = "nor-drive-recent"; // [{id, name, path}], newest first: images o
 // Cache Storage, + Drive id: an image downloaded from Drive, its file name (URI-encoded) and when it was saved
 // in the headers
 const IMAGES = "nor-images-v1", IMAGE_NAME = "x-nor-name", IMAGE_AT = "x-nor-saved-at";
+// Cache Storage, + Drive folder id: the folder's rauntruth-previews.tiff, its SHA-256 and the folder's name in the headers
+const FOLDER_PREVIEWS = "nor-previews-v1", PREVIEWS_SHA = "x-nor-sha256";
 const SEEN_VERSION = "nor-seen-version"; // the site version the user last saw, to tell them what changed since
 const MEMORY_TIP = "nor-memory-tip-off"; // true: the user asked never to see the low-memory popup again
 // the page's memory with a study's Python loaded (studies/nor/detection/browser/MEMORY.md), and the device
@@ -475,8 +478,10 @@ function driveDialog() {
     // a listing the user has moved on from by the time it arrives is dropped
     const asked = ++listing;
     try {
-      const items = await NorDrive.list(at.id);
+      const all = await NorDrive.list(at.id);
       if (asked !== listing) return;
+      const file = all.find((f) => !f.folder && f.name === PREVIEWS), items = all.filter((f) => f !== file);
+      thumbs.cover(file ? folderPreviews(at, file) : null);
       msg(items.length ? "" : "No TIFF or PNG images here.");
       for (const [k, f] of items.entries()) {
         const b = document.createElement("button"); b.type = "button"; b.className = "item" + (f.folder ? " folder" : "");
@@ -502,6 +507,8 @@ function driveDialog() {
     // rows: the listing's image rows that await a ready-made thumbnail or what the file holds, in the list's
     // order, each {at, row, f, thumb, holds, asked, done}, at its place in the list; epoch: which listing they
     // belong to; dir: the study on show's ready-made thumbnails
+    // asked, done and bytes count the thumbnails, which the note beside the checkbox reports; a header read for
+    // what a file holds is not one
     let ctl = new AbortController(), running = 0, rows = [], epoch = 0, ready, frame = 0, asked = 0, done = 0, bytes = 0, dir = null;
     const put = (pic, url) => { const i = new Image(); i.alt = ""; i.src = url; pic.replaceChildren(i); };
     const tell = () => {
@@ -523,9 +530,9 @@ function driveDialog() {
       frame = 0;
       for (const want = wanted(); running < AT_ONCE && want.length; ) {
         const r = want.shift(), signal = ctl.signal;
-        r.asked = true; running++; asked++;
+        r.asked = true; running++; if (r.thumb) asked++;
         job(r, signal).catch((e) => { if (e.throttled) throttle(); })
-          .finally(() => { if (signal.aborted) return; r.done = true; running--; done++; tell(); next(); });
+          .finally(() => { if (signal.aborted) return; r.done = true; running--; if (r.thumb) done++; tell(); next(); });
       }
       tell();
     };
@@ -537,7 +544,6 @@ function driveDialog() {
       if (r.holds) {
         const buf = await NorDrive.head(r.f.id, HEAD, signal);
         if (signal.aborted) return;
-        bytes += buf.byteLength;
         r.row.querySelector(".shape").textContent = know(r.f.id, shape(buf));
       }
     };
@@ -549,13 +555,25 @@ function driveDialog() {
       tell();
     };
     const reset = () => {
-      stop(); rows = []; epoch++;
+      stop(); rows = []; epoch++; covered = Promise.resolve(null);
       const own = manifest?.driveThumbs ? base + manifest.driveThumbs : null;
       if (own !== dir) { dir = own; ready = null; }
       ready = ready || (dir ? fetch(dir + "index.json").then((r) => r.json()).then((ids) => new Set(ids)).catch(() => new Set()) : Promise.resolve(new Set()));
     };
+    // the folder's previews file, once read; an image it covers is shown from it with no read of its own
+    let covered = Promise.resolve(null);
+    const cover = (p) => { covered = p || Promise.resolve(null); };
+    const fromPreviews = async (pic, e, pv) => {
+      const row = pic.closest(".item");
+      row.querySelector(".shape").textContent = holds({ images: 1, slices: e.slices, channels: e.channels });
+      put(pic, await pv.picture(e));
+      if (e.kind === "stack") turning(row, pic, pv.volume(e));
+    };
     const watch = async (pic, f, at) => {
-      const url = made.get(f.id) || readJSON(SAVED_THUMB + f.id, "") || f.preview, of = epoch;
+      const of = epoch, pv = await covered, e = pv?.entry(f.name, f.sha);
+      if (of !== epoch) return;
+      if (e) return fromPreviews(pic, e, pv);
+      const url = made.get(f.id) || readJSON(SAVED_THUMB + f.id, "") || f.preview;
       if (url) put(pic, url);
       const holds = /\.tiff?$/i.test(f.name) && NorDrive.ready && !(f.id in readJSON(HOLDS)), thumb = !url && (await ready).has(f.id);
       if (of !== epoch || !(thumb || holds)) return;
@@ -563,7 +581,7 @@ function driveDialog() {
     };
     $("#drive-list").addEventListener("scroll", later, { passive: true });
     $("#drive-dlg").addEventListener("close", stop);
-    return { reset, watch, stop, later };
+    return { reset, watch, stop, later, cover };
   })();
   $("#drive-open").onclick = () => chosen && enter(chosen);
   $("#drive-thumbs").checked = readJSON(THUMBS, "on") !== "off";
@@ -640,6 +658,40 @@ function picture(id, name, bytes) {
   if (url) { keepThumb(id, name, url); st.pictured = id; }
 }
 
+// a folder's rauntruth-previews.tiff, read: the copy kept on this device while Drive gives the file the same
+// SHA-256, else downloaded and kept; null when there is none to read
+async function folderPreviews(folder, f) {
+  const url = new URL("drive-previews/" + encodeURIComponent(folder.id), location.href).href;
+  try {
+    const cache = await caches.open(FOLDER_PREVIEWS), kept = await cache.match(url);
+    if (kept && f.sha && kept.headers.get(PREVIEWS_SHA) === f.sha) return readPreviews(await kept.arrayBuffer());
+    if (throttled()) return null;
+    const got = await NorDrive.file(f.id, f.name);
+    await cache.put(url, new Response(new Blob([got.bytes]), { headers: { [PREVIEWS_SHA]: f.sha || "", [IMAGE_NAME]: encodeURIComponent(folder.name) } }));
+    diskBar();
+    return readPreviews(got.bytes);
+  } catch (e) {
+    if (e.throttled) throttle();
+    else console.warn("no previews for this folder:", e);
+    return null;
+  }
+}
+// a stack's row turns its volume while the pointer is over it, and shows its still again after
+function turning(row, pic, volume) {
+  let frame = 0, still = null;
+  row.addEventListener("mouseenter", async () => {
+    const v = await volume, start = performance.now();
+    still = still || pic.firstChild;
+    const spin = (now) => {
+      const cv = drawVolume(v, TURN + ((now - start) / 1000) * (Math.PI / 2));
+      cv.className = "turning"; pic.replaceChildren(cv);
+      frame = requestAnimationFrame(spin);
+    };
+    cancelAnimationFrame(frame); frame = requestAnimationFrame(spin);
+  });
+  row.addEventListener("mouseleave", () => { cancelAnimationFrame(frame); if (still) pic.replaceChildren(still); });
+}
+
 // images downloaded from Drive, kept on this device while Auto-save images is on
 const imageUrl = (id) => new URL("drive-image/" + encodeURIComponent(id), location.href).href;
 async function savedImage(id) {
@@ -710,6 +762,11 @@ async function inventory() {
       const cache = await caches.open(c);
       for (const req of await cache.keys()) {
         const res = await cache.match(req), u = new URL(req.url);
+        if (c === FOLDER_PREVIEWS) {
+          out.thumbs.push({ name: "Previews of " + decodeURIComponent(res.headers.get(IMAGE_NAME) || "a folder"), size: (await res.blob()).size,
+            what: "Google Drive", del: () => cache.delete(req) });
+          continue;
+        }
         if (c === IMAGES) {
           const at = Number(res.headers.get(IMAGE_AT));
           out.files.push({ name: decodeURIComponent(res.headers.get(IMAGE_NAME) || u.pathname.split("/").pop()), size: (await res.blob()).size,
