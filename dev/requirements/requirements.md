@@ -458,6 +458,24 @@ test fold under it. A study's research requirements, which no user sees, stay in
   name while folded. Test: `web-tests/test_left_bar_page.py`, `web-tests/test_study_contract.py`.
   </details>
 
+- `1.42` A folder's `rauntruth-previews.tiff` gives every image it covers a preview at once, a stack turning on hover.
+  <details>
+
+  A Drive folder may hold `rauntruth-previews.tiff`, made by `dev/tools/previews/make_previews.py`
+  on a computer that has the folder's images and uploaded beside them: a multi-page TIFF, its pages
+  deflate-compressed, whose first page's description is a JSON index naming each image, its SHA-256
+  and its pages. A flat image has one colour page; a stack has a mini-volume, one 8-bit page per
+  slice and channel. The dialog never lists the file; when a folder has one it downloads it at
+  once, in one request, and keeps it in the browser until Drive gives the file a different SHA-256.
+  An image the index names with the SHA-256 Drive gives for it now shows its preview and what it
+  holds (`1.36`) with no read of its own: a flat image's colour picture, a stack's mini-volume drawn
+  turned a little, its channels in their own colours, and turning while the pointer is over its row.
+  An image the index lacks, or names with another SHA-256 (it changed since the file was made), is
+  read as without the file (`1.18`, `1.36`). The download waits, like every other, while Drive
+  throttles the site (`1.37`). Manage storage lists each folder's file among the thumbnails. Test:
+  `web-tests/test_drive_previews_page.py`.
+  </details>
+
 ## `2` The repo's checks
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.
