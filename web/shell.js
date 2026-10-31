@@ -66,14 +66,10 @@ const LOCAL_GT = "Ground truth cannot be sent from local files, only from Google
 const STUDY_REQUEST = "new-study.yml";
 // signing in (1.50): these settings follow the user to every device, in their own Google Drive; the rest stay with this one
 const signIn = account({
-  keys: [THEME, TIPS, SEEN_VERSION, MEMORY_TIP, SOURCE, DRIVE_LINK, DRIVE_LINKS, THUMBS, RECENT],
+  keys: [THEME, TIPS, SEEN_VERSION, MEMORY_TIP, SOURCE, DRIVE_LINK, DRIVE_LINKS, THUMBS, RECENT, MOTION],
   menu: $("#user-menu"),
   clientId: ((window.NOR_CONFIG && window.NOR_CONFIG.google) || {}).clientId || "",
-  applied: () => {
-    let t = null;
-    try { t = localStorage.getItem(THEME); } catch { /* no storage */ }
-    if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
-  },
+  applied: () => reapply(),
 });
 
 function readJSON(key, fallback = {}) {
@@ -201,8 +197,12 @@ function showNumber(item, text, spike) {
 // ---------- animations: on unless the user turned them off in the CPU tab, or asks the system for reduced motion ----------
 // Off, the stylesheet stops every animation and transition but the spinners'; motion the page starts itself asks still()
 const motion = $("#motion");
-motion.checked = readJSON(MOTION, true) !== false;
-const showMotion = () => { document.documentElement.dataset.motion = motion.checked ? "on" : "off"; };
+const showMotion = () => {
+  let kept = null;
+  try { kept = localStorage.getItem(MOTION); } catch { /* no storage */ }
+  motion.checked = kept !== "false";
+  document.documentElement.dataset.motion = motion.checked ? "on" : "off";
+};
 showMotion();
 motion.onchange = () => { writeJSON(MOTION, motion.checked); showMotion(); };
 function still() { return !motion.checked || matchMedia("(prefers-reduced-motion: reduce)").matches; }
@@ -1048,6 +1048,7 @@ const settings = settingsDialog({
     { key: DRIVE_LINKS, label: "Last Google Drive link in each study", kind: "map" },
     { key: TIPS, label: "Tips you closed (clear one to see it again)", kind: "set" },
     { key: RECENT, label: "Recent images from Google Drive (clear one to drop it)", kind: "list", name: (r) => (r.study ? `${r.study}: ` : "") + (r.path?.length ? `${r.path.join("/")}/` : "") + r.name },
+    { key: MOTION, label: "Animations", kind: "toggle", on: true, off: false, fallback: true },
     { key: SEEN_VERSION, label: "Version you saw last", kind: "text" },
   ],
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
@@ -1056,12 +1057,15 @@ const settings = settingsDialog({
     signIn.changed(k);
   },
   where: () => (signIn.signedIn() ? "Kept in your Google Drive, so they follow you to every device." : "Kept on this device only. Sign in with Google to keep them with you."),
-  saved: () => {
-    let t = null;
-    try { t = localStorage.getItem(THEME); } catch { /* no storage */ }
-    if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
-  },
+  saved: () => reapply(),
 });
+// the settings that follow the user, drawn again once Drive's or the Settings dialog's have replaced this device's
+function reapply() {
+  let t = null;
+  try { t = localStorage.getItem(THEME); } catch { /* no storage */ }
+  if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+  showMotion(); showRecent();
+}
 $("#open-settings").onclick = () => { $("#user-menu").open = false; settings.open(); };
 $("#storage-reload").onclick = () => location.reload();
 $("#usage-dlg").addEventListener("close", () => { $("#storage-msg").textContent = ""; if ($("#drive-dlg").open) showSaved(); });
