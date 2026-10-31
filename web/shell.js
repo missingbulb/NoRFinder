@@ -1,8 +1,8 @@
 // The page's shell: it runs the study the address names (/<id>, the default at the bare address), and knows
 // none of them; the header's switcher offers the ones the build lists and swaps one in without a reload. What it gives a study, as shell in mount(shell): loading images (from the
 // computer or Google Drive), Python (the study's own, run in worker.js), the viewer the study asks for,
-// the page's state its controls are drawn from (page: get, set, watch(key, fn, {signal})), the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own) and the boxes' titles (boxDone(box, summary) once a box's task is done), notices, the user's saved settings, downloads, ground-truth
-// submission and splitting the image into parts for it (splitImage(), its dialog); and around them the theme, the left bar, foldable boxes, the resources dialog (storage, memory,
+// the page's state its controls are drawn from (page: get, set, watch(key, fn, {signal})), the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own) and the boxes' titles (boxDone(box, summary) once a box's task is done), notices, the user's saved settings, downloads and ground-truth
+// submission; and around them the theme, the left bar, foldable boxes, Preprocessing (Split into parts, and a study's own steps in its slot), the resources dialog (storage, memory,
 // network and CPU) and the version history.
 //
 // The study's hooks, all optional, returned from mount: ready(info) once its Python is loaded;
@@ -1361,6 +1361,9 @@ async function mountStudy(id) {
       $(`slot-here[data-slot-for="${t.dataset.slot}"]`).before(...nodes); mounted.push(...nodes);
     }
   }
+  // Preprocessing comes before the study's own work: it folds once the study's first step is done
+  const first = manifest.phases[0]?.key;
+  if (first) $("#preprocessing-box").dataset.folds = first; else delete $("#preprocessing-box").dataset.folds;
   unfoldFirst(); // before the first paint with them, so they do not fold in view
   view = viewers[manifest.viewer] ||= VIEWERS[manifest.viewer](shell);
   view.channels(manifest.channels);
@@ -1389,10 +1392,9 @@ function leaveStudy() {
 
 const shell = {
   $, state: st, page, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, showImage, boxDone,
-  splitImage: () => splitDialog.open(),
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; },
 };
-const splitDialog = splitter(shell);
+splitter(shell);
 // for the page's tests, which drive it from outside
 window.st = st; window.$ = $; window.shellForTests = { saveThumb, page };
 

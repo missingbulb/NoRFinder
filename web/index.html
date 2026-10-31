@@ -63,6 +63,14 @@
       </div>
     </section>
 
+    <section class="box foldable" id="preprocessing-box" data-opens="load">
+      <div class="sec-head"><h2>Preprocessing</h2></div>
+      <div class="steps">
+        <slot-here data-slot-for="preprocessing"></slot-here>
+        <button id="split-open" type="button" disabled title="Cut the image into 4 or 9 parts, each its own TIFF, to annotate one at a time">Split into parts…</button>
+      </div>
+    </section>
+
     <slot-here data-slot-for="left"></slot-here>
   </aside>
   <div class="gutter" id="gutter-left" title="Drag to resize"></div>

@@ -11,6 +11,7 @@ writes those versions into this file. Releases with no visible change are left o
 
 ## Next release
 - The status bar's numbers roll to each new value like a clock, and the CPU or network flashes when it jumps. The network now shows how fast the page is downloading; its tab still gives the total. (#628)
+- Preprocessing, with Split into parts, is now in every study, the Image Viewer included, right below the image. (#627)
 - Preprocessing has Split into parts: cut a large image into 4 or 9 TIFFs to annotate one at a time. Drag the cut lines, click a part to leave it out, drop channels or slices, name the files, and download them all as one ZIP. Each part keeps the image's scale and colours, and remembers where it lay in the image. (#621)
 - Double click a candidate on the image to open its card in the item views, or double click a card to see it on the image. Long lists of cards open at once, drawing the cards as you scroll to them. Dragging the image from beside a number or the ruler's length no longer selects text. (#617)
 - The left bar's boxes are now drawers stacked in one panel, each numbered and checked off once done. A folded drawer's title says what was done: the image's preview, name and channels, or which finder ran. Algorithms and Post-processing are renamed Processing and Postprocessing, restore defaults sits with the settings, and Add mask sits below Summary's title. The status bar no longer moves on to Submit GT while the Submit Ground Truth button still says something is missing. (#616)

@@ -9,9 +9,6 @@ export function mount(shell) {
   const { $, status, busy, slow, until, readJSON, writeJSON, esc, saveFile } = shell, st = shell.state;
   // a listener outside the study's own panels lasts only while the study is on show
   const here = { signal: shell.signal };
-  // Preprocessing's split, the shell's dialog, on the image open
-  $("#split-open").onclick = () => shell.splitImage();
-  shell.page.watch("image", (im) => { $("#split-open").disabled = !im; }, here);
   const SVGNS = "http://www.w3.org/2000/svg";
   const STORE = "nor-filter-settings-v1"; // {values: {param: number}, off: [filter key]}; only what the user changed
   const MARKS = "nor-marks-v1:"; // + file name + "|" + finder: {"x,y": "in" | "out"}, the user's keepers and removals
