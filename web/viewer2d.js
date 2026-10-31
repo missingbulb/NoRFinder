@@ -131,15 +131,18 @@ export function viewer(shell) {
   // Over the image's corner, a little see-through until the pointer is on it: the whole image, the part in view
   // outlined, and a click or a drag moves the view there. Its header's ^ collapses it to the header, and the
   // same spot, now v, expands it again; the X across the title hides it, and the toolbar's button brings it back.
+  // It shows only while the image is larger than the view.
   // Its mode and opacity are the page's state, kept for the next visit.
   const minimap = (() => {
     const box = $("#minimap"), cv = $("#minimap-canvas"), btn = $("#minimap-btn"), fold = $("#minimap-fold"), range = $("#minimap-opacity");
     const saved = { mode: "open", opacity: 1, ...shell.readJSON(MINIMAP) };
     page.set({ minimap: ["open", "collapsed", "hidden"].includes(saved.mode) ? saved.mode : "open", minimapOpacity: saved.opacity });
     const keep = () => shell.writeJSON(MINIMAP, { mode: page.get("minimap"), opacity: page.get("minimapOpacity") });
+    // the whole image in view leaves nothing to navigate: the minimap waits until it is larger than the view
+    const fits = () => { const sc = $("#scroller"); return st.W * st.zoom <= sc.clientWidth && st.H * st.zoom <= sc.clientHeight; };
     function place() {
       const mode = page.get("minimap");
-      box.hidden = !st.img || mode === "hidden"; box.classList.toggle("collapsed", mode === "collapsed");
+      box.hidden = !st.img || mode === "hidden" || fits(); box.classList.toggle("collapsed", mode === "collapsed");
       btn.setAttribute("aria-pressed", mode !== "hidden");
       fold.ariaLabel = fold.title = mode === "open" ? "Collapse the minimap" : "Expand the minimap";
       view();
@@ -177,6 +180,7 @@ export function viewer(shell) {
     body.addEventListener("pointerdown", (e) => { body.setPointerCapture(e.pointerId); shell.showImage(); go(e); });
     body.addEventListener("pointermove", (e) => { if (body.hasPointerCapture(e.pointerId)) go(e); });
     $("#scroller").addEventListener("scroll", view);
+    addEventListener("resize", place);
     return { draw, view, place };
   })();
 
@@ -192,7 +196,7 @@ export function viewer(shell) {
     svg.style.fontSize = 12 / st.zoom + "px";
     sc.scrollLeft = ix * st.zoom - ax; sc.scrollTop = iy * st.zoom - ay;
     $("#zoom-label").textContent = Math.round(st.zoom * 100) + "%";
-    ruler.draw(); grid.draw(); hooks.zoomed?.(); minimap.view();
+    ruler.draw(); grid.draw(); hooks.zoomed?.(); minimap.place();
   }
   // the whole image in view
   function fit() {
@@ -345,7 +349,7 @@ export function viewer(shell) {
 
   return {
     use(h) { hooks = h || {}; }, channels: setChannels,
-    draw, setZoom, fit, focus, toImage, layer, minimapView: () => minimap.view(), preview, clear, shown, picture,
+    draw, setZoom, fit, focus, toImage, layer, minimapView: () => minimap.place(), preview, clear, shown, picture,
     get overlay() { return $("#overlay"); }, get scroller() { return $("#scroller"); },
   };
 }

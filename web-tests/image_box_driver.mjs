@@ -92,6 +92,9 @@ await check(await visible("#unload"), "an image open: Unload shows");
 await check((await box("#unload")).x > (await box("#load")).x && Math.abs((await box("#unload")).y - (await box("#load")).y) < 4, "Unload stands beside Load");
 await shot("image_box", "#image-box");
 
+await check(!(await visible("#minimap")) && (await page.getAttribute("#minimap-btn", "aria-pressed")) === "true", "the whole image in view: no minimap, nothing to navigate, its button still pressed");
+for (let k = 0; k < 10; k++) await page.click("#zoom-in"); // the fixture is small: as near as it goes, so the view scrolls
+await check(await visible("#minimap"), "zoomed past the view, the minimap shows");
 const mm = await box("#minimap"), sc = await box("#scroller");
 await check(mm && mm.x >= sc.x && mm.y >= sc.y && mm.x + mm.w <= sc.x + sc.w && mm.y + mm.h <= sc.y + sc.h, "the minimap hovers over the image", [mm, sc]);
 await check(mm.x - sc.x < 40 && mm.y - sc.y < 40, "in its top left corner", [mm, sc]);
@@ -102,7 +105,6 @@ await check((await opacity()) === 1, "opaque at first", await opacity());
 await shot("minimap", "#view");
 
 // the view moves where the minimap is clicked
-for (let k = 0; k < 10; k++) await page.click("#zoom-in"); // the fixture is small: as near as it goes, so the view scrolls
 const before = await page.evaluate(() => [document.querySelector("#scroller").scrollLeft, document.querySelector("#scroller").scrollTop]);
 const c = await box("#minimap canvas");
 await page.mouse.click(c.x + c.w * 0.9, c.y + c.h * 0.9);

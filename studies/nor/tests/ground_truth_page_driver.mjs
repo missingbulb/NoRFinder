@@ -73,9 +73,7 @@ async function open(drive) {
     if (u.searchParams.get("alt") === "media") return r.fulfill({ status: 200, headers: { ...headers, "content-length": String(bytes.length) }, body: bytes });
     return r.fulfill({ status: 200, headers, contentType: "application/json", body: JSON.stringify({ name: "corner.tif", mimeType: "image/tiff" }) });
   });
-  // the minimap hidden, as a user would put it away: it hovers over the image's top left corner, where these
-  // checks point and click
-  await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; localStorage.setItem("nor-minimap", JSON.stringify({ mode: "hidden" })); });
+  await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);

@@ -186,7 +186,9 @@ test fold under it. A study's research requirements, which no user sees, stay in
   Set by the owner on 2026-10-31. The minimap (a small picture of the whole image, the part in view
   outlined; never called a thumbnail, which is a file's picture in a list) hovers over the image's top
   left corner, headed "Minimap" and framed by a solid white border that sets it apart from any image;
-  a click or a drag on it moves the view there. A ^ at one end of its header collapses it to the
+  a click or a drag on it moves the view there. It shows only while the image is larger than the view:
+  with the whole image in view there is nothing to navigate, and it would only cover the image's
+  corner. A ^ at one end of its header collapses it to the
   header, and the same spot then shows v, which opens it again, so a second click undoes the first;
   an X at the header's other end hides it. A Minimap button in the toolbar, beside the Grid, shows it
   again or hides it, pressed while it shows; hovering over the button opens a popup choosing how
