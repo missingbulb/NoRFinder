@@ -328,8 +328,9 @@ test fold under it. A study's research requirements, which no user sees, stay in
 - `1.29` Load's dropdown lists the images opened from Google Drive lately, each one click away; the dropdown stays inside the left bar, a long name cut short.
   <details>
 
-  Below this computer and Google Drive, Load's dropdown lists the last 10 images opened from Drive,
-  newest first, each by its name and where it is in Drive (the folders under the link it was opened
+  Below this computer and Google Drive, Load's dropdown lists the last 10 images opened from Drive
+  in the study on show, newest first (set by the owner on 2026-10-31: an image opened in another
+  study is irrelevant here), each by its name and where it is in Drive (the folders under the link it was opened
   from) beside Drive's small logo, as From Google Drive has one, so two files of one name stay apart; an image is one entry however often it is opened.
   Choosing one opens the copy kept on this device (`1.7`), with no download, and downloads it again
   only when none is kept. Images from this computer are not listed: a web page cannot open a file
@@ -637,7 +638,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   Signed in, the avatar is the user's picture, the menu names them and offers Sign out. These
   settings follow the user: dark or light, the tips closed, the version last seen, the low-memory
   popup turned off, where Load reads from, the last Drive link (in each study too), Show thumbnails,
-  and the images opened from Drive lately. These stay with the device: the left bar's width,
+  the images opened from Drive lately, and whether animations are on (`1.54`). These stay with the device: the left bar's width,
   Auto-save images, and everything kept for images. Google's token lasts about an hour and is kept on
   this device for that hour. A new one can be asked for only in the user's own click or key press, so
   once it has run out the page asks only in one that needs Google: a change to a setting that follows
@@ -673,7 +674,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   the theme (follow the system, dark or light); where Load reads from; Show thumbnails in the Drive
   dialog; whether the low-memory popup shows; the last Google Drive link, and the last one in each
   study; the tips closed, each with a tick to clear to see it again; the recent images from Google
-  Drive, each with a tick to clear to drop it; and the version seen last. A line says where they are
+  Drive, each with a tick to clear to drop it; Animations; and the version seen last. A line says where they are
   kept: in the user's Google Drive when signed in, else on this device only. Save writes what changed,
   the theme at once, and when signed in saves the user's settings file; Cancel changes nothing. Test:
   `web-tests/test_account_page.py`.
@@ -694,11 +695,14 @@ test fold under it. A study's research requirements, which no user sees, stay in
 - `1.54` An Animations checkbox in the resources dialog's CPU tab turns every animation on the page off.
   <details>
 
-  Set by the owner on 2026-10-31. Checked at first, it is kept as the user's setting for the next
-  visit. Unchecked, nothing on the page moves to draw the eye: the minimap and the drawers change at
-  once, the photocopier's light does not sweep the image, no button shines or glows, the status
+  Set by the owner on 2026-10-31. Checked at first, it is kept as the user's setting: the next visit
+  opens with it as it was left, and signed in it follows the user (`1.50`). Unchecked, nothing on the
+  page moves to draw the eye: the minimap and the drawers change at once, the photocopier's light
+  does not sweep the image, no button shines or glows (one that would looks plain, with no light or
+  halo frozen on it), the status
   bar's digits change without rolling and a sharp rise does not flash. A spinner still turns, since
-  it is what says the page is working rather than stuck. Test: `web-tests/test_status_bar_page.py`.
+  it is what says the page is working rather than stuck. Test: `web-tests/test_status_bar_page.py`,
+  `web-tests/test_account_page.py`.
   </details>
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.
