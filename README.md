@@ -1,12 +1,13 @@
 # NoRFinder
 
-**Open the site: [rauntruth.com](https://rauntruth.com/)**
+**Open the site: [rauntruth.com](https://rauntruth.com/)**, or go straight to the app:
+[rauntruth.com/app](https://rauntruth.com/app/). The code is under the [MIT License](LICENSE).
 
 A page that turns fluorescence-microscopy images into numbers a researcher can check, and gathers
 their corrections as ground truth. It runs entirely in the browser, and each analysis on it is a
 *study*, picked from the title at the top of the page or opened by its address. The page opens on
 the Image Viewer, which only shows an image; the first study is NoR Finder, at
-[rauntruth.com/nor](https://rauntruth.com/nor).
+[rauntruth.com/app/nor](https://rauntruth.com/app/nor).
 
 ## NoR Finder, the first study
 

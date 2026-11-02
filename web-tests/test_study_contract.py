@@ -7,6 +7,7 @@ import re
 from html.parser import HTMLParser
 
 import pytest
+from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, '..')
@@ -50,6 +51,13 @@ def test_a_study_names_files_that_exist(path):
         assert 0 <= black < white <= 255, c
     if 'driveThumbs' in m:
         assert os.path.isdir(os.path.join(base, m['driveThumbs']))
+    # 1.60: its own tab icon and link-preview poster, published with its page part
+    if 'icon' in m:
+        assert m['icon'].startswith('web/') and m['icon'].endswith('.svg') and os.path.isfile(os.path.join(base, m['icon'])), m['icon']
+    if 'poster' in m:
+        assert m['poster'].startswith('web/') and m['poster'].endswith('.png'), m['poster']
+        im = Image.open(os.path.join(base, m['poster']))
+        assert (im.format, im.size) == ('PNG', (1200, 630)), m['poster']
 
 
 @pytest.mark.parametrize('path', STUDIES, ids=lambda p: os.path.basename(os.path.dirname(p)))

@@ -1530,6 +1530,7 @@ async function mountStudy(id) {
   if (!r.ok) throw new Error(`no study "${id}"`);
   manifest = await r.json();
   document.title = manifest.title; $("#title").textContent = manifest.title; markCurrent();
+  $("#favicon").href = manifest.icon ? base + manifest.icon : new URL("icon.svg", import.meta.url).href;
   $("#file").accept = manifest.files.accept; $("#empty-text").textContent = manifest.files.empty;
   if (manifest.web.style) { css = document.createElement("link"); css.rel = "stylesheet"; css.href = base + manifest.web.style; document.head.append(css); }
   if (manifest.web.panels) {

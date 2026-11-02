@@ -37,15 +37,15 @@ const FILES = { [ROOT]: [{ id: "acmestack00000000001", name: "stack one.tif" }, 
 
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".webmanifest": "application/manifest+json", ".whl": "application/zip" };
 let down = false;
-// as Cloudflare serves the site: /<name> is <name>.html, / is index.html; and an unlisted study's address the page
-// too, as the tests' repo server serves it, so the fixture study runs
+// as Cloudflare serves the site: /<name> is <name>.html, a folder its index.html; and an unlisted study's address in
+// the app the app's page too, as the tests' repo server serves it, so the fixture study runs
 const server = http.createServer((q, r) => {
   if (down) return q.socket.destroy();
   let u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   let f = path.join(site, u);
   if (u.endsWith("/")) f = path.join(f, "index.html");
   else if (!fs.existsSync(f) && fs.existsSync(f + ".html")) f += ".html";
-  else if (/^\/[\w-]+$/.test(u) && fs.existsSync(path.join(site, "studies", u, "study.json"))) f = path.join(site, "index.html");
+  else if (/^\/app\/[\w-]+$/.test(u) && fs.existsSync(path.join(site, "studies", u.slice(5), "study.json"))) f = path.join(site, "app", "index.html");
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream", "content-length": fs.statSync(f).size });
   if (q.method === "HEAD") return r.end();
@@ -82,17 +82,17 @@ const ready = (timeout = 180000) => page.waitForFunction(() => window.st?.ready,
 const statusText = () => page.textContent("#status");
 
 try {
-  await page.goto(origin + "/fixture");
+  await page.goto(origin + "/app/fixture");
   await ready();
   check(true, "the fixture study's Python runs online");
   check(!(await page.$("link[rel=manifest]")), "the page names no app manifest before the user asks for the app (1.56)");
 
   // every file offline.json lists is kept, once the page has run
-  const listed = JSON.parse(fs.readFileSync(path.join(site, "offline.json"))).files.map((f) => f.path);
+  const listed = JSON.parse(fs.readFileSync(path.join(site, "app", "offline.json"))).files.map((f) => f.path);
   const missing = () => page.evaluate(async (paths) => {
     const out = [];
     for (const p of paths) {
-      const u = new URL(p.replace(/(^|\/)index\.html$/, "$1").replace(/\.html$/, ""), location.origin + "/").href;
+      const u = new URL(p.replace(/(^|\/)index\.html$/, "$1").replace(/\.html$/, ""), location.origin + "/app/").href;
       if (!(await caches.match(u))) out.push(p);
     }
     return out;
@@ -105,7 +105,7 @@ try {
   await page.click("#user-menu summary");
   await page.click("#manage-storage");
   await page.waitForFunction(() => document.querySelector("#usage-dlg").open && !/Reading/.test(document.querySelector("#storage-list").textContent));
-  const studies = JSON.parse(fs.readFileSync(path.join(site, "studies.json"))).map((s) => s.id);
+  const studies = JSON.parse(fs.readFileSync(path.join(site, "app", "studies.json"))).map((s) => s.id);
   const offers = await page.$$eval("#storage-list .group[data-group^='study:']", (gs) => gs.map((g) => ({ id: g.dataset.group.slice(6), offer: !!g.querySelector(".make-offline") })));
   check(studies.every((id) => offers.some((o) => o.id === id)) && offers.find((o) => o.id === "vascular").offer && !offers.find((o) => o.id === "fixture"),
     "the Storage tab has a section per listed study, each not all here offering Make available offline: " + JSON.stringify(offers));
@@ -159,7 +159,7 @@ try {
   await ctx.setOffline(true); down = true;
   const reached = await page.evaluate(() => fetch("https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide-lock.json?offline-probe").then(() => true, () => false));
   check(!reached, "offline, nothing the cache lacks is reached, the service worker's own downloads included");
-  await page.goto(origin + "/fixture");
+  await page.goto(origin + "/app/fixture");
   await page.waitForFunction(() => document.querySelector("#title")?.textContent, null, { timeout: 10000 }).catch(() => {});
   check(!!(await page.textContent("#title")), "offline, the page opens at its address: " + (await page.textContent("#title")));
   await ready(60000);
@@ -175,7 +175,7 @@ try {
   check(!(await popup), "offline, Submit New Study Request opens nothing");
   await shot(page, "offline-page");
 
-  await page.goto(origin + "/vascular");
+  await page.goto(origin + "/app/vascular");
   await ready(60000);
   check(true, "offline, the prepared study runs");
   await page.click("#load-menu summary");
@@ -188,7 +188,7 @@ try {
   await page.waitForFunction(() => window.shellForTests.page.get("image")?.name === "stack two.tif", null, { timeout: 60000 }).catch(() => {});
   check((await page.evaluate(() => window.shellForTests.page.get("image")?.name)) === "stack two.tif", "offline, a kept image opens");
 
-  await page.goto(origin + "/nor");
+  await page.goto(origin + "/app/nor");
   await page.waitForFunction(() => /not on this device/i.test(document.querySelector("#status").textContent), null, { timeout: 60000 }).catch(() => {});
   check(/not on this device/i.test(await statusText()), "offline, a study whose Python is not here says so: " + (await statusText()));
 
