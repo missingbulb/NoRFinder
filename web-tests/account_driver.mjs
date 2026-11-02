@@ -117,7 +117,7 @@ const local = (page, k) => page.evaluate((k) => localStorage.getItem(k), k);
 const shot = async (page, name) => { if (shots) await page.screenshot({ path: path.join(shots, name + ".png"), clip: { x: 1000, y: 0, width: 400, height: 260 } }); };
 
 try {
-  // device A: used before, never signed in; it answered the sign-in popup (1.58) and closed its tip
+  // device A: used before, never signed in; it answered the sign-in popup (1.64) and closed its tip
   const answered = { "nor-welcome": JSON.stringify({ choice: "anonymous", remember: true }) };
   const a = await device({ ...answered, "nor-theme": "dark", "nor-tips-closed": JSON.stringify(["recent-files", "sign-in"]), "nor-bars-v1": JSON.stringify({ left: 300 }) });
   await pause(300);

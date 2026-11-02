@@ -64,7 +64,7 @@ Taken on Fable's recommendation unless the owner says otherwise:
 - **Listing:** the study is listed now (owner, 2026-10-31), with the 3D viewer alone; it stays PreGT until
   the model view brings Submit Ground Truth.
 - **D9:** decided once the model view lands here. Until then the old site stays the place to correct
-  vessel models. After that: redirect its page to rauntruth.com/vascular, stop its scheduled
+  vessel models. After that: redirect its page to rauntruth.com/app/vascular, stop its scheduled
   Claudinite runs, and archive the repo.
 
 Conflicts with existing requirements to resolve on the way:

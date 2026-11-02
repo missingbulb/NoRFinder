@@ -1,4 +1,4 @@
-// The sign-in popup on opening the page (requirement 1.58): Sign in with Google or Continue anonymously, the answer
+// The sign-in popup on opening the page (requirement 1.64): Sign in with Google or Continue anonymously, the answer
 // kept when the user ticks Remember this choice. A remembered anonymous choice leaves a tip by the avatar instead.
 // The popup deletes nothing and stops nothing; offline, its Google button is held like every control that needs
 // the network (1.55).

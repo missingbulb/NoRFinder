@@ -20,7 +20,7 @@ export const SIGNED_IN = "nor-google-sign-in";
 // keys: the browser keys whose settings follow the user; applied(): runs once Drive's settings have replaced them
 export function account({ keys, menu, clientId, applied }) {
   const $ = (s) => menu.querySelector(s);
-  // waiting: {ok, fail} of a sign-in the popup is waiting on (1.58)
+  // waiting: {ok, fail} of a sign-in the popup is waiting on (1.64)
   let me = read(), client = null, script = null, saving = null, waiting = null;
   const answered = (how, why) => { const w = waiting; waiting = null; if (w) w[how](why); };
 

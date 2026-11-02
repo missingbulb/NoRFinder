@@ -20,7 +20,7 @@ const MODEL = 'rgba(255,79,216,.75)', ITEM = '#fff';
 const FADED = .4;
 const STATE_TEXT = { vessel: 'Vessel', candidate: 'Low confidence', accepted: 'Approved', rejected: 'Declined' };
 
-let kind = 'junctions', filter = 'all', sort = 'file', items = { junctions: [], vessels: [] }, shown = false, selected = null;
+let kind = 'junctions', filter = 'all', sort = 'open', items = { junctions: [], vessels: [] }, shown = false, selected = null;
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const fmt = (v, d = 1) => (Number.isFinite(v) ? v.toFixed(d) : '–');
 
@@ -56,6 +56,8 @@ function build(m) {
   return { junctions, vessels };
 }
 
+// a card's task is open: a vessel waiting for its verdict, a junction waiting on one of its vessels
+const open = (it) => +(tasks && (kind === 'vessels' ? it.state === 'candidate' : it.pending));
 function visible() {
   let list = items[kind];
   if (kind === 'vessels') {
@@ -64,6 +66,7 @@ function visible() {
     else list = list.filter((v) => v.state !== 'rejected');
   } else if (filter === 'review') list = list.filter((j) => j.pending || j.branches >= 4 || j.crowd);
   const by = {
+    open: (a, b) => open(b) - open(a),
     file: null,
     short: kind === 'vessels' ? (a, b) => a.length - b.length : null,
     wide: kind === 'vessels' ? (a, b) => (b.width ?? -1) - (a.width ?? -1) : null,
@@ -169,7 +172,7 @@ function card(m, it) {
   const el = document.createElement('article'), cv = document.createElement('canvas'), body = document.createElement('div');
   el.className = 'card'; el.tabIndex = 0; body.className = 'card-body';
   const key = kind === 'vessels' ? `v${it.n}` : `j${it.id}`;
-  el.dataset.key = key; el.classList.toggle('on', selected === key);
+  el.dataset.key = key; el.classList.toggle('on', selected === key); el.classList.toggle('task-open', !!open(it));
   const actions = document.createElement('div'); actions.className = 'card-actions';
   if (kind === 'vessels') {
     el.classList.add(`state-${it.state}`);
@@ -209,7 +212,7 @@ function select(key) {
   selected = key;
   for (const c of $('item-list').children) c.classList.toggle('on', c.dataset.key === key);
 }
-let show3d = () => {};
+let show3d = () => {}, count = () => {}, tasks = false;
 
 function render() {
   const m = MV.current(), list = $('item-list');
@@ -218,8 +221,9 @@ function render() {
     b.setAttribute('aria-pressed', String(b.dataset.v === kind));
     b.querySelector('.count').textContent = counts[b.dataset.v];
   }
-  $('items-count').textContent = m ? String(counts.junctions + counts.vessels) : '';
-  $('item-switch').disabled = !m;
+  // the tasks: a verdict on every low-confidence vessel, among every junction and vessel
+  count(m ? items.vessels.filter((v) => v.state === 'candidate').length : null, m ? counts.junctions + counts.vessels : null);
+  $('switch').disabled = !m;
   for (const o of $('item-sort').options) o.hidden = !o.dataset.for.includes(kind);
   if (!$('item-sort').selectedOptions[0] || $('item-sort').selectedOptions[0].hidden) { sort = 'file'; $('item-sort').value = 'file'; }
   for (const o of $('item-filter').options) o.hidden = !o.dataset.for.includes(kind);
@@ -243,8 +247,8 @@ function render() {
   list.parentElement.scrollTop = top;
 }
 
-export function init(view, toThreeD) {
-  V = view; show3d = toThreeD; items = { junctions: [], vessels: [] }; shown = false; selected = null;
+export function init(view, toThreeD, counts, areTasks) {
+  V = view; show3d = toThreeD; count = counts; tasks = areTasks; items = { junctions: [], vessels: [] }; shown = false; selected = null;
   MV.onChange((m) => { items = build(m); render(); });
   $('item-kind').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { kind = b.dataset.v; render(); } });
   $('item-filter').onchange = (e) => { filter = e.target.value; render(); };

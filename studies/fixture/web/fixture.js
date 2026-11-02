@@ -1,5 +1,5 @@
 // The fixture study's page: a threshold, a Count button, the count, and the counted pixels drawn over
-// the image; the count is its ground truth.
+// the image; the count is its ground truth, and checking it is right its one task in the item view.
 export function mount(shell) {
   const $ = shell.$;
   let ready = false, counted = null;
@@ -7,6 +7,8 @@ export function mount(shell) {
     shell.busy(true, "Counting…");
     shell.call("count", { threshold: +$("#fx-threshold").value });
   };
+  const task = (open) => { shell.views.count(open ? 1 : 0, 1); $("#fx-task").classList.toggle("task-open", open && shell.views.tasks); };
+  $("#fx-done").onchange = () => task(!$("#fx-done").checked);
   $("#fx-truth").onclick = () => {
     const name = shell.state.fileName.replace(/\.[^.]*$/, "");
     shell.submitTruth({ doc: { labels: counted ? [counted] : [] }, count: counted ? 1 : 0, file: name + "_gt.json", items: [], issue: { title: "Ground truth: " + name, body: "" },
@@ -16,12 +18,14 @@ export function mount(shell) {
     ready(info) { $("#fx-threshold").value = info.threshold; ready = true; },
     opened() {
       counted = null; $("#fx-count").disabled = !ready; $("#fx-truth").disabled = true;
+      $("#switch").disabled = true; $("#fx-done").disabled = true; $("#fx-done").checked = false; shell.views.count(null);
       $("#fx-result").textContent = "Nothing counted yet."; shell.viewer.layer("fx").replaceChildren();
     },
     result(action, meta, bytes) {
       shell.busy(false);
       counted = { threshold: +$("#fx-threshold").value, count: meta.count };
       $("#fx-result").textContent = `${meta.count} pixels above the threshold`; $("#fx-truth").disabled = false;
+      $("#switch").disabled = false; $("#fx-done").disabled = false; $("#fx-done").checked = false; task(true);
       shell.step("count", true, `${meta.count} pixels above ${counted.threshold}`);
       shell.boxDone($("#fx-box"), `Counted at ${counted.threshold}`);
       const { W } = shell.state, g = shell.viewer.layer("fx");

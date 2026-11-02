@@ -3,6 +3,8 @@
   "title": "NoR Finder",
   "listed": true,
   "stage": "GT",
+  "icon": "web/icon.svg",
+  "poster": "web/poster.png",
   "phases": [
     {
       "key": "find",

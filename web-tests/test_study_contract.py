@@ -7,6 +7,7 @@ import re
 from html.parser import HTMLParser
 
 import pytest
+from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, '..')
@@ -50,14 +51,21 @@ def test_a_study_names_files_that_exist(path):
         assert 0 <= black < white <= 255, c
     if 'driveThumbs' in m:
         assert os.path.isdir(os.path.join(base, m['driveThumbs']))
+    # 1.60: its own tab icon and link-preview poster, published with its page part
+    if 'icon' in m:
+        assert m['icon'].startswith('web/') and m['icon'].endswith('.svg') and os.path.isfile(os.path.join(base, m['icon'])), m['icon']
+    if 'poster' in m:
+        assert m['poster'].startswith('web/') and m['poster'].endswith('.png'), m['poster']
+        im = Image.open(os.path.join(base, m['poster']))
+        assert (im.format, im.size) == ('PNG', (1200, 630)), m['poster']
 
 
 @pytest.mark.parametrize('path', STUDIES, ids=lambda p: os.path.basename(os.path.dirname(p)))
 def test_a_study_names_its_stage_and_steps(path):
     """1.32, 1.33: the stage and the study's own steps are stated, never assumed."""
     m = manifest(path)
-    assert m.get('stage') in ('PreGT', 'GT', 'PostGT'), 'stage: PreGT, GT or PostGT'
-    if m['stage'] != 'PreGT':
+    assert m.get('stage') in ('PreGT', 'GT', 'PostGT', 'Published'), 'stage: PreGT, GT, PostGT or Published'
+    if m['stage'] in ('GT', 'PostGT'):
         assert m.get('groundTruth', {}).keys() >= {'label', 'button'}, 'a study that makes ground truth names its label and button'
     assert isinstance(m.get('phases'), list), 'phases: the study\'s own steps, [] for none'
     keys = [p['key'] for p in m['phases']]

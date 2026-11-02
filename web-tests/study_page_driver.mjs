@@ -5,7 +5,8 @@
 // rewritten to that path; that the bare address opens the Image Viewer, whose empty right bar gives its
 // room to the image; and that the header's switcher lists the studies in STUDIES (the build's list), ticks
 // the one on show, finds one by search, and swaps studies in place: no reload, the open image kept, the
-// leaving study's panels and listeners gone, back and forward too.
+// leaving study's panels and listeners gone, back and forward too; and that the tab's icon is the study's own, or
+// the app's for a study naming none (1.60).
 // Then the same with the real worker (web/worker.js), Pyodide served from the copy installed beside the
 // tests, since the fixture needs none of its packages. Prints what it saw; exits 1 on a failure, 2 when it
 // cannot run.
@@ -72,10 +73,11 @@ try {
   const seen = await page.evaluate(() => ({
     title: document.title, h1: document.querySelector("#title").textContent, threshold: document.querySelector("#fx-threshold").value,
     channels: [...document.querySelectorAll("#channels label")].map((l) => l.textContent), accept: document.querySelector("#file").accept,
-    other: !!document.querySelector("#finder"), path: location.pathname,
+    other: !!document.querySelector("#finder"), path: location.pathname, icon: document.querySelector("#favicon").href,
   }));
   console.log(JSON.stringify(seen));
   if (seen.title !== "Fixture" || seen.h1 !== "Fixture") problems.push("the page does not carry the study's title");
+  if (!seen.icon.endsWith("/studies/fixture/web/icon.svg")) problems.push("the tab's icon is not the study's own: " + seen.icon);
   if (seen.threshold !== "100") problems.push("the study's ready hook did not get its Python's answer");
   if (seen.channels.join() !== "Grey" || seen.accept !== ".png") problems.push("the study's channels or file types are not the page's");
   if (seen.other) problems.push("another study's panels are on the page");
@@ -115,7 +117,7 @@ try {
     file: document.querySelector("#file-name").textContent, fixture: !!document.querySelector("#fx-box, #fx-result"),
     css: [...document.querySelectorAll("link[rel=stylesheet]")].map((l) => l.getAttribute("href")).filter((h) => h.includes("studies/")),
     channels: [...document.querySelectorAll("#channels label")].map((l) => l.textContent).join(),
-    noHelp: !document.querySelector("#channels .help"),
+    noHelp: !document.querySelector("#channels .help"), icon: document.querySelector("#favicon").href,
   }));
   await page.click("#study-menu summary");
   const focused = await page.waitForFunction(() => document.activeElement?.type === "search").then(() => true, () => false);
@@ -128,6 +130,7 @@ try {
   const inViewer = await shown(), alone = await listeners();
   console.log(JSON.stringify(inViewer), "listeners", alone);
   if (!inViewer.stayed) problems.push("switching study reloaded the page");
+  if (!inViewer.icon.endsWith("/web/icon.svg")) problems.push("the Image Viewer, naming no icon, does not show the app's: " + inViewer.icon);
   if (inViewer.path !== "/web/") problems.push("the Image Viewer's address is not the bare one: " + inViewer.path);
   if (inViewer.image !== "80,60" || inViewer.file !== "squares.png") problems.push("the open image did not stay open: " + inViewer.image + " " + inViewer.file);
   if (inViewer.fixture || inViewer.css.length) problems.push("the fixture left its panels or stylesheet behind: " + inViewer.css);
@@ -154,6 +157,7 @@ try {
   console.log(JSON.stringify(inNor), "listeners", await listeners());
   if (!inNor.stayed || inNor.path !== "/web/nor" || inNor.title !== "NoR Finder") problems.push("choosing NoR Finder did not swap it in at /web/nor: " + JSON.stringify(inNor));
   if (inNor.image !== "80,60") problems.push("the image did not open in NoR Finder");
+  if (!inNor.icon.endsWith("/studies/nor/web/icon.svg")) problems.push("switching to NoR Finder did not swap in its icon: " + inNor.icon);
   await page.goBack();
   await page.waitForFunction(() => document.title === "Image Viewer" && !document.querySelector("#finder"));
   const back = await shown(), after = await listeners();

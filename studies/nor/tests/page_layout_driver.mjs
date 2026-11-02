@@ -84,17 +84,24 @@ for (const width of [1000, 1600]) {
     return { sel: box("#selected-box"), view: box("#image-view"), mm: box("#minimap"), crop: box("#selected .crop-wrap canvas, #selected .crop-wrap img"),
       prev: box("#sel-prev"), next: box("#sel-next"), title: document.querySelector("#selected-box h2")?.textContent || "",
       stepIn: !!document.querySelector("#selected .crop-wrap #sel-prev"), right: !!document.querySelector("#right"),
-      gt: document.querySelector("#dl-truth").textContent.trim(), gtLast: tools[tools.length - 1]?.id };
+      gt: document.querySelector("#dl-truth").textContent.trim(), gtShown: !!document.querySelector("#dl-truth").offsetParent };
   });
   console.log(JSON.stringify(layout));
   if (layout.title) await fail("the selected card has a title", layout.title);
   if (Math.abs(layout.sel.r - layout.view.r) > 40 || Math.abs(layout.sel.t - layout.view.t) > 40) await fail("the selected card is not at the image's top right corner", layout);
   if (layout.mm && layout.mm.r > layout.sel.l) await fail("the minimap and the selected card overlap", layout);
   if (!layout.stepIn || layout.prev.b > layout.crop.b + 1 || layout.prev.t < layout.crop.t || layout.next.l < layout.prev.r - 1) await fail("previous and next do not hover side by side over the bottom of the selected crop", layout);
-  if (layout.gt !== "Submit Ground Truth" || layout.gtLast !== "dl-truth") await fail("Submit Ground Truth is not the toolbar's last button", layout);
+  if (layout.gt !== "Submit Ground Truth" || layout.gtShown) await fail("Submit Ground Truth shows in the image view", layout);
   if (layout.right) await fail("the right bar is still there", layout);
   if (process.env.SHOTS) { await page.evaluate(() => { $("#notice").hidden = true; }); await page.mouse.move(5, 5); await page.screenshot({ path: `${process.env.SHOTS}/${width}_image.png` }); }
-  const views = [["image", async () => {}], ["finalists", () => page.click("#switch")], ["rejected", () => page.click("#tab-fail")]];
+  const views = [["image", async () => {}], ["finalists", async () => {
+    await page.click("#switch"); await page.waitForFunction(() => document.querySelector("#view").dataset.view === "items" && document.querySelector("#list .card:not(.stub)"));
+    // the tasks' bar heads the finalists, Submit Ground Truth at its end (1.63)
+    const t = await page.evaluate(() => { const b = document.querySelector("#tasks-bar"), r = (e) => e.getBoundingClientRect(), g = document.querySelector("#dl-truth");
+      return { shown: !!b.offsetParent, text: b.querySelector(".done").textContent, inBar: b.contains(g) && !!g.offsetParent, atEnd: Math.abs(r(g).right - r(b).right) < 40, above: r(b).bottom <= r(document.querySelector("#items-view")).top + 1,
+        open: document.querySelectorAll("#list .card.task-open").length, cards: document.querySelectorAll("#list .card:not(.stub)").length }; });
+    if (!t.shown || !/^\d+ of \d+ done$/.test(t.text) || !t.inBar || !t.atEnd || !t.above || !t.open || t.open !== t.cards) await fail("the tasks' bar does not head the finalists with Submit Ground Truth at its end, every undecided card marked open", t);
+  }], ["rejected", () => page.click("#tab-fail")]];
   for (const [view, go] of views) {
     await go(); await page.waitForFunction(() => !document.querySelector("button.working"));
     // the cards near the view are drawn as the list's observer reports them (3.22)

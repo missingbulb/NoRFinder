@@ -89,7 +89,7 @@ try {
   await page.click('#review-mode [data-v="all"]');
 
   check(await page.isHidden("#vm-truth"), "Submit Ground Truth is not in the image view");
-  await page.click("#item-switch");
+  await page.click("#switch");
   check(await page.isVisible("#vm-truth"), "Submit Ground Truth is in the Item View");
   await page.click("#vm-truth");
   check(await page.evaluate(() => $("#gt-dlg").open && $("#gt-export").disabled), "Submit Ground Truth has nothing to export before a correction");
@@ -111,7 +111,7 @@ try {
     `the export is the corrected model: ${dl.suggestedFilename()}, status ${doc.status}, ${doc.corrections} correction`);
   await page.click("#gt-close");
 
-  await page.click("#item-switch");
+  await page.click("#switch");
   await page.click("#m-undo");
   check(/0 approved/.test(await facts()), "Undo takes the approval back");
 

@@ -1,4 +1,4 @@
-"""1.58: opening the page asks, once, whether to sign in with Google or go on anonymously
+"""1.64: opening the page asks, once, whether to sign in with Google or go on anonymously
 (welcome_driver.mjs, in headless Chromium, against stand-ins for Google's sign-in)."""
 import os
 import shutil

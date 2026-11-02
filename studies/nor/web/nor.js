@@ -47,7 +47,7 @@ export function mount(shell) {
     fails: [], alone: null, forced: new Map(), edits: new Map(), defaults: {}, values: {}, off: new Set(),
     about: {}, detectValues: {}, lastRun: null, filtersFor: null, seq: 0, inflight: false, pending: false,
     added: [], mask: [], lasso: null, numbers: new Map(), order: [], sel: null, tab: "pass",
-    show: { ...SHOW_DEFAULTS, ...readJSON(SHOW) }, opt: readOpts(), sort: { pass: "number", fail: "number", ...readJSON(SORT) }, crops: new Map(),
+    show: { ...SHOW_DEFAULTS, ...readJSON(SHOW) }, opt: readOpts(), sort: { pass: shell.views.tasks ? "verified-last" : "number", fail: "number", ...readJSON(SORT) }, crops: new Map(),
   });
 
   function readOpts() {
@@ -653,7 +653,8 @@ export function mount(shell) {
   function card(c, where) {
     const r = result(c.i), f = c.added ? st.added[c.k].verdict : st.forced.get(c.i), d = document.createElement("div");
     d.className = "card " + (r === null ? "pass" : "fail") + (f === "in" ? " approved" : f === "out" ? " byyou" : "") + (c.added ? " added" : "") +
-      (where === "list" && c.i === st.sel ? " selected" : "");
+      (where === "list" && c.i === st.sel ? " selected" : "") +
+      (shell.views.tasks && r === null && !f ? " task-open" : "");
     d.dataset.i = c.i;
     const state = r === null ? "Finalist" : "Rejected";
     const num = c.added ? `<span class="num added" title="Added by you" aria-label="Added by you, #${numOf(c)}">${ADD_ICON}#${numOf(c)}</span>` : `<span class="num">#${numOf(c)}</span>`;
@@ -929,6 +930,9 @@ export function mount(shell) {
     const b = $("#dl-truth"); b.disabled = !st.img;
     const { state, items } = gtState(), open = items.filter((t) => t.grade && !t.ok);
     b.dataset.state = st.img ? state : "";
+    // the tasks: a verdict on every finalist and every NoR the user added
+    const verdict = (c) => (c.added ? st.added[c.k].verdict : st.forced.get(c.i)), tasks = st.meta ? [...(st.passes || []).filter((c) => !c.added), ...addedCands()] : null;
+    shell.views.count(tasks && tasks.filter((c) => !verdict(c)).length, tasks && tasks.length);
     b.title = (open.length ? open.map((t) => t.text + ".").join(" ") : "Every finalist has your verdict.") + " Click to export or submit.";
     steps();
   }
@@ -1106,16 +1110,14 @@ export function mount(shell) {
   }
 
   // ---------- views ----------
-  function showView(v) {
-    st.view = v; $("#tip").hidden = true;
-    $("#image-view").hidden = v !== "image"; $("#items-view").hidden = v !== "items";
-    $("#view").dataset.view = v;
-    $("#switch").textContent = v === "image" ? "Item View" : "Image View";
+  // the shell's switch shows the view; the cards are built only while the item view shows
+  const showView = (v) => shell.views.show(v);
+  st.view = shell.views.now;
+  shell.views.on((v) => {
+    st.view = v;
     if (v === "items" && st.meta) { renderList(); revealSelected("center"); }
     if (v === "image") { lazy.seen?.disconnect(); lazy.near.clear(); $("#list").replaceChildren(); shell.viewer.minimapView(); }
-  }
-  $("#switch").onclick = () => showView(st.view === "image" ? "items" : "image");
-  showView("image");
+  });
 
   // for the study's page tests, which drive it from outside
   window.nor = { candOf, addedCands, linesOf, showView, decide, numOf, whyAll, result, summaryRows, inMask, fmt, card };
