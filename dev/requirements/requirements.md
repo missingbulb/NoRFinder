@@ -658,8 +658,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
   each one this device changed since it last synced, which is kept and saved over the file's; with no
   file yet, this device's start it. While it has a token,
   each change to a setting that follows the user saves the whole file. Sign out forgets the user and
-  the token on this device and leaves its settings as they are. A visitor who never signs in sees the
-  page as before and loads nothing from Google for it. Test: `web-tests/test_account_page.py`,
+  the token on this device and leaves its settings as they are. A visitor who never signs in is asked
+  once on opening the page (`1.58`) and loads nothing from Google for it. Test: `web-tests/test_account_page.py`,
   `web-tests/test_site_config.py`.
   </details>
 
@@ -769,6 +769,25 @@ test fold under it. A study's research requirements, which no user sees, stay in
   offline carries nothing. Load's recent images carry none: with Auto-save on, they are all kept. Hovering on the mark says what
   it means: the study runs, or the image opens, without the internet. Test:
   `web-tests/test_storage_page.py`.
+  </details>
+
+- `1.58` Opening the page asks, once, whether to sign in with Google or go on anonymously, and remembers the answer if asked to.
+  <details>
+
+  Set by the owner on 2026-11-02. Where the site has a Google client (`1.50`), opening the page
+  fades it behind a popup offering **Sign in with Google** or **Continue anonymously**, with
+  **Remember this choice** below them, unticked. Ticked, the answer stands: signed in, the next
+  visits open signed in with no popup, and anonymously, with no popup either, but a tip beside the
+  avatar suggesting signing in to keep the settings on every device and reach the user's data files
+  as themselves, until closed (`1.52` lists it with the tips). Unticked, the popup comes back on the
+  next visit, signed in or not; there Continue anonymously signs out as the menu's Sign out does,
+  and Sign in with Google goes on as the user signed in. Signing in from the menu counts as a
+  remembered choice; signing out there forgets it. Closing the popup (Escape) changes nothing for
+  this visit. The popup deletes nothing and stops nothing the page is doing, and Google's script is
+  loaded only once the user reaches for its button. Offline (`1.55`) the popup still comes: Sign in
+  with Google is held, as everywhere offline, and a line says signing in can wait until the network
+  is back, from the avatar's menu or the next visit; Continue anonymously works. Test:
+  `web-tests/test_welcome_page.py`.
   </details>
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.

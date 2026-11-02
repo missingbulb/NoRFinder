@@ -119,12 +119,18 @@ export function account({ keys, menu, clientId, applied }) {
     return true;
   };
 
-  $("#sign-in").onclick = () => { if (client) client.requestAccessToken(); };
-  menu.addEventListener("toggle", () => { if (menu.open && clientId && !me) ready(); });
-  $("#sign-out").onclick = () => {
+  // in the user's click: the signed-in user goes on as themselves, asked nothing while their token lasts
+  const signIn = () => {
+    if (!clientId || live()) return;
+    ready().then(() => client?.requestAccessToken(me?.user ? { prompt: "", login_hint: me.user.email } : undefined));
+  };
+  const signOut = () => {
     clearTimeout(saving);
     me = null; keep(); show(); menu.open = false;
   };
+  $("#sign-in").onclick = () => { if (client) client.requestAccessToken(); };
+  menu.addEventListener("toggle", () => { if (menu.open && clientId && !me) ready(); });
+  $("#sign-out").onclick = signOut;
 
   if (!clientId) me = null;
   show();
@@ -146,5 +152,10 @@ export function account({ keys, menu, clientId, applied }) {
     // the user is about to use Google Drive (Load): a token run out is renewed in their click, and the settings sync
     drive() { renew(); },
     signedIn: () => !!(me && me.user),
+    user: () => (me && me.user) || null,
+    offered: !!clientId,
+    // the user is reaching for Sign in: Google's script, so their click can ask at once
+    preload() { if (clientId) ready(); },
+    signIn, signOut,
   };
 }

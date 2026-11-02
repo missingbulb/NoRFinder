@@ -117,8 +117,9 @@ const local = (page, k) => page.evaluate((k) => localStorage.getItem(k), k);
 const shot = async (page, name) => { if (shots) await page.screenshot({ path: path.join(shots, name + ".png"), clip: { x: 1000, y: 0, width: 400, height: 260 } }); };
 
 try {
-  // device A: used before, never signed in
-  const a = await device({ "nor-theme": "dark", "nor-tips-closed": JSON.stringify(["recent-files"]), "nor-bars-v1": JSON.stringify({ left: 300 }) });
+  // device A: used before, never signed in; it answered the sign-in popup (1.58) and closed its tip
+  const answered = { "nor-welcome": JSON.stringify({ choice: "anonymous", remember: true }) };
+  const a = await device({ ...answered, "nor-theme": "dark", "nor-tips-closed": JSON.stringify(["recent-files", "sign-in"]), "nor-bars-v1": JSON.stringify({ left: 300 }) });
   await pause(300);
   check(scriptLoads === 0 && outside.length === 0, "a visitor who never signs in loads nothing from Google");
   check(await a.page.textContent("#who-where") === "On this device, not signed in" && await a.page.isHidden("#sign-out"), "not signed in, the menu says so");
@@ -139,7 +140,7 @@ try {
   await shot(a.page, "account_signed_in");
   check(await until(() => file()?.["nor-theme"] === "dark"), "a first sign-in starts the user's settings file from this device's");
   check(same(drive.file.parents, ["appDataFolder"]), "the file is in the app's hidden folder in the user's Drive");
-  check(file()["nor-tips-closed"] === JSON.stringify(["recent-files"]) && !("nor-bars-v1" in file()),
+  check(file()["nor-tips-closed"] === JSON.stringify(["recent-files", "sign-in"]) && !("nor-bars-v1" in file()),
     "the file holds the settings that follow the user, not the left bar's width");
   await a.page.click("body", { position: { x: 700, y: 500 } });
   await a.page.click("#theme");
@@ -169,7 +170,7 @@ try {
   await a.page.uncheck('#settings-dlg input[name="nor-tips-closed"][value="recent-files"]');
   await a.page.fill('#settings-dlg input[name="nor-drive-link"]', "https://drive.google.com/drive/folders/acmenew");
   await a.page.click("#settings-save");
-  check(await until(() => file()?.["nor-theme"] === "dark" && file()["nor-tips-closed"] === "[]"
+  check(await until(() => file()?.["nor-theme"] === "dark" && file()["nor-tips-closed"] === JSON.stringify(["sign-in"])
     && file()["nor-drive-link"] === JSON.stringify("https://drive.google.com/drive/folders/acmenew")),
     "Save writes what changed and saves the user's settings file");
   check(await a.page.evaluate(() => document.documentElement.dataset.theme === "dark" && !document.querySelector("#settings-dlg").open), "the theme changes at once, and the dialog closes");
@@ -186,7 +187,7 @@ try {
   drive.file.body = JSON.stringify({ ...file(), "nor-motion": "false" });
 
   // device B: its own theme and left bar
-  const b = await device({ "nor-theme": "dark", "nor-bars-v1": JSON.stringify({ left: 400 }) });
+  const b = await device({ ...answered, "nor-tips-closed": JSON.stringify(["sign-in"]), "nor-theme": "dark", "nor-bars-v1": JSON.stringify({ left: 400 }) });
   check(await b.page.evaluate(() => document.documentElement.dataset.theme) === "dark", "a second device starts in its own theme");
   await signInVia(b.page);
   check(await until(() => b.page.evaluate(() => document.documentElement.dataset.theme === "light")), "signing in there brings the user's theme at once");

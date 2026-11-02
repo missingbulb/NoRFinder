@@ -362,7 +362,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 
 .tip-bubble { position: fixed; z-index: 35; display: flex; align-items: flex-start; gap: 4px; max-width: 260px; padding: 8px 6px 8px 10px; background: var(--panel);
   color: var(--text); border: 1px solid var(--accent); border-radius: var(--r-ctl); box-shadow: 0 4px 16px #0004; font-size: 13px; }
-.tip-bubble::before { content: ""; position: absolute; left: 16px; top: -7px; width: 12px; height: 12px; background: var(--panel);
+.tip-bubble::before { content: ""; position: absolute; left: var(--arrow, 16px); top: -7px; width: 12px; height: 12px; background: var(--panel);
   border-left: 1px solid var(--accent); border-top: 1px solid var(--accent); transform: rotate(45deg); }
 .tip-bubble .x { padding: 0 6px; border: 0; background: none; color: var(--dim); font-size: 16px; line-height: 1; cursor: pointer; }
 .tip-bubble .x:hover { color: var(--text); }
@@ -403,9 +403,9 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 @media (prefers-reduced-motion: reduce) { #busy.scan #scan-light { animation-duration: 8s; } }
 
 /* the Google Drive dialog */
-#drive-dlg, #memory-dlg, #history-dlg, #usage-dlg, #split-dlg, #settings-dlg, #offline-dlg { width: min(640px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
+#drive-dlg, #memory-dlg, #history-dlg, #usage-dlg, #split-dlg, #settings-dlg, #offline-dlg, #welcome-dlg { width: min(640px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
   border: 1px solid var(--line); border-radius: var(--r-panel); box-shadow: 0 12px 40px #0006; }
-#drive-dlg::backdrop, #memory-dlg::backdrop, #history-dlg::backdrop, #usage-dlg::backdrop, #split-dlg::backdrop, #settings-dlg::backdrop, #offline-dlg::backdrop { background: #0007; }
+#drive-dlg::backdrop, #memory-dlg::backdrop, #history-dlg::backdrop, #usage-dlg::backdrop, #split-dlg::backdrop, #settings-dlg::backdrop, #offline-dlg::backdrop, #welcome-dlg::backdrop { background: #0007; }
 .drive-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
 .drive-row.end { justify-content: space-between; }
 #drive-link { flex: 1; min-width: 0; }
@@ -665,3 +665,10 @@ html.offline [data-needs-network] { opacity: .45; cursor: not-allowed; }
 .offline-mark:hover { color: var(--text); }
 #storage-list .group > summary .title { display: inline-flex; align-items: center; }
 #storage-list .entry .del-none { width: 22px; }
+
+/* the sign-in popup on opening the page (1.58) */
+#welcome-dlg { width: min(420px, calc(100vw - 32px)); }
+#welcome-dlg h2 { margin: 0 0 6px; }
+#welcome-dlg .welcome-choices { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+#welcome-dlg .welcome-choices button { padding: 8px 12px; }
+html:not(.offline) #welcome-offline { display: none; }
