@@ -1,4 +1,4 @@
-"""1.1, 1.2: the shell knows no study, and a study is a folder whose study.json names everything the
+"""req/shell/study/knows-none, req/shell/study/folder-and-address: the shell knows no study, and a study is a folder whose study.json names everything the
 shell needs. The shell running a study is test_study_runs.py."""
 import glob
 import json
@@ -51,7 +51,7 @@ def test_a_study_names_files_that_exist(path):
         assert 0 <= black < white <= 255, c
     if 'driveThumbs' in m:
         assert os.path.isdir(os.path.join(base, m['driveThumbs']))
-    # 1.60: its own tab icon and link-preview poster, published with its page part
+    # req/shell/site/icons: its own tab icon and link-preview poster, published with its page part
     if 'icon' in m:
         assert m['icon'].startswith('web/') and m['icon'].endswith('.svg') and os.path.isfile(os.path.join(base, m['icon'])), m['icon']
     if 'poster' in m:
@@ -62,7 +62,7 @@ def test_a_study_names_files_that_exist(path):
 
 @pytest.mark.parametrize('path', STUDIES, ids=lambda p: os.path.basename(os.path.dirname(p)))
 def test_a_study_names_its_stage_and_steps(path):
-    """1.32, 1.33: the stage and the study's own steps are stated, never assumed."""
+    """req/shell/study/stage, req/shell/status-bar/breadcrumbs: the stage and the study's own steps are stated, never assumed."""
     m = manifest(path)
     assert m.get('stage') in ('PreGT', 'GT', 'PostGT', 'Published'), 'stage: PreGT, GT, PostGT or Published'
     if m['stage'] in ('GT', 'PostGT'):
@@ -98,7 +98,7 @@ class Boxes(HTMLParser):
 
 
 def test_every_studys_boxes_name_the_steps_that_open_and_fold_them():
-    """1.41: every foldable box of a study says when it opens (a step, or user: only its title), never left to a default."""
+    """req/shell/left-bar/folding: every foldable box of a study says when it opens (a step, or user: only its title), never left to a default."""
     seen = 0
     for path in STUDIES:
         m = manifest(path)

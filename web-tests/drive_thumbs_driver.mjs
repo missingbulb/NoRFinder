@@ -1,6 +1,6 @@
 // Drives the Google Drive dialog (web/) in headless Chromium against a stand-in Drive API listing a folder of
 // N images and a slow subfolder, with a stand-in driveThumbs set whose thumbnail for row k is k + 1 pixels wide,
-// so a thumbnail in the wrong row shows. Checks 1.18: thumbnails are fetched for the rows in view and the next
+// so a thumbnail in the wrong row shows. Checks req/shell/drive/dialog: thumbnails are fetched for the rows in view and the next
 // 10, each landing in its own row whatever order they arrive in; a fast scroll skips the rows passed over; a
 // stale folder listing never shows; closing stops the fetches and reopening shows those already fetched at once
 // and fetches what the rows in view still lack.

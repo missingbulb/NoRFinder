@@ -1,4 +1,4 @@
-"""1.48: splitting an image into parts (web/split.js), run under Node (split_driver.mjs) on TIFFs written by
+"""req/shell/preprocessing/split: splitting an image into parts (web/split.js), run under Node (split_driver.mjs) on TIFFs written by
 tifffile and Pillow, every part read back with tifffile: its pixels the crop of the image, and what the image's
 file said (scale, colours, names, display ranges, slice spacing) kept, with the record of where the part lay."""
 import json

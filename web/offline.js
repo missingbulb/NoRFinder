@@ -1,12 +1,12 @@
-// Working without the internet. Offline by default (requirement 1.55): the service worker keeps the site's copy,
+// Working without the internet. Offline by default (req/shell/offline/default): the service worker keeps the site's copy,
 // which keepSite() brings up to the release now published; with no network the page says Offline in the status
 // bar, and each control marked data-needs-network says so and does nothing. No network is the browser saying so,
 // or the site not answering: a plane's Wi-Fi with no internet beyond it leaves the browser saying it is online.
-// Making a study available offline (1.56), from the Storage tab: a popup of what the study's Python and the images
+// Making a study available offline (req/shell/offline/per-study), from the Storage tab: a popup of what the study's Python and the images
 // in its Google Drive folder take, beside the room left and the time at this session's speeds, then the download;
 // and Install as an app, at the top of the tab.
 // deps: $, esc, sizeText; drive, the Drive module; kept(id), whether an image is kept on this device;
-// keep(id, name, bytes, {path, study}), keeping one; throttled() and throttle(), Google's wait (1.37); stored(),
+// keep(id, name, bytes, {path, study}), keeping one; throttled() and throttle(), Google's wait (req/shell/drive/throttle); stored(),
 // once something is kept; showStorage(), opening the Storage tab.
 import { CORE, packagesOf } from "./python_files.js";
 import { PREVIEWS } from "./previews.js";
@@ -14,7 +14,7 @@ import { PREVIEWS } from "./previews.js";
 // the browser key that says the user asked for the app, so the page names its manifest from then on
 export const APP_ASKED = "nor-app-asked";
 
-// The quiet mark of what is available offline (requirement 1.57): a study whose Python is all on this device, or an
+// The quiet mark of what is available offline (req/shell/offline/mark): a study whose Python is all on this device, or an
 // image kept on it; hovering on it says what that means.
 const SAYS = {
   study: "Available offline: this study's Python is on this device, so the study runs without the internet.",

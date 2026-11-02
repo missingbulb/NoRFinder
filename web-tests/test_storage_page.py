@@ -1,4 +1,4 @@
-"""1.6: the avatar's Manage storage dialog lists, and clears, what this device keeps
+"""req/shell/storage/manage: the avatar's Manage storage dialog lists, and clears, what this device keeps
 (storage_driver.mjs, in headless Chromium)."""
 import os
 import shutil

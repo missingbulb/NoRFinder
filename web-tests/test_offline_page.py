@@ -1,4 +1,4 @@
-"""1.55, 1.56: the built site opens and runs offline, and Prepare for offline keeps the app, the studies' Python
+"""req/shell/offline/default, req/shell/offline/per-study: the built site opens and runs offline, and Prepare for offline keeps the app, the studies' Python
 and their data the user chooses (offline_driver.mjs, in headless Chromium with the real worker and the real
 Pyodide from its CDN, which a stand-in could not prove kept: what is cached is what the worker really fetched)."""
 import os

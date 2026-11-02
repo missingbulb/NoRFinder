@@ -1,4 +1,4 @@
-"""1.48: the shell's Preprocessing drawer and its Split into parts, on the Image Viewer, a study with nothing of its
+"""req/shell/preprocessing/split: the shell's Preprocessing drawer and its Split into parts, on the Image Viewer, a study with nothing of its
 own, in headless Chromium with a stand-in worker
 (split_page_driver.mjs): the dialog's grid, lines, parts left out, channels, slices and file names, then the ZIP
 it downloads, each part read back with tifffile as the crop of the image the dialog showed."""

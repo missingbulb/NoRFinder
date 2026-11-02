@@ -1,4 +1,4 @@
-"""1.13, 1.32–1.35: the status bar, its stage, its breadcrumbs and the buttons they make shine, its memory
+"""req/shell/status-bar, req/shell/study/stage, req/shell/status-bar/breadcrumbs, req/shell/status-bar/memory, req/shell/status-bar/disk: the status bar, its stage, its breadcrumbs and the buttons they make shine, its memory
 popup and its disk, on the fixture study in headless Chromium with a stand-in worker (status_bar_driver.mjs)."""
 from test_study_runs import NODE, answers, png, run  # noqa: F401  (fixtures)
 import pytest

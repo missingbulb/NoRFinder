@@ -1,4 +1,4 @@
-"""1.28: the Image Viewer shows any TIFF or PNG one plane per channel, with the names and colours the file
+"""req/shell/image-viewer: the Image Viewer shows any TIFF or PNG one plane per channel, with the names and colours the file
 gives its channels, and says what the file says about the image.
 
 Run: python3 -m pytest studies/viewer/tests

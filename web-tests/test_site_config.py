@@ -1,4 +1,4 @@
-"""1.18, 1.50 — the deploy's repository variables reach the page through web/config.js.
+"""req/shell/drive/dialog, req/shell/account/sign-in — the deploy's repository variables reach the page through web/config.js.
 
 Run: python3 web-tests/test_site_config.py
 """

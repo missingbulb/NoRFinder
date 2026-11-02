@@ -1,5 +1,5 @@
 // Drives the page (web/) in headless Chromium with a stand-in worker that answers from ANSWERS (written by
-// tests/test_memory.py), each answer late as on a slow computer, and checks 1.21's kindness to slow computers:
+// tests/test_memory.py), each answer late as on a slow computer, and checks req/shell/waiting/slow-computers's kindness to slow computers:
 // a button whose action takes a while is held, with a spinner, until the action is done; the low-memory popup
 // shows on a computer reporting little memory and not on one with plenty, stays away once the user asks, and
 // shows whenever the page runs out of memory; the status bar shows the memory in use. Optional SHOTS: a directory for screenshots.
@@ -74,7 +74,7 @@ async function open(gb) {
 }
 const held = (page, id) => page.evaluate((id) => { const b = $(id); return b.disabled && b.classList.contains("working"); }, id);
 const free = (page, id) => page.waitForFunction((id) => !$(id).classList.contains("working") && !$(id).disabled, id);
-// a box folded with the steps (1.38), opened by its title as the user would
+// a box folded with the steps (req/shell/tools/ruler), opened by its title as the user would
 const unfold = async (page, box) => { await page.evaluate((b) => { const e = $(b); if (e.classList.contains("folded")) e.querySelector(".sec-head h2").click(); }, box); await page.waitForFunction(() => !document.documentElement.hasAttribute("data-drawers")); };
 
 // ---- plenty of memory: no popup; slow buttons are held until their action is done ----

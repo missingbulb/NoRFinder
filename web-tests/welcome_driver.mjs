@@ -1,5 +1,5 @@
 // Drives the page (web/) in headless Chromium against stand-ins for Google's sign-in script and account details,
-// and checks 1.64: where the site has a Google client, opening the page fades it behind a popup offering Sign in
+// and checks req/shell/account/welcome: where the site has a Google client, opening the page fades it behind a popup offering Sign in
 // with Google or Continue anonymously, with Remember this choice unticked; unticked, the popup comes back on the
 // next visit, signed in or not, and there Continue anonymously signs out; ticked, signed in opens signed in with no
 // popup, and anonymously opens with no popup but a tip beside the avatar, until closed; signing out from the menu

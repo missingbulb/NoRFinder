@@ -1,5 +1,5 @@
 // Drives a browser that ran the app at the site's top, with its service worker registered there (OLD_SW, the
-// worker as it was), then the built site (SITE), and checks 1.27: the first visit to / shows the landing page and
+// worker as it was), then the built site (SITE), and checks req/shell/site/app-address: the first visit to / shows the landing page and
 // ends that registration, and /app/ registers its own.
 // Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/old_worker_driver.mjs SITE OLD_SW

@@ -127,7 +127,7 @@ const offAxis = (L) => {
   return Math.max(...L.red.map((p) => Math.abs((B[0] - A[0]) * (A[1] - p[1]) - (A[0] - p[0]) * (B[1] - A[1])) / n));
 };
 
-// a box folded with the steps (1.38), opened by its title as the user would
+// a box folded with the steps (req/shell/tools/ruler), opened by its title as the user would
 const unfold = async (page, box) => { await page.evaluate((b) => { const e = $(b); if (e.classList.contains("folded")) e.querySelector(".sec-head h2").click(); }, box); await page.waitForFunction(() => !document.documentElement.hasAttribute("data-drawers")); };
 async function markAndVote(page) {
   await unfold(page, "#finder-box");
@@ -215,7 +215,7 @@ async function sorting(page) {
     await check(JSON.stringify(choices) === JSON.stringify(["number", "verified-first", "verified-last", ...(fail ? ["filters"] : [])]),
       `the ${fail ? "rejected" : "finalists"} sort by ${choices.join(", ")}`);
     let L = await shown();
-    // the finalists are tasks: open ones first, then by number (1.63); the rejected by number
+    // the finalists are tasks: open ones first, then by number (req/shell/views/submit-task); the rejected by number
     const want = fail ? "number" : "verified-last", openFirst = (xs) => up(xs.map((c) => +c.v)) && [0, 1].every((v) => byNum(xs.filter((c) => +c.v === v)));
     await check(await page.$eval("#sort", (s) => s.value) === want && (fail ? byNum(L) : openFirst(L)) && L.length > 2, `${fail ? "by number" : "open tasks first"} by default`);
     L = await sortBy("verified-first");
@@ -236,7 +236,7 @@ async function sorting(page) {
 
 // the popup the Ground truth button opens: its text, and the file its Export button downloads
 async function popup(page) {
-  // Submit Ground Truth heads the tasks (1.63)
+  // Submit Ground Truth heads the tasks (req/shell/views/submit-task)
   const was = await page.evaluate(() => st.view);
   if (was !== "items") { await page.click("#switch"); await idle(page); }
   await page.click("#dl-truth");

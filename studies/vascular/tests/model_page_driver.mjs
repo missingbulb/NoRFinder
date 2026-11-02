@@ -1,5 +1,5 @@
 // Drives the vascular study's page (web/) in headless Chromium against a stand-in worker that opens a drawn stack
-// under the name of a stack the study ships a draft model for, so the real draft opens with it. Checks 4.3 to 4.5:
+// under the name of a stack the study ships a draft model for, so the real draft opens with it. Checks req/vascular/model/correct, req/vascular/model/cards and req/vascular/model/ground-truth:
 // the draft opens side by side and goes over the stack; Detected keeps only the signal near the model; Item View
 // shows its cards and approves a low-confidence vessel from one; Submit Ground Truth stays off until the model carries
 // a correction and then exports the corrected model, from the Item View only; undo takes the approval back; the model's canvas leaves the 3D

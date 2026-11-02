@@ -6,7 +6,7 @@
 // room to the image; and that the header's switcher lists the studies in STUDIES (the build's list), ticks
 // the one on show, finds one by search, and swaps studies in place: no reload, the open image kept, the
 // leaving study's panels and listeners gone, back and forward too; and that the tab's icon is the study's own, or
-// the app's for a study naming none (1.60).
+// the app's for a study naming none (req/shell/site/icons).
 // Then the same with the real worker (web/worker.js), Pyodide served from the copy installed beside the
 // tests, since the fixture needs none of its packages. Prints what it saw; exits 1 on a failure, 2 when it
 // cannot run.

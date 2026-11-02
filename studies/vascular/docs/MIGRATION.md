@@ -69,6 +69,6 @@ Taken on Fable's recommendation unless the owner says otherwise:
 
 Conflicts with existing requirements to resolve on the way:
 
-- The MicroViewer's right bar has to move into the left slots (1.11).
-- Requirement 1.3 promises a lasso that viewer2d does not own.
-- The study-words test (1.1) must learn this study's words.
+- The MicroViewer's right bar has to move into the left slots (req/shell/left-bar/width).
+- req/shell/study/viewer-choice promises a lasso that viewer2d does not own.
+- The study-words test (req/shell/study/knows-none) must learn this study's words.

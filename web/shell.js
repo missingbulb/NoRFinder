@@ -68,7 +68,7 @@ const REPO = "missingbulb/NoRFinder";
 const LOCAL_GT = "Ground truth cannot be sent from local files, only from Google Drive.";
 // the issue form a proposal for a new study is written on
 const STUDY_REQUEST = "new-study.yml";
-// signing in (1.50): these settings follow the user to every device, in their own Google Drive; the rest stay with this one
+// signing in (req/shell/account/sign-in): these settings follow the user to every device, in their own Google Drive; the rest stay with this one
 const FOLLOWS = [THEME, TIPS, SEEN_VERSION, MEMORY_TIP, SOURCE, DRIVE_LINK, DRIVE_LINKS, THUMBS, RECENT, MOTION];
 const signIn = account({
   keys: FOLLOWS,
@@ -732,7 +732,7 @@ function driveDialog() {
     $("#drive-list").querySelectorAll(".item").forEach((e) => e.setAttribute("aria-selected", e === b));
   };
   const enter = (f) => (f.folder ? (trail.push(f), show()) : f.kept ? take(f.id, f.name, f.path, undefined, true) : take(f.id, f.name, trail.slice(1).map((t) => t.name), f.sha));
-  // offline, in place of a Drive folder: the images kept on this device, the study's own first (1.55)
+  // offline, in place of a Drive folder: the images kept on this device, the study's own first (req/shell/offline/default)
   showKept = async () => {
     thumbs.stop(); trail = []; choose(null);
     $("#drive-path").textContent = "You are offline: the images kept on this device"; $("#drive-list").replaceChildren();
@@ -1023,8 +1023,8 @@ const OWN_SETTINGS = {
   [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
   [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page",
 };
-// What the site keeps, by what it takes to work offline (1.6): a section per study, then what they share; settings
-// apart, which Settings keeps (1.52), and with them what nobody names. An entry: {kind, name, what, size, del, held, ask}, del
+// What the site keeps, by what it takes to work offline (req/shell/storage/manage): a section per study, then what they share; settings
+// apart, which Settings keeps (req/shell/account/settings), and with them what nobody names. An entry: {kind, name, what, size, del, held, ask}, del
 // absent for what cannot go alone. Kinds in a section's order:
 const KINDS = ["site", "python", "code", "image", "thumb", "selections", "other"];
 const SHARED_ABOUT = "The site itself, so it opens offline; Python itself; and the packages two studies or more use.";
@@ -1182,7 +1182,7 @@ function deviceSettings() {
     return label && { key: k, label, size: sizeText(bytesOf(k)) };
   }).filter(Boolean).sort((a, b) => a.label.localeCompare(b.label));
 }
-// Settings (1.52): the settings that follow the user, as the shell keeps them, and those kept on this device only
+// Settings (req/shell/account/settings): the settings that follow the user, as the shell keeps them, and those kept on this device only
 const settings = settingsDialog({
   dialog: $("#settings-dlg"),
   fields: () => [
@@ -1625,7 +1625,7 @@ const shell = {
 splitter(shell);
 const offlineCopy = offline({ $, esc, sizeText, drive: NorDrive, throttled, throttle, stored: () => diskBar(), showStorage: () => usage("storage"),
   kept: async (id) => !!(await caches.open(IMAGES).then((c) => c.match(imageUrl(id)), () => null)), keep: saveImage });
-// the sign-in popup on opening the page (1.64); the menu's Sign in and Sign out answer it too
+// the sign-in popup on opening the page (req/shell/account/welcome); the menu's Sign in and Sign out answer it too
 const welcomed = welcome({ dialog: $("#welcome-dlg"), account: signIn, avatar: $("#user-menu summary"), tip });
 $("#sign-in").addEventListener("click", () => { welcomed.chose(); closeTip("sign-in"); });
 $("#sign-out").addEventListener("click", () => welcomed.forgot());

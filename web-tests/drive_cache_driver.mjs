@@ -1,9 +1,9 @@
 // Drives the Google Drive dialog (web/) in headless Chromium against a stand-in Drive API whose files' bytes can
-// change, and which gives each file's SHA-256 only where a request's fields ask for it, as Drive does. Checks 1.7:
+// change, and which gives each file's SHA-256 only where a request's fields ask for it, as Drive does. Checks req/shell/drive/kept-images:
 // a recent image opens from this device with no call to Drive; one chosen from Drive, in the list or by its link,
 // opens from this device once its SHA-256 matches Drive's (the listing's, or the file's details for a link); one
 // changed on Drive is downloaded again and kept in place of the old; with no SHA-256 from Drive it is downloaded,
-// and with none to be had it does not open from this device. Then 1.39: opening a kept image from the dialog shows
+// and with none to be had it does not open from this device. Then req/shell/load/recents-tip: opening a kept image from the dialog shows
 // a tip at Load's dropdown arrow; its × closes it for good, after a reload too, and opening the dropdown does too.
 // Optional SHOTS: a directory for a screenshot. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/drive_cache_driver.mjs [SHOTS]
@@ -116,7 +116,7 @@ try {
   await page.waitForFunction(async () => (await (await caches.open("nor-images-v1")).keys()).length === 1);
   check(downloads() === 1 && (await tip()) === null, "a first open downloads the image, and shows no tip");
 
-  // ---- 1.7 ----
+  // ---- req/shell/drive/kept-images ----
   calls.length = 0;
   await fromDialog(); await settle();
   check(downloads() === 0 && !calls.includes("details"), `kept, and matching the listing's SHA-256, it opens from this device with no further request: ${calls}`);
@@ -171,7 +171,7 @@ try {
   check(calls.length === 0, `from the recents it still opens from this device, with no call to Drive: ${calls}`);
   checksums = true;
 
-  // ---- 1.39 ----
+  // ---- req/shell/load/recents-tip ----
   // opening the recents above closed the tip for good; start again
   check((await page.evaluate(() => JSON.parse(localStorage.getItem("nor-tips-closed")) || [])).includes("recent-files"), "opening the recents has closed the tip for good");
   await page.evaluate(() => localStorage.removeItem("nor-tips-closed"));

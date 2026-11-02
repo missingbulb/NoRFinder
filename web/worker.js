@@ -84,7 +84,7 @@ study = importlib.import_module(entry)
 }
 
 // a download the network did not answer (a fetch or an import fails with a TypeError then, an answer that is
-// an error comes as an Error): what the page cannot run until it is back (requirement 1.55)
+// an error comes as an Error): what the page cannot run until it is back (req/shell/offline/default)
 const NOT_HERE = "This study's Python is not on this device, and the internet cannot be reached. Open the study once online, or use Make available offline in Manage storage.";
 // once one fails, the others still arriving say nothing over its error
 const offline = (p) => p.catch((e) => { stage = null; throw navigator.onLine && !(e instanceof TypeError) ? e : new Error(NOT_HERE); });

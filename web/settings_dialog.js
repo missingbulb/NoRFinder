@@ -1,4 +1,4 @@
-// The Settings dialog (1.52): every setting that follows the user, each with a control, saved together. It knows the
+// The Settings dialog (req/shell/account/settings): every setting that follows the user, each with a control, saved together. It knows the
 // settings only as the fields the shell hands it: {key, label, kind, ...}, kind one of
 //   choice  options [[value, label]], fallback: a select;           toggle  on, off, fallback, label: a checkbox;
 //   text    a text box, empty forgets it;                           map     {name: text}: a text box per name;

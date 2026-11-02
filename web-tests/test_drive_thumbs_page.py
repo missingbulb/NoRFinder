@@ -1,4 +1,4 @@
-"""1.18: the Google Drive dialog fetches thumbnails for the rows in view and the next 10, in order,
+"""req/shell/drive/dialog: the Google Drive dialog fetches thumbnails for the rows in view and the next 10, in order,
 across fast scrolls and reopening (drive_thumbs_driver.mjs, in headless Chromium)."""
 import os
 import shutil
