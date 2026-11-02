@@ -589,10 +589,16 @@ function tip(id, anchor, text) {
     document.body.append(t);
   }
   t.querySelector("span").textContent = text;
-  const r = anchor.getBoundingClientRect(), left = Math.max(8, Math.min(r.left + r.width / 2 - 22, innerWidth - t.offsetWidth - 8));
+  tipAnchors.set(t, anchor); placeTip(t);
+}
+// each open tip's anchor, so a tip follows it when the window resizes
+const tipAnchors = new Map();
+function placeTip(t) {
+  const r = tipAnchors.get(t).getBoundingClientRect(), left = Math.max(8, Math.min(r.left + r.width / 2 - 22, innerWidth - t.offsetWidth - 8));
   t.style.left = left + "px"; t.style.top = r.bottom + 10 + "px";
   t.style.setProperty("--arrow", r.left + r.width / 2 - left - 6 + "px");
 }
+addEventListener("resize", () => { for (const t of tipAnchors.keys()) if (t.isConnected) placeTip(t); else tipAnchors.delete(t); });
 function closeTip(id) {
   const t = document.querySelector(`.tip-bubble[data-tip="${id}"]`);
   if (!t) return;

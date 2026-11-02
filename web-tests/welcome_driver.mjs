@@ -29,7 +29,11 @@ const GSI = "https://accounts.google.com/gsi/client";
 let clientId = "acme-client.apps.googleusercontent.com";
 const SCRIPT = `window.google = { accounts: { oauth2: { initTokenClient(o) {
   window.tokenClient = { asked: [] };
-  return { requestAccessToken(opts) { window.tokenClient.asked.push(opts || {}); setTimeout(() => o.callback({ access_token: "tok", expires_in: 3599 })); } };
+  return { requestAccessToken(opts) {
+    window.tokenClient.asked.push(opts || {});
+    const answer = window.googleAnswer || "token";
+    setTimeout(() => answer === "cancel" ? o.callback({ error: "access_denied" }) : answer === "blocked" ? o.error_callback?.({ type: "popup_failed_to_open" }) : o.callback({ access_token: "tok", expires_in: 3599 }));
+  } };
 } } } };`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
@@ -51,7 +55,7 @@ const pause = (ms) => new Promise((ok) => setTimeout(ok, ms));
 
 let scriptLoads = 0;
 // a device: its own browser storage; offline, the browser says so
-async function device({ offline = false } = {}) {
+async function device({ offline = false, seed = {} } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   await ctx.route(GSI, (route) => { scriptLoads++; route.fulfill({ status: 200, contentType: "text/javascript", body: SCRIPT }); });
   await ctx.route(/^https:\/\/(www|openidconnect)\.googleapis\.com\//, (route) => {
@@ -61,10 +65,11 @@ async function device({ offline = false } = {}) {
     route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify(body) });
   });
   await ctx.route((u) => !u.href.startsWith(origin) && u.href !== GSI && !/^https:\/\/(www|openidconnect)\.googleapis\.com\//.test(u.href), (r) => r.abort());
-  await ctx.addInitScript((offline) => {
+  await ctx.addInitScript(([offline, seed]) => {
     delete Navigator.prototype.serviceWorker;
-    if (offline) { window.netDown = true; Object.defineProperty(Navigator.prototype, "onLine", { get: () => !window.netDown }); }
-  }, offline);
+    if (offline) { window.netDown = sessionStorage.getItem("net") !== "up"; Object.defineProperty(Navigator.prototype, "onLine", { get: () => !window.netDown }); }
+    if (!localStorage.getItem("primed")) { localStorage.setItem("primed", "1"); for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v); }
+  }, [offline, seed]);
   const page = await ctx.newPage();
   page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.message); });
   page.setDefaultTimeout(10000);
@@ -85,6 +90,10 @@ const shot = async (page, name) => { if (shots) await page.screenshot({ path: pa
 try {
   // a first visit
   const a = await device();
+  await a.page.hover("#welcome-google");
+  await a.page.focus("#welcome-google");
+  await pause(300);
+  check(scriptLoads === 0, "the mouse passing over Sign in with Google, or focus reaching it, loads nothing from Google");
   check(await popup(a.page), "opening the page fades it behind the sign-in popup");
   check(await a.page.evaluate(() => {
     const d = document.querySelector("#welcome-dlg");
@@ -124,8 +133,9 @@ try {
   // signed in, not remembered
   const b = await device();
   await b.page.hover("#welcome-google");
-  check(await b.page.waitForFunction(() => window.google).then(() => true, () => false), "reaching for Sign in with Google loads Google's script");
-  await b.page.click("#welcome-google");
+  await b.page.mouse.down();
+  check(await b.page.waitForFunction(() => window.google).then(() => true, () => false), "pressing Sign in with Google loads Google's script");
+  await b.page.mouse.up();
   check(await b.page.waitForFunction(() => !document.querySelector("#sign-out").hidden).then(() => true, () => false) && !(await popup(b.page)),
     "Sign in with Google signs the user in and closes the popup");
   await b.open();
@@ -174,6 +184,53 @@ try {
   await c.page.evaluate(() => { window.netDown = true; dispatchEvent(new Event("offline")); });
   await c.page.click("#welcome-anonymous");
   check(!(await popup(c.page)), "and offline, Continue anonymously works");
+
+  // signed in, not remembered, opened offline: no popup, still signed in, the changes waiting for Drive kept
+  const ada = { user: { name: "Ada Lovelace", email: "ada@acme.example", picture: null }, token: "tok", until: Date.now() - 1, changed: ["nor-theme"] };
+  const e = await device({ offline: true, seed: { "nor-google-sign-in": JSON.stringify(ada), "nor-welcome": JSON.stringify({ choice: "google", remember: false }) } });
+  check(!(await popup(e.page)) && await signedIn(e.page), "signed in and offline, the page opens with no popup, still signed in");
+  check(await e.page.evaluate(() => JSON.parse(localStorage.getItem("nor-google-sign-in"))?.changed?.includes("nor-theme")), "and the settings waiting for Google Drive stay waiting");
+  await e.page.evaluate(() => { sessionStorage.setItem("net", "up"); window.netDown = false; dispatchEvent(new Event("online")); });
+  await e.open();
+  check(await popup(e.page), "the next visit online asks again");
+
+  // Google's window cancelled, or blocked: the popup stays, saying so; trying again signs in
+  const f = await device();
+  await f.page.evaluate(() => { window.googleAnswer = "cancel"; });
+  await f.page.click("#welcome-google");
+  check(await f.page.waitForFunction(() => /did not finish/i.test(document.querySelector("#welcome-failed")?.textContent) && !document.querySelector("#welcome-failed").hidden).then(() => true, () => false)
+    && await popup(f.page) && !(await signedIn(f.page)), "a cancelled Google window leaves the popup up, saying sign-in did not finish");
+  await f.page.evaluate(() => { window.googleAnswer = "blocked"; });
+  await f.page.click("#welcome-google");
+  await pause(300);
+  check(await popup(f.page) && await f.page.isVisible("#welcome-failed") && !(await signedIn(f.page)), "and so does a blocked one");
+  await f.page.evaluate(() => { window.googleAnswer = "token"; });
+  await f.page.click("#welcome-google");
+  check(await f.page.waitForFunction(() => !document.querySelector("#sign-out").hidden).then(() => true, () => false) && !(await popup(f.page)), "trying again signs in and closes it");
+
+  // the tip follows the avatar when the window is resized
+  const g = await device({ seed: { "nor-welcome": JSON.stringify({ choice: "anonymous", remember: true }) } });
+  await g.page.setViewportSize({ width: 700, height: 800 });
+  await pause(200);
+  const moved = await signInTip(g.page);
+  check(moved && moved.inside && moved.under, "the tip follows the avatar when the window narrows: " + JSON.stringify(moved));
+
+  // a remembered anonymous choice beside a signed-in record (another tab signed in): the popup asks
+  const h = await device({ seed: { "nor-google-sign-in": JSON.stringify({ ...ada, until: Date.now() + 3600e3, changed: [] }), "nor-welcome": JSON.stringify({ choice: "anonymous", remember: true }) } });
+  check(await popup(h.page), "a remembered anonymous choice with someone signed in asks again");
+
+  // two tabs: signing out in one is not undone by the other
+  await h.page.keyboard.press("Escape");
+  const h2 = await h.ctx.newPage();
+  await h2.goto(origin + "/web/index.html"); await h2.waitForFunction(() => document.querySelector("#title").textContent); await pause(300);
+  await h2.keyboard.press("Escape");
+  await h.page.click("#user-menu summary");
+  await h.page.click("#sign-out");
+  await pause(300);
+  check(await h2.evaluate(() => document.querySelector("#sign-out").hidden), "signing out in one tab signs the other out too");
+  await h2.click("#theme");
+  await pause(600);
+  check(await h2.evaluate(() => localStorage.getItem("nor-google-sign-in")) === null, "and a change in the other tab does not sign the user back in");
 
   // no Google client
   clientId = "";
