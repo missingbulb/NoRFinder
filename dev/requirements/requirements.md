@@ -324,7 +324,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   move (`/<id>`, `/web/…`, `/?study=<id>`) is not served, by the owner's choice: nothing redirects
   it. The service worker the app registered at the site's top before the move is retired by a
   `/sw.js` that unregisters itself and deletes nothing it kept. Test:
-  `web-tests/test_published_site.py`.
+  `web-tests/test_published_site.py`, `web-tests/test_old_worker_page.py`.
   </details>
 
 - `1.28` The Image Viewer: the page with no study's tools, the one it opens on.

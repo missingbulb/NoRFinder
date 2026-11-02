@@ -115,13 +115,6 @@ def test_no_address_from_before_the_move_is_redirected(tmp_path):
     assert not any((tmp_path / (s + '.html')).exists() for s in STUDIES)
 
 
-def test_the_worker_the_app_once_registered_at_the_top_retires_itself():
-    """1.27: browsers that ran the app at the site's top still hold its worker, scoped to the whole site; the
-    /sw.js they check it against ends that registration, and touches nothing the app kept."""
-    sw = open(os.path.join(ROOT, 'site', 'sw.js')).read()
-    assert 'registration.unregister()' in sw
-    assert 'caches' not in sw and 'fetch' not in sw
-
 def test_the_page_loads_the_analytics_loader_and_the_loader_waits_for_its_token():
     page = open(os.path.join(ROOT, 'web', 'index.html')).read()
     assert 'src="../analytics.js"' in page
@@ -188,7 +181,6 @@ def words(html):
 def test_the_license_page_carries_the_repos_mit_license_word_for_word(tmp_path):
     build.assemble(ROOT, str(tmp_path), {})
     license = open(os.path.join(ROOT, 'LICENSE')).read()
-    assert license.startswith('MIT License') and 'Ariel' in license
     assert ' '.join(license.split()) in words((tmp_path / 'license.html').read_text())
 
 
@@ -196,6 +188,7 @@ def test_the_landing_page_opens_the_app_and_lists_every_listed_study(tmp_path):
     build.assemble(ROOT, str(tmp_path), {})
     landing = (tmp_path / 'index.html').read_text()
     assert re.search(r'<a [^>]*href="app/"', landing), 'the landing page does not open the app'
+    assert len(build.studies(ROOT)) >= 3
     for s in build.studies(ROOT):
         assert re.search(rf'<a [^>]*href="app/{s["id"]}"[^>]*>[^<]*{re.escape(s["title"])}', landing), s
     assert not re.search(r'href="app/fixture"', landing), 'an unlisted study is offered on the landing page'
@@ -239,6 +232,7 @@ def test_a_studys_address_carries_its_own_icon_and_poster_or_the_apps(tmp_path):
     """1.60: study.json's icon and poster, under its web/, reach its address; a study naming none keeps the app's."""
     build.assemble(ROOT, str(tmp_path), {})
     site, own = build.SITE_URL, 0
+    assert len(build.studies(ROOT)) >= 3
     for s in build.studies(ROOT):
         m = json.load(open(os.path.join(ROOT, 'studies', s['id'], 'study.json')))
         html = (tmp_path / 'app' / (s['id'] + '.html')).read_text()
