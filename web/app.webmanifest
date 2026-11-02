@@ -1,0 +1,11 @@
+{
+  "name": "rauntruth.com",
+  "short_name": "rauntruth",
+  "description": "Image studies that run in the browser, online or offline.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#16181c",
+  "theme_color": "#16181c",
+  "icons": [{ "src": "logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

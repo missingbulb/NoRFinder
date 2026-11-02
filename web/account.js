@@ -130,6 +130,8 @@ export function account({ keys, menu, clientId, applied }) {
   show();
   if (live()) syncing();
   else if (me) ready(); // so a click that needs Google can ask at once
+  // a change made offline waits for the network, then syncs while the token lasts
+  addEventListener("online", () => { if (live()) syncing(); });
 
   return {
     // a setting the shell just wrote: saved to Drive now; with no token, a token is asked for when the user just

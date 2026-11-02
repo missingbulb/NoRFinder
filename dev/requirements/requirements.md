@@ -54,18 +54,26 @@ test fold under it. A study's research requirements, which no user sees, stay in
   change to the shell, so a person's settings, decisions and measurements survive a release.
   </details>
 
-- `1.6` The user sees, and can clear, what this device keeps.
+- `1.6` The user sees, and can clear, what this device keeps, study by study.
   <details>
 
   Not signed in (`1.50`), the user is whoever opened the page on this device. An avatar at the right of
   the header opens a menu whose **Manage storage** opens the Storage tab of the resources dialog
-  (`1.43`), which lists everything the site keeps on this device, each with its size, in six groups, each folded when the dialog opens: the code kept for
-  the next visit (Python and its packages, by file); image thumbnails, by the image's full name (by
-  its Drive id for one saved before names were kept); image files saved from Google Drive, by name;
-  settings, the shell's and the study's; the study's selections per image, by image name; and
-  anything else stored under the site that neither the shell nor the study names. Each entry, and
-  each group, can be deleted. The shell names its own keys; the study names its keys through its
-  `stored` hook, so the shell still names no study (`1.1`). Test: `web-tests/test_storage_page.py`.
+  (`1.43`), which lists everything the site keeps on this device but settings, each with its size, in
+  sections folded when the dialog opens. Set by the owner on 2026-11-02, the sections follow what it
+  takes to work offline (`1.55`, `1.56`): one per study, whose title says whether the study is
+  available offline (`1.57`), holding its Python packages no other study uses, by package; its own
+  pages and code, part of the site's copy; the images kept from Google Drive in it, by name; one
+  record for all their thumbnails and its Drive folders' previews; and, for the study on show, the
+  selections per image, by image name. An image, a thumbnail or a preview kept before images were
+  told apart by study, and opened in none of them since, is listed with the study on show. Then
+  **Shared by every study**: the site itself, Python itself, the packages two studies or more use,
+  and, as one record, code no study uses now. Each entry can be deleted, but a study's pages, kept
+  whole with the site; each section's Delete all deletes all it can, and a study's is the study's
+  whole purge, leaving what other studies use. Settings are not listed here: they are kept, shown
+  and cleared in Settings (`1.52`); the total says what they take, and counts too what is stored
+  under the site that neither the shell nor the study names. The shell names its own keys; the study names its keys through its `stored` hook, so the
+  shell still names no study (`1.1`). Test: `web-tests/test_storage_page.py`.
   </details>
 
 - `1.7` Images from Drive open again without a download.
@@ -281,6 +289,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
   <details>
 
   Third-party code (Pyodide, its packages, vendored wheels) is cached in the browser for 30 days.
+  The site's own files are fetched fresh whenever the network answers, so a release shows on the
+  next load; a copy is kept only to open the page offline (`1.55`).
   </details>
 
 - `1.25` Memory does not grow with use.
@@ -476,7 +486,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   opens a popup choosing the grid's colour and the distance between its lines: in µm when the file
   gives the pixel's size, the cells then square in µm whatever the pixel's width and height, and in
   pixels when it does not. The colour and both distances, µm and pixels each its own, are kept as
-  the user's settings for the next visit, and Manage storage lists them. The grid stays on from one
+  the user's settings for the next visit, and Settings lists them, kept on this device only (`1.52`). The grid stays on from one
   image to the next, and keeps its place through zoom. Test: `web-tests/test_grid_page.py`.
   </details>
 
@@ -518,7 +528,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   turned a little, its channels in their own colours, and turning while the pointer is over its row.
   An image the index lacks, or names with another SHA-256 (it changed since the file was made), is
   read as without the file (`1.18`, `1.36`). The download waits, like every other, while Drive
-  throttles the site (`1.37`). Manage storage lists each folder's file among the thumbnails. Test:
+  throttles the site (`1.37`). Manage storage counts each folder's file with its study's thumbnails. Test:
   `web-tests/test_drive_previews_page.py`.
   </details>
 
@@ -678,7 +688,10 @@ test fold under it. A study's research requirements, which no user sees, stay in
   dialog; whether the low-memory popup shows; the last Google Drive link, and the last one in each
   study; the tips closed, each with a tick to clear to see it again; the recent images from Google
   Drive, each with a tick to clear to drop it; Animations; and the version seen last. A line says where they are
-  kept: in the user's Google Drive when signed in, else on this device only. Save writes what changed,
+  kept: in the user's Google Drive when signed in, else on this device only. Below them, set by the
+  owner on 2026-11-02, **Kept on this device only**: every other setting the page keeps here, the
+  shell's and the study on show's, each with its size and a tick to clear to forget it, and a link
+  that clears them all, since the Storage tab no longer lists them (`1.6`). Save writes what changed,
   the theme at once, and when signed in saves the user's settings file; Cancel changes nothing. Test:
   `web-tests/test_account_page.py`.
   </details>
@@ -708,7 +721,60 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `web-tests/test_account_page.py`.
   </details>
 
-- `1.55` The second view is Tasks while a study makes ground truth, and Items otherwise; the shell owns its switch.
+- `1.55` Offline by default: a page opened once online opens again with no connection, and runs whatever is already on this device.
+  <details>
+
+  Set by the owner on 2026-11-02 (the airplane case), with no step from the user. Every visit keeps
+  a copy of the whole site's own files on this device, the one release the build lists in
+  `offline.json` with each file's SHA-256, each checked against that list and refetched only when it
+  changed. With no network the page then opens at its own address and at every study's, from that
+  copy. A study whose Python is already on this device runs; one whose Python is not says so: it
+  needs the internet once, or Make available offline (`1.56`). An image kept on this device (`1.7`,
+  `1.56`) opens: offline, From Google Drive lists the images kept here instead of a Drive folder.
+  The status bar shows Offline, which opens the Storage tab (`1.56`). What needs the network says so in
+  its tooltip and does nothing: Sign in with Google, opening a new GitHub issue and Submit New Study
+  Request. A change to a setting that follows the user (`1.50`) waits and is saved once the network is
+  back. A visit the browser cannot reach a copy for, never opened online, shows the browser's own
+  offline page: no site opens there. Nothing here installs the site as an app or asks the browser
+  for anything. Test: `web-tests/test_offline_page.py`.
+  </details>
+
+- `1.56` Each study can be made available offline from the Storage tab, after a popup with what it takes and how long.
+  <details>
+
+  Set by the owner on 2026-11-02, nothing in it happening until the user asks. The Storage tab
+  (`1.6`) opens with **Install as an app**: only on the user's click does the page offer the
+  browser's install, an icon that opens the site in its own window, offline too; until then the
+  page names no app manifest, so the browser offers none unprompted. Where the browser has no install
+  button of its own to call, the tab says where that browser's own menu has it. Each study's section
+  that is not all on this device has **Make available offline**, which opens a popup of what that
+  takes: its Python still missing, Python itself counted when it is, from jsDelivr; and, for a study
+  with a Google Drive folder of its own (`files.drive`), every image reachable from it, its
+  subfolders included, each with its folder and size, ticked, to untick one by one or all at once.
+  The popup adds up what the choice downloads, beside how much more the browser lets the site keep,
+  and estimates how long it takes, source by source (`1 GB from Google Drive at 25 MB/s + 200 MB of
+  Python at 15 MB/s, about 1 min 20 s`), at the speeds this session measured from each source; with
+  none measured yet, at the browser's own estimate of the connection, saying so, or it says it
+  cannot tell. A choice larger than the room left is refused, saying so. Download asks the browser
+  to keep the site's storage until the user deletes it, downloads with its progress shown and can be
+  stopped, and ends saying what is now on this device and whether the browser agreed to keep it.
+  When Google throttles the downloads (`1.37`) it stops and says so. The status bar's Offline
+  (`1.55`) opens the Storage tab. Test: `web-tests/test_offline_page.py`.
+  </details>
+
+- `1.57` What is available offline says so, quietly: a study, and an image from Google Drive.
+  <details>
+
+  Set by the owner on 2026-11-02, so the user knows before doing anything what works with no network
+  (`1.55`). A small grey mark, the same everywhere, an arrow into a tray for saved on this device,
+  follows a study whose Python is all on this device, in the header's switcher and its Storage
+  section, and an image kept on this device, in the Google Drive dialog's rows; what is not available
+  offline carries nothing. Load's recent images carry none: with Auto-save on, they are all kept. Hovering on the mark says what
+  it means: the study runs, or the image opens, without the internet. Test:
+  `web-tests/test_storage_page.py`.
+  </details>
+
+- `1.58` The second view is Tasks while a study makes ground truth, and Items otherwise; the shell owns its switch.
   <details>
 
   Set by the owner on 2026-11-02. A study with an item view (`#items-view` in its `views` slot) gets
@@ -722,10 +788,10 @@ test fold under it. A study's research requirements, which no user sees, stay in
   vessels) and hears which view is shown (`views.on(fn)`). Test: `web-tests/test_status_bar_page.py`.
   </details>
 
-- `1.56` Submit Ground Truth is the last task: it sits in the Tasks view's bar, and each card says whether its task is open.
+- `1.59` Submit Ground Truth is the last task: it sits in the Tasks view's bar, and each card says whether its task is open.
   <details>
 
-  Set by the owner on 2026-11-02. In a GT or PostGT study a bar heads the Tasks view (`1.55`): how
+  Set by the owner on 2026-11-02. In a GT or PostGT study a bar heads the Tasks view (`1.58`): how
   many tasks are done of all ("28 of 40 done", as words and a meter), and at its end the study's
   Submit Ground Truth (its `tasks-end` slot); the image view has no submit button. The Submit GT
   crumb (`1.33`) opens Tasks and presses it. A card whose task is still open is marked so, and the
@@ -773,8 +839,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   settings now chosen, titled "<finder> executed"; Postprocessing, the filters, which only its title
   opens; and Summary, which opens once the candidates are found. Postprocessing and Summary keep
   their names whatever is done. The main area has a toolbar over two views: the image and the
-  tasks, a card for each candidate to decide, with the shell's switch between them at its left (`1.55`); Submit Ground Truth (`3.13`) heads
-  the tasks, in their bar (`1.56`). Changed by the owner on 2026-11-02: it is no longer in the
+  tasks, a card for each candidate to decide, with the shell's switch between them at its left (`1.58`); Submit Ground Truth (`3.13`) heads
+  the tasks, in their bar (`1.59`). Changed by the owner on 2026-11-02: it is no longer in the
   image view. Changed by the owner on 2026-10-31: there is no right bar
   (`1.11`).
   </details>
@@ -854,7 +920,7 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   with a reset, and the rest. A rejected card names every filter that rejects it by itself, or says
   the user rejected it. Each view has its own Options menu (remembered per view) that sets the order
   of its cards (by number; verified first; verified last, the finalists' default while the study
-  makes ground truth (`1.56`, changed by the owner on 2026-11-02); by number for the rest; and on the rejected, the most
+  makes ground truth (`1.59`, changed by the owner on 2026-11-02); by number for the rest; and on the rejected, the most
   rejecting filters first; ties by number; set by the owner on 2026-10-07), the crop's context
   padding, turns each crop so the NoR lies level (finalists only; the rejected are never turned),
   and shows or hides the NoR borders, the measurement bars, the lengths on the crop, the lengths on
@@ -1034,7 +1100,7 @@ owner's decisions on the stacks and the vessel model, are
   next): the stack around it flattened over the slices shown, the rest of the model thin in magenta
   and the item in white, with its numbers (a vessel's length along its curve, its width and depth
   span; a junction's depth, width and how many junctions lie within 20 µm). Filters show the ones
-  worth a look and the declined vessels; sorting brings the open tasks (`1.56`, the default), the shortest, widest, most branched or most
+  worth a look and the declined vessels; sorting brings the open tasks (`1.59`, the default), the shortest, widest, most branched or most
   crowded first. A card approves, declines or deletes a vessel, splits a junction, or shows its
   item in 3D. Test: `studies/vascular/tests/test_model_page.py`.
   </details>
@@ -1042,7 +1108,7 @@ owner's decisions on the stacks and the vessel model, are
 - `4.5` The corrected model is the study's ground truth.
   <details>
 
-  Submit Ground Truth (`1.26`), in the item view (Tasks, `1.55`) and only there, exports the corrected `vessel-model/2` file, `status` corrected and
+  Submit Ground Truth (`1.26`), in the item view (Tasks, `1.58`) and only there, exports the corrected `vessel-model/2` file, `status` corrected and
   its corrections counted, labelled `vascular-ground-truth`; it is off until the model carries a
   correction, and its checklist says how many low-confidence vessels still wait for a verdict.
   Test: `studies/vascular/tests/test_model_page.py`.

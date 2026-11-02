@@ -2,7 +2,7 @@
 // ANSWERS (tests/test_study_runs.py), and checks the grid: its button draws it and takes it away; a click or a
 // hover opens the popup of its colour and spacing; the spacing is in µm with a scale, the cells square in µm
 // on a pixel taller than wide, and in pixels without one, each kept apart; the grid stays on from one image to
-// the next and through zoom; the choices outlive a reload and Manage storage lists them. Optional SHOTS: a
+// the next and through zoom; the choices outlive a reload and Settings lists them. Optional SHOTS: a
 // directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/grid_driver.mjs ANSWERS IMAGE.png STUDIES [SHOTS]
 import { createRequire } from "node:module";
@@ -129,8 +129,8 @@ await page.click("#grid-btn");
 g = await grid(page); p = await pop(page);
 await check(g.w === 25 && g.colour === "#00ff00" && p.spacing === "5" && p.colour === "#00ff00", "the colour and spacing are kept for the next visit", { g, p });
 await closePop(page);
-await page.click("#sb-disk");
-await page.waitForFunction(() => document.querySelector("#storage-list .entry"));
-const listed = await page.evaluate(() => [...document.querySelectorAll("#storage-list .entry")].map((e) => e.dataset.name));
-await check(listed.includes("Grid colour and spacing"), "Manage storage lists the grid's settings", listed);
+await page.click("#user-menu summary"); await page.click("#open-settings");
+await page.waitForFunction(() => document.querySelector("#settings-dlg").open);
+const listed = await page.$$eval('#settings-dlg input[name="device-only"]', (is) => is.map((i) => i.closest("label").textContent));
+await check(listed.some((t) => t.includes("Grid colour and spacing")), "Settings lists the grid's settings, kept on this device only", listed);
 await done(0);

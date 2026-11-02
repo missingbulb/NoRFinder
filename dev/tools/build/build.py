@@ -14,7 +14,7 @@ writes the version history the page shows (version_history.py) and the studies i
 settings into the published web/config.js from the repository variables: GOOGLE_API_KEY turns on
 loading from Google Drive, GOOGLE_CLIENT_ID signing in with Google. The folder its dialog opens on is each study's own (files.drive in its study.json).
 """
-import glob, json, os, shutil, subprocess, sys
+import glob, hashlib, json, os, shutil, subprocess, sys
 
 import version_history
 
@@ -24,6 +24,10 @@ OUT = os.path.join(WEB, 'vendor')
 SITE = os.path.join(ROOT, 'dev', 'build', 'site')
 # what the build writes into web/ and the page reads
 GENERATED = ('vendor', 'version_history.json', 'studies.json')
+# the list of the site's files the page keeps a copy of to open offline (requirement 1.55), and what it leaves
+# out: the release rewrites the analytics loader after the build, and the redirect rules are never served
+OFFLINE = 'offline.json'
+NOT_OFFLINE = {OFFLINE, 'analytics.js', '_redirects'}
 
 
 def wheels():
@@ -127,7 +131,20 @@ def assemble(root, out, env):
     if text:
         with open(os.path.join(out, 'config.js'), 'w') as f:
             f.write(text)
+    offline_list(out)
     return len(files), bool(text)
+
+
+def offline_list(out):
+    """Writes out/offline.json, {files: [{path, sha256}]}: every file the site serves, by its path there."""
+    files = []
+    for d, _, fs in os.walk(out):
+        for f in fs:
+            rel = os.path.relpath(os.path.join(d, f), out).replace(os.sep, '/')
+            if rel not in NOT_OFFLINE:
+                files.append({'path': rel, 'sha256': hashlib.sha256(open(os.path.join(d, f), 'rb').read()).hexdigest()})
+    with open(os.path.join(out, OFFLINE), 'w') as f:
+        json.dump({'files': sorted(files, key=lambda e: e['path'])}, f, indent=1)
 
 
 if __name__ == '__main__':
