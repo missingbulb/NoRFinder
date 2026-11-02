@@ -21,8 +21,8 @@ NODE = shutil.which('node')
 TOOL = os.path.join(REPO, 'dev', 'tools', 'previews', 'make_previews.py')
 
 
-def write(images, out, old=None):
-    r = subprocess.run([NODE, os.path.join(HERE, 'previews_writer_driver.mjs'), str(images), str(out), *([str(old)] if old else [])],
+def write(images, out, old=None, tiffs=None):
+    r = subprocess.run([NODE, os.path.join(HERE, 'previews_writer_driver.mjs'), str(images), str(out), str(old or '-'), *([str(tiffs)] if tiffs else [])],
                        capture_output=True, text=True, timeout=120)
     assert r.returncode == 0, r.stderr
     return json.loads(r.stdout)
@@ -70,3 +70,22 @@ def test_it_keeps_the_previews_still_valid(tmp_path):
         o = next(x for x in old_index['images'] if x['name'] == e['name'])
         for i in range(e['pages']):
             assert np.array_equal(new_pages[e['page'] + i], old_pages[o['page'] + i])
+
+
+@pytest.mark.skipif(not NODE, reason='node missing')
+def test_a_stacks_preview_opens_in_3d(tmp_path):
+    """1.69: the TIFF Data Management hands Python for a stack's preview opens in Vascular Measurements' own reader
+    as a stack: its mini-volume's slices and channels, the slice spacing scaled to them."""
+    images, tiffs = tmp_path / 'images', tmp_path / 'tiffs'
+    images.mkdir()
+    tiffs.mkdir()
+    stack = np.zeros((40, 2, 300, 260), np.uint16)
+    stack[:, 0, 100:200, 50:90] = 3000
+    tifffile.imwrite(images / 'z.tif', stack, imagej=True, metadata={'axes': 'ZCYX', 'spacing': 0.5})
+    write(images, tmp_path / 'p.tiff', tiffs=tiffs)
+    sys.path.insert(0, os.path.join(REPO, 'studies', 'vascular', 'py'))
+    import vascular
+    meta, _ = vascular.Session(str(tiffs / 'z.preview.tif')).opened()
+    meta = json.loads(meta)
+    assert (meta['Z'], meta['W'], meta['H']) == (24, 83, 96), meta
+    assert meta['spacing'] == pytest.approx(0.5 * 40 / 24), meta

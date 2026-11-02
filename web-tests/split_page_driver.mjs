@@ -58,7 +58,9 @@ const page = await ctx.newPage();
 page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
 await page.goto(origin + "/web/?study=viewer");
 await page.waitForFunction(() => document.querySelector("#split-open"));
-// Preprocessing is Data Management's (1.48), which a data manager opens; the dialog is what this checks
+// Preprocessing is Data Management's (1.48), which a data manager opens; the dialog is what this checks. Once the
+// study is in, which leaves the mode
+await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
 await page.evaluate(() => { document.documentElement.dataset.mode = "data"; });
 
 await check(await page.isDisabled("#split-open"), "Split into parts waits for an image");
@@ -133,7 +135,9 @@ const cuts = s.grips;
 await page.click("#split-close");
 await page.reload();
 await page.waitForFunction(() => document.querySelector("#split-open"));
-// Preprocessing is Data Management's (1.48), which a data manager opens; the dialog is what this checks
+// Preprocessing is Data Management's (1.48), which a data manager opens; the dialog is what this checks. Once the
+// study is in, which leaves the mode
+await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
 await page.evaluate(() => { document.documentElement.dataset.mode = "data"; });
 await page.setInputFiles("#file", image);
 await page.waitForFunction(() => !document.querySelector("#split-open").disabled);

@@ -20,6 +20,18 @@ const ACCESS = {
 const stem = (name) => name.replace(/\.[^.]*$/, "");
 export const truthMarker = (name) => stem(name) + ".ground_truth.MISSING";
 
+// a preview as an ImageJ TIFF a study's Python opens: a flat image's three colour planes, a stack's slices
+export function previewTiff(e, pages) {
+  const { W, H } = pages[0];
+  if (e.kind !== "stack") {
+    const rgb = pages[0].data, planes = [0, 1, 2].map((j) => Uint8Array.from({ length: W * H }, (_, i) => rgb[i * 3 + j]));
+    return writeTiff({ w: W, h: H, bps: 1, planes, description: "ImageJ=1.11a\nimages=3\nchannels=3\nmode=composite\n" }).buffer;
+  }
+  const [Z, C] = e.volume, spacing = e.spacing ? (e.spacing * e.slices) / Z : null;
+  return writeTiff({ w: W, h: H, bps: 1, planes: pages.map((p) => p.data),
+    description: `ImageJ=1.11a\nimages=${Z * C}\nchannels=${C}\nslices=${Z}\nhyperstack=true\nmode=composite\n${spacing ? `spacing=${spacing}\nunit=micron\n` : ""}` }).buffer;
+}
+
 // ctx: what the shell lends it, named below where it is used
 export function dataMode(ctx) {
   const { $, esc, drive, account, sizeText } = ctx;
@@ -261,17 +273,7 @@ export function dataMode(ctx) {
     if (!e) { ctx.status(`${f.name} has no preview yet: opening the image itself.`); return ctx.loadOriginal(source); }
     ctx.openPreview(stem(f.name) + ".preview.tif", previewTiff(e, await pv.pages(e)), { ...source, kind: "preview" });
   }
-  // a preview as an ImageJ TIFF the study's Python opens: a flat image's three colour planes, a stack's slices
-  function previewTiff(e, pages) {
-    const { W, H } = pages[0];
-    if (e.kind !== "stack") {
-      const rgb = pages[0].data, planes = [0, 1, 2].map((j) => Uint8Array.from({ length: W * H }, (_, i) => rgb[i * 3 + j]));
-      return writeTiff({ w: W, h: H, bps: 1, planes, description: "ImageJ=1.11a\nimages=3\nchannels=3\nmode=composite\n" }).buffer;
-    }
-    const [Z, C] = e.volume, spacing = e.spacing ? (e.spacing * e.slices) / Z : null;
-    return writeTiff({ w: W, h: H, bps: 1, planes: pages.map((p) => p.data),
-      description: `ImageJ=1.11a\nimages=${Z * C}\nchannels=${C}\nslices=${Z}\nhyperstack=true\nmode=composite\n${spacing ? `spacing=${spacing}\n` : ""}` }).buffer;
-  }
+
 
   // ---------- entering and leaving ----------
   function enter(open) {
