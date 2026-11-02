@@ -158,3 +158,16 @@ def test_the_privacy_policy_and_terms_are_published_beside_the_page_and_linked_f
     privacy = (tmp_path / 'privacy.html').read_text()
     # Google's consent screen requires the policy to say Google user data is used under its Limited Use rules
     assert 'https://developers.google.com/terms/api-services-user-data-policy' in privacy and 'Limited Use' in privacy
+
+
+def test_the_build_lists_every_file_the_page_needs_offline_with_its_hash(tmp_path):
+    """1.55: offline.json names each file the site serves with its SHA-256, but the release's own (the analytics
+    loader, which the release rewrites, and the redirect rules) and itself."""
+    import hashlib
+    build.assemble(ROOT, str(tmp_path), {})
+    files = json.load(open(tmp_path / 'offline.json'))['files']
+    on_disk = {os.path.relpath(os.path.join(d, f), tmp_path).replace(os.sep, '/') for d, _, fs in os.walk(tmp_path) for f in fs}
+    assert {f['path'] for f in files} == on_disk - {'offline.json', 'analytics.js', '_redirects'}
+    for f in files:
+        assert f['sha256'] == hashlib.sha256(open(tmp_path / f['path'], 'rb').read()).hexdigest(), f['path']
+    assert {'index.html', 'shell.js', 'sw.js', 'studies/nor/study.json'} <= {f['path'] for f in files}

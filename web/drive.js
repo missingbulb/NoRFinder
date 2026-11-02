@@ -7,8 +7,10 @@
 window.NorDrive = (() => {
   const key = ((window.NOR_CONFIG && window.NOR_CONFIG.google) || {}).apiKey || "";
   const API = "https://www.googleapis.com/drive/v3/files";
-  // the bytes Drive's answers have brought, for the status bar's network: Google does not let a page read their size
+  // the bytes Drive's answers have brought, for the status bar's network: Google does not let a page read their size;
+  // and the files downloaded whole, {bytes, ms}, for how fast Drive answers
   let received = 0;
+  const timed = { bytes: 0, ms: 0 };
   const get = async (url, init) => {
     const r = await fetch(url, init);
     return r.body ? new Response(r.body.pipeThrough(new TransformStream({ transform(c, out) { received += c.byteLength; out.enqueue(c); } })), r) : r;
@@ -56,10 +58,11 @@ window.NorDrive = (() => {
       if (f.mimeType === "application/vnd.google-apps.folder") return { folder: true, id, name: f.name };
       name = f.name;
     }
-    const r = await download(id);
+    const t0 = performance.now(), r = await download(id);
     if (onStart) onStart(name);
+    const done = (bytes) => { timed.bytes += bytes.byteLength; timed.ms += performance.now() - t0; return bytes; };
     const total = +r.headers.get("content-length") || null;
-    if (!onChunk || !r.body) return { name, bytes: await r.arrayBuffer() };
+    if (!onChunk || !r.body) return { name, bytes: done(await r.arrayBuffer()) };
     let buf = new ArrayBuffer(total || 1 << 20), got = 0;
     for (const reader = r.body.getReader(); ; ) {
       const { done, value } = await reader.read();
@@ -71,7 +74,7 @@ window.NorDrive = (() => {
       new Uint8Array(buf, got).set(value); got += value.length;
       onChunk(buf, got, total);
     }
-    return { name, bytes: got === buf.byteLength ? buf : buf.slice(0, got) };
+    return { name, bytes: done(got === buf.byteLength ? buf : buf.slice(0, got)) };
   }
 
   // the first n bytes of a file, as an ArrayBuffer
@@ -104,5 +107,5 @@ window.NorDrive = (() => {
       .filter((f) => f.folder || /\.(tiff?|png)$/i.test(f.name));
   }
 
-  return { parse, file, head, checksum, list, ready: !!key, received: () => received };
+  return { parse, file, head, checksum, list, ready: !!key, received: () => received, speed: () => ({ ...timed }) };
 })();

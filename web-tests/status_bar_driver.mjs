@@ -255,7 +255,8 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await page.keyboard.press("Escape");
 
   // the disk opens the Storage tab, whose total it shows, counting what was kept since
-  await page.evaluate(() => localStorage.setItem("kept-since", "x".repeat(300000)));
+  // code no study uses, which the Shared section lists as one record
+  await page.evaluate(async () => (await caches.open("third-party-v1")).put(new URL("vendor/acme-0-py3-none-any.whl", location.href).href, new Response(new Uint8Array(300000))));
   await page.click("#sb-disk");
   await tabIs(page, "storage");
   await page.waitForFunction(() => /keeps/.test(document.querySelector("#storage-total").textContent));

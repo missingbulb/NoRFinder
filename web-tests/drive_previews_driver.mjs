@@ -3,7 +3,7 @@
 // Drive gives it. Checks 1.42: the file is not listed and is downloaded once; the images it covers show their
 // preview and what they hold with no read of their own, a stack turning while the pointer is over its row; one
 // it lacks, or one changed since it was made, is read as without it; a reload reads the kept copy, and a new
-// file on Drive is downloaded again; Manage storage lists it among the thumbnails.
+// file on Drive is downloaded again; Manage storage counts it with its study's thumbnails.
 // Optional SHOTS: a directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/drive_previews_driver.mjs IMAGES [SHOTS]
 import { createRequire } from "node:module";
@@ -132,8 +132,8 @@ try {
 
   await page.click("#user-menu summary"); await page.click("#manage-storage");
   await page.waitForFunction(() => $("#usage-dlg").open && !/Reading/.test($("#storage-list").textContent));
-  const thumbs = await page.evaluate(() => [...document.querySelectorAll("#storage-list .group[data-group=thumbs] .entry .name")].map((e) => e.textContent));
-  check(thumbs.includes("Previews of Folder"), `Manage storage lists it among the thumbnails: ${thumbs}`);
+  const thumbs = await page.evaluate(() => [...document.querySelectorAll("#storage-list .entry[data-kind=thumb] .what")].map((e) => e.textContent));
+  check(thumbs.some((t) => /1 folder's previews/.test(t)), `Manage storage counts it with its study's thumbnails: ${thumbs}`);
 } catch (e) {
   failed = true; console.error("FAILED: " + e.message);
 }
