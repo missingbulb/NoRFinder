@@ -4,8 +4,7 @@
 // Messages out while a study loads: progress {text}, ready {info}, error {text}; the rest are the bridge's.
 // A module worker: its imports are fetched with CORS, so the service worker can cache them.
 import { bridge } from "./bridge.js";
-
-const PYODIDE = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/";
+import { PYODIDE, packagesOf } from "./python_files.js";
 
 const say = (text) => post({ type: "progress", text });
 let py, manifest, current;
@@ -32,20 +31,14 @@ async function loadStudy(id) {
   stage = "Downloading Python and packages"; expected = Infinity; heads = 0; sized = true; got = 0; total = 0;
   const wheels = (async () => {
     const [lock, vendored] = await Promise.all([fetch(PYODIDE + "pyodide-lock.json"), fetch("vendor/wheels.json")].map(async (r) => (await r).json()));
-    // the build vendors every study's wheels; this study's are the ones its study.json pins, by name and version
-    const wheel = (pin) => pin.replace("==", "-").replace(/-/g, "_").toLowerCase();
-    const own = vendored.filter((w) => m.python.wheels.some((pin) => w.toLowerCase().replace(/-/g, "_").startsWith(wheel(pin) + "_")));
-    const list = m.python.packages
-      .map((n) => ({ url: PYODIDE + lock.packages[n].file_name, sha256: lock.packages[n].sha256 }))
-      .concat(own.map((w) => ({ url: new URL("vendor/" + w, self.location.href).href })))
-      .filter((w) => !unpacked.has(w.url));
+    const list = packagesOf(m.python, lock, vendored, new URL("vendor/", self.location.href).href).filter((w) => !unpacked.has(w.url));
     expected = list.length;
     return Promise.all(list.map(async (w) => ({ url: w.url, buf: await fetchWheel(w) })));
   })();
   wheels.catch(() => {}); // a failed download is reported where it is awaited, after Python starts
-  py = await python;
+  py = await offline(python);
   stage = "Downloading packages";
-  const bufs = await wheels;
+  const bufs = await offline(wheels);
   if (bufs.length) say(m.progress?.install || "Installing Python's packages…");
   working(() => {
     const site = py.runPython("import sysconfig; sysconfig.get_path('purelib')");
@@ -90,10 +83,17 @@ study = importlib.import_module(entry)
   post({ type: "ready", info: JSON.parse(py.runPython("study.ready()")), secs: (performance.now() - t0) / 1000 });
 }
 
+// a download the network did not answer (a fetch or an import fails with a TypeError then, an answer that is
+// an error comes as an Error): what the page cannot run until it is back (requirement 1.55)
+const NOT_HERE = "This study's Python is not on this device, and the internet cannot be reached. Open the study once online, or use Prepare for offline in the avatar's menu.";
+// once one fails, the others still arriving say nothing over its error
+const offline = (p) => p.catch((e) => { stage = null; throw navigator.onLine && !(e instanceof TypeError) ? e : new Error(NOT_HERE); });
+
 // the packages' download, counted for the status bar while Python starts
 let stage = "Downloading Python and packages", expected = Infinity, heads = 0, sized = true, got = 0, total = 0, shown = 0;
 const mb = (n) => (n / 1048576).toFixed(0);
 function counted(n, size) {
+  if (!stage) return;
   got += n; if (size !== undefined) { heads++; total += size || 0; sized &&= !!size; }
   const all = heads === expected && sized && got >= total;
   if (!n || (performance.now() - shown < 250 && !all)) return;

@@ -24,6 +24,7 @@ import { PREVIEWS, readPreviews } from "./previews.js";
 import { account, SIGNED_IN } from "./account.js";
 import { settingsDialog } from "./settings_dialog.js";
 import { splitter, SPLIT_PATTERN } from "./split_dialog.js";
+import { offline, APP_ASKED } from "./offline.js";
 
 const $ = (s) => document.querySelector(s);
 // image3d is the 2D viewer of a stack's flattened planes with a 3D view beside it, sharing the one 2D viewer
@@ -47,6 +48,8 @@ const RECENT = "nor-drive-recent"; // [{id, name, path, study}], newest first: i
 // Cache Storage, + Drive id: an image downloaded from Drive, its file name (URI-encoded) and when it was saved
 // in the headers
 const IMAGES = "nor-images-v1", IMAGE_NAME = "x-nor-name", IMAGE_AT = "x-nor-saved-at";
+// and, for one kept since offline came, its folders under the study's link (a JSON list, URI-encoded) and the study
+const IMAGE_PATH = "x-nor-path", IMAGE_STUDY = "x-nor-study";
 // Cache Storage, + Drive folder id: the folder's rauntruth-previews.tiff, its SHA-256 and the folder's name in the headers
 const FOLDER_PREVIEWS = "nor-previews-v1", PREVIEWS_SHA = "x-nor-sha256";
 const MOTION = "nor-motion"; // false: the user turned the page's animations off
@@ -417,6 +420,7 @@ async function start() {
                             new Promise((r) => setTimeout(r, 3000))]);
       }
     } catch (e) { console.warn("no cache for third-party files:", e); }
+    offlineCopy.keepSite().then(diskBar, (e) => console.warn("no copy of the site for offline:", e));
   }
   status("Loading Python in the background…"); $("#spin").classList.add("on");
   st.worker = new Worker("worker.js?study=" + encodeURIComponent(studyOf(location)), { type: "module" });
@@ -549,6 +553,7 @@ function load(src) {
   writeJSON(SOURCE, src); $("#load-menu").open = false;
   if (src === "local") return $("#file").click();
   driveFrom = $("#drive-link").value = readJSON(DRIVE_LINKS)[manifest.id] || manifest.files.drive || readJSON(DRIVE_LINK, ""); $("#drive-dlg").showModal(); $("#drive-link").select(); showSaved();
+  if (offlineCopy.offline()) return showKept();
   holdDrive();
   if (!throttled() && NorDrive.parse($("#drive-link").value)?.kind === "folder") $("#drive-go").click();
 }
@@ -596,7 +601,7 @@ $("#load-menu").addEventListener("toggle", () => { if ($("#load-menu").open) clo
 // the images opened from Drive lately in the study on show, in Load's dropdown; a Drive id names one file wherever
 // it is, so two of one name stay apart; one kept from before recents had a study belongs to none. openRecent is the Drive dialog's, which opens the copy kept on this device when there is one.
 const RECENT_KEEP = 10;
-let openRecent = () => {};
+let openRecent = () => {}, showKept = () => {};
 const recentHere = (list) => list.filter((r) => r.study === manifest?.id);
 function remember(id, name, path) {
   const study = manifest.id, rest = readJSON(RECENT, []).filter((r) => r.study && !(r.id === id && r.study === study));
@@ -667,7 +672,7 @@ function driveDialog() {
         $("#busy-text").textContent = `Downloading ${what} · ${mb(got)}${total ? " of " + mb(total) : ""} MB`;
       });
       if (f.folder) { trail = [f]; return show(); }
-      if ($("#drive-autosave").checked) saveImage(id, f.name, f.bytes);
+      if ($("#drive-autosave").checked) saveImage(id, f.name, f.bytes, { path, study: manifest.id });
       remember(id, f.name, path); picture(id, f.name, f.bytes);
       openBytes(f.name, f.bytes, { kind: "drive", id });
     } catch (err) {
@@ -680,7 +685,34 @@ function driveDialog() {
     chosen = f; $("#drive-open").disabled = !f;
     $("#drive-list").querySelectorAll(".item").forEach((e) => e.setAttribute("aria-selected", e === b));
   };
-  const enter = (f) => (f.folder ? (trail.push(f), show()) : take(f.id, f.name, trail.slice(1).map((t) => t.name), f.sha));
+  const enter = (f) => (f.folder ? (trail.push(f), show()) : f.kept ? take(f.id, f.name, f.path, undefined, true) : take(f.id, f.name, trail.slice(1).map((t) => t.name), f.sha));
+  // offline, in place of a Drive folder: the images kept on this device, the study's own first (1.55)
+  showKept = async () => {
+    thumbs.stop(); trail = []; choose(null);
+    $("#drive-path").textContent = "On this device"; $("#drive-list").replaceChildren();
+    const kept = [];
+    try {
+      const c = await caches.open(IMAGES);
+      for (const q of await c.keys()) {
+        const r = await c.match(q), path = r.headers.get(IMAGE_PATH);
+        kept.push({ id: decodeURIComponent(new URL(q.url).pathname.split("/").pop()), name: decodeURIComponent(r.headers.get(IMAGE_NAME) || ""),
+          path: path ? JSON.parse(decodeURIComponent(path)) : [], study: r.headers.get(IMAGE_STUDY), size: (await r.blob()).size, kept: true });
+      }
+    } catch (e) { console.warn("cannot read the images kept here:", e); }
+    kept.sort((a, b) => (b.study === manifest.id) - (a.study === manifest.id) || a.name.localeCompare(b.name));
+    msg(kept.length ? "You are offline: these are the images kept on this device." : "You are offline, and no image is kept on this device: Prepare for offline, in the avatar's menu, keeps some.");
+    for (const f of kept) {
+      const b = document.createElement("button"); b.type = "button"; b.className = "item"; b.setAttribute("aria-selected", "false");
+      const meta = [sizeText(f.size), ["Google Drive", ...f.path].join(" / ")].join(" · ");
+      b.innerHTML = `<span class="pic"></span><span class="name">${esc(f.name)}</span><span class="shape">${esc(readJSON(HOLDS)[f.id] || "")}</span><span class="meta">${esc(meta)}</span>`;
+      const pic = readJSON(SAVED_THUMB + f.id, "");
+      if (pic) b.querySelector(".pic").append(Object.assign(new Image(), { alt: "", src: pic }));
+      b.onclick = () => choose(f, b);
+      b.ondblclick = () => enter(f);
+      b.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); enter(f); } };
+      $("#drive-list").append(b);
+    }
+  };
   openRecent = (r) => take(r.id, r.name, r.path || [], undefined, true);
   const show = async () => {
     const at = trail[trail.length - 1];
@@ -810,6 +842,7 @@ function driveDialog() {
     d.disabled = true; d.title = "Needs this site's Google API key (issue #234)";
   }
   const open = () => {
+    if (offlineCopy.offline()) return showKept();
     const link = $("#drive-link").value, ref = NorDrive.parse(link);
     $("#drive-list").replaceChildren(); $("#drive-path").replaceChildren(); choose(null);
     if (!ref) return msg("That does not look like a Google Drive link.", true);
@@ -911,10 +944,12 @@ async function savedImage(id) {
   } catch { return null; }
 }
 // copies the bytes at once, before the caller hands them to Python
-async function saveImage(id, name, bytes) {
+// where: {path, study}, the folders it is in under the study's link and the study it was kept in
+async function saveImage(id, name, bytes, where = {}) {
   const body = new Blob([bytes]);
+  const headers = { [IMAGE_NAME]: encodeURIComponent(name), [IMAGE_AT]: String(Date.now()), [IMAGE_PATH]: encodeURIComponent(JSON.stringify(where.path || [])), [IMAGE_STUDY]: where.study || "" };
   try {
-    await (await caches.open(IMAGES)).put(imageUrl(id), new Response(body, { headers: { [IMAGE_NAME]: encodeURIComponent(name), [IMAGE_AT]: String(Date.now()) } }));
+    await (await caches.open(IMAGES)).put(imageUrl(id), new Response(body, { headers }));
   } catch (e) { console.warn("image not saved:", e); }
   showSaved(); diskBar();
 }
@@ -931,7 +966,7 @@ async function showSaved() {
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
   [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
-  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off",
+  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [APP_ASKED]: "Asked for the site as an app",
 };
 const GROUPS = [
   ["code", "Code kept for the next visit", "Python and its packages, so the page starts without downloading them again."],
@@ -967,6 +1002,7 @@ async function inventory() {
     else out.other.push({ name: k, size: bytesOf(k), del: () => drop(k), held: true });
   }
   for (const im of images.values()) out.images.push({ name: im.name, what: [...im.whats].join(", "), size: im.size, del: () => drop(...im.keys), held: true, ask: true });
+  const site = { size: 0, files: 0 };
   if (window.caches) {
     for (const c of await caches.keys()) {
       const cache = await caches.open(c);
@@ -975,6 +1011,10 @@ async function inventory() {
         if (c === FOLDER_PREVIEWS) {
           out.thumbs.push({ name: "Previews of " + decodeURIComponent(res.headers.get(IMAGE_NAME) || "a folder"), size: (await res.blob()).size,
             what: "Google Drive", del: () => cache.delete(req) });
+          continue;
+        }
+        if (c === offlineCopy.siteCache()) {
+          site.size += (await res.blob()).size; site.files++;
           continue;
         }
         if (c === IMAGES) {
@@ -991,6 +1031,7 @@ async function inventory() {
       }
     }
   }
+  if (site.files) out.code.push({ name: "The site itself", what: `${site.files - 1} files, so it opens offline`, size: site.size, del: () => caches.delete(offlineCopy.siteCache()), held: true });
   for (const list of Object.values(out)) list.sort((a, b) => a.name.localeCompare(b.name));
   return { out, extra };
 }
@@ -1472,6 +1513,8 @@ const shell = {
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; },
 };
 splitter(shell);
+const offlineCopy = offline({ $, esc, sizeText, drive: NorDrive, throttled, throttle, stored: () => diskBar(),
+  kept: async (id) => !!(await caches.open(IMAGES).then((c) => c.match(imageUrl(id)), () => null)), keep: saveImage });
 // for the page's tests, which drive it from outside
 window.st = st; window.$ = $; window.shellForTests = { saveThumb, page };
 

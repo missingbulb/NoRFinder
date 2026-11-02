@@ -403,9 +403,9 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 @media (prefers-reduced-motion: reduce) { #busy.scan #scan-light { animation-duration: 8s; } }
 
 /* the Google Drive dialog */
-#drive-dlg, #memory-dlg, #history-dlg, #usage-dlg, #split-dlg, #settings-dlg { width: min(640px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
+#drive-dlg, #memory-dlg, #history-dlg, #usage-dlg, #split-dlg, #settings-dlg, #offline-dlg { width: min(640px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
   border: 1px solid var(--line); border-radius: var(--r-panel); box-shadow: 0 12px 40px #0006; }
-#drive-dlg::backdrop, #memory-dlg::backdrop, #history-dlg::backdrop, #usage-dlg::backdrop, #split-dlg::backdrop, #settings-dlg::backdrop { background: #0007; }
+#drive-dlg::backdrop, #memory-dlg::backdrop, #history-dlg::backdrop, #usage-dlg::backdrop, #split-dlg::backdrop, #settings-dlg::backdrop, #offline-dlg::backdrop { background: #0007; }
 .drive-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
 .drive-row.end { justify-content: space-between; }
 #drive-link { flex: 1; min-width: 0; }
@@ -640,3 +640,26 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 /* still, a shining button looks plain: a frozen sweep and a halo read as a smudge */
 :root[data-motion="off"] .shine { box-shadow: none; }
 :root[data-motion="off"] .shine::after { display: none; }
+
+/* working offline (1.55) and Prepare for offline (1.56) */
+html.offline [data-needs-network] { opacity: .45; cursor: not-allowed; }
+#statusbar #sb-offline { color: var(--warn); }
+#offline-dlg h2 { margin: 0 0 4px; }
+#offline-dlg h3 { margin: 14px 0 4px; font-size: 13px; }
+#offline-dlg .offline-part .drive-row { margin-top: 0; }
+#offline-dlg .offline-part .drive-row .hint { margin: 0; }
+#offline-studies { display: flex; flex-direction: column; gap: 6px; max-height: 46vh; overflow: auto; }
+#offline-dlg .pick-row, #offline-dlg .file-row, #offline-dlg .all-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+#offline-dlg .pick-row .name { font-weight: 600; }
+#offline-dlg .size, #offline-dlg .where { color: var(--dim); font-size: 12px; white-space: nowrap; }
+#offline-dlg .pick-row .size, #offline-dlg .file-row .size { margin-left: auto; }
+#offline-dlg .data { margin: 2px 0 4px 24px; }
+#offline-dlg .data .hint { margin: 2px 0; }
+#offline-dlg .files { display: flex; flex-direction: column; gap: 2px; max-height: 180px; overflow: auto; }
+#offline-dlg .file-row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#offline-dlg .file-row .where { overflow: hidden; text-overflow: ellipsis; }
+#offline-total { margin: 8px 0 0; font-size: 13px; }
+#offline-warn { color: var(--err); font-size: 13px; margin: 4px 0 0; }
+#offline-progress { width: 100%; margin-top: 8px; }
+@media (max-width: 520px) { #offline-dlg .where { display: none; } }
+#statusbar #sb-offline[hidden] { display: none; }

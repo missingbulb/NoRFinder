@@ -1,6 +1,7 @@
 // Working without the internet. Offline by default (requirement 1.55): the service worker keeps the site's copy,
 // which keepSite() brings up to the release now published; with no network the page says Offline in the status
-// bar, and each control marked data-needs-network says so and does nothing. Prepare for offline (1.56): a dialog
+// bar, and each control marked data-needs-network says so and does nothing. No network is the browser saying so,
+// or the site not answering: a plane's Wi-Fi with no internet beyond it leaves the browser saying it is online. Prepare for offline (1.56): a dialog
 // where the user chooses what more to keep on this device, the site as an app, each study's Python and the images
 // in each study's Google Drive folder, with what it all takes beside the room left.
 // deps: $, esc, sizeText; drive, the Drive module; kept(id), whether an image is kept on this device;
@@ -16,9 +17,12 @@ const MAX_FOLDERS = 200, MAX_FILES = 2000;
 
 export function offline({ $, esc, sizeText, drive, kept, keep, throttled, throttle, stored }) {
   // ---------- offline by default ----------
-  const NEEDS = "[data-needs-network]", WHY = "Needs the internet: you are offline.";
+  const NEEDS = "[data-needs-network]", WHY = "Needs the internet: you are offline.", AGAIN_MS = 30000;
+  let unreached = false, again = 0;
+  const isOffline = () => !navigator.onLine || unreached;
   const mark = () => {
-    const off = !navigator.onLine;
+    const off = isOffline();
+    clearInterval(again); again = off ? setInterval(keepSite, AGAIN_MS) : 0;
     document.documentElement.classList.toggle("offline", off);
     $("#sb-offline").hidden = !off;
     for (const el of document.querySelectorAll(NEEDS)) {
@@ -30,11 +34,11 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
   addEventListener("offline", mark);
   mark();
   document.addEventListener("click", (e) => {
-    if (!navigator.onLine && e.target.closest?.(NEEDS)) { e.preventDefault(); e.stopImmediatePropagation(); }
+    if (isOffline() && e.target.closest?.(NEEDS)) { e.preventDefault(); e.stopImmediatePropagation(); }
   }, true);
   $("#sb-offline").onclick = () => prepare();
 
-  // the site's copy, brought up to date by the service worker: {files, cache} once it answers, cache the copy's
+  // the site's copy, brought up to date by the service worker: {files, unreached, cache} once it answers
   let siteCache = null;
   async function keepSite() {
     const sw = navigator.serviceWorker && (await navigator.serviceWorker.ready.catch(() => null))?.active;
@@ -46,7 +50,8 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
     sw.postMessage({ type: "site" });
     const m = await answer;
     siteCache = m.cache;
-    if (m.error && navigator.onLine) console.warn("the site's copy for offline is not up to date:", m.error);
+    if (!!m.unreached !== unreached) { unreached = !!m.unreached; mark(); }
+    if (m.error) console.warn("the site's copy for offline is not up to date:", m.error);
     return m;
   }
 
@@ -137,7 +142,7 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
     const link = s.manifest.files.drive, ref = link && drive.parse(link);
     if (!ref || ref.kind !== "folder") { el.innerHTML = `<p class="hint">This study has no Google Drive folder of its own.</p>`; return; }
     if (!drive.ready) { el.innerHTML = `<p class="hint">Its Google Drive folder needs this site's Google API key.</p>`; return; }
-    if (!navigator.onLine) { el.innerHTML = `<p class="hint">Its Google Drive folder can be read once you are online.</p>`; return; }
+    if (isOffline()) { el.innerHTML = `<p class="hint">Its Google Drive folder can be read once you are online.</p>`; return; }
     if (throttled()) { el.innerHTML = `<p class="hint">Google is throttling this site's downloads; try again in a while.</p>`; return; }
     el.innerHTML = `<p class="hint">Reading its Google Drive folder…</p>`;
     const found = [];
@@ -191,7 +196,7 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
     const tooMuch = free != null && bytes > free;
     $("#offline-warn").hidden = !tooMuch;
     $("#offline-warn").textContent = tooMuch ? `That is more than this browser lets the site keep (${sizeText(free)}). Untick some images or studies.` : "";
-    $("#offline-go").disabled = !some || tooMuch || !navigator.onLine || !!ctl;
+    $("#offline-go").disabled = !some || tooMuch || isOffline() || !!ctl;
     return { python: [...python], images, bytes };
   }
 
@@ -233,19 +238,18 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
     }
     ctl = null; bar.hidden = true; $("#offline-stop").hidden = true;
     stored();
+    $("#offline-studies").replaceChildren(...studies.map(row));
+    await recount();
     const ticked = studies.filter((s) => picked.has(s.id)).map((s) => s.title).join(", ");
     const kept = persisted ? "The browser keeps them until you delete them in Manage storage." : "The browser may clear them if this device runs low on space.";
     if (error) msg(`Could not finish: ${error.message || error}. ${soFar(images)}`);
     else if (signal.aborted) msg(`Stopped. ${soFar(images)}`);
     else msg(`Ready for offline: ${ticked} and ${images === 1 ? "1 image" : images + " images"}. ${kept}`);
-    for (const el of document.querySelectorAll("#offline-studies .data")) delete el.dataset.read;
-    $("#offline-studies").replaceChildren(...studies.map(row));
-    await recount();
   };
   const soFar = (n) => (n ? `${n === 1 ? "1 image" : n + " images"} kept so far.` : "");
   $("#offline-stop").onclick = () => ctl?.abort();
   $("#offline-dlg").addEventListener("close", () => ctl?.abort());
   $("#prepare-offline").onclick = () => { $("#user-menu").open = false; prepare(); };
 
-  return { keepSite, siteCache: () => siteCache };
+  return { keepSite, siteCache: () => siteCache, offline: isOffline };
 }
