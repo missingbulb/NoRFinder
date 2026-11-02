@@ -25,7 +25,7 @@ ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 # the address a shared link's preview and the sitemap name the site by
 SITE_URL = 'https://www.rauntruth.com'
 APP = 'app'
-# the site's own pages the sitemap lists, besides the app: every page at the top but the landing page's file
+# the site's own pages the sitemap lists: every page at the top but the landing page's file
 PAGES_NOT_LISTED = {'index.html'}
 WEB = os.path.join(ROOT, 'web')
 OUT = os.path.join(WEB, 'vendor')
@@ -159,7 +159,7 @@ def assemble(root, out, env):
     with open(os.path.join(out, 'sitemap.xml'), 'w') as f:
         f.write(sitemap(out))
     with open(os.path.join(out, 'robots.txt'), 'w') as f:
-        f.write(robots(studies(root)))
+        f.write(robots())
     text = config_js(env)
     if text:
         with open(os.path.join(app, 'config.js'), 'w') as f:
@@ -211,8 +211,8 @@ def list_studies(landing, listed):
 
 
 def site_pages(out):
-    """The addresses of the site's own pages and the app, never a study's (requirement 1.61)."""
-    pages = ['/', f'/{APP}/']
+    """The addresses of the site's own pages, never the app's or a study's (requirement 1.61)."""
+    pages = ['/']
     pages += sorted('/' + f[:-len('.html')] for f in os.listdir(out) if f.endswith('.html') and f not in PAGES_NOT_LISTED)
     return [SITE_URL + p for p in pages]
 
@@ -222,11 +222,9 @@ def sitemap(out):
     return f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n{urls}</urlset>\n'
 
 
-def robots(listed):
-    """Crawlers kept off each study's address, exactly, and nothing else: the app's own address and the posters
-    a link's preview fetches stay open (requirement 1.61)."""
-    rules = ''.join(f'Disallow: /{APP}/{s["id"]}$\n' for s in listed)
-    return f'User-agent: *\n{rules}\nSitemap: {SITE_URL}/sitemap.xml\n'
+def robots():
+    """Crawlers kept off the app, every study's address in it included (requirement 1.61)."""
+    return f'User-agent: *\nDisallow: /{APP}/\n\nSitemap: {SITE_URL}/sitemap.xml\n'
 
 
 def offline_list(out):

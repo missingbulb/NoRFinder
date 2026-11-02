@@ -246,21 +246,22 @@ def test_a_studys_address_carries_its_own_icon_and_poster_or_the_apps(tmp_path):
     assert own >= 1, 'no study sets its own icon and poster: the substitution is not exercised'
 
 
-def test_the_sitemap_lists_the_sites_pages_and_the_app_never_a_study(tmp_path):
+def test_the_sitemap_lists_the_sites_own_pages_never_the_app_or_a_study(tmp_path):
     build.assemble(ROOT, str(tmp_path), {})
     site = build.SITE_URL
     listed = re.findall(r'<loc>([^<]+)</loc>', (tmp_path / 'sitemap.xml').read_text())
-    assert set(listed) == {site + '/', site + '/app/', site + '/privacy', site + '/terms', site + '/license'}, listed
+    assert set(listed) == {site + '/', site + '/privacy', site + '/terms', site + '/license'}, listed
 
 
-def test_robots_names_the_sitemap_and_keeps_crawlers_off_each_studys_address(tmp_path):
+def test_robots_names_the_sitemap_and_keeps_crawlers_off_the_app(tmp_path):
     build.assemble(ROOT, str(tmp_path), {})
     robots = (tmp_path / 'robots.txt').read_text()
     assert f'Sitemap: {build.SITE_URL}/sitemap.xml' in robots and 'User-agent: *' in robots
     rules = re.findall(r'^Disallow: (\S+)$', robots, re.M)
-    assert sorted(rules) == sorted(f'/app/{s["id"]}$' for s in build.studies(ROOT)), rules
-    # the app, the landing page and every poster stay open: a link preview fetches the poster
-    assert not any(r in ('/', '/app/', '/app', '/studies/') for r in rules)
+    assert rules == ['/app/'], rules
+    # every page the sitemap lists stays open to crawlers
+    for url in re.findall(r'<loc>([^<]+)</loc>', (tmp_path / 'sitemap.xml').read_text()):
+        assert not url[len(build.SITE_URL):].startswith('/app/'), url
 
 
 def test_the_build_lists_every_file_the_app_needs_offline_with_its_hash(tmp_path):

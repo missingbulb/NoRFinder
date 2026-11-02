@@ -805,13 +805,12 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `web-tests/test_published_site.py`, `web-tests/test_study_contract.py`, `web-tests/test_study_runs.py`.
   </details>
 
-- `1.61` `sitemap.xml` lists the site's pages and the app, never a study's address; `robots.txt` keeps crawlers off those.
+- `1.61` `sitemap.xml` lists the site's own pages, never the app or a study; `robots.txt` keeps crawlers off the app.
   <details>
 
-  Set by the owner on 2026-11-02. The build writes both: the sitemap lists the site's own pages and
-  the app's address; `robots.txt` names the sitemap and disallows each listed study's address,
-  exactly (`Disallow: /app/<id>$`), leaving the app, the site's pages and every poster open to
-  crawlers. Test: `web-tests/test_published_site.py`.
+  Set by the owner on 2026-11-02. The build writes both: the sitemap lists the site's own pages;
+  `robots.txt` names the sitemap and disallows `/app/`, the app and every study's address in it,
+  leaving the site's pages open to crawlers. Test: `web-tests/test_published_site.py`.
   </details>
 
 ## `2` The repo's checks
