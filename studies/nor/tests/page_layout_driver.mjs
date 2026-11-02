@@ -96,7 +96,7 @@ for (const width of [1000, 1600]) {
   if (process.env.SHOTS) { await page.evaluate(() => { $("#notice").hidden = true; }); await page.mouse.move(5, 5); await page.screenshot({ path: `${process.env.SHOTS}/${width}_image.png` }); }
   const views = [["image", async () => {}], ["finalists", async () => {
     await page.click("#switch"); await page.waitForFunction(() => document.querySelector("#view").dataset.view === "items" && document.querySelector("#list .card:not(.stub)"));
-    // the tasks' bar heads the finalists, Submit Ground Truth at its end (1.59)
+    // the tasks' bar heads the finalists, Submit Ground Truth at its end (1.63)
     const t = await page.evaluate(() => { const b = document.querySelector("#tasks-bar"), r = (e) => e.getBoundingClientRect(), g = document.querySelector("#dl-truth");
       return { shown: !!b.offsetParent, text: b.querySelector(".done").textContent, inBar: b.contains(g) && !!g.offsetParent, atEnd: Math.abs(r(g).right - r(b).right) < 40, above: r(b).bottom <= r(document.querySelector("#items-view")).top + 1,
         open: document.querySelectorAll("#list .card.task-open").length, cards: document.querySelectorAll("#list .card:not(.stub)").length }; });

@@ -16,14 +16,14 @@ test fold under it. A study's research requirements, which no user sees, stay in
   and the shell's page tests run on the fixture study, which shares none of them.
   </details>
 
-- `1.2` A study is a folder, and the page runs the one its address names: rauntruth.com/<id>.
+- `1.2` A study is a folder, and the app runs the one its address names: rauntruth.com/app/<id>.
   <details>
 
   A study is `studies/<id>/` with a `study.json` that names everything the shell needs, and every
-  file it names exists. The page runs the study its path names (`rauntruth.com/nor`), the Image
-  Viewer (`1.28`) at the bare address; an address from before paths, `?study=<id>`, opens the same
+  file it names exists. The app runs the study its path names (`rauntruth.com/app/nor`), the Image
+  Viewer (`1.28`) at its bare address (`rauntruth.com/app/`); `?study=<id>` there opens the same
   study and is rewritten to its path. The build publishes the page once more under each listed
-  study's id, so the path opens it fresh too, and refuses an id the site already serves at its
+  study's id, so the path opens it fresh too, and refuses an id the app already serves at its
   top. Adding a study changes nothing in `web/`, in the deploy's settings or in CI. Test:
   `web-tests/test_study_contract.py`, `web-tests/test_published_site.py`, `web-tests/test_study_runs.py`.
   </details>
@@ -313,14 +313,18 @@ test fold under it. A study's research requirements, which no user sees, stay in
   popup the issue button is off and says why (`studies/nor/tests/test_ground_truth_page.py`).
   </details>
 
-- `1.27` The page is at the site's root: rauntruth.com/ opens it, and an old /web/ address redirects there.
+- `1.27` The app is at rauntruth.com/app/; the site's root says what the site is.
   <details>
 
-  The shell's page files are published at the top of the site, beside the studies' `studies/`
-  folder, so the page's `../studies/` resolves to the same folder at the root and at `/web/` in a
-  preview of the repo itself. A `_redirects` rule, which Cloudflare applies, sends every `/web/…`
-  address to the same address without `/web`. Test: `web-tests/test_published_site.py` (the
-  layout); the redirect is seen on the released site.
+  Set by the owner on 2026-11-02. The shell's page files are published under `app/`, beside the
+  studies' `studies/` folder at the site's top, so the page's `../studies/` resolves to the same
+  folder in the app and at `/web/` in a preview of the repo itself. The site's own pages (`site/`)
+  are published at its top: the landing page (`1.58`), the legal pages (`1.53`, `1.59`), the
+  icons and posters (`1.60`), `robots.txt` and `sitemap.xml` (`1.61`). An address from before the
+  move (`/<id>`, `/web/…`, `/?study=<id>`) is not served, by the owner's choice: nothing redirects
+  it. The service worker the app registered at the site's top before the move is retired by a
+  `/sw.js` that unregisters itself and deletes nothing it kept. Test:
+  `web-tests/test_published_site.py`, `web-tests/test_old_worker_page.py`.
   </details>
 
 - `1.28` The Image Viewer: the page with no study's tools, the one it opens on.
@@ -666,8 +670,6 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `web-tests/test_site_config.py`.
   </details>
 
-## `2` The repo's checks
-
 - `1.51` The status bar's numbers roll to each new value, and a sharp rise in the CPU or network flashes.
   <details>
 
@@ -696,7 +698,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `web-tests/test_account_page.py`.
   </details>
 
-- `1.53` The site publishes its privacy policy and terms of service, linked from the avatar's menu.
+- `1.53` The site publishes its privacy policy and terms of service, linked from its landing page and the avatar's menu.
   <details>
 
   Set by the owner on 2026-10-31, for Google's sign-in consent screen, which links both and requires
@@ -704,7 +706,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
   runs the site and how to reach them. The privacy policy says what the page keeps on the device, what
   reaches each outside service (Cloudflare, Google, jsDelivr, GitHub) and when, and, for signing in,
   which Google user data the page reads, where it keeps it and that it shares none, under Google's
-  API Services User Data Policy and its Limited Use requirements. The avatar's menu links both. Test:
+  API Services User Data Policy and its Limited Use requirements. The landing page (`1.58`) and the
+  avatar's menu link both. Test:
   `web-tests/test_published_site.py`.
   </details>
 
@@ -774,7 +777,46 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `web-tests/test_storage_page.py`.
   </details>
 
-- `1.58` The second view is Tasks while a study makes ground truth, and Items otherwise; the shell owns its switch.
+- `1.58` The site's root is a short page saying what the site is, opening the app and each listed study.
+  <details>
+
+  Set by the owner on 2026-11-02, so a visitor who gets a link learns what this is before landing in
+  the tool. `rauntruth.com/` says what the site does and for whom, that images are analysed in the
+  browser and never uploaded, and that it is free and open source; it opens the app (`1.27`), lists
+  every study the switcher offers (`1.10`), each a link to its address, filled in by the build from
+  the studies' `study.json`, and links the privacy policy, the terms and the license. Test:
+  `web-tests/test_published_site.py`.
+  </details>
+
+- `1.59` The code is MIT-licensed: the repo's `LICENSE`, and rauntruth.com/license.
+  <details>
+
+  Set by the owner on 2026-11-02, naming whoever the terms name. The license page carries the MIT
+  text the repo's `LICENSE` carries, word for word, and is linked from the landing page, the legal
+  pages and the avatar's menu. Test: `web-tests/test_published_site.py`.
+  </details>
+
+- `1.60` The site, the app and each study show their own icon in the tab and their own poster in a shared link.
+  <details>
+
+  Set by the owner on 2026-11-02. The site's pages carry the site's favicon (`favicon.svg`, and
+  `favicon.ico` for whatever asks for it unnamed) and its poster; the app carries a different icon
+  and its own poster. A study may name its own in `study.json`, `icon` (an SVG) and `poster` (a
+  1200 × 630 PNG), files under its `web/`: its address then carries them, and while it is on show
+  the tab's icon is its own; a study naming none shows the app's. A poster is named by its full
+  address (`og:image`), with the page's title and description, for a shared link's preview. Test:
+  `web-tests/test_published_site.py`, `web-tests/test_study_contract.py`, `web-tests/test_study_runs.py`.
+  </details>
+
+- `1.61` `sitemap.xml` lists the site's own pages, never the app or a study; `robots.txt` keeps crawlers off the app.
+  <details>
+
+  Set by the owner on 2026-11-02. The build writes both: the sitemap lists the site's own pages;
+  `robots.txt` names the sitemap and disallows `/app/`, the app and every study's address in it,
+  leaving the site's pages open to crawlers. Test: `web-tests/test_published_site.py`.
+  </details>
+
+- `1.62` The second view is Tasks while a study makes ground truth, and Items otherwise; the shell owns its switch.
   <details>
 
   Set by the owner on 2026-11-02. A study with an item view (`#items-view` in its `views` slot) gets
@@ -788,10 +830,10 @@ test fold under it. A study's research requirements, which no user sees, stay in
   vessels) and hears which view is shown (`views.on(fn)`). Test: `web-tests/test_status_bar_page.py`.
   </details>
 
-- `1.59` Submit Ground Truth is the last task: it sits in the Tasks view's bar, and each card says whether its task is open.
+- `1.63` Submit Ground Truth is the last task: it sits in the Tasks view's bar, and each card says whether its task is open.
   <details>
 
-  Set by the owner on 2026-11-02. In a GT or PostGT study a bar heads the Tasks view (`1.58`): how
+  Set by the owner on 2026-11-02. In a GT or PostGT study a bar heads the Tasks view (`1.62`): how
   many tasks are done of all ("28 of 40 done", as words and a meter), and at its end the study's
   Submit Ground Truth (its `tasks-end` slot); the image view has no submit button. The Submit GT
   crumb (`1.33`) opens Tasks and presses it. A card whose task is still open is marked so, and the
@@ -800,6 +842,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
   a vessel's review). In a PreGT or Published study there is no bar and no card is marked. Test:
   `web-tests/test_status_bar_page.py`, `studies/nor/tests/test_page_layout.py`.
   </details>
+
+## `2` The repo's checks
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.
   <details>
@@ -839,8 +883,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   settings now chosen, titled "<finder> executed"; Postprocessing, the filters, which only its title
   opens; and Summary, which opens once the candidates are found. Postprocessing and Summary keep
   their names whatever is done. The main area has a toolbar over two views: the image and the
-  tasks, a card for each candidate to decide, with the shell's switch between them at its left (`1.58`); Submit Ground Truth (`3.13`) heads
-  the tasks, in their bar (`1.59`). Changed by the owner on 2026-11-02: it is no longer in the
+  tasks, a card for each candidate to decide, with the shell's switch between them at its left (`1.62`); Submit Ground Truth (`3.13`) heads
+  the tasks, in their bar (`1.63`). Changed by the owner on 2026-11-02: it is no longer in the
   image view. Changed by the owner on 2026-10-31: there is no right bar
   (`1.11`).
   </details>
@@ -920,7 +964,7 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   with a reset, and the rest. A rejected card names every filter that rejects it by itself, or says
   the user rejected it. Each view has its own Options menu (remembered per view) that sets the order
   of its cards (by number; verified first; verified last, the finalists' default while the study
-  makes ground truth (`1.59`, changed by the owner on 2026-11-02); by number for the rest; and on the rejected, the most
+  makes ground truth (`1.63`, changed by the owner on 2026-11-02); by number for the rest; and on the rejected, the most
   rejecting filters first; ties by number; set by the owner on 2026-10-07), the crop's context
   padding, turns each crop so the NoR lies level (finalists only; the rejected are never turned),
   and shows or hides the NoR borders, the measurement bars, the lengths on the crop, the lengths on
@@ -1100,7 +1144,7 @@ owner's decisions on the stacks and the vessel model, are
   next): the stack around it flattened over the slices shown, the rest of the model thin in magenta
   and the item in white, with its numbers (a vessel's length along its curve, its width and depth
   span; a junction's depth, width and how many junctions lie within 20 µm). Filters show the ones
-  worth a look and the declined vessels; sorting brings the open tasks (`1.59`, the default), the shortest, widest, most branched or most
+  worth a look and the declined vessels; sorting brings the open tasks (`1.63`, the default), the shortest, widest, most branched or most
   crowded first. A card approves, declines or deletes a vessel, splits a junction, or shows its
   item in 3D. Test: `studies/vascular/tests/test_model_page.py`.
   </details>
@@ -1108,7 +1152,7 @@ owner's decisions on the stacks and the vessel model, are
 - `4.5` The corrected model is the study's ground truth.
   <details>
 
-  Submit Ground Truth (`1.26`), in the item view (Tasks, `1.58`) and only there, exports the corrected `vessel-model/2` file, `status` corrected and
+  Submit Ground Truth (`1.26`), in the item view (Tasks, `1.62`) and only there, exports the corrected `vessel-model/2` file, `status` corrected and
   its corrections counted, labelled `vascular-ground-truth`; it is off until the model carries a
   correction, and its checklist says how many low-confidence vessels still wait for a verdict.
   Test: `studies/vascular/tests/test_model_page.py`.

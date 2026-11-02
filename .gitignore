@@ -13,4 +13,3 @@ __pycache__/
 # the site the build assembles for the release beside the files tracked there (python3 dev/tools/build/build.py)
 /dev/build/site/*
 !/dev/build/site/analytics.js
-!/dev/build/site/_redirects

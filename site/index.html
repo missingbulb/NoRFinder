@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>rauntruth.com · microscopy image studies in your browser</title>
+<meta name="version" title="version 0.11101.68">
+<meta name="description" content="Free, open-source tools that turn fluorescence-microscopy images into numbers a researcher can check, running entirely in the browser.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="rauntruth.com">
+<meta property="og:title" content="rauntruth.com · microscopy image studies in your browser">
+<meta property="og:description" content="Free, open-source tools that turn fluorescence-microscopy images into numbers a researcher can check, running entirely in the browser.">
+<meta property="og:image" content="poster.png">
+<meta property="og:url" content="./">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="site.css">
+<!-- cookieless visit counts (Cloudflare Web Analytics), on the released site only -->
+<script defer src="analytics.js"></script>
+</head>
+<body>
+<main>
+<section class="hero">
+<h1>Microscopy images into numbers you can check</h1>
+<p class="lead">rauntruth.com is a free research tool for neuroscientists. Open a fluorescence-microscopy
+image and a study finds, counts and measures what it is built for, then lets you review every result
+and correct it.</p>
+<a class="open" href="app/">Open the app</a>
+</section>
+
+<h2>What it does</h2>
+<p>Each analysis on the site is a <em>study</em>: a viewer and an algorithm for one question about one
+kind of image. A study proposes every candidate it finds, says why it kept or rejected each one, and
+reports counts, densities and lengths for the whole image or a region you draw. You keep the final say:
+accept, reject or correct any result, and export the numbers as CSV.</p>
+<p>Your corrections can be sent back as <em>ground truth</em>, which is what the algorithms are tested and
+improved against, in the open.</p>
+
+<h2>Studies</h2>
+<ul class="studies" id="studies"></ul>
+
+<h2>Your images stay with you</h2>
+<p>Everything runs in your browser. Images are analysed on your own computer, from a file or a shared
+Google Drive folder, and are never uploaded to a server; the site has none. Once opened, the app works
+offline too. Signing in with Google is optional and only carries your settings between devices. The
+<a href="privacy">privacy policy</a> has the details.</p>
+
+<h2>Open source</h2>
+<p>The site's code, its algorithms and the ground truth they are scored against are public under the
+<a href="license">MIT License</a>.</p>
+
+<footer class="dim">
+Run by Ariel · <a href="mailto:ariel@rauntruth.com">ariel@rauntruth.com</a> ·
+<a href="privacy">Privacy policy</a> · <a href="terms">Terms of service</a> · <a href="license">License</a>
+</footer>
+</main>
+</body>
+</html>

@@ -3,6 +3,7 @@
   "title": "Fixture",
   "listed": false,
   "stage": "GT",
+  "icon": "web/icon.svg",
   "phases": [
     {
       "key": "count",

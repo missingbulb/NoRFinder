@@ -1,4 +1,4 @@
-"""Serves the built site (dev/build/site/) on this computer the way Cloudflare does: /nor is nor.html.
+"""Serves the built site (dev/build/site/) on this computer the way Cloudflare does: /app/nor is app/nor.html.
 
   python3 dev/tools/build/serve.py [port]        then open http://localhost:8000/
 """
