@@ -221,6 +221,20 @@
     <div class="drive-row end"><span class="grow"></span><button type="button" id="settings-cancel">Cancel</button><button type="button" id="settings-save" class="primary">Save</button></div>
   </form>
 </dialog>
+<dialog id="welcome-dlg" aria-labelledby="welcome-title">
+  <form method="dialog">
+    <h2 id="welcome-title">Welcome</h2>
+    <p class="hint">Sign in to keep your settings on every device, or go on without an account.</p>
+    <p id="welcome-who" hidden></p>
+    <div class="welcome-choices">
+      <button id="welcome-google" type="button" class="primary" data-needs-network>Sign in with Google</button>
+      <button id="welcome-anonymous" type="button" autofocus>Continue anonymously</button>
+    </div>
+    <p id="welcome-failed" class="hint" role="alert" hidden>Google sign-in did not finish. Try again, or continue anonymously.</p>
+    <p id="welcome-offline" class="hint">You are offline. You can sign in with Google once you are back online, from your avatar's menu at the top right.</p>
+    <label class="hint"><input type="checkbox" id="welcome-remember"> Remember this choice</label>
+  </form>
+</dialog>
 <dialog id="usage-dlg" aria-labelledby="usage-title">
   <form method="dialog">
     <h2 id="usage-title">Resource Usage</h2>

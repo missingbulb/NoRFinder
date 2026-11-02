@@ -25,6 +25,7 @@ import { account, SIGNED_IN } from "./account.js";
 import { settingsDialog } from "./settings_dialog.js";
 import { splitter, SPLIT_PATTERN } from "./split_dialog.js";
 import { offline, APP_ASKED, markOffline } from "./offline.js";
+import { welcome, WELCOME } from "./welcome.js";
 
 const $ = (s) => document.querySelector(s);
 // image3d is the 2D viewer of a stack's flattened planes with a 3D view beside it, sharing the one 2D viewer
@@ -625,9 +626,16 @@ function tip(id, anchor, text) {
     document.body.append(t);
   }
   t.querySelector("span").textContent = text;
-  const r = anchor.getBoundingClientRect();
-  t.style.left = Math.max(8, r.left + r.width / 2 - 22) + "px"; t.style.top = r.bottom + 10 + "px";
+  tipAnchors.set(t, anchor); placeTip(t);
 }
+// each open tip's anchor, so a tip follows it when the window resizes
+const tipAnchors = new Map();
+function placeTip(t) {
+  const r = tipAnchors.get(t).getBoundingClientRect(), left = Math.max(8, Math.min(r.left + r.width / 2 - 22, innerWidth - t.offsetWidth - 8));
+  t.style.left = left + "px"; t.style.top = r.bottom + 10 + "px";
+  t.style.setProperty("--arrow", r.left + r.width / 2 - left - 6 + "px");
+}
+addEventListener("resize", () => { for (const t of tipAnchors.keys()) if (t.isConnected) placeTip(t); else tipAnchors.delete(t); });
 function closeTip(id) {
   const t = document.querySelector(`.tip-bubble[data-tip="${id}"]`);
   if (!t) return;
@@ -1013,7 +1021,7 @@ async function showSaved() {
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
   [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
-  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [APP_ASKED]: "Asked for the site as an app",
+  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page",
 };
 // What the site keeps, by what it takes to work offline (1.6): a section per study, then what they share; settings
 // apart, which Settings keeps (1.52), and with them what nobody names. An entry: {kind, name, what, size, del, held, ask}, del
@@ -1617,6 +1625,11 @@ const shell = {
 splitter(shell);
 const offlineCopy = offline({ $, esc, sizeText, drive: NorDrive, throttled, throttle, stored: () => diskBar(), showStorage: () => usage("storage"),
   kept: async (id) => !!(await caches.open(IMAGES).then((c) => c.match(imageUrl(id)), () => null)), keep: saveImage });
+// the sign-in popup on opening the page (1.64); the menu's Sign in and Sign out answer it too
+const welcomed = welcome({ dialog: $("#welcome-dlg"), account: signIn, avatar: $("#user-menu summary"), tip });
+$("#sign-in").addEventListener("click", () => { welcomed.chose(); closeTip("sign-in"); });
+$("#sign-out").addEventListener("click", () => welcomed.forgot());
+$("#user-menu").addEventListener("toggle", () => { if ($("#user-menu").open) closeTip("sign-in"); });
 // for the page's tests, which drive it from outside
 window.st = st; window.$ = $; window.shellForTests = { saveThumb, page };
 

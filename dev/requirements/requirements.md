@@ -665,8 +665,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
   each one this device changed since it last synced, which is kept and saved over the file's; with no
   file yet, this device's start it. While it has a token,
   each change to a setting that follows the user saves the whole file. Sign out forgets the user and
-  the token on this device and leaves its settings as they are. A visitor who never signs in sees the
-  page as before and loads nothing from Google for it. Test: `web-tests/test_account_page.py`,
+  the token on this device and leaves its settings as they are. A visitor who never signs in is asked
+  once on opening the page (`1.64`) and loads nothing from Google for it. Test: `web-tests/test_account_page.py`,
   `web-tests/test_site_config.py`.
   </details>
 
@@ -841,6 +841,31 @@ test fold under it. A study's research requirements, which no user sees, stay in
   Verified last; Vascular's cards open Open tasks first, an open junction being one that waits on
   a vessel's review). In a PreGT or Published study there is no bar and no card is marked. Test:
   `web-tests/test_status_bar_page.py`, `studies/nor/tests/test_page_layout.py`.
+  </details>
+
+- `1.64` Opening the page asks, once, whether to sign in with Google or go on anonymously, and remembers the answer if asked to.
+  <details>
+
+  Set by the owner on 2026-11-02. Where the site has a Google client (`1.50`), opening the page
+  fades it behind a popup offering **Sign in with Google** or **Continue anonymously**, with
+  **Remember this choice** below them, unticked. Ticked, the answer stands: signed in, the next
+  visits open signed in with no popup, and anonymously, with no popup either, but a tip beside the
+  avatar suggesting signing in to keep the settings on every device and reach the user's data files
+  as themselves, until closed (`1.52` lists it with the tips). Unticked, the popup comes back on the
+  next visit, signed in or not; there Continue anonymously signs out as the menu's Sign out does,
+  and Sign in with Google goes on as the user signed in. A remembered answer the sign-in on this
+  device contradicts (anonymous, yet signed in from another tab) is asked again. Signing in from the
+  menu counts as a remembered choice; signing out there forgets it, and every open tab follows a
+  sign-in or sign-out made in another. Closing the popup (Escape) changes nothing for this visit.
+  Set by the owner on 2026-11-02 after a review: Sign in with Google keeps the popup up until Google
+  answers; a Google window cancelled or blocked leaves it up, saying sign-in did not finish, to try
+  again or continue anonymously. Google's script loads as the button is pressed, never on hover or
+  focus. The popup deletes nothing and stops nothing the page is doing. Offline (`1.55`), a user
+  signed in is not asked: the page opens signed in and the settings waiting for Google Drive keep
+  waiting, to be asked on the next visit online. Anyone else offline still gets the popup: Sign in
+  with Google is held, as everywhere offline, and a line says signing in can wait until the network
+  is back, from the avatar's menu; Continue anonymously works. The sign-in tip, like every tip,
+  follows what it points at when the window resizes. Test: `web-tests/test_welcome_page.py`.
   </details>
 
 ## `2` The repo's checks
