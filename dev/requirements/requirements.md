@@ -60,7 +60,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   Not signed in (`1.50`), the user is whoever opened the page on this device. An avatar at the right of
   the header opens a menu whose **Manage storage** opens the Storage tab of the resources dialog
   (`1.43`), which lists everything the site keeps on this device, each with its size, in six groups, each folded when the dialog opens: the code kept for
-  the next visit (Python and its packages, by file); image thumbnails, by the image's full name (by
+  the next visit (Python and its packages, by file, and the site itself, kept to open offline (`1.55`), as one entry); image thumbnails, by the image's full name (by
   its Drive id for one saved before names were kept); image files saved from Google Drive, by name;
   settings, the shell's and the study's; the study's selections per image, by image name; and
   anything else stored under the site that neither the shell nor the study names. Each entry, and
@@ -281,6 +281,8 @@ test fold under it. A study's research requirements, which no user sees, stay in
   <details>
 
   Third-party code (Pyodide, its packages, vendored wheels) is cached in the browser for 30 days.
+  The site's own files are fetched fresh whenever the network answers, so a release shows on the
+  next load; a copy is kept only to open the page offline (`1.55`).
   </details>
 
 - `1.25` Memory does not grow with use.
@@ -703,6 +705,45 @@ test fold under it. A study's research requirements, which no user sees, stay in
   bar's digits change without rolling and a sharp rise does not flash. A spinner still turns, since
   it is what says the page is working rather than stuck. Test: `web-tests/test_status_bar_page.py`,
   `web-tests/test_account_page.py`.
+  </details>
+
+- `1.55` Offline by default: a page opened once online opens again with no connection, and runs whatever is already on this device.
+  <details>
+
+  Set by the owner on 2026-11-02 (the airplane case), with no step from the user. Every visit keeps
+  a copy of the whole site's own files on this device, the one release the build lists in
+  `offline.json` with each file's SHA-256, each checked against that list and refetched only when it
+  changed. With no network the page then opens at its own address and at every study's, from that
+  copy. A study whose Python is already on this device runs; one whose Python is not says so: it
+  needs the internet once, or Prepare for offline (`1.56`). An image kept on this device (`1.7`,
+  `1.56`) opens: offline, From Google Drive lists the images kept here instead of a Drive folder.
+  The status bar shows Offline, which opens Prepare for offline. What needs the network says so in
+  its tooltip and does nothing: Sign in with Google, opening a new GitHub issue and Submit New Study
+  Request. A change to a setting that follows the user (`1.50`) waits and is saved once the network is
+  back. A visit the browser cannot reach a copy for, never opened online, shows the browser's own
+  offline page: no site opens there. Nothing here installs the site as an app or asks the browser
+  for anything. Test: `web-tests/test_offline_page.py`.
+  </details>
+
+- `1.56` Prepare for offline: the user chooses the app, the studies' Python and their data to keep on this device, each with its size.
+  <details>
+
+  Set by the owner on 2026-11-02. Prepare for offline…, in the avatar's menu, opens a dialog of
+  three parts, and nothing in it happens until the user asks. **Install as an app**: only on the
+  user's click does the page offer the browser's install, an icon that opens the site in its own
+  window, offline too; until then the page names no app manifest, so the browser offers none
+  unprompted. Where the browser has no install button of its own to call, the dialog says where
+  that browser's own menu has it. **Studies**: every listed study, each with how much its Python
+  takes, Python itself shared by all, and what is already on this device marked so; a ticked study's
+  Python is downloaded, all of it, so the study runs offline. **Data**: for each ticked study with a
+  Google Drive folder of its own (`files.drive`), the images reachable from it, its subfolders
+  included, each with its folder, its size and whether it is already on this device, to tick one by
+  one or all at once; a ticked image is kept as Auto-save keeps one (`1.7`). The dialog adds up what
+  the choice downloads, beside how much more the browser lets the site keep, and says when the
+  choice is more than that, which it then does not start. Prepare asks the browser to keep the
+  site's storage until the user deletes it, downloads with its progress shown and can be stopped,
+  and ends saying what is now on this device and whether the browser agreed to keep it. When Google
+  throttles the downloads (`1.37`) it stops and says so. Test: `web-tests/test_offline_page.py`.
   </details>
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.
