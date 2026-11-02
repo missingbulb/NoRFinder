@@ -8,7 +8,7 @@ export function mount(shell) {
   MV.init(V, shell.signal);
   shell.signal.addEventListener("abort", () => MV.leave());
   shell.views.on((v) => { items.visibleNow(v === "items"); if (v === "image") V.redraw(); });
-  items.init(V, () => shell.views.show("image"), shell.views.count);
+  items.init(V, () => shell.views.show("image"), shell.views.count, shell.views.tasks);
   MV.onChange((m) => { $("#vm-truth").disabled = !m; });
   $("#vm-truth").onclick = () => {
     const gt = MV.truth();

@@ -343,8 +343,13 @@ const views = {
   },
   on(fn) { views.heard.push(fn); lifetime.signal.addEventListener("abort", () => views.heard.splice(views.heard.indexOf(fn), 1)); },
   count(left, total) { views.left = left ?? null; views.total = total ?? null; views.draw(); },
+  // the item view is the tasks that make the ground truth: a bar heads them, how many done and the study's Submit
+  get tasks() { return makesTruth() && !!$("#items-view"); },
   draw() {
-    const b = $("#switch"), tasks = makesTruth();
+    const b = $("#switch"), tasks = makesTruth(), bar = $("#tasks-bar"), m = bar.querySelector("meter");
+    bar.hidden = !views.tasks;
+    bar.querySelector(".done").textContent = views.total === null ? "No tasks yet" : `${views.total - views.left} of ${views.total} done`;
+    m.max = views.total || 1; m.value = views.total === null ? 0 : views.total - views.left;
     b.querySelector(".name").textContent = views.now === "items" ? "Image" : tasks ? "Tasks" : "Items";
     b.querySelector(".count").textContent = views.now === "items" || views.total === null ? ""
       : !tasks ? String(views.total) : views.left ? `${views.left} left` : "done";
@@ -401,6 +406,7 @@ function drawSteps() {
 function goToStep(e) {
   const c = e.target.closest(".crumb.now"), p = c && steps.find((x) => "sb-" + x.key === c.id), b = p?.button && $(p.button);
   if (!b || b.hidden) return;
+  if (b.closest("#tasks-bar, #items-view") && views.now !== "items") views.show("items");
   b.closest(".box.foldable")?.classList.remove("folded");
   b.scrollIntoView({ block: "nearest" });
   if (!b.disabled) b.click();
@@ -1496,12 +1502,12 @@ function leaveStudy() {
   st.ready = false; $("#ram-gc").disabled = true;
   for (const w of Object.values(waiting)) w.splice(0).forEach((x) => x.bad(new Error("the study left")));
   busy(false); $("#notice").hidden = true; $("#tip").hidden = true;
-  $("#image-view").hidden = false; delete $("#view").dataset.view; $("#switch").hidden = true; views.now = "image";
+  $("#image-view").hidden = false; delete $("#view").dataset.view; $("#switch").hidden = true; $("#tasks-bar").hidden = true; views.now = "image";
 }
 
 const shell = {
   $, state: st, page, still, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, showImage, boxDone,
-  views: { show: (v) => views.show(v), on: (fn) => views.on(fn), count: (l, t) => views.count(l, t), get now() { return views.now; } },
+  views: { show: (v) => views.show(v), on: (fn) => views.on(fn), count: (l, t) => views.count(l, t), get now() { return views.now; }, get tasks() { return views.tasks; } },
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; },
 };
 splitter(shell);

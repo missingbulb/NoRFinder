@@ -7,7 +7,8 @@ export function mount(shell) {
     shell.busy(true, "Counting…");
     shell.call("count", { threshold: +$("#fx-threshold").value });
   };
-  $("#fx-done").onchange = () => shell.views.count($("#fx-done").checked ? 0 : 1, 1);
+  const task = (open) => { shell.views.count(open ? 1 : 0, 1); $("#fx-task").classList.toggle("task-open", open && shell.views.tasks); };
+  $("#fx-done").onchange = () => task(!$("#fx-done").checked);
   $("#fx-truth").onclick = () => {
     const name = shell.state.fileName.replace(/\.[^.]*$/, "");
     shell.submitTruth({ doc: { labels: counted ? [counted] : [] }, count: counted ? 1 : 0, file: name + "_gt.json", items: [], issue: { title: "Ground truth: " + name, body: "" },
@@ -24,7 +25,7 @@ export function mount(shell) {
       shell.busy(false);
       counted = { threshold: +$("#fx-threshold").value, count: meta.count };
       $("#fx-result").textContent = `${meta.count} pixels above the threshold`; $("#fx-truth").disabled = false;
-      $("#switch").disabled = false; $("#fx-done").disabled = false; $("#fx-done").checked = false; shell.views.count(1, 1);
+      $("#switch").disabled = false; $("#fx-done").disabled = false; $("#fx-done").checked = false; task(true);
       shell.step("count", true, `${meta.count} pixels above ${counted.threshold}`);
       shell.boxDone($("#fx-box"), `Counted at ${counted.threshold}`);
       const { W } = shell.state, g = shell.viewer.layer("fx");

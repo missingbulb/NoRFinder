@@ -722,6 +722,19 @@ test fold under it. A study's research requirements, which no user sees, stay in
   vessels) and hears which view is shown (`views.on(fn)`). Test: `web-tests/test_status_bar_page.py`.
   </details>
 
+- `1.56` Submit Ground Truth is the last task: it sits in the Tasks view's bar, and each card says whether its task is open.
+  <details>
+
+  Set by the owner on 2026-11-02. In a GT or PostGT study a bar heads the Tasks view (`1.55`): how
+  many tasks are done of all ("28 of 40 done", as words and a meter), and at its end the study's
+  Submit Ground Truth (its `tasks-end` slot); the image view has no submit button. The Submit GT
+  crumb (`1.33`) opens Tasks and presses it. A card whose task is still open is marked so, and the
+  cards list open tasks first unless the user chose another order (NoR's finalists open sorted
+  Verified last; Vascular's cards open Open tasks first, an open junction being one that waits on
+  a vessel's review). In a PreGT or Published study there is no bar and no card is marked. Test:
+  `web-tests/test_status_bar_page.py`, `studies/nor/tests/test_page_layout.py`.
+  </details>
+
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.
   <details>
 
@@ -760,8 +773,9 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   settings now chosen, titled "<finder> executed"; Postprocessing, the filters, which only its title
   opens; and Summary, which opens once the candidates are found. Postprocessing and Summary keep
   their names whatever is done. The main area has a toolbar over two views: the image and the
-  tasks, a card for each candidate to decide, with the shell's switch between them at its left (`1.55`) and Submit Ground Truth
-  (`3.13`) at its right end, in both views. Changed by the owner on 2026-10-31: there is no right bar
+  tasks, a card for each candidate to decide, with the shell's switch between them at its left (`1.55`); Submit Ground Truth (`3.13`) heads
+  the tasks, in their bar (`1.56`). Changed by the owner on 2026-11-02: it is no longer in the
+  image view. Changed by the owner on 2026-10-31: there is no right bar
   (`1.11`).
   </details>
 
@@ -839,7 +853,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   (with a faint go-to button in its corner that shows it on the image), then "Lengths adjusted"
   with a reset, and the rest. A rejected card names every filter that rejects it by itself, or says
   the user rejected it. Each view has its own Options menu (remembered per view) that sets the order
-  of its cards (by number, the default; verified first; verified last; and on the rejected, the most
+  of its cards (by number; verified first; verified last, the finalists' default while the study
+  makes ground truth (`1.56`, changed by the owner on 2026-11-02); by number for the rest; and on the rejected, the most
   rejecting filters first; ties by number; set by the owner on 2026-10-07), the crop's context
   padding, turns each crop so the NoR lies level (finalists only; the rejected are never turned),
   and shows or hides the NoR borders, the measurement bars, the lengths on the crop, the lengths on
@@ -1019,7 +1034,7 @@ owner's decisions on the stacks and the vessel model, are
   next): the stack around it flattened over the slices shown, the rest of the model thin in magenta
   and the item in white, with its numbers (a vessel's length along its curve, its width and depth
   span; a junction's depth, width and how many junctions lie within 20 µm). Filters show the ones
-  worth a look and the declined vessels; sorting brings the shortest, widest, most branched or most
+  worth a look and the declined vessels; sorting brings the open tasks (`1.56`, the default), the shortest, widest, most branched or most
   crowded first. A card approves, declines or deletes a vessel, splits a junction, or shows its
   item in 3D. Test: `studies/vascular/tests/test_model_page.py`.
   </details>

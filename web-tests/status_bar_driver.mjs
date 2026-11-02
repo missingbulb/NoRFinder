@@ -217,16 +217,29 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await check((await tip(page, "Count")).includes("400"), "the study's step says what it did");
   // the tasks: how many are left on the switch, the item view behind it, and none left once done
   await switchIs(page, "Tasks 1 left", true, "with how many are left");
+  await check(await page.evaluate(() => document.querySelector("#fx-truth").offsetParent === null), "the image view has no submit button");
   await page.click("#switch");
+  // the bar heading the tasks: how many are done, and the submit button at its end
+  const bar = async () => page.evaluate(() => { const b = document.querySelector("#tasks-bar"), m = b.querySelector("meter"), t = document.querySelector("#fx-task");
+    return { shown: !!b.offsetParent, text: b.querySelector(".done").textContent, meter: m && [m.value, m.max], last: b.lastElementChild.previousElementSibling?.id || b.lastElementChild.id,
+      inBar: b.contains(document.querySelector("#fx-truth")) && !!document.querySelector("#fx-truth").offsetParent, open: t.classList.contains("task-open"), mark: getComputedStyle(t).borderLeftWidth }; });
+  const b0 = await bar();
+  await check(b0.shown && b0.text === "0 of 1 done" && b0.meter.join() === "0,1" && b0.inBar && b0.last === "fx-truth", "the tasks' bar says 0 of 1 done, with Submit at its end", b0);
+  await check(b0.open && b0.mark === "3px", "the open task's card is marked", b0);
   const inItems = await page.evaluate(() => ({ items: !document.querySelector("#items-view").hidden, image: !document.querySelector("#image-view").hidden, view: document.querySelector("#view").dataset.view }));
   await check(inItems.items && !inItems.image && inItems.view === "items", "pressing it shows the item view", inItems);
   await switchIs(page, "Image", true, "and then reads Image");
   await page.check("#fx-done");
+  const b1 = await bar();
+  await check(b1.text === "1 of 1 done" && b1.meter.join() === "1,1" && !b1.open && b1.mark !== "3px", "a done task counts and loses its mark", b1);
   await page.click("#switch");
   await switchIs(page, "Tasks done", true, "once no task is left");
   await check(await page.evaluate(() => !document.querySelector("#image-view").hidden && document.querySelector("#items-view").hidden), "and the image is back");
   await shot(page, "2-submit");
-  await page.click("#fx-truth");
+  // from the image view, the shining Submit GT crumb opens the tasks and presses Submit
+  await page.click("#sb-submit");
+  await page.waitForFunction(() => document.querySelector("#gt-dlg").open);
+  await check(await page.evaluate(() => !document.querySelector("#items-view").hidden), "the Submit GT crumb opens the tasks and presses Submit");
   const download = page.waitForEvent("download");
   await page.click("#gt-export");
   await download;
@@ -342,6 +355,8 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await loadImage(page); await count(page);
   await steps(page, ["Load image", "Count"], []);
   await switchIs(page, "Items 1", true, "a PreGT study's item view shows what was found, how many");
+  await page.click("#switch");
+  await check(await page.evaluate(() => !document.querySelector("#tasks-bar").offsetParent && !document.querySelector("#fx-task").classList.contains("task-open")), "with no tasks' bar and no card marked");
   await ctx.close();
   stage = null;
 }

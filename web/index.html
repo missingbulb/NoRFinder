@@ -100,6 +100,7 @@
       </div>
       <slot-here data-slot-for="toolbar-end"></slot-here>
     </div>
+    <div id="tasks-bar" class="for-items" hidden><span class="done"></span><meter min="0" max="1" value="0"></meter><span class="grow"></span><slot-here data-slot-for="tasks-end"></slot-here></div>
     <div id="busy" hidden><div id="scan-light"></div><span class="spin big"></span><div id="busy-text"></div><div id="busy-time"></div></div>
 
     <slot-here data-slot-for="view-top"></slot-here>

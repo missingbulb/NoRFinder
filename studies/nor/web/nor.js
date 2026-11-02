@@ -47,7 +47,7 @@ export function mount(shell) {
     fails: [], alone: null, forced: new Map(), edits: new Map(), defaults: {}, values: {}, off: new Set(),
     about: {}, detectValues: {}, lastRun: null, filtersFor: null, seq: 0, inflight: false, pending: false,
     added: [], mask: [], lasso: null, numbers: new Map(), order: [], sel: null, tab: "pass",
-    show: { ...SHOW_DEFAULTS, ...readJSON(SHOW) }, opt: readOpts(), sort: { pass: "number", fail: "number", ...readJSON(SORT) }, crops: new Map(),
+    show: { ...SHOW_DEFAULTS, ...readJSON(SHOW) }, opt: readOpts(), sort: { pass: shell.views.tasks ? "verified-last" : "number", fail: "number", ...readJSON(SORT) }, crops: new Map(),
   });
 
   function readOpts() {
@@ -653,7 +653,8 @@ export function mount(shell) {
   function card(c, where) {
     const r = result(c.i), f = c.added ? st.added[c.k].verdict : st.forced.get(c.i), d = document.createElement("div");
     d.className = "card " + (r === null ? "pass" : "fail") + (f === "in" ? " approved" : f === "out" ? " byyou" : "") + (c.added ? " added" : "") +
-      (where === "list" && c.i === st.sel ? " selected" : "");
+      (where === "list" && c.i === st.sel ? " selected" : "") +
+      (shell.views.tasks && r === null && !f ? " task-open" : "");
     d.dataset.i = c.i;
     const state = r === null ? "Finalist" : "Rejected";
     const num = c.added ? `<span class="num added" title="Added by you" aria-label="Added by you, #${numOf(c)}">${ADD_ICON}#${numOf(c)}</span>` : `<span class="num">#${numOf(c)}</span>`;

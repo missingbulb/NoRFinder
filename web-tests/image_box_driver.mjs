@@ -152,9 +152,9 @@ await page.evaluate(() => shellForTests.page.set({ minimap: "hidden" }));
 await check(!(await visible("#minimap")) && (await page.getAttribute("#minimap-btn", "aria-pressed")) === "false", "the page's state hides the minimap and raises its button");
 await page.evaluate(() => shellForTests.page.set({ minimap: "open" }));
 
-// ---- the study's ground-truth button at the toolbar's right end; no right bar ----
-const bar = await page.evaluate(() => { const t = [...document.querySelector(".toolbar").children].filter((e) => e.offsetParent && e.tagName !== "SLOT-HERE"); return { last: t[t.length - 1]?.id, right: !!document.querySelector("#right, #gutter-right") }; });
-await check(bar.last === "fx-truth" && !bar.right, "the ground-truth button ends the toolbar, and there is no right bar", bar);
+// ---- the study's ground-truth button heads the tasks, not the image (1.56); no right bar ----
+const bar = await page.evaluate(() => ({ inImage: !!document.querySelector("#fx-truth").offsetParent, inBar: document.querySelector("#tasks-bar").contains(document.querySelector("#fx-truth")), right: !!document.querySelector("#right, #gutter-right") }));
+await check(!bar.inImage && bar.inBar && !bar.right, "the ground-truth button is in the tasks' bar, not over the image, and there is no right bar", bar);
 
 // ---- the channel: the study's name and description, its black and white points, its checkbox ----
 const rows = () => page.$$eval("#channels .channel", (rs) => rs.map((r) => ({ name: r.querySelector("label").textContent, colour: r.dataset.colour,
