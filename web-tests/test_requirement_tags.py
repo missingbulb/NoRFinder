@@ -54,7 +54,7 @@ def test_each_section_is_sorted_by_tag():
 
 def test_every_cited_tag_exists():
     known = {t for s, ts in sections().items() for t in [s, *ts]}
-    unknown = []
+    unknown, scanned, cited = [], 0, 0
     for top, dirs, files in os.walk(ROOT):
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
         for name in files:
@@ -65,7 +65,10 @@ def test_every_cited_tag_exists():
                 text = open(path, encoding='utf-8').read()
             except UnicodeDecodeError:
                 continue
+            scanned += 1
             for tag in re.findall(rf'(?<![\w/.-]){TAG}', text):
+                cited += 1
                 if tag not in known:
                     unknown.append(f'{os.path.relpath(path, ROOT)}: {tag}')
+    assert scanned >= 200 and cited >= 200, f'swept {scanned} files and {cited} citations: the walk no longer reaches the repo'
     assert not unknown, 'cited tags the spec does not have:\n' + '\n'.join(unknown)
