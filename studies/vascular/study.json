@@ -3,6 +3,7 @@
   "title": "Vascular Measurements",
   "listed": true,
   "stage": "GT",
+  "icon": "web/icon.svg",
   "phases": [],
   "viewer": "image3d",
   "python": {

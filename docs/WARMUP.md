@@ -14,7 +14,8 @@ Working on a study? Read its own warm-up next: [NoR Finder](../studies/nor/docs/
 |---|---|---|
 | Shell: loading (computer, Google Drive), the Python runtime, status and memory, notices, theme, side bars, version history, downloads, ground-truth submission, splitting an image into parts (`web/split.js`, its dialog `web/split_dialog.js`), working offline and making a study available offline from the Storage tab (`web/offline.js`, with the service worker `web/sw.js`) | `web/` | — |
 | Viewer: shows the opened image and what a study draws over it, zoom, pan, the minimap, each channel's row and its black and white points (`web/channels.js`) | `web/viewer2d.js`; `web/viewer3d.js` adds a 3D view of a z-stack | a study's `viewer` |
-| Study: its panels, its flow, its Python | `studies/<id>/` | `/<id>` (rauntruth.com/nor) |
+| Study: its panels, its flow, its Python | `studies/<id>/` | `/app/<id>` (rauntruth.com/app/nor) |
+| The site's own pages around the app: the landing page, privacy, terms, license, icons, poster, the retired root service worker | `site/` | — |
 
 The 3D viewer (`image3d`) keeps the 2D viewer's interface and adds a 3D view beside it; a method shared by
 several studies (the NoR study's candidates-then-filters flow, say) is lifted out of its study once a
@@ -80,11 +81,13 @@ python3 dev/tools/build/build.py
 python3 dev/tools/build/serve.py 8000
 ```
 
-then open `http://localhost:8000/` (the Image Viewer), `http://localhost:8000/nor` or
-`http://localhost:8000/fixture`. `serve.py` serves `/nor` from the `nor.html` the build writes, as
-Cloudflare does; a plain file server would answer a reload there with a 404.
+then open `http://localhost:8000/` (the landing page), `http://localhost:8000/app/` (the Image Viewer),
+`http://localhost:8000/app/nor` or `http://localhost:8000/app/fixture`. `serve.py` serves `/app/nor` from
+the `app/nor.html` the build writes, as Cloudflare does; a plain file server would answer a reload there
+with a 404.
 The build assembles under `dev/build/site/` exactly what is published (requirement 1.8), with the
-page at the root as rauntruth.com serves it (requirement 1.27); serving the repo root instead and
+site's pages at the top, the app under `app/` and the studies under `studies/`, as rauntruth.com serves
+them (requirement 1.27); serving the repo root instead and
 opening `/web/` shows the page with every file of every study reachable.
 The full set (`python3 -m pytest web-tests studies`) also needs Node, Pyodide
 (`npm i --prefix web-tests pyodide@314.0.7`, as CI does) and Playwright's Chromium.
