@@ -373,17 +373,20 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `web-tests/test_study_request.py` (the form asks for each of these).
   </details>
 
-- `1.32` A study declares its stage: PreGT, GT or PostGT.
+- `1.32` A study declares its stage: PreGT, GT, PostGT or Published.
   <details>
 
   Every `study.json` names its `stage`, and the status bar shows it first as a traffic light, its
-  name in no words: red for PreGT, yellow for GT, green for PostGT. Hovering it opens a popup
-  listing the three stages in order with what each means, the study's own highlighted and the
+  name in no words: red for PreGT, yellow for GT, green for PostGT, all three green for Published.
+  Hovering it opens a popup listing the four stages in order with what each means, the study's own highlighted and the
   ones before it crossed out, and what the study needs to move on to the next.
   PreGT: the study's tools work but cannot make ground truth yet, so it offers no export: its
   ground-truth button (`groundTruth.button`) is hidden and it has no Submit GT step. GT: the same,
   with the ground truth exported and submitted (`1.26`). PostGT: GT with batch actions on top (none
-  yet). A GT or PostGT study names its ground truth's label and button. The Image Viewer is PreGT,
+  yet). Set by the owner on 2026-11-02, Published: the study's algorithm is trusted and the page only
+  shows what it finds, so it makes no ground truth (no Submit GT, its button hidden, as in PreGT) and
+  drops the steps that serve making it: the shell's Preprocessing (`1.48`) and the study's
+  postprocessing (NoR's filters, `3.5`) are not shown. A GT or PostGT study names its ground truth's label and button. The Image Viewer is PreGT,
   NoR Finder GT. Test: `web-tests/test_study_contract.py`, `web-tests/test_status_bar_page.py`.
   </details>
 
@@ -813,6 +816,33 @@ test fold under it. A study's research requirements, which no user sees, stay in
   leaving the site's pages open to crawlers. Test: `web-tests/test_published_site.py`.
   </details>
 
+- `1.62` The second view is Tasks while a study makes ground truth, and Items otherwise; the shell owns its switch.
+  <details>
+
+  Set by the owner on 2026-11-02. A study with an item view (`#items-view` in its `views` slot) gets
+  the shell's switch at the toolbar's left, off until the study turns it on. In a GT or PostGT study
+  the item view is a list of the tasks the user does to make the ground truth, so the switch reads
+  "Tasks" and, once the study counts them, how many are left ("Tasks 3 left", "Tasks done" at none
+  left). In a PreGT or Published study nothing is being made, the cards are small viewers of what
+  was found, and it reads "Items" with how many there are. In the item view it reads "Image". The
+  study counts its own (`views.count(left, total)`; NoR: the finalists and added NoRs with no
+  verdict, among all; Vascular: the low-confidence vessels with no verdict, among all junctions and
+  vessels) and hears which view is shown (`views.on(fn)`). Test: `web-tests/test_status_bar_page.py`.
+  </details>
+
+- `1.63` Submit Ground Truth is the last task: it sits in the Tasks view's bar, and each card says whether its task is open.
+  <details>
+
+  Set by the owner on 2026-11-02. In a GT or PostGT study a bar heads the Tasks view (`1.62`): how
+  many tasks are done of all ("28 of 40 done", as words and a meter), and at its end the study's
+  Submit Ground Truth (its `tasks-end` slot); the image view has no submit button. The Submit GT
+  crumb (`1.33`) opens Tasks and presses it. A card whose task is still open is marked so, and the
+  cards list open tasks first unless the user chose another order (NoR's finalists open sorted
+  Verified last; Vascular's cards open Open tasks first, an open junction being one that waits on
+  a vessel's review). In a PreGT or Published study there is no bar and no card is marked. Test:
+  `web-tests/test_status_bar_page.py`, `studies/nor/tests/test_page_layout.py`.
+  </details>
+
 ## `2` The repo's checks
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.
@@ -853,8 +883,9 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   settings now chosen, titled "<finder> executed"; Postprocessing, the filters, which only its title
   opens; and Summary, which opens once the candidates are found. Postprocessing and Summary keep
   their names whatever is done. The main area has a toolbar over two views: the image and the
-  individual items, with the button that switches between them at its left and Submit Ground Truth
-  (`3.13`) at its right end, in both views. Changed by the owner on 2026-10-31: there is no right bar
+  tasks, a card for each candidate to decide, with the shell's switch between them at its left (`1.62`); Submit Ground Truth (`3.13`) heads
+  the tasks, in their bar (`1.63`). Changed by the owner on 2026-11-02: it is no longer in the
+  image view. Changed by the owner on 2026-10-31: there is no right bar
   (`1.11`).
   </details>
 
@@ -932,7 +963,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   (with a faint go-to button in its corner that shows it on the image), then "Lengths adjusted"
   with a reset, and the rest. A rejected card names every filter that rejects it by itself, or says
   the user rejected it. Each view has its own Options menu (remembered per view) that sets the order
-  of its cards (by number, the default; verified first; verified last; and on the rejected, the most
+  of its cards (by number; verified first; verified last, the finalists' default while the study
+  makes ground truth (`1.63`, changed by the owner on 2026-11-02); by number for the rest; and on the rejected, the most
   rejecting filters first; ties by number; set by the owner on 2026-10-07), the crop's context
   padding, turns each crop so the NoR lies level (finalists only; the rejected are never turned),
   and shows or hides the NoR borders, the measurement bars, the lengths on the crop, the lengths on
@@ -1105,14 +1137,14 @@ owner's decisions on the stacks and the vessel model, are
   submitted. Test: `studies/vascular/tests/test_model_page.py`.
   </details>
 
-- `4.4` Item View shows each junction and vessel of the model as a card.
+- `4.4` Tasks shows each junction and vessel of the model as a card.
   <details>
 
   A card for each junction (three or more live branches) and each vessel (junction or tip to the
   next): the stack around it flattened over the slices shown, the rest of the model thin in magenta
   and the item in white, with its numbers (a vessel's length along its curve, its width and depth
   span; a junction's depth, width and how many junctions lie within 20 µm). Filters show the ones
-  worth a look and the declined vessels; sorting brings the shortest, widest, most branched or most
+  worth a look and the declined vessels; sorting brings the open tasks (`1.63`, the default), the shortest, widest, most branched or most
   crowded first. A card approves, declines or deletes a vessel, splits a junction, or shows its
   item in 3D. Test: `studies/vascular/tests/test_model_page.py`.
   </details>
@@ -1120,7 +1152,7 @@ owner's decisions on the stacks and the vessel model, are
 - `4.5` The corrected model is the study's ground truth.
   <details>
 
-  Submit Ground Truth (`1.26`), in the Item View and only there, exports the corrected `vessel-model/2` file, `status` corrected and
+  Submit Ground Truth (`1.26`), in the item view (Tasks, `1.62`) and only there, exports the corrected `vessel-model/2` file, `status` corrected and
   its corrections counted, labelled `vascular-ground-truth`; it is off until the model carries a
   correction, and its checklist says how many low-confidence vessels still wait for a verdict.
   Test: `studies/vascular/tests/test_model_page.py`.

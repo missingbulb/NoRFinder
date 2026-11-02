@@ -216,6 +216,16 @@ button.tool[aria-pressed=true] { border-color: var(--accent); box-shadow: inset 
 .menu .pop label.num input { width: 58px; padding: 2px 6px; }
 /* each view shows only its own tools */
 #view[data-view=image] .for-items, #view[data-view=items] .for-image { display: none; }
+/* a published study shows what it finds: the steps that serve making ground truth go */
+[data-stage=Published] .unpublished { display: none !important; }
+#switch .count { opacity: .7; font-weight: 400; }
+#switch .count:empty { display: none; }
+#tasks-bar { display: flex; gap: 10px; align-items: center; min-height: 44px; padding: 0 var(--pad); border-bottom: 1px solid var(--line); font-size: 13px; }
+#tasks-bar[hidden] { display: none; }
+#tasks-bar meter { width: 160px; height: 8px; }
+#tasks-bar .grow { flex: 1; }
+/* a card whose task is still open */
+.task-open { border-left: 3px solid var(--accent) !important; }
 .tabs { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; }
 .menu .pop label.sort select { padding: 2px 6px; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-ctl); }
 .tabs button { border: 0; border-radius: 0; background: transparent; padding: 5px 14px; }
@@ -333,6 +343,8 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #sb-stage circle.lit[data-light=red], #stage-list .dot[data-light=red] { fill: var(--no); background: var(--no); }
 #sb-stage circle.lit[data-light=yellow], #stage-list .dot[data-light=yellow] { fill: #f5c400; background: #f5c400; }
 #sb-stage circle.lit[data-light=green], #stage-list .dot[data-light=green] { fill: var(--yes); background: var(--yes); }
+#sb-stage[data-stage=Published] circle.lit { fill: var(--yes); }
+#stage-list .dot[data-light=all] { background: var(--yes); box-shadow: 0 0 0 2px color-mix(in srgb, var(--yes) 40%, transparent); }
 #sb-stage:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 /* the stages, over the status bar at the stage's left edge */
 #stage-pop { position: fixed; inset: auto auto calc(1cm + 6px) 8px; margin: 0; width: min(360px, calc(100vw - 16px)); padding: 12px 14px;

@@ -75,7 +75,7 @@
       </div>
     </section>
 
-    <section class="box foldable" id="preprocessing-box" data-opens="load">
+    <section class="box foldable unpublished" id="preprocessing-box" data-opens="load">
       <div class="sec-head"><h2>Preprocessing</h2></div>
       <div class="steps">
         <slot-here data-slot-for="preprocessing"></slot-here>
@@ -89,6 +89,7 @@
 
   <main id="view">
     <div class="toolbar">
+      <button id="switch" class="big" type="button" hidden disabled><span class="name"></span> <span class="count"></span></button>
       <slot-here data-slot-for="toolbar"></slot-here>
       <span class="grow"></span>
       <button id="ruler-btn" class="for-image tool" type="button" aria-pressed="false" title="Ruler: drag across the image to measure a distance. Click again to clear it." aria-label="Ruler"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="2" y="8" width="20" height="8" rx="1.5"/><path d="M6 8v3M10 8v4M14 8v3M18 8v4"/></g></svg></button>
@@ -107,6 +108,7 @@
       </div>
       <slot-here data-slot-for="toolbar-end"></slot-here>
     </div>
+    <div id="tasks-bar" class="for-items" hidden><span class="done"></span><meter min="0" max="1" value="0"></meter><span class="grow"></span><slot-here data-slot-for="tasks-end"></slot-here></div>
     <div id="busy" hidden><div id="scan-light"></div><span class="spin big"></span><div id="busy-text"></div><div id="busy-time"></div></div>
 
     <slot-here data-slot-for="view-top"></slot-here>

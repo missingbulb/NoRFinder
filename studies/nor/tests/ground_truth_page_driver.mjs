@@ -215,7 +215,9 @@ async function sorting(page) {
     await check(JSON.stringify(choices) === JSON.stringify(["number", "verified-first", "verified-last", ...(fail ? ["filters"] : [])]),
       `the ${fail ? "rejected" : "finalists"} sort by ${choices.join(", ")}`);
     let L = await shown();
-    await check(await page.$eval("#sort", (s) => s.value) === "number" && byNum(L) && L.length > 2, "by number by default");
+    // the finalists are tasks: open ones first, then by number (1.63); the rejected by number
+    const want = fail ? "number" : "verified-last", openFirst = (xs) => up(xs.map((c) => +c.v)) && [0, 1].every((v) => byNum(xs.filter((c) => +c.v === v)));
+    await check(await page.$eval("#sort", (s) => s.value) === want && (fail ? byNum(L) : openFirst(L)) && L.length > 2, `${fail ? "by number" : "open tasks first"} by default`);
     L = await sortBy("verified-first");
     await check(down(L.map((c) => +c.v)) && L.some((c) => c.v) && byNum(L.filter((c) => c.v)) && byNum(L.filter((c) => !c.v)), "verified first, each part by number");
     L = await sortBy("verified-last");
@@ -234,6 +236,9 @@ async function sorting(page) {
 
 // the popup the Ground truth button opens: its text, and the file its Export button downloads
 async function popup(page) {
+  // Submit Ground Truth heads the tasks (1.63)
+  const was = await page.evaluate(() => st.view);
+  if (was !== "items") { await page.click("#switch"); await idle(page); }
   await page.click("#dl-truth");
   await check(await page.isVisible("#gt-dlg"), "the Ground truth button opens its popup");
   // a checklist of every issue, the resolved ones crossed out: what is still open
@@ -244,6 +249,8 @@ async function popup(page) {
   const line = (re) => items.find((t) => re.test(t.text));
   await check(!!line(/you added/) === has.added && !!line(/mask/) === has.mask && (!has.mask || !line(/mask/).ok),
     `the added NoRs and the mask are listed only when there are some, and the mask never as done (${items.map((t) => t.text).join(" | ")})`);
+  // and the view the case was in comes back under the popup
+  if (was !== "items") await page.evaluate((v) => nor.showView(v), was);
   return items.filter((t) => !t.ok).map((t) => t.text).join(" | ");
 }
 // which of the popup's buttons is blue: the next step

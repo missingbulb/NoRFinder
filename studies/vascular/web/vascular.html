@@ -42,9 +42,6 @@
       </div>
     </section>
 </template>
-<template data-slot="toolbar">
-      <button id="item-switch" class="big" type="button" disabled>Item View <span class="count" id="items-count"></span></button>
-</template>
 <template data-slot="views">
     <div id="items-view" hidden>
       <div class="items-bar">
@@ -58,6 +55,7 @@
           <option value="declined" data-for="vessels">Declined</option>
         </select>
         <select id="item-sort" aria-label="Order">
+          <option value="open" data-for="junctions vessels">Open tasks first</option>
           <option value="file" data-for="junctions vessels">In file order</option>
           <option value="short" data-for="vessels">Shortest first</option>
           <option value="wide" data-for="vessels">Widest first</option>
@@ -72,8 +70,8 @@
       </div>
     </div>
 </template>
-<template data-slot="toolbar-end">
-    <button id="vm-truth" class="for-items" type="button" disabled>Submit Ground Truth</button>
+<template data-slot="tasks-end">
+    <button id="vm-truth" type="button" disabled>Submit Ground Truth</button>
 </template>
 <template data-slot="body">
 <div id="ctx" class="pop" role="menu" hidden></div>

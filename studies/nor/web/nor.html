@@ -23,7 +23,7 @@
       </div>
     </section>
 
-    <section class="box foldable" id="filters-box" data-opens="user">
+    <section class="box foldable unpublished" id="filters-box" data-opens="user">
       <div class="sec-head"><h2>Postprocessing</h2></div>
       <div id="presets" class="tabs presets" role="group" aria-label="Filter preset" hidden></div>
       <div id="filters"></div>
@@ -37,7 +37,6 @@
     </section>
 </template>
 <template data-slot="toolbar">
-      <button id="switch" class="big" disabled>Item View</button>
       <details class="menu for-image" id="show-menu">
         <summary>Show</summary>
         <div class="pop">
@@ -81,7 +80,7 @@
       <div id="selected"></div>
     </section>
 </template>
-<template data-slot="toolbar-end">
+<template data-slot="tasks-end">
     <button id="dl-truth" disabled><span class="gt-ico" aria-hidden="true"></span>Submit Ground Truth</button>
 </template>
 <template data-slot="body">

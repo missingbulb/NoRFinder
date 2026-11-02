@@ -1,7 +1,7 @@
 // The page's shell: it runs the study the address names (/<id>, the default at the bare address), and knows
 // none of them; the header's switcher offers the ones the build lists and swaps one in without a reload. What it gives a study, as shell in mount(shell): loading images (from the
 // computer or Google Drive), Python (the study's own, run in worker.js), the viewer the study asks for,
-// the page's state its controls are drawn from (page: get, set, watch(key, fn, {signal})), the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own) and the boxes' titles (boxDone(box, summary) once a box's task is done), notices, the user's saved settings, downloads and ground-truth
+// the page's state its controls are drawn from (page: get, set, watch(key, fn, {signal})), the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own), the switch to its item view (views) and the boxes' titles (boxDone(box, summary) once a box's task is done), notices, the user's saved settings, downloads and ground-truth
 // submission; and around them the theme, the left bar, foldable boxes, Preprocessing (Split into parts, and a study's own steps in its slot), the resources dialog (storage, memory,
 // network and CPU) and the version history.
 //
@@ -307,12 +307,16 @@ const STAGES = {
     next: "To move on to GT, the study needs a way to make ground truth: an export of what you confirm, to submit." },
   GT: { light: "yellow", what: "Its tools make ground truth, to export and submit.",
     next: "To move on to PostGT, the study needs batch actions: its tools run over many images at once." },
-  PostGT: { light: "green", what: "It makes ground truth, and has batch actions too.", next: "This is the last stage." },
+  PostGT: { light: "green", what: "It makes ground truth, and has batch actions too.",
+    next: "To move on to Published, its algorithm needs to be trusted, so the page only shows what it finds." },
+  Published: { light: "all", what: "Its algorithm is trusted: the page shows what it finds, with no ground truth to make.", next: "This is the last stage." },
 };
 function showStage() {
   const now = Object.keys(STAGES).indexOf(manifest.stage), e = $("#sb-stage");
   e.dataset.stage = manifest.stage; e.setAttribute("aria-label", "Stage: " + manifest.stage);
-  e.querySelectorAll("circle").forEach((c) => c.classList.toggle("lit", c.dataset.light === STAGES[manifest.stage].light));
+  const light = STAGES[manifest.stage].light;
+  e.querySelectorAll("circle").forEach((c) => c.classList.toggle("lit", light === "all" || c.dataset.light === light));
+  document.documentElement.dataset.stage = manifest.stage;
   $("#stage-list").replaceChildren(...Object.entries(STAGES).map(([name, s], k) => {
     const li = document.createElement("li"); li.className = k < now ? "past" : k === now ? "now" : "";
     li.innerHTML = `<span class="dot" data-light="${s.light}"></span><span class="name">${name}</span><span class="what">${esc(s.what)}</span>`;
@@ -327,7 +331,39 @@ function showStage() {
   e.addEventListener("mouseenter", () => show(true)); e.addEventListener("mouseleave", () => show(false));
   e.addEventListener("focus", () => show(true)); e.addEventListener("blur", () => show(false));
 }
-const makesTruth = () => manifest.stage !== "PreGT";
+const makesTruth = () => manifest.stage === "GT" || manifest.stage === "PostGT";
+
+// ---------- the image and the item view ----------
+// A study with an item view gets the switch between it and the image. While the study makes ground truth its
+// cards are the tasks that make it, and the switch says how many are left; otherwise they show what was found.
+// count(left, total) from the study, null until it has any; on(fn) hears the view now shown, "image" or "items".
+const views = {
+  now: "image", left: null, total: null, heard: [],
+  show(v) {
+    views.now = v; $("#tip").hidden = true;
+    $("#image-view").hidden = v !== "image"; if ($("#items-view")) $("#items-view").hidden = v !== "items";
+    $("#view").dataset.view = v; views.draw();
+    for (const fn of views.heard) fn(v);
+  },
+  on(fn) { views.heard.push(fn); lifetime.signal.addEventListener("abort", () => views.heard.splice(views.heard.indexOf(fn), 1)); },
+  count(left, total) { views.left = left ?? null; views.total = total ?? null; views.draw(); },
+  // the item view is the tasks that make the ground truth: a bar heads them, how many done and the study's Submit
+  get tasks() { return makesTruth() && !!$("#items-view"); },
+  draw() {
+    const b = $("#switch"), tasks = makesTruth(), bar = $("#tasks-bar"), m = bar.querySelector("meter");
+    bar.hidden = !views.tasks;
+    bar.querySelector(".done").textContent = views.total === null ? "No tasks yet" : `${views.total - views.left} of ${views.total} done`;
+    m.max = views.total || 1; m.value = views.total === null ? 0 : views.total - views.left;
+    b.querySelector(".name").textContent = views.now === "items" ? "Image" : tasks ? "Tasks" : "Items";
+    b.querySelector(".count").textContent = views.now === "items" || views.total === null ? ""
+      : !tasks ? String(views.total) : views.left ? `${views.left} left` : "done";
+  },
+  mount() {
+    $("#switch").hidden = !$("#items-view"); $("#switch").disabled = true;
+    views.left = views.total = null; views.show("image");
+  },
+};
+$("#switch").onclick = () => views.show(views.now === "image" ? "items" : "image");
 // The study's steps, in order, in one state that the breadcrumbs and the shining buttons are drawn from:
 // [{key, name, button, done, info, at}]. Load image and Submit GT are the shell's, the study's own come from its
 // study.json; the step to do now is the first not done.
@@ -374,6 +410,7 @@ function drawSteps() {
 function goToStep(e) {
   const c = e.target.closest(".crumb.now"), p = c && steps.find((x) => "sb-" + x.key === c.id), b = p?.button && $(p.button);
   if (!b || b.hidden) return;
+  if (b.closest("#tasks-bar, #items-view") && views.now !== "items") views.show("items");
   b.closest(".box.foldable")?.classList.remove("folded");
   b.scrollIntoView({ block: "nearest" });
   if (!b.disabled) b.click();
@@ -1547,6 +1584,7 @@ async function mountStudy(id) {
   view = viewers[manifest.viewer] ||= VIEWERS[manifest.viewer](shell);
   for (const v of new Set(Object.values(viewers))) v.active?.(v === view);
   view.channels(manifest.channels);
+  views.mount();
   const mod = await import(base + manifest.web.module);
   study = (await mod.mount(shell)) || {};
   view.use(study);
@@ -1568,11 +1606,12 @@ function leaveStudy() {
   st.ready = false; $("#ram-gc").disabled = true;
   for (const w of Object.values(waiting)) w.splice(0).forEach((x) => x.bad(new Error("the study left")));
   busy(false); $("#notice").hidden = true; $("#tip").hidden = true;
-  $("#image-view").hidden = false; delete $("#view").dataset.view;
+  $("#image-view").hidden = false; delete $("#view").dataset.view; $("#switch").hidden = true; $("#tasks-bar").hidden = true; views.now = "image";
 }
 
 const shell = {
   $, state: st, page, still, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, showImage, boxDone,
+  views: { show: (v) => views.show(v), on: (fn) => views.on(fn), count: (l, t) => views.count(l, t), get now() { return views.now; }, get tasks() { return views.tasks; } },
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; },
 };
 splitter(shell);
