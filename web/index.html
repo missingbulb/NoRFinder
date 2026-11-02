@@ -54,6 +54,14 @@
 </header>
 
 <div id="layout">
+  <aside id="data-col" aria-label="Data Management" hidden>
+    <button id="data-open" type="button" aria-expanded="false" title="Data Management: the study's folders and images"><svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg><span class="strip-name">Data Management</span></button>
+    <div id="data-body">
+      <div class="data-head"><h2>Folders</h2><button id="data-approve" type="button" class="link" hidden></button></div>
+      <div id="data-tree" role="tree" aria-label="The study's folders"></div>
+      <p id="data-msg" class="hint" role="status"></p>
+    </div>
+  </aside>
   <aside id="left">
     <section class="box foldable" id="image-box" data-folds="load">
       <div class="sec-head"><h2 data-done-name="Loaded Image">Load Image</h2></div>
@@ -69,16 +77,24 @@
             </div>
           </details>
         </div>
+        <button id="load-original" class="primary" type="button" hidden title="Open the image itself, not its preview: from this device when it is kept here, else from Google Drive">Load Original</button>
         <button id="unload" type="button" hidden title="Close the image and clear the page">Unload</button>
         <input id="file" type="file" hidden>
         <svg hidden><symbol id="drive-logo" viewBox="0 0 24 21"><path fill="#0f9d58" d="M8 0l4 7-8 14-4-7z"/><path fill="#ffba00" d="M8 0h8l8 14h-8z"/><path fill="#4285f4" d="M8 14h16l-4 7H4z"/></symbol><symbol id="computer-logo" viewBox="0 0 24 21"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2" y="1" width="20" height="14" rx="2"/><path d="M8 20h8M12 15v5"/></g></symbol></svg>
       </div>
     </section>
 
-    <section class="box foldable unpublished" id="preprocessing-box" data-opens="load">
+    <section class="box foldable" id="folder-box">
+      <div class="sec-head"><h2>Selected Folder</h2></div>
+      <div id="folder-name"></div>
+      <dl id="folder-summary"></dl>
+      <div class="folder-actions"><button id="update-previews" type="button" disabled>Update previews</button></div>
+      <p id="folder-msg" class="hint" role="status"></p>
+    </section>
+
+    <section class="box foldable" id="preprocessing-box" data-opens="load">
       <div class="sec-head"><h2>Preprocessing</h2></div>
       <div class="steps">
-        <slot-here data-slot-for="preprocessing"></slot-here>
         <button id="split-open" type="button" disabled title="Cut the image into 4 or 9 parts, each its own TIFF, to annotate one at a time">Split into parts…</button>
       </div>
     </section>
@@ -108,6 +124,7 @@
       </div>
       <slot-here data-slot-for="toolbar-end"></slot-here>
     </div>
+    <div id="access-bar" role="status" hidden><span id="access-text"></span><span class="grow"></span><button id="access-go" class="primary" type="button" data-needs-network>Choose folders…</button><button id="access-x" class="x" type="button" aria-label="Close">×</button></div>
     <div id="tasks-bar" class="for-items" hidden><span class="done"></span><meter min="0" max="1" value="0"></meter><span class="grow"></span><slot-here data-slot-for="tasks-end"></slot-here></div>
     <div id="busy" hidden><div id="scan-light"></div><span class="spin big"></span><div id="busy-text"></div><div id="busy-time"></div></div>
 
@@ -125,6 +142,10 @@
       <slot-here data-slot-for="over-image"></slot-here>
     </div>
 
+    <div id="folder-view" hidden>
+      <div class="folder-bar"><h2 id="folder-title"></h2><span class="grow"></span><div class="tabs" id="folder-layout" role="group" aria-label="Show the images as"><button type="button" data-layout="grid" aria-pressed="true">Grid</button><button type="button" data-layout="list" aria-pressed="false">List</button></div></div>
+      <div id="folder-items" data-layout="grid"></div>
+    </div>
     <slot-here data-slot-for="views"></slot-here>
   </main>
 </div>

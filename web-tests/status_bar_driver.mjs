@@ -4,7 +4,7 @@
 // nothing else does; a popup on each crumb saying what was done; the shining crumb bringing its button into view
 // and pressing it; a new image starting over; a PreGT study with no Submit GT and its ground-truth button hidden;
 // the second view's switch reading Tasks with what is left while the study makes ground truth, Items otherwise;
-// a Published study dropping Preprocessing, its postprocessing and Submit GT; switching study in place bringing its own stage and steps; the disk, memory, network and CPU as grey icons and
+// a Published study dropping its postprocessing and Submit GT; switching study in place bringing its own stage and steps; the disk, memory, network and CPU as grey icons and
 // numbers, each opening its own tab of one dialog, each rolling its changed characters to a new value, the CPU and
 // the network flashing on a sharp rise and rolling nothing when reduced motion is asked for; a separator between every two items; no question-mark pointer.
 // Optional SHOTS: a directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
@@ -371,8 +371,8 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   const green = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--yes").trim());
   await check(lights.stage === "Published" && lights.lit.every((f) => f && f === lights.lit[0]) && lights.lit[0] !== await page.evaluate(() => getComputedStyle(document.querySelector("#sb-stage circle:not(.lit)") || document.body).fill),
     "the stage, Published, lights all three alike", { lights, green });
-  const gone = await page.evaluate(() => ["#preprocessing-box", "#fx-counted", "#fx-truth"].map((id) => [id, document.querySelector(id).offsetParent === null]));
-  await check(gone.every(([, hidden]) => hidden), "Preprocessing, the study's postprocessing and its ground-truth button are not shown", gone);
+  const gone = await page.evaluate(() => ["#fx-counted", "#fx-truth"].map((id) => [id, document.querySelector(id).offsetParent === null]));
+  await check(gone.every(([, hidden]) => hidden), "the study's postprocessing and its ground-truth button are not shown", gone);
   await loadImage(page); await count(page);
   await steps(page, ["Load image", "Count"], []);
   await switchIs(page, "Items 1", true, "its item view shows what was found, how many");

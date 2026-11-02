@@ -2,7 +2,8 @@
 // in its own window and hands this page a token, and the page keeps the user's settings in their own Google Drive,
 // in the app's hidden folder, as one file it reads whole and replaces whole: {browser key: the string this device
 // keeps under it}, for the keys whose settings follow the user. The services it reaches: Google's sign-in script
-// and window, Google's account details (name, email, picture), and the Drive API for that one file.
+// and window, Google's account details (name, email, picture), and the Drive API for that one file. A study may
+// ask for more (more(scope), 1.65): Google's per-file Drive permission, added to the same token.
 "use strict";
 const GOOGLE_SCRIPT = "https://accounts.google.com/gsi/client";
 const SCOPES = "openid email profile https://www.googleapis.com/auth/drive.appdata";
@@ -13,14 +14,15 @@ const FILE_NAME = "rauntruth-settings.json";
 // a token this close to running out is renewed rather than used
 const MARGIN_MS = 60 * 1000;
 const SAVE_AFTER_MS = 400;
-// who is signed in on this device: {user: {name, email, picture}, token, until (ms), fileId, changed}, changed the
-// keys whose settings this device changed since Drive last had them
+// who is signed in on this device: {user: {name, email, picture}, token, until (ms), scopes (what the token may do,
+// as Google listed it), fileId, changed}, changed the keys whose settings this device changed since Drive last had them
 export const SIGNED_IN = "nor-google-sign-in";
 
-// keys: the browser keys whose settings follow the user; applied(): runs once Drive's settings have replaced them
-export function account({ keys, menu, clientId, applied }) {
+// keys: the browser keys whose settings follow the user; applied(): runs once Drive's settings have replaced them;
+// changed(): runs whenever who is signed in may have changed
+export function account({ keys, menu, clientId, applied, changed = () => {} }) {
   const $ = (s) => menu.querySelector(s);
-  let me = read(), client = null, script = null, saving = null;
+  let me = read(), client = null, script = null, saving = null, asked = null;
 
   function read() { try { return JSON.parse(localStorage.getItem(SIGNED_IN)) || null; } catch { return null; } }
   const keep = () => { try { if (me) localStorage.setItem(SIGNED_IN, JSON.stringify(me)); else localStorage.removeItem(SIGNED_IN); } catch { /* private mode: this page only */ } };
@@ -91,6 +93,7 @@ export function account({ keys, menu, clientId, applied }) {
       was.outerHTML = summary.dataset.anonymous;
     }
     summary.title = summary.ariaLabel = user ? `${user.name}, signed in` : "You, on this device";
+    changed();
   };
 
   // Google's script, loaded only for someone signing in or signed in; its token client asks for the token
@@ -99,15 +102,17 @@ export function account({ keys, menu, clientId, applied }) {
       client = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId, scope: SCOPES,
         callback: async (t) => {
-          if (t.error) return console.warn("Google gave no token:", t.error);
+          const waiting = asked; asked = null;
+          if (t.error) { waiting?.(false); return console.warn("Google gave no token:", t.error); }
           const first = !me || !me.user;
-          me = { ...(me || {}), token: t.access_token, until: Date.now() + t.expires_in * 1000 };
+          me = { ...(me || {}), token: t.access_token, until: Date.now() + t.expires_in * 1000, scopes: t.scope || SCOPES };
           if (first) {
             const u = await (await google(USER_INFO)).json();
             me.user = { name: u.name || u.email, email: u.email, picture: u.picture || null };
           }
-          keep(); show(); syncing();
+          keep(); show(); syncing(); waiting?.(true);
         },
+        error_callback: () => { asked?.(false); asked = null; },
       });
     })
     .catch((e) => { script = null; console.warn("Google sign-in did not load:", e); }));
@@ -146,5 +151,21 @@ export function account({ keys, menu, clientId, applied }) {
     // the user is about to use Google Drive (Load): a token run out is renewed in their click, and the settings sync
     drive() { renew(); },
     signedIn: () => !!(me && me.user),
+    email: () => (me && me.user && me.user.email) || null,
+    // the token while it lasts, else null; renewing it needs the user's click (renew)
+    token: () => (live() ? me.token : null),
+    renew,
+    // whether the token Google gave may do scope, as far as the last one said
+    may: (scope) => !!(me && (me.scopes || "").split(" ").includes(scope)),
+    // asks Google, in the user's click, to add scope to the token: true once it has
+    more(scope) {
+      if (!me || !client || !navigator.userActivation?.isActive) return Promise.resolve(false);
+      return new Promise((ok) => {
+        asked = ok;
+        client.requestAccessToken({ scope: SCOPES + " " + scope, include_granted_scopes: true, login_hint: me.user.email });
+      }).then((got) => got && this.may(scope));
+    },
+    // Google's sign-in script, loaded
+    ready: () => ready(),
   };
 }

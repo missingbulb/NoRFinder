@@ -49,6 +49,13 @@ def test_a_study_names_files_that_exist(path):
         assert len(c.get('about', '').split()) <= 100, f"{c['name']}: about runs past 100 words"
         black, white = c.get('black', 0), c.get('white', 255)
         assert 0 <= black < white <= 255, c
+    # 1.64: its Drive folders, each a folder link, and who holds each role, by email
+    assert 'drive' not in m['files'], 'a study names its Drive folders in files.folders'
+    for link in m['files'].get('folders', []):
+        assert re.search(r'/folders/[\w-]{10,}', link), link
+    for role, who in m.get('permissions', {}).items():
+        assert role in ('data_management', 'ground_truth_writer'), role
+        assert who and all(re.fullmatch(r'[^@\s]+@[^@\s]+\.[^@\s]+', e) for e in who), (role, who)
     if 'driveThumbs' in m:
         assert os.path.isdir(os.path.join(base, m['driveThumbs']))
     # 1.60: its own tab icon and link-preview poster, published with its page part

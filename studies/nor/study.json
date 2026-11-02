@@ -42,7 +42,9 @@
   "files": {
     "accept": ".tif,.tiff,.png",
     "empty": "Load a three-channel ImageJ TIFF (Caspr green, Nav red, DAPI) or an RGB PNG, then press Find Candidates.",
-    "drive": "https://drive.google.com/drive/folders/1WulrO8Qeqx-Qcxi1TQ7DcaVJNqYq2Bxl"
+    "folders": [
+      "https://drive.google.com/drive/folders/1WulrO8Qeqx-Qcxi1TQ7DcaVJNqYq2Bxl"
+    ]
   },
   "channels": [
     {
@@ -69,6 +71,11 @@
     "load": "Loading the finders…",
     "open": "Reading the image and building the blue mask…",
     "detect": "Finding candidates (the slow part)…"
+  },
+  "permissions": {
+    "data_management": [
+      "arielra@gmail.com"
+    ]
   },
   "groundTruth": {
     "label": "new-ground-truth",
