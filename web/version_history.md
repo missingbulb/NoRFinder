@@ -10,7 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
-- Item View is now Tasks, and says how many are left: in NoR Finder, the finalists and added NoRs still waiting for your verdict; in Vascular Measurements, the low-confidence vessels. It reads "Tasks done" once none are left. (#PR)
+- Item View is now Tasks, and says how many are left: in NoR Finder, the finalists and added NoRs still waiting for your verdict; in Vascular Measurements, the low-confidence vessels. It reads "Tasks done" once none are left. (#648)
 - Load's recent images are listed per study: each study shows only the images opened in it. Animations turned off stay off on your next visit and follow you when signed in (also in Settings), and buttons that would shine look plain. (#632)
 - Sign in with Google from your avatar's menu to carry your settings to every device, kept in a hidden file in your own Google Drive: the theme, the tips you closed, where Load reads from, your last Drive links and your recent Drive images. Not signing in changes nothing. (#624)
 - Settings… in your avatar's menu lists your settings (the theme, where Load reads from, thumbnails, the low-memory popup, your last Drive links, the tips you closed, your recent Drive images) to change and save in one place. The dialog behind the disk, memory, network and CPU is now titled Resource Usage. (#624)
