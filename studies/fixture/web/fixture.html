@@ -4,9 +4,9 @@
     <input type="range" id="fx-threshold" min="0" max="255" value="128">
     <button id="fx-count" class="primary" disabled>Count</button>
   </section>
-  <section class="box foldable" data-opens="count">
+  <section class="box foldable unpublished" id="fx-counted" data-opens="count">
     <div class="sec-head"><h2>Counted</h2></div>
-    <p class="hint">The count is in the Result box.</p>
+    <p class="hint">The count is in the Result box. Its postprocessing, gone once the study is published.</p>
   </section>
   <section class="box foldable" data-opens="user">
     <div class="sec-head"><h2>Notes</h2></div>
@@ -15,6 +15,11 @@
 </template>
 <template data-slot="left">
   <section class="box"><h2>Result</h2><div id="fx-result" class="dim">Nothing counted yet.</div></section>
+</template>
+<template data-slot="views">
+  <div id="items-view" hidden>
+    <label><input type="checkbox" id="fx-done" disabled> The count is right</label>
+  </div>
 </template>
 <template data-slot="toolbar-end">
   <button id="fx-truth" disabled>Submit ground truth</button>

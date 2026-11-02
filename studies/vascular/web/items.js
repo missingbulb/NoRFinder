@@ -209,7 +209,7 @@ function select(key) {
   selected = key;
   for (const c of $('item-list').children) c.classList.toggle('on', c.dataset.key === key);
 }
-let show3d = () => {};
+let show3d = () => {}, count = () => {};
 
 function render() {
   const m = MV.current(), list = $('item-list');
@@ -218,8 +218,9 @@ function render() {
     b.setAttribute('aria-pressed', String(b.dataset.v === kind));
     b.querySelector('.count').textContent = counts[b.dataset.v];
   }
-  $('items-count').textContent = m ? String(counts.junctions + counts.vessels) : '';
-  $('item-switch').disabled = !m;
+  // the tasks: a verdict on every low-confidence vessel, among every junction and vessel
+  count(m ? items.vessels.filter((v) => v.state === 'candidate').length : null, m ? counts.junctions + counts.vessels : null);
+  $('switch').disabled = !m;
   for (const o of $('item-sort').options) o.hidden = !o.dataset.for.includes(kind);
   if (!$('item-sort').selectedOptions[0] || $('item-sort').selectedOptions[0].hidden) { sort = 'file'; $('item-sort').value = 'file'; }
   for (const o of $('item-filter').options) o.hidden = !o.dataset.for.includes(kind);
@@ -243,8 +244,8 @@ function render() {
   list.parentElement.scrollTop = top;
 }
 
-export function init(view, toThreeD) {
-  V = view; show3d = toThreeD; items = { junctions: [], vessels: [] }; shown = false; selected = null;
+export function init(view, toThreeD, counts) {
+  V = view; show3d = toThreeD; count = counts; items = { junctions: [], vessels: [] }; shown = false; selected = null;
   MV.onChange((m) => { items = build(m); render(); });
   $('item-kind').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { kind = b.dataset.v; render(); } });
   $('item-filter').onchange = (e) => { filter = e.target.value; render(); };

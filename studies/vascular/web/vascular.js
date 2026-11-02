@@ -7,18 +7,8 @@ export function mount(shell) {
   const { $ } = shell, V = shell.viewer.three;
   MV.init(V, shell.signal);
   shell.signal.addEventListener("abort", () => MV.leave());
-  let view = "image";
-  function showView(v) {
-    view = v;
-    $("#image-view").hidden = v !== "image"; $("#items-view").hidden = v !== "items";
-    $("#view").dataset.view = v;
-    $("#item-switch").firstChild.textContent = v === "image" ? "Item View " : "Image View ";
-    items.visibleNow(v === "items");
-    if (v === "image") V.redraw();
-  }
-  items.init(V, () => showView("image"));
-  $("#item-switch").onclick = () => showView(view === "image" ? "items" : "image");
-  showView("image");
+  shell.views.on((v) => { items.visibleNow(v === "items"); if (v === "image") V.redraw(); });
+  items.init(V, () => shell.views.show("image"), shell.views.count);
   MV.onChange((m) => { $("#vm-truth").disabled = !m; });
   $("#vm-truth").onclick = () => {
     const gt = MV.truth();

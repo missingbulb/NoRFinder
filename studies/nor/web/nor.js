@@ -929,6 +929,9 @@ export function mount(shell) {
     const b = $("#dl-truth"); b.disabled = !st.img;
     const { state, items } = gtState(), open = items.filter((t) => t.grade && !t.ok);
     b.dataset.state = st.img ? state : "";
+    // the tasks: a verdict on every finalist and every NoR the user added
+    const verdict = (c) => (c.added ? st.added[c.k].verdict : st.forced.get(c.i)), tasks = st.meta ? [...(st.passes || []).filter((c) => !c.added), ...addedCands()] : null;
+    shell.views.count(tasks && tasks.filter((c) => !verdict(c)).length, tasks && tasks.length);
     b.title = (open.length ? open.map((t) => t.text + ".").join(" ") : "Every finalist has your verdict.") + " Click to export or submit.";
     steps();
   }
@@ -1106,16 +1109,14 @@ export function mount(shell) {
   }
 
   // ---------- views ----------
-  function showView(v) {
-    st.view = v; $("#tip").hidden = true;
-    $("#image-view").hidden = v !== "image"; $("#items-view").hidden = v !== "items";
-    $("#view").dataset.view = v;
-    $("#switch").textContent = v === "image" ? "Item View" : "Image View";
+  // the shell's switch shows the view; the cards are built only while the item view shows
+  const showView = (v) => shell.views.show(v);
+  st.view = shell.views.now;
+  shell.views.on((v) => {
+    st.view = v;
     if (v === "items" && st.meta) { renderList(); revealSelected("center"); }
     if (v === "image") { lazy.seen?.disconnect(); lazy.near.clear(); $("#list").replaceChildren(); shell.viewer.minimapView(); }
-  }
-  $("#switch").onclick = () => showView(st.view === "image" ? "items" : "image");
-  showView("image");
+  });
 
   // for the study's page tests, which drive it from outside
   window.nor = { candOf, addedCands, linesOf, showView, decide, numOf, whyAll, result, summaryRows, inMask, fmt, card };

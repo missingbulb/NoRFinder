@@ -3,7 +3,8 @@
 // popup lists the stages; breadcrumbs of the steps done and the one to do now, which shines with its button and
 // nothing else does; a popup on each crumb saying what was done; the shining crumb bringing its button into view
 // and pressing it; a new image starting over; a PreGT study with no Submit GT and its ground-truth button hidden;
-// switching study in place bringing its own stage and steps; the disk, memory, network and CPU as grey icons and
+// the second view's switch reading Tasks with what is left while the study makes ground truth, Items otherwise;
+// a Published study dropping Preprocessing, its postprocessing and Submit GT; switching study in place bringing its own stage and steps; the disk, memory, network and CPU as grey icons and
 // numbers, each opening its own tab of one dialog, each rolling its changed characters to a new value, the CPU and
 // the network flashing on a sharp rise and rolling nothing when reduced motion is asked for; a separator between every two items; no question-mark pointer.
 // Optional SHOTS: a directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
@@ -126,6 +127,12 @@ const tabIs = async (page, tab) => {
   const title = await page.evaluate(() => { const d = document.querySelector("#usage-dlg"), h = document.getElementById(d.getAttribute("aria-labelledby")); return h && d.contains(h) && h.textContent; });
   await check(title === "Resource Usage", `the dialog is open on ${tab}, titled Resource Usage`, title);
 };
+// the shell's switch to the item view: first in the toolbar, what it reads, whether it can be pressed
+const switchIs = async (page, want, on, what) => {
+  await page.waitForFunction((w) => document.querySelector("#switch")?.textContent.replace(/\s+/g, " ").trim() === w, want).catch(() => {});
+  const s = await page.evaluate(() => { const b = document.querySelector("#switch"); return b && { text: b.textContent.replace(/\s+/g, " ").trim(), on: !b.disabled, shown: !!b.offsetParent, first: b === document.querySelector(".toolbar").firstElementChild }; });
+  await check(s && s.text === want && s.on === on && s.shown && s.first, `the switch, first in the toolbar, reads "${want}"${on ? "" : ", off"}${what ? ": " + what : ""}`, s);
+};
 const loadImage = async (page) => { await page.setInputFiles("#file", image); await page.waitForFunction(() => !document.querySelector("#fx-count").disabled); };
 const count = async (page) => { await page.click("#fx-count"); await page.waitForFunction(() => /pixels/.test(document.querySelector("#fx-result").textContent)); };
 
@@ -139,9 +146,9 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   const stages = await page.evaluate(() => [...document.querySelectorAll("#stage-pop li")].map((li) => ({
     name: li.querySelector(".name").textContent, now: li.classList.contains("now"), crossed: getComputedStyle(li.querySelector(".name")).textDecorationLine,
   })));
-  await check(stages.map((x) => x.name).join() === "PreGT,GT,PostGT" && stages[1].now && !stages[0].now && !stages[2].now,
-    "the stage's popup lists PreGT, GT and PostGT, GT highlighted", stages);
-  await check(stages[0].crossed === "line-through" && stages[1].crossed === "none" && stages[2].crossed === "none", "the stage before it is crossed out", stages);
+  await check(stages.map((x) => x.name).join() === "PreGT,GT,PostGT,Published" && stages[1].now && stages.filter((x) => x.now).length === 1,
+    "the stage's popup lists PreGT, GT, PostGT and Published, GT highlighted", stages);
+  await check(stages[0].crossed === "line-through" && stages.slice(1).every((x) => x.crossed === "none"), "the stage before it is crossed out", stages);
   await check(/next|move on/i.test(await page.textContent("#stage-pop")), "and says what moves the study on", await page.textContent("#stage-pop"));
   if (shots) await page.screenshot({ path: path.join(shots, "0-stages.png") });
   await page.mouse.move(700, 300);
@@ -182,6 +189,7 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await page.click("#sb-load");
   await check(!!(await chooser), "clicking the shining Load image presses Load");
 
+  await switchIs(page, "Tasks", false, "a GT study's item view is its tasks, off until there are some");
   await loadImage(page);
   await steps(page, ["Load image", "Count*"], ["#fx-count", "#sb-count"]);
   await check((await tip(page, "Load image")).includes("squares.png"), "Load image's popup names the image");
@@ -207,6 +215,16 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await check(!(await page.evaluate(() => document.querySelector("#sb-cpu").classList.contains("spike"))), "and the flash fades after a few seconds");
   await steps(page, ["Load image", "Count", "Submit GT*"], ["#fx-truth", "#sb-submit"]);
   await check((await tip(page, "Count")).includes("400"), "the study's step says what it did");
+  // the tasks: how many are left on the switch, the item view behind it, and none left once done
+  await switchIs(page, "Tasks 1 left", true, "with how many are left");
+  await page.click("#switch");
+  const inItems = await page.evaluate(() => ({ items: !document.querySelector("#items-view").hidden, image: !document.querySelector("#image-view").hidden, view: document.querySelector("#view").dataset.view }));
+  await check(inItems.items && !inItems.image && inItems.view === "items", "pressing it shows the item view", inItems);
+  await switchIs(page, "Image", true, "and then reads Image");
+  await page.check("#fx-done");
+  await page.click("#switch");
+  await switchIs(page, "Tasks done", true, "once no task is left");
+  await check(await page.evaluate(() => !document.querySelector("#image-view").hidden && document.querySelector("#items-view").hidden), "and the image is back");
   await shot(page, "2-submit");
   await page.click("#fx-truth");
   const download = page.waitForEvent("download");
@@ -323,6 +341,25 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await check(await page.evaluate(() => document.querySelector("#fx-truth").offsetParent === null), "its ground-truth button is hidden");
   await loadImage(page); await count(page);
   await steps(page, ["Load image", "Count"], []);
+  await switchIs(page, "Items 1", true, "a PreGT study's item view shows what was found, how many");
+  await ctx.close();
+  stage = null;
+}
+
+// ---- the same study as Published: it only shows what it finds ----
+{
+  stage = "Published";
+  const { ctx, page } = await open("fixture");
+  const lights = await page.evaluate(() => ({ stage: document.querySelector("#sb-stage").dataset.stage,
+    lit: [...document.querySelectorAll("#sb-stage circle")].map((c) => c.classList.contains("lit") && getComputedStyle(c).fill) }));
+  const green = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--yes").trim());
+  await check(lights.stage === "Published" && lights.lit.every((f) => f && f === lights.lit[0]) && lights.lit[0] !== await page.evaluate(() => getComputedStyle(document.querySelector("#sb-stage circle:not(.lit)") || document.body).fill),
+    "the stage, Published, lights all three alike", { lights, green });
+  const gone = await page.evaluate(() => ["#preprocessing-box", "#fx-counted", "#fx-truth"].map((id) => [id, document.querySelector(id).offsetParent === null]));
+  await check(gone.every(([, hidden]) => hidden), "Preprocessing, the study's postprocessing and its ground-truth button are not shown", gone);
+  await loadImage(page); await count(page);
+  await steps(page, ["Load image", "Count"], []);
+  await switchIs(page, "Items 1", true, "its item view shows what was found, how many");
   await ctx.close();
   stage = null;
 }
