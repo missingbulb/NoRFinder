@@ -63,16 +63,16 @@ test fold under it. A study's research requirements, which no user sees, stay in
   sections folded when the dialog opens. Set by the owner on 2026-11-02, the sections follow what it
   takes to work offline (`1.55`, `1.56`): one per study, whose title says whether the study is
   available offline (`1.57`), holding its Python packages no other study uses, by package; its own
-  pages and code, part of the site's copy; the images kept from Google Drive in it, by name; their
-  thumbnails and its Drive folders' previews; and, for the study on show, the selections per image,
-  by image name. Then **Shared by every study**: the site itself, Python itself and the packages two
-  studies or more use. Then **Not tied to a study**: an image, a thumbnail or a preview kept before
-  images were told apart by study and opened in none of them since, code no study uses now, and
-  anything stored under the site that neither the shell nor the study names. Each entry can be
-  deleted, but a study's pages, kept whole with the site; each section's Delete all deletes all it
-  can, and a study's is the study's whole purge, leaving what other studies use. Settings are not
-  listed here: they are kept, shown and cleared in Settings (`1.52`), and the total says what they
-  take. The shell names its own keys; the study names its keys through its `stored` hook, so the
+  pages and code, part of the site's copy; the images kept from Google Drive in it, by name; one
+  record for all their thumbnails and its Drive folders' previews; and, for the study on show, the
+  selections per image, by image name. An image, a thumbnail or a preview kept before images were
+  told apart by study, and opened in none of them since, is listed with the study on show. Then
+  **Shared by every study**: the site itself, Python itself, the packages two studies or more use,
+  and, as one record, code no study uses now. Each entry can be deleted, but a study's pages, kept
+  whole with the site; each section's Delete all deletes all it can, and a study's is the study's
+  whole purge, leaving what other studies use. Settings are not listed here: they are kept, shown
+  and cleared in Settings (`1.52`); the total says what they take, and counts too what is stored
+  under the site that neither the shell nor the study names. The shell names its own keys; the study names its keys through its `stored` hook, so the
   shell still names no study (`1.1`). Test: `web-tests/test_storage_page.py`.
   </details>
 
@@ -525,7 +525,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   turned a little, its channels in their own colours, and turning while the pointer is over its row.
   An image the index lacks, or names with another SHA-256 (it changed since the file was made), is
   read as without the file (`1.18`, `1.36`). The download waits, like every other, while Drive
-  throttles the site (`1.37`). Manage storage lists each folder's file among the thumbnails. Test:
+  throttles the site (`1.37`). Manage storage counts each folder's file with its study's thumbnails. Test:
   `web-tests/test_drive_previews_page.py`.
   </details>
 
@@ -761,9 +761,10 @@ test fold under it. A study's research requirements, which no user sees, stay in
   <details>
 
   Set by the owner on 2026-11-02, so the user knows before doing anything what works with no network
-  (`1.55`). A small mark, the same everywhere, follows a study whose Python is all on this device, in
-  the header's switcher, and an image kept on this device, in the Google Drive dialog's rows and in
-  Load's recent images; what is not available offline carries nothing. Hovering on the mark says what
+  (`1.55`). A small grey mark, the same everywhere, an arrow into a tray for saved on this device,
+  follows a study whose Python is all on this device, in the header's switcher and its Storage
+  section, and an image kept on this device, in the Google Drive dialog's rows; what is not available
+  offline carries nothing. Load's recent images carry none: with Auto-save on, they are all kept. Hovering on the mark says what
   it means: the study runs, or the image opens, without the internet. Test:
   `web-tests/test_storage_page.py`.
   </details>

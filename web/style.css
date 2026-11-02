@@ -664,7 +664,7 @@ html.offline [data-needs-network] { opacity: .45; cursor: not-allowed; }
 @media (max-width: 520px) { #offline-dlg .where { display: none; } }
 #statusbar #sb-offline[hidden] { display: none; }
 /* what is available offline (1.57): a small, quiet mark, explained on hover */
-.offline-mark { display: inline-flex; align-items: center; margin-left: 5px; color: var(--yes); opacity: .75; vertical-align: -1px; cursor: help; }
-.offline-mark:hover { opacity: 1; }
+.offline-mark { display: inline-flex; align-items: center; margin-left: 5px; color: var(--dim); vertical-align: -1px; cursor: help; }
+.offline-mark:hover { color: var(--text); }
 #storage-list .group > summary .title { display: inline-flex; align-items: center; }
 #storage-list .entry .del-none { width: 22px; }

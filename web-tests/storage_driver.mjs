@@ -3,7 +3,7 @@
 // per study, then the shared and the rest, folded at first, each entry with its size, and no setting; deleting an
 // entry removes exactly what it lists, and a study's Delete all purges it but what other studies use; a thumbnail
 // saved from now on is listed by its image's name. 1.52: Settings lists the settings kept on this device only, to
-// clear. 1.57: the study switcher, the Drive dialog and Load's recents mark what is available offline. Then 1.7: the Drive dialog's Show
+// clear. 1.57: the study switcher and the Drive dialog mark what is available offline. Then 1.7: the Drive dialog's Show
 // thumbnails and Auto-save images, and the link beside them showing what thumbnails and images take; an image
 // downloaded while Auto-save is on opens again with no download, one downloaded while it is off is not kept.
 // Then 1.29: Load's dropdown lists the images opened from Drive, newest first, once each, two of one name told
@@ -153,20 +153,21 @@ try {
     [...g.querySelectorAll(".entry")].map((e) => ({ kind: e.dataset.kind, name: e.querySelector(".name").textContent, what: e.querySelector(".what")?.textContent || "", size: e.querySelector(".size").textContent, del: !!e.querySelector(".del") }))])));
   let g = await groups();
   const names = (k, kind) => (g[k] || []).filter((e) => !kind || e.kind === kind).map((e) => e.name);
-  check(Object.keys(g).join() === "study:viewer,study:nor,study:vascular,shared,loose", `a section per study, by title, then the shared, then the rest: ${Object.keys(g)}`);
+  check(Object.keys(g).join() === "study:viewer,study:nor,study:vascular,shared", `a section per study, by title, then the shared: ${Object.keys(g)}`);
   const titles = await page.$$eval("#storage-list .group > summary", (ss) => ss.map((s) => ({ text: s.textContent, mark: !!s.querySelector(".offline-mark") })));
   check(titles[0].mark && !titles[1].mark && /Image Viewer/.test(titles[0].text) && /NoR Finder/.test(titles[1].text), `a study's title says whether it is available offline: ${JSON.stringify(titles)}`);
   check(names("study:nor", "python").join() === "scipy" && /300 KB/.test(g["study:nor"].find((e) => e.kind === "python").size), `a study's own Python packages, by package: ${JSON.stringify(g["study:nor"])}`);
-  check(names("study:nor", "image").join() === "slide 1.tif", `the images kept in a study, by name: ${names("study:nor", "image")}`);
-  check(names("study:nor", "thumb").join() === "slide 1.tif", `their thumbnails, by image name: ${names("study:nor", "thumb")}`);
+  check(names("study:nor", "image").sort().join() === "old.tif,slide 1.tif", `the images kept in a study, by name, one kept before studies were told apart with the study on show: ${names("study:nor", "image")}`);
+  const pics = g["study:nor"].filter((e) => e.kind === "thumb");
+  check(pics.length === 1 && /2 images/.test(pics[0].what), `the study's thumbnails, one record for all: ${JSON.stringify(pics)}`);
   check(names("study:nor", "selections").sort().join() === "other.tif,slide 1.tif", `the study on show's selections, by image: ${names("study:nor", "selections")}`);
   const slide = g["study:nor"].find((e) => e.kind === "selections" && e.name === "slide 1.tif");
   check(slide && /keep/i.test(slide.what) && /mask/i.test(slide.what), `an image's row says what is kept for it: "${slide && slide.what}"`);
   check(names("shared").sort().join() === "Python itself,numpy,pillow", `what two studies or more use is shared: ${names("shared")}`);
-  check(names("loose").sort().join() === "ID2,acme-key,old.tif", `what no study is told for, and what nobody names: ${names("loose")}`);
   const all = Object.values(g).flat();
   check(!all.some((e) => ["Theme", "Last Google Drive link", "Filter settings"].includes(e.name)), "no setting is listed: Settings keeps them");
-  check(all.length === 11 && all.every((e) => /\d/.test(e.size)), `every entry, ${all.length} of 11, shows its size`);
+  check(!all.some((e) => e.name === "acme-key"), "what nobody names is not listed");
+  check(all.length === 9 && all.every((e) => /\d/.test(e.size)), `every entry, ${all.length} of 9, shows its size`);
   check(/\d/.test(await page.textContent("#storage-total")) && /settings/i.test(await page.textContent("#storage-total")), "the dialog says how much the site keeps in all, settings included: " + (await page.textContent("#storage-total")));
 
   // deleting one image's selections removes its keys only
@@ -177,26 +178,22 @@ try {
   check(!k.some((x) => x.includes("slide 1.tif|") || x.endsWith(":slide 1.tif")) && k.includes("nor-edits-v1:other.tif|ridge"), `deleting an image removes its selections only: ${k}`);
   check(await page.isVisible("#storage-reload"), "and offers to reload the page, which still holds them");
 
-  // deleting a thumbnail removes it, its place in the list and its name
-  await page.click('#storage-list .entry[data-kind=thumb][data-name="slide 1.tif"] .del');
-  await page.waitForFunction(() => !document.querySelector('#storage-list .entry[data-kind=thumb][data-name="slide 1.tif"]'));
-  const thumbs = await page.evaluate(() => [localStorage.getItem("nor-drive-thumb:ID1"), localStorage.getItem("nor-drive-thumbs-saved"), localStorage.getItem("nor-drive-thumb-names")]);
-  check(thumbs[0] === null && thumbs[1] === '["ID2"]' && thumbs[2] === "{}", `deleting a thumbnail removes it from every list: ${thumbs}`);
+  // deleting the thumbnails removes each, its place in the list and its name
+  await page.click('#storage-list .group[data-group="study:nor"] .entry[data-kind=thumb] .del');
+  await page.waitForFunction(() => !document.querySelector('#storage-list .entry[data-kind=thumb]'));
+  const thumbs = await page.evaluate(() => [localStorage.getItem("nor-drive-thumb:ID1"), localStorage.getItem("nor-drive-thumb:ID2"), localStorage.getItem("nor-drive-thumbs-saved"), localStorage.getItem("nor-drive-thumb-names")]);
+  check(thumbs[0] === null && thumbs[1] === null && thumbs[2] === "[]" && thumbs[3] === "{}", `deleting the thumbnails removes them from every list: ${thumbs}`);
 
   // a study's Delete all purges it, leaving what other studies use
   page.once("dialog", (d) => d.accept());
   await page.click('#storage-list .group[data-group="study:nor"] .clear');
   await page.waitForFunction(() => !document.querySelector('#storage-list .group[data-group="study:nor"] .entry'));
   const left = await page.evaluate(async ({ own, shared }) => ({ own: !!(await caches.match(own)), shared: (await Promise.all(shared.map((u) => caches.match(u)))).every(Boolean),
-    image: !!(await caches.match(new URL("drive-image/ID1", location.href).href)), selections: Object.keys(localStorage).filter((x) => x.startsWith("nor-edits-v1:")).length }), { own: OWN, shared: SHARED });
-  check(!left.own && !left.image && !left.selections && left.shared, `a study's Delete all deletes its own packages, images and selections, and keeps the shared: ${JSON.stringify(left)}`);
+    image: !!(await caches.match(new URL("drive-image/ID1", location.href).href)) || !!(await caches.match(new URL("drive-image/ID9", location.href).href)),
+    selections: Object.keys(localStorage).filter((x) => x.startsWith("nor-edits-v1:")).length, other: localStorage.getItem("acme-key") }), { own: OWN, shared: SHARED });
+  check(!left.own && !left.image && !left.selections && left.shared && left.other === "x", `a study's Delete all deletes its own packages, images and selections, and keeps the shared and what nobody names: ${JSON.stringify(left)}`);
   g = await groups();
-  check(names("loose").sort().join() === "ID2,acme-key,old.tif" && names("shared").length === 3, "and leaves the other sections alone");
-  page.once("dialog", (d) => d.accept());
-  await page.click('#storage-list .group[data-group="loose"] .clear');
-  await page.waitForFunction(() => !document.querySelector('#storage-list .group[data-group="loose"] .entry'));
-  check(await page.evaluate(async () => !(await caches.match(new URL("drive-image/ID9", location.href).href)) && localStorage.getItem("acme-key") === null),
-    "Not tied to a study's Delete all deletes what it lists");
+  check(names("shared").length === 3, "and leaves the shared section alone");
   await page.click("#usage-dlg button[value=close]");
 
   // 1.52: the settings kept on this device only are listed in Settings, each to clear
@@ -272,9 +269,6 @@ try {
   let r = await recents();
   check(r.map((e) => e.name).join() === `${DRIVE[1].name},${DRIVE[0].name}`, `the dropdown lists the images opened, newest first, once each: ${JSON.stringify(r)}`);
   check(r.every((e) => e.logo) && (await page.$('#load-menu .item[data-src="drive"] svg.drive-logo')), "each recent, and From Google Drive, shows Drive's logo");
-  await page.waitForFunction(() => document.querySelector("#load-menu .recent .offline-mark"), null, { timeout: 5000 }).catch(() => {});
-  const recentMarks = await page.$$eval("#load-menu .recent", (bs) => bs.map((b) => !!b.querySelector(".offline-mark")));
-  check(recentMarks.join() === "false,true", `a recent image kept on this device is marked, one not kept is not: ${recentMarks}`);
   check(!!(await page.$('#load-menu .item[data-src="local"] svg.computer-logo')), "1.15: From this computer shows a computer");
   await page.click("#load-menu summary");
   const fit = await page.evaluate(() => { const p = $("#load-menu .pop").getBoundingClientRect(), bar = $("#left"), b = bar.getBoundingClientRect();

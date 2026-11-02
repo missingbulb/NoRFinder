@@ -620,7 +620,6 @@ function showRecent() {
     b.onclick = () => { $("#load-menu").open = false; openRecent(r); };
     return b;
   }));
-  keptIds().then((kept) => list.forEach((r, k) => { const b = box.children[k + 1]; if (b) markOffline(b, "image", kept.has(r.id)); }));
 }
 
 // once Google throttles the site's downloads the Drive dialog waits WAIT, with a notice and a countdown, and
@@ -979,23 +978,28 @@ const OWN_SETTINGS = {
   [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
   [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [APP_ASKED]: "Asked for the site as an app",
 };
-// What the site keeps, by what it takes to work offline (1.6): a section per study, then what they share, then the
-// rest; settings apart, which Settings keeps (1.52). An entry: {kind, name, what, size, del, held, ask, pic}, del
+// What the site keeps, by what it takes to work offline (1.6): a section per study, then what they share; settings
+// apart, which Settings keeps (1.52), and with them what nobody names. An entry: {kind, name, what, size, del, held, ask}, del
 // absent for what cannot go alone. Kinds in a section's order:
 const KINDS = ["site", "python", "code", "image", "thumb", "selections", "other"];
 const SHARED_ABOUT = "The site itself, so it opens offline; Python itself; and the packages two studies or more use.";
-const LOOSE_ABOUT = "Kept before images were told apart by study, code no study uses now, and anything the page no longer names.";
 // a package's name from its wheel's file name
 const packageOf = (url) => decodeURIComponent(url.split("/").pop()).split("-")[0].replace(/_/g, "-");
-// [{id, title, about, mark, entries}], and what the settings take apart from them
+// [{id, title, about, mark, entries}], what the settings take apart from them, and the rest
 async function inventory() {
   const drop = (...keys) => keys.forEach((k) => { try { localStorage.removeItem(k); } catch { /* nothing kept */ } });
   const studies = await offlineCopy.studyFiles().catch((e) => { console.warn("the studies could not be read:", e); return []; });
   const live = await offlineCopy.available().catch(() => new Set());
   const sections = studies.map((s) => ({ id: "study:" + s.id, study: s.id, title: s.title, mark: live.has(s.id), entries: [] }));
   const shared = { id: "shared", title: "Shared by every study", about: SHARED_ABOUT, entries: [] };
-  const loose = { id: "loose", title: "Not tied to a study", about: LOOSE_ABOUT, entries: [] };
-  const sectionOf = (id) => sections.find((x) => x.study === id) || loose;
+  // a study's own, else the study on show's: kept before images were told apart by study
+  const sectionOf = (id) => sections.find((x) => x.study === id) || sections.find((x) => x.study === manifest?.id) || shared;
+  // each section's thumbnails and its folders' previews, one record
+  const thumbsOf = new Map(), thumb = (x, size, del, preview) => {
+    const t = thumbsOf.get(x) || { pics: 0, previews: 0, size: 0, dels: [] };
+    t[preview ? "previews" : "pics"]++; t.size += size; t.dels.push(del); thumbsOf.set(x, t);
+  };
+  const unused = { size: 0, dels: [] };
   // the study each Drive image belongs to: the one it was kept in, else the one it was last opened in
   const studyOf = {};
   for (const r of readJSON(RECENT, [])) if (r.study && !(r.id in studyOf)) studyOf[r.id] = r.study;
@@ -1010,10 +1014,10 @@ async function inventory() {
     if (k === SAVED_THUMBS || k === THUMB_NAMES) { overhead += bytesOf(k); continue; }
     if (k.startsWith(SAVED_THUMB)) {
       const id = k.slice(SAVED_THUMB.length);
-      sectionOf(studyOf[id]).entries.push({ kind: "thumb", name: names[id] || id, what: names[id] ? "Thumbnail" : "Thumbnail, saved before names were kept", pic: readJSON(k, ""), size: bytesOf(k), del: () => {
+      thumb(sectionOf(studyOf[id]), bytesOf(k), () => {
         drop(k); writeJSON(SAVED_THUMBS, readJSON(SAVED_THUMBS, []).filter((i) => i !== id));
         const n = readJSON(THUMB_NAMES); delete n[id]; writeJSON(THUMB_NAMES, n);
-      } });
+      });
       continue;
     }
     if (OWN_SETTINGS[k]) { settings += bytesOf(k); continue; }
@@ -1022,7 +1026,7 @@ async function inventory() {
       const im = selections.get(s.image) || { name: s.image, whats: new Set(), keys: [], size: 0 };
       im.whats.add(s.what); im.keys.push(k); im.size += bytesOf(k); selections.set(s.image, im);
     } else if (s) settings += bytesOf(k);
-    else loose.entries.push({ kind: "other", name: k, size: bytesOf(k), del: () => drop(k), held: true });
+    else overhead += bytesOf(k);
   }
   for (const im of selections.values()) sectionOf(manifest?.id).entries.push({ kind: "selections", name: im.name, what: "Your selections: " + [...im.whats].join(", "), size: im.size, del: () => drop(...im.keys), held: true, ask: true });
 
@@ -1042,7 +1046,7 @@ async function inventory() {
         continue;
       }
       if (c === FOLDER_PREVIEWS) {
-        sectionOf(res.headers.get(IMAGE_STUDY)).entries.push({ kind: "thumb", name: "Previews of " + decodeURIComponent(res.headers.get(IMAGE_NAME) || "a folder"), what: "Google Drive folder", size, del });
+        thumb(sectionOf(res.headers.get(IMAGE_STUDY)), size, del, true);
         continue;
       }
       if (c === IMAGES) {
@@ -1056,17 +1060,18 @@ async function inventory() {
       const entry = { kind: "python", name: packageOf(req.url), size, del };
       if (who.length === 1) sectionOf(who[0].id).entries.push({ ...entry, what: "Python package" });
       else if (who.length) shared.entries.push({ ...entry, what: "Python package, used by " + who.map((x) => x.title).join(", ") });
-      else {
-        const at = Number(res.headers.get("x-nor-cached-at"));
-        loose.entries.push({ kind: "other", name: decodeURIComponent(u.pathname.split("/").pop()) || u.href, size, del,
-          what: u.host + (at ? " · kept " + new Date(at).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "") });
-      }
+      else { unused.size += size; unused.dels.push(del); }
     }
   }
   for (const x of sections) if (code[x.study]) x.entries.push({ kind: "code", name: "Its pages and code", what: "Part of the site's copy, kept whole with it", size: code[x.study] });
+  for (const [x, t] of thumbsOf) {
+    const what = [t.pics && `${t.pics} ${t.pics === 1 ? "image" : "images"}`, t.previews && `${t.previews} ${t.previews === 1 ? "folder's" : "folders'"} previews`].filter(Boolean).join(", ");
+    x.entries.push({ kind: "thumb", name: "Thumbnails", what: `Small pictures for the Google Drive dialog: ${what}`, size: t.size, del: () => Promise.all(t.dels.map((d) => d())) });
+  }
+  if (unused.dels.length) shared.entries.push({ kind: "other", name: "Older code", what: `${unused.dels.length} files no study uses now`, size: unused.size, del: () => Promise.all(unused.dels.map((d) => d())) });
   if (python.dels.length) shared.entries.push({ kind: "python", name: "Python itself", what: "Every study runs on it", size: python.size, del: () => Promise.all(python.dels.map((d) => d())) });
   if (site.files) shared.entries.push({ kind: "site", name: "The site itself", what: `${site.files} files, so it opens offline; deleting it deletes every study's pages too`, size: site.size + Object.values(code).reduce((a, b) => a + b, 0), del: site.del, held: true });
-  const all = [...sections, shared, loose];
+  const all = [...sections, shared];
   for (const x of all) x.entries.sort((a, b) => KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind) || a.name.localeCompare(b.name));
   return { sections: all, settings, overhead };
 }
@@ -1102,7 +1107,6 @@ async function storageTab(fresh) {
       const row = document.createElement("div"); row.className = "entry"; row.dataset.name = e.name; row.dataset.kind = e.kind;
       row.innerHTML = `<span class="label"><span class="name"></span>${e.what ? '<span class="what"></span>' : ""}</span><span class="size">${sizeText(e.size)}</span>` +
         (e.del ? `<button type="button" class="del" title="Delete from this device" aria-label="Delete ${esc(e.name)} from this device">×</button>` : `<span class="del-none"></span>`);
-      if (e.pic) row.prepend(Object.assign(new Image(), { className: "pic", alt: "", src: e.pic }));
       row.querySelector(".name").textContent = e.name;
       if (e.what) row.querySelector(".what").textContent = e.what;
       if (e.del) row.querySelector(".del").onclick = () => act([e], e.ask && `Delete everything kept for ${e.name}?`);
