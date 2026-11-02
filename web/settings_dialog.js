@@ -3,6 +3,7 @@
 //   choice  options [[value, label]], fallback: a select;           toggle  on, off, fallback, label: a checkbox;
 //   text    a text box, empty forgets it;                           map     {name: text}: a text box per name;
 //   set     [string]: a tick per entry, cleared to drop it;         list    [object], name(entry): the same, by name;
+//   device  entries(): [{key, label, size}], other keys the browser keeps: a tick each, cleared to forget it, and Clear all;
 // raw: the browser keeps the value as it is, not as JSON. get(key) is what the browser keeps under a key, null for
 // nothing; set(key, value) keeps it, null forgetting it.
 "use strict";
@@ -28,6 +29,10 @@ export function settingsDialog({ dialog, fields, get, set, where, saved }) {
       return `<div class="setting">${box("", f.label, (v === undefined ? f.fallback : v) === f.on)}</div>`;
     } else if (f.kind === "text") {
       control = `<input type="text" ${name} value="${esc(v || "")}" spellcheck="false">`;
+    } else if (f.kind === "device") {
+      const items = f.entries();
+      control = items.length ? items.map((e) => `<label class="tick"><input type="checkbox" ${name} value="${esc(e.key)}" checked> ${esc(e.label)} <span class="dim">${esc(e.size)}</span></label>`).join("") +
+        `<button type="button" class="link" data-clear="${esc(f.key)}">Clear all</button>` : `<span class="dim">None</span>`;
     } else if (f.kind === "map") {
       const entries = Object.entries(v || {});
       control = entries.length ? entries.map(([k, t]) => `<label class="sub">${esc(k)} <input type="text" ${name} data-study="${esc(k)}" value="${esc(t)}" spellcheck="false"></label>`).join("") : `<span class="dim">None yet</span>`;
@@ -61,6 +66,10 @@ export function settingsDialog({ dialog, fields, get, set, where, saved }) {
   $("#settings-cancel").onclick = () => dialog.close();
   $("#settings-save").onclick = () => {
     for (const f of fields()) {
+      if (f.kind === "device") {
+        for (const i of dialog.querySelectorAll(`[name="${CSS.escape(f.key)}"]`)) if (!i.checked) set(i.value, null);
+        continue;
+      }
       const now = value(f);
       if (now !== get(f.key)) set(f.key, now);
     }
@@ -71,6 +80,7 @@ export function settingsDialog({ dialog, fields, get, set, where, saved }) {
     open() {
       $("#settings-where").textContent = where();
       $("#settings-list").innerHTML = fields().map(row).join("");
+      for (const b of dialog.querySelectorAll("[data-clear]")) b.onclick = () => dialog.querySelectorAll(`[name="${CSS.escape(b.dataset.clear)}"]`).forEach((i) => { i.checked = false; });
       dialog.showModal();
     },
   };

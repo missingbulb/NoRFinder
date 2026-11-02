@@ -12,6 +12,25 @@ import { PREVIEWS } from "./previews.js";
 
 // the browser key that says the user asked for the app, so the page names its manifest from then on
 export const APP_ASKED = "nor-app-asked";
+
+// The quiet mark of what is available offline (requirement 1.57): a study whose Python is all on this device, or an
+// image kept on it; hovering on it says what that means.
+const SAYS = {
+  study: "Available offline: this study's Python is on this device, so the study runs without the internet.",
+  image: "Available offline: this image is kept on this device, so it opens without the internet.",
+};
+export function offlineMark(what) {
+  const m = document.createElement("span");
+  m.className = "offline-mark"; m.title = SAYS[what]; m.setAttribute("role", "img"); m.setAttribute("aria-label", SAYS[what]);
+  m.innerHTML = `<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M5.2 8.2l2 2 3.6-4"/></svg>`;
+  return m;
+}
+// el's mark, put at its end or taken away
+export function markOffline(el, what, on) {
+  const had = el.querySelector(":scope > .offline-mark");
+  if (on && !had) el.append(offlineMark(what));
+  if (!on && had) had.remove();
+}
 // a ticked study's Drive folder is read this deep and this far at most
 const MAX_FOLDERS = 200, MAX_FILES = 2000;
 
@@ -100,9 +119,22 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
   const here = async (url) => !!(await caches.match(url).catch(() => null));
   let studies = [], picked = new Set(), files = new Map(), run = 0, ctl = null;
   // [{url}] each study's Python, Python itself apart
-  async function pythonOf(m) {
-    const [lock, vendored] = await Promise.all([fetch(CORE.at(-1)), fetch(new URL("vendor/wheels.json", import.meta.url))].map(async (r) => (await r).json()));
-    return packagesOf(m.python, lock, vendored, new URL("vendor/", import.meta.url).href);
+  // every listed study, [{id, title, manifest, python}], python its packages' urls, Python itself apart; read once,
+  // and again after a failure
+  let listing = null;
+  const studyFiles = () => (listing ||= (async () => {
+    const [listed, lock, vendored] = await Promise.all([new URL("studies.json", import.meta.url), CORE.at(-1), new URL("vendor/wheels.json", import.meta.url)]
+      .map(async (u) => { const r = await fetch(u); if (!r.ok) throw new Error(`${u}: HTTP ${r.status}`); return r.json(); }));
+    return Promise.all(listed.map(async (s) => {
+      const m = await (await fetch(new URL(`../studies/${s.id}/study.json`, import.meta.url))).json();
+      return { ...s, manifest: m, python: packagesOf(m.python, lock, vendored, new URL("vendor/", import.meta.url).href).map((w) => w.url) };
+    }));
+  })().catch((e) => { listing = null; throw e; }));
+  // the ids of the studies whose Python is all on this device
+  async function available() {
+    const core = (await Promise.all(CORE.map(here))).every(Boolean), out = new Set();
+    if (core) for (const s of await studyFiles()) if ((await Promise.all(s.python.map(here))).every(Boolean)) out.add(s.id);
+    return out;
   }
   // what is missing of a list of urls, and its size
   async function missing(urls) {
@@ -117,11 +149,7 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
     $("#offline-dlg").showModal(); showApp();
     $("#offline-msg").textContent = ""; $("#offline-studies").textContent = "Reading the studies…";
     try {
-      const listed = await (await fetch(new URL("studies.json", import.meta.url))).json();
-      studies = await Promise.all(listed.map(async (s) => {
-        const m = await (await fetch(new URL(`../studies/${s.id}/study.json`, import.meta.url))).json();
-        return { ...s, manifest: m, python: (await pythonOf(m)).map((w) => w.url) };
-      }));
+      studies = await studyFiles();
     } catch (e) { $("#offline-studies").textContent = "The studies could not be read: " + (e.message || e); return; }
     $("#offline-studies").replaceChildren(...studies.map(row));
     await recount();
@@ -251,5 +279,5 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
   $("#offline-dlg").addEventListener("close", () => ctl?.abort());
   $("#prepare-offline").onclick = () => { $("#user-menu").open = false; prepare(); };
 
-  return { keepSite, siteCache: () => siteCache, offline: isOffline };
+  return { keepSite, siteCache: () => siteCache, offline: isOffline, studyFiles, available, core: CORE };
 }

@@ -191,9 +191,9 @@ try {
   await page.click("#load-menu summary"); await page.click("#load-menu summary");
   check((await tip()) === null && (await page.evaluate(() => JSON.parse(localStorage.getItem("nor-tips-closed")) || [])).includes("recent-files"), "opening the dropdown closes it for good");
 
-  await page.click("#user-menu summary"); await page.click("#manage-storage");
-  await page.waitForFunction(() => $("#usage-dlg").open && !/Reading/.test($("#storage-list").textContent));
-  check(await page.evaluate(() => [...document.querySelectorAll("#storage-list .group[data-group=settings] .entry .name")].some((e) => e.textContent === "Tips you closed")), "Manage storage lists the closed tips among the settings");
+  await page.click("#user-menu summary"); await page.click("#open-settings");
+  await page.waitForFunction(() => $("#settings-dlg").open);
+  check(!!(await page.$('#settings-dlg input[name="nor-tips-closed"][value="recent-files"]')), "Settings lists the closed tip, to clear");
 } catch (e) {
   failed = true; console.error("FAILED: " + e.message);
 }

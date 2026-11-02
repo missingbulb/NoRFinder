@@ -54,18 +54,26 @@ test fold under it. A study's research requirements, which no user sees, stay in
   change to the shell, so a person's settings, decisions and measurements survive a release.
   </details>
 
-- `1.6` The user sees, and can clear, what this device keeps.
+- `1.6` The user sees, and can clear, what this device keeps, study by study.
   <details>
 
   Not signed in (`1.50`), the user is whoever opened the page on this device. An avatar at the right of
   the header opens a menu whose **Manage storage** opens the Storage tab of the resources dialog
-  (`1.43`), which lists everything the site keeps on this device, each with its size, in six groups, each folded when the dialog opens: the code kept for
-  the next visit (Python and its packages, by file, and the site itself, kept to open offline (`1.55`), as one entry); image thumbnails, by the image's full name (by
-  its Drive id for one saved before names were kept); image files saved from Google Drive, by name;
-  settings, the shell's and the study's; the study's selections per image, by image name; and
-  anything else stored under the site that neither the shell nor the study names. Each entry, and
-  each group, can be deleted. The shell names its own keys; the study names its keys through its
-  `stored` hook, so the shell still names no study (`1.1`). Test: `web-tests/test_storage_page.py`.
+  (`1.43`), which lists everything the site keeps on this device but settings, each with its size, in
+  sections folded when the dialog opens. Set by the owner on 2026-11-02, the sections follow what it
+  takes to work offline (`1.55`, `1.56`): one per study, whose title says whether the study is
+  available offline (`1.57`), holding its Python packages no other study uses, by package; its own
+  pages and code, part of the site's copy; the images kept from Google Drive in it, by name; their
+  thumbnails and its Drive folders' previews; and, for the study on show, the selections per image,
+  by image name. Then **Shared by every study**: the site itself, Python itself and the packages two
+  studies or more use. Then **Not tied to a study**: an image, a thumbnail or a preview kept before
+  images were told apart by study and opened in none of them since, code no study uses now, and
+  anything stored under the site that neither the shell nor the study names. Each entry can be
+  deleted, but a study's pages, kept whole with the site; each section's Delete all deletes all it
+  can, and a study's is the study's whole purge, leaving what other studies use. Settings are not
+  listed here: they are kept, shown and cleared in Settings (`1.52`), and the total says what they
+  take. The shell names its own keys; the study names its keys through its `stored` hook, so the
+  shell still names no study (`1.1`). Test: `web-tests/test_storage_page.py`.
   </details>
 
 - `1.7` Images from Drive open again without a download.
@@ -475,7 +483,7 @@ test fold under it. A study's research requirements, which no user sees, stay in
   opens a popup choosing the grid's colour and the distance between its lines: in µm when the file
   gives the pixel's size, the cells then square in µm whatever the pixel's width and height, and in
   pixels when it does not. The colour and both distances, µm and pixels each its own, are kept as
-  the user's settings for the next visit, and Manage storage lists them. The grid stays on from one
+  the user's settings for the next visit, and Settings lists them, kept on this device only (`1.52`). The grid stays on from one
   image to the next, and keeps its place through zoom. Test: `web-tests/test_grid_page.py`.
   </details>
 
@@ -677,7 +685,10 @@ test fold under it. A study's research requirements, which no user sees, stay in
   dialog; whether the low-memory popup shows; the last Google Drive link, and the last one in each
   study; the tips closed, each with a tick to clear to see it again; the recent images from Google
   Drive, each with a tick to clear to drop it; Animations; and the version seen last. A line says where they are
-  kept: in the user's Google Drive when signed in, else on this device only. Save writes what changed,
+  kept: in the user's Google Drive when signed in, else on this device only. Below them, set by the
+  owner on 2026-11-02, **Kept on this device only**: every other setting the page keeps here, the
+  shell's and the study on show's, each with its size and a tick to clear to forget it, and a link
+  that clears them all, since the Storage tab no longer lists them (`1.6`). Save writes what changed,
   the theme at once, and when signed in saves the user's settings file; Cancel changes nothing. Test:
   `web-tests/test_account_page.py`.
   </details>
@@ -744,6 +755,17 @@ test fold under it. A study's research requirements, which no user sees, stay in
   site's storage until the user deletes it, downloads with its progress shown and can be stopped,
   and ends saying what is now on this device and whether the browser agreed to keep it. When Google
   throttles the downloads (`1.37`) it stops and says so. Test: `web-tests/test_offline_page.py`.
+  </details>
+
+- `1.57` What is available offline says so, quietly: a study, and an image from Google Drive.
+  <details>
+
+  Set by the owner on 2026-11-02, so the user knows before doing anything what works with no network
+  (`1.55`). A small mark, the same everywhere, follows a study whose Python is all on this device, in
+  the header's switcher, and an image kept on this device, in the Google Drive dialog's rows and in
+  Load's recent images; what is not available offline carries nothing. Hovering on the mark says what
+  it means: the study runs, or the image opens, without the internet. Test:
+  `web-tests/test_storage_page.py`.
   </details>
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.

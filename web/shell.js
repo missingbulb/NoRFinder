@@ -24,7 +24,7 @@ import { PREVIEWS, readPreviews } from "./previews.js";
 import { account, SIGNED_IN } from "./account.js";
 import { settingsDialog } from "./settings_dialog.js";
 import { splitter, SPLIT_PATTERN } from "./split_dialog.js";
-import { offline, APP_ASKED } from "./offline.js";
+import { offline, APP_ASKED, markOffline } from "./offline.js";
 
 const $ = (s) => document.querySelector(s);
 // image3d is the 2D viewer of a stack's flattened planes with a 3D view beside it, sharing the one 2D viewer
@@ -50,7 +50,7 @@ const RECENT = "nor-drive-recent"; // [{id, name, path, study}], newest first: i
 const IMAGES = "nor-images-v1", IMAGE_NAME = "x-nor-name", IMAGE_AT = "x-nor-saved-at";
 // and, for one kept since offline came, its folders under the study's link (a JSON list, URI-encoded) and the study
 const IMAGE_PATH = "x-nor-path", IMAGE_STUDY = "x-nor-study";
-// Cache Storage, + Drive folder id: the folder's rauntruth-previews.tiff, its SHA-256 and the folder's name in the headers
+// Cache Storage, + Drive folder id: the folder's rauntruth-previews.tiff, its SHA-256, the folder's name and the study it was read in in the headers
 const FOLDER_PREVIEWS = "nor-previews-v1", PREVIEWS_SHA = "x-nor-sha256";
 const MOTION = "nor-motion"; // false: the user turned the page's animations off
 const SEEN_VERSION = "nor-seen-version"; // the site version the user last saw, to tell them what changed since
@@ -68,8 +68,9 @@ const LOCAL_GT = "Ground truth cannot be sent from local files, only from Google
 // the issue form a proposal for a new study is written on
 const STUDY_REQUEST = "new-study.yml";
 // signing in (1.50): these settings follow the user to every device, in their own Google Drive; the rest stay with this one
+const FOLLOWS = [THEME, TIPS, SEEN_VERSION, MEMORY_TIP, SOURCE, DRIVE_LINK, DRIVE_LINKS, THUMBS, RECENT, MOTION];
 const signIn = account({
-  keys: [THEME, TIPS, SEEN_VERSION, MEMORY_TIP, SOURCE, DRIVE_LINK, DRIVE_LINKS, THUMBS, RECENT, MOTION],
+  keys: FOLLOWS,
   menu: $("#user-menu"),
   clientId: ((window.NOR_CONFIG && window.NOR_CONFIG.google) || {}).clientId || "",
   applied: () => reapply(),
@@ -155,8 +156,8 @@ $("#ram-gc").onclick = () => working($("#ram-gc"), () => { const told = until("m
 
 // the disk: what the site keeps on this device, as Manage storage counts it
 async function diskBar() {
-  const { out, extra } = await inventory();
-  showDisk(Object.entries(out).reduce((a, [g, items]) => a + items.reduce((b, e) => b + e.size, 0) + (extra[g] || 0), 0));
+  const { sections, settings, overhead } = await inventory();
+  showDisk(sections.reduce((a, x) => a + x.entries.reduce((b, e) => b + e.size, 0), settings + overhead));
 }
 const showDisk = (n) => showNumber($("#sb-disk"), sizeText(n));
 $("#sb-disk").onclick = () => usage("storage");
@@ -619,6 +620,7 @@ function showRecent() {
     b.onclick = () => { $("#load-menu").open = false; openRecent(r); };
     return b;
   }));
+  keptIds().then((kept) => list.forEach((r, k) => { const b = box.children[k + 1]; if (b) markOffline(b, "image", kept.has(r.id)); }));
 }
 
 // once Google throttles the site's downloads the Drive dialog waits WAIT, with a notice and a countdown, and
@@ -695,7 +697,7 @@ function driveDialog() {
       const c = await caches.open(IMAGES);
       for (const q of await c.keys()) {
         const r = await c.match(q), path = r.headers.get(IMAGE_PATH);
-        kept.push({ id: decodeURIComponent(new URL(q.url).pathname.split("/").pop()), name: decodeURIComponent(r.headers.get(IMAGE_NAME) || ""),
+        kept.push({ id: idOf(q.url), name: decodeURIComponent(r.headers.get(IMAGE_NAME) || ""),
           path: path ? JSON.parse(decodeURIComponent(path)) : [], study: r.headers.get(IMAGE_STUDY), size: (await r.blob()).size, kept: true });
       }
     } catch (e) { console.warn("cannot read the images kept here:", e); }
@@ -705,6 +707,7 @@ function driveDialog() {
       const b = document.createElement("button"); b.type = "button"; b.className = "item"; b.setAttribute("aria-selected", "false");
       const meta = [sizeText(f.size), ["Google Drive", ...f.path].join(" / ")].join(" · ");
       b.innerHTML = `<span class="pic"></span><span class="name">${esc(f.name)}</span><span class="shape">${esc(readJSON(HOLDS)[f.id] || "")}</span><span class="meta">${esc(meta)}</span>`;
+      markOffline(b.querySelector(".meta"), "image", true);
       const pic = readJSON(SAVED_THUMB + f.id, "");
       if (pic) b.querySelector(".pic").append(Object.assign(new Image(), { alt: "", src: pic }));
       b.onclick = () => choose(f, b);
@@ -734,12 +737,15 @@ function driveDialog() {
         const meta = [f.size == null ? "" : sizeText(f.size),
           f.created ? f.created.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : ""].filter(Boolean).join(" · ");
         b.innerHTML = `<span class="pic"></span><span class="name">${esc(f.name)}</span><span class="shape">${esc(readJSON(HOLDS)[f.id] || "")}</span><span class="meta">${esc(meta)}</span>`;
+        if (!f.folder) b.dataset.id = f.id;
         b.onclick = () => choose(f, b);
         b.ondblclick = () => enter(f);
         b.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); enter(f); } };
         $("#drive-list").append(b);
         if (!f.folder) thumbs.watch(b.querySelector(".pic"), f, k);
       }
+      const kept = await keptIds();
+      if (asked === listing) for (const b of $("#drive-list").querySelectorAll(".item[data-id]")) markOffline(b.querySelector(".meta"), "image", kept.has(b.dataset.id));
     } catch (err) { if (asked === listing) (err.throttled ? throttle() : msg(err.message || String(err), true)); }
   };
   // each image's thumbnail: the one saved when it was last opened here, else the study's ready-made one,
@@ -910,7 +916,7 @@ async function folderPreviews(folder, f) {
     if (kept && f.sha && kept.headers.get(PREVIEWS_SHA) === f.sha) return readPreviews(await kept.arrayBuffer());
     if (throttled()) return null;
     const got = await NorDrive.file(f.id, f.name);
-    await cache.put(url, new Response(new Blob([got.bytes]), { headers: { [PREVIEWS_SHA]: f.sha || "", [IMAGE_NAME]: encodeURIComponent(folder.name) } }));
+    await cache.put(url, new Response(new Blob([got.bytes]), { headers: { [PREVIEWS_SHA]: f.sha || "", [IMAGE_NAME]: encodeURIComponent(folder.name), [IMAGE_STUDY]: manifest?.id || "" } }));
     diskBar();
     return readPreviews(got.bytes);
   } catch (e) {
@@ -937,6 +943,11 @@ function turning(row, pic, volume) {
 
 // images downloaded from Drive, kept on this device while Auto-save images is on
 const imageUrl = (id) => new URL("drive-image/" + encodeURIComponent(id), location.href).href;
+const idOf = (url) => decodeURIComponent(new URL(url).pathname.split("/").pop());
+// the Drive ids of the images kept here
+async function keptIds() {
+  try { return new Set((await (await caches.open(IMAGES)).keys()).map((q) => idOf(q.url))); } catch { return new Set(); }
+}
 async function savedImage(id) {
   try {
     const r = await (await caches.open(IMAGES)).match(imageUrl(id));
@@ -968,78 +979,102 @@ const OWN_SETTINGS = {
   [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
   [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [APP_ASKED]: "Asked for the site as an app",
 };
-const GROUPS = [
-  ["code", "Code kept for the next visit", "Python and its packages, so the page starts without downloading them again."],
-  ["thumbs", "Image thumbnails", "Small pictures of the images opened from Google Drive, shown in its dialog."],
-  ["files", "Images from Google Drive", "Images opened from Google Drive, kept so they open again without a download."],
-  ["settings", "Settings", ""],
-  ["images", "Your selections, per image", "What you marked and measured on each image, kept by its file name."],
-  ["other", "Other", "Kept under this site by something the page no longer names."],
-];
-// every key in the browser's storage, and every file in its caches, sorted into GROUPS: [{name, what, size, del}]
+// What the site keeps, by what it takes to work offline (1.6): a section per study, then what they share, then the
+// rest; settings apart, which Settings keeps (1.52). An entry: {kind, name, what, size, del, held, ask, pic}, del
+// absent for what cannot go alone. Kinds in a section's order:
+const KINDS = ["site", "python", "code", "image", "thumb", "selections", "other"];
+const SHARED_ABOUT = "The site itself, so it opens offline; Python itself; and the packages two studies or more use.";
+const LOOSE_ABOUT = "Kept before images were told apart by study, code no study uses now, and anything the page no longer names.";
+// a package's name from its wheel's file name
+const packageOf = (url) => decodeURIComponent(url.split("/").pop()).split("-")[0].replace(/_/g, "-");
+// [{id, title, about, mark, entries}], and what the settings take apart from them
 async function inventory() {
-  const out = Object.fromEntries(GROUPS.map(([g]) => [g, []])), extra = { thumbs: 0 };
   const drop = (...keys) => keys.forEach((k) => { try { localStorage.removeItem(k); } catch { /* nothing kept */ } });
-  let keys = [];
+  const studies = await offlineCopy.studyFiles().catch((e) => { console.warn("the studies could not be read:", e); return []; });
+  const live = await offlineCopy.available().catch(() => new Set());
+  const sections = studies.map((s) => ({ id: "study:" + s.id, study: s.id, title: s.title, mark: live.has(s.id), entries: [] }));
+  const shared = { id: "shared", title: "Shared by every study", about: SHARED_ABOUT, entries: [] };
+  const loose = { id: "loose", title: "Not tied to a study", about: LOOSE_ABOUT, entries: [] };
+  const sectionOf = (id) => sections.find((x) => x.study === id) || loose;
+  // the study each Drive image belongs to: the one it was kept in, else the one it was last opened in
+  const studyOf = {};
+  for (const r of readJSON(RECENT, [])) if (r.study && !(r.id in studyOf)) studyOf[r.id] = r.study;
+  let settings = 0, overhead = 0, keys = [];
   try { keys = Object.keys(localStorage); } catch { /* no storage */ }
-  const names = readJSON(THUMB_NAMES), images = new Map();
+  const stores = window.caches ? await Promise.all((await caches.keys()).map(async (n) => ({ name: n, cache: await caches.open(n) }))) : [];
+  const images = stores.find((c) => c.name === IMAGES);
+  if (images) for (const q of await images.cache.keys()) { const kept = (await images.cache.match(q)).headers.get(IMAGE_STUDY); if (kept) studyOf[idOf(q.url)] = kept; }
+
+  const names = readJSON(THUMB_NAMES), selections = new Map();
   for (const k of keys) {
-    if (k === SAVED_THUMBS || k === THUMB_NAMES) { extra.thumbs += bytesOf(k); continue; }
+    if (k === SAVED_THUMBS || k === THUMB_NAMES) { overhead += bytesOf(k); continue; }
     if (k.startsWith(SAVED_THUMB)) {
       const id = k.slice(SAVED_THUMB.length);
-      out.thumbs.push({ name: names[id] || id, what: names[id] ? "" : "Saved before names were kept", pic: readJSON(k, ""), size: bytesOf(k), del: () => {
+      sectionOf(studyOf[id]).entries.push({ kind: "thumb", name: names[id] || id, what: names[id] ? "Thumbnail" : "Thumbnail, saved before names were kept", pic: readJSON(k, ""), size: bytesOf(k), del: () => {
         drop(k); writeJSON(SAVED_THUMBS, readJSON(SAVED_THUMBS, []).filter((i) => i !== id));
         const n = readJSON(THUMB_NAMES); delete n[id]; writeJSON(THUMB_NAMES, n);
       } });
       continue;
     }
-    if (OWN_SETTINGS[k]) { out.settings.push({ name: OWN_SETTINGS[k], size: bytesOf(k), del: () => drop(k), held: true }); continue; }
+    if (OWN_SETTINGS[k]) { settings += bytesOf(k); continue; }
     const s = study.stored?.(k);
     if (s && s.group === "images") {
-      const im = images.get(s.image) || { name: s.image, whats: new Set(), keys: [], size: 0, held: true };
-      im.whats.add(s.what); im.keys.push(k); im.size += bytesOf(k); images.set(s.image, im);
-    } else if (s) out.settings.push({ name: s.what, size: bytesOf(k), del: () => drop(k), held: true });
-    else out.other.push({ name: k, size: bytesOf(k), del: () => drop(k), held: true });
+      const im = selections.get(s.image) || { name: s.image, whats: new Set(), keys: [], size: 0 };
+      im.whats.add(s.what); im.keys.push(k); im.size += bytesOf(k); selections.set(s.image, im);
+    } else if (s) settings += bytesOf(k);
+    else loose.entries.push({ kind: "other", name: k, size: bytesOf(k), del: () => drop(k), held: true });
   }
-  for (const im of images.values()) out.images.push({ name: im.name, what: [...im.whats].join(", "), size: im.size, del: () => drop(...im.keys), held: true, ask: true });
-  const site = { size: 0, files: 0 };
-  if (window.caches) {
-    for (const c of await caches.keys()) {
-      const cache = await caches.open(c);
-      for (const req of await cache.keys()) {
-        const res = await cache.match(req), u = new URL(req.url);
-        if (c === FOLDER_PREVIEWS) {
-          out.thumbs.push({ name: "Previews of " + decodeURIComponent(res.headers.get(IMAGE_NAME) || "a folder"), size: (await res.blob()).size,
-            what: "Google Drive", del: () => cache.delete(req) });
-          continue;
-        }
-        if (c === offlineCopy.siteCache()) {
-          site.size += (await res.blob()).size; site.files++;
-          continue;
-        }
-        if (c === IMAGES) {
-          const at = Number(res.headers.get(IMAGE_AT));
-          out.files.push({ name: decodeURIComponent(res.headers.get(IMAGE_NAME) || u.pathname.split("/").pop()), size: (await res.blob()).size,
-            what: "Google Drive" + (at ? " · saved " + new Date(at).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : ""),
-            del: () => cache.delete(req) });
-          continue;
-        }
+  for (const im of selections.values()) sectionOf(manifest?.id).entries.push({ kind: "selections", name: im.name, what: "Your selections: " + [...im.whats].join(", "), size: im.size, del: () => drop(...im.keys), held: true, ask: true });
+
+  // the packages: whose they are; Python itself, the lock naming its packages and the build's vendored list, shared
+  const users = new Map();
+  for (const s of studies) for (const u of s.python) users.set(u, [...(users.get(u) || []), s]);
+  const itself = new Set(offlineCopy.core), python = { size: 0, dels: [] };
+  const code = {}, site = { size: 0, files: 0, del: null };
+  for (const { name: c, cache } of stores) {
+    for (const req of await cache.keys()) {
+      const res = await cache.match(req), u = new URL(req.url), size = (await res.blob()).size, del = () => cache.delete(req);
+      if (c === offlineCopy.siteCache()) {
+        const id = u.pathname.match(/\/studies\/([\w-]+)\//)?.[1];
+        if (id && sections.some((x) => x.study === id)) code[id] = (code[id] || 0) + size;
+        else { site.size += size; site.files++; }
+        site.del = () => caches.delete(c);
+        continue;
+      }
+      if (c === FOLDER_PREVIEWS) {
+        sectionOf(res.headers.get(IMAGE_STUDY)).entries.push({ kind: "thumb", name: "Previews of " + decodeURIComponent(res.headers.get(IMAGE_NAME) || "a folder"), what: "Google Drive folder", size, del });
+        continue;
+      }
+      if (c === IMAGES) {
+        const at = Number(res.headers.get(IMAGE_AT)), id = idOf(req.url);
+        sectionOf(studyOf[id]).entries.push({ kind: "image", name: decodeURIComponent(res.headers.get(IMAGE_NAME) || id), size, del,
+          what: "Image from Google Drive" + (at ? " · saved " + new Date(at).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "") });
+        continue;
+      }
+      if (itself.has(req.url) || u.pathname.endsWith("/vendor/wheels.json")) { python.size += size; python.dels.push(del); continue; }
+      const who = users.get(req.url) || [];
+      const entry = { kind: "python", name: packageOf(req.url), size, del };
+      if (who.length === 1) sectionOf(who[0].id).entries.push({ ...entry, what: "Python package" });
+      else if (who.length) shared.entries.push({ ...entry, what: "Python package, used by " + who.map((x) => x.title).join(", ") });
+      else {
         const at = Number(res.headers.get("x-nor-cached-at"));
-        out.code.push({ name: decodeURIComponent(u.pathname.split("/").pop()) || u.href, size: (await res.blob()).size,
-          what: u.host + (at ? " · kept " + new Date(at).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : ""),
-          del: () => cache.delete(req) });
+        loose.entries.push({ kind: "other", name: decodeURIComponent(u.pathname.split("/").pop()) || u.href, size, del,
+          what: u.host + (at ? " · kept " + new Date(at).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "") });
       }
     }
   }
-  if (site.files) out.code.push({ name: "The site itself", what: `${site.files - 1} files, so it opens offline`, size: site.size, del: () => caches.delete(offlineCopy.siteCache()), held: true });
-  for (const list of Object.values(out)) list.sort((a, b) => a.name.localeCompare(b.name));
-  return { out, extra };
+  for (const x of sections) if (code[x.study]) x.entries.push({ kind: "code", name: "Its pages and code", what: "Part of the site's copy, kept whole with it", size: code[x.study] });
+  if (python.dels.length) shared.entries.push({ kind: "python", name: "Python itself", what: "Every study runs on it", size: python.size, del: () => Promise.all(python.dels.map((d) => d())) });
+  if (site.files) shared.entries.push({ kind: "site", name: "The site itself", what: `${site.files} files, so it opens offline; deleting it deletes every study's pages too`, size: site.size + Object.values(code).reduce((a, b) => a + b, 0), del: site.del, held: true });
+  const all = [...sections, shared, loose];
+  for (const x of all) x.entries.sort((a, b) => KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind) || a.name.localeCompare(b.name));
+  return { sections: all, settings, overhead };
 }
-// the Storage tab; fresh: just opened, every group folded, where a redraw after a deletion keeps what the user unfolded
+// the Storage tab; fresh: just opened, every section folded, where a redraw after a deletion keeps what the user unfolded
 async function storageTab(fresh) {
   const list = $("#storage-list"), open = new Set(fresh ? [] : [...list.querySelectorAll(".group[open]")].map((g) => g.dataset.group));
   if (fresh) { list.textContent = "Reading what this device keeps…"; $("#storage-total").textContent = ""; }
-  const { out, extra } = await inventory();
+  const { sections, settings, overhead } = await inventory();
   const held = () => { $("#storage-reload").hidden = false; $("#storage-msg").textContent = "The page still holds what you deleted until it reloads."; };
   const act = async (items, ask) => {
     if (ask && !confirm(ask)) return;
@@ -1047,37 +1082,52 @@ async function storageTab(fresh) {
     if (items.some((e) => e.held)) held();
     storageTab(false);
   };
-  let total = 0;
-  list.replaceChildren(...GROUPS.map(([g, title, about]) => {
-    const items = out[g], size = items.reduce((a, e) => a + e.size, 0) + (extra[g] || 0);
+  let total = settings + overhead;
+  list.replaceChildren(...sections.map((x) => {
+    const items = x.entries, size = items.reduce((a, e) => a + e.size, 0), gone = items.filter((e) => e.del);
     total += size;
-    const box = document.createElement("details"); box.className = "group"; box.dataset.group = g; box.open = open.has(g);
-    box.innerHTML = `<summary>${esc(title)}<span class="count">${items.length ? `${items.length} · ${sizeText(size)}` : "Nothing kept"}</span></summary>`;
-    if (items.length) {
+    const box = document.createElement("details"); box.className = "group"; box.dataset.group = x.id; box.open = open.has(x.id);
+    box.innerHTML = `<summary><span class="title">${esc(x.title)}</span><span class="count">${items.length ? `${items.length} · ${sizeText(size)}` : x.study ? "Nothing of its own" : "Nothing kept"}</span></summary>`;
+    if (x.mark) markOffline(box.querySelector(".title"), "study", true);
+    if (gone.length) {
       const clear = Object.assign(document.createElement("button"), { type: "button", className: "link clear", textContent: "Delete all" });
-      clear.onclick = (e) => { e.preventDefault(); act(items, `Delete all ${items.length} of "${title}" from this device?`); };
+      const ask = x.study ? `Delete everything kept for ${x.title} on this device? What other studies use stays, and so do its pages, kept with the site.`
+        : `Delete all ${gone.length} of "${x.title}" from this device?`;
+      clear.onclick = (e) => { e.preventDefault(); act(gone, ask); };
       box.firstChild.append(clear);
     }
-    if (about) box.append(Object.assign(document.createElement("p"), { className: "hint", textContent: about }));
+    const about = x.about || (x.mark ? "Available offline: its Python is on this device." : "Not available offline yet: Prepare for offline, in the avatar's menu, keeps its Python.");
+    box.append(Object.assign(document.createElement("p"), { className: "hint", textContent: about }));
     for (const e of items) {
-      const row = document.createElement("div"); row.className = "entry"; row.dataset.name = e.name;
+      const row = document.createElement("div"); row.className = "entry"; row.dataset.name = e.name; row.dataset.kind = e.kind;
       row.innerHTML = `<span class="label"><span class="name"></span>${e.what ? '<span class="what"></span>' : ""}</span><span class="size">${sizeText(e.size)}</span>` +
-        `<button type="button" class="del" title="Delete from this device" aria-label="Delete ${esc(e.name)} from this device">×</button>`;
+        (e.del ? `<button type="button" class="del" title="Delete from this device" aria-label="Delete ${esc(e.name)} from this device">×</button>` : `<span class="del-none"></span>`);
       if (e.pic) row.prepend(Object.assign(new Image(), { className: "pic", alt: "", src: e.pic }));
       row.querySelector(".name").textContent = e.name;
       if (e.what) row.querySelector(".what").textContent = e.what;
-      row.querySelector(".del").onclick = () => act([e], e.ask && `Delete everything kept for ${e.name}?`);
+      if (e.del) row.querySelector(".del").onclick = () => act([e], e.ask && `Delete everything kept for ${e.name}?`);
       box.append(row);
     }
     return box;
   }));
   const est = await navigator.storage?.estimate?.().catch(() => null);
   showDisk(total);
-  $("#storage-total").textContent = `This site keeps ${sizeText(total)} on this device` + (est?.quota ? `; the browser allows it up to ${sizeText(est.quota)}.` : ".");
+  $("#storage-total").textContent = `This site keeps ${sizeText(total)} on this device, ${sizeText(settings)} of it settings, which Settings clears` +
+    (est?.quota ? `; the browser allows it up to ${sizeText(est.quota)}.` : ".");
 }
 $("#manage-storage").onclick = () => { $("#user-menu").open = false; usage("storage"); };
 
-// Settings (1.52): the settings that follow the user, as the shell keeps them
+// the settings kept on this device only, the shell's and the study on show's, each {key, label, size}; who is signed
+// in is Sign out's to forget
+function deviceSettings() {
+  let keys = [];
+  try { keys = Object.keys(localStorage); } catch { /* no storage */ }
+  return keys.map((k) => {
+    const label = OWN_SETTINGS[k] && !FOLLOWS.includes(k) && k !== SIGNED_IN ? OWN_SETTINGS[k] : !OWN_SETTINGS[k] && study.stored?.(k)?.group === "settings" ? study.stored(k).what : null;
+    return label && { key: k, label, size: sizeText(bytesOf(k)) };
+  }).filter(Boolean).sort((a, b) => a.label.localeCompare(b.label));
+}
+// Settings (1.52): the settings that follow the user, as the shell keeps them, and those kept on this device only
 const settings = settingsDialog({
   dialog: $("#settings-dlg"),
   fields: () => [
@@ -1091,6 +1141,7 @@ const settings = settingsDialog({
     { key: RECENT, label: "Recent images from Google Drive (clear one to drop it)", kind: "list", name: (r) => (r.study ? `${r.study}: ` : "") + (r.path?.length ? `${r.path.join("/")}/` : "") + r.name },
     { key: MOTION, label: "Animations", kind: "toggle", on: true, off: false, fallback: true },
     { key: SEEN_VERSION, label: "Version you saw last", kind: "text" },
+    { key: "device-only", label: "Kept on this device only", kind: "device", entries: deviceSettings },
   ],
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
   set: (k, v) => {
@@ -1416,6 +1467,7 @@ function filterStudies() {
 }
 $("#study-menu").addEventListener("toggle", () => {
   if (!$("#study-menu").open) return;
+  offlineCopy.available().then((ids) => { for (const a of $("#study-list").children) markOffline(a, "study", ids.has(a.dataset.id)); }, () => {});
   $("#study-menu .pop").style.left = $("#study-menu .caret").offsetLeft + "px";
   $("#study-search").value = ""; filterStudies(); $("#study-search").focus();
 });
