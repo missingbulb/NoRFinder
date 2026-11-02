@@ -689,7 +689,7 @@ function driveDialog() {
   // offline, in place of a Drive folder: the images kept on this device, the study's own first (1.55)
   showKept = async () => {
     thumbs.stop(); trail = []; choose(null);
-    $("#drive-path").textContent = "On this device"; $("#drive-list").replaceChildren();
+    $("#drive-path").textContent = "You are offline: the images kept on this device"; $("#drive-list").replaceChildren();
     const kept = [];
     try {
       const c = await caches.open(IMAGES);
@@ -700,7 +700,7 @@ function driveDialog() {
       }
     } catch (e) { console.warn("cannot read the images kept here:", e); }
     kept.sort((a, b) => (b.study === manifest.id) - (a.study === manifest.id) || a.name.localeCompare(b.name));
-    msg(kept.length ? "You are offline: these are the images kept on this device." : "You are offline, and no image is kept on this device: Prepare for offline, in the avatar's menu, keeps some.");
+    msg(kept.length ? "" : "No image is kept here: Prepare for offline, in the avatar's menu, keeps some.");
     for (const f of kept) {
       const b = document.createElement("button"); b.type = "button"; b.className = "item"; b.setAttribute("aria-selected", "false");
       const meta = [sizeText(f.size), ["Google Drive", ...f.path].join(" / ")].join(" · ");
