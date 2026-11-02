@@ -781,13 +781,19 @@ test fold under it. A study's research requirements, which no user sees, stay in
   avatar suggesting signing in to keep the settings on every device and reach the user's data files
   as themselves, until closed (`1.52` lists it with the tips). Unticked, the popup comes back on the
   next visit, signed in or not; there Continue anonymously signs out as the menu's Sign out does,
-  and Sign in with Google goes on as the user signed in. Signing in from the menu counts as a
-  remembered choice; signing out there forgets it. Closing the popup (Escape) changes nothing for
-  this visit. The popup deletes nothing and stops nothing the page is doing, and Google's script is
-  loaded only once the user reaches for its button. Offline (`1.55`) the popup still comes: Sign in
+  and Sign in with Google goes on as the user signed in. A remembered answer the sign-in on this
+  device contradicts (anonymous, yet signed in from another tab) is asked again. Signing in from the
+  menu counts as a remembered choice; signing out there forgets it, and every open tab follows a
+  sign-in or sign-out made in another. Closing the popup (Escape) changes nothing for this visit.
+  Set by the owner on 2026-11-02 after a review: Sign in with Google keeps the popup up until Google
+  answers; a Google window cancelled or blocked leaves it up, saying sign-in did not finish, to try
+  again or continue anonymously. Google's script loads as the button is pressed, never on hover or
+  focus. The popup deletes nothing and stops nothing the page is doing. Offline (`1.55`), a user
+  signed in is not asked: the page opens signed in and the settings waiting for Google Drive keep
+  waiting, to be asked on the next visit online. Anyone else offline still gets the popup: Sign in
   with Google is held, as everywhere offline, and a line says signing in can wait until the network
-  is back, from the avatar's menu or the next visit; Continue anonymously works. Test:
-  `web-tests/test_welcome_page.py`.
+  is back, from the avatar's menu; Continue anonymously works. The sign-in tip, like every tip,
+  follows what it points at when the window resizes. Test: `web-tests/test_welcome_page.py`.
   </details>
 
 - `2.1` CI runs in two sets, and a test that would skip there fails instead.
