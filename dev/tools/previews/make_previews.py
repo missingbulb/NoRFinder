@@ -1,4 +1,4 @@
-# Makes rauntruth-previews.tiff for a Drive folder from its TIFF and PNG images (requirement 1.42): run it
+# Makes rauntruth-previews.tiff for a Drive folder from its TIFF and PNG images (req/shell/drive/previews): run it
 # where the folder's images are, then upload the file beside them. Each page is deflate-compressed.
 #   python3 dev/tools/previews/make_previews.py IMAGES_DIR [OUT_DIR]   (OUT_DIR defaults to IMAGES_DIR)
 # A flat image is one RGB page at most FLAT pixels a side; a stack is a mini-volume of at most

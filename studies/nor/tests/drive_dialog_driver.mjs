@@ -75,7 +75,7 @@ await ctx.route("https://www.googleapis.com/**", (route) => {
   // a file's details, as Drive answers them
   if (u.searchParams.get("alt") !== "media")
     return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ id, name: f.name, mimeType: f.mimeType }) });
-  // a piece, as Drive answers a Range: the page reads a TIFF's header for what it holds (1.36)
+  // a piece, as Drive answers a Range: the page reads a TIFF's header for what it holds (req/shell/drive/stacks)
   const range = (q.headers()["range"] || "").match(/^bytes=(\d+)-(\d+)$/);
   if (range) { asked[id].pieces++; return route.fulfill({ status: 206, headers: cors, contentType: "image/tiff", body: f.bytes.subarray(+range[1], +range[2] + 1) }); }
   asked[id].whole++;

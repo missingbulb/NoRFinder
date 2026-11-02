@@ -1,4 +1,4 @@
-"""1.14: the page's version history. web/version_history.md parses into releases, and a Next release line
+"""req/shell/version-history: the page's version history. web/version_history.md parses into releases, and a Next release line
 goes under the release that first carried its pull request (dev/tools/build/version_history.py)."""
 import os
 import sys

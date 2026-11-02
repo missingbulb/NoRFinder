@@ -1,12 +1,12 @@
 // Drives the built site (SITE, as dev/tools/build/build.py assembles it with a stand-in GOOGLE_API_KEY) in headless Chromium with the real worker
 // and the real Pyodide from its CDN, over a server that answers as Cloudflare does and a stand-in Drive API, and
-// checks 1.55 and 1.56.
-// 1.56 first, online: the Storage tab offers each study not all here Make available offline, whose popup lists the
+// checks req/shell/offline/default and req/shell/offline/per-study.
+// req/shell/offline/per-study first, online: the Storage tab offers each study not all here Make available offline, whose popup lists the
 // study's Drive folder with its subfolder's images, the total beside the room left and the time at this session's
 // speeds, refuses a choice larger than that room, and downloads the study's Python and images, nothing from Drive
 // before Download; the page names no app manifest until Install as an app is clicked, and then the browser finds
 // the site installable.
-// Then 1.55, with the network gone (the browser offline and the server refusing): the page opens at its address
+// Then req/shell/offline/default, with the network gone (the browser offline and the server refusing): the page opens at its address
 // and the Python already on this device runs; the status bar says Offline; what needs the network is held; a
 // prepared study runs, and From Google Drive lists the images kept here and opens one; a study whose Python is not
 // here says so.
@@ -85,7 +85,7 @@ try {
   await page.goto(origin + "/app/fixture");
   await ready();
   check(true, "the fixture study's Python runs online");
-  check(!(await page.$("link[rel=manifest]")), "the page names no app manifest before the user asks for the app (1.56)");
+  check(!(await page.$("link[rel=manifest]")), "the page names no app manifest before the user asks for the app (req/shell/offline/per-study)");
 
   // every file offline.json lists is kept, once the page has run
   const listed = JSON.parse(fs.readFileSync(path.join(site, "app", "offline.json"))).files.map((f) => f.path);
@@ -101,7 +101,7 @@ try {
   for (let t = 0; t < 60 && left.length; t++) { left = await missing(); if (left.length) await page.waitForTimeout(500); }
   check(listed.length > 30 && !left.length, `the site's own ${listed.length} files are kept on this device` + (left.length ? `; missing ${left.slice(0, 5)}` : ""));
 
-  // 1.56: the Storage tab, where each study is made available offline
+  // req/shell/offline/per-study: the Storage tab, where each study is made available offline
   await page.click("#user-menu summary");
   await page.click("#manage-storage");
   await page.waitForFunction(() => document.querySelector("#usage-dlg").open && !/Reading/.test(document.querySelector("#storage-list").textContent));
@@ -155,7 +155,7 @@ try {
   check(!errors.length, "once asked for, the site is installable" + (errors.length ? ": " + errors.join(", ") : ""));
   await page.keyboard.press("Escape");
 
-  // 1.55: the network goes
+  // req/shell/offline/default: the network goes
   await ctx.setOffline(true); down = true;
   const reached = await page.evaluate(() => fetch("https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide-lock.json?offline-probe").then(() => true, () => false));
   check(!reached, "offline, nothing the cache lacks is reached, the service worker's own downloads included");

@@ -1,7 +1,6 @@
-"""1.8: the shell decides what is published, from the studies' standard layout; 1.9: visits are
-counted on the released site only; 1.27: the app is under /app/ and the site's own pages at its top; 1.53,
-1.59: the privacy policy, terms and license are published there and linked; 1.58: the landing page; 1.60: the
-icons and posters; 1.61: the sitemap and robots.txt.
+"""req/shell/site/published-files: the shell decides what is published, from the studies' standard layout; req/shell/site/visit-counting: visits are
+counted on the released site only; req/shell/site/app-address: the app is under /app/ and the site's own pages at its top; req/shell/site/policies, req/shell/site/license: the privacy policy, terms and license are published there and linked; req/shell/site/landing: the landing page; req/shell/site/icons: the
+icons and posters; req/shell/site/crawlers: the sitemap and robots.txt.
 
 Run: python3 -m pytest web-tests/test_published_site.py
 """
@@ -53,7 +52,7 @@ def test_nothing_else_of_a_study_ships():
 
 
 def test_every_file_a_study_page_fetches_is_published():
-    """3.21: a file the page reads beside its own module (new URL(..., import.meta.url)) must ship with it."""
+    """req/nor/metrics: a file the page reads beside its own module (new URL(..., import.meta.url)) must ship with it."""
     got, fetched = published(), []
     for module in glob.glob(os.path.join(ROOT, 'studies', '*', 'web', '*.js')):
         rel = os.path.relpath(module, ROOT)
@@ -109,7 +108,7 @@ def test_the_app_is_under_app_beside_the_studies_and_the_site_pages_at_the_top(t
 
 
 def test_no_address_from_before_the_move_is_redirected(tmp_path):
-    """1.27: the owner chose to let /<id>, /web/... and /?study= go unserved: nothing redirects them."""
+    """req/shell/site/app-address: the owner chose to let /<id>, /web/... and /?study= go unserved: nothing redirects them."""
     build.assemble(ROOT, str(tmp_path), {})
     assert not (tmp_path / '_redirects').exists()
     assert not any((tmp_path / (s + '.html')).exists() for s in STUDIES)
@@ -137,7 +136,7 @@ def listed_studies(tmp_path, *studies):
 
 
 def test_each_listed_study_is_published_under_its_own_path(tmp_path):
-    """1.2: rauntruth.com/app/<id> is the page, published again as app/<id>.html, which Cloudflare serves at /app/<id>."""
+    """req/shell/study/folder-and-address: rauntruth.com/app/<id> is the page, published again as app/<id>.html, which Cloudflare serves at /app/<id>."""
     root = listed_studies(tmp_path, ('alpha', True), ('hidden', False))
     assert build.study_pages(root, {'index.html', 'shell.js'}) == ['alpha.html']
 
@@ -229,7 +228,7 @@ def test_the_site_and_the_app_each_carry_their_own_icon_and_poster(tmp_path):
 
 
 def test_a_studys_address_carries_its_own_icon_and_poster_or_the_apps(tmp_path):
-    """1.60: study.json's icon and poster, under its web/, reach its address; a study naming none keeps the app's."""
+    """req/shell/site/icons: study.json's icon and poster, under its web/, reach its address; a study naming none keeps the app's."""
     build.assemble(ROOT, str(tmp_path), {})
     site, own = build.SITE_URL, 0
     assert len(build.studies(ROOT)) >= 3
@@ -265,7 +264,7 @@ def test_robots_names_the_sitemap_and_keeps_crawlers_off_the_app(tmp_path):
 
 
 def test_the_build_lists_every_file_the_app_needs_offline_with_its_hash(tmp_path):
-    """1.55: app/offline.json names each file of the app and the studies with its SHA-256, by its path from the app,
+    """req/shell/offline/default: app/offline.json names each file of the app and the studies with its SHA-256, by its path from the app,
     but itself; the site's own pages lie outside the app's worker and are left out."""
     import hashlib
     build.assemble(ROOT, str(tmp_path), {})

@@ -1,4 +1,4 @@
-"""1.18: the Google Drive dialog selects on a click and opens on Open or a double click, and shows a study's
+"""req/shell/drive/dialog: the Google Drive dialog selects on a click and opens on Open or a double click, and shows a study's
 ready-made thumbnail or the one saved when an image was opened, never reading Drive for one
 (drive_dialog_driver.mjs). The study ships no ready-made thumbnails, so the test serves stand-ins."""
 import json, os

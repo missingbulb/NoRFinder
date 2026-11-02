@@ -653,7 +653,7 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 :root[data-motion="off"] .shine { box-shadow: none; }
 :root[data-motion="off"] .shine::after { display: none; }
 
-/* working offline (1.55) and making a study available offline (1.56) */
+/* working offline (req/shell/offline/default) and making a study available offline (req/shell/offline/per-study) */
 html.offline [data-needs-network] { opacity: .45; cursor: not-allowed; }
 #statusbar #sb-offline { color: var(--warn); }
 #statusbar #sb-offline[hidden] { display: none; }
@@ -672,13 +672,13 @@ html.offline [data-needs-network] { opacity: .45; cursor: not-allowed; }
 #usage-dlg .install-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 #usage-dlg .install-row .hint { margin: 0; }
 @media (max-width: 520px) { #offline-dlg .where { display: none; } }
-/* what is available offline (1.57): a small, quiet mark, explained on hover */
+/* what is available offline (req/shell/offline/mark): a small, quiet mark, explained on hover */
 .offline-mark { display: inline-flex; align-items: center; margin-left: 5px; color: var(--dim); vertical-align: -1px; cursor: help; }
 .offline-mark:hover { color: var(--text); }
 #storage-list .group > summary .title { display: inline-flex; align-items: center; }
 #storage-list .entry .del-none { width: 22px; }
 
-/* the sign-in popup on opening the page (1.64) */
+/* the sign-in popup on opening the page (req/shell/account/welcome) */
 #welcome-dlg { width: min(420px, calc(100vw - 32px)); }
 #welcome-dlg h2 { margin: 0 0 6px; }
 #welcome-dlg .welcome-choices { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }

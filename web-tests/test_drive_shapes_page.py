@@ -1,4 +1,4 @@
-"""1.36: the Google Drive dialog tells a 3D stack from a flat image and saves a 3D thumbnail of an opened stack
+"""req/shell/drive/stacks: the Google Drive dialog tells a 3D stack from a flat image and saves a 3D thumbnail of an opened stack
 (drive_shapes_driver.mjs, in headless Chromium)."""
 import os
 import shutil

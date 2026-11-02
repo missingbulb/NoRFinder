@@ -1,5 +1,5 @@
 // Drives the page (web/) in headless Chromium against stand-ins for Google's sign-in script, its account details
-// and the Drive API's app folder, and checks 1.50: a visitor who never signs in loads nothing from Google; signing
+// and the Drive API's app folder, and checks req/shell/account/sign-in: a visitor who never signs in loads nothing from Google; signing
 // in asks Google for the user's name, email and picture and the app's own Drive folder, nothing else of their
 // Drive; the first sign-in starts the user's settings file from this device's settings that follow the user, not
 // the ones that stay; a change is saved; a second device signing in takes the file's settings, the theme at once,
@@ -117,7 +117,7 @@ const local = (page, k) => page.evaluate((k) => localStorage.getItem(k), k);
 const shot = async (page, name) => { if (shots) await page.screenshot({ path: path.join(shots, name + ".png"), clip: { x: 1000, y: 0, width: 400, height: 260 } }); };
 
 try {
-  // device A: used before, never signed in; it answered the sign-in popup (1.64) and closed its tip
+  // device A: used before, never signed in; it answered the sign-in popup (req/shell/account/welcome) and closed its tip
   const answered = { "nor-welcome": JSON.stringify({ choice: "anonymous", remember: true }) };
   const a = await device({ ...answered, "nor-theme": "dark", "nor-tips-closed": JSON.stringify(["recent-files", "sign-in"]), "nor-bars-v1": JSON.stringify({ left: 300 }) });
   await pause(300);
@@ -146,7 +146,7 @@ try {
   await a.page.click("#theme");
   check(await until(() => file()?.["nor-theme"] === "light"), "switching to light while signed in saves it to the file");
 
-  // 1.52: Settings, from the avatar's menu
+  // req/shell/account/settings: Settings, from the avatar's menu
   const openSettings = async (page) => {
     await page.click("#user-menu summary");
     await page.click("#open-settings");

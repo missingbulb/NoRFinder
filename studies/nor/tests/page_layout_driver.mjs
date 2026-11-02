@@ -71,7 +71,7 @@ for (const width of [1000, 1600]) {
   await page.click("#find");
   await page.waitForFunction(() => st.alone && $("#busy").hidden);
     // ---- the selected card over the image's top right corner, only while one is selected; Submit Ground
-  // Truth at the toolbar's right end; no right bar (3.2, 3.4, 3.13) ----
+  // Truth at the toolbar's right end; no right bar (req/nor/layout, req/nor/candidates/decide, req/nor/downloads) ----
   const fail = async (what, seen) => { console.error("FAILED: " + what + ": " + JSON.stringify(seen)); await done(1); };
   if (await page.isVisible("#selected-box")) await fail("the selected card shows with nothing selected", true);
   const sc = await page.locator("#scroller").boundingBox();
@@ -96,7 +96,7 @@ for (const width of [1000, 1600]) {
   if (process.env.SHOTS) { await page.evaluate(() => { $("#notice").hidden = true; }); await page.mouse.move(5, 5); await page.screenshot({ path: `${process.env.SHOTS}/${width}_image.png` }); }
   const views = [["image", async () => {}], ["finalists", async () => {
     await page.click("#switch"); await page.waitForFunction(() => document.querySelector("#view").dataset.view === "items" && document.querySelector("#list .card:not(.stub)"));
-    // the tasks' bar heads the finalists, Submit Ground Truth at its end (1.63)
+    // the tasks' bar heads the finalists, Submit Ground Truth at its end (req/shell/views/submit-task)
     const t = await page.evaluate(() => { const b = document.querySelector("#tasks-bar"), r = (e) => e.getBoundingClientRect(), g = document.querySelector("#dl-truth");
       return { shown: !!b.offsetParent, text: b.querySelector(".done").textContent, inBar: b.contains(g) && !!g.offsetParent, atEnd: Math.abs(r(g).right - r(b).right) < 40, above: r(b).bottom <= r(document.querySelector("#items-view")).top + 1,
         open: document.querySelectorAll("#list .card.task-open").length, cards: document.querySelectorAll("#list .card:not(.stub)").length }; });
@@ -104,7 +104,7 @@ for (const width of [1000, 1600]) {
   }], ["rejected", () => page.click("#tab-fail")]];
   for (const [view, go] of views) {
     await go(); await page.waitForFunction(() => !document.querySelector("button.working"));
-    // the cards near the view are drawn as the list's observer reports them (3.22)
+    // the cards near the view are drawn as the list's observer reports them (req/nor/cards/lazy)
     if (view !== "image") await page.waitForFunction(() => document.querySelector("#list .card canvas"));
     const got = await measure(page);
     const cards = got.filter((g) => g.where === "list").length, selected = got.filter((g) => g.where === "selected").length;

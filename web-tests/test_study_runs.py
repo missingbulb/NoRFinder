@@ -1,6 +1,6 @@
-"""1.3, 1.4: the shell runs the fixture study, which shares none of the NoR study's words: its Python through
+"""req/shell/study/viewer-choice, req/shell/python/one-call: the shell runs the fixture study, which shares none of the NoR study's words: its Python through
 the bridge in Pyodide under Node (study_bridge_driver.mjs), and the whole page, viewer and panels included,
-in headless Chromium with a stand-in worker (study_page_driver.mjs). 1.10, 1.28: the header's switcher and
+in headless Chromium with a stand-in worker (study_page_driver.mjs). req/shell/header, req/shell/image-viewer: the header's switcher and
 the default study, in the same page."""
 import os
 import shutil

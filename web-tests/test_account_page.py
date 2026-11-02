@@ -1,4 +1,4 @@
-"""1.50: signing in with Google from the avatar's menu keeps the user's settings in their own Google Drive
+"""req/shell/account/sign-in: signing in with Google from the avatar's menu keeps the user's settings in their own Google Drive
 (account_driver.mjs, in headless Chromium, against stand-ins for Google's sign-in and the Drive API)."""
 import os
 import shutil

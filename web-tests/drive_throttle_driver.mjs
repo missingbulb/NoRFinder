@@ -1,7 +1,7 @@
 // Drives the Google Drive dialog (web/) in headless Chromium against a stand-in Drive API that can refuse
 // downloads as Google does when it throttles a site (a 403 without the header that lets the page read it, which
 // the page sees as a failed request) while
-// still answering for files' details, or fail outright. Checks 1.37: a refused download, or a refused read for a
+// still answering for files' details, or fail outright. Checks req/shell/drive/throttle: a refused download, or a refused read for a
 // row's badge, starts a 15-minute wait: a large notice and a red countdown, and no call to Drive from the dialog,
 // across a reload; an image kept on this device still opens; when the countdown ends the dialog lists its link
 // again. A failure where the details fail too starts no wait.

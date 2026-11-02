@@ -43,9 +43,9 @@ python3 -m pytest tests
 ## The page
 
 `py/vascular.py` is what the browser runs: it hands the shell's 3D viewer the stack, flattened and
-slice by slice (requirement `4.1`). `web/vascular.js` mounts the vessel model over or beside it
+slice by slice (`req/vascular/stack-view`). `web/vascular.js` mounts the vessel model over or beside it
 (`web/model_view.js`, drawing through the 3D viewer's `three`), its cards (`web/items.js`) and Submit
-Ground Truth (requirements `4.3` to `4.5`, `tests/test_model_page.py`). The draft models it opens are
+Ground Truth (`req/vascular/model/correct`, `req/vascular/model/cards` and `req/vascular/model/ground-truth`, `tests/test_model_page.py`). The draft models it opens are
 `web/models/`; the model's format and edits are `web/model.js` (`web/coverage.js` the review's
 tube), pinned by `tests/test_model_js.py` and, against the Python fit,
 `tests/test_vessel_model_curve.py`.

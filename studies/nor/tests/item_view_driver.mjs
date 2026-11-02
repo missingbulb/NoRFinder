@@ -1,8 +1,8 @@
 // Drives the page (web/) in headless Chromium with the stand-in worker of the layout test, answering from
 // real results (ANSWERS, written by tests/test_memory.py), and checks the item views' navigation and
-// drawing: a drag from a label pans and selects no text (1.17); a double click on a candidate opens its
-// card, and on a card shows it on the image (3.4); only the cards in view and two rows past it are drawn
-// (3.22). Prints what it saw; exits 1 on a failure, 2 when it cannot run.
+// drawing: a drag from a label pans and selects no text (req/shell/image/minimap); a double click on a candidate opens its
+// card, and on a card shows it on the image (req/nor/candidates/decide); only the cards in view and two rows past it are drawn
+// (req/nor/cards/lazy). Prints what it saw; exits 1 on a failure, 2 when it cannot run.
 //   node tests/item_view_driver.mjs ANSWERS IMAGE
 import { repoFile } from "../../../web-tests/repo_file.mjs";
 import { createRequire } from "node:module";
@@ -76,7 +76,7 @@ const settled = async () => {
 };
 const centre = (sel) => page.$eval(sel, (e) => { const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
 
-// ---- 1.17: a drag that starts beside a candidate's number and crosses it pans the image and selects no
+// ---- req/shell/image/minimap: a drag that starts beside a candidate's number and crosses it pans the image and selects no
 // text ----
 for (let k = 0; k < 4; k++) await page.click("#zoom-in");
 const label = await page.evaluate(() => {
@@ -107,7 +107,7 @@ if (sel2) await fail("a drag across the ruler's length selected text", sel2);
 await page.click("#ruler-btn"); // takes the ruler away
 await page.click("#zoom-out"); for (let k = 0; k < 6; k++) await page.click("#zoom-out");
 
-// ---- 3.4: a double click on a candidate opens its card in the item views ----
+// ---- req/nor/candidates/decide: a double click on a candidate opens its card in the item views ----
 const target = await page.evaluate(() => {
   const v = $("#scroller").getBoundingClientRect();
   for (const g of document.querySelectorAll("#overlay g[data-i]")) {
@@ -130,7 +130,7 @@ const opened = await page.evaluate(() => {
 console.log("double click on the image:", JSON.stringify(opened));
 if (opened.sel !== target.i || !opened.card || !opened.outlined || !opened.inView || !opened.drawn) await fail("a double click on a candidate did not open its card", { ...opened, want: target.i });
 
-// ---- 3.4: a double click on a card shows it on the image ----
+// ---- req/nor/candidates/decide: a double click on a card shows it on the image ----
 const other = await page.evaluate(() => [...document.querySelectorAll("#list .card")].find((d) => d.dataset.i !== String(st.sel) && d.querySelector("canvas"))?.dataset.i);
 if (other === undefined) await fail("no second card to double click");
 await page.dblclick(`#list .card[data-i="${other}"] .state`);
@@ -139,7 +139,7 @@ const shown = await page.evaluate(() => String(st.sel));
 console.log("double click on a card:", shown, "of", other);
 if (shown !== other) await fail("a double click on a card did not select it on the image", { shown, other });
 
-// ---- 3.22: only the cards in view and two rows past it are drawn ----
+// ---- req/nor/cards/lazy: only the cards in view and two rows past it are drawn ----
 // a narrow, short window puts the corner's few cards in many rows
 await page.setViewportSize({ width: 760, height: 420 });
 await page.click("#switch");

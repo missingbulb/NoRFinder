@@ -1,4 +1,4 @@
-"""1.7, 1.39: a kept Drive image opens once its SHA-256 matches Drive's, and a tip points at the recents
+"""req/shell/drive/kept-images, req/shell/load/recents-tip: a kept Drive image opens once its SHA-256 matches Drive's, and a tip points at the recents
 (drive_cache_driver.mjs, in headless Chromium)."""
 import os
 import shutil

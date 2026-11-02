@@ -1,4 +1,4 @@
-"""1.42: a folder's rauntruth-previews.tiff, made by dev/tools/previews/make_previews.py from synthetic ImageJ TIFFs,
+"""req/shell/drive/previews: a folder's rauntruth-previews.tiff, made by dev/tools/previews/make_previews.py from synthetic ImageJ TIFFs,
 previews the images it covers in the Google Drive dialog (drive_previews_driver.mjs, in headless Chromium)."""
 import json
 import os

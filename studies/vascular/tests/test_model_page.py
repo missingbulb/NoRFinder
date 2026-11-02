@@ -1,4 +1,4 @@
-"""4.3 to 4.5: the vessel model beside or over the stack, its item cards and its submission as ground truth
+"""req/vascular/model/correct, req/vascular/model/cards and req/vascular/model/ground-truth: the vessel model beside or over the stack, its item cards and its submission as ground truth
 (model_page_driver.mjs, in headless Chromium with a stand-in worker and a draft the study ships)."""
 import os
 import shutil

@@ -1,4 +1,4 @@
-"""1.41: the left bar's drawers fold with the steps and title themselves by them, on the fixture study in headless Chromium with a stand-in
+"""req/shell/left-bar/folding: the left bar's drawers fold with the steps and title themselves by them, on the fixture study in headless Chromium with a stand-in
 worker (left_bar_driver.mjs)."""
 from test_study_runs import NODE, answers, png, run  # noqa: F401  (fixtures)
 import pytest

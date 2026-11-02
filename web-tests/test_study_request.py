@@ -1,4 +1,4 @@
-"""1.31: the form Submit New Study Request opens asks for everything a new study needs."""
+"""req/shell/study/request-form: the form Submit New Study Request opens asks for everything a new study needs."""
 import os
 
 import yaml

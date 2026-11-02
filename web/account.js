@@ -1,4 +1,4 @@
-// Signing in with Google (1.50), from the avatar's menu, with no server of the site's own: Google signs the user in
+// Signing in with Google (req/shell/account/sign-in), from the avatar's menu, with no server of the site's own: Google signs the user in
 // in its own window and hands this page a token, and the page keeps the user's settings in their own Google Drive,
 // in the app's hidden folder, as one file it reads whole and replaces whole: {browser key: the string this device
 // keeps under it}, for the keys whose settings follow the user. The services it reaches: Google's sign-in script
@@ -20,7 +20,7 @@ export const SIGNED_IN = "nor-google-sign-in";
 // keys: the browser keys whose settings follow the user; applied(): runs once Drive's settings have replaced them
 export function account({ keys, menu, clientId, applied }) {
   const $ = (s) => menu.querySelector(s);
-  // waiting: {ok, fail} of a sign-in the popup is waiting on (1.64)
+  // waiting: {ok, fail} of a sign-in the popup is waiting on (req/shell/account/welcome)
   let me = read(), client = null, script = null, saving = null, waiting = null;
   const answered = (how, why) => { const w = waiting; waiting = null; if (w) w[how](why); };
 
