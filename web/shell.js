@@ -701,7 +701,7 @@ function driveDialog() {
       }
     } catch (e) { console.warn("cannot read the images kept here:", e); }
     kept.sort((a, b) => (b.study === manifest.id) - (a.study === manifest.id) || a.name.localeCompare(b.name));
-    msg(kept.length ? "" : "No image is kept here: Prepare for offline, in the avatar's menu, keeps some.");
+    msg(kept.length ? "" : "No image is kept here: Make available offline, in Manage storage, keeps a study's.");
     for (const f of kept) {
       const b = document.createElement("button"); b.type = "button"; b.className = "item"; b.setAttribute("aria-selected", "false");
       const meta = [sizeText(f.size), ["Google Drive", ...f.path].join(" / ")].join(" · ");
@@ -990,7 +990,7 @@ async function inventory() {
   const drop = (...keys) => keys.forEach((k) => { try { localStorage.removeItem(k); } catch { /* nothing kept */ } });
   const studies = await offlineCopy.studyFiles().catch((e) => { console.warn("the studies could not be read:", e); return []; });
   const live = await offlineCopy.available().catch(() => new Set());
-  const sections = studies.map((s) => ({ id: "study:" + s.id, study: s.id, title: s.title, mark: live.has(s.id), entries: [] }));
+  const sections = studies.map((s) => ({ id: "study:" + s.id, study: s.id, title: s.title, mark: live.has(s.id), drive: !!s.manifest.files.drive, entries: [] }));
   const shared = { id: "shared", title: "Shared by every study", about: SHARED_ABOUT, entries: [] };
   // a study's own, else the study on show's: kept before images were told apart by study
   const sectionOf = (id) => sections.find((x) => x.study === id) || sections.find((x) => x.study === manifest?.id) || shared;
@@ -1094,6 +1094,12 @@ async function storageTab(fresh) {
     const box = document.createElement("details"); box.className = "group"; box.dataset.group = x.id; box.open = open.has(x.id);
     box.innerHTML = `<summary><span class="title">${esc(x.title)}</span><span class="count">${items.length ? `${items.length} · ${sizeText(size)}` : x.study ? "Nothing of its own" : "Nothing kept"}</span></summary>`;
     if (x.mark) markOffline(box.querySelector(".title"), "study", true);
+    // a study not all here offers to make it so; one that is, to keep its Drive images too
+    if (x.study && (!x.mark || x.drive)) {
+      const make = Object.assign(document.createElement("button"), { type: "button", className: x.mark ? "link get-images" : "link make-offline", textContent: x.mark ? "Its Drive images…" : "Make available offline" });
+      make.onclick = (e) => { e.preventDefault(); offlineCopy.makeAvailable(x.study, () => storageTab(false)); };
+      box.firstChild.append(make);
+    }
     if (gone.length) {
       const clear = Object.assign(document.createElement("button"), { type: "button", className: "link clear", textContent: "Delete all" });
       const ask = x.study ? `Delete everything kept for ${x.title} on this device? What other studies use stays, and so do its pages, kept with the site.`
@@ -1101,7 +1107,7 @@ async function storageTab(fresh) {
       clear.onclick = (e) => { e.preventDefault(); act(gone, ask); };
       box.firstChild.append(clear);
     }
-    const about = x.about || (x.mark ? "Available offline: its Python is on this device." : "Not available offline yet: Prepare for offline, in the avatar's menu, keeps its Python.");
+    const about = x.about || (x.mark ? "Available offline: its Python is on this device." : "Not available offline yet: its Python is not all on this device.");
     box.append(Object.assign(document.createElement("p"), { className: "hint", textContent: about }));
     for (const e of items) {
       const row = document.createElement("div"); row.className = "entry"; row.dataset.name = e.name; row.dataset.kind = e.kind;
@@ -1569,7 +1575,7 @@ const shell = {
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; },
 };
 splitter(shell);
-const offlineCopy = offline({ $, esc, sizeText, drive: NorDrive, throttled, throttle, stored: () => diskBar(),
+const offlineCopy = offline({ $, esc, sizeText, drive: NorDrive, throttled, throttle, stored: () => diskBar(), showStorage: () => usage("storage"),
   kept: async (id) => !!(await caches.open(IMAGES).then((c) => c.match(imageUrl(id)), () => null)), keep: saveImage });
 // for the page's tests, which drive it from outside
 window.st = st; window.$ = $; window.shellForTests = { saveThumb, page };

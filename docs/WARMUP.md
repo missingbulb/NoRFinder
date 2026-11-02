@@ -12,7 +12,7 @@ Working on a study? Read its own warm-up next: [NoR Finder](../studies/nor/docs/
 
 | Layer | Where | Swapped by |
 |---|---|---|
-| Shell: loading (computer, Google Drive), the Python runtime, status and memory, notices, theme, side bars, version history, downloads, ground-truth submission, splitting an image into parts (`web/split.js`, its dialog `web/split_dialog.js`), working offline and Prepare for offline (`web/offline.js`, with the service worker `web/sw.js`) | `web/` | — |
+| Shell: loading (computer, Google Drive), the Python runtime, status and memory, notices, theme, side bars, version history, downloads, ground-truth submission, splitting an image into parts (`web/split.js`, its dialog `web/split_dialog.js`), working offline and making a study available offline from the Storage tab (`web/offline.js`, with the service worker `web/sw.js`) | `web/` | — |
 | Viewer: shows the opened image and what a study draws over it, zoom, pan, the minimap, each channel's row and its black and white points (`web/channels.js`) | `web/viewer2d.js`; `web/viewer3d.js` adds a 3D view of a z-stack | a study's `viewer` |
 | Study: its panels, its flow, its Python | `studies/<id>/` | `/<id>` (rauntruth.com/nor) |
 

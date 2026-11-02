@@ -726,9 +726,9 @@ test fold under it. A study's research requirements, which no user sees, stay in
   `offline.json` with each file's SHA-256, each checked against that list and refetched only when it
   changed. With no network the page then opens at its own address and at every study's, from that
   copy. A study whose Python is already on this device runs; one whose Python is not says so: it
-  needs the internet once, or Prepare for offline (`1.56`). An image kept on this device (`1.7`,
+  needs the internet once, or Make available offline (`1.56`). An image kept on this device (`1.7`,
   `1.56`) opens: offline, From Google Drive lists the images kept here instead of a Drive folder.
-  The status bar shows Offline, which opens Prepare for offline. What needs the network says so in
+  The status bar shows Offline, which opens the Storage tab (`1.56`). What needs the network says so in
   its tooltip and does nothing: Sign in with Google, opening a new GitHub issue and Submit New Study
   Request. A change to a setting that follows the user (`1.50`) waits and is saved once the network is
   back. A visit the browser cannot reach a copy for, never opened online, shows the browser's own
@@ -736,25 +736,27 @@ test fold under it. A study's research requirements, which no user sees, stay in
   for anything. Test: `web-tests/test_offline_page.py`.
   </details>
 
-- `1.56` Prepare for offline: the user chooses the app, the studies' Python and their data to keep on this device, each with its size.
+- `1.56` Each study can be made available offline from the Storage tab, after a popup with what it takes and how long.
   <details>
 
-  Set by the owner on 2026-11-02. Prepare for offline…, in the avatar's menu, opens a dialog of
-  three parts, and nothing in it happens until the user asks. **Install as an app**: only on the
-  user's click does the page offer the browser's install, an icon that opens the site in its own
-  window, offline too; until then the page names no app manifest, so the browser offers none
-  unprompted. Where the browser has no install button of its own to call, the dialog says where
-  that browser's own menu has it. **Studies**: every listed study, each with how much its Python
-  takes, Python itself shared by all, and what is already on this device marked so; a ticked study's
-  Python is downloaded, all of it, so the study runs offline. **Data**: for each ticked study with a
-  Google Drive folder of its own (`files.drive`), the images reachable from it, its subfolders
-  included, each with its folder, its size and whether it is already on this device, to tick one by
-  one or all at once; a ticked image is kept as Auto-save keeps one (`1.7`). The dialog adds up what
-  the choice downloads, beside how much more the browser lets the site keep, and says when the
-  choice is more than that, which it then does not start. Prepare asks the browser to keep the
-  site's storage until the user deletes it, downloads with its progress shown and can be stopped,
-  and ends saying what is now on this device and whether the browser agreed to keep it. When Google
-  throttles the downloads (`1.37`) it stops and says so. Test: `web-tests/test_offline_page.py`.
+  Set by the owner on 2026-11-02, nothing in it happening until the user asks. The Storage tab
+  (`1.6`) opens with **Install as an app**: only on the user's click does the page offer the
+  browser's install, an icon that opens the site in its own window, offline too; until then the
+  page names no app manifest, so the browser offers none unprompted. Where the browser has no install
+  button of its own to call, the tab says where that browser's own menu has it. Each study's section
+  that is not all on this device has **Make available offline**, which opens a popup of what that
+  takes: its Python still missing, Python itself counted when it is, from jsDelivr; and, for a study
+  with a Google Drive folder of its own (`files.drive`), every image reachable from it, its
+  subfolders included, each with its folder and size, ticked, to untick one by one or all at once.
+  The popup adds up what the choice downloads, beside how much more the browser lets the site keep,
+  and estimates how long it takes, source by source (`1 GB from Google Drive at 25 MB/s + 200 MB of
+  Python at 15 MB/s, about 1 min 20 s`), at the speeds this session measured from each source; with
+  none measured yet, at the browser's own estimate of the connection, saying so, or it says it
+  cannot tell. A choice larger than the room left is refused, saying so. Download asks the browser
+  to keep the site's storage until the user deletes it, downloads with its progress shown and can be
+  stopped, and ends saying what is now on this device and whether the browser agreed to keep it.
+  When Google throttles the downloads (`1.37`) it stops and says so. The status bar's Offline
+  (`1.55`) opens the Storage tab. Test: `web-tests/test_offline_page.py`.
   </details>
 
 - `1.57` What is available offline says so, quietly: a study, and an image from Google Drive.

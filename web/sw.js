@@ -19,8 +19,14 @@ self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 // file counts its headers alone, one from Cache Storage nothing); which page each Python worker belongs to; and
 // the fetches waiting for their timing, by URL.
 const got = {}, workerOf = {}, waiting = new Map();
+// and what it downloaded from each host, {bytes, ms}, for how fast each answers (requirement 1.56)
+const hosts = {};
 new PerformanceObserver((l) => {
   for (const e of l.getEntries()) {
+    if (e.transferSize > 0 && e.duration > 0) {
+      const h = (hosts[new URL(e.name).host] ||= { bytes: 0, ms: 0 });
+      h.bytes += e.transferSize; h.ms += e.duration;
+    }
     const ids = waiting.get(e.name), id = ids?.shift();
     if (ids && !ids.length) waiting.delete(e.name);
     if (id) got[id] = (got[id] || 0) + e.transferSize;
@@ -40,6 +46,7 @@ self.addEventListener("message", (e) => {
     const answer = async (m) => e.source.postMessage({ type: "site", cache: (await siteCopy())?.name || null, ...m });
     return e.waitUntil(keepSite().then((m) => answer(m), (err) => answer({ error: String(err.message || err) })));
   }
+  if (e.data?.type === "speeds") return e.source.postMessage({ type: "speeds", hosts });
   if (e.data?.type !== "net") return;
   const page = e.source.id, workers = new Set([...(e.data.workers || []), ...Object.keys(workerOf).filter((w) => workerOf[w] === page)]);
   e.source.postMessage({ type: "net", page: { id: page, bytes: got[page] || 0 }, workers: Object.fromEntries([...workers].map((w) => [w, got[w] || 0])) });

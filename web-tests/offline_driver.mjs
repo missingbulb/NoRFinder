@@ -1,11 +1,11 @@
 // Drives the built site (SITE, as dev/tools/build/build.py assembles it with a stand-in GOOGLE_API_KEY) in headless Chromium with the real worker
 // and the real Pyodide from its CDN, over a server that answers as Cloudflare does and a stand-in Drive API, and
 // checks 1.55 and 1.56.
-// 1.56 first, online: the page names no app manifest until Install as an app is clicked, and then the browser
-// finds the site installable; Prepare for offline lists every listed study with its Python's size, a ticked
-// study's Drive folder with its subfolder's images, the total beside the room left, and refuses a choice larger
-// than that room; Prepare downloads the ticked study's Python and images, and nothing is downloaded from Drive
-// before it is clicked.
+// 1.56 first, online: the Storage tab offers each study not all here Make available offline, whose popup lists the
+// study's Drive folder with its subfolder's images, the total beside the room left and the time at this session's
+// speeds, refuses a choice larger than that room, and downloads the study's Python and images, nothing from Drive
+// before Download; the page names no app manifest until Install as an app is clicked, and then the browser finds
+// the site installable.
 // Then 1.55, with the network gone (the browser offline and the server refusing): the page opens at its address
 // and the Python already on this device runs; the status bar says Offline; what needs the network is held; a
 // prepared study runs, and From Google Drive lists the images kept here and opens one; a study whose Python is not
@@ -101,39 +101,45 @@ try {
   for (let t = 0; t < 60 && left.length; t++) { left = await missing(); if (left.length) await page.waitForTimeout(500); }
   check(listed.length > 30 && !left.length, `the site's own ${listed.length} files are kept on this device` + (left.length ? `; missing ${left.slice(0, 5)}` : ""));
 
-  // 1.56: Prepare for offline
+  // 1.56: the Storage tab, where each study is made available offline
   await page.click("#user-menu summary");
-  await page.click("#prepare-offline");
-  await page.waitForSelector("#offline-dlg[open]");
+  await page.click("#manage-storage");
+  await page.waitForFunction(() => document.querySelector("#usage-dlg").open && !/Reading/.test(document.querySelector("#storage-list").textContent));
   const studies = JSON.parse(fs.readFileSync(path.join(site, "studies.json"))).map((s) => s.id);
-  await page.waitForFunction((n) => document.querySelectorAll("#offline-studies [data-study] .size:not(:empty)").length === n, studies.length, { timeout: 60000 });
-  const rows = await page.$$eval("#offline-studies [data-study]", (rs) => rs.map((r) => ({ id: r.dataset.study, size: r.querySelector(".size").textContent })));
-  check(studies.every((id) => rows.some((r) => r.id === id && /\d+(\.\d)? MB|on this device/.test(r.size))), "every listed study is offered with its Python's size: " + rows.map((r) => `${r.id} ${r.size}`).join(", "));
-  check(/on this device/i.test(await page.textContent("#offline-core")), "Python itself, already downloaded, is marked on this device: " + (await page.textContent("#offline-core")));
-  check(/\d/.test(await page.textContent("#offline-free")), "the dialog says how much more the site may keep: " + (await page.textContent("#offline-free")));
-  await page.check('#offline-studies [data-study="vascular"] input.pick');
-  await page.waitForFunction(() => document.querySelectorAll('#offline-studies [data-study="vascular"] .data input.file').length === 2, null, { timeout: 30000 });
-  const data = await page.$$eval('#offline-studies [data-study="vascular"] .data .file-row', (rs) => rs.map((r) => r.textContent));
-  check(data.some((t) => t.includes("stack one.tif")) && data.some((t) => t.includes("stack two.tif") && t.includes("sub")), "a ticked study lists the images in its Drive folder, its subfolder's with their folder: " + data.join(" | "));
+  const offers = await page.$$eval("#storage-list .group[data-group^='study:']", (gs) => gs.map((g) => ({ id: g.dataset.group.slice(6), offer: !!g.querySelector(".make-offline") })));
+  check(studies.every((id) => offers.some((o) => o.id === id)) && offers.find((o) => o.id === "vascular").offer && !offers.find((o) => o.id === "fixture"),
+    "the Storage tab has a section per listed study, each not all here offering Make available offline: " + JSON.stringify(offers));
+  await page.click('#storage-list .group[data-group="study:vascular"] .make-offline');
+  await page.waitForSelector("#offline-dlg[open]");
+  await page.waitForFunction(() => document.querySelectorAll("#offline-files input.file").length === 2, null, { timeout: 30000 });
+  const data = await page.$$eval("#offline-files .file-row", (rs) => rs.map((r) => ({ text: r.textContent, on: r.querySelector("input").checked })));
+  check(data.some((t) => t.text.includes("stack one.tif")) && data.some((t) => t.text.includes("stack two.tif") && t.text.includes("sub")) && data.every((t) => t.on),
+    "the popup lists the images in the study's Drive folder, its subfolder's with their folder, all ticked: " + JSON.stringify(data));
   check(driveDownloads === 0, "listing the folder downloads no image");
-  await page.check('#offline-studies [data-study="vascular"] .data input.all');
-  await page.waitForFunction(() => /\d/.test(document.querySelector("#offline-total").textContent));
-  check(/MB|KB/.test(await page.textContent("#offline-total")), "the dialog adds up what the choice downloads: " + (await page.textContent("#offline-total")));
+  await page.waitForFunction(() => /\d/.test(document.querySelector("#offline-total").textContent) && /\d/.test(document.querySelector("#offline-free").textContent));
+  const say = async () => ({ python: await page.textContent("#offline-python"), total: await page.textContent("#offline-total"), free: await page.textContent("#offline-free"), time: await page.textContent("#offline-time") });
+  let told = await say();
+  check(/MB/.test(told.python) && /MB|KB/.test(told.total) && /\d/.test(told.free), "the popup says what the study's Python and its images take, beside the room left: " + JSON.stringify(told));
+  // Python downloaded this session from jsDelivr, so its speed is measured; Drive's is not yet
+  check(/Python at \d+(\.\d)? (KB|MB)\/s/.test(told.time) && /Google Drive/.test(told.time) && /about/.test(told.time), "it estimates the time, source by source, at the speeds measured: " + told.time);
   // a choice larger than the room left is refused
   await page.evaluate(() => { window.realEstimate = navigator.storage.estimate.bind(navigator.storage); navigator.storage.estimate = async () => ({ quota: 1e6, usage: 9e5 }); });
-  await page.uncheck('#offline-studies [data-study="vascular"] .data input.all'); await page.check('#offline-studies [data-study="vascular"] .data input.all');
+  await page.uncheck("#offline-files input.all"); await page.check("#offline-files input.all");
   await page.waitForFunction(() => document.querySelector("#offline-go").disabled);
   check(/more than/i.test(await page.textContent("#offline-warn")), "a choice larger than the room left is refused, saying so: " + (await page.textContent("#offline-warn")));
   await shot(page, "offline-too-much");
   await page.evaluate(() => { navigator.storage.estimate = window.realEstimate; });
-  await page.uncheck('#offline-studies [data-study="vascular"] .data input.all'); await page.check('#offline-studies [data-study="vascular"] .data input.all');
+  await page.uncheck("#offline-files input.all"); await page.check("#offline-files input.all");
   await page.waitForFunction(() => !document.querySelector("#offline-go").disabled);
   await shot(page, "offline-dialog");
   await page.click("#offline-go");
-  await page.waitForFunction(() => /ready for offline/i.test(document.querySelector("#offline-msg").textContent) || /could not/i.test(document.querySelector("#offline-msg").textContent), null, { timeout: 240000 });
-  check(/ready for offline/i.test(await page.textContent("#offline-msg")), "Prepare ends saying what is on this device: " + (await page.textContent("#offline-msg")));
-  check(driveDownloads === 2, `Prepare downloads the two ticked images (${driveDownloads})`);
-  check(/on this device/i.test(await page.textContent('#offline-studies [data-study="vascular"] .size')), "the prepared study is marked on this device");
+  await page.waitForFunction(() => /available offline/i.test(document.querySelector("#offline-msg").textContent) || /could not/i.test(document.querySelector("#offline-msg").textContent), null, { timeout: 240000 });
+  check(/available offline/i.test(await page.textContent("#offline-msg")), "Download ends saying what is on this device: " + (await page.textContent("#offline-msg")));
+  check(driveDownloads === 2, `it downloads the two ticked images (${driveDownloads})`);
+  await page.click("#offline-close");
+  await page.waitForFunction(() => document.querySelector('#storage-list .group[data-group="study:vascular"] summary .offline-mark'), null, { timeout: 10000 }).catch(() => {});
+  check(!!(await page.$('#storage-list .group[data-group="study:vascular"] summary .offline-mark')) && !(await page.$('#storage-list .group[data-group="study:vascular"] .make-offline')),
+    "the study is then marked available offline, and offers it no more");
   await shot(page, "offline-prepared");
 
   // Install as an app: only now does the page name its manifest, and the browser finds the site installable
@@ -159,6 +165,9 @@ try {
   await ready(60000);
   check(true, "offline, the Python already on this device runs");
   check(await page.isVisible("#sb-offline"), "the status bar says Offline");
+  await page.click("#sb-offline");
+  check(await page.evaluate(() => document.querySelector("#usage-dlg").open && document.querySelector("#usage-dlg").dataset.tab === "storage"), "clicking it opens the Storage tab");
+  await page.keyboard.press("Escape");
   check(await page.$eval("#study-request", (a) => a.getAttribute("aria-disabled") === "true" && /offline/i.test(a.title)), "Submit New Study Request is held, its tooltip saying why");
   // a click on it opens nothing
   const popup = page.waitForEvent("popup", { timeout: 1500 }).then(() => true, () => false);

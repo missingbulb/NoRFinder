@@ -1,12 +1,13 @@
 // Working without the internet. Offline by default (requirement 1.55): the service worker keeps the site's copy,
 // which keepSite() brings up to the release now published; with no network the page says Offline in the status
 // bar, and each control marked data-needs-network says so and does nothing. No network is the browser saying so,
-// or the site not answering: a plane's Wi-Fi with no internet beyond it leaves the browser saying it is online. Prepare for offline (1.56): a dialog
-// where the user chooses what more to keep on this device, the site as an app, each study's Python and the images
-// in each study's Google Drive folder, with what it all takes beside the room left.
+// or the site not answering: a plane's Wi-Fi with no internet beyond it leaves the browser saying it is online.
+// Making a study available offline (1.56), from the Storage tab: a popup of what the study's Python and the images
+// in its Google Drive folder take, beside the room left and the time at this session's speeds, then the download;
+// and Install as an app, at the top of the tab.
 // deps: $, esc, sizeText; drive, the Drive module; kept(id), whether an image is kept on this device;
 // keep(id, name, bytes, {path, study}), keeping one; throttled() and throttle(), Google's wait (1.37); stored(),
-// once something is kept.
+// once something is kept; showStorage(), opening the Storage tab.
 import { CORE, packagesOf } from "./python_files.js";
 import { PREVIEWS } from "./previews.js";
 
@@ -35,7 +36,7 @@ export function markOffline(el, what, on) {
 // a ticked study's Drive folder is read this deep and this far at most
 const MAX_FOLDERS = 200, MAX_FILES = 2000;
 
-export function offline({ $, esc, sizeText, drive, kept, keep, throttled, throttle, stored }) {
+export function offline({ $, esc, sizeText, drive, kept, keep, throttled, throttle, stored, showStorage }) {
   // ---------- offline by default ----------
   const NEEDS = "[data-needs-network]", WHY = "Needs the internet: you are offline.", AGAIN_MS = 30000;
   let unreached = false, again = 0;
@@ -56,7 +57,7 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
   document.addEventListener("click", (e) => {
     if (isOffline() && e.target.closest?.(NEEDS)) { e.preventDefault(); e.stopImmediatePropagation(); }
   }, true);
-  $("#sb-offline").onclick = () => prepare();
+  $("#sb-offline").onclick = () => showStorage();
 
   // the site's copy, brought up to date by the service worker: {files, unreached, cache} once it answers
   let siteCache = null;
@@ -113,13 +114,11 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
     showApp(outcome === "accepted" ? "Installed: the site's icon opens it in its own window." : "Not installed. You can install it later from here.");
   };
 
-  // ---------- the studies and their data ----------
+  // ---------- the studies, and making one available offline ----------
   const sizes = new Map(); // url → its size in bytes, as the network said, or null when it would not say
   const sizeOf = (url) => sizes.has(url) ? sizes.get(url) : fetch(url, { method: "HEAD" })
     .then((r) => +r.headers.get("content-length") || null, () => null).then((n) => (sizes.set(url, n), n));
   const here = async (url) => !!(await caches.match(url).catch(() => null));
-  let studies = [], picked = new Set(), files = new Map(), run = 0, ctl = null;
-  // [{url}] each study's Python, Python itself apart
   // every listed study, [{id, title, manifest, python}], python its packages' urls, Python itself apart; read once,
   // and again after a failure
   let listing = null;
@@ -144,107 +143,133 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
     const n = await Promise.all(out.map(sizeOf));
     return { urls: out, bytes: n.reduce((a, b) => a + (b || 0), 0), unknown: n.some((b) => b == null) };
   }
-  const told = (m) => (!m.urls.length ? "on this device" : `${sizeText(m.bytes)}${m.unknown ? " or more" : ""}`);
 
-  async function prepare() {
-    $("#offline-dlg").showModal(); showApp();
-    $("#offline-msg").textContent = ""; $("#offline-studies").textContent = "Reading the studies…";
-    try {
-      studies = await studyFiles();
-    } catch (e) { $("#offline-studies").textContent = "The studies could not be read: " + (e.message || e); return; }
-    $("#offline-studies").replaceChildren(...studies.map(row));
-    await recount();
-  }
-  function row(s) {
-    const r = document.createElement("div"); r.className = "study-row"; r.dataset.study = s.id;
-    r.innerHTML = `<label class="pick-row"><input type="checkbox" class="pick"><span class="name">${esc(s.title)}</span><span class="size"></span></label><div class="data" hidden></div>`;
-    const box = r.querySelector(".pick");
-    box.checked = picked.has(s.id);
-    box.onchange = () => { if (box.checked) picked.add(s.id); else picked.delete(s.id); showData(s, r.querySelector(".data")); recount(); };
-    if (box.checked) showData(s, r.querySelector(".data"));
-    return r;
-  }
-  // a ticked study's images, from its own Drive folder and the folders under it
-  async function showData(s, el) {
-    el.hidden = !picked.has(s.id);
-    if (el.hidden || el.dataset.read) return;
-    const link = s.manifest.files.drive, ref = link && drive.parse(link);
-    if (!ref || ref.kind !== "folder") { el.innerHTML = `<p class="hint">This study has no Google Drive folder of its own.</p>`; return; }
-    if (!drive.ready) { el.innerHTML = `<p class="hint">Its Google Drive folder needs this site's Google API key.</p>`; return; }
-    if (isOffline()) { el.innerHTML = `<p class="hint">Its Google Drive folder can be read once you are online.</p>`; return; }
-    if (throttled()) { el.innerHTML = `<p class="hint">Google is throttling this site's downloads; try again in a while.</p>`; return; }
-    el.innerHTML = `<p class="hint">Reading its Google Drive folder…</p>`;
-    const found = [];
-    try {
-      for (const queue = [{ id: ref.id, path: [] }], seen = new Set(); queue.length && seen.size < MAX_FOLDERS && found.length < MAX_FILES; ) {
-        const at = queue.shift();
-        if (seen.has(at.id)) continue;
-        seen.add(at.id);
-        for (const f of await drive.list(at.id)) {
-          if (f.folder) queue.push({ id: f.id, path: [...at.path, f.name] });
-          else if (f.name !== PREVIEWS) found.push({ ...f, path: at.path, study: s.id, kept: await kept(f.id) });
-        }
-      }
-    } catch (e) {
-      if (e.throttled) throttle();
-      el.innerHTML = `<p class="hint err">Its Google Drive folder could not be read: ${esc(e.message || e)}</p>`; return;
+  // This session's download speeds, bytes per second by source, or null: Python's as the service worker measured
+  // its downloads from the CDN, Google Drive's as the Drive module measured its own; else the browser's estimate of
+  // the connection, flagged as one.
+  async function speeds() {
+    const sw = navigator.serviceWorker && (await navigator.serviceWorker.ready.catch(() => null))?.active;
+    let hosts = {};
+    if (sw) {
+      hosts = await Promise.race([new Promise((ok) => {
+        const on = (e) => { if (e.data?.type !== "speeds") return; navigator.serviceWorker.removeEventListener("message", on); ok(e.data.hosts || {}); };
+        navigator.serviceWorker.addEventListener("message", on);
+        sw.postMessage({ type: "speeds" });
+      }), new Promise((ok) => setTimeout(() => ok({}), 1000))]);
     }
-    el.dataset.read = "1";
-    if (!found.length) { el.innerHTML = `<p class="hint">Its Google Drive folder holds no images.</p>`; return; }
-    el.innerHTML = `<p class="hint">Its images on Google Drive, to keep on this device too:</p><label class="all-row"><input type="checkbox" class="all"> All ${found.length}</label><div class="files"></div>`;
-    el.querySelector(".files").replaceChildren(...found.map((f) => {
-      const l = document.createElement("label"); l.className = "file-row";
-      l.innerHTML = `<input type="checkbox" class="file"><span class="name">${esc(f.name)}</span><span class="where">${esc(["Folder", ...f.path].join(" / "))}</span><span class="size">${f.kept ? "on this device" : f.size == null ? "" : sizeText(f.size)}</span>`;
-      const box = l.querySelector("input");
-      box.checked = files.has(f.id); box.disabled = f.kept;
-      box.onchange = () => { if (box.checked) files.set(f.id, f); else files.delete(f.id); recount(); };
-      return l;
-    }));
-    el.querySelector(".all").onchange = (e) => {
-      for (const b of el.querySelectorAll("input.file:not(:disabled)")) { b.checked = e.target.checked; b.onchange(); }
-    };
+    const rate = (m) => (m && m.bytes > 0 && m.ms > 0 ? (m.bytes / m.ms) * 1000 : null);
+    const guess = navigator.connection?.downlink ? { rate: navigator.connection.downlink * 125000, guessed: true } : null;
+    const of = (m) => (rate(m) ? { rate: rate(m) } : guess);
+    return { python: of(hosts[new URL(CORE[0]).host]), drive: of(drive.speed?.()) };
   }
-  // what the choice downloads, beside the room left; Prepare is refused a choice larger than that
-  async function recount() {
+  const duration = (s) => (s < 60 ? `${Math.max(1, Math.round(s))} s` : s < 3600 ? `${Math.floor(s / 60)} min ${Math.round(s % 60)} s` : `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} min`);
+  // "200 MB of Python at 15 MB/s + 1 GB from Google Drive at 25 MB/s, about 1 min 20 s"
+  function timeText(parts) {
+    const said = [], known = [];
+    for (const p of parts.filter((x) => x.bytes)) {
+      if (!p.speed) { said.push(`${sizeText(p.bytes)} ${p.what}, at a speed not measured yet`); continue; }
+      said.push(`${sizeText(p.bytes)} ${p.what} at ${p.speed.guessed ? "about " : ""}${sizeText(p.speed.rate)}/s${p.speed.guessed ? " (the browser's estimate)" : ""}`);
+      known.push(p.bytes / p.speed.rate);
+    }
+    if (!said.length) return "";
+    return "Time: " + said.join(" + ") + (known.length ? `, about ${duration(known.reduce((a, b) => a + b, 0))}${known.length < said.length ? " and more" : ""}.` : ".");
+  }
+
+  // the images in a study's own Drive folder and the folders under it: [{id, name, size, path, study, kept}], or
+  // a sentence saying why there are none
+  async function imagesOf(s) {
+    const link = s.manifest.files.drive, ref = link && drive.parse(link);
+    if (!ref || ref.kind !== "folder") return "This study has no Google Drive folder of its own.";
+    if (!drive.ready) return "Its Google Drive folder needs this site's Google API key.";
+    if (isOffline()) return "Its Google Drive folder can be read once you are online.";
+    if (throttled()) return "Google is throttling this site's downloads; try again in a while.";
+    const found = [];
+    for (const queue = [{ id: ref.id, path: [] }], seen = new Set(); queue.length && seen.size < MAX_FOLDERS && found.length < MAX_FILES; ) {
+      const at = queue.shift();
+      if (seen.has(at.id)) continue;
+      seen.add(at.id);
+      for (const f of await drive.list(at.id)) {
+        if (f.folder) queue.push({ id: f.id, path: [...at.path, f.name] });
+        else if (f.name !== PREVIEWS) found.push({ ...f, path: at.path, study: s.id, kept: await kept(f.id) });
+      }
+    }
+    return found.length ? found : "Its Google Drive folder holds no images.";
+  }
+
+  // The popup for one study: what making it available offline takes, then the download. done() once it closes.
+  let ctl = null, run = 0, plan = null;
+  async function makeAvailable(id, done) {
+    const dlg = $("#offline-dlg"), msg = (t) => { $("#offline-msg").textContent = t; };
+    const s = (await studyFiles()).find((x) => x.id === id);
+    if (!s) return;
+    $("#offline-title").textContent = `Make ${s.title} available offline`;
+    for (const el of ["#offline-python", "#offline-total", "#offline-free", "#offline-time", "#offline-warn"]) $(el).textContent = "";
+    $("#offline-files").textContent = "Reading its Google Drive folder…"; msg(""); $("#offline-go").disabled = true; $("#offline-go").hidden = false;
+    $("#offline-close").onclick = () => dlg.close();
+    dlg.onclose = () => { ctl?.abort(); done?.(); };
+    dlg.showModal();
     const asked = ++run;
-    const core = await missing(CORE);
-    const rows = await Promise.all(studies.map(async (s) => ({ s, m: await missing(s.python) })));
+    let images = [];
+    try { images = await imagesOf(s); } catch (e) {
+      if (e.throttled) throttle();
+      images = `Its Google Drive folder could not be read: ${e.message || e}`;
+    }
     if (asked !== run) return;
-    $("#offline-core").textContent = "Python itself, shared by every study: " + told(core) + ".";
-    for (const { s, m } of rows) $(`#offline-studies [data-study="${s.id}"] .size`).textContent = told(m);
-    const python = new Set(core.urls);
-    for (const { s, m } of rows) if (picked.has(s.id)) m.urls.forEach((u) => python.add(u));
-    const images = [...files.values()].filter((f) => picked.has(f.study));
-    const bytes = (await Promise.all([...python].map(sizeOf))).reduce((a, b) => a + (b || 0), 0) + images.reduce((a, f) => a + (f.size || 0), 0);
-    let free = null;
-    try { const e = await navigator.storage.estimate(); free = e.quota - e.usage; } catch { /* the browser does not say */ }
+    if (typeof images === "string") $("#offline-files").innerHTML = `<p class="hint">${esc(images)}</p>`;
+    else {
+      const fresh = images.filter((f) => !f.kept);
+      $("#offline-files").innerHTML = `<p class="hint">Its images on Google Drive${fresh.length < images.length ? `, ${images.length - fresh.length} of them already on this device` : ""}:</p>` +
+        (fresh.length ? `<label class="all-row"><input type="checkbox" class="all" checked> All ${fresh.length}</label>` : "") + `<div class="files"></div>`;
+      $("#offline-files .files").replaceChildren(...images.map((f) => {
+        const l = document.createElement("label"); l.className = "file-row";
+        l.innerHTML = `<input type="checkbox" class="file"><span class="name">${esc(f.name)}</span><span class="where">${esc(["Folder", ...f.path].join(" / "))}</span><span class="size">${f.size == null ? "" : sizeText(f.size)}</span>`;
+        const box = l.querySelector("input"); box.checked = true; box.disabled = f.kept; box.dataset.id = f.id;
+        if (f.kept) markOffline(l.querySelector(".size"), "image", true);
+        box.onchange = () => recount(s, images);
+        return l;
+      }));
+      const all = $("#offline-files input.all");
+      if (all) all.onchange = () => { for (const b of $("#offline-files").querySelectorAll("input.file:not(:disabled)")) b.checked = all.checked; recount(s, images); };
+    }
+    await recount(s, typeof images === "string" ? [] : images);
+  }
+  // what the choice downloads, beside the room left, and how long it takes; Download is refused a choice larger
+  // than the room left
+  async function recount(s, images) {
+    const asked = ++run;
+    const python = await missing([...CORE, ...s.python]);
+    const ticked = new Set([...$("#offline-files").querySelectorAll("input.file:checked:not(:disabled)")].map((b) => b.dataset.id));
+    const chosen = images.filter((f) => ticked.has(f.id)), imageBytes = chosen.reduce((a, f) => a + (f.size || 0), 0);
+    const [speed, free] = await Promise.all([speeds(), navigator.storage?.estimate?.().then((e) => e.quota - e.usage, () => null) ?? null]);
     if (asked !== run) return;
-    const some = !!picked.size && (python.size || images.length);
+    const bytes = python.bytes + imageBytes;
+    $("#offline-python").textContent = python.urls.length ? `Its Python: ${sizeText(python.bytes)}${python.unknown ? " or more" : ""} from jsDelivr.` : "Its Python is already on this device.";
     $("#offline-free").textContent = free == null ? "This browser does not say how much more the site may keep." : `This browser lets the site keep about ${sizeText(free)} more.`;
-    $("#offline-total").textContent = !picked.size ? "Tick the studies to keep." : some ? `This choice downloads ${sizeText(bytes)}.` : "Everything ticked is already on this device.";
+    $("#offline-total").textContent = bytes ? `This downloads ${sizeText(bytes)}${chosen.length ? `: its Python and ${chosen.length === 1 ? "1 image" : chosen.length + " images"}` : ""}.` : "Everything is already on this device.";
+    $("#offline-time").textContent = timeText([{ what: "of Python", bytes: python.bytes, speed: speed.python }, { what: "from Google Drive", bytes: imageBytes, speed: speed.drive }]);
     const tooMuch = free != null && bytes > free;
     $("#offline-warn").hidden = !tooMuch;
-    $("#offline-warn").textContent = tooMuch ? `That is more than this browser lets the site keep (${sizeText(free)}). Untick some images or studies.` : "";
-    $("#offline-go").disabled = !some || tooMuch || isOffline() || !!ctl;
-    return { python: [...python], images, bytes };
+    $("#offline-warn").textContent = tooMuch ? `That is more than this browser lets the site keep (${sizeText(free)}). Untick some images.` : "";
+    $("#offline-go").disabled = !bytes || tooMuch || isOffline() || !!ctl;
+    plan = { s, python: python.urls, images: chosen, bytes };
   }
 
-  // Prepare: the browser asked to keep the site's storage, the site's copy brought up to date, then each download
+  // Download: the browser asked to keep the site's storage, the site's copy brought up to date, then each download
   // in turn, the Python first
   $("#offline-go").onclick = async () => {
-    const plan = await recount();
     if (!plan) return;
+    const { s, python, images: chosen, bytes } = plan;
     ctl = new AbortController(); const signal = ctl.signal;
     $("#offline-go").disabled = true; $("#offline-stop").hidden = false;
     const bar = $("#offline-progress"), msg = (t) => { $("#offline-msg").textContent = t; };
-    bar.hidden = false; bar.max = plan.bytes || 1; bar.value = 0;
+    bar.hidden = false; bar.max = bytes || 1; bar.value = 0;
     let done = 0, images = 0, error = null;
     const persisted = await navigator.storage?.persist?.().catch(() => false);
     try {
       msg("Keeping the site itself…"); await keepSite();
-      for (const url of plan.python) {
+      for (const url of python) {
         if (signal.aborted) break;
-        msg(`Downloading Python · ${sizeText(done)} of ${sizeText(plan.bytes)}`);
+        msg(`Downloading Python · ${sizeText(done)} of ${sizeText(bytes)}`);
         const r = await fetch(url, { signal });
         if (!r.ok) throw new Error(`${url.split("/").pop()}: HTTP ${r.status}`);
         for (const reader = r.body.getReader(); ; ) {
@@ -253,32 +278,28 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
           done += value.length; bar.value = done;
         }
       }
-      for (const f of plan.images) {
+      for (const f of chosen) {
         if (signal.aborted) break;
         if (throttled()) throw Object.assign(new Error("Google is throttling this site's downloads"), { throttled: true });
-        msg(`Downloading ${f.name} · ${sizeText(done)} of ${sizeText(plan.bytes)}`);
+        msg(`Downloading ${f.name} · ${sizeText(done)} of ${sizeText(bytes)}`);
         const got = await drive.file(f.id, f.name);
         await keep(f.id, got.name, got.bytes, { path: f.path, study: f.study });
-        f.kept = true; files.delete(f.id); done += got.bytes.byteLength; bar.value = done; images++;
+        done += got.bytes.byteLength; bar.value = done; images++;
       }
     } catch (e) {
       if (e.throttled) throttle();
       if (e.name !== "AbortError") error = e;
     }
-    ctl = null; bar.hidden = true; $("#offline-stop").hidden = true;
+    ctl = null; bar.hidden = true; $("#offline-stop").hidden = true; $("#offline-go").hidden = true;
     stored();
-    $("#offline-studies").replaceChildren(...studies.map(row));
-    await recount();
-    const ticked = studies.filter((s) => picked.has(s.id)).map((s) => s.title).join(", ");
-    const kept = persisted ? "The browser keeps them until you delete them in Manage storage." : "The browser may clear them if this device runs low on space.";
-    if (error) msg(`Could not finish: ${error.message || error}. ${soFar(images)}`);
-    else if (signal.aborted) msg(`Stopped. ${soFar(images)}`);
-    else msg(`Ready for offline: ${ticked} and ${images === 1 ? "1 image" : images + " images"}. ${kept}`);
+    const soFar = images ? ` ${images === 1 ? "1 image" : images + " images"} kept so far.` : "";
+    const keptFor = persisted ? "The browser keeps it until you delete it here." : "The browser may clear it if this device runs low on space.";
+    if (error) msg(`Could not finish: ${error.message || error}.${soFar}`);
+    else if (signal.aborted) msg(`Stopped.${soFar}`);
+    else msg(`${s.title} is available offline: its Python${images ? ` and ${images === 1 ? "1 image" : images + " images"}` : ""}. ${keptFor}`);
   };
-  const soFar = (n) => (n ? `${n === 1 ? "1 image" : n + " images"} kept so far.` : "");
   $("#offline-stop").onclick = () => ctl?.abort();
-  $("#offline-dlg").addEventListener("close", () => ctl?.abort());
-  $("#prepare-offline").onclick = () => { $("#user-menu").open = false; prepare(); };
 
-  return { keepSite, siteCache: () => siteCache, offline: isOffline, studyFiles, available, core: CORE };
+  showApp();
+  return { keepSite, siteCache: () => siteCache, offline: isOffline, studyFiles, available, makeAvailable, core: CORE };
 }

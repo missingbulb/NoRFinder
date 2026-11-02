@@ -1,5 +1,5 @@
 // What a study's Python downloads: Python itself, from Pyodide's CDN, and the packages its study.json names, from
-// Pyodide's own set and the wheels the build vendors. The worker downloads them; Prepare for offline keeps them.
+// Pyodide's own set and the wheels the build vendors. The worker downloads them; making a study available offline keeps them.
 export const PYODIDE = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/";
 // Python itself: what loadPyodide fetches before any package
 export const CORE = ["pyodide.mjs", "pyodide.asm.mjs", "pyodide.asm.wasm", "python_stdlib.zip", "pyodide-lock.json"].map((f) => PYODIDE + f);
