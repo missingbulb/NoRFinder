@@ -3,8 +3,8 @@
 // second one level across it, the second a blob. Checks req/shell/viewer-3d: a stack opens on the 3D view, which draws it; the
 // channel rows drive it (hiding a channel or raising its black point darkens it); Colour by depth paints by
 // depth; Side turns the view; a sideways scroll turns the picture about the line of sight; a drag turns on past
-// looking straight across; the depth slab hides slices; the spacing says where it came from; a 2D study
-// shows no switch. Exits 1 on a failed check, 2 when it cannot run.
+// looking straight across; the depth slab hides slices; the spacing says where it came from; no 2D/3D switch
+// anywhere, and Edit Image on a stack offers no flat-image drawing tools. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/viewer3d_driver.mjs [SHOT.png]
 import { repoFile } from "./repo_file.mjs";
 import { createRequire } from "node:module";
@@ -95,7 +95,7 @@ try {
   if (gl3d) {
     await page.setInputFiles("#file", { name: "stack.tif", mimeType: "image/tiff", buffer: Buffer.from([0x49, 0x49, 42, 0]) });
     await page.waitForFunction(() => !$("#v3-stage").hidden);
-    check(await page.isVisible("#v3-switch"), "a stack opens on the 3D view, with the 2D/3D switch in the toolbar");
+    check(!(await page.$("#v3-switch, #v3-2d")) && await page.isHidden("#stage"), "a stack opens on the 3D view only, with no 2D/3D switch to flatten it");
     const tools = await page.evaluate(() => ["#v3-render-btn", "#v3-depth", "#v3-look-btn", "#v3-slices-btn"].map((s) => {
       const b = document.querySelector(s); return !!b && b.matches(".toolbar button.tool") && b.offsetParent !== null;
     }));
@@ -150,13 +150,19 @@ try {
     const note = await page.textContent("#v3-note");
     check(/owner/i.test(note), `the spacing says who stated it: "${note}"`);
 
-    await page.click("#v3-2d");
-    check(await page.isHidden("#v3-stage") && await page.isVisible("#stage"), "2D shows the flattened stack again");
+    // Data Management wants a signed-in Drive; its Edit Image box is only kept out of sight outside it
+    await page.evaluate(() => { document.documentElement.dataset.mode = "data"; $("#edit-open").click(); });
+    await page.waitForFunction(() => !$("#edit-box").hidden);
+    check(await page.isVisible("#edit-slices-sec") && await page.isHidden("#edit-crop") && await page.isHidden("#edit-lasso") && await page.isHidden("#edit-split-hint"),
+      "Edit Image on a stack offers no Crop or Imperfections lasso, which draw on a flat image");
+    check(await page.isVisible("#v3-stage") && await page.isHidden("#stage"), "Edit Image keeps the stack in 3D");
+    await page.click("#edit-done");
+    await page.evaluate(() => delete document.documentElement.dataset.mode);
   } else console.log(`not checked in this ${ENGINE}: the 3D view, which needs the WebGL2 it lacks`);
 
   await page.goto(origin + "/web/fixture");
   await page.waitForFunction(() => window.$ && $("#title").textContent === "Fixture");
-  check(await page.isHidden("#v3-switch"), "a 2D study has no 2D/3D switch");
+  check(!(await page.$("#v3-switch")), "a 2D study has no 2D/3D switch");
 
   // a browser without WebGL2: the stack still opens, flattened, its volume there for the study to read
   const noGl = await browser.newContext({ viewport: { width: 1400, height: 900 } });
@@ -172,7 +178,7 @@ try {
   await p2.waitForFunction(() => window.$ && $("#status").textContent.startsWith("Ready"));
   await p2.setInputFiles("#file", { name: "stack.tif", mimeType: "image/tiff", buffer: Buffer.from([0x49, 0x49, 42, 0]) });
   await p2.waitForFunction(() => window.shellForTests.page.get("image"));
-  const seen = await p2.evaluate(() => ({ shape: window.shellForTests.viewer.three?.meta?.shape || null, flat: !$("#stage").hidden, switch: !$("#v3-switch").hidden }));
+  const seen = await p2.evaluate(() => ({ shape: window.shellForTests.viewer.three?.meta?.shape || null, flat: !$("#stage").hidden, switch: !!$("#v3-switch") }));
   check(seen.shape?.length === 3 && seen.flat && !seen.switch, `with no WebGL2 the stack opens flattened, with no 2D/3D switch, its volume there: ${JSON.stringify(seen)}`);
 } catch (e) {
   failed = true; console.error(e);
