@@ -147,13 +147,16 @@ body.resizing { cursor: col-resize; user-select: none; }
 .channel .ch-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .channel label { flex: 0 1 auto; min-width: 2em; overflow: hidden; text-overflow: ellipsis; cursor: pointer; white-space: nowrap; }
 .channel input[type=checkbox] { flex: none; width: 15px; height: 15px; margin: 0; cursor: pointer; }
-/* the colour picker: a swatch of the channel's colour in a rainbow ring */
-.channel input[type=color] { flex: none; width: 18px; height: 18px; padding: 3px; border: 0; border-radius: 50%; cursor: pointer;
-  background: conic-gradient(#f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
+/* the colour picker: a swatch a little wider than tall in a thick frame, lit from the top left like a picture's; its colour, at
+   the centre, a little lighter towards the top left and darker towards the bottom right */
+.channel input[type=color] { flex: none; width: 28px; height: 20px; padding: 0; border: 3px solid; border-radius: 2px; cursor: pointer; background: none;
+  border-color: color-mix(in srgb, var(--dim) 55%, #fff) color-mix(in srgb, var(--dim) 65%, #000) color-mix(in srgb, var(--dim) 65%, #000) color-mix(in srgb, var(--dim) 55%, #fff); }
 .channel input[type=color]:hover, .channel input[type=color]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .channel input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
-.channel input[type=color]::-webkit-color-swatch { border: 2px solid var(--panel); border-radius: 50%; }
-.channel input[type=color]::-moz-color-swatch { border: 2px solid var(--panel); border-radius: 50%; }
+.channel input[type=color]::-webkit-color-swatch { border: 0; border-radius: 0; box-shadow: inset 0 0 0 1px #0006;
+  background-image: linear-gradient(135deg, #ffffff59, #fff0 50%, #0000 50%, #00000059); }
+.channel input[type=color]::-moz-color-swatch { border: 0; border-radius: 0; box-shadow: inset 0 0 0 1px #0006;
+  background-image: linear-gradient(135deg, #ffffff59, #fff0 50%, #0000 50%, #00000059); }
 .channel .from-file { flex: 0 2 auto; min-width: 0; color: var(--dim); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .channel.off .levels { opacity: .4; }
 /* a slider of two points: the track and its thumbs, each thumb a triangle drawn by the channel's own rules */
