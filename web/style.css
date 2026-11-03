@@ -138,15 +138,15 @@ body.resizing { cursor: col-resize; user-select: none; }
 #file-info dt { color: var(--dim); }
 #file-info dd { margin: 0; overflow-wrap: anywhere; }
 #file-info dd.none { grid-column: 1 / -1; margin-top: 2px; }
-/* a row per channel, on one line: its checkbox in the channel's colour, its colour picker, its name, its
-   description behind a (?), the file's own name for it, and one slider holding its black and white points over
-   a ramp from black to its colour */
+/* a row per channel, on one line: its checkbox, its colour picker, the one part in the channel's colour, its
+   name, its description behind a (?), the file's own name for it, and one slider holding its black and white
+   points over a ramp from black to white */
 #channels { display: grid; grid-template-columns: auto auto minmax(0, max-content) minmax(60px, 1fr); gap: 6px; font-size: 13px; }
 #channels:empty { display: none; }
 .channel { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; }
 .channel .ch-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .channel label { flex: 0 1 auto; min-width: 2em; overflow: hidden; text-overflow: ellipsis; cursor: pointer; white-space: nowrap; }
-.channel input[type=checkbox] { flex: none; width: 15px; height: 15px; margin: 0; cursor: pointer; accent-color: var(--ch); }
+.channel input[type=checkbox] { flex: none; width: 15px; height: 15px; margin: 0; cursor: pointer; }
 .channel input[type=color] { flex: none; width: 18px; height: 18px; padding: 0; border: 1px solid var(--line); border-radius: var(--r-ctl); cursor: pointer; background: none; }
 .channel input[type=color]::-webkit-color-swatch-wrapper { padding: 2px; }
 .channel input[type=color]::-webkit-color-swatch { border: 0; border-radius: 2px; }
@@ -170,7 +170,7 @@ body.resizing { cursor: col-resize; user-select: none; }
    one right, so the two meet in one larger triangle and neither covers the other. Each input is a thumb's width
    short of the slider, the white one starting a thumb's width in, so both put their value at the same place */
 .channel .levels { --t: 7px; min-width: 0; height: 14px; margin: 0; }
-.channel .levels::before { left: var(--t); right: var(--t); top: 0; height: 5px; border-radius: 2px; }
+.channel .levels::before { left: var(--t); right: var(--t); top: 0; height: 5px; border-radius: 2px; background: linear-gradient(90deg, #000, #fff); }
 .channel .levels input[type=range] { inset: 0 auto 0 0; width: calc(100% - var(--t)); height: 14px; --edge: var(--dim); }
 .channel .levels input.white { left: var(--t); }
 .channel .levels input:focus-visible { --edge: var(--accent); }
@@ -184,10 +184,10 @@ body.resizing { cursor: col-resize; user-select: none; }
   background-image: linear-gradient(to top left, #000 50%, transparent 50%), linear-gradient(to top left, var(--edge) 50%, transparent 50%);
   background-size: calc(100% - 2px) 7px, 100% 10px; background-position: right 1px bottom 1px, right bottom; }
 .channel .levels input.white::-webkit-slider-thumb {
-  background-image: linear-gradient(to top right, var(--ch) 50%, transparent 50%), linear-gradient(to top right, var(--edge) 50%, transparent 50%);
+  background-image: linear-gradient(to top right, #fff 50%, transparent 50%), linear-gradient(to top right, var(--edge) 50%, transparent 50%);
   background-size: calc(100% - 2px) 7px, 100% 10px; background-position: left 1px bottom 1px, left bottom; }
 .channel .levels input.white::-moz-range-thumb {
-  background-image: linear-gradient(to top right, var(--ch) 50%, transparent 50%), linear-gradient(to top right, var(--edge) 50%, transparent 50%);
+  background-image: linear-gradient(to top right, #fff 50%, transparent 50%), linear-gradient(to top right, var(--edge) 50%, transparent 50%);
   background-size: calc(100% - 2px) 7px, 100% 10px; background-position: left 1px bottom 1px, left bottom; }
 .row { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; }
 /* a button shines while it is the next thing to press */
