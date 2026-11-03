@@ -32,6 +32,24 @@
       <div id="summary" class="dim">No candidates yet.</div>
       <div class="csv-btns"><button id="dl-cands" disabled>Download Candidates</button><button id="dl-summary" disabled>Download Summary</button></div>
     </section>
+
+    <section class="box foldable" id="tasks-box" data-opens="find" hidden>
+      <div class="sec-head"><h2>Ground Truth Tasks</h2></div>
+      <div class="gt-progress"><span id="gt-done">No tasks yet</span><meter id="gt-meter" min="0" max="1" value="0"></meter></div>
+      <ol id="gt-tasks">
+        <li data-task="pass"><button class="task-head" type="button"><span class="tick" aria-hidden="true"></span><span class="t">Review the finalists</span><span class="n"></span></button><div class="task-body"></div></li>
+        <li data-task="fail"><button class="task-head" type="button"><span class="tick" aria-hidden="true"></span><span class="t">Review the rejected</span><span class="n"></span></button><div class="task-body"></div></li>
+        <li data-task="missed"><button class="task-head" type="button"><span class="tick" aria-hidden="true"></span><span class="t">Mark the NoRs the finder missed</span><span class="n"></span></button>
+          <div class="task-body"><p class="hint">Right-click the image where the finder missed a NoR to add one, then correct its lines and approve it on its card.</p>
+            <div class="missed-slot"></div>
+            <label class="missed-done"><input type="checkbox" id="missed-done"> I looked over the whole image: no other NoR is missing</label></div></li>
+        <li data-task="submit"><div class="task-head"><span class="tick" aria-hidden="true"></span><button id="dl-truth" disabled><span class="gt-ico" aria-hidden="true"></span>Submit Ground Truth</button></div></li>
+      </ol>
+      <div id="task-now">
+        <div class="task-step"><div class="stepper"><button id="task-prev" type="button" title="Previous candidate in this task" aria-label="Previous candidate in this task">‹</button><button id="task-next" type="button" title="Next candidate in this task" aria-label="Next candidate in this task">›</button></div><span id="task-place"></span></div>
+        <div id="task-card"></div>
+      </div>
+    </section>
 </template>
 <template data-slot="toolbar">
       <details class="menu for-image" id="show-menu">
@@ -67,7 +85,7 @@
     <div id="lasso-hint" hidden>Drag around the area to count · Esc cancels</div>
 </template>
 <template data-slot="views">
-    <div id="items-view" hidden>
+    <div id="items-view" data-viewing hidden>
       <div id="list"></div>
     </div>
 </template>
@@ -76,9 +94,6 @@
       <div class="stepper" id="sel-step"><button id="sel-prev" title="Previous candidate" aria-label="Previous candidate" disabled>‹</button><button id="sel-next" title="Next candidate" aria-label="Next candidate" disabled>›</button></div>
       <div id="selected"></div>
     </section>
-</template>
-<template data-slot="tasks-end">
-    <button id="dl-truth" disabled><span class="gt-ico" aria-hidden="true"></span>Submit Ground Truth</button>
 </template>
 <template data-slot="body">
 <div id="ctx" class="pop" role="menu" hidden><button class="item" role="menuitem" type="button"></button></div>
