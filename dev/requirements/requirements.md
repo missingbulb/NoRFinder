@@ -396,14 +396,17 @@ spec does not have.
 - `req/shell/image-viewer` The Image Viewer: the page with no study's tools, the one it opens on.
   <details>
 
-  A study with no panels and no actions (`studies/viewer/`): it loads any TIFF or PNG and shows each
+  A study with no panels and no actions (`studies/viewer/`): it loads any TIFF or PNG and opens it in the viewer
+  its shape asks for (owner, 2026-11-03): a z-stack (a TIFF's Z axis, or the pages of one that names none of its
+  axes) in 3D (`req/shell/viewer-3d`), a flat image in 2D. Load being its only step, the Image box stays open once
+  the image has loaded (owner, 2026-11-03). It shows each
   channel, up to 8, under the name the file gives it (an OME channel name, an ImageJ label, never
   ImageJ's own made-up "c:1/3 - …") and in the colour the file displays it in (an ImageJ LUT, mixed
   colours included), leaving what the file does not say to `req/shell/channels/rows`; the image box says what the file
   states, its scale only when the file gives one in µm. A side bar it leaves empty gives its room to the image, and it
   has no ground truth, so a local image earns no notice about sending one. A TIFF opens uncompressed or
   compressed with LZW, Deflate or PackBits. Test: `studies/viewer/tests/test_viewer.py`,
-  `web-tests/test_study_runs.py`, `web-tests/test_compressed_tiff.py`.
+  `web-tests/test_study_runs.py`, `web-tests/test_compressed_tiff.py`, `web-tests/test_viewer3d_page.py`.
   </details>
 
 - `req/shell/left-bar/collapse` The left bar collapses to a narrow Steps strip, giving the image its room, and expands again (remembered).
@@ -436,7 +439,7 @@ spec does not have.
   check once the drawer's task is done; the open drawers carry an accent bar at their left. A
   drawer's title describes its task while the task waits, open or folded; once it is done, the
   folded title sums up what was done and the open one names the drawer. The Image box, titled Load
-  Image while no image is open (and again after Unload), folds once done to
+  Image while no image is open (and again after Unload), folds once done (in a study with a step after Load) to
   a small preview of the image, its name and what it holds ("2D", "3 channels", from the file;
   only "2D" when the file does not say), and opens as "Loaded Image". A study's drawer is done
   when the study gives it a summary, and waits again when the study takes it back. A drawer opening or
