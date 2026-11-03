@@ -4,7 +4,9 @@
 // channel rows drive it (hiding a channel or raising its black point darkens it); Colour by depth paints by
 // depth; Side turns the view; a sideways scroll turns the picture about the line of sight; a drag turns on past
 // looking straight across; the depth slab hides slices; the spacing says where it came from; no 2D/3D switch
-// anywhere, and Edit Image on a stack offers no flat-image drawing tools. Exits 1 on a failed check, 2 when it cannot run.
+// anywhere, and Edit Image on a stack offers no flat-image drawing tools. And req/shell/image-viewer: the Image Viewer
+// opens a stack in 3D and a flat image (a .png here) in 2D, and keeps its Image box open once either has loaded.
+// Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/viewer3d_driver.mjs [SHOT.png]
 import { repoFile } from "./repo_file.mjs";
 import { createRequire } from "node:module";
@@ -24,7 +26,7 @@ try { pw = require("playwright"); } catch {
 const [shot] = process.argv.slice(2);
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-// the stand-in: every study is ready at once, and any file opens as the same drawn stack
+// the stand-in: every study is ready at once, and any file opens as the same drawn stack, a .png as its flattened planes
 const STAND_IN = `
 const W = 96, H = 80, Z = 12, C = 2, n = W * H;
 const vol = new Uint8Array(C * Z * n);
@@ -41,6 +43,7 @@ const meta = { W, H, Z, spacing: null, um: 1, um_y: 1, info: [["Slices", String(
 postMessage({ type: "ready", info: {} });
 onmessage = ({ data: m }) => {
   if (m.type === "study") postMessage({ type: "ready", info: {} });
+  else if (m.type === "open" && m.name.endsWith(".png")) { const images = flat.slice(); postMessage({ type: "opened", meta: { ...meta, Z: 1 }, images }, [images.buffer]); }
   else if (m.type === "open") { const images = new Uint8Array(flat.length + vol.length); images.set(flat); images.set(vol, flat.length); postMessage({ type: "opened", meta, images }, [images.buffer]); }
 };`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
@@ -159,6 +162,24 @@ try {
     await page.click("#edit-done");
     await page.evaluate(() => delete document.documentElement.dataset.mode);
   } else console.log(`not checked in this ${ENGINE}: the 3D view, which needs the WebGL2 it lacks`);
+
+  // the Image Viewer, at the bare address: the viewer follows the image, and its one step leaves the Image box open
+  await page.goto(origin + "/web/");
+  await page.waitForFunction(() => window.$ && $("#title").textContent === "Image Viewer" && $("#status").textContent.startsWith("Ready"));
+  const loaded = async (name) => {
+    await page.setInputFiles("#file", { name, mimeType: "image/tiff", buffer: Buffer.from([0x49, 0x49, 42, 0]) });
+    await page.waitForFunction((name) => window.shellForTests.page.get("image")?.name === name && $("#status").textContent === "Image loaded.", name);
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    return page.evaluate(() => ({ in3d: !!$("#v3-stage")?.checkVisibility(), flat: $("#stage").checkVisibility(), open: !$("#image-box").classList.contains("folded") }));
+  };
+  if (gl3d) {
+    const stack = await loaded("stack.tif");
+    check(stack.in3d && !stack.flat, `the Image Viewer opens a stack in 3D: ${JSON.stringify(stack)}`);
+    check(stack.open, "the Image Viewer keeps its Image box open once a stack has loaded");
+  }
+  const png = await loaded("flat.png");
+  check(!png.in3d && png.flat, `the Image Viewer opens a flat image in 2D: ${JSON.stringify(png)}`);
+  check(png.open, "the Image Viewer keeps its Image box open once a flat image has loaded");
 
   await page.goto(origin + "/web/fixture");
   await page.waitForFunction(() => window.$ && $("#title").textContent === "Fixture");

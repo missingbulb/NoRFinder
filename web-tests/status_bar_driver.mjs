@@ -256,6 +256,8 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await switchIs(page, "Tasks 1 left", true, "with how many are left");
   await check(await page.evaluate(() => document.querySelector("#fx-truth").offsetParent === null), "the image view has no submit button");
   await page.click("#switch");
+  // the switch is slow: it shows the item view once its hold is up
+  await page.waitForFunction(() => !document.querySelector("#switch").classList.contains("working"));
   // the bar heading the tasks: how many are done, and the submit button at its end
   const bar = async () => page.evaluate(() => { const b = document.querySelector("#tasks-bar"), m = b.querySelector("meter"), t = document.querySelector("#fx-task");
     return { shown: !!b.offsetParent, text: b.querySelector(".done").textContent, meter: m && [m.value, m.max], last: b.lastElementChild.previousElementSibling?.id || b.lastElementChild.id,

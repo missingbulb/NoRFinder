@@ -10,15 +10,20 @@ carried all its pull requests. The `writing-version-history` skill says how.
 
 ## Next release
 
-In NoR Finder's Processing box, each finder has its own icon, and Settings start folded. "How the
-traffic light algorithm works" lays out the finder's steps as an indented list, and ends with
-the precision and recall the finder gives with its default filters, on how many images, and without
-filters. The finder list shows the same default-filter numbers. (#710)
+A z-stack now opens in 3D only, with no 2D/3D switch, the Image Viewer included, while a flat image
+opens in 2D; a plain multi-page TIFF opens as a stack in Vascular Measurements too. Edit Image on a
+stack leaves out Crop, the cut lines and Imperfections. In the Image Viewer the Image box stays open
+once loaded. (#702, #707, #713)
 
-## 0.11103.80
+The left bar collapses from the chevron at its top, where the collapsed strip shows its own, so the
+same spot opens it again. Dragging the bar's edge to the left also collapses it, and dragging the
+strip's edge out opens it. A folded drawer opens from a click anywhere on it, not just its title.
+(#709, #714)
 
-A z-stack now opens in 3D only, with no 2D/3D switch. Edit Image on a stack leaves out Crop, the cut
-lines and Imperfections, which draw on a flat image. (#702)
+In NoR Finder, an opening image builds in grey while it downloads, then its colours wipe in. Each
+finder in Processing has its own icon, Settings start folded, and "How the fill algorithm works"
+lists its steps, then its precision and recall with default filters and without. Tasks works again
+after Unload. (#710, #711, #715)
 
 ## 0.11103.79
 

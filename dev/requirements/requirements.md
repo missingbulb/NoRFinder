@@ -382,9 +382,12 @@ spec does not have.
   <details>
 
   An uncompressed TIFF like the lab's paints onto the page from its bytes as they arrive from
-  Google Drive, one channel after another in its own colour, with the megabytes so far and the
-  elapsed time below; a file from the computer shows at once. Python's own drawing replaces it once
-  the image is read. Any other image shows the byte count.
+  Google Drive, in grey from the channels in so far, with the megabytes so far and the elapsed
+  time below. Once every byte is in, its colours wipe down over the grey; a file from the computer,
+  or one already kept, fades up from black into its colours instead, quickly. No pixel ever shows a
+  colour its final one lacks: each is grey, black, or a darker shade of the colour it ends in, and
+  the colours it ends in are the brightness Python draws, so Python's own drawing, which replaces it
+  once the image is read, changes nothing visible. Any other image shows the byte count.
   </details>
 
 - `req/shell/image/proportions` No image is ever drawn out of its proportions.
@@ -396,17 +399,21 @@ spec does not have.
 - `req/shell/image-viewer` The Image Viewer: the page with no study's tools, the one it opens on.
   <details>
 
-  A study with no panels and no actions (`studies/viewer/`): it loads any TIFF or PNG and shows each
+  A study with no panels and no actions (`studies/viewer/`): it loads any TIFF or PNG and opens it in the viewer
+  its shape asks for (owner, 2026-11-03): a z-stack (a TIFF's Z axis, or the pages of one that names none of its
+  axes) in 3D (`req/shell/viewer-3d`), a flat image in 2D. Load being its only step, the Image box stays open once
+  the image has loaded (owner, 2026-11-03). It shows each
   channel, up to 8, under the name the file gives it (an OME channel name, an ImageJ label, never
   ImageJ's own made-up "c:1/3 - …") and in the colour the file displays it in (an ImageJ LUT, mixed
   colours included), leaving what the file does not say to `req/shell/channels/rows`; the image box says what the file
   states, its scale only when the file gives one in µm. A side bar it leaves empty gives its room to the image, and it
   has no ground truth, so a local image earns no notice about sending one. A TIFF opens uncompressed or
   compressed with LZW, Deflate or PackBits. Test: `studies/viewer/tests/test_viewer.py`,
-  `web-tests/test_study_runs.py`, `web-tests/test_compressed_tiff.py`.
+  `web-tests/test_study_runs.py`, `web-tests/test_compressed_tiff.py`, `web-tests/test_viewer3d_page.py`.
   </details>
 
-- `req/shell/left-bar/collapse` The left bar collapses to a narrow Steps strip, giving the image its room, and expands again (remembered).
+- `req/shell/left-bar/collapse` The left bar collapses to a narrow Steps strip, giving the image its room, and expands again (remembered):
+  by a chevron in one spot, at the bar's top open or collapsed, or by dragging the gutter past the bar's narrowest and back out.
   <details>
 
   Set by the owner on 2026-11-03. A small tab holding a chevron sits on the gutter between the open
@@ -436,12 +443,14 @@ spec does not have.
   check once the drawer's task is done; the open drawers carry an accent bar at their left. A
   drawer's title describes its task while the task waits, open or folded; once it is done, the
   folded title sums up what was done and the open one names the drawer. The Image box, titled Load
-  Image while no image is open (and again after Unload), folds once done to
+  Image while no image is open (and again after Unload), folds once done (in a study with a step after Load) to
   a small preview of the image, its name and what it holds ("2D", "3 channels", from the file;
   only "2D" when the file does not say), and opens as "Loaded Image". A study's drawer is done
   when the study gives it a summary, and waits again when the study takes it back. A drawer opening or
   folding slides open or shut, and the drawers below it slide to their new places (set by the owner on
-  2026-10-31). Test: `web-tests/test_left_bar_page.py`, `web-tests/test_study_contract.py`.
+  2026-10-31). Changed by the owner on 2026-11-03: a folded drawer opens from a click anywhere on it,
+  not only on its title or number; an open one still folds only from its title.
+  Test: `web-tests/test_left_bar_page.py`, `web-tests/test_study_contract.py`.
   </details>
 
 - `req/shell/left-bar/width` The left bar drags wider or narrower (remembered; a double click restores it); there is no right bar.

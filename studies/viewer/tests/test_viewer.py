@@ -136,3 +136,35 @@ def test_it_offers_no_action(tmp_path):
     Image.fromarray(np.zeros((H, W), np.uint8)).save(p)
     with pytest.raises(ValueError):
         viewer.Session(p).call('detect', {})
+
+
+def test_a_z_stack_comes_flattened_then_slice_by_slice_for_the_3d_view(tmp_path):
+    p = str(tmp_path / 'z.tif')
+    a = np.zeros((4, 2, H, W), np.uint16)  # ZCYX
+    a[1, 0, 2:6, 2:6] = 4000; a[3, 1, 10:14, 20:24] = 4000
+    tifffile.imwrite(p, a, imagej=True, resolution=(5.0, 5.0), metadata={'axes': 'ZCYX', 'unit': 'micron', 'spacing': 2.5})
+    meta, data = viewer.Session(p).opened()
+    meta = json.loads(meta)
+    assert meta['Z'] == 4 and meta['spacing'] == pytest.approx(2.5) and len(meta['channels']) == 2
+    flat = np.frombuffer(data, np.uint8)[:2 * H * W].reshape(2, H, W)
+    vol = np.frombuffer(data, np.uint8)[2 * H * W:].reshape(2, 4, H, W)
+    assert bright(flat[0]) == (2, 2) and bright(flat[1]) == (10, 20), 'the flat planes are each channel\'s brightest through depth'
+    assert vol[0, 1, 3, 3] == 255 and vol[0, 0, 3, 3] == 0 and vol[1, 3, 11, 21] == 255, 'every slice of every channel follows'
+    assert dict(meta['info'])['Slices'] == '4'
+
+
+@pytest.mark.parametrize('shaped', [True, False])
+def test_a_tiff_that_names_no_axes_is_a_stack_of_its_pages(tmp_path, shaped):
+    p = str(tmp_path / 'pages.tif')
+    tifffile.imwrite(p, spots(5), metadata={} if shaped else None)
+    meta, _ = viewer.Session(p).opened()
+    meta = json.loads(meta)
+    assert meta['Z'] == 5 and meta['spacing'] is None and len(meta['channels']) == 1
+
+
+def test_a_flat_image_has_one_slice(tmp_path):
+    p = str(tmp_path / 'flat.tif')
+    tifffile.imwrite(p, spots(), imagej=True, metadata={'axes': 'CYX'})
+    meta, data = viewer.Session(p).opened()
+    meta = json.loads(meta)
+    assert meta.get('Z', 1) == 1 and len(data) == 3 * H * W and 'Slices' not in dict(meta['info'])
