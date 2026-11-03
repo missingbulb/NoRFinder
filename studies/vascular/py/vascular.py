@@ -47,6 +47,9 @@ def read_stack(path):
         microns = str(ij.get('unit', '')).lower() in ('micron', 'um', 'µm')
         um = res.value[1] / res.value[0] if res and res.value[0] and microns else None
         spacing = float(ij['spacing']) if microns and ij.get('spacing') else None
+    # a file that names none of its axes lays its slices out as pages
+    if 'Z' not in axes:
+        axes = next((axes.replace(x, 'Z', 1) for x in 'IQ' if x in axes), axes)
     for ax in [x for x in axes if x not in 'CZYX']:
         a = np.take(a, 0, axis=axes.index(ax)); axes = axes.replace(ax, '')
     if 'C' not in axes:
