@@ -499,8 +499,11 @@ export function mount(shell) {
     note.replaceChildren(outline(about.about + (about.exact_refilter ? "" : "\n\nIt picks between alternatives using the filters, so after a filter change, find again for its exact result.")));
     quality.then((q) => {
       const own = q && q.finders[finder];
-      if (own && $("#finder").value === finder)
-        note.append(outline(`Precision (P) and recall (R) on the ground truth:\n- its ${own.finder.candidates} candidates, before any filter: ${pr(own.finder)}\n- after the best filter preset, as in the list: ${pr(best(own.filtered))}`));
+      if (!own || $("#finder").value !== finder) return;
+      const pr0 = (r) => `P:\u00a0${r.precision.toFixed(2)}, R:\u00a0${r.recall.toFixed(2)}`, n = q.images.length;
+      const p = document.createElement("p"), b = document.createElement("strong");
+      b.textContent = `Algorithm and filters give ${pr0(best(own.filtered))} based on ${n} image${n > 1 ? "s" : ""} (without filters ${pr0(own.finder)})`;
+      p.append(b); note.append(p);
     });
     const row = (k) => dial(k, defs[k], vals[k], (v) => {
       vals[k] = v;

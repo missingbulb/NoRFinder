@@ -11,9 +11,9 @@ carried all its pull requests. The `writing-version-history` skill says how.
 ## Next release
 
 In NoR Finder's Processing box, each finder has its own icon, and Settings start folded. "How the
-traffic light algorithm works" lays out the finder's steps as an indented list, and ends with its
-precision and recall before any filter beside those after the best filter preset, the numbers the
-list shows. (#710)
+traffic light algorithm works" lays out the finder's steps as an indented list, and ends by
+highlighting the precision and recall the finder and its filters give, on how many images, with
+the finder's own numbers without filters beside them. (#710)
 
 ## 0.11103.80
 
