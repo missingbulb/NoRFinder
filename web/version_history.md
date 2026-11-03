@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- In the 3D view, a sideways scroll spins the stack about the line of sight (it panned before), and dragging no longer stops at a side-on view: it turns on, like a trackball. (#689)
 - Choose folders… in Data Management opens Google's permission window again, instead of doing nothing. (#694)
 - Switching study unloads the open image: the new study starts with none open. (#686)
 - A popup opened by a button grows out of that button. (#691)

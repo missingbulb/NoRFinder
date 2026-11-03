@@ -2,7 +2,8 @@
 // stand-in worker that opens a drawn stack: two channels, the first a bright tube climbing through depth and a
 // second one level across it, the second a blob. Checks req/shell/viewer-3d: a stack opens on the 3D view, which draws it; the
 // channel rows drive it (hiding a channel or raising its black point darkens it); Colour by depth paints by
-// depth; Side turns the view; the depth slab hides slices; the spacing says where it came from; a 2D study
+// depth; Side turns the view; a sideways scroll turns the picture about the line of sight; a drag turns on past
+// looking straight across; the depth slab hides slices; the spacing says where it came from; a 2D study
 // shows no switch. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/viewer3d_driver.mjs [SHOT.png]
 import { repoFile } from "./repo_file.mjs";
@@ -71,10 +72,15 @@ const picture = () => page.evaluate(async () => {
   c.width = gl.width; c.height = gl.height;
   const g = c.getContext("2d"); g.drawImage(gl, 0, 0);
   const d = g.getImageData(0, 0, c.width, c.height).data;
-  let r = 0, gr = 0, b = 0, lit = 0;
-  for (let i = 0; i < d.length; i += 4) { r += d[i]; gr += d[i + 1]; b += d[i + 2]; if (d[i] + d[i + 1] + d[i + 2] > 60) lit++; }
-  const n = d.length / 4;
-  return { r: r / n, g: gr / n, b: b / n, lit, sum: (r + gr + b) / n };
+  let r = 0, gr = 0, b = 0, lit = 0, sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    r += d[i]; gr += d[i + 1]; b += d[i + 2];
+    if (d[i] + d[i + 1] + d[i + 2] > 60) { const x = (i / 4) % c.width, y = Math.floor(i / 4 / c.width); lit++; sx += x; sy += y; sxx += x * x; syy += y * y; sxy += x * y; }
+  }
+  const n = d.length / 4, mx = sx / lit, my = sy / lit;
+  // the direction of the lit pixels' long axis on the screen, radians
+  const axis = 0.5 * Math.atan2(2 * (sxy / lit - mx * my), sxx / lit - mx * mx - (syy / lit - my * my));
+  return { r: r / n, g: gr / n, b: b / n, lit, sum: (r + gr + b) / n, axis };
 });
 const show = (k, on) => page.evaluate(([k, on]) => { const b = document.querySelector("#show-" + k); b.checked = on; b.dispatchEvent(new Event("change", { bubbles: true })); }, [k, on]);
 const level = async (k, which, v) => page.evaluate(([k, which, v]) => {
@@ -122,6 +128,19 @@ try {
     await page.hover("#v3-look-btn"); await page.click('#v3-look [data-look="side"]');
     const side = await picture();
     check(Math.abs(side.lit - top.lit) > top.lit * 0.2, `Side turns the view: ${top.lit} → ${side.lit} lit pixels`);
+    await page.hover("#v3-look-btn"); await page.click('#v3-look [data-look="top"]');
+
+    const box = await page.locator("#v3-gl").boundingBox(), mid = [box.x + box.width / 2, box.y + box.height / 2];
+    await page.mouse.move(...mid); await page.mouse.wheel(300, 0);
+    const rolled = await picture(), turned = Math.abs(Math.atan2(Math.sin(2 * (rolled.axis - top.axis)), Math.cos(2 * (rolled.axis - top.axis))) / 2);
+    check(turned > 0.4 && Math.abs(rolled.lit - top.lit) < top.lit * 0.1,
+      `a sideways scroll turns the picture about the line of sight: its long axis turns ${turned.toFixed(2)} rad, ${top.lit} → ${rolled.lit} lit pixels`);
+    await page.hover("#v3-look-btn"); await page.click('#v3-look [data-look="top"]');
+    await page.mouse.move(...mid); await page.mouse.down();
+    await page.mouse.move(mid[0], mid[1] + Math.PI / 0.008, { steps: 20 }); await page.mouse.up();
+    const under = await picture();
+    check(Math.abs(under.lit - top.lit) < top.lit * 0.15,
+      `dragging down by half a turn turns on past looking straight across, to the stack from beneath: ${top.lit} → ${under.lit} lit pixels`);
     await page.hover("#v3-look-btn"); await page.click('#v3-look [data-look="top"]');
 
     await page.evaluate(() => { const s = $("#v3-z1"); s.value = 0; s.dispatchEvent(new Event("input", { bubbles: true })); });
