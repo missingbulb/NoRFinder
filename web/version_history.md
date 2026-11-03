@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- The big spinner shows again while the page waits for Python. (#674)
 - Firefox 147 and Safari 26, and later, are supported browsers: the status bar no longer warns in them, and the site lists them. (#672)
 - In a browser without 3D graphics (WebGL2, off when hardware acceleration is), a z-stack opens flattened, and Vascular Measurements' cards show its pictures instead of failing. (#662)
 - A toolbar's popup (Grid, Minimap, the 3D tools) closes when the pointer leaves it, also after you clicked its button. (#662)
