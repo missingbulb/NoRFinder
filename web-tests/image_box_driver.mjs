@@ -184,9 +184,13 @@ await check(pts[0] < pts[1], "the black point stays below the white point", pts)
 // the row is one line: its checkbox, colour, name and slider side by side
 const line = await page.$eval("#channels .channel:nth-child(1)", (r) => {
   const mid = (q) => { const b = r.querySelector(q).getBoundingClientRect(); return b.top + b.height / 2; };
-  return { h: r.getBoundingClientRect().height, mids: ["input[type=checkbox]", "input[type=color]", "label", ".levels"].map(mid) };
+  const x = (q) => r.querySelector(q).getBoundingClientRect();
+  return { h: r.getBoundingClientRect().height, mids: ["input[type=checkbox]", "label", ".levels", "input[type=color]"].map(mid),
+    order: [x("input[type=checkbox]").right <= x("label").left, x("label").right <= x(".levels").left, x(".levels").right <= x("input[type=color]").left],
+    ring: getComputedStyle(r.querySelector("input[type=color]")).backgroundImage };
 });
-await check(line.h <= 24 && Math.max(...line.mids) - Math.min(...line.mids) <= 4, "the row is one line: checkbox, colour, name and slider", line);
+await check(line.h <= 24 && Math.max(...line.mids) - Math.min(...line.mids) <= 4 && line.order.every(Boolean), "the row is one line: checkbox, name, slider, then the colour picker", line);
+await check(line.ring.includes("conic-gradient"), "the colour picker is a swatch in a rainbow ring", line.ring);
 // the slider's track sits in the middle of the row, its points on it
 const mids = await page.$eval("#channels .channel:nth-child(1) .levels", (l) => { const b = l.getBoundingClientRect(), t = getComputedStyle(l, "::before");
   return { row: b.height / 2, track: parseFloat(t.top) + parseFloat(t.height) / 2 }; });
