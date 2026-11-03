@@ -55,11 +55,10 @@ async function open({ motion = true, reducedMotion = "no-preference" } = {}) {
 const firstFrame = (page, dlg, btn) => page.evaluate(([dlg, btn]) => {
   const d = document.querySelector(dlg), all = d.getAnimations({ subtree: true });
   const box = (r) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height });
-  const end = box(d.getBoundingClientRect()); // a transform leaves layout alone, so this is where it ends up
   all.forEach((a) => { a.pause(); a.currentTime = 0; });
   const start = box(d.getBoundingClientRect());
   return { open: d.open, count: all.length, running: all.filter((a) => !a.pseudoElement).length, opacity: +getComputedStyle(d).opacity,
-    start, end, button: box(document.querySelector(btn).getBoundingClientRect()) };
+    start, button: box(document.querySelector(btn).getBoundingClientRect()) };
 }, [dlg, btn]);
 const near = (a, b, by = 2) => Math.abs(a - b) <= by;
 const resume = (page, dlg) => page.evaluate((dlg) => document.querySelector(dlg).getAnimations({ subtree: true }).forEach((a) => a.finish()), dlg);
@@ -67,7 +66,10 @@ const resume = (page, dlg) => page.evaluate((dlg) => document.querySelector(dlg)
 // ---- a button opens its dialog out of itself ----
 {
   const { ctx, page } = await open();
-  for (const [btn, dlg, what] of [["#sb-version", "#history-dlg", "Version history"], ["#sb-cpu", "#usage-dlg", "Resource Usage"]]) {
+  // the history arrives once, and the dialog grows with it: let that happen first
+  await page.evaluate(() => { $("#sb-version").click(); $("#history-dlg").close(); });
+  await page.waitForTimeout(1200);
+  for (const [btn, dlg, what] of [["#sb-version", "#history-dlg", "Version history"], ["#sb-res-icon", "#usage-dlg", "Resource Usage"]]) {
     await page.click(btn);
     const f = await firstFrame(page, dlg, btn);
     await check(f.open && f.running >= 1, `${btn} opens ${what}, animated`, f);
@@ -76,8 +78,8 @@ const resume = (page, dlg) => page.evaluate((dlg) => document.querySelector(dlg)
     await check(f.opacity < 0.05, `and faded out`, f);
     if (shots) await page.screenshot({ path: path.join(shots, dlg.slice(1) + "_first_frame.png") });
     await resume(page, dlg);
-    const last = await page.evaluate((dlg) => { const r = document.querySelector(dlg).getBoundingClientRect(); return { w: r.width, n: document.querySelector(dlg).getAnimations({ subtree: true }).length }; }, dlg);
-    await check(near(last.w, f.end.w) && last.n === 0, `then grows to its own size and stops`, { last, end: f.end });
+    const last = await page.evaluate((dlg) => { const d = document.querySelector(dlg), r = d.getBoundingClientRect(); return { w: r.width, h: r.height, ow: d.offsetWidth, oh: d.offsetHeight, n: d.getAnimations({ subtree: true }).length }; }, dlg);
+    await check(near(last.w, last.ow) && near(last.h, last.oh) && last.n === 0, `then grows to its own size and stops`, last);
     await page.keyboard.press("Escape");
   }
   // nothing pressed lately: the page opens it at once

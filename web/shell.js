@@ -31,6 +31,7 @@ import { problemUrl, ACTIONS_QUOTED, ERRORS_QUOTED } from "./problem_report.js";
 import { dataMode } from "./data_mode.js";
 import { imageEditor, SPLIT_PATTERN } from "./image_edit.js";
 import { replacedBy } from "./edit.js";
+import { dialogMotion } from "./dialog_motion.js";
 
 const $ = (s) => document.querySelector(s);
 // what the user does here, kept on this device for a problem report (req/shell/report/action-log)
@@ -250,6 +251,7 @@ const showMotion = () => {
 showMotion();
 motion.onchange = () => { writeJSON(MOTION, motion.checked); showMotion(); };
 function still() { return !motion.checked || matchMedia("(prefers-reduced-motion: reduce)").matches; }
+dialogMotion(still);
 
 $("#sb-net").onclick = () => usage("network");
 $("#sb-cpu").onclick = () => usage("cpu");
