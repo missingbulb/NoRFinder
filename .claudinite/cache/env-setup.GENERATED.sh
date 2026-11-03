@@ -9,7 +9,7 @@ failed=0
 
 echo '=== Python imaging stack (numpy, scipy, pillow, matplotlib) (pack local/nor-finder) ==='
 if ! (
-python3 -m pip install --quiet --root-user-action=ignore -r requirements.txt
+python3 -m pip install --quiet --root-user-action=ignore -r requirements.txt && python3 -m pip install --quiet --root-user-action=ignore --ignore-installed pillow
 ); then
   echo 'cn env: Python imaging stack (numpy, scipy, pillow, matplotlib) (pack local/nor-finder): setup failed' >&2
   failed=1
