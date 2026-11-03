@@ -207,10 +207,28 @@
 #gt-tasks .task-body { padding: 0 10px 10px; }
 #gt-tasks .task-body .hint { margin-top: 0; }
 #gt-tasks .missed-done { display: flex; gap: 6px; align-items: flex-start; font-size: 12px; margin-top: 6px; }
-#task-now .task-step { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
-#task-card .card { background: var(--panel); cursor: default; margin: 0; }
-#task-now #card-menu { margin-top: 8px; }
-#task-now #card-menu .pop { position: static; display: flex; flex-direction: column; gap: 8px; padding: 8px 0 0; border: 0; box-shadow: none; background: none; min-width: 0; }
+/* Go back and Skip at the top, the place and the cogwheel between them */
+#task-now .task-step { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+#task-now .task-step #task-place { flex: 1; text-align: center; }
+#task-now .task-step .link { font-size: 12px; padding: 2px 0; white-space: nowrap; }
+#task-now .task-step .link:disabled { opacity: .4; }
+#task-now #card-menu summary { padding: 2px 4px; border: 0; background: none; color: var(--dim); display: inline-flex; }
+#task-now #card-menu summary::after { content: none; }
+#task-now #card-menu summary:hover, #task-now #card-menu[open] summary { color: var(--accent); }
+#task-now #card-menu .pop { left: auto; right: 0; }
+/* the card: the crop taking most of it, big thumbs beside it; the next card slides in over the last */
+#task-stage { position: relative; overflow: hidden; }
+#task-stage .leaving { position: absolute; left: 0; top: 0; width: 100%; pointer-events: none; }
+.card.task { background: var(--panel); cursor: default; margin: 0; padding: 8px; }
+.card.task .task-row { display: flex; gap: 8px; align-items: center; }
+.card.task .crop-wrap { flex: 1; min-width: 0; margin: 0; }
+.card.task .side { flex: none; display: flex; flex-direction: column; gap: 6px; }
+.card.task .side .verdict { flex-direction: column; margin: 0; border-radius: var(--r-ctl); }
+.card.task .side .verdict button { width: 48px; height: 48px; }
+.card.task .side .verdict button + button { border-left: 0; border-top: 1px solid var(--line); }
+.card.task .side .verdict svg { width: 24px; height: 24px; }
+.card.task .side .verdict .remove { height: 32px; font-size: 16px; }
+.card.task .tag, .card.task .why { margin-top: 6px; }
 
 /* the image while the study makes ground truth: a candidate waiting is a faint outline and nothing more; a
    reviewed one is filled, blue when voted up (a colour the slide's red and green do not carry), darkened when

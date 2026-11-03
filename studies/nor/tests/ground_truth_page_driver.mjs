@@ -164,8 +164,8 @@ async function markAndVote(page) {
   const added = await page.evaluate(() => ({ sel: st.sel, c: nor.candOf(st.sel) }));
   await check(added.sel === "u1" && Math.hypot(added.c.cx - m.x, added.c.cy - m.y) < 1, `the added NoR is centred where clicked and selected (${added.c.cx}, ${added.c.cy})`);
   await check(await page.$$eval("#overlay .added .glow", (c) => c.length) === 1, "it glows on the image");
-  await check(await page.$$eval("#task-card .card.added .num.added svg", (c) => c.length) === 1 && await page.$$eval("#task-card .handle", (h) => h.length) === 6,
-    "its card carries the added icon and six handles");
+  await check(await page.$$eval("#task-card .card.added", (c) => c.length) === 1 && await page.$$eval("#task-card .handle", (h) => h.length) === 6,
+    "its task's card shows it with six handles");
   // a green end dragged off the axis turns it; the red ends follow onto the new axis
   await drag(page, await handle(page, "length", 1), 0, -40);
   let L = await page.evaluate(() => nor.candOf("u1").lines);
@@ -185,7 +185,7 @@ async function markAndVote(page) {
   // in the finalists' task, a thumbs up on the first candidate, a thumbs down on the third; the second stays undecided
   await page.click('#gt-tasks > li[data-task="pass"] .task-head');
   await page.click("#task-card .verdict .up");
-  await page.click("#task-next"); await page.click("#task-card .verdict .down"); await page.click("#task-prev");
+  await page.click("#task-skip"); await page.click("#task-card .verdict .down"); await page.click("#task-back");
   // a found candidate's red end dragged off the axis only slides along it: the green ends stay put
   L = await page.evaluate(() => nor.linesOf(nor.candOf(st.sel)));
   if (L) {

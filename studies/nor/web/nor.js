@@ -674,6 +674,8 @@ export function mount(shell) {
   const THUMB = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>`;
   // user-plus (Lucide, ISC licence): a NoR the user added
   const ADD_ICON = `<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>`;
+  // settings (Lucide, ISC licence)
+  const COG = `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>`;
   const GOTO = `<svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2" class="dot"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></svg>`;
   function card(c, where) {
     const r = result(c.i), f = c.added ? st.added[c.k].verdict : st.forced.get(c.i), d = document.createElement("div");
@@ -705,7 +707,8 @@ export function mount(shell) {
       d.ondblclick = (e) => { if (!e.target.closest("button, .handle")) { getSelection().removeAllRanges(); show(); } };
     }
     const wrap = document.createElement("div"); wrap.className = "crop-wrap";
-    wrap.append(crop(c, where === "list" ? 170 : where === "task" ? 260 : 320));
+    // a task's crop takes the box's width, less the thumbs beside it
+    wrap.append(crop(c, where === "list" ? 170 : where === "task" ? Math.max(160, Math.round(($("#tasks-box").clientWidth || 300) - 110)) : 320));
     wrap.insertAdjacentHTML("beforeend", `<button class="goto" title="Show it on the image" aria-label="Show it on the image">${GOTO}</button>`);
     const show = () => { if (where !== "task") select(c.i); showView("image"); focusOn(c); };
     wrap.querySelector(".goto").onclick = show;
@@ -714,6 +717,12 @@ export function mount(shell) {
     if (e.length || e.red || e.width) {
       d.insertAdjacentHTML("beforeend", `<div class="tag">Lengths adjusted <button class="link">reset</button></div>`);
       d.querySelector(".tag button").onclick = () => edit(c.i, { length: null, red: null, width: null });
+    }
+    // a task's card: the crop and, beside it, the thumbs; no number or state
+    if (where === "task") {
+      const row = document.createElement("div"), side = document.createElement("div");
+      row.className = "task-row"; side.className = "side"; side.append(acts);
+      d.querySelector(".head").remove(); row.append(wrap, side); d.prepend(row); d.classList.add("task");
     }
     if (r !== null) d.insertAdjacentHTML("beforeend", `<div class="why">${whyAll(c).map((k) => `<span><b class="lt" style="--c:${colour(k)}">${reasonOf(k).letter}</b> ${esc(reasonOf(k).title)}</span>`).join("")}</div>`);
     if (optsOf(c).lenCard && c.m) {
@@ -1007,6 +1016,7 @@ export function mount(shell) {
   function moveOn(c) {
     const xs = taskItems(st.task), k = xs.findIndex((x) => x.i === c.i);
     const next = [...xs.slice(k + 1), ...xs.slice(0, Math.max(k, 0))].find((x) => !verdictOf(x));
+    st.taskDir = 1;
     if (next) return goTo(next);
     if (st.task === "missed" && !st.looked) return renderTasks();
     goTask(firstOpen());
@@ -1014,10 +1024,10 @@ export function mount(shell) {
   function stepTask(dir) {
     const xs = taskItems(st.task); if (!xs.length) return;
     const k = xs.findIndex((x) => x.i === st.sel), c = xs[k < 0 ? (dir > 0 ? 0 : xs.length - 1) : (k + dir + xs.length) % xs.length];
-    goTo(c);
+    st.taskDir = dir; goTo(c);
   }
-  $("#task-prev").onclick = () => stepTask(-1);
-  $("#task-next").onclick = () => stepTask(1);
+  $("#task-back").onclick = () => stepTask(-1);
+  $("#task-skip").onclick = () => stepTask(1);
   // the image pans to the candidate only when it is out of the middle of the view
   function bringIntoView(c) {
     const sc = $("#scroller"), x = c.cx * st.zoom - sc.scrollLeft, y = c.cy * st.zoom - sc.scrollTop;
@@ -1043,17 +1053,30 @@ export function mount(shell) {
     if (li && st.task !== "submit") (st.task === "missed" ? li.querySelector(".missed-slot") : li.querySelector(".task-body")).append(now);
     if (st.task === "pass" || st.task === "fail") {
       if (st.tab !== st.task) setTab(st.task);
-      now.append($("#card-menu"));
+      $("#task-skip").before($("#card-menu"));
     } else $("#tasks-box").append($("#card-menu"));
     $("#card-menu").hidden = !(st.task === "pass" || st.task === "fail");
     $("#task-place").textContent = c ? `${xs.indexOf(c) + 1} of ${xs.length}` : "";
-    $("#task-prev").disabled = $("#task-next").disabled = xs.length < 2;
-    $("#task-card").replaceChildren(...(c ? [card(c, "task")] : []));
+    $("#task-back").disabled = $("#task-skip").disabled = xs.length < 2;
+    const was = $("#task-card .card"), fresh = c ? card(c, "task") : null;
+    $("#task-card").replaceChildren(...(fresh ? [fresh] : []));
+    if (was && fresh && was.dataset.i !== fresh.dataset.i) slideIn(was, fresh, st.taskDir || 1);
+    st.taskDir = 0;
+  }
+  // the next candidate's card slides in over the last one's, which slides out the other way
+  function slideIn(was, fresh, dir) {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    $("#task-stage").querySelectorAll(".leaving").forEach((e) => e.remove());
+    const out = document.createElement("div"); out.className = "leaving"; out.setAttribute("aria-hidden", "true"); out.inert = true;
+    out.append(was); $("#task-stage").append(out);
+    const t = { duration: 220, easing: "cubic-bezier(.2,.7,.3,1)" };
+    out.animate([{ transform: "none", opacity: 1 }, { transform: `translateX(${-dir * 60}%)`, opacity: 0 }], t).finished.then(() => out.remove(), () => out.remove());
+    fresh.animate([{ transform: `translateX(${dir * 60}%)`, opacity: 0 }, { transform: "none", opacity: 1 }], t);
   }
   if (TRUTH) {
     $("#summary-box").hidden = true; $("#tasks-box").hidden = false; $("#show-menu").hidden = true;
     // the card's options fold under the task's card instead of opening over the image
-    const menu = $("#card-menu"); menu.className = "fold"; menu.open = false;
+    const menu = $("#card-menu"); menu.open = false;
     $("#overlay").classList.add("gt"); shell.signal.addEventListener("abort", () => $("#overlay").classList.remove("gt"));
     for (const li of $("#gt-tasks").children) li.querySelector("button.task-head")?.addEventListener("click", () => { if (st.meta) goTask(li.dataset.task); });
     $("#missed-done").onchange = () => {
@@ -1219,7 +1242,9 @@ export function mount(shell) {
       if (document.activeElement !== pad) pad.value = st.opt[st.tab].pad;
       pad.placeholder = CARD_DEFAULTS[st.tab].pad;
       $("#opt-align").parentElement.hidden = st.tab === "fail";
-      $("#card-menu summary").textContent = (st.tab === "pass" ? "Finalist" : "Rejected") + " options";
+      const what = (st.tab === "pass" ? "Finalist" : "Rejected") + " options", sum = $("#card-menu summary");
+      // a task's options open from a cogwheel
+      if (TRUTH) { sum.innerHTML = COG; sum.title = what; sum.setAttribute("aria-label", what); } else sum.textContent = what;
     };
     st.showOpts();
   }

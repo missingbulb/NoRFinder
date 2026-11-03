@@ -1403,14 +1403,18 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   rejected, mark the NoRs the finder missed, and Submit Ground Truth (`req/nor/downloads`). Above
   them, how many candidates are reviewed of all, as words and a meter ("12 of 230 reviewed"), and
   each task says how many of its own are done; a done task is checked. The current task is open:
-  its candidate's card (`req/nor/candidates/decide`), with previous and next buttons and its place
-  in the task ("3 of 40"), and under it the card's options folded (`req/nor/cards/views`). A
+  its candidate's card (`req/nor/candidates/decide`), with its place in the task ("3 of 40") and
+  the card's options (`req/nor/cards/views`). A
   verdict moves on to the task's next candidate with none, and once a task has none left to the
   first task not done; the image pans to the candidate when it is out of the middle of the view.
   Clicking a task opens it at its first candidate with no verdict. Mark the missed NoRs says to
   right-click the image to add one, shows the added NoR's card to correct and decide, and is done
   once every added NoR is decided and the user ticks that they looked over the whole image (kept per
-  file name). Test: `studies/nor/tests/test_truth_tasks_page.py`.
+  file name). Changed by the owner on 2026-11-03: the card gives most of its room to the crop, with
+  no number, state or separator; big thumbs up and down stand beside the crop; small Go back and
+  Skip links sit at the card's top, the place between them; the options open from a cogwheel as a
+  popup. Each verdict, skip or go back slides the next card in over the last one (no motion when
+  the user asks for reduced motion). Test: `studies/nor/tests/test_truth_tasks_page.py`.
   </details>
 
 ## `req/vascular` The Vascular Measurements page: cerebral vessels in CD31 z-stacks

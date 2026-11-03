@@ -86,7 +86,7 @@ await check(!(await shown(page, "#switch")) && !(await shown(page, "#tasks-bar")
 const tasks = await page.$$eval("#gt-tasks > li", (li) => li.map((l) => l.dataset.task));
 await check(JSON.stringify(tasks) === JSON.stringify(["pass", "fail", "missed", "submit"]), "the tasks in order: the finalists, the rejected, the missed NoRs, Submit", tasks);
 await check(await page.$eval("#dl-truth", (b) => !!b.closest('#gt-tasks > li[data-task="submit"]')), "Submit Ground Truth is the last task");
-await check(await page.$eval("#card-menu", (d) => !!d.closest("#tasks-box") && !d.open), "the card's options are in the task, folded");
+await check(await page.$eval("#card-menu", (d) => !!d.closest("#tasks-box") && !d.open && !!d.querySelector("summary svg") && !d.querySelector("summary").textContent.trim()), "the card's options are behind a cogwheel in the task, closed");
 
 // req/nor/truth/order: area by area, the rows of areas back and forth, top to bottom inside an area
 const order = await page.evaluate(() => {
@@ -100,12 +100,24 @@ for (const [t, xs] of [["finalists", order[0]], ["rejected", order[1]]]) {
 }
 const total = order[0].length + order[1].length;
 
-const now = () => page.evaluate(() => ({ task: st.task, sel: st.sel, card: document.querySelector("#task-card .card")?.dataset.i, place: $("#task-place")?.textContent,
+const now = () => page.evaluate(() => ({ task: st.task, sel: st.sel, card: document.querySelector("#task-card .card")?.dataset.i, cards: document.querySelectorAll("#task-card .card").length, place: $("#task-place")?.textContent,
   done: $("#gt-done").textContent, n: [...document.querySelectorAll("#gt-tasks > li")].map((l) => l.querySelector(".n")?.textContent || "") }));
 let s = await now();
 await check(s.task === "pass" && s.card === String(order[0][0].i) && s.sel === order[0][0].i, "the finalists' task opens on its first candidate", s);
 await check(s.done === `0 of ${total} reviewed` && /^1 of \d+$/.test(s.place), `the progress reads "${s.done}", the place "${s.place}"`, s);
 await check(await page.$$eval("#tasks-box .card", (c) => c.length) === 1, "one card at a time");
+// the crop takes most of the card, the thumbs big beside it, no number or state; Go back and Skip at the top
+const look = await page.evaluate(() => {
+  const r = (e) => e.getBoundingClientRect(), d = $("#task-card .card"), crop = r(d.querySelector(".crop canvas")), up = r(d.querySelector(".verdict .up")), card = r(d);
+  const back = r($("#task-back")), skip = r($("#task-skip"));
+  return { share: crop.width / card.width, beside: up.left >= crop.right - 1, big: up.width >= 40 && up.height >= 40, head: !!d.querySelector(".head, .num, .state"),
+    top: back.bottom <= card.top + 1 && skip.bottom <= card.top + 1, links: [back.left < skip.left, $("#task-back").textContent.trim(), $("#task-skip").textContent.trim()] };
+});
+await check(look.share >= 0.6 && look.beside && look.big && !look.head && look.top && look.links[0] && /back/i.test(look.links[1]) && /skip/i.test(look.links[2]),
+  "the crop takes most of the card, big thumbs beside it, no number, Go back and Skip at the top", look);
+await page.click("#card-menu summary");
+await check(await page.evaluate(() => { const p = $("#card-menu .pop"), r = p.getBoundingClientRect(); return getComputedStyle(p).position === "absolute" && r.height > 40 && !!$("#opt-borders").offsetParent; }), "the cogwheel opens the options as a popup");
+await page.click("#card-menu summary");
 
 // req/nor/truth/marks: waiting, a faint outline and nothing else
 const mark = (i) => page.evaluate((i) => {
@@ -129,9 +141,13 @@ m = await mark(order[0][1].i);
 await check(/\bno\b/.test(m.cls) && m.area !== "none" && m.fill === "rgb(0, 0, 0)" && m.fillOpacity >= 0.4, "voted down, it is darkened", m);
 s = await now();
 await check(s.sel === order[0][2].i, "and on again", s);
-await page.click("#task-prev");
+// the card slides in: an animation runs on it, and the card it replaces leaves beside it
+const slide = await page.evaluate(() => { $("#task-skip").click(); return { anims: $("#task-card").getAnimations({ subtree: true }).length, leaving: document.querySelectorAll("#task-stage .leaving").length, cards: document.querySelectorAll("#task-card .card").length }; });
+await check(slide.anims > 0 && slide.leaving === 1 && slide.cards === 1, "Skip slides the next card in over the last", slide);
+await page.click("#task-back");
+await page.click("#task-back");
 s = await now();
-await check(s.sel === order[0][1].i && s.done === `2 of ${total} reviewed`, "previous steps back without a verdict", s);
+await check(s.sel === order[0][1].i && s.done === `2 of ${total} reviewed`, "Go back steps back without a verdict", s);
 
 // the last finalist decided moves on to the rejected
 await page.evaluate((xs) => { for (const x of xs.slice(0, -1)) if (!st.forced.get(x.i)) nor.decide(x.i, "approve"); }, order[0]);
@@ -142,7 +158,7 @@ await page.click("#task-card .verdict .up");
 s = await now();
 await check(s.task === "fail" && s.sel === order[1][0].i && s.n[0] === `${order[0].length} of ${order[0].length}`, "the finalists done, the rejected's task opens on its first", s);
 await check(await page.$eval('#gt-tasks > li[data-task="pass"]', (l) => l.classList.contains("done")), "a done task is checked");
-await check(await page.evaluate(() => st.tab === "fail" && /Rejected/.test($("#card-menu summary").textContent)), "the rejected's card options are those of the rejected");
+await check(await page.evaluate(() => st.tab === "fail" && /Rejected/.test($("#card-menu summary").getAttribute("aria-label"))), "the rejected's card options are those of the rejected");
 
 // a candidate clicked on the image becomes the current one
 const target = order[0][2].i;

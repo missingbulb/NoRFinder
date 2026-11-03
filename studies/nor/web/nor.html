@@ -46,8 +46,8 @@
         <li data-task="submit"><div class="task-head"><span class="tick" aria-hidden="true"></span><button id="dl-truth" disabled><span class="gt-ico" aria-hidden="true"></span>Submit Ground Truth</button></div></li>
       </ol>
       <div id="task-now">
-        <div class="task-step"><div class="stepper"><button id="task-prev" type="button" title="Previous candidate in this task" aria-label="Previous candidate in this task">‹</button><button id="task-next" type="button" title="Next candidate in this task" aria-label="Next candidate in this task">›</button></div><span id="task-place"></span></div>
-        <div id="task-card"></div>
+        <div class="task-step"><button id="task-back" class="link" type="button" title="The previous candidate in this task">‹ Go back</button><span id="task-place"></span><button id="task-skip" class="link" type="button" title="The next candidate in this task, leaving this one for later">Skip ›</button></div>
+        <div id="task-stage"><div id="task-card"></div></div>
       </div>
     </section>
 </template>
