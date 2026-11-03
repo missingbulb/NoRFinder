@@ -13,6 +13,8 @@ carried all its pull requests. The `writing-version-history` skill says how.
 A z-stack now opens in 3D only, with no 2D/3D switch. Edit Image on a stack leaves out Crop, the cut
 lines and Imperfections, which draw on a flat image. (#702)
 
+Each channel in the Image box fits on one line, with a colour picker to show it in any colour. Its black and white points are small triangles that meet in one, so the black point can always be dragged back from the white. (#708)
+
 ## 0.11103.79
 
 This version history tells each release in a few short paragraphs, instead of a line for every
