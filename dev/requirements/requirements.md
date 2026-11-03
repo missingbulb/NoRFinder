@@ -386,8 +386,9 @@ spec does not have.
   ImageJ's own made-up "c:1/3 - …") and in the colour the file displays it in (an ImageJ LUT, mixed
   colours included), leaving what the file does not say to `req/shell/channels/rows`; the image box says what the file
   states, its scale only when the file gives one in µm. A side bar it leaves empty gives its room to the image, and it
-  has no ground truth, so a local image earns no notice about sending one. Test:
-  `studies/viewer/tests/test_viewer.py`, `web-tests/test_study_runs.py`.
+  has no ground truth, so a local image earns no notice about sending one. A TIFF opens uncompressed or
+  compressed with LZW, Deflate or PackBits. Test: `studies/viewer/tests/test_viewer.py`,
+  `web-tests/test_study_runs.py`, `web-tests/test_compressed_tiff.py`.
   </details>
 
 - `req/shell/left-bar/folding` The left bar's boxes stay folded until their step makes them useful, and fold again once it is done.
