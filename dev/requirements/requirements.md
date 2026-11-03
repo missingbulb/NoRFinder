@@ -126,6 +126,40 @@ spec does not have.
   a file anyone else made. Test: `web-tests/test_data_mode_page.py`.
   </details>
 
+- `req/shell/data/edit` Edit Image opens the image itself and marks what to do with it: split, crop, slices, channels, imperfections; the view shows the result.
+  <details>
+
+  Set by the owner on 2026-11-03. In Data Management, Preprocessing's Edit Image (off until an image is
+  open) opens the image itself, from the copy on this device or Drive, when a preview is on show, and
+  opens the Edit Image box below Preprocessing. Every choice there redraws the image as it will be saved,
+  in 2D and in 3D, the view staying as the user left it (2D or 3D, turned as it was): Split cuts it 2 × 2 or 3 × 3, the parts drawn apart with a gap between them, so a
+  stack in 3D looks cut; the cut lines over the image drag, never closer than a twentieth of the crop
+  to the next, and a click on a part leaves it out (drawn dim) and keeps it again. Crop draws a rectangle
+  on the whole image and then shows only it. Slices, for a stack, is one slider with two marks, the first
+  and the last slice kept, the slices outside dropped from the view; a band on the slider marks the
+  suggested slices, those holding signal (each slice's 99th percentile above its median, at least a
+  quarter of the best slice's), and Use suggested sets the marks there. Channels ticks each channel kept,
+  a dropped one shown empty. Imperfections lassoes a part on the image (in 3D, on the 2D top view) to
+  leave out of every slice, drawn as if no data were there; each is listed with its share of the image
+  and can be removed, and the box's folded title sums them up ("4% imperfections"). Done leaves the box
+  and shows the image as it was. Test: `web-tests/test_image_edit_page.py`, `web-tests/test_image_edit.py`.
+  </details>
+
+- `req/shell/data/edit-save` Save… writes the edited image, or its parts, into a folder named after the image, beside it.
+  <details>
+
+  Set by the owner on 2026-11-03. The page changes no file it did not make (`req/shell/data/drive-access`),
+  so an edit goes into a folder named after the image (its name without the extension), which the page
+  creates beside it, or uses when the page made it before. Save… shows where the files will go, their
+  names (the image's name and a pattern: `_edited` with no split, `_r{row}c{col}` with one, kept as the
+  user's setting; the pattern's fields as `req/shell/preprocessing/split` lists them), and holds the save
+  while two files would share a name, no channel is kept or every part is left out. Save to Google Drive
+  writes them there, while the folder is writable; Download gives the one file, or a ZIP of the parts.
+  Wherever the page lists a folder's images (the tree, the folder view and Load's Drive dialog), an image
+  beside a folder of its name is not listed: that folder, and the edited files in it, take its place.
+  Test: `web-tests/test_image_edit_page.py`.
+  </details>
+
 - `req/shell/data/folder` A folder chosen shows its images as a grid or a list, and the left bar sums it up.
   <details>
 
@@ -506,33 +540,27 @@ spec does not have.
   `web-tests/test_image_box_page.py`.
   </details>
 
-- `req/shell/preprocessing/split` Preprocessing, in Data Management, splits an image into 4 or 9 TIFFs for ground truth, each recording where it lay.
+- `req/shell/preprocessing/split` Preprocessing, in Data Management, holds Edit Image; each file it saves is an ImageJ TIFF recording where it lay.
   <details>
 
   Set by the owner on 2026-10-31. A large image is hard to annotate in one sitting; its parts can be
   annotated one at a time, by several people at once, and give the finders smaller samples to tune on.
   Changed by the owner on 2026-10-31: it is the shell's, in every study, the Image Viewer included.
   Changed by the owner on 2026-11-02: it exists only in Data Management (`req/shell/data/mode`), below
-  the Image box; out of it no drawer, number or crumb names it. Its Split into parts button, off until
-  an image is open, opens the dialog. The dialog shows the image small, cut 2 × 2 or 3 × 3 into evenly spaced parts numbered as `{n}` counts
-  them; dragging a line moves its cut, never closer than a twentieth of the image to the next one, and
-  clicking a part leaves it out, clicking again keeping it. It lists the image's channels by the names and
-  colours the page gives them, each kept or dropped, and for a stack the slices kept, from one to another.
-  The parts' file names are the image's name and a pattern (`_r{row}c{col}` at first, kept as the user's
-  setting; `{row}` `{col}` `{n}` `{x}` `{y}` `{rows}` `{cols}`, `{name}` for the image's name), listed as
-  they will be; a pattern giving two parts one name, no channel kept, slices out of range or every part left
-  out holds the download and says why. Download all parts gives one ZIP of the parts. Upload to Google
-  Drive is shown, off, and says it needs a Google sign-in the page does not have.
+  the Image box; out of it no drawer, number or crumb names it. Changed by the owner on 2026-11-03: Split
+  into parts became Edit Image (`req/shell/data/edit`), whose Save… (`req/shell/data/edit-save`) writes
+  the files; there is no separate dialog.
   Each part is an ImageJ TIFF (uncompressed, little-endian) of the channels and slices kept, every time point
-  kept, its pixels the image's own, bit for bit at its own bit depth: the image's scale, unit, slice spacing,
+  kept, its pixels the image's own, bit for bit at its own bit depth, but 0 inside an imperfection: the image's scale, unit, slice spacing,
   channel colours (the file's LUTs, else the page's colours), names, display ranges and Info are kept, and
   its Info gains a line `rauntruth.split={…}`: the image it came from (name, SHA-256, Drive id, size,
   channels, slices, frames), the grid's cuts, the part's row, column, number, x, y, width and height, the
-  channels and slices kept (from 0), and for a part of a part where it lies in the first image (`root`).
+  channels and slices kept (from 0), the parts of the image left blank as imperfections (`removed`, polygons
+  in the image's pixels, every slice), and for a part of a part where it lies in the first image (`root`).
   That record is enough to join the parts' ground truth back into the whole image's. It reads ImageJ
   hyperstacks, OME-TIFFs in one file and plain TIFFs (strips or tiles; uncompressed, LZW, Deflate or
   PackBits, either byte order; 8, 16, 32 or 64 bits), and a PNG as the browser decodes it; it refuses a
-  BigTIFF, and a part over 4 GB. Test: `web-tests/test_split.py`, `web-tests/test_split_page.py`, `web-tests/test_left_bar_page.py`.
+  BigTIFF, and a part over 4 GB. Test: `web-tests/test_split.py`, `web-tests/test_image_edit.py`.
   </details>
 
 - `req/shell/python/background-load` No waiting to start: Python loads in the background from the moment the page opens.
@@ -562,7 +590,7 @@ spec does not have.
   image (where from, its size and slices) and a step done are logged too, and kept apart from them the errors
   the page meets: an error in the status line, and a script error the page did not catch. No image's or
   folder's name is logged: a control that shows one (Load's recents, the Drive list, the image's name, a
-  part's file name, the Storage tab, the lists in Settings) is logged by what it is. The log keeps the last
+  file name Save… lists, the Data Management tree and folder view, the Storage tab, the lists in Settings) is logged by what it is. The log keeps the last
   200 entries in the browser, so a report filed after a reload still has them; Settings lists it among what is
   kept on this device only, with its size, to clear (`req/shell/account/settings`). The privacy policy says it is kept. Test:
   `web-tests/test_problem_report_page.py`.
