@@ -1,8 +1,8 @@
 // Drives the page (web/) in headless Chromium with a stand-in worker that answers only the study's ready() (READY,
 // written by tests/test_processing_box.py), and checks the Processing box before any image: its settings and its
 // algorithm note start folded; each finder in the list carries its icon; the note's title names the chosen
-// algorithm, its explanation is drawn as a nested list of steps, and it tells its precision and recall before any
-// filter apart from those after the filter preset the list shows. Prints what it saw; exits 1 on a failure, 2
+// algorithm, its explanation is drawn as a nested list of steps, and it highlights its precision and recall after the
+// filters, as the list shows them, with those before any filter beside them. Prints what it saw; exits 1 on a failure, 2
 // when it cannot run.
 //   node tests/processing_box_driver.mjs READY
 import { repoFile } from "../../../web-tests/repo_file.mjs";
@@ -23,6 +23,7 @@ try { pw = require("playwright"); } catch {
 const [ready] = process.argv.slice(2);
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const READY = JSON.parse(fs.readFileSync(ready, "utf8"));
+const QUALITY = JSON.parse(fs.readFileSync(path.join(repo, "studies", "nor", "web", "finder_metrics.json"), "utf8"));
 
 const STAND_IN = `postMessage({ type: "ready", info: ${JSON.stringify(READY)}, secs: 0 });`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
@@ -63,12 +64,12 @@ try {
     if (!icon || !text.startsWith(icon + " " + READY.finders[k])) problems.push(`${k} in the list does not start with its icon: ${text}`);
     // the box is folded until an image opens, so the choice is made as the list would make it
     await page.evaluate((k) => { const s = document.querySelector("#finder"); s.value = k; s.dispatchEvent(new Event("change")); }, k);
-    await page.waitForFunction((n) => document.querySelector("#about-box summary").textContent.includes(n) && /after/i.test(document.querySelector("#finder-note").textContent), READY.finders[k]).catch(() => {});
+    await page.waitForFunction((n) => document.querySelector("#about-box summary").textContent.includes(n) && document.querySelector("#finder-note strong"), READY.finders[k]).catch(() => {});
     const note = await page.evaluate(() => {
       const n = document.querySelector("#finder-note"), sel = document.querySelector("#finder");
       return {
         title: document.querySelector("#about-box summary").textContent, nested: !!n.querySelector("li > ul > li, li > ol > li"),
-        text: n.textContent, raw: /(^|\n)\s*- /.test(n.innerText), option: sel.selectedOptions[0].textContent,
+        text: n.textContent, strong: n.querySelector("strong")?.textContent, raw: /(^|\n)\s*- /.test(n.innerText), option: sel.selectedOptions[0].textContent,
       };
     });
     console.log(k, JSON.stringify(note));
@@ -76,9 +77,12 @@ try {
     const name = READY.finders[k];
     if (note.title !== `How the ${name} algorithm works`) problems.push(`${k}: the note's title does not name the algorithm: ${note.title}`);
     if (note.raw) problems.push(`${k}: the note shows its list's markup instead of a list`);
-    const listed = (note.option.match(/\((P\s[^)]*)\)/) || [])[1];
-    if (!/before any filter/i.test(note.text)) problems.push(`${k}: the note does not give the numbers before any filter`);
-    if (!listed || !note.text.includes(listed) || !/after the best filter preset/i.test(note.text)) problems.push(`${k}: the note does not say the list's ${listed} is after the best filter preset`);
+    // the highlighted numbers are the list's, after the best filter preset, with the finder's own before any filter
+    const [, lp, lr] = note.option.match(/\(P\s(\.\d+)\s·\sR\s(\.\d+)\)/) || [];
+    const own = QUALITY.finders[k].finder, m = (note.strong || "").match(/^Algorithm and filters give P:\s([\d.]+), R:\s([\d.]+) based on (\d+) images? \(without filters P:\s([\d.]+), R:\s([\d.]+)\)$/);
+    if (!m) problems.push(`${k}: the note does not highlight "Algorithm and filters give P, R based on N images (without filters P, R)": ${note.strong}`);
+    else if (+m[1] !== +lp || +m[2] !== +lr || +m[3] !== QUALITY.images.length || +m[4] !== +own.precision.toFixed(2) || +m[5] !== +own.recall.toFixed(2))
+      problems.push(`${k}: the highlighted numbers ${m.slice(1)} are not the list's ${lp}, ${lr} on ${QUALITY.images.length} images, without filters ${own.precision}, ${own.recall}`);
   }
   if (!nested) problems.push("no finder's note draws a step with steps of its own");
 } catch (e) {
