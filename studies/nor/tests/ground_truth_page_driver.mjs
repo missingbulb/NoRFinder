@@ -46,14 +46,12 @@ onmessage = async ({ data: m }) => {
     postMessage({ type: "result", action: "refilter", meta: A.filtered[finder][0], echo: m.echo, ms: 0 });
   }
 };`;
-const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "test-key" } };`;
 
 let stage = null; // the study's stage as served; null: as committed
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
-  if (u === "/web/config.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(CONFIG); }
   if (u === "/studies/nor/study.json" && stage) {
     r.writeHead(200, { "content-type": "application/json" });
     return r.end(JSON.stringify({ ...JSON.parse(fs.readFileSync(path.join(repo, u))), stage }));
@@ -72,7 +70,7 @@ const bytes = fs.readFileSync(image);
 
 async function open(drive) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
-  await asTagger(ctx);
+  await asTagger(ctx, { apiKey: "test-key" });
   const asked = []; // what was asked of github.com
   await ctx.route(offSite(origin), (r) => {
     const u = new URL(r.request().url());
