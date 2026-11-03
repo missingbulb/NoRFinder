@@ -180,6 +180,7 @@ details.fold[open] > summary::before, .box.foldable:not(.folded) > .sec-head h2:
 .sec-head h2, .sec-head button { margin: 0; white-space: nowrap; }
 .box > .sec-head { margin-bottom: 10px; }
 .box.foldable.folded > .sec-head { margin-bottom: 0; }
+.box.foldable.folded { cursor: pointer; }
 .sec-head button { padding: 3px 10px; font-size: 12px; }
 button.link { border: 0; background: none; padding: 0; color: var(--accent); font-size: 12px; }
 button.link:not(:disabled):hover { text-decoration: underline; }

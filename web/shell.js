@@ -1448,8 +1448,10 @@ function slide(change) {
 function foldable() {
   document.querySelectorAll(".box.foldable > .sec-head h2").forEach((h) => {
     h.tabIndex = 0; h.setAttribute("role", "button");
-    const flip = () => slide(() => { h.closest(".box").classList.toggle("folded"); retitle(); });
-    h.onclick = flip; h.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } };
+    const box = h.closest(".box"), flip = () => slide(() => { box.classList.toggle("folded"); retitle(); });
+    // folded, the whole drawer opens it; open, only its title folds it
+    box.onclick = (e) => { if (box.classList.contains("folded") || h.contains(e.target)) flip(); };
+    h.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } };
   });
   unfoldFirst();
 }
