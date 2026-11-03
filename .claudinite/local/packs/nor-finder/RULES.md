@@ -22,6 +22,13 @@ not belong here — propose it to the Claudinite canon instead, where every repo
   be regenerated from it. Before replying that work is done, check that nothing the next session
   would need exists only in the project. (working-claude-project)
 
+## Production and its tests
+
+- **A test needing the page to behave otherwise than it does on the live site** — change the
+  testing surface (a stand-in, a route, a seeded browser key, a shared helper beside the tests),
+  never `web/` or a study's `web/`: the production code is written for the live site alone.
+  (tests-bend-test-surface)
+
 ## The page's version history
 
 - **Changing what a user of the NoR Finder page sees** — work it into the "Next release" story in

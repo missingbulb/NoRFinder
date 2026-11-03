@@ -5,7 +5,7 @@ CC-BY 4.0 · University of Würzburg · read from the supplied PDF (29 pages + s
 
 > **Attribution correction.** The first pass cited this as "Stengel et al.", from a web-search
 > summary. The co-first authors are **Appeltshauser, Linke and Heil**; issue
-> [#6](https://github.com/missingbulb/NoRFinder/issues/6) carries the wrong name.
+> [#6](https://github.com/missingbulb/RaunTruth/issues/6) carries the wrong name.
 
 **This is the most important of the four supplied papers, and it was the one I predicted would
 matter least.** It is the only source in the whole review that **automates node counting and

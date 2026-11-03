@@ -13,12 +13,32 @@ spec does not have.
 
 ## `req/shell` The shell, whichever study it runs
 
+- `req/shell/account/role` Beside the avatar, a menu picks the role the user works in; the page shows that role's own view.
+  <details>
+
+  Set by the owner on 2026-11-03: one page adapting to every role at once is replaced by a view per role,
+  chosen on purpose. Left of the avatar, a menu names the role the user works in and lists the roles they
+  hold in the study on show: **Viewer**, everyone's, and the only one for a visitor not signed in
+  (`req/shell/account/sign-in`); **Ground Truth Tagger**, anyone's who is signed in, listed only in a study
+  that makes ground truth (GT or PostGT, `req/shell/study/stage`); and **Data Manager**, held by those the
+  study's permissions name (`req/shell/data/roles`), listed where the study has Drive folders. Where it
+  lists Viewer alone, a line says what signing in adds. Choosing a role changes the page to its view at
+  once. Viewer sees the study as a Published one shows it: its tools and what they find, nothing that
+  makes ground truth (no Submit GT step, the ground-truth button hidden, the item view its Items, the
+  study's postprocessing not shown). Ground Truth Tagger sees the page that makes ground truth. Data
+  Manager sees Data Management (`req/shell/data/mode`). Moving between Viewer and Ground Truth Tagger
+  opens the study afresh on the same image. The page opens as Viewer; the role chosen follows the user
+  (`req/shell/account/sign-in`) and Settings lists it (`req/shell/account/settings`). A role not held in
+  the study on show, or no longer held, shows as Viewer, and the choice stays for where it is held. Test:
+  `web-tests/test_roles_page.py`.
+  </details>
+
 - `req/shell/account/settings` The avatar's menu opens Settings: every setting that follows the user, to change and save.
   <details>
 
   Set by the owner on 2026-10-31. Settings… in the avatar's menu opens a dialog listing each setting
   that follows the user (`req/shell/account/sign-in`), whether or not they are signed in, each with a control to change it:
-  the theme (follow the system, dark or light); where Load reads from; Show thumbnails in the Drive
+  the theme (follow the system, dark or light); the role the user works in (`req/shell/account/role`); where Load reads from; Show thumbnails in the Drive
   dialog; whether the low-memory popup shows; the last Google Drive link, and the last one in each
   study; the tips closed, each with a tick to clear to see it again; the recent images from Google
   Drive, each with a tick to clear to drop it; Animations; and the version seen last. A line says where they are
@@ -41,7 +61,7 @@ spec does not have.
   user's name, email and picture and for the app's own folder in their Drive, nothing else of it.
   Signed in, the avatar is the user's picture, the menu names them and offers Sign out. These
   settings follow the user: dark or light, the tips closed, the version last seen, the low-memory
-  popup turned off, where Load reads from, the last Drive link (in each study too), Show thumbnails,
+  popup turned off, the role the user works in (`req/shell/account/role`), where Load reads from, the last Drive link (in each study too), Show thumbnails,
   the images opened from Drive lately, whether animations are on (`req/shell/resources-dialog/animations`) and how the status bar shows its resources (`req/shell/status-bar/resources`). These stay with the device: the left bar's width,
   Auto-save images, and everything kept for images. Google's token lasts about an hour and is kept on
   this device for that hour. A new one can be asked for only in the user's own click or key press, so
@@ -101,28 +121,38 @@ spec does not have.
 - `req/shell/channels/rows` Each channel has its row: shown or not, its black and white points, its name and its description.
   <details>
 
-  Set by the owner on 2026-10-31. One row per channel of the image: a checkbox in the channel's
-  colour that shows or hides it, its name, a (?) whose hover shows the study's description of it (at
-  most 100 words), the file's own name for it when the study names it otherwise, and one slider
-  holding two points: at or below the black point the channel is dark, at or above the white point
-  its full colour, in proportion between; the black point stays below the white. A double click on
-  the slider puts the points back. The channels are added together, each in its colour. A channel's
-  name, colour, description, whether it shows at first and its first points come from the study's
-  `channels` for the channel at that place, else from what the file says (the study's Python), else
-  from its place: red, green and blue, then more colours, a lone channel grey; a channel the file
-  colours but does not name is named for its colour. The rows start over with every image. Test:
+  Set by the owner on 2026-10-31; one line per row, a colour picker, triangle points and a value bubble
+  on 2026-11-03. One row per channel of the image, all on one line: a checkbox that shows or hides it,
+  its name, a (?) whose hover shows the study's description of it (at most 100 words), the file's own
+  name for it when the study names it otherwise, one slider holding two points, and right of the slider
+  a colour picker, a swatch a little wider than tall in a thick frame, like a picture's, its colour
+  shaded on the diagonal, a little lighter at the top left and darker at the bottom right with the
+  channel's colour at the centre, that recolours it. At or below the black point the channel is dark, at
+  or above the white point its full colour, in proportion between; the black point stays below the
+  white. Only the colour picker carries the channel's colour: the checkbox and the slider, a ramp from
+  black to white, look the same on every row. The slider's track is centred in its row and each point is
+  a right-angled triangle sitting on it, the black one left of its value and the white one right, so
+  that the two meeting make one larger triangle over one value and neither hides the other: each can
+  still be dragged away from there. While a point is dragged or has the keyboard's focus, its value
+  (0–255) shows in a small bubble above it, gone once it is let go. A double click on the slider puts
+  the points back. The channels are added together, each in its colour. A channel's name, colour,
+  description, whether it shows at first and its first points come from the study's `channels` for the
+  channel at that place, else from what the file says (the study's Python), else from its place: red,
+  green and blue, then more colours, a lone channel grey; a channel the file colours but does not name
+  is named for its colour. The rows start over with every image. Test:
   `web-tests/test_image_box_page.py`, `studies/viewer/tests/test_viewer.py`.
   </details>
 
-- `req/shell/data/drive-access` A signed-in user with a role is asked to let the site into the study's folders, just those, and sees which it may write.
+- `req/shell/data/drive-access` A data manager is offered, in the folder tree, to let the site into the study's folders, just those, and sees which it may write.
   <details>
 
-  Set by the owner on 2026-11-02. Opening a study where the signed-in user holds a role
-  (`req/shell/data/roles`), the page asks, only for the folders it lacks access to, for Google's
+  Set by the owner on 2026-11-02. In the Data Manager role (`req/shell/account/role`), the tree's head
+  offers to approve the folders the site lacks access to, and its click asks for Google's
   per-file permission (`drive.file`) and then Google's own picker showing just the study's folders and
   their subfolders, to approve all or some. The page then knows, for each folder: not approved for this
-  site; approved but view-only in Drive; or writable; a folder added since, or one left out, is asked
-  for again. The page only creates files and changes or trashes the ones it created; it never changes
+  site; approved but view-only in Drive; or writable; a folder added since, or one left out, is offered
+  again. Changed by the owner on 2026-11-03: the page asks nowhere else, and no bar over the image asks
+  for the folders. The page only creates files and changes or trashes the ones it created; it never changes
   a file anyone else made. Test: `web-tests/test_data_mode_page.py`.
   </details>
 
@@ -173,12 +203,13 @@ spec does not have.
   marked as needing it (`req/shell/data/preview-images`). Test: `web-tests/test_data_mode_page.py`.
   </details>
 
-- `req/shell/data/mode` Data Management: a column left of the left bar, for data managers only, collapsed until opened.
+- `req/shell/data/mode` Data Management: the Data Manager role's view, a column of the study's folders left of the left bar, open until folded.
   <details>
 
-  Set by the owner on 2026-11-02. For a signed-in data manager (`req/shell/data/roles`) a narrow strip
-  sits left of the left bar; opening it slides out the tree of the study's folders and enters Data
-  Management, closing it leaves. Others see no strip. The tree shows every folder and subfolder, open,
+  Set by the owner on 2026-11-02, changed on 2026-11-03: Data Management is the Data Manager role's view
+  (`req/shell/account/role`), entered by choosing that role and left by choosing another; nobody in any
+  other role sees any of it. In it the tree of the study's folders sits left of the left bar, open; its
+  chevron folds it to a narrow strip and opens it again. The tree shows every folder and subfolder, open,
   each with its access (`req/shell/data/drive-access`); a folder's images stay folded under it until
   its image count is clicked, each with a small preview. In the mode the left bar keeps the Image box
   and Preprocessing (`req/shell/preprocessing/split`) and hides the study's own drawers, its item view
@@ -202,7 +233,7 @@ spec does not have.
   <details>
 
   Set by the owner on 2026-11-02. A study's `permissions` maps a role to the Google accounts, by
-  email, that hold it: `data_management` (Data Management, `req/shell/data/mode`) and
+  email, that hold it: `data_management` (the Data Manager role, `req/shell/account/role`) and
   `ground_truth_writer` (writing ground truth to Drive, still to come). Its `files.folders` lists its
   Drive folders, and Load's Drive dialog opens on the first. A role only shows or hides the page's
   tools; what anyone can change is still what Drive itself lets them. Test:
@@ -382,9 +413,12 @@ spec does not have.
   <details>
 
   An uncompressed TIFF like the lab's paints onto the page from its bytes as they arrive from
-  Google Drive, one channel after another in its own colour, with the megabytes so far and the
-  elapsed time below; a file from the computer shows at once. Python's own drawing replaces it once
-  the image is read. Any other image shows the byte count.
+  Google Drive, in grey from the channels in so far, with the megabytes so far and the elapsed
+  time below. Once every byte is in, its colours wipe down over the grey; a file from the computer,
+  or one already kept, fades up from black into its colours instead, quickly. No pixel ever shows a
+  colour its final one lacks: each is grey, black, or a darker shade of the colour it ends in, and
+  the colours it ends in are the brightness Python draws, so Python's own drawing, which replaces it
+  once the image is read, changes nothing visible. Any other image shows the byte count.
   </details>
 
 - `req/shell/image/proportions` No image is ever drawn out of its proportions.
@@ -396,17 +430,21 @@ spec does not have.
 - `req/shell/image-viewer` The Image Viewer: the page with no study's tools, the one it opens on.
   <details>
 
-  A study with no panels and no actions (`studies/viewer/`): it loads any TIFF or PNG and shows each
+  A study with no panels and no actions (`studies/viewer/`): it loads any TIFF or PNG and opens it in the viewer
+  its shape asks for (owner, 2026-11-03): a z-stack (a TIFF's Z axis, or the pages of one that names none of its
+  axes) in 3D (`req/shell/viewer-3d`), a flat image in 2D. Load being its only step, the Image box stays open once
+  the image has loaded (owner, 2026-11-03). It shows each
   channel, up to 8, under the name the file gives it (an OME channel name, an ImageJ label, never
   ImageJ's own made-up "c:1/3 - …") and in the colour the file displays it in (an ImageJ LUT, mixed
   colours included), leaving what the file does not say to `req/shell/channels/rows`; the image box says what the file
   states, its scale only when the file gives one in µm. A side bar it leaves empty gives its room to the image, and it
   has no ground truth, so a local image earns no notice about sending one. A TIFF opens uncompressed or
   compressed with LZW, Deflate or PackBits. Test: `studies/viewer/tests/test_viewer.py`,
-  `web-tests/test_study_runs.py`, `web-tests/test_compressed_tiff.py`.
+  `web-tests/test_study_runs.py`, `web-tests/test_compressed_tiff.py`, `web-tests/test_viewer3d_page.py`.
   </details>
 
-- `req/shell/left-bar/collapse` The left bar collapses to a narrow Steps strip, giving the image its room, and expands again (remembered).
+- `req/shell/left-bar/collapse` The left bar collapses to a narrow Steps strip, giving the image its room, and expands again (remembered):
+  by a chevron in one spot, at the bar's top open or collapsed, or by dragging the gutter past the bar's narrowest and back out.
   <details>
 
   Set by the owner on 2026-11-03. A small tab holding a chevron sits on the gutter between the open
@@ -436,12 +474,14 @@ spec does not have.
   check once the drawer's task is done; the open drawers carry an accent bar at their left. A
   drawer's title describes its task while the task waits, open or folded; once it is done, the
   folded title sums up what was done and the open one names the drawer. The Image box, titled Load
-  Image while no image is open (and again after Unload), folds once done to
+  Image while no image is open (and again after Unload), folds once done (in a study with a step after Load) to
   a small preview of the image, its name and what it holds ("2D", "3 channels", from the file;
   only "2D" when the file does not say), and opens as "Loaded Image". A study's drawer is done
   when the study gives it a summary, and waits again when the study takes it back. A drawer opening or
   folding slides open or shut, and the drawers below it slide to their new places (set by the owner on
-  2026-10-31). Test: `web-tests/test_left_bar_page.py`, `web-tests/test_study_contract.py`.
+  2026-10-31). Changed by the owner on 2026-11-03: a folded drawer opens from a click anywhere on it,
+  not only on its title or number; an open one still folds only from its title.
+  Test: `web-tests/test_left_bar_page.py`, `web-tests/test_study_contract.py`.
   </details>
 
 - `req/shell/left-bar/width` The left bar drags wider or narrower (remembered; a double click restores it); there is no right bar.
@@ -1273,9 +1313,14 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   <details>
 
   They re-run the finder. Each finder names its main settings (its function's `MAIN`), shown first;
-  every setting is under a collapsed Advanced box. Each finder shows a few sentences on how it
-  works, and every setting and filter value has a ? that says what it does
-  (`detection/finder_help.py`; the test fails when one is missing).
+  every setting is under a collapsed Advanced box. Each finder shows how it works under "How the
+  <finder> algorithm works", its steps as a nested list (written as a Markdown outline), and every
+  setting and filter value has a ? that says what it does (`detection/finder_help.py`; the test fails
+  when one is missing). Changed by the owner on 2026-11-03: the note ends with "<Finder> algorithm plus
+  default filters show precision of X and recall of Y based on N images", in bold, the numbers the finder
+  list shows, then "(without filters: …)", the finder's own, not bold;
+  each finder in the list carries its own icon, the study's choice; the settings start folded.
+  Test: `studies/nor/tests/test_processing_box.py`.
   </details>
 
 - `req/nor/lab-parity` The page runs the lab's code, and at our settings passes what the lab passes.
@@ -1290,8 +1335,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   <details>
 
   Changed by the owner on 2026-10-30, 2026-10-31 and 2026-11-02. Below the Image box
-  (`req/shell/left-bar/folding`) the left bar holds Processing, the candidates finder (its "how it works"
-  and its settings fold away; its "restore defaults" sits with the settings, not in the title row), open
+  (`req/shell/left-bar/folding`) the left bar holds Processing, the candidates finder (its "how the
+  algorithm works" and its settings fold away, and start folded; its "restore defaults" sits with the settings, not in the title row), open
   from the image's opening until Find Candidates and, folded once Find Candidates has run with the finder and
   settings now chosen, titled "<finder> executed"; Postprocessing, the filters, which only its title
   opens; and Summary, which opens once the candidates are found. Postprocessing and Summary keep

@@ -10,14 +10,20 @@ carried all its pull requests. The `writing-version-history` skill says how.
 
 ## Next release
 
-Making ground truth is now a to-do list in the left bar: the finalists, the rejected, then each area
-of the image checked for missed NoRs, one at a time, with big thumbs under the crop. Whatever you
-finish is cut out of the image, and the bar fills task by task. (#720)
+Pick your role from the new menu beside your avatar. Viewer shows what a study finds. Signed in,
+Ground Truth Tagger turns the left bar into a to-do list: the finalists, the rejected, then each
+area checked for missed NoRs, one at a time, each finished one cut out of the image. Data Manager
+opens a study's folders at once. (#705, #720)
 
-## 0.11103.80
+A z-stack opens in 3D only and a flat image in 2D, in every study; a plain multi-page TIFF opens as
+a stack too. Edit Image on a stack leaves out Crop, the cut lines and Imperfections. Each channel in
+the Image box fits on one line, with a swatch to recolour it and triangle black and white points.
+(#702, #707, #708, #713)
 
-A z-stack now opens in 3D only, with no 2D/3D switch. Edit Image on a stack leaves out Crop, the cut
-lines and Imperfections, which draw on a flat image. (#702)
+The left bar collapses and opens from the chevron at its top, or by dragging its edge, and a folded
+drawer opens from a click anywhere on it. In NoR Finder an opening image builds in grey while it
+downloads, each finder in Processing has its own icon, and Tasks works again after Unload. (#709,
+#710, #711, #714, #715)
 
 ## 0.11103.79
 

@@ -14,6 +14,7 @@ import http from "node:http";
 import path from "node:path";
 import { offSite } from "../../../web-tests/off_site.mjs";
 import { ENGINE } from "../../../web-tests/engine.mjs";
+import { asTagger } from "../../../web-tests/tagger.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -67,6 +68,7 @@ const shot = async (page, name, sel) => { if (shots) await (sel ? page.locator(s
 
 async function open(gb) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  await asTagger(ctx);
   await ctx.route(offSite(origin), (r) => r.abort());
   await ctx.addInitScript((gb) => {
     delete Navigator.prototype.serviceWorker;

@@ -1,8 +1,8 @@
 # Literature review — index and status
 
 Literature review for the Node of Ranvier detection project. Tracked in
-[#5](https://github.com/missingbulb/NoRFinder/issues/5); the second pass, ingesting four papers the
-owner supplied, in [#8](https://github.com/missingbulb/NoRFinder/issues/8).
+[#5](https://github.com/missingbulb/RaunTruth/issues/5); the second pass, ingesting four papers the
+owner supplied, in [#8](https://github.com/missingbulb/RaunTruth/issues/8).
 
 The scope is deliberately narrow: enough to (a) understand the problem domain, (b) pin down the
 measurement the project is automating, and (c) find out whether anyone has already built the
@@ -33,7 +33,7 @@ The overview document itself is ingested at [`../project-brief.md`](../project-b
 | Linke, Appeltshauser, Doppler & Heinze (2025). *Deep learning-driven automated high-content dSTORM imaging with a scalable open-source toolkit.* Biophys Rep 5:100201. | Owner-supplied | Deep-learning node segmentation, training-data budget |
 | Rasband & Peles (2021). *Mechanisms of node of Ranvier assembly.* Nat Rev Neurosci 22:7–20. [DOI](https://doi.org/10.1038/s41583-020-00406-8) | Owner-supplied | **Nothing algorithmically relevant** — a mechanism review, superseding nothing in `node-biology.md`. Do not re-read it for this project. |
 
-Nothing is now unreachable. [#6](https://github.com/missingbulb/NoRFinder/issues/6) is closed.
+Nothing is now unreachable. [#6](https://github.com/missingbulb/RaunTruth/issues/6) is closed.
 
 ## Findings that changed how we will build this
 
@@ -63,7 +63,7 @@ web-search summaries did not survive contact with the sources:
 
 - **Two author attributions were wrong.** "Reeves et al." is **Song et al.**; "Stengel et al." is
   **Appeltshauser, Linke & Heil et al.** Issue
-  [#6](https://github.com/missingbulb/NoRFinder/issues/6) carries the wrong names.
+  [#6](https://github.com/missingbulb/RaunTruth/issues/6) carries the wrong names.
 - **A definition was invented by paraphrase.** Node-length definition C was recorded as *"the
   distance between the inner edges of the Caspr-positive paranodal regions"*. That phrasing is
   **not in the paper**, which defines nothing beyond "gap size". The summary attributed a precision

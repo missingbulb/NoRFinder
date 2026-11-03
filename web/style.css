@@ -37,6 +37,16 @@ header > .grow { flex: 1; }
 h1 { font-size: 16px; font-weight: 600; margin: 0; }
 /* the study switcher, after GitHub's repository switcher: the title and a solid caret as one control, opening a
    panel under the caret with a search box and the studies, the one on show ticked */
+/* the role menu beside the avatar (req/shell/account/role) */
+#role-menu summary { display: flex; align-items: center; gap: 2px; height: 32px; padding: 0 4px 0 10px; box-sizing: border-box; font-size: 13px; }
+#role-menu summary::after { content: none; }
+#role-menu .caret { display: grid; place-items: center; color: var(--dim); } #role-menu .caret svg { fill: currentColor; }
+#role-menu .pop { width: 240px; }
+#role-menu .pop h2 { font-size: 13px; margin: 0 0 4px; color: var(--dim); font-weight: 600; }
+#role-list { display: flex; flex-direction: column; }
+#role-list .item[aria-checked=true] { font-weight: 600; } #role-list .item[aria-checked=true]::before { content: "✓ "; }
+#role-list .item[aria-checked=false]::before { content: "✓ "; visibility: hidden; }
+#role-hint { margin: 6px 0 0; font-size: 12px; white-space: normal; }
 #study-menu summary { display: flex; align-items: center; height: 32px; padding: 0; border: 0; border-radius: var(--r-chip); background: none; overflow: hidden; }
 #study-menu summary::after { content: none; }
 #study-menu h1 { height: 32px; line-height: 32px; padding: 0 8px; background: color-mix(in srgb, var(--text) 7%, var(--bg)); }
@@ -138,18 +148,31 @@ body.resizing { cursor: col-resize; user-select: none; }
 #file-info dt { color: var(--dim); }
 #file-info dd { margin: 0; overflow-wrap: anywhere; }
 #file-info dd.none { grid-column: 1 / -1; margin-top: 2px; }
-/* a row per channel: its checkbox in the channel's colour, its name, its description behind a (?), the file's own
-   name for it, and one slider holding its black and white points over a ramp from black to its colour */
-#channels { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+/* a row per channel, on one line: its checkbox, its name, its description behind a (?), the file's own name
+   for it, one slider holding its black and white points over a ramp from black to white, and its colour
+   picker, the one part in the channel's colour */
+#channels { display: grid; grid-template-columns: auto minmax(0, max-content) minmax(60px, 1fr) auto; gap: 6px; font-size: 13px; }
 #channels:empty { display: none; }
-.channel .ch-head { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.channel label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; }
-.channel input[type=checkbox] { width: 15px; height: 15px; margin: 0; cursor: pointer; accent-color: var(--ch); }
-.channel .from-file { margin-left: auto; color: var(--dim); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.channel { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; }
+.channel .ch-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.channel label { flex: 0 1 auto; min-width: 2em; overflow: hidden; text-overflow: ellipsis; cursor: pointer; white-space: nowrap; }
+.channel input[type=checkbox] { flex: none; width: 15px; height: 15px; margin: 0; cursor: pointer; }
+/* the colour picker: a swatch a little wider than tall in a thick frame, lit from the top left like a picture's; its colour, at
+   the centre, a little lighter towards the top left and darker towards the bottom right */
+.channel input[type=color] { flex: none; width: 22px; height: 15px; padding: 0; border: 3px solid; border-radius: 2px; cursor: pointer; background: none;
+  border-color: color-mix(in srgb, var(--dim) 55%, #fff) color-mix(in srgb, var(--dim) 65%, #000) color-mix(in srgb, var(--dim) 65%, #000) color-mix(in srgb, var(--dim) 55%, #fff); }
+.channel input[type=color]:hover, .channel input[type=color]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.channel input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+.channel input[type=color]::-webkit-color-swatch { border: 0; border-radius: 0; box-shadow: inset 0 0 0 1px #0006;
+  background-image: linear-gradient(135deg, #ffffff59, #fff0 50%, #0000 50%, #00000059); }
+.channel input[type=color]::-moz-color-swatch { border: 0; border-radius: 0; box-shadow: inset 0 0 0 1px #0006;
+  background-image: linear-gradient(135deg, #ffffff59, #fff0 50%, #0000 50%, #00000059); }
+.channel .from-file { flex: 0 2 auto; min-width: 0; color: var(--dim); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.channel.off .levels { opacity: .4; }
+/* a slider of two points: the track and its thumbs, each thumb a triangle drawn by the channel's own rules */
 .levels { position: relative; height: 16px; margin: 4px 0 0 21px; }
 .levels::before { content: ""; position: absolute; left: 0; right: 0; top: 5px; height: 6px; border-radius: 3px;
   background: linear-gradient(90deg, #000, var(--ch)); box-shadow: inset 0 0 0 1px var(--line); }
-.channel.off .levels { opacity: .4; }
 .levels input[type=range] { position: absolute; inset: 0; width: 100%; height: 16px; margin: 0; padding: 0; border: 0; background: none;
   pointer-events: none; -webkit-appearance: none; appearance: none; }
 .levels input[type=range]::-webkit-slider-runnable-track { background: none; height: 16px; }
@@ -157,10 +180,32 @@ body.resizing { cursor: col-resize; user-select: none; }
 .levels input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; cursor: ew-resize; width: 8px; height: 16px;
   border-radius: 2px; border: 1px solid var(--dim); }
 .levels input[type=range]::-moz-range-thumb { pointer-events: auto; cursor: ew-resize; width: 6px; height: 14px; border-radius: 2px; border: 1px solid var(--dim); }
-.levels input.black::-webkit-slider-thumb { background: #000; } .levels input.black::-moz-range-thumb { background: #000; }
-.levels input.white::-webkit-slider-thumb { background: var(--ch); } .levels input.white::-moz-range-thumb { background: var(--ch); }
 .levels input:focus-visible { outline: none; }
 .levels input:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--accent); }
+/* a channel's points: right-angled triangles on the track, the black one left of its value and the white one
+   right, so the two meet in one larger triangle and neither covers the other. Each input is a thumb's width
+   short of the slider, the white one starting a thumb's width in, so both put their value at the same place */
+.channel .levels { --t: 10px; min-width: 0; height: 14px; margin: 0; }
+.channel .levels::before { left: var(--t); right: var(--t); top: 5px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, #000, #fff); }
+.channel .levels input[type=range] { inset: 0 auto 0 0; width: calc(100% - var(--t)); height: 14px; }
+.channel .levels input.white { left: var(--t); }
+.channel .levels input[type=range]::-webkit-slider-runnable-track { height: 14px; }
+.channel .levels input[type=range]::-webkit-slider-thumb { width: var(--t); height: 14px; border: 0; border-radius: 0; outline: none; background: none 0 0 / 100% 100% no-repeat; }
+.channel .levels input[type=range]::-moz-range-thumb { width: var(--t); height: 14px; border: 0; border-radius: 0; background: none 0 0 / 100% 100% no-repeat; }
+/* the value of the point in hand, above where it points */
+.channel .levels .bubble { position: absolute; bottom: calc(100% + 3px); left: calc(var(--t) + var(--v) * (100% - 2 * var(--t)));
+  transform: translateX(-50%); z-index: 5; padding: 1px 5px; border-radius: 4px; background: var(--tipbg); color: var(--text);
+  border: 1px solid var(--line); font-size: 11px; line-height: 1.3; font-variant-numeric: tabular-nums; pointer-events: none; white-space: nowrap; }
+.channel .levels .bubble[hidden] { display: none; }
+/* each point flat, with a soft edge, in the accent colour while it has the keyboard's focus */
+.channel .levels input.black::-webkit-slider-thumb { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cpath d='M9.5,0.8 L9.5,12.4 L0.9,12.4Z' fill='%23141414' stroke='%239aa0a8' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.channel .levels input.black::-moz-range-thumb { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cpath d='M9.5,0.8 L9.5,12.4 L0.9,12.4Z' fill='%23141414' stroke='%239aa0a8' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.channel .levels input.black:focus-visible::-webkit-slider-thumb { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cpath d='M9.5,0.8 L9.5,12.4 L0.9,12.4Z' fill='%23141414' stroke='%234c8dff' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.channel .levels input.black:focus-visible::-moz-range-thumb { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cpath d='M9.5,0.8 L9.5,12.4 L0.9,12.4Z' fill='%23141414' stroke='%234c8dff' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.channel .levels input.white::-webkit-slider-thumb { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cpath d='M0.5,0.8 L0.5,12.4 L9.1,12.4Z' fill='%23f4f4f4' stroke='%239aa0a8' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.channel .levels input.white::-moz-range-thumb { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cpath d='M0.5,0.8 L0.5,12.4 L9.1,12.4Z' fill='%23f4f4f4' stroke='%239aa0a8' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.channel .levels input.white:focus-visible::-webkit-slider-thumb { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cpath d='M0.5,0.8 L0.5,12.4 L9.1,12.4Z' fill='%23f4f4f4' stroke='%234c8dff' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.channel .levels input.white:focus-visible::-moz-range-thumb { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cpath d='M0.5,0.8 L0.5,12.4 L9.1,12.4Z' fill='%23f4f4f4' stroke='%234c8dff' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 .row { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; }
 /* a button shines while it is the next thing to press */
 .shine { position: relative; overflow: hidden; box-shadow: 0 0 10px var(--accent); }
@@ -180,6 +225,7 @@ details.fold[open] > summary::before, .box.foldable:not(.folded) > .sec-head h2:
 .sec-head h2, .sec-head button { margin: 0; white-space: nowrap; }
 .box > .sec-head { margin-bottom: 10px; }
 .box.foldable.folded > .sec-head { margin-bottom: 0; }
+.box.foldable.folded { cursor: pointer; }
 .sec-head button { padding: 3px 10px; font-size: 12px; }
 button.link { border: 0; background: none; padding: 0; color: var(--accent); font-size: 12px; }
 button.link:not(:disabled):hover { text-decoration: underline; }
@@ -226,6 +272,8 @@ button.tool[aria-pressed=true] { border-color: var(--accent); box-shadow: inset 
 #view[data-view=image] .for-items, #view[data-view=items] .for-image { display: none; }
 /* a published study shows what it finds: the steps that serve making ground truth go */
 [data-stage=Published] .unpublished { display: none !important; }
+/* nothing that makes ground truth but for a Ground Truth Tagger (req/shell/account/role) */
+:root:is([data-stage=GT], [data-stage=PostGT]):not([data-role=tagger]) .unpublished { display: none !important; }
 #switch .count { opacity: .7; font-weight: 400; }
 #switch .count:empty { display: none; }
 #tasks-bar { display: flex; gap: 10px; align-items: center; min-height: 44px; padding: 0 var(--pad); border-bottom: 1px solid var(--line); font-size: 13px; }
@@ -711,8 +759,8 @@ html:not(.offline) #welcome-offline { display: none; }
 
 /* ---------- Data Management (req/shell/data/mode): the tree's column, left of the left bar, for data managers only ---------- */
 #data-col { grid-column: 1; } #left { grid-column: 2; } #gutter-left { grid-column: 3; } #view { grid-column: 4; }
-:root[data-manager] #layout { --tw: 36px; }
-:root[data-manager][data-mode=data] #layout { --tw: 300px; }
+:root[data-mode=data] #layout { --tw: 300px; }
+:root[data-mode=data][data-tree=folded] #layout { --tw: 36px; }
 #data-col[hidden] { display: none; }
 #data-col { position: relative; padding: var(--pad) 0 var(--pad) 8px; overflow: hidden; scrollbar-gutter: auto; display: flex; flex-direction: column; min-width: 0; }
 #data-open { display: flex; align-items: center; gap: 6px; padding: 8px 4px; border-radius: var(--r-panel); white-space: nowrap; }
@@ -720,11 +768,11 @@ html:not(.offline) #welcome-offline { display: none; }
 #data-open[aria-expanded=true] .chev, #left-collapse .chev { transform: rotate(180deg); }
 /* its strip, and the left bar's collapsed (req/shell/left-bar/collapse): a chevron over an upright name, the whole
    column's height, the left bar's with its steps' marks between */
-:root:not([data-mode=data]) #data-open, #left-strip { flex: 1; flex-direction: column; justify-content: flex-start; gap: 10px; padding: 12px 0; width: 100%; min-width: 0; box-sizing: border-box;
+:root[data-tree=folded] #data-open, #left-strip { flex: 1; flex-direction: column; justify-content: flex-start; gap: 10px; padding: 12px 0; width: 100%; min-width: 0; box-sizing: border-box;
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-panel); color: var(--dim); }
-:root:not([data-mode=data]) #data-open:hover, #left-strip:hover { color: var(--text); border-color: var(--accent); }
-:root:not([data-mode=data]) #data-open .strip-name, #left-strip .strip-name { writing-mode: vertical-rl; font-size: 12px; letter-spacing: .03em; }
-:root[data-mode=data] #data-open { align-self: flex-start; border: 0; background: transparent; color: var(--dim); }
+:root[data-tree=folded] #data-open:hover, #left-strip:hover { color: var(--text); border-color: var(--accent); }
+:root[data-tree=folded] #data-open .strip-name, #left-strip .strip-name { writing-mode: vertical-rl; font-size: 12px; letter-spacing: .03em; }
+:root:not([data-tree=folded]) #data-open { align-self: flex-start; border: 0; background: transparent; color: var(--dim); }
 #left-strip { display: none; align-items: center; cursor: pointer; }
 :root[data-left=collapsed] #left-strip { display: flex; }
 #left-expand { display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: inherit; }
@@ -733,20 +781,18 @@ html:not(.offline) #welcome-offline { display: none; }
 #left-marks .step-mark.open { border-color: var(--accent); color: var(--accent); }
 #left-marks .step-mark.done { border-color: var(--yes); background: var(--yes); color: #fff; }
 #left-marks .step-mark:hover { outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent); }
-/* the open bar's tab on the gutter, at its middle, in place of the gutter's grip */
-#left-collapse { position: absolute; top: 50%; left: 50%; translate: -50% -50%; z-index: 6; display: grid; place-items: center; width: 16px; height: 40px; padding: 0;
-  border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--panel); color: var(--dim); cursor: pointer; }
+/* the open bar's head: its chevron where the strip's is, so the one spot collapses the bar and expands it again */
+#left-head { display: flex; align-items: center; gap: 6px; height: 40px; margin: 0 0 0 -8px; color: var(--dim); }
+#left-head .strip-name { font-size: 12px; letter-spacing: .03em; }
+#left-collapse { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; color: inherit; cursor: pointer; }
 #left-collapse:hover { color: var(--text); border-color: var(--accent); }
-#gutter-left::after { display: none; }
-:root[data-left=collapsed] #left-collapse { display: none; }
 /* collapsed, the drawers are kept laid out out of sight, so their steps are still numbered for the strip */
 :root[data-left=collapsed] #layout { --lw-now: 32px; }
 :root[data-left=collapsed] #left { position: relative; display: flex; flex-direction: column; overflow: hidden; scrollbar-gutter: auto; padding: var(--pad) 0 var(--pad) 4px; }
 :root[data-left=collapsed] #left > :not(#left-strip) { position: absolute; top: 0; left: 0; width: 300px; visibility: hidden; pointer-events: none; }
-:root[data-left=collapsed] #gutter-left { pointer-events: none; }
 #left.sliding-in > :not(#left-strip) { animation: data-in .35s ease-out; }
 #data-body { display: none; min-width: 240px; flex: 1; min-height: 0; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-panel); padding: 10px 8px; margin-top: 6px; }
-:root[data-mode=data] #data-body { display: flex; animation: data-in .35s ease-out; }
+:root[data-mode=data]:not([data-tree=folded]) #data-body { display: flex; animation: data-in .35s ease-out; }
 @keyframes data-in { from { opacity: 0; transform: translateX(-24px); } }
 .data-head { display: flex; align-items: baseline; gap: 8px; padding: 0 4px 8px; } .data-head h2 { font-size: 14px; margin: 0; flex: 1; }
 #data-tree { overflow: auto; flex: 1; min-height: 0; font-size: 13px; }
@@ -779,9 +825,8 @@ html:not(.offline) #welcome-offline { display: none; }
 #folder-name { font-weight: 600; overflow-wrap: anywhere; }
 #folder-msg { overflow-wrap: anywhere; }
 
-/* the asking bar, and the folder's images in the main area */
-#access-bar { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; padding: 8px 12px; border: 1px solid var(--accent); border-radius: var(--r-panel); background: color-mix(in srgb, var(--accent) 12%, var(--panel)); font-size: 13px; }
-#access-bar[hidden], #folder-view[hidden] { display: none; }
+/* the folder's images in the main area */
+#folder-view[hidden] { display: none; }
 #folder-view { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .folder-bar { display: flex; align-items: center; gap: 8px; padding: 4px 2px 10px; } .folder-bar h2 { margin: 0; font-size: 15px; }
 #folder-layout button[aria-pressed=true] { background: var(--accent); color: #fff; }

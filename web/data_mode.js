@@ -1,8 +1,9 @@
 // Data Management (req/shell/data/mode, req/shell/data/drive-access, req/shell/data/folder,
-// req/shell/data/update-previews, req/shell/data/preview-images): for a signed-in user a study's permissions name, the study's Drive
-// folders as a tree in a column left of the left bar, opened from its strip; a folder chosen fills the main area
-// with its images and the left bar with their sums, and its actions; an image chosen opens from its preview. It
-// asks for the folders' access when the study opens (study_drive.js), and writes only files it creates.
+// req/shell/data/update-previews, req/shell/data/preview-images): the Data Manager role's view, for a signed-in user a
+// study's permissions name: the study's Drive folders as a tree in a column left of the left bar, its chevron folding
+// it; a folder chosen fills the main area with its images and the left bar with their sums, and its actions; an image
+// chosen opens from its preview. The tree's head asks for the folders' access (study_drive.js), and it writes only
+// files it creates.
 "use strict";
 import { rolesOf, studyDrive } from "./study_drive.js";
 import { PREVIEWS } from "./previews.js";
@@ -77,22 +78,10 @@ export function dataMode(ctx) {
     await Promise.all([...nodes.values()].map(async (n) => {
       try { n.access = (await sd.access(n.id)) || "unknown"; } catch (e) { console.warn("access not read:", e); n.access = "unknown"; }
     }));
-    drawTree(); askBar();
+    drawTree();
   }
   const lacking = () => [...nodes.values()].filter((n) => n.access === "none");
 
-  // the bar asking a role holder to let the site into the folders it is not approved for yet
-  let barClosed = false;
-  function askBar() {
-    const want = lacking(), bar = $("#access-bar");
-    bar.hidden = barClosed || offline() || !roles.size || !want.length;
-    if (bar.hidden) return;
-    account.preload();
-    const all = nodes.size;
-    $("#access-text").textContent = want.length === all
-      ? `To work on ${manifest.title}'s data, let this site into its ${all === 1 ? "folder" : all + " folders"} in your Google Drive. It will only add files there.`
-      : `${want.length} of ${manifest.title}'s ${all} folders ${want.length === 1 ? "is" : "are"} not open to this site yet${want.some((n) => n.parent) ? ", new or left out" : ""}.`;
-  }
   async function approve() {
     const want = lacking();
     if (!want.length) return;
@@ -102,9 +91,7 @@ export function dataMode(ctx) {
       drawTree(); await checkAccess();
     } catch (e) { msg($("#data-msg"), e.message || String(e), true); }
   }
-  $("#access-go").onclick = approve;
   $("#data-approve").onclick = approve;
-  $("#access-x").onclick = () => { barClosed = true; askBar(); };
 
   // ---------- the tree ----------
   // a folder's images, but those an edit replaced (req/shell/data/edit-save)
@@ -297,7 +284,6 @@ export function dataMode(ctx) {
     if (open === on()) return;
     const go = () => {
       if (open) root.dataset.mode = "data"; else { delete root.dataset.mode; delete root.dataset.sel; chosen = null; ctx.showFolder(false); }
-      $("#data-open").setAttribute("aria-expanded", String(open));
       ctx.modeChanged(open);
     };
     poof(open);
@@ -315,10 +301,15 @@ export function dataMode(ctx) {
     // gone once the puff is over, whether it ran out, was cut short or (WebKit, at times) never started
     Promise.all(l.getAnimations().map((x) => x.finished.catch(() => {}))).then(() => { l.classList.remove("poof"); if (on()) l.classList.add("gone"); });
   }
-  $("#data-open").onclick = () => enter(!on());
+  // the chevron folds the tree to a strip, and opens it again
+  $("#data-open").onclick = () => {
+    const fold = root.dataset.tree !== "folded";
+    if (fold) root.dataset.tree = "folded"; else delete root.dataset.tree;
+    $("#data-open").setAttribute("aria-expanded", String(!fold));
+  };
   // the network back: the folders read afresh, if they could not be read before
   addEventListener(CONNECTION, (e) => {
-    if (!e.detail.online || !manifest || !roles.size || nodes.size) return;
+    if (!e.detail.online || !on() || nodes.size) return;
     loaded = null; load();
   });
 
@@ -327,18 +318,18 @@ export function dataMode(ctx) {
     mount(m) {
       // the same study again, for the same person (Unload): the mode and the tree stay as they were
       if (manifest && m.id === manifest.id && account.email() === who) { manifest = m; ctx.showFolder(chosen?.kind === "folder"); return; }
-      epoch++; manifest = m; who = account.email(); nodes = new Map(); loaded = null; chosen = null; barClosed = false;
+      epoch++; manifest = m; who = account.email(); nodes = new Map(); loaded = null; chosen = null;
       if (on()) enter(false);
       roles = account.signedIn() ? rolesOf(m, account.email()) : new Set();
       roots = [...new Set((m?.files?.folders || []).map((l) => drive.parse(l)).filter((r) => r?.kind === "folder").map((r) => r.id))];
-      const manager = roles.has("data_management") && roots.length > 0 && drive.ready;
-      $("#data-col").hidden = !manager;
-      if (manager) root.dataset.manager = ""; else delete root.dataset.manager;
-      $("#data-tree").replaceChildren(); $("#access-bar").hidden = true; msg($("#data-msg"), "");
-      if (roles.size && roots.length && drive.ready) load();
+      $("#data-tree").replaceChildren(); msg($("#data-msg"), "");
     },
     // whoever is signed in may have changed: the study's roles again, if so
     signedIn() { if (manifest && account.email() !== who) this.mount(manifest); },
+    // whether the user may work as the study's data manager: named in its permissions, the study having folders
+    get manager() { return roles.has("data_management") && roots.length > 0 && drive.ready; },
+    // the Data Manager role chosen, or left (req/shell/account/role)
+    role(open) { $("#data-col").hidden = !open; enter(open); },
     get on() { return on(); },
     // the access to the folder an image is in, as the tree knows it ("write", "view", "none", or null when unknown)
     accessOf: (folder) => nodes.get(folder)?.access ?? null,

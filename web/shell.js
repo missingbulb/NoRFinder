@@ -29,6 +29,7 @@ import { actionLog, ACTIONS } from "./action_log.js";
 import { identify, verdict } from "./browsers.js";
 import { problemUrl, ACTIONS_QUOTED, ERRORS_QUOTED } from "./problem_report.js";
 import { dataMode } from "./data_mode.js";
+import { ROLE, ROLE_NAMES, held, shown, roleMenu } from "./roles.js";
 import { imageEditor, SPLIT_PATTERN } from "./image_edit.js";
 import { replacedBy } from "./edit.js";
 import { dialogMotion } from "./dialog_motion.js";
@@ -74,19 +75,19 @@ const PAGE_GB = 1, LOW_GB = 4;
 // browser's own share; measured once as Chrome's private memory for the tab against the readable total (2026-10-07)
 const UNREAD_MB = 190;
 // where ground truth is submitted: an issue with the study's label, which the repo's intake reads
-const REPO = "missingbulb/NoRFinder";
+const REPO = "missingbulb/RaunTruth";
 const LOCAL_GT = "Ground truth cannot be sent from local files, only from Google Drive.";
 // the issue form a proposal for a new study is written on
 const STUDY_REQUEST = "new-study.yml";
 // signing in (req/shell/account/sign-in): these settings follow the user to every device, in their own Google Drive; the rest stay with this one
-const FOLLOWS = [THEME, TIPS, SEEN_VERSION, MEMORY_TIP, SOURCE, DRIVE_LINK, DRIVE_LINKS, THUMBS, RECENT, MOTION, RESOURCES];
+const FOLLOWS = [THEME, ROLE, TIPS, SEEN_VERSION, MEMORY_TIP, SOURCE, DRIVE_LINK, DRIVE_LINKS, THUMBS, RECENT, MOTION, RESOURCES];
 const signIn = account({
   keys: FOLLOWS,
   menu: $("#user-menu"),
   clientId: ((window.NOR_CONFIG && window.NOR_CONFIG.google) || {}).clientId || "",
   applied: () => reapply(),
   // after the page's own start, which this may run during
-  changed: () => queueMicrotask(() => data.signedIn()),
+  changed: () => queueMicrotask(() => { data.signedIn(); showRole(); }),
 });
 
 function readJSON(key, fallback = {}) {
@@ -371,7 +372,38 @@ function showStage() {
 }
 // the stages pop up while the stage is hovered or focused
 hoverPop($("#sb-stage"), $("#stage-pop"), () => {});
-const makesTruth = () => manifest.stage === "GT" || manifest.stage === "PostGT";
+const stageTruth = () => manifest.stage === "GT" || manifest.stage === "PostGT";
+// the study makes ground truth for this user: a Ground Truth Tagger in a study that makes it (req/shell/account/role)
+const makesTruth = () => stageTruth() && role === "tagger";
+
+// ---------- the role the user works in (req/shell/account/role) ----------
+let role = "viewer";
+const rolesHeld = () => held({ signedIn: signIn.signedIn(), truth: stageTruth(), manager: data.manager });
+const keptRole = () => { try { return localStorage.getItem(ROLE); } catch { return null; } };
+// the role shown, as the study comes in: before its steps are drawn from it
+function takeRole() {
+  const roles = rolesHeld();
+  role = shown(roles, keptRole());
+  document.documentElement.dataset.role = role;
+  const hint = roles.length > 1 ? "" : !signIn.signedIn() && signIn.offered
+    ? (stageTruth() ? "Sign in with Google to tag ground truth." : "Sign in with Google for the roles your studies give you.") : "";
+  roleChooser.draw(roles, role, hint);
+}
+// the role shown again, once what it rests on may have changed (a choice, a sign-in, the settings synced): a change
+// between viewing and making ground truth opens the study afresh on the same image
+function showRole() {
+  if (!manifest) return;
+  const truth = makesTruth();
+  takeRole();
+  if (makesTruth() !== truth) return restudy();
+  data.role(role === "data");
+}
+const roleChooser = roleMenu($("#role-menu"), (r) => {
+  try { localStorage.setItem(ROLE, r); } catch { /* private mode: this page only */ }
+  signIn.changed(ROLE);
+  log.add(`Chose the role ${ROLE_NAMES[r]}`);
+  showRole();
+});
 
 // ---------- the image and the item view ----------
 // A study with an item view gets the switch between it and the image. While the study makes ground truth its
@@ -490,7 +522,12 @@ async function working(btn, action) {
     hold.disconnect(); btn.classList.remove("working"); btn.disabled = false; study.idle?.();
   }
 }
-const slow = (btn) => { const act = btn.onclick; btn.onclick = (e) => working(btn, () => act.call(btn, e)); };
+// once only: the shell's own buttons outlive a study, so a study slowing one again on its next mount would hold
+// it from inside its own hold, and the click would do nothing
+const slow = (btn) => {
+  if (btn.onclick?.slow) return;
+  const act = btn.onclick; btn.onclick = Object.assign((e) => working(btn, () => act.call(btn, e)), { slow: true });
+};
 
 // ---------- Python ----------
 async function start() {
@@ -654,15 +691,20 @@ function dropImage() {
 // Unload: no image open, the study starting over as one that has just come in
 $("#unload").onclick = () => {
   if (!st.img || $("#load-main").classList.contains("working")) return;
+  restudy(false);
+};
+// the study mounted again in place, Python kept; again: the image open, opened again in it
+function restudy(again = true) {
   swapping = swapping.then(async () => {
-    const { ready, readyInfo } = st, id = manifest.id;
+    const { ready, readyInfo } = st, id = manifest.id, image = again && st.img ? st.kept : null;
     dropImage();
     leaveStudy();
     try { await mountStudy(id); } catch (e) { return status("Error: " + (e.message || e), true); }
     if (ready) { st.ready = true; $("#ram-gc").disabled = false; study.ready?.(readyInfo); }
     statusBar(); status(ready ? "Ready. Load an image." : "Loading Python in the background…");
+    if (image) openBytes(image.name, image.bytes, image.source);
   });
-};
+}
 document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => load(b.dataset.src)));
 
 // a tip: a bubble below its anchor, pointing at it, until the user closes it, after which it never shows again
@@ -1078,7 +1120,7 @@ async function showSaved() {
 // ---------- the user: whoever opened the page on this device, and what the site keeps here ----------
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
-  [THEME]: "Theme", [BARS]: "Left bar width, and whether it is collapsed", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
+  [THEME]: "Theme", [ROLE]: "The role you work in", [BARS]: "Left bar width, and whether it is collapsed", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
   [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [RESOURCES]: "The status bar's disk, memory, network and CPU: hidden, auto-hiding or always open", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
 };
 // What the site keeps, by what it takes to work offline (req/shell/storage/manage): a section per study, then what they share; settings
@@ -1245,6 +1287,7 @@ const settings = settingsDialog({
   dialog: $("#settings-dlg"),
   fields: () => [
     { key: THEME, label: "Theme", kind: "choice", raw: true, fallback: "", options: [["", "Follow the system"], ["dark", "Dark"], ["light", "Light"]] },
+    { key: ROLE, label: "The role you work in", kind: "choice", raw: true, fallback: "viewer", options: Object.entries(ROLE_NAMES) },
     { key: SOURCE, label: "Load reads from", kind: "choice", fallback: "local", options: [["local", "This computer"], ["drive", "Google Drive"]] },
     { key: THUMBS, label: "Show thumbnails in the Google Drive dialog", kind: "toggle", on: "on", off: "off", fallback: "on" },
     { key: MEMORY_TIP, label: "Show the low-memory popup", kind: "toggle", on: false, off: true, fallback: false },
@@ -1270,7 +1313,7 @@ function reapply() {
   let t = null;
   try { t = localStorage.getItem(THEME); } catch { /* no storage */ }
   if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
-  showMotion(); showResources(); showRecent();
+  showMotion(); showResources(); showRecent(); showRole();
 }
 $("#open-settings").onclick = () => { $("#user-menu").open = false; settings.open(); };
 $("#storage-reload").onclick = () => location.reload();
@@ -1380,11 +1423,11 @@ const boxes = () => document.querySelectorAll(".box.foldable");
 function unfoldFirst() { boxes().forEach((b) => b.classList.toggle("folded", b.hasAttribute("data-opens"))); retitle(); }
 // a step just done: a new image folds every box waiting for a later step
 function foldFor(key) {
-  // a preview keeps the Image box open: Load Original is what comes next
-  const preview = key === "load" && st.source?.kind === "preview";
+  // a preview keeps the Image box open: Load Original is what comes next; so does a study with no step after Load
+  const keep = key === "load" && (st.source?.kind === "preview" || steps.length === 1);
   boxes().forEach((b) => {
-    if (b.dataset.opens === key || (preview && b.id === "image-box")) b.classList.remove("folded");
-    else if ((b.dataset.folds === key && !(preview && b.id === "image-box")) || (key === "load" && b.hasAttribute("data-opens"))) b.classList.add("folded");
+    if (b.dataset.opens === key || (keep && b.id === "image-box")) b.classList.remove("folded");
+    else if ((b.dataset.folds === key && !(keep && b.id === "image-box")) || (key === "load" && b.hasAttribute("data-opens"))) b.classList.add("folded");
   });
   retitle();
 }
@@ -1451,8 +1494,10 @@ function slide(change) {
 function foldable() {
   document.querySelectorAll(".box.foldable > .sec-head h2").forEach((h) => {
     h.tabIndex = 0; h.setAttribute("role", "button");
-    const flip = () => slide(() => { h.closest(".box").classList.toggle("folded"); retitle(); });
-    h.onclick = flip; h.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } };
+    const box = h.closest(".box"), flip = () => slide(() => { box.classList.toggle("folded"); retitle(); });
+    // folded, the whole drawer opens it; open, only its title folds it
+    box.onclick = (e) => { if (box.classList.contains("folded") || h.contains(e.target)) flip(); };
+    h.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } };
   });
   unfoldFirst();
 }
@@ -1460,33 +1505,39 @@ function foldable() {
 function showImage() { study.showImage?.(); view.minimapView(); }
 
 // ---------- the left bar and theme ----------
-// the left bar takes the width it is dragged to; a double click puts it back
+// the left bar takes the width it is dragged to; a double click puts it back. Dragged past its narrowest it
+// collapses (req/shell/left-bar/collapse), and dragged out from the strip it opens again under the pointer
 {
-  const lay = $("#layout"), saved = readJSON(BARS), g = $("#gutter-left");
+  const lay = $("#layout"), saved = readJSON(BARS), g = $("#gutter-left"), bar = $("#left"), root = document.documentElement;
+  const MIN = 200, STRIP = 32, SHUT = (MIN + STRIP) / 2;
   const set = (w) => {
     if (w == null) { lay.style.removeProperty("--lw"); return; }
-    lay.style.setProperty("--lw", Math.round(Math.max(200, Math.min(w, innerWidth * 0.4))) + "px");
+    lay.style.setProperty("--lw", Math.round(Math.max(MIN, Math.min(w, innerWidth * 0.4))) + "px");
   };
   set(saved.left);
-  g.addEventListener("pointerdown", (e) => {
-    if (e.target.closest("#left-collapse")) return;
-    g.setPointerCapture(e.pointerId); document.body.classList.add("resizing");
-    const move = (ev) => { saved.left = ev.clientX - lay.getBoundingClientRect().left; set(saved.left); view?.minimapView(); };
-    const up = () => { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); document.body.classList.remove("resizing"); writeJSON(BARS, saved); };
-    g.addEventListener("pointermove", move); g.addEventListener("pointerup", up);
-  });
-  g.addEventListener("dblclick", () => { delete saved.left; set(null); writeJSON(BARS, saved); view?.minimapView(); });
-  // req/shell/left-bar/collapse: collapsed to its Steps strip, and back, the drawers sliding in on the way out
-  const bar = $("#left"), root = document.documentElement;
   const collapse = (on) => { if (on) root.dataset.left = "collapsed"; else delete root.dataset.left; };
   collapse(!!saved.collapsed);
   const toggle = (on) => {
+    if (!!saved.collapsed === on) return;
     saved.collapsed = on; writeJSON(BARS, saved);
     if (!on) { bar.classList.add("sliding-in"); setTimeout(() => bar.classList.remove("sliding-in"), 400); }
     collapse(on);
     retitle();
     setTimeout(() => view?.minimapView(), 400);
   };
+  g.addEventListener("pointerdown", (e) => {
+    g.setPointerCapture(e.pointerId); document.body.classList.add("resizing");
+    const was = saved.left;
+    const move = (ev) => {
+      const w = ev.clientX - bar.getBoundingClientRect().left;
+      if (w < SHUT) { saved.left = was; toggle(true); }
+      else { saved.left = w; set(w); toggle(false); }
+      view?.minimapView();
+    };
+    const up = () => { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); document.body.classList.remove("resizing"); writeJSON(BARS, saved); };
+    g.addEventListener("pointermove", move); g.addEventListener("pointerup", up);
+  });
+  g.addEventListener("dblclick", () => { delete saved.left; set(null); writeJSON(BARS, saved); view?.minimapView(); });
   $("#left-collapse").onclick = () => toggle(true);
   // a step mark opens its drawer first, then the click reaches the strip
   $("#left-strip").onclick = () => toggle(false);
@@ -1697,6 +1748,8 @@ async function mountStudy(id) {
   const r = await fetch(base + "study.json");
   if (!r.ok) throw new Error(`no study "${id}"`);
   manifest = await r.json();
+  data.mount(manifest);
+  takeRole();
   document.title = manifest.title; $("#title").textContent = manifest.title; $("#title-icon").replaceChildren(...studyIcon(id, manifest.icon)); markCurrent();
   log.add(`Opened the study “${manifest.title}”`);
   $("#favicon").href = manifest.icon ? base + manifest.icon : new URL("icon.svg", import.meta.url).href;
@@ -1723,7 +1776,7 @@ async function mountStudy(id) {
   makeSteps();
   foldable();
   showRecent();
-  data.mount(manifest);
+  data.role(role === "data");
 }
 const viewers = {};
 // The study on show leaves: its panels, stylesheet, drawing, listeners and state go, and its Python's late

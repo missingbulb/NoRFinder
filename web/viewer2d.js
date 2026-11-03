@@ -41,28 +41,39 @@ export function viewer(shell) {
 
   // ---------- the channels ----------
   // One row per channel of the image on show, or per channel the study names before one: what the study says
-  // of it, else what the file says, else its place (channels.js). Each row's checkbox shows or hides it and its
-  // slider holds its black and white points; a double click on the slider puts them back. They start over with
-  // every image.
+  // of it, else what the file says, else its place (channels.js). Each row's checkbox shows or hides it, its
+  // slider holds its black and white points and its colour picker recolours it; a double click on the slider
+  // puts the points back. They start over with every image.
   function rows() {
     $("#channels").replaceChildren(...chans.map((c, k) => {
       const row = html("div", { className: "channel" + (c.on ? "" : " off") });
       row.dataset.colour = c.colour; row.style.setProperty("--ch", c.colour);
       const box = html("input", { type: "checkbox", id: "show-" + k, checked: c.on });
-      const head = html("div", { className: "ch-head" });
-      head.append(box, html("label", { htmlFor: box.id, textContent: c.name }));
-      if (c.about) { const h = html("span", { className: "help", tabIndex: 0, textContent: "?" }); h.dataset.help = c.about; head.append(h); }
-      if (c.fileName) head.append(html("span", { className: "from-file", textContent: "file: " + c.fileName, title: `The file calls this channel ${c.fileName}` }));
+      const pick = html("input", { type: "color", value: c.colour, title: "The colour " + c.name + " is shown in" });
+      pick.setAttribute("aria-label", c.name + " colour");
+      const name = html("span", { className: "ch-name" });
+      name.append(html("label", { htmlFor: box.id, textContent: c.name, title: c.name }));
+      if (c.about) { const h = html("span", { className: "help", tabIndex: 0, textContent: "?" }); h.dataset.help = c.about; name.append(h); }
+      if (c.fileName) name.append(html("span", { className: "from-file", textContent: c.fileName, title: `The file calls this channel ${c.fileName}` }));
       const levels = html("div", { className: "levels", title: "Black and white points: below the black one is dark, above the white one full colour. Double click to put them back." });
       const black = html("input", { type: "range", className: "black", min: 0, max: 255, value: c.black });
       const white = html("input", { type: "range", className: "white", min: 0, max: 255, value: c.white });
       black.setAttribute("aria-label", c.name + " black point"); white.setAttribute("aria-label", c.name + " white point");
-      levels.append(black, white);
+      const bubble = html("span", { className: "bubble", hidden: true });
+      levels.append(black, white, bubble);
+      // the value of the point being dragged, or holding the keyboard's focus, above it
+      const tell = (i) => { bubble.textContent = i.value; bubble.style.setProperty("--v", i.value / 255); bubble.hidden = false; };
+      for (const i of [black, white]) {
+        i.addEventListener("pointerdown", () => { tell(i); addEventListener("pointerup", () => { bubble.hidden = true; }, { once: true }); });
+        i.addEventListener("focus", () => { if (i.matches(":focus-visible")) tell(i); });
+        i.addEventListener("blur", () => { bubble.hidden = true; });
+      }
+      pick.oninput = () => { c.colour = pick.value; row.dataset.colour = c.colour; row.style.setProperty("--ch", c.colour); later(); };
       box.onchange = () => { c.on = box.checked; row.classList.toggle("off", !c.on); redraw(); };
-      black.oninput = () => { c.black = Math.min(+black.value, c.white - 1); black.value = c.black; later(); };
-      white.oninput = () => { c.white = Math.max(+white.value, c.black + 1); white.value = c.white; later(); };
+      black.oninput = () => { c.black = Math.min(+black.value, c.white - 1); black.value = c.black; tell(black); later(); };
+      white.oninput = () => { c.white = Math.max(+white.value, c.black + 1); white.value = c.white; tell(white); later(); };
       levels.ondblclick = () => { c.black = black.value = c.base.black; c.white = white.value = c.base.white; redraw(); };
-      row.append(head, levels);
+      row.append(box, name, levels, pick);
       return row;
     }));
   }
@@ -90,6 +101,7 @@ export function viewer(shell) {
   function show(im) {
     const fit = Math.floor(im.planes.length / (im.W * im.H));
     const n = Math.min(fit, im.channels ? im.channels.length : declared.length || fit);
+    st.peek?.stop?.();
     st.W = im.W; st.H = im.H; st.img = { planes: im.planes, n, file: im.channels || null }; st.plain = null; st.peeked = false;
     choose(n, st.img.file);
     ruler.reset(); draw();
@@ -98,6 +110,7 @@ export function viewer(shell) {
   }
   // no image: the page as before any
   function blank() {
+    st.peek?.stop?.();
     st.img = null; st.plain = null; st.peeked = false; st.W = st.H = 0;
     ruler.reset(); clear();
     const c = $("#base"); c.width = c.height = 0;
@@ -359,7 +372,7 @@ export function viewer(shell) {
 
   // the screen while the image's bytes arrive, before Python has read it: the study's painter draws them
   function preview(painter) {
-    st.peeked = false;
+    st.peek?.stop?.(); st.peeked = false;
     return (st.peek = painter($("#base"), shown, (W, H) => {
       st.img = null; st.plain = null; st.W = W; st.H = H; st.peeked = true; ruler.reset();
       $("#overlay").innerHTML = ""; $("#empty").hidden = true; $("#stage").hidden = false;

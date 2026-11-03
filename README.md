@@ -1,4 +1,4 @@
-# NoRFinder
+# RaunTruth
 
 **Open the site: [rauntruth.com](https://rauntruth.com/)**, or go straight to the app:
 [rauntruth.com/app](https://rauntruth.com/app/). The code is under the [MIT License](LICENSE).
@@ -37,7 +37,7 @@ with Google is optional: Google signs you in, in its own window, and gives the p
 hour, kept in your browser for that hour. The page uses it to keep your settings (the theme, the tips
 you closed, where Load reads from, your last Drive links and the images you opened from Drive lately) in
 one small file in your own Google Drive, in a hidden folder only this site can see, so they follow you
-to other devices. A study's data managers can also let it into that study's Drive folders, the ones
+to other devices. Signed in, you can also work as a Ground Truth Tagger, from the role menu beside your avatar. A study's data managers can also let it into that study's Drive folders, the ones
 they choose in Google's own picker, where it adds files (previews, ground-truth markers, edited images) and changes only
 those it made. It cannot see anything else in your Drive, and the site keeps nothing about you
 anywhere. Signing in sends none of your images or results anywhere, but the previews and edited images a data manager asks

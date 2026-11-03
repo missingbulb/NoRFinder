@@ -7,7 +7,7 @@
 > **Attribution correction.** The first pass of this review cited this paper as "Reeves et al.",
 > taken from a web-search summary. **The authors are Song, McEwan, Ameen-Ali, Tomasevich,
 > Kennedy-Dietrich, Palma, Arroyo, Dolle, Johnson, Stewart & Smith.** Issue
-> [#6](https://github.com/missingbulb/NoRFinder/issues/6) carries the wrong name; the citation
+> [#6](https://github.com/missingbulb/RaunTruth/issues/6) carries the wrong name; the citation
 > here is the correct one.
 
 **Why it matters to us:** it is the closest published tissue to ours — **periventricular white

@@ -8,20 +8,26 @@ import path from "node:path";
 import { standIn } from "./stand_in_drive.mjs";
 
 const [answers, studies, rootDir, out, shots] = process.argv.slice(2);
-const { FILES, writes, open, check, done } = await standIn({ answers, studies, rootDir, uploaded: (f) => { if (f.name === "rauntruth-previews.tiff") fs.writeFileSync(out, f.bytes); } });
+const { FILES, writes, open, role, check, done } = await standIn({ answers, studies, rootDir, uploaded: (f) => { if (f.name === "rauntruth-previews.tiff") fs.writeFileSync(out, f.bytes); } });
 const shot = (name) => shots && page.screenshot({ path: path.join(shots, name + ".png") });
 
 // not signed in: no strip, no Preprocessing
 let page = await open(false);
 await check(await page.evaluate(() => $("#data-col").hidden && !$("#preprocessing-box").checkVisibility()), "not signed in, there is no Data Management strip, and no Preprocessing");
-await check(await page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].filter((b) => b.checkVisibility()).map((b) => b.querySelector(".step-mark").textContent).join()) === "1,2,3,4",
-  "the drawers on show are numbered without Preprocessing");
+await check(await page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].filter((b) => b.checkVisibility()).map((b) => b.querySelector(".step-mark").textContent).join()) === "1,2,3",
+  "the drawers on show, a viewer's without the postprocessing, are numbered without Preprocessing");
 await page.context().close();
 
 page = await open(true);
 const width = () => page.evaluate(() => Math.round($("#data-col").getBoundingClientRect().width));
-await check(await page.evaluate(() => !$("#data-col").hidden && !document.documentElement.dataset.mode), "a data manager sees the strip, collapsed, out of the mode");
-await check((await width()) < 60, "the strip is narrow", await width());
+await check(await page.evaluate(() => $("#data-col").hidden && !document.documentElement.dataset.mode), "a data manager in another role sees no Data Management");
+await role(page, "Data Manager");
+await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder").length === 2);
+await page.waitForTimeout(600);
+await check((await width()) > 200, "choosing Data Manager slides the column out, open", await width());
+await page.click("#data-open");
+await page.waitForTimeout(600);
+await check((await width()) < 60, "its chevron folds it to a narrow strip", await width());
 await shot("1-strip");
 // req/shell/left-bar/collapse: the left bar's strip beside it, the same width, a small gap between them
 await page.click("#left-collapse");
@@ -30,13 +36,10 @@ const pair = await page.evaluate(() => { const d = $("#data-open").getBoundingCl
 await check(pair.dm === pair.steps && pair.gap > 0 && pair.gap <= 4, "collapsed, the Steps strip is as wide as Data Management's, a small gap from it", pair);
 await page.click("#left-strip .strip-name");
 await page.waitForFunction(() => document.querySelector("#left").getBoundingClientRect().width > 200 && !document.getAnimations().some((a) => a.transitionProperty === "grid-template-columns"));
-await page.waitForFunction(() => !$("#access-bar").hidden);
-await check(/1 of .*2 folders/.test(await page.textContent("#access-text")), "the bar asks for the one folder not approved yet", await page.textContent("#access-text"));
-
 await page.click("#data-open");
-await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder").length === 2);
 await page.waitForTimeout(600);
-await check((await width()) > 200, "opening slides the column out", await width());
+await check((await width()) > 200, "the chevron opens the column again", await width());
+await check(await page.textContent("#data-approve") === "Approve 1 folder…" && await page.isVisible("#data-approve"), "the tree's head offers the one folder not approved yet", await page.textContent("#data-approve"));
 const access = await page.evaluate(() => [...document.querySelectorAll("#data-tree .tree-folder")].map((f) => [f.querySelector(":scope > .row .name").textContent, f.querySelector(":scope > .row .access").textContent]));
 await check(JSON.stringify(access) === JSON.stringify([["Study folder one", "Writable"], ["sub", "Not approved"]]), "the tree shows every folder with its access", access);
 await check(await page.evaluate(() => [...document.querySelectorAll(".tree-images")].every((b) => b.hidden)), "the images stay folded under their folders");
@@ -126,10 +129,10 @@ await check(writes.length === before, "offline, marking an image does nothing", 
 await page.context().setOffline(false);
 await page.waitForFunction(() => !document.documentElement.classList.contains("offline"));
 
-await page.click("#data-open");
+await role(page, "Viewer");
 await page.waitForTimeout(600);
-await check((await width()) < 60 && await page.evaluate(() => !$("#load").classList.contains("gone") && !$("#preprocessing-box").checkVisibility() && !document.documentElement.dataset.mode),
-  "closing the column leaves the mode: Load back, Preprocessing gone");
+await check(await page.evaluate(() => $("#data-col").hidden && !$("#load").classList.contains("gone") && !$("#preprocessing-box").checkVisibility() && !document.documentElement.dataset.mode),
+  "another role leaves the mode: the column gone, Load back, Preprocessing gone");
 
 // a previews file whose pictures cannot be read, its index intact: each image shows no preview, and one chosen
 // opens itself, with nothing left uncaught; nor is it when what the site keeps cannot be counted as it is stored
@@ -152,7 +155,7 @@ const damage = (bytes) => {
 };
 const kept = FILES.find((f) => f.name === "rauntruth-previews.tiff");
 kept.bytes = damage(Buffer.from(kept.bytes));
-await page.click("#data-open");
+await role(page, "Data Manager");
 await page.click("#data-tree .tree-folder .name");
 await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell .pic.none").length === 3, null, { timeout: 5000 }).catch(() => {});
 await check(await page.evaluate(() => document.querySelectorAll("#folder-items .cell .pic.none").length === 3), "a previews file that cannot be read: each image shows no preview");
