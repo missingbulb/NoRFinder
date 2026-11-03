@@ -120,21 +120,23 @@ const viewW = () => page.evaluate(() => Math.round(document.querySelector("#view
 const settled = () => page.waitForFunction(() => !document.getAnimations().some((a) => a.transitionProperty === "grid-template-columns" || a.animationName === "data-in"));
 const wide = await left(), imageW = await viewW();
 await check(await page.evaluate(() => document.querySelector("#data-col").getClientRects().length === 0), "no data manager: no sliver of the Data Management strip beside the bar");
-const tab = await page.evaluate(() => { const t = document.querySelector("#left-collapse")?.getBoundingClientRect(), g = document.querySelector("#gutter-left").getBoundingClientRect();
-  return t && { onGutter: t.left < g.right && t.right > g.left, middle: Math.abs((t.top + t.bottom) / 2 - (g.top + g.bottom) / 2) < 2, shown: t.width > 0 }; });
-await check(tab?.onGutter && tab.middle && tab.shown, "the open bar's collapse tab sits on the gutter, at its middle", tab);
+// one spot toggles it: the open bar's chevron sits where the strip's does, and the gutter between the bar and the image is
+// only the resize handle, no wider than the gap beside the image
+const chev = (sel) => page.evaluate((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return [Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2)]; }, sel);
+const gutter = await page.evaluate(() => ({ w: Math.round(document.querySelector("#gutter-left").getBoundingClientRect().width), holds: document.querySelector("#gutter-left").children.length }));
+await check(gutter.holds === 0 && gutter.w <= 12, "the gutter holds no tab, only the resize handle", gutter);
+const openAt = await chev("#left-collapse .chev");
 await page.click("#left-collapse");
 await page.waitForTimeout(50); await settled();
 await check((await left()) < 60, "collapsing leaves a narrow strip", await left());
 await check((await viewW()) > imageW + 200, "and gives the image the room", [imageW, await viewW()]);
 const strip = await page.evaluate(() => ({ label: document.querySelector("#left-strip .strip-name").textContent, vertical: getComputedStyle(document.querySelector("#left-strip .strip-name")).writingMode,
   marks: [...document.querySelectorAll("#left-marks .step-mark")].map((m) => m.textContent).join(),
-  tab: document.querySelector("#left-collapse").checkVisibility(), drawers: [...document.querySelectorAll("#left > .box")].filter((b) => b.checkVisibility({ visibilityProperty: true })).length }));
+  tab: document.querySelector("#left-collapse").checkVisibility({ visibilityProperty: true }), drawers: [...document.querySelectorAll("#left > .box")].filter((b) => b.checkVisibility({ visibilityProperty: true })).length }));
 await check(strip.label === "Steps" && strip.vertical === "vertical-rl" && strip.marks === "1,2,3,4" && !strip.tab && strip.drawers === 0,
   "the strip shows the step marks and Steps, upright, and hides the drawers and the tab", strip);
-const g = await page.locator("#gutter-left").boundingBox();
-await page.mouse.move(g.x + g.width / 2, g.y + 100); await page.mouse.down(); await page.mouse.move(g.x + 300, g.y + 100); await page.mouse.up();
-await check((await left()) < 60, "a collapsed bar cannot be dragged wider", await left());
+const shutAt = await chev("#left-expand .chev");
+await check(Math.abs(shutAt[0] - openAt[0]) <= 1 && Math.abs(shutAt[1] - openAt[1]) <= 1, "the strip's chevron is where the open bar's was, so a second click there expands it", [openAt, shutAt]);
 await page.reload();
 await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
 await settled();
@@ -154,4 +156,12 @@ await page.waitForTimeout(50); await settled();
 await page.locator("#left-marks .step-mark").nth(2).click();
 await settled();
 await boxes(["1 Load Image open", "2 Threshold folded", "3 Counted open", "4 Notes folded"], "clicking a step mark expands the bar with that drawer open");
+// the gutter drags it shut, past the bar's narrowest, and out again from the strip's edge, following the pointer
+const drag = async (to) => { const g = await page.locator("#gutter-left").boundingBox(); await page.mouse.move(g.x + g.width / 2, g.y + 100); await page.mouse.down();
+  for (const x of to) await page.mouse.move(x, g.y + 100, { steps: 4 }); await page.mouse.up(); await page.waitForTimeout(50); await settled(); };
+const barLeft = await page.evaluate(() => Math.round(document.querySelector("#left").getBoundingClientRect().left));
+await drag([barLeft + 150, barLeft + 40]);
+await check((await left()) < 60, "dragging the gutter past the bar's narrowest collapses it", await left());
+await drag([barLeft + 100, barLeft + 280]);
+await check(Math.abs((await left()) - 280) <= 14, "dragging the collapsed strip's edge out expands the bar to where it is let go", await left());
 await done(0);

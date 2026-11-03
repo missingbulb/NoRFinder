@@ -15,6 +15,10 @@ opens in 2D; a plain multi-page TIFF opens as a stack in Vascular Measurements t
 stack leaves out Crop, the cut lines and Imperfections. In the Image Viewer the Image box stays open
 once loaded. (#702, #707, #713)
 
+The left bar collapses from the chevron at its top, where the collapsed strip shows its own, so the
+same spot opens it again. Dragging the bar's edge to the left also collapses it, and dragging the
+strip's edge out opens it. (#709)
+
 ## 0.11103.79
 
 This version history tells each release in a few short paragraphs, instead of a line for every
