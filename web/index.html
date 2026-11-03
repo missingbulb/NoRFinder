@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>rauntruth.com app</title>
-<meta name="version" id="site-version" title="version 0.11102.69">
+<meta name="version" id="site-version" title="version 0.11103.71">
 <meta name="description" content="Image studies that run in your browser: find, count and measure in microscopy images, then review every result. Online or offline.">
 <link rel="icon" id="favicon" href="icon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
@@ -59,7 +59,7 @@
     <button id="data-open" type="button" aria-expanded="false" title="Data Management: the study's folders and images"><svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg><span class="strip-name">Data Management</span></button>
     <div id="data-body">
       <div class="data-head"><h2>Folders</h2><button id="data-approve" type="button" class="link" data-needs-network hidden></button></div>
-      <div id="data-tree" role="tree" aria-label="The study's folders"></div>
+      <div id="data-tree" role="tree" aria-label="The study's folders" data-log-as="a folder or image in the Data Management tree"></div>
       <p id="data-msg" class="hint" role="status"></p>
     </div>
   </aside>
@@ -96,8 +96,22 @@
     <section class="box foldable" id="preprocessing-box" data-opens="load">
       <div class="sec-head"><h2>Preprocessing</h2></div>
       <div class="steps">
-        <button id="split-open" type="button" disabled title="Cut the image into 4 or 9 parts, each its own TIFF, to annotate one at a time">Split into parts…</button>
+        <button id="edit-open" type="button" disabled title="Split, crop, keep slices and channels, and leave out imperfections, seeing the result before you save it">Edit Image</button>
       </div>
+    </section>
+
+    <section class="box foldable" id="edit-box" hidden>
+      <div class="sec-head"><h2>Edit Image</h2></div>
+      <div class="edit-row"><span class="edit-label">Split</span><div class="tabs" id="edit-split" role="group" aria-label="Split"><button type="button" data-n="1">None</button><button type="button" data-n="2">2 × 2</button><button type="button" data-n="3">3 × 3</button></div></div>
+      <p class="hint" id="edit-split-hint" hidden>Drag a cut line on the image to move it; click a part to leave it out, and again to keep it.</p>
+      <div class="edit-row"><span class="edit-label">Crop</span><button id="edit-crop" type="button" aria-pressed="false" title="Draw the rectangle to keep on the image">Draw</button><span id="edit-crop-size" class="hint"></span><button id="edit-crop-reset" type="button" class="link" hidden>whole image</button></div>
+      <div id="edit-slices-sec">
+        <div class="edit-row"><span class="edit-label">Slices</span><span id="edit-z-text" class="hint"></span><span class="grow"></span><button id="edit-suggest" type="button" class="link">Use suggested</button></div>
+        <div class="levels slices" id="edit-slices" title="The first and the last slice kept; the band marks the slices that hold signal"><div id="edit-band"></div><input type="range" id="edit-z0" step="1" aria-label="First slice kept"><input type="range" id="edit-z1" step="1" aria-label="Last slice kept"></div>
+      </div>
+      <div class="edit-row top"><span class="edit-label">Channels</span><div id="edit-channels"></div></div>
+      <div class="edit-row top"><span class="edit-label">Imperfections</span><div><button id="edit-lasso" type="button" aria-pressed="false" title="Draw around a part of the image to leave it out of every slice">Mark</button><ul id="edit-flaws"></ul></div></div>
+      <div class="edit-row end"><button id="edit-save" class="primary" type="button">Save…</button><button id="edit-done" type="button" title="Leave Edit Image and show the image as it was">Done</button></div>
     </section>
 
     <slot-here data-slot-for="left"></slot-here>
@@ -145,7 +159,7 @@
 
     <div id="folder-view" hidden>
       <div class="folder-bar"><h2 id="folder-title"></h2><span class="grow"></span><div class="tabs" id="folder-layout" role="group" aria-label="Show the images as"><button type="button" data-layout="grid" aria-pressed="true">Grid</button><button type="button" data-layout="list" aria-pressed="false">List</button></div></div>
-      <div id="folder-items" data-layout="grid"></div>
+      <div id="folder-items" data-layout="grid" data-log-as="an image in the folder view"></div>
     </div>
     <slot-here data-slot-for="views"></slot-here>
   </main>
@@ -211,23 +225,13 @@
     <div class="drive-row end"><span class="grow"></span><button value="close" class="primary" autofocus>Close</button></div>
   </form>
 </dialog>
-<dialog id="split-dlg" aria-labelledby="split-title">
-  <h2 id="split-title">Split into parts</h2>
-  <p class="hint">Smaller parts are quicker to annotate, and can be shared out. Each part is a TIFF that keeps the image's scale and channels, and records where it lay in this image.</p>
-  <div class="split-body">
-    <div id="split-view"><canvas id="split-canvas"></canvas><svg id="split-grid" aria-label="The parts: drag a line to move it, click a part to leave it out"></svg></div>
-    <div class="split-side">
-      <div class="split-field"><span class="split-label">Parts</span><div class="tabs" id="split-n" role="group" aria-label="Parts"><button type="button" data-n="2">2 × 2</button><button type="button" data-n="3">3 × 3</button></div></div>
-      <p class="hint">Drag a line to move it. Click a part to leave it out, and again to keep it.</p>
-      <fieldset id="split-channels"><legend>Channels</legend><div id="split-channel-list"></div></fieldset>
-      <fieldset id="split-slices"><legend>Slices</legend><label>from <input type="number" id="split-z0" min="1" step="1"></label> <label>to <input type="number" id="split-z1" min="1" step="1"></label> <span class="hint" id="split-z-of"></span></fieldset>
-      <p class="hint" id="split-frames" hidden></p>
-      <label class="split-field" for="split-pattern"><span class="split-label">File names</span><input id="split-pattern" type="text" spellcheck="false" autocomplete="off"></label>
-      <p class="hint">Added to the image's name: {row} {col} {n} {x} {y} {rows} {cols}, or {name} for the name itself.</p>
-      <ul id="split-names" data-log-as="a part's file name"></ul>
-    </div>
-  </div>
-  <div class="drive-row end"><span id="split-msg" class="hint" role="status"></span><span class="grow"></span><button id="split-drive" type="button" disabled>Upload to Google Drive</button><button id="split-download" class="primary" type="button">Download all parts</button><button id="split-close" type="button">Close</button></div>
+<dialog id="save-dlg" aria-labelledby="save-title">
+  <h2 id="save-title">Save the edited image</h2>
+  <p class="hint" id="save-where"></p>
+  <label class="split-field" for="save-pattern"><span class="split-label">File names</span><input id="save-pattern" type="text" spellcheck="false" autocomplete="off"></label>
+  <p class="hint">Added to the image's name: {row} {col} {n} {x} {y} {rows} {cols}, or {name} for the name itself.</p>
+  <ul id="save-names" data-log-as="a file name Save… lists"></ul>
+  <div class="drive-row end"><span id="save-msg" class="hint" role="status"></span><span class="grow"></span><button id="save-download" type="button">Download</button><button id="save-drive" class="primary" type="button" data-needs-network>Save to Google Drive</button><button id="save-close" type="button">Close</button></div>
 </dialog>
 <dialog id="offline-dlg" aria-labelledby="offline-title">
   <h2 id="offline-title">Make available offline</h2>

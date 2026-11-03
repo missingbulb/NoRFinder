@@ -80,6 +80,11 @@ export function studyDrive({ account, apiKey, clientId }) {
       const upload = await multipart({ name, parents: [parent], appProperties: MINE }, blob, blob.type || "application/octet-stream");
       return (await (await google(`${UPLOAD}?uploadType=multipart&fields=id,sha256Checksum&supportsAllDrives=true`, { method: "POST", ...upload })).json());
     },
+    // a new folder in folder parent, the page's own: its id
+    async folder(parent, name) {
+      return (await (await google(`${FILES}?fields=id&supportsAllDrives=true`, { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name, mimeType: FOLDER, parents: [parent], appProperties: MINE }) })).json()).id;
+    },
     // whether the page made the file, and so may change it
     async ours(id) {
       try {

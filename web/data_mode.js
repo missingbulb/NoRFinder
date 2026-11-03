@@ -9,6 +9,7 @@ import { PREVIEWS } from "./previews.js";
 import { makePreview, buildPreviews } from "./previews_writer.js";
 import { readTiff, fromPlanes, writeTiff } from "./split.js";
 import { CONNECTION } from "./offline.js";
+import { replacedBy, stemOf } from "./edit.js";
 
 const IMAGE = /\.(tiff?|png)$/i;
 const MAX_FOLDERS = 200;
@@ -19,8 +20,7 @@ const ACCESS = {
   none: ["Not approved", "Not yet open to this site: approve it to add files here."],
   unknown: ["Checking…", "Your Google sign-in is being renewed."],
 };
-const stem = (name) => name.replace(/\.[^.]*$/, "");
-export const truthMarker = (name) => stem(name) + ".ground_truth.MISSING";
+export const truthMarker = (name) => stemOf(name) + ".ground_truth.MISSING";
 
 // a preview as an ImageJ TIFF a study's Python opens: a flat image's three colour planes, a stack's slices
 export function previewTiff(e, pages) {
@@ -106,7 +106,11 @@ export function dataMode(ctx) {
   $("#access-x").onclick = () => { barClosed = true; askBar(); };
 
   // ---------- the tree ----------
-  const imagesOf = (n) => n.files.filter((f) => IMAGE.test(f.name) && f.name !== PREVIEWS);
+  // a folder's images, but those an edit replaced (req/shell/data/edit-save)
+  const imagesOf = (n) => {
+    const edited = replacedBy([...n.files, ...n.folders.map((id) => ({ name: nodes.get(id)?.name, folder: true }))]);
+    return n.files.filter((f) => IMAGE.test(f.name) && f.name !== PREVIEWS && !edited(f));
+  };
   function drawTree() {
     if (!on()) return;
     const make = (id) => {
@@ -160,7 +164,7 @@ export function dataMode(ctx) {
   // each image's state in the folder: {f, entry, stale, truth, marker}
   function states(n, pv) {
     return imagesOf(n).map((f) => {
-      const entry = pv?.entry(f.name, f.sha) || null, s = stem(f.name) + ".ground_truth.";
+      const entry = pv?.entry(f.name, f.sha) || null, s = stemOf(f.name) + ".ground_truth.";
       return { f, entry, stale: !entry && !!pv?.index.images.some((e) => e.name === f.name),
         truth: n.files.some((g) => g.name.startsWith(s) && g.name !== s + "MISSING"), marker: n.files.find((g) => g.name === s + "MISSING") || null };
     });
@@ -276,7 +280,7 @@ export function dataMode(ctx) {
     drawTree(); ctx.showFolder(false);
     const pv = await previewsOf(n), e = pv?.entry(f.name, f.sha), source = { kind: "drive", id: f.id, name: f.name, folder: n.id };
     if (!e) { ctx.status(`${f.name} has no preview yet: opening the image itself.`); return ctx.loadOriginal(source); }
-    ctx.openPreview(stem(f.name) + ".preview.tif", previewTiff(e, await pv.pages(e)), { ...source, kind: "preview" });
+    ctx.openPreview(stemOf(f.name) + ".preview.tif", previewTiff(e, await pv.pages(e)), { ...source, kind: "preview" });
   }
 
 
@@ -328,5 +332,23 @@ export function dataMode(ctx) {
     // whoever is signed in may have changed: the study's roles again, if so
     signedIn() { if (manifest && account.email() !== who) this.mount(manifest); },
     get on() { return on(); },
+    // the access to the folder an image is in, as the tree knows it ("write", "view", "none", or null when unknown)
+    accessOf: (folder) => nodes.get(folder)?.access ?? null,
+    // Edit Image's files into the folder named after the image, beside it: the page's own one when it made it
+    // before, else a new one; the tree read again after (req/shell/data/edit-save)
+    async saveEdits(folder, image, files, say) {
+      const n = nodes.get(folder);
+      if (!n || n.access !== "write") throw new Error(ACCESS[n?.access || "unknown"][1]);
+      const name = stemOf(image), there = (await drive.all(folder)).find((f) => f.folder && f.name === name);
+      if (there && !(await sd.ours(there.id))) throw new Error(`This folder already holds a folder named ${name} that this page did not make.`);
+      const into = there ? there.id : await sd.folder(folder, name);
+      for (const [k, f] of files.entries()) {
+        say(`Saving ${k + 1} of ${files.length}, ${f.name}…`);
+        await sd.create(into, f.name, new Blob([f.bytes], { type: "image/tiff" }));
+      }
+      nodes = new Map(); loaded = null; chosen = null;
+      await load();
+      if (nodes.has(folder)) await chooseFolder(nodes.get(folder));
+    },
   };
 }

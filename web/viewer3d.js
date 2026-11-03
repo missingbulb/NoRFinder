@@ -418,8 +418,11 @@ export function viewer3d(shell, flat) {
     const drawn = !!initGL();
     const bin = Math.max(1, Math.ceil(Math.max(im.W, im.H) / (drawn ? Math.min(MAX_SIDE, gl.getParameter(gl.MAX_3D_TEXTURE_SIZE)) : MAX_SIDE)));
     const { vols, X, Y } = binned(im.planes, C * im.W * im.H, Math.min(C, CHANNELS), im.Z, im.W, im.H, bin);
+    // an edit redrawn (req/shell/data/edit) is the same image: the view stays as the user left it, 2D or 3D, turned
+    const again = im.edited && !!vol, was3d = mode3d;
     vol = { vols, X, Y, Z: im.Z, bin };
     const v = shell.study?.view || {};
+    if (again) { Object.assign(S, { z0: 0, z1: im.Z - 1 }); ui("v3-z0").max = ui("v3-z1").max = im.Z - 1; upload(); sync(); return show3d(was3d); }
     Object.assign(S, { mode: v.render === "surface" ? 1 : 0, depth: v.depthColour ? 1 : 0, z0: 0, z1: im.Z - 1,
       yaw: 0, pitch: 0, dist: FIT_DIST, pivot: [0, 0, 0], clip: null, spot: null });
     ui("v3-z0").max = ui("v3-z1").max = im.Z - 1;
