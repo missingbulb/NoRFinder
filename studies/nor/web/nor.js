@@ -477,7 +477,7 @@ export function mount(shell) {
   }
 
   // a Markdown outline drawn as HTML: paragraphs split by blank lines, "- " or "1. " items nested by their indent
-  function outline(text) {
+  function markdownNote(text) {
     const out = document.createDocumentFragment();
     for (const para of text.split(/\n\s*\n/)) {
       const lists = []; // the open lists, outermost first: {indent, el}
@@ -504,7 +504,7 @@ export function mount(shell) {
     const defs = about.detection_params, vals = (st.detectValues[finder] ||= { ...defs });
     $("#about-box summary").textContent = `How the ${st.names[finder]} algorithm works`;
     const note = $("#finder-note");
-    note.replaceChildren(outline(about.about + (about.exact_refilter ? "" : "\n\nIt picks between alternatives using the filters, so after a filter change, find again for its exact result.")));
+    note.replaceChildren(markdownNote(about.about + (about.exact_refilter ? "" : "\n\nIt picks between alternatives using the filters, so after a filter change, find again for its exact result.")));
     quality.then((q) => {
       const own = q && q.finders[finder];
       if (!own || $("#finder").value !== finder) return;
