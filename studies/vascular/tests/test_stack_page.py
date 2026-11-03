@@ -49,3 +49,13 @@ def test_a_single_channel_stack_is_cd31_and_its_recorded_spacing_comes_through(t
     a = np.zeros((3, 5, 5), np.uint16); a[1, 2, 2] = 100
     meta, _, _ = opened(stack_file(tmp_path / 'c.tif', a, 'ZYX', spacing=2.5))
     assert [c['name'] for c in meta['channels']] == ['CD31'] and meta['spacing'] == 2.5
+
+
+def test_a_tiff_that_names_no_axes_is_a_stack_of_its_pages(tmp_path):
+    a = np.zeros((5, 6, 7), np.uint16); a[3, 2, 2] = 700
+    for shaped in (True, False):
+        p = str(tmp_path / f'pages-{shaped}.tif')
+        tifffile.imwrite(p, a, metadata={} if shaped else None)
+        meta, _, vol = opened(p)
+        assert meta['Z'] == 5 and len(meta['channels']) == 1, f'every page is a slice (shaped={shaped})'
+        assert vol[0, 3, 2, 2] == 255, 'the bright voxel sits in its own page'

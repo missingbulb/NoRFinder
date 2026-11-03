@@ -10,12 +10,16 @@ carried all its pull requests. The `writing-version-history` skill says how.
 
 ## Next release
 
+A z-stack now opens in 3D only, with no 2D/3D switch, the Image Viewer included, while a flat image
+opens in 2D; a plain multi-page TIFF opens as a stack in Vascular Measurements too. Edit Image on a
+stack leaves out Crop, the cut lines and Imperfections. In the Image Viewer the Image box stays open
+once loaded. (#702, #707, #713)
+
+The left bar collapses from the chevron at its top, where the collapsed strip shows its own, so the
+same spot opens it again. Dragging the bar's edge to the left also collapses it, and dragging the
+strip's edge out opens it. (#709)
+
 An image opening in NoR Finder now builds in grey while it downloads, and its colours wipe down over it once it is in; one opened from this computer fades in. No more stray colours that looked like a glitch before the image settled. (#715)
-
-## 0.11103.80
-
-A z-stack now opens in 3D only, with no 2D/3D switch. Edit Image on a stack leaves out Crop, the cut
-lines and Imperfections, which draw on a flat image. (#702)
 
 ## 0.11103.79
 

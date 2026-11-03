@@ -5,7 +5,7 @@
   "icon": "web/icon.svg",
   "stage": "PreGT",
   "phases": [],
-  "viewer": "image2d",
+  "viewer": "image3d",
   "python": {
     "paths": [
       "py/"
