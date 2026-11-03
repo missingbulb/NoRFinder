@@ -543,8 +543,10 @@ function handle(m) {
   else if (m.type === "error") {
     // the request that failed is over: its button can be pressed again
     study.error?.();
-    if (!st.ready) st.failed = true;
-    status("Error: " + m.text, true); if (OUT_OF_MEMORY.test(m.text)) memoryTip(true);
+    if (!st.ready) { st.failed = true; $("#spin").classList.remove("on"); }
+    // what being offline stops is said plainly: the online icon already says why (req/shell/offline/default)
+    if (m.offline) status(m.text); else status("Error: " + m.text, true);
+    if (OUT_OF_MEMORY.test(m.text)) memoryTip(true);
   } else if (m.type === "ready") {
     st.ready = true; st.readyInfo = m.info; $("#spin").classList.remove("on");
     study.ready?.(m.info); statusBar(); diskBar();

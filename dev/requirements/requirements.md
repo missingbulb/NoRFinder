@@ -478,7 +478,8 @@ spec does not have.
   `offline.json` with each file's SHA-256, each checked against that list and refetched only when it
   changed. With no network the page then opens at its own address and at every study's, from that
   copy. A study whose Python is already on this device runs; one whose Python is not says so: it
-  needs the internet once, or Make available offline (`req/shell/offline/per-study`). An image kept on this device (`req/shell/drive/kept-images`,
+  needs the internet once, or Make available offline (`req/shell/offline/per-study`). It says so plainly, not as an error
+  and with no traceback, the spinner stopping, the network dropping as the study's own modules load too (set by the owner on 2026-11-03). An image kept on this device (`req/shell/drive/kept-images`,
   `req/shell/offline/per-study`) opens: offline, From Google Drive lists the images kept here instead of a Drive folder.
   The status bar's online icon (`req/shell/status-bar/online`) shows it, the network's tooltip and its
   Network tab saying the page is offline too. No

@@ -6,6 +6,7 @@
 // speeds, refuses a choice larger than that room, and downloads the study's Python and images, nothing from Drive
 // before Download; the page names no app manifest until Install as an app is clicked, and then the browser finds
 // the site installable.
+// A first visit whose network drops as the study's modules load says so plainly.
 // Then req/shell/offline/default, with the network gone (the browser offline and the server refusing): the page opens at its address
 // and the Python already on this device runs; the status bar's online icon shows offline; what needs the network is held; a
 // prepared study runs, and From Google Drive lists the images kept here and opens one; a study whose Python is not
@@ -39,12 +40,12 @@ const SUB = "acmefolder0000000002";
 const FILES = { [ROOT]: [{ id: "acmestack00000000001", name: "stack one.tif" }, { id: SUB, name: "sub", folder: true }], [SUB]: [{ id: "acmestack00000000002", name: "stack two.tif" }] };
 
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".webmanifest": "application/manifest+json", ".whl": "application/zip" };
-let down = false;
+let down = false, pyDown = false; // pyDown: the network gone for the study's Python modules alone
 // as Cloudflare serves the site: /<name> is <name>.html, a folder its index.html; and an unlisted study's address in
 // the app the app's page too, as the tests' repo server serves it, so the fixture study runs
 const server = http.createServer((q, r) => {
-  if (down) return q.socket.destroy();
   let u = decodeURIComponent(new URL(q.url, "http://x").pathname);
+  if (down || (pyDown && u.endsWith(".py"))) return q.socket.destroy();
   let f = path.join(site, u);
   if (u.endsWith("/")) f = path.join(f, "index.html");
   else if (!fs.existsSync(f) && fs.existsSync(f + ".html")) f += ".html";
@@ -85,6 +86,19 @@ const ready = (timeout = 180000) => page.waitForFunction(() => window.st?.ready,
 const statusText = () => page.textContent("#status");
 
 try {
+  // a first visit, no copy of the site kept yet, the network dropping as the study's own Python modules are fetched:
+  // the status says what the network's going stops, never Python's traceback
+  {
+    const fresh = await pw[ENGINE].launch(), first = await fresh.newPage();
+    pyDown = true;
+    await first.goto(origin + "/app/fixture");
+    await first.waitForFunction(() => /not on this device|Error/.test(document.querySelector("#status").textContent), null, { timeout: 180000 }).catch(() => {});
+    const said = await first.textContent("#status"), red = await first.$eval("#status", (e) => e.classList.contains("err"));
+    check(/not on this device/i.test(said) && !/Traceback|Error/.test(said) && !red, "the network dropping while the study's modules load says so plainly, not as an error: " + said.slice(0, 200));
+    check(!(await first.$eval("#spin", (e) => e.classList.contains("on"))), "and the spinner stops: nothing is loading any more");
+    await fresh.close(); pyDown = false;
+  }
+
   await page.goto(origin + "/app/fixture");
   await ready();
   check(true, "the fixture study's Python runs online");
@@ -195,7 +209,8 @@ try {
 
   await page.goto(origin + "/app/nor");
   await page.waitForFunction(() => /not on this device/i.test(document.querySelector("#status").textContent), null, { timeout: 60000 }).catch(() => {});
-  check(/not on this device/i.test(await statusText()), "offline, a study whose Python is not here says so: " + (await statusText()));
+  check(/not on this device/i.test(await statusText()) && !/Error/.test(await statusText()) && !(await page.$eval("#status", (e) => e.classList.contains("err"))),
+    "offline, a study whose Python is not here says so, not as an error: " + (await statusText()));
   // its Make available offline, opened offline: nothing to read yet, Download held
   await page.click("#user-menu summary");
   await page.click("#manage-storage");
