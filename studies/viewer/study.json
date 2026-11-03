@@ -2,6 +2,7 @@
   "id": "viewer",
   "title": "Image Viewer",
   "listed": true,
+  "icon": "web/icon.svg",
   "stage": "PreGT",
   "phases": [],
   "viewer": "image2d",

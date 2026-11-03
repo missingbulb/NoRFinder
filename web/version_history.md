@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- The Image Viewer has its own icon, a microscope, in the browser tab and the study switcher. (#PR)
 - The study switcher's button shows the open study's icon beside its name. (#PR)
 - In the 3D view, a sideways scroll spins the stack about the line of sight (it panned before), and dragging no longer stops at a side-on view: it turns on, like a trackball. (#689)
 - Choose folders… in Data Management opens Google's permission window again, instead of doing nothing. (#694)
