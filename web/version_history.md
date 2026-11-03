@@ -18,6 +18,9 @@ opens where you set up working offline. The bug icon sits beside the version and
 gauge unfolds, and losing the internet while a study loads says plainly what it needs, instead of
 an error. (#692)
 
+A z-stack now opens in 3D only, with no 2D/3D switch. Edit Image on a stack leaves out Crop, the cut
+lines and Imperfections, which draw on a flat image. (#702)
+
 ## 0.11103.78
 
 Collapse the left bar with the ‹ tab beside the image to give the image the whole width: a narrow

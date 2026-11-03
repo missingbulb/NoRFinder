@@ -132,16 +132,18 @@ spec does not have.
   Set by the owner on 2026-11-03. In Data Management, Preprocessing's Edit Image (off until an image is
   open) opens the image itself, from the copy on this device or Drive, when a preview is on show, and
   opens the Edit Image box below Preprocessing. Every choice there redraws the image as it will be saved,
-  in 2D and in 3D, the view staying as the user left it (2D or 3D, turned as it was): Split cuts it 2 × 2 or 3 × 3, the parts drawn apart with a gap between them, so a
-  stack in 3D looks cut; the cut lines over the image drag, never closer than a twentieth of the crop
+  the view staying as the user left it (a stack turned as it was): Split cuts it 2 × 2 or 3 × 3, the parts drawn apart with a gap between them, so a
+  stack in 3D looks cut; on a flat image the cut lines over the image drag, never closer than a twentieth of the crop
   to the next, and a click on a part leaves it out (drawn dim) and keeps it again. Crop draws a rectangle
   on the whole image and then shows only it. Slices, for a stack, is one slider with two marks, the first
   and the last slice kept, the slices outside dropped from the view; a band on the slider marks the
   suggested slices, those holding signal (each slice's 99th percentile above its median, at least a
   quarter of the best slice's), and Use suggested sets the marks there. Channels ticks each channel kept,
-  a dropped one shown empty. Imperfections lassoes a part on the image (in 3D, on the 2D top view) to
-  leave out of every slice, drawn as if no data were there; each is listed with its share of the image
-  and can be removed, and the box's folded title sums them up ("4% imperfections"). Done leaves the box
+  a dropped one shown empty. Imperfections lassoes a part on the image to
+  leave out, drawn as if no data were there; each is listed with its share of the image
+  and can be removed, and the box's folded title sums them up ("4% imperfections"). Crop, the cut lines and Imperfections
+  draw on a flat image, so a stack, shown in 3D only (`req/shell/viewer-3d`), has none of them (owner,
+  2026-11-03: each viewer gets tools made for it). Done leaves the box
   and shows the image as it was. Test: `web-tests/test_image_edit_page.py`, `web-tests/test_image_edit.py`.
   </details>
 
@@ -980,8 +982,8 @@ spec does not have.
 
   The image a study works on is shown by a viewer the study names (`viewer` in `study.json`),
   behind one interface: show the opened image, draw the study's layers over it, report a pick and a
-  lasso in image coordinates, zoom and pan. The 3D viewer (`req/shell/viewer-3d`) keeps that interface and adds
-  a 3D view beside the 2D one, with no change to the studies that keep the 2D viewer.
+  lasso in image coordinates, zoom and pan. The 3D viewer (`req/shell/viewer-3d`) keeps that interface and shows
+  a stack in 3D in the 2D view's place, with no change to the studies that keep the 2D viewer.
   </details>
 
 - `req/shell/tools/grid` A Grid button beside the Ruler draws a grid over the image, its colour and spacing the user's.
@@ -1027,8 +1029,9 @@ spec does not have.
 
   Set by the owner on 2026-10-31, moving the 3D MicroViewer into the shell. The study's Python
   returns a stack as its flattened planes, which the 2D view shows unchanged, followed by every
-  slice of every channel (`Z` in its meta). A 2D/3D switch in the toolbar opens the 3D view, which
-  a stack opens on: it casts rays through the stack in the browser (WebGL2), looking straight down
+  slice of every channel (`Z` in its meta). A stack is shown in 3D only, with no switch to a flat view
+  (owner, 2026-11-03: a 2D image makes no sense in 3D, nor a 3D one in 2D); only where the browser lacks
+  WebGL2 does the flattened stack show instead. The 3D view casts rays through the stack in the browser (WebGL2), looking straight down
   as the microscope does. Dragging turns it about the screen's two axes, on past looking straight
   across, a sideways scroll spins it about the line of sight (owner, 2026-11-03), the wheel zooms,
   shift-drag pans, and Top, Tilted,

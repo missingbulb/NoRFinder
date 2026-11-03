@@ -105,13 +105,13 @@
       <div class="sec-head"><h2>Edit Image</h2></div>
       <div class="edit-row"><span class="edit-label">Split</span><div class="tabs" id="edit-split" role="group" aria-label="Split"><button type="button" data-n="1">None</button><button type="button" data-n="2">2 × 2</button><button type="button" data-n="3">3 × 3</button></div></div>
       <p class="hint" id="edit-split-hint" hidden>Drag a cut line on the image to move it; click a part to leave it out, and again to keep it.</p>
-      <div class="edit-row"><span class="edit-label">Crop</span><button id="edit-crop" type="button" aria-pressed="false" title="Draw the rectangle to keep on the image">Draw</button><span id="edit-crop-size" class="hint"></span><button id="edit-crop-reset" type="button" class="link" hidden>whole image</button></div>
+      <div class="edit-row" id="edit-crop-row"><span class="edit-label">Crop</span><button id="edit-crop" type="button" aria-pressed="false" title="Draw the rectangle to keep on the image">Draw</button><span id="edit-crop-size" class="hint"></span><button id="edit-crop-reset" type="button" class="link" hidden>whole image</button></div>
       <div id="edit-slices-sec">
         <div class="edit-row"><span class="edit-label">Slices</span><span id="edit-z-text" class="hint"></span><span class="grow"></span><button id="edit-suggest" type="button" class="link">Use suggested</button></div>
         <div class="levels slices" id="edit-slices" title="The first and the last slice kept; the band marks the slices that hold signal"><div id="edit-band"></div><input type="range" id="edit-z0" step="1" aria-label="First slice kept"><input type="range" id="edit-z1" step="1" aria-label="Last slice kept"></div>
       </div>
       <div class="edit-row top"><span class="edit-label">Channels</span><div id="edit-channels"></div></div>
-      <div class="edit-row top"><span class="edit-label">Imperfections</span><div><button id="edit-lasso" type="button" aria-pressed="false" title="Draw around a part of the image to leave it out of every slice">Mark</button><ul id="edit-flaws"></ul></div></div>
+      <div class="edit-row top" id="edit-flaws-row"><span class="edit-label">Imperfections</span><div><button id="edit-lasso" type="button" aria-pressed="false" title="Draw around a part of the image to leave it out of every slice">Mark</button><ul id="edit-flaws"></ul></div></div>
       <div class="edit-row end"><button id="edit-save" class="primary" type="button">Save…</button><button id="edit-done" type="button" title="Leave Edit Image and show the image as it was">Done</button></div>
     </section>
 
