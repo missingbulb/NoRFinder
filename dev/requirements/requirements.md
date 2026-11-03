@@ -13,12 +13,33 @@ spec does not have.
 
 ## `req/shell` The shell, whichever study it runs
 
+- `req/shell/account/role` Beside the avatar, a menu picks the role the user works in; the page shows that role's own view.
+  <details>
+
+  Set by the owner on 2026-11-03: one page adapting to every role at once is replaced by a view per role,
+  chosen on purpose. Left of the avatar, a menu names the role the user works in and lists the roles they
+  hold in the study on show: **Viewer**, everyone's, and the only one for a visitor not signed in
+  (`req/shell/account/sign-in`); **Ground Truth Tagger**, anyone's who is signed in, listed only in a study
+  that makes ground truth (GT or PostGT, `req/shell/study/stage`); and **Data Manager**, held by those the
+  study's permissions name (`req/shell/data/roles`), listed where the study has Drive folders. Where it
+  lists Viewer alone, a line says what signing in adds. Choosing a role changes the page to its view at
+  once. Viewer sees the study as a Published one shows it: its tools and what they find, nothing that
+  makes ground truth (no Submit GT step, the ground-truth button hidden, the item view its Items, the
+  study's postprocessing not shown). Ground Truth Tagger sees the page that makes ground truth. Data
+  Manager sees Data Management (`req/shell/data/mode`). Moving between Viewer and Ground Truth Tagger
+  opens the study afresh on the same image. The page opens as Viewer; the role chosen follows the user
+  (`req/shell/account/sign-in`) and Settings lists it (`req/shell/account/settings`). A role not held in
+  the study on show, or no longer held, shows as Viewer, and the choice stays for where it is held. A site
+  with no Google client signs no one in, so there every visitor may also choose Ground Truth Tagger. Test:
+  `web-tests/test_roles_page.py`.
+  </details>
+
 - `req/shell/account/settings` The avatar's menu opens Settings: every setting that follows the user, to change and save.
   <details>
 
   Set by the owner on 2026-10-31. Settings… in the avatar's menu opens a dialog listing each setting
   that follows the user (`req/shell/account/sign-in`), whether or not they are signed in, each with a control to change it:
-  the theme (follow the system, dark or light); where Load reads from; Show thumbnails in the Drive
+  the theme (follow the system, dark or light); the role the user works in (`req/shell/account/role`); where Load reads from; Show thumbnails in the Drive
   dialog; whether the low-memory popup shows; the last Google Drive link, and the last one in each
   study; the tips closed, each with a tick to clear to see it again; the recent images from Google
   Drive, each with a tick to clear to drop it; Animations; and the version seen last. A line says where they are
@@ -41,7 +62,7 @@ spec does not have.
   user's name, email and picture and for the app's own folder in their Drive, nothing else of it.
   Signed in, the avatar is the user's picture, the menu names them and offers Sign out. These
   settings follow the user: dark or light, the tips closed, the version last seen, the low-memory
-  popup turned off, where Load reads from, the last Drive link (in each study too), Show thumbnails,
+  popup turned off, the role the user works in (`req/shell/account/role`), where Load reads from, the last Drive link (in each study too), Show thumbnails,
   the images opened from Drive lately, whether animations are on (`req/shell/resources-dialog/animations`) and how the status bar shows its resources (`req/shell/status-bar/resources`). These stay with the device: the left bar's width,
   Auto-save images, and everything kept for images. Google's token lasts about an hour and is kept on
   this device for that hour. A new one can be asked for only in the user's own click or key press, so
@@ -114,15 +135,16 @@ spec does not have.
   `web-tests/test_image_box_page.py`, `studies/viewer/tests/test_viewer.py`.
   </details>
 
-- `req/shell/data/drive-access` A signed-in user with a role is asked to let the site into the study's folders, just those, and sees which it may write.
+- `req/shell/data/drive-access` A data manager is offered, in the folder tree, to let the site into the study's folders, just those, and sees which it may write.
   <details>
 
-  Set by the owner on 2026-11-02. Opening a study where the signed-in user holds a role
-  (`req/shell/data/roles`), the page asks, only for the folders it lacks access to, for Google's
+  Set by the owner on 2026-11-02. In the Data Manager role (`req/shell/account/role`), the tree's head
+  offers to approve the folders the site lacks access to, and its click asks for Google's
   per-file permission (`drive.file`) and then Google's own picker showing just the study's folders and
   their subfolders, to approve all or some. The page then knows, for each folder: not approved for this
-  site; approved but view-only in Drive; or writable; a folder added since, or one left out, is asked
-  for again. The page only creates files and changes or trashes the ones it created; it never changes
+  site; approved but view-only in Drive; or writable; a folder added since, or one left out, is offered
+  again. Changed by the owner on 2026-11-03: the page asks nowhere else, and no bar over the image asks
+  for the folders. The page only creates files and changes or trashes the ones it created; it never changes
   a file anyone else made. Test: `web-tests/test_data_mode_page.py`.
   </details>
 
@@ -171,12 +193,13 @@ spec does not have.
   marked as needing it (`req/shell/data/preview-images`). Test: `web-tests/test_data_mode_page.py`.
   </details>
 
-- `req/shell/data/mode` Data Management: a column left of the left bar, for data managers only, collapsed until opened.
+- `req/shell/data/mode` Data Management: the Data Manager role's view, a column of the study's folders left of the left bar, open until folded.
   <details>
 
-  Set by the owner on 2026-11-02. For a signed-in data manager (`req/shell/data/roles`) a narrow strip
-  sits left of the left bar; opening it slides out the tree of the study's folders and enters Data
-  Management, closing it leaves. Others see no strip. The tree shows every folder and subfolder, open,
+  Set by the owner on 2026-11-02, changed on 2026-11-03: Data Management is the Data Manager role's view
+  (`req/shell/account/role`), entered by choosing that role and left by choosing another; nobody in any
+  other role sees any of it. In it the tree of the study's folders sits left of the left bar, open; its
+  chevron folds it to a narrow strip and opens it again. The tree shows every folder and subfolder, open,
   each with its access (`req/shell/data/drive-access`); a folder's images stay folded under it until
   its image count is clicked, each with a small preview. In the mode the left bar keeps the Image box
   and Preprocessing (`req/shell/preprocessing/split`) and hides the study's own drawers, its item view
@@ -200,7 +223,7 @@ spec does not have.
   <details>
 
   Set by the owner on 2026-11-02. A study's `permissions` maps a role to the Google accounts, by
-  email, that hold it: `data_management` (Data Management, `req/shell/data/mode`) and
+  email, that hold it: `data_management` (the Data Manager role, `req/shell/account/role`) and
   `ground_truth_writer` (writing ground truth to Drive, still to come). Its `files.folders` lists its
   Drive folders, and Load's Drive dialog opens on the first. A role only shows or hides the page's
   tools; what anyone can change is still what Drive itself lets them. Test:

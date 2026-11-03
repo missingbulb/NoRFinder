@@ -1,0 +1,90 @@
+// Drives the role menu beside the avatar (req/shell/account/role) in headless Chromium on the fixture study (a GT study),
+// against the stand-in Google of stand_in_drive.mjs serving ROOT: what each visitor may choose, and what each role's
+// view shows. Exits 1 on a failed check, 2 when it cannot run.
+//   node web-tests/roles_driver.mjs ANSWERS STUDIES ROOT IMAGE
+import { standIn } from "./stand_in_drive.mjs";
+
+const [answers, studies, rootDir, image] = process.argv.slice(2);
+const { open, check, done } = await standIn({ answers, studies, rootDir });
+const OTHER = "someone@example.com";
+
+// what the page shows: the role named, the roles listed, the line under them, and each role's tools
+const seen = (page) => page.evaluate(() => {
+  const shows = (s) => !!document.querySelector(s)?.checkVisibility();
+  return {
+    role: $("#role-name").textContent.trim(),
+    list: [...document.querySelectorAll("#role-list .item")].map((b) => b.textContent.trim()),
+    hint: $("#role-hint").hidden ? "" : $("#role-hint").textContent.trim(),
+    truth: shows("#fx-truth"), counted: shows("#fx-counted"), submit: steps().includes("Submit GT"),
+    data: shows("#data-col"), mode: document.documentElement.dataset.mode || "", bar: !!document.querySelector("#access-bar"),
+  };
+  function steps() { return [...document.querySelectorAll("#sb-steps .crumb, #sb-steps > *")].map((e) => e.textContent).join(" ") || st.steps?.map?.((p) => p.name).join(" ") || ""; }
+});
+const choose = async (page, name) => {
+  await page.click("#role-menu summary");
+  await page.click(`#role-list .item:text-is("${name}")`);
+  await page.waitForFunction((n) => $("#role-name").textContent.trim() === n && document.querySelector("#status").textContent.startsWith("Ready"), name);
+};
+const role = (page) => page.evaluate(() => localStorage.getItem("nor-role"));
+
+// not signed in, where the site signs people in: Viewer alone, and nothing that makes ground truth
+let page = await open(false);
+let s = await seen(page);
+await check(s.role === "Viewer" && s.list.join() === "Viewer" && /sign in/i.test(s.hint), "not signed in, the menu offers Viewer alone and says what signing in adds", s);
+await check(!s.truth && !s.counted && !s.data && !s.bar, "a viewer sees no ground-truth button, no postprocessing, no Data Management and no asking bar", s);
+await page.context().close();
+
+// signed in, not a data manager: Viewer first, Ground Truth Tagger to choose
+page = await open(true, { email: OTHER });
+s = await seen(page);
+await check(s.role === "Viewer" && s.list.join() === "Viewer,Ground Truth Tagger" && !s.hint, "signed in, the page opens as Viewer, Ground Truth Tagger offered", s);
+await page.setInputFiles("#file", image);
+await page.waitForFunction(() => !document.querySelector("#fx-count").disabled);
+const before = await page.evaluate(() => st.fileName);
+await choose(page, "Ground Truth Tagger");
+await page.waitForFunction((n) => st.fileName === n && !document.querySelector("#fx-count").disabled, before);
+s = await seen(page);
+await check(s.truth && s.counted && !s.data, "as Ground Truth Tagger the ground-truth button and the postprocessing show", s);
+await check(await page.evaluate(() => st.fileName) === before, "and the image stays open", before);
+await check(await role(page) === "tagger", "the role chosen is kept", await role(page));
+await page.reload();
+await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
+s = await seen(page);
+await check(s.role === "Ground Truth Tagger" && s.truth, "and the page opens in it again", s);
+await choose(page, "Viewer");
+s = await seen(page);
+await check(!s.truth && !s.counted, "back as Viewer, the ground-truth tools go", s);
+await page.context().close();
+
+// a data manager kept in that role, opening where they hold it no more: Viewer, the choice kept for where they do
+page = await open(true, { email: OTHER, seed: { "nor-role": "data" } });
+s = await seen(page);
+await check(s.role === "Viewer" && !s.data, "a role not held shows as Viewer", s);
+await check(await role(page) === "data", "and the choice stays", await role(page));
+await page.context().close();
+
+// the study's data manager: Data Manager offered; choosing it opens the tree, asking only there
+page = await open(true);
+s = await seen(page);
+await check(s.list.join() === "Viewer,Ground Truth Tagger,Data Manager" && !s.data, "a data manager is offered Data Manager, and sees no Data Management until choosing it", s);
+await choose(page, "Data Manager");
+await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder").length === 2);
+await page.waitForTimeout(500);
+s = await seen(page);
+const width = () => page.evaluate(() => Math.round($("#data-col").getBoundingClientRect().width));
+await check(s.data && s.mode === "data" && (await width()) > 200, "as Data Manager the folder tree shows, open", { ...s, width: await width() });
+await check(await page.isVisible("#data-approve") && !s.bar, "the tree offers to approve the folder not approved yet, and no bar over the image asks", s);
+await page.click("#data-open"); await page.waitForTimeout(500);
+await check((await width()) < 60 && document !== null && (await seen(page)).mode === "data", "its chevron folds the tree to a strip", await width());
+await page.click("#data-open"); await page.waitForTimeout(500);
+await check((await width()) > 200, "and opens it again", await width());
+await choose(page, "Viewer");
+s = await seen(page);
+await check(!s.data && !s.mode, "choosing Viewer leaves Data Management", s);
+await page.context().close();
+
+// a site with no Google client signs no one in: there anyone may tag ground truth
+page = await open(false, { prepare: (ctx) => ctx.route("**/web/config.js", (r) => r.fulfill({ contentType: "text/javascript", body: 'window.NOR_CONFIG = { google: { apiKey: "stand-in", clientId: "" } };' })) });
+s = await seen(page);
+await check(s.list.join() === "Viewer,Ground Truth Tagger" && s.role === "Viewer", "with no sign-in on the site, everyone is offered Ground Truth Tagger", s);
+await done(0);

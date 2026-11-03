@@ -140,19 +140,21 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
 
   const SIGNED_IN = { user: { name: "Tester", email: EMAIL, picture: null }, token: "stand-in-token", until: Date.now() + 3600e3,
     scopes: "openid email profile https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file" };
-  // scopes: what the signed-in user's token may do, in place of SIGNED_IN's; prepare(ctx): routes of a driver's own,
+  // scopes: what the signed-in user's token may do, in place of SIGNED_IN's; email: who is signed in, in place of the
+  // study's data manager; seed: browser keys kept before the page opens; prepare(ctx): routes of a driver's own,
   // taking precedence over these
-  async function open(signedIn, { scopes, prepare } = {}) {
+  async function open(signedIn, { scopes, email, seed = {}, prepare } = {}) {
     const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
     await ctx.route("https://www.googleapis.com/**", google);
     await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
     if (prepare) await prepare(ctx);
     // the welcome popup answered before, and remembered (req/shell/account/welcome)
-    await ctx.addInitScript((who) => {
+    await ctx.addInitScript(([who, seed]) => {
       delete Navigator.prototype.serviceWorker;
       if (who) localStorage.setItem("nor-google-sign-in", JSON.stringify(who));
       localStorage.setItem("nor-welcome", JSON.stringify({ choice: who ? "google" : "anonymous", remember: true }));
-    }, signedIn ? { ...SIGNED_IN, ...(scopes ? { scopes } : {}) } : null);
+      for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v);
+    }, [signedIn ? { ...SIGNED_IN, ...(scopes ? { scopes } : {}), ...(email ? { user: { ...SIGNED_IN.user, email } } : {}) } : null, seed]);
     const page = await ctx.newPage();
     page.on("pageerror", async (e) => { if (cutShort(e)) return; console.error("page error: " + e.message); await done(1); });
     page.setDefaultTimeout(10000);
