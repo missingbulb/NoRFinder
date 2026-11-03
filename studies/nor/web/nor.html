@@ -32,6 +32,20 @@
       <div id="summary" class="dim">No candidates yet.</div>
       <div class="csv-btns"><button id="dl-cands" disabled>Download Candidates</button><button id="dl-summary" disabled>Download Summary</button></div>
     </section>
+
+    <section class="box foldable" id="tasks-box" data-opens="find" hidden>
+      <div class="sec-head"><h2>Ground Truth Tasks</h2></div>
+      <div id="gt-bar"><span data-task="pass"></span><span data-task="fail"></span><span data-task="missed"></span></div>
+      <ol id="gt-tasks">
+        <li data-task="pass"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button"><span class="n"></span> Finalists</button></div><div class="task-body"></div></li>
+        <li data-task="fail"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button"><span class="n"></span> Rejected</button></div><div class="task-body"></div></li>
+        <li data-task="missed"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button" title="The image's areas, each checked for NoRs the finder missed"><span class="n"></span> Areas</button></div>
+          <div class="task-body"><p class="hint">Right-click where the finder missed a NoR in the framed area.</p><div class="missed-slot"></div><button id="area-ok" class="primary" type="button">No missed NoRs here</button></div></li>
+        <li data-task="submit"><div class="task-head"><span class="tick" aria-hidden="true"></span><button id="dl-truth" disabled><span class="gt-ico" aria-hidden="true"></span>Submit Ground Truth</button></div></li>
+      </ol>
+      <span id="task-tools"><button id="task-skip" class="link" type="button" title="The next one, leaving this one for later">Skip ›</button></span>
+      <div id="task-now"><div id="task-stage"><div id="task-card"></div></div></div>
+    </section>
 </template>
 <template data-slot="toolbar">
       <details class="menu for-image" id="show-menu">
@@ -67,7 +81,7 @@
     <div id="lasso-hint" hidden>Drag around the area to count · Esc cancels</div>
 </template>
 <template data-slot="views">
-    <div id="items-view" hidden>
+    <div id="items-view" data-viewing hidden>
       <div id="list"></div>
     </div>
 </template>
@@ -76,9 +90,6 @@
       <div class="stepper" id="sel-step"><button id="sel-prev" title="Previous candidate" aria-label="Previous candidate" disabled>‹</button><button id="sel-next" title="Next candidate" aria-label="Next candidate" disabled>›</button></div>
       <div id="selected"></div>
     </section>
-</template>
-<template data-slot="tasks-end">
-    <button id="dl-truth" disabled><span class="gt-ico" aria-hidden="true"></span>Submit Ground Truth</button>
 </template>
 <template data-slot="body">
 <div id="ctx" class="pop" role="menu" hidden><button class="item" role="menuitem" type="button"></button></div>

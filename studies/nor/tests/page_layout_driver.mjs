@@ -44,6 +44,10 @@ const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/cs
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
+  if (u === "/studies/nor/study.json") {
+    r.writeHead(200, { "content-type": "application/json" });
+    return r.end(JSON.stringify({ ...JSON.parse(fs.readFileSync(path.join(repo, u))), stage }));
+  }
   let f = u.startsWith("/web/answers/") ? path.join(answers, u.slice("/web/answers/".length)) : repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
@@ -59,6 +63,9 @@ const measure = (page) => page.evaluate(() => [...document.querySelectorAll("can
   return { where: c.closest("[id]").id, skew: Math.abs(r.width / r.height / (w / h) - 1) };
 }));
 let seen = 0, worst = { skew: 0 };
+// the item views and the selected card only show what was found, so they are driven in a PreGT study
+// (req/shell/views/second); while the study makes ground truth, the task's card is in the left bar
+let stage = "PreGT";
 // the side bars at their narrowest, in a narrow and a wide window
 for (const width of [1000, 1600]) {
   const ctx = await browser.newContext({ viewport: { width, height: 900 } });
@@ -75,7 +82,7 @@ for (const width of [1000, 1600]) {
   await page.click("#find");
   await page.waitForFunction(() => st.alone && $("#busy").hidden);
     // ---- the selected card over the image's top right corner, only while one is selected; Submit Ground
-  // Truth at the toolbar's right end; no right bar (req/nor/layout, req/nor/candidates/decide, req/nor/downloads) ----
+  // Truth not in the image view; no right bar (req/nor/layout, req/nor/candidates/decide, req/nor/downloads) ----
   const fail = async (what, seen) => { console.error("FAILED: " + what + ": " + JSON.stringify(seen)); await done(1); };
   if (await page.isVisible("#selected-box")) await fail("the selected card shows with nothing selected", true);
   const sc = await page.locator("#scroller").boundingBox();
@@ -100,11 +107,6 @@ for (const width of [1000, 1600]) {
   if (process.env.SHOTS) { await page.evaluate(() => { $("#notice").hidden = true; }); await page.mouse.move(5, 5); await page.screenshot({ path: `${process.env.SHOTS}/${width}_image.png` }); }
   const views = [["image", async () => {}], ["finalists", async () => {
     await page.click("#switch"); await page.waitForFunction(() => document.querySelector("#view").dataset.view === "items" && document.querySelector("#list .card:not(.stub)"));
-    // the tasks' bar heads the finalists, Submit Ground Truth at its end (req/shell/views/submit-task)
-    const t = await page.evaluate(() => { const b = document.querySelector("#tasks-bar"), r = (e) => e.getBoundingClientRect(), g = document.querySelector("#dl-truth");
-      return { shown: !!b.offsetParent, text: b.querySelector(".done").textContent, inBar: b.contains(g) && !!g.offsetParent, atEnd: Math.abs(r(g).right - r(b).right) < 40, above: r(b).bottom <= r(document.querySelector("#items-view")).top + 1,
-        open: document.querySelectorAll("#list .card.task-open").length, cards: document.querySelectorAll("#list .card:not(.stub)").length }; });
-    if (!t.shown || !/^\d+ of \d+ done$/.test(t.text) || !t.inBar || !t.atEnd || !t.above || !t.open || t.open !== t.cards) await fail("the tasks' bar does not head the finalists with Submit Ground Truth at its end, every undecided card marked open", t);
   }], ["rejected", () => page.click("#tab-fail")]];
   for (const [view, go] of views) {
     await go(); await page.waitForFunction(() => !document.querySelector("button.working"));
@@ -127,6 +129,30 @@ for (const width of [1000, 1600]) {
     }
     for (const g of got) if (g.skew > worst.skew) worst = { ...g, width, view };
   }
+  await ctx.close();
+}
+// a GT study: the image and the task's card in the left bar, at the left bar's narrowest
+stage = "GT";
+for (const width of [1000, 1600]) {
+  const ctx = await browser.newContext({ viewport: { width, height: 900 } });
+  await ctx.route(offSite(origin), (r) => r.abort());
+  await asTagger(ctx);
+  await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; localStorage.setItem("nor-bars-v1", JSON.stringify({ left: 200, right: 200 })); });
+  const page = await ctx.newPage();
+  page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
+  page.setDefaultTimeout(10000);
+  await page.goto(origin + "/web/index.html?study=nor");
+  await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false);
+  await page.setInputFiles("#file", image);
+  await page.waitForFunction(() => !document.querySelector("#find").disabled);
+  await page.click("#find");
+  await page.waitForFunction(() => st.alone && $("#busy").hidden && document.querySelector("#task-card canvas"));
+  const got = await measure(page), task = got.filter((g) => g.where === "task-card").length;
+  console.log(`${width}px GT: ${got.length} images, ${task} task card`);
+  if (task !== 1) { console.error("no task card drawn in the left bar"); await done(1); }
+  if (process.env.SHOTS) { await page.evaluate(() => { $("#notice").hidden = true; }); await page.screenshot({ path: `${process.env.SHOTS}/${width}_gt.png` }); }
+  seen += got.length;
+  for (const g of got) if (g.skew > worst.skew) worst = { ...g, width, view: "GT" };
   await ctx.close();
 }
 console.log(`${seen} images measured; most skewed ${worst.skew.toFixed(3)}`, worst.where ? `(${worst.where}, ${worst.view}, ${worst.width}px)` : "");

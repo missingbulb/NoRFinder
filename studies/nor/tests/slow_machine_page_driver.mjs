@@ -49,6 +49,11 @@ const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/cs
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
+  // the item views only show what was found, so they are driven in a PreGT study (req/shell/views/second)
+  if (u === "/studies/nor/study.json") {
+    r.writeHead(200, { "content-type": "application/json" });
+    return r.end(JSON.stringify({ ...JSON.parse(fs.readFileSync(path.join(repo, u))), stage: "PreGT" }));
+  }
   const f = u.startsWith("/web/answers/") ? path.join(answers, u.slice("/web/answers/".length)) : repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
@@ -113,7 +118,7 @@ const unfold = async (page, box) => { await page.evaluate((b) => { const e = $(b
   }) && $(`#presets [data-preset=precise]`).classList.contains("on")), "and every filter shows the preset's values");
   await page.click("#switch");
   await free(page, "#switch");
-  await check(await page.evaluate(() => st.view === "items"), "the Tasks switch switches views and lets go");
+  await check(await page.evaluate(() => st.view === "items"), "the Items switch switches views and lets go");
   const playing = () => page.evaluate(() => $("#far").getAnimations({ subtree: true })[0].playState);
   await page.evaluate(() => $("#left").insertAdjacentHTML("beforeend", '<div style="height:3000px"></div><div id="far" class="shine">x</div>'));
   await page.waitForFunction(() => $("#far").classList.contains("offscreen"));

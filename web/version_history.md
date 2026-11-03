@@ -10,10 +10,10 @@ carried all its pull requests. The `writing-version-history` skill says how.
 
 ## Next release
 
-Pick the role you work in from the new menu beside your avatar: each role has its own view.
-Everyone starts as Viewer, which shows what a study finds. Signed in, you can switch to Ground Truth
-Tagger to make ground truth; a study's data managers can switch to Data Manager, which opens its
-folders at once. (#705)
+Pick your role from the new menu beside your avatar. Viewer shows what a study finds. Signed in,
+Ground Truth Tagger turns the left bar into a to-do list: the finalists, the rejected, then each
+area checked for missed NoRs, one at a time, each finished one cut out of the image. Data Manager
+opens a study's folders at once. (#705, #720)
 
 A z-stack opens in 3D only and a flat image in 2D, in every study; a plain multi-page TIFF opens as
 a stack too. Edit Image on a stack leaves out Crop, the cut lines and Imperfections. Each channel in

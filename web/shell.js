@@ -409,18 +409,21 @@ const roleChooser = roleMenu($("#role-menu"), (r) => {
 // A study with an item view gets the switch between it and the image. While the study makes ground truth its
 // cards are the tasks that make it, and the switch says how many are left; otherwise they show what was found.
 // count(left, total) from the study, null until it has any; on(fn) hears the view now shown, "image" or "items".
+// An item view marked data-viewing only shows what was found: while the study makes ground truth it is not shown,
+// and the study lists its tasks itself.
+const itemsView = () => { const v = $("#items-view"); return v && !(makesTruth() && v.hasAttribute("data-viewing")) ? v : null; };
 const views = {
   now: "image", left: null, total: null, heard: [],
   show(v) {
     views.now = v; $("#tip").hidden = true;
-    $("#image-view").hidden = v !== "image"; if ($("#items-view")) $("#items-view").hidden = v !== "items";
+    $("#image-view").hidden = v !== "image"; if ($("#items-view")) $("#items-view").hidden = v !== "items" || !itemsView();
     $("#view").dataset.view = v; views.draw();
     for (const fn of views.heard) fn(v);
   },
   on(fn) { views.heard.push(fn); lifetime.signal.addEventListener("abort", () => views.heard.splice(views.heard.indexOf(fn), 1)); },
   count(left, total) { views.left = left ?? null; views.total = total ?? null; views.draw(); },
   // the item view is the tasks that make the ground truth: a bar heads them, how many done and the study's Submit
-  get tasks() { return makesTruth() && !!$("#items-view"); },
+  get tasks() { return makesTruth() && !!itemsView(); },
   draw() {
     const b = $("#switch"), tasks = makesTruth(), bar = $("#tasks-bar"), m = bar.querySelector("meter");
     bar.hidden = !views.tasks;
@@ -431,7 +434,7 @@ const views = {
       : !tasks ? String(views.total) : views.left ? `${views.left} left` : "done";
   },
   mount() {
-    $("#switch").hidden = !$("#items-view"); $("#switch").disabled = true;
+    $("#switch").hidden = !itemsView(); $("#switch").disabled = true;
     views.left = views.total = null; views.show("image");
   },
 };
@@ -1793,7 +1796,7 @@ function leaveStudy() {
 const shell = {
   $, state: st, page, still, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, showImage, boxDone,
   views: { show: (v) => views.show(v), on: (fn) => views.on(fn), count: (l, t) => views.count(l, t), get now() { return views.now; }, get tasks() { return views.tasks; } },
-  get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; },
+  get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; }, get makesTruth() { return makesTruth(); },
 };
 const offlineCopy = offline({ $, esc, sizeText, drive: NorDrive, throttled, throttle, stored: () => diskBar(),
   kept: async (id) => !!(await caches.open(IMAGES).then((c) => c.match(imageUrl(id)), () => null)), keep: saveImage });
