@@ -317,6 +317,8 @@ async function mask(page) {
   const { ctx, page, asked } = await open(false);
   const warn = await page.isVisible("#notice") && (await page.textContent("#notice-text"));
   await check(warn && /local files/.test(warn) && warn.split(/\s+/).length <= 15, `a local image warns its ground truth cannot be sent: "${warn}"`);
+  const where = await page.evaluate(() => { const n = $("#notice").getBoundingClientRect(), v = $("#view").getBoundingClientRect(); return { top: n.top - v.top, centre: (n.left + n.right) / 2 - (v.left + v.right) / 2 }; });
+  await check(Math.abs(where.top - 56) <= 1 && Math.abs(where.centre) <= 1, `the warning sits at the top of the view, across its middle: ${JSON.stringify(where)}`);
   await page.click("#notice-ok");
   const before = await crumbs(page);
   await check(before === "Load image › Run algorithm* | #find,#sb-find", `with an image open, Run algorithm is the step to do: ${before}`);

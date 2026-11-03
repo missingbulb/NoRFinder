@@ -12,6 +12,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { repoFile } from "./repo_file.mjs";
+import { helpTip } from "./help_tip.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -139,6 +140,8 @@ await check((await visible("#minimap canvas")) && (await page.getAttribute("#min
 // hovering the toolbar button opens its opacity
 await page.mouse.move(5, 5); await page.hover("#minimap-btn");
 await page.waitForFunction(() => document.querySelector("#minimap-pop").matches(":popover-open"));
+const under = await page.evaluate(() => { const p = $("#minimap-pop").getBoundingClientRect(), b = $("#minimap-btn").getBoundingClientRect(); return { gap: p.top - b.bottom, right: p.right - b.right, inside: p.left >= 0 && p.right <= innerWidth }; });
+await check(under.gap >= 4 && under.gap <= 8 && Math.abs(under.right) <= 1 && under.inside, "under its button, their right edges lined up", under);
 await page.$eval("#minimap-opacity", (i) => { i.value = 40; i.dispatchEvent(new Event("input", { bubbles: true })); });
 await page.mouse.move(5, 5); await page.waitForTimeout(500);
 await check(Math.abs((await opacity()) - 0.4) < 0.01, "its popup sets the minimap's opacity at rest", await opacity());
@@ -162,6 +165,9 @@ const rows = () => page.$$eval("#channels .channel", (rs) => rs.map((r) => ({ na
 let ch = await rows();
 await check(ch.length === 1 && ch[0].name === "Grey" && ch[0].colour === "#ffffff" && ch[0].levels === 2, "one row per channel, with a slider of two points", ch);
 await check(ch[0].help === (await page.evaluate(async () => (await (await fetch("../studies/fixture/study.json")).json()).channels[0].about)), "its (?) shows the study's description", ch[0].help);
+const help = await helpTip(page, "#channels .channel .help");
+await check(help.text === ch[0].help && help.side === "right", "hovering the (?) shows the description beside it", help);
+await page.mouse.move(5, 5);
 // the squares are 200 and 250 in the image, the rest 0
 await check((await pixel(15, 15)).join() === "200,200,200", "the image as it is at first", await pixel(15, 15));
 const level = (k, which, v) => page.$eval(`#channels .channel:nth-child(${k}) input.${which}`, (i, v) => { i.value = v; i.dispatchEvent(new Event("input", { bubbles: true })); }, v);

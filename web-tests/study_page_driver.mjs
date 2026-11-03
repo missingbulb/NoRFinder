@@ -122,6 +122,8 @@ try {
   await page.click("#study-menu summary");
   const focused = await page.waitForFunction(() => document.activeElement?.type === "search").then(() => true, () => false);
   if (!focused) problems.push("the switcher does not open on its search box");
+  const lined = await page.evaluate(() => $("#study-menu .pop").getBoundingClientRect().left - $("#study-menu .caret").getBoundingClientRect().left);
+  if (Math.abs(lined) > 1) problems.push(`the switcher's popup does not open under its caret: ${lined} px off`);
   await page.keyboard.type("image");
   const found = await page.evaluate(() => [...document.querySelectorAll("#study-list a")].filter((a) => !a.hidden).map((a) => a.textContent).join());
   if (found !== "Image Viewer") problems.push("searching 'image' leaves " + found);

@@ -83,7 +83,9 @@ const signInTip = (page) => page.evaluate(() => {
   const t = document.querySelector('.tip-bubble[data-tip="sign-in"]'), a = document.querySelector("#user-menu summary");
   if (!t) return null;
   const r = t.getBoundingClientRect(), ar = a.getBoundingClientRect();
-  return { text: t.textContent, inside: r.left >= 0 && r.right <= innerWidth, below: r.top >= ar.bottom && r.top - ar.bottom < 30, under: r.left < ar.right && r.right > ar.left };
+  const s = document.createElement("style"); s.textContent = ".tip-bubble::before { pointer-events: auto !important; }"; document.head.append(s);
+  const arrow = t.contains(document.elementFromPoint((ar.left + ar.right) / 2, ar.bottom + 5)); s.remove();
+  return { text: t.textContent, inside: r.left >= 0 && r.right <= innerWidth, below: r.top >= ar.bottom && r.top - ar.bottom < 30, under: r.left < ar.right && r.right > ar.left, arrow };
 });
 const shot = async (page, name) => { if (shots) await page.screenshot({ path: path.join(shots, name + ".png") }); };
 
@@ -123,7 +125,7 @@ try {
   check(!(await popup(a.page)), "ticked, the next visit opens with no popup");
   const t = await signInTip(a.page);
   check(t && /sign in/i.test(t.text) && /settings/i.test(t.text) && /data files/i.test(t.text), "a tip suggests signing in to keep the settings everywhere and reach the data files: " + t?.text);
-  check(t && t.inside && t.below && t.under, "beside the avatar, inside the window: " + JSON.stringify(t));
+  check(t && t.inside && t.below && t.under && t.arrow, "beside the avatar, inside the window, its arrow at the avatar: " + JSON.stringify(t));
   check(scriptLoads === 0, "an anonymous visit loads nothing from Google");
   await shot(a.page, "welcome_tip");
   await a.page.click('.tip-bubble[data-tip="sign-in"] .x');
@@ -213,7 +215,7 @@ try {
   await g.page.setViewportSize({ width: 700, height: 800 });
   await pause(200);
   const moved = await signInTip(g.page);
-  check(moved && moved.inside && moved.under, "the tip follows the avatar when the window narrows: " + JSON.stringify(moved));
+  check(moved && moved.inside && moved.under && moved.arrow, "the tip follows the avatar when the window narrows: " + JSON.stringify(moved));
 
   // a remembered anonymous choice beside a signed-in record (another tab signed in): the popup asks
   const h = await device({ seed: { "nor-google-sign-in": JSON.stringify({ ...ada, until: Date.now() + 3600e3, changed: [] }), "nor-welcome": JSON.stringify({ choice: "anonymous", remember: true }) } });
