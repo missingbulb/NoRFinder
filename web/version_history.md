@@ -15,10 +15,10 @@ Everyone starts as Viewer, which shows what a study finds. Signed in, you can sw
 Tagger to make ground truth; a study's data managers can switch to Data Manager, which opens its
 folders at once. (#705)
 
-A z-stack now opens in 3D only, with no 2D/3D switch, the Image Viewer included, while a flat image
-opens in 2D; a plain multi-page TIFF opens as a stack in Vascular Measurements too. Edit Image on a
-stack leaves out Crop, the cut lines and Imperfections. In the Image Viewer the Image box stays open
-once loaded. (#702, #707, #713)
+A z-stack opens in 3D only and a flat image in 2D, in every study; a plain multi-page TIFF opens as
+a stack too. Edit Image on a stack leaves out Crop, the cut lines and Imperfections. Each channel in
+the Image box fits on one line, with a swatch to recolour it and triangle black and white points.
+(#702, #707, #708, #713)
 
 The left bar collapses and opens from the chevron at its top, or by dragging its edge, and a folded
 drawer opens from a click anywhere on it. In NoR Finder an opening image builds in grey while it
