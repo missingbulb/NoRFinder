@@ -998,10 +998,11 @@ spec does not have.
   <details>
 
   Clicking the version in the status bar (it has no tooltip) opens a Version history popup: each
-  release, newest first, with its date and terse lines on what changed for the user. The lines live
-  in [`web/version_history.md`](../../web/version_history.md): a pull request that changes what
-  users see adds one under "Next release", and the site build files it under the release that first
-  carried that pull request. The browser remembers the version last seen; when the page has been
+  release, newest first, with its date and at most three short paragraphs, of at most 60 words
+  each, on what changed for the user. They live in
+  [`web/version_history.md`](../../web/version_history.md): a pull request that changes what users
+  see works itself into the "Next release" paragraphs, leaving out what pales beside the rest, and
+  the site build files each paragraph under the release that carried every pull request it names. The browser remembers the version last seen; when the page has been
   updated since and the history names a change in between, a bubble points at the version saying
   "Click here to see what was updated since v…", until the user opens the history or closes the
   bubble with its ×. The history then marks the releases that are new

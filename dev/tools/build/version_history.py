@@ -1,7 +1,8 @@
 """The page's version history: web/version_history.md, read into the list the page shows.
 
-A line under "Next release" names its pull request, and goes under the release that first carried
-that pull request, read from main's release commits. Run from the repo root:
+Each release is a few paragraphs, each ending with the pull requests it tells of, `(#12, #34)`. A
+paragraph under "Next release" goes under the release that carried all of them, read from main's
+release commits. Run from the repo root:
 
   python3 dev/tools/build/version_history.py json     writes web/version_history.json, which the page reads
   python3 dev/tools/build/version_history.py fold     writes the found versions into version_history.md
@@ -14,18 +15,43 @@ OUT = os.path.join(ROOT, 'web', 'version_history.json')
 NEXT = 'Next release'
 RELEASE = re.compile(r'^Release site version (\S+)$')
 PR_IN_SUBJECT = re.compile(r'\(#(\d+)\)$|^Merge pull request #(\d+) ')
-PR_IN_LINE = re.compile(r'\(#(\d+)\)\s*$')
+PRS_AT_END = re.compile(r'\s*\((#\d+(?:,\s*#\d+)*)\)\s*$')
+MAX_PARAGRAPHS, MAX_WORDS = 3, 60
 
 
 def parse(text):
-    """[(heading, [line])] in the file's order: each "## " heading with its "- " lines."""
-    sections = []
+    """[(heading, [paragraph])] in the file's order: each "## " heading with its blank-line-separated paragraphs."""
+    sections, lines = [], []
+
+    def close():
+        if lines and sections:
+            sections[-1][1].append(' '.join(lines))
+        lines.clear()
     for raw in text.splitlines():
         if raw.startswith('## '):
+            close()
             sections.append((raw[3:].strip(), []))
-        elif raw.startswith('- ') and sections:
-            sections[-1][1].append(raw[2:].strip())
+        elif not raw.strip():
+            close()
+        elif sections:
+            lines.append(raw.strip())
+    close()
     return sections
+
+
+def pull_requests(paragraph):
+    m = PRS_AT_END.search(paragraph)
+    return [int(n) for n in re.findall(r'\d+', m.group(1))] if m else []
+
+
+def words(paragraph):
+    return len(PRS_AT_END.sub('', paragraph).split())
+
+
+def carried_by(paragraph, found):
+    """The release that carried every pull request the paragraph names, or None while one is unreleased."""
+    versions = [found.get(pr) for pr in pull_requests(paragraph)]
+    return max(versions, key=build_number) if versions and all(versions) else None
 
 
 def releases(log):
@@ -50,19 +76,17 @@ def build_number(version):
 
 
 def resolve(sections, found, current):
-    """[{version, changes}] newest first: every Next release line moved to the version that carried its
-    pull request, or to `current` (the version being built) when no release carried it yet."""
+    """[{version, changes}] newest first: every Next release paragraph moved to the version that carried its
+    pull requests, or to `current` (the version being built) while one is unreleased."""
     by_version = {}
     for heading, lines in sections:
         for line in lines:
             if heading == NEXT:
-                m = PR_IN_LINE.search(line)
-                version = found.get(int(m.group(1))) if m else None
-                version = version or current
+                version = carried_by(line, found) or current
             else:
                 version = heading
             by_version.setdefault(version, []).append(line)
-    return [{'version': v, 'changes': [PR_IN_LINE.sub('', c).rstrip() for c in by_version[v]]}
+    return [{'version': v, 'changes': [PRS_AT_END.sub('', c) for c in by_version[v]]}
             for v in sorted(by_version, key=build_number, reverse=True)]
 
 
@@ -87,12 +111,11 @@ def history(root):
 
 
 def fold(text, found):
-    """version_history.md with each Next release line that a release carried moved under that release."""
+    """version_history.md with each Next release paragraph that a release carried moved under that release."""
     sections = parse(text)
     keep, moved = [], {}
     for line in dict(sections).get(NEXT, []):
-        m = PR_IN_LINE.search(line)
-        version = found.get(int(m.group(1))) if m else None
+        version = carried_by(line, found)
         (moved.setdefault(version, []) if version else keep).append(line)
     if not moved:
         return text
@@ -101,9 +124,17 @@ def fold(text, found):
     for version, lines in moved.items():
         out[version] = lines + out.get(version, [])
     order = sorted(out, key=build_number, reverse=True)
-    body = [f'## {NEXT}\n' + ''.join(f'- {line}\n' for line in keep)]
-    body += [f'## {v}\n' + ''.join(f'- {line}\n' for line in out[v]) for v in order]
-    return head + '\n'.join(body)
+    section = lambda h, ps: '\n\n'.join([f'## {h}', *map(wrap, ps)]) + '\n'
+    return head + '\n'.join([section(NEXT, keep), *(section(v, out[v]) for v in order)])
+
+
+def wrap(paragraph, width=100):
+    lines = ['']
+    for word in paragraph.split():
+        if lines[-1] and len(lines[-1]) + 1 + len(word) > width:
+            lines.append('')
+        lines[-1] = f'{lines[-1]} {word}'.lstrip()
+    return '\n'.join(lines)
 
 
 if __name__ == '__main__':
