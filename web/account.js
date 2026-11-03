@@ -6,6 +6,7 @@
 // ask for more (more(scope), req/shell/data/drive-access): Google's per-file Drive permission, added to the same token.
 "use strict";
 import { CONNECTION } from "./offline.js";
+import { multipart } from "./drive_upload.js";
 
 const GOOGLE_SCRIPT = "https://accounts.google.com/gsi/client";
 const SCOPES = "openid email profile https://www.googleapis.com/auth/drive.appdata";
@@ -62,11 +63,8 @@ export function account({ keys, menu, clientId, applied, changed = () => {} }) {
     const body = JSON.stringify(here()), id = await fileId();
     if (id) await google(`${UPLOAD}/${id}?uploadType=media`, { method: "PATCH", headers: { "content-type": "application/json" }, body });
     else {
-      // Drive's multipart upload: the file's details, then the file, written out as text
-      const cut = "nor-settings-" + Math.random().toString(36).slice(2);
-      const parts = [`--${cut}`, "Content-Type: application/json; charset=UTF-8", "", JSON.stringify({ name: FILE_NAME, parents: ["appDataFolder"] }),
-        `--${cut}`, "Content-Type: application/json", "", body, `--${cut}--`, ""].join("\r\n");
-      me.fileId = (await (await google(`${UPLOAD}?uploadType=multipart&fields=id`, { method: "POST", headers: { "content-type": `multipart/related; boundary=${cut}` }, body: parts })).json()).id;
+      const upload = await multipart({ name: FILE_NAME, parents: ["appDataFolder"] }, body, "application/json");
+      me.fileId = (await (await google(`${UPLOAD}?uploadType=multipart&fields=id`, { method: "POST", ...upload })).json()).id;
     }
     me.changed = []; keep();
   }
