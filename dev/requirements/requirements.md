@@ -356,7 +356,17 @@ spec does not have.
   copy. A study whose Python is already on this device runs; one whose Python is not says so: it
   needs the internet once, or Make available offline (`req/shell/offline/per-study`). An image kept on this device (`req/shell/drive/kept-images`,
   `req/shell/offline/per-study`) opens: offline, From Google Drive lists the images kept here instead of a Drive folder.
-  The status bar shows Offline, which opens the Storage tab (`req/shell/offline/per-study`). What needs the network says so in
+  The status bar's network carries a red mark on its icon, the one red in the status bar, its tooltip and its
+  Network tab saying the page is offline; set by the owner on 2026-11-03, it took the place of an Offline item. No
+  network is the browser saying so, or the site not answering, asked every 30 seconds all session long, so the
+  network going or coming back mid-session shows within that, the browser saying online or not, and a Wi-Fi's
+  sign-in page answering in the site's place counts as no network. What the page is doing follows it, set by the
+  owner on 2026-11-03: a study whose Python could not load loads it once the network is back, with no reload;
+  an open From Google Drive lists the images kept here once it goes and the study's folder once it is back, and
+  an image it could not download says the internet cannot be reached; an open Make available offline reads the
+  study's folder and counts again, and offers Download again after a run the network cut short, what it kept
+  staying kept; a signed-in user's settings sync, the version is checked and the site's copy brought up to date.
+  What needs the network says so in
   its tooltip and does nothing: Sign in with Google, opening a new GitHub issue and Submit New Study
   Request. A change to a setting that follows the user (`req/shell/account/sign-in`) waits and is saved once the network is
   back. A visit the browser cannot reach a copy for, never opened online, shows the browser's own
@@ -395,8 +405,7 @@ spec does not have.
   cannot tell. A choice larger than the room left is refused, saying so. Download asks the browser
   to keep the site's storage until the user deletes it, downloads with its progress shown and can be
   stopped, and ends saying what is now on this device and whether the browser agreed to keep it.
-  When Google throttles the downloads (`req/shell/drive/throttle`) it stops and says so. The status bar's Offline
-  (`req/shell/offline/default`) opens the Storage tab. Test: `web-tests/test_offline_page.py`.
+  When Google throttles the downloads (`req/shell/drive/throttle`) it stops and says so. Test: `web-tests/test_offline_page.py`.
   </details>
 
 - `req/shell/page-state` The shell's controls are drawn from one page state, and change only it.
