@@ -77,19 +77,24 @@ def test_leaves_a_compressed_tiff_alone():
 def test_every_frame_is_grey_black_or_a_shade_of_the_final_colours():
     """Arriving, wiping or fading in, no pixel shows a hue its final colour lacks: it is grey, or its final
     colour at one brightness shared by the whole frame."""
-    for path, (info, whole, _) in zip(TIFS[:3], paint(TIFS[:3], chunk=524288, frames=True)):
+    painted = paint(TIFS[:3], chunk=524288, frames=True)
+    assert len(painted) == len(TIFS[:3])
+    for path, (info, whole, _) in zip(TIFS[:3], painted):
         final = whole[..., :3].reshape(-1, 3)[::EVERY].astype(float)
         frames = info['frames'].astype(float)
         assert len(frames) > 10, path  # the download and the animations painted step by step
         assert (frames[-1] == final).all(), path
+        coloured = 0
         for n, f in enumerate(frames):
             grey = (f.max(1) - f.min(1)) <= 1
             col = ~grey
             if not col.any():
                 continue
+            coloured += 1
             s = (f[col] * final[col]).sum() / max((final[col] ** 2).sum(), 1)
             off = np.abs(f[col] - final[col] * s).max(1) > 2
             assert off.mean() < 1e-4, (path, n, s, off.mean())
+        assert coloured >= 10, (path, coloured)  # the wipe and the fade both reached the check, frame by frame
 
 
 @pytest.mark.skipif(not NODE or not TIFS, reason='needs node and the lab images')
