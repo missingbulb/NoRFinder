@@ -43,9 +43,16 @@ python3 -m pytest tests
 ## The page
 
 `py/vascular.py` is what the browser runs: it hands the shell's 3D viewer the stack, flattened and
-slice by slice (`req/vascular/stack-view`). `web/vascular.js` mounts the vessel model over or beside it
-(`web/model_view.js`, drawing through the 3D viewer's `three`), its cards (`web/items.js`) and Submit
-Ground Truth (`req/vascular/model/correct`, `req/vascular/model/cards` and `req/vascular/model/ground-truth`, `tests/test_model_page.py`). The draft models it opens are
-`web/models/`; the model's format and edits are `web/model.js` (`web/coverage.js` the review's
-tube), pinned by `tests/test_model_js.py` and, against the Python fit,
-`tests/test_vessel_model_curve.py`.
+slice by slice (`req/vascular/stack-view`), and runs the extraction lab's versions on it in the page
+(`req/vascular/model/run`: Processing's Execute; the page's Python imports `analysis/` and
+`analysis/extraction/` as they are, so a new version ships with no list to update). The site ships no
+drawn models. `web/vascular.js` mounts Processing, the vessel model over or beside the stack
+(`web/model_view.js`, drawing through the 3D viewer's `three`; `req/vascular/model/view`,
+`req/vascular/model/correct`), the Ground Truth Tasks in the left bar while the study makes ground
+truth (`web/tasks.js`; `req/vascular/truth/tasks`, `req/vascular/truth/order`, `req/vascular/truth/marks`), the item cards outside it (`web/items.js`,
+`req/vascular/model/cards`) and Submit Ground Truth (`req/vascular/model/ground-truth`). Tests:
+`tests/test_model_page.py` (PreGT: views and cards), `tests/test_vessel_tasks_page.py` (GT: Execute
+and the tasks), both against the stand-in worker in `tests/stand_in.mjs`, and
+`tests/test_extract_bridge.py` (the real Python in Pyodide). The model's format and edits are
+`web/model.js` (`web/coverage.js` the review's tube and what the tasks cut out of the stack), pinned
+by `tests/test_model_js.py` and, against the Python fit, `tests/test_vessel_model_curve.py`.

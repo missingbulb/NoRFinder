@@ -24,8 +24,11 @@ tracer, so an unchanged version is not re-run.
 
 ## Where things stand
 
-- **Default: v5** (`lab.py` `DEFAULT`), and the models the MicroViewer ships
-  (`microviewer/models/`) are v5's.
+- **Default: v5** (`lab.py` `DEFAULT`). The study's page offers every version, the default first,
+  and runs the one chosen on the stack open (`lab.run_volume`, as `run` does from a file), in the
+  page's Python: a new version file and its `VERSIONS` entry are all it takes to offer one there.
+  Its first docstring line before the colon is the version's title on the page, the whole docstring
+  its How the algorithm works.
 - **Two judges, neither the owner.** `score.py` gives a *plausibility* from the pixels under each
   edge and from biology invariants (no short loops, mostly bifurcations, wide branch angles, one
   taper direction per junction). `labels/fable-v1.json` holds a model's (Fable's) verdicts on 232
