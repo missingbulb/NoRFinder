@@ -1729,6 +1729,8 @@ async function mountStudy(id) {
   const r = await fetch(base + "study.json");
   if (!r.ok) throw new Error(`no study "${id}"`);
   manifest = await r.json();
+  data.mount(manifest);
+  takeRole();
   document.title = manifest.title; $("#title").textContent = manifest.title; $("#title-icon").replaceChildren(...studyIcon(id, manifest.icon)); markCurrent();
   log.add(`Opened the study “${manifest.title}”`);
   $("#favicon").href = manifest.icon ? base + manifest.icon : new URL("icon.svg", import.meta.url).href;
@@ -1751,8 +1753,6 @@ async function mountStudy(id) {
   study = (await mod.mount(shell)) || {};
   view.use(study);
   showStage();
-  data.mount(manifest);
-  takeRole();
   if (!makesTruth() && manifest.groundTruth?.button) $(manifest.groundTruth.button).hidden = true;
   makeSteps();
   foldable();
