@@ -12,6 +12,8 @@ import sys
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 # the browser each Playwright engine stands for
 BROWSER = {'chromium': 'Chrome', 'firefox': 'Firefox', 'webkit': 'Safari'}
+# the full set, but what only Chromium's DevTools can measure
+SELECTED = ['-m', 'full and not chromium_only']
 
 
 def counts(engine, supported):
@@ -34,7 +36,7 @@ def verdict(engine, code, supported):
 def main(engine):
     supported = json.load(open(os.path.join(ROOT, 'web', 'browsers.json')))['supported']
     counts(engine, supported)
-    code = subprocess.run([sys.executable, '-m', 'pytest', 'web-tests', 'studies', '-m', 'full', '-q', '--durations=10'],
+    code = subprocess.run([sys.executable, '-m', 'pytest', 'web-tests', 'studies', *SELECTED, '-q', '--durations=10'],
                           cwd=ROOT, env={**os.environ, 'PW_ENGINE': engine}).returncode
     return verdict(engine, code, supported)
 

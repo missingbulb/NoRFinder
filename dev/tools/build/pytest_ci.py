@@ -17,3 +17,5 @@ def pytest_runtest_makereport(item, call):
 def pytest_configure(config):
     config.addinivalue_line('markers', 'full: drives Node, Pyodide or Chromium, or measures speed or memory; '
                                        'left out of the fast set every PR runs (-m "not full")')
+    config.addinivalue_line('markers', "chromium_only: what it checks is read through Chromium's DevTools, so the run on "
+                                       'the other engines leaves it out (req/checks/other-engines)')

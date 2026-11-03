@@ -1039,7 +1039,9 @@ spec does not have.
   set again on Playwright's Firefox and on its WebKit, standing for Safari; a push to main does not, and
   neither gates a release. An engine whose browser `web/browsers.json` does not list (`req/shell/browsers/supported`) reports
   its failures as a warning on the run and the night stays green; once its browser is listed, a failure
-  fails the night as any other test does. Each page test's driver launches the engine `PW_ENGINE` names, so the
+  fails the night as any other test does. A test whose subject only Chromium's DevTools can read (the page's memory)
+  is marked `chromium_only` and left out of those runs, and a check of that kind inside another test (whether the site
+  is installable, the listeners a study leaves) is made in Chromium only. Each page test's driver launches the engine `PW_ENGINE` names, so the
   same run can be made by hand: `python3 dev/tools/build/other_engines.py firefox`. Test:
   `web-tests/test_other_engines.py`.
   </details>
