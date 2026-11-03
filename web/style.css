@@ -40,9 +40,13 @@ h1 { font-size: 16px; font-weight: 600; margin: 0; }
 #study-menu summary { display: flex; align-items: center; height: 32px; padding: 0; border: 0; border-radius: var(--r-chip); background: none; overflow: hidden; }
 #study-menu summary::after { content: none; }
 #study-menu h1 { height: 32px; line-height: 32px; padding: 0 8px; background: color-mix(in srgb, var(--text) 7%, var(--bg)); }
+#title-icon { display: flex; align-items: center; height: 32px; padding-left: 8px; color: var(--text); background: color-mix(in srgb, var(--text) 7%, var(--bg)); }
+#title-icon svg { fill: currentColor; }
+#title-icon .study-icon[hidden] { display: none; }
+#title-icon:empty { display: none; }
 #study-menu .caret { display: grid; place-items: center; width: 24px; height: 32px; color: var(--text); background: color-mix(in srgb, var(--text) 13%, var(--bg)); }
 #study-menu .caret svg, #study-menu .search svg, #study-list svg { fill: currentColor; flex: none; }
-#study-menu summary:hover h1, #study-menu[open] h1 { background: color-mix(in srgb, var(--text) 12%, var(--bg)); }
+#study-menu summary:hover h1, #study-menu[open] h1, #study-menu summary:hover #title-icon, #study-menu[open] #title-icon { background: color-mix(in srgb, var(--text) 12%, var(--bg)); }
 #study-menu summary:hover .caret, #study-menu[open] .caret { background: color-mix(in srgb, var(--text) 18%, var(--bg)); }
 #study-menu summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 #study-menu .caret { anchor-name: --study-caret; }

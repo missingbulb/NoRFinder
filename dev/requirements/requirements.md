@@ -336,7 +336,7 @@ spec does not have.
 - `req/shell/header` A header with the logo, the study switcher and a dark/light switch (remembered).
   <details>
 
-  GitHub's repository switcher, for studies: the study's title and a solid caret form one 32 px
+  GitHub's repository switcher, for studies: the study's icon (as in its list, below), its title and a solid caret form one 32 px
   control; it opens, under the caret, a 320 px panel headed "Switch study", a search box (focused,
   filtering by title as the user types) and every study whose `study.json` says `"listed": true`,
   by title, each with its own icon (the tab's icon its `study.json` names; the generic study icon

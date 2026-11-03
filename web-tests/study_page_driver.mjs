@@ -98,9 +98,22 @@ try {
   await page.waitForFunction(() => [...document.querySelectorAll("#study-list img")].every((i) => i.complete));
   const icons = await page.evaluate(() => [...document.querySelectorAll("#study-list a")].map((a) => {
     const img = a.querySelector("img.study-icon");
-    return { id: a.dataset.id, src: img && !img.hidden && img.naturalWidth ? new URL(img.src).pathname : null, generic: !!a.querySelector("svg.study-icon:not([hidden])") };
+    return { id: a.dataset.id, src: img && !img.hidden && img.naturalWidth ? new URL(img.src).pathname : null, generic: a.querySelector("svg.study-icon:not([hidden])") instanceof SVGSVGElement };
   }));
   console.log(JSON.stringify(icons));
+  // the control showing the study on show carries its icon too: its own, loaded, or the generic one
+  const headIcon = async (want) => {
+    const got = () => page.evaluate(() => {
+      const img = document.querySelector("#study-menu summary img.study-icon:not([hidden])");
+      if (img) return img.complete && img.naturalWidth ? new URL(img.src).pathname : "loading";
+      const svg = document.querySelector("#study-menu summary svg.study-icon:not([hidden])");
+      return svg instanceof SVGSVGElement ? "generic" : "none";
+    });
+    for (let i = 0; i < 30 && (await got()) !== want; i++) await page.waitForTimeout(100);
+    const seen = await got();
+    if (seen !== want) problems.push(`the switcher's control shows ${seen}, not ${want}`);
+  };
+  await headIcon("/studies/fixture/web/icon.svg");
   for (const s of JSON.parse(fs.readFileSync(studies, "utf8"))) {
     const got = icons.find((i) => i.id === s.id) || {};
     const want = s.icon ? `/studies/${s.id}/${s.icon}` : null;
@@ -167,6 +180,7 @@ try {
   else if (!form || !fs.existsSync(path.join(repo, ".github", "ISSUE_TEMPLATE", form))) problems.push("Submit New Study Request opens a form the repo does not carry: " + request.href);
   const viewerMenu = await menu();
   if (viewerMenu.items.join() !== titles.map((t) => (t === "Image Viewer" ? t + "*" : t)).join()) problems.push("the switcher does not tick the study on show: " + viewerMenu.items);
+  await headIcon("generic");
 
   // into NoR Finder by a click, then back: NoR's panels and listeners leave with it
   await page.click("#study-menu summary");
@@ -178,6 +192,7 @@ try {
   if (!inNor.stayed || inNor.path !== "/web/nor" || inNor.title !== "NoR Finder") problems.push("choosing NoR Finder did not swap it in at /web/nor: " + JSON.stringify(inNor));
   if (inNor.image || inNor.file !== "No image loaded") problems.push("an image opened in NoR Finder after the switch: " + JSON.stringify(inNor));
   if (!inNor.icon.endsWith("/studies/nor/web/icon.svg")) problems.push("switching to NoR Finder did not swap in its icon: " + inNor.icon);
+  await headIcon("/studies/nor/web/icon.svg");
   await page.goBack();
   await page.waitForFunction(() => document.title === "Image Viewer" && !document.querySelector("#finder"));
   const back = await shown(), after = await listeners();
