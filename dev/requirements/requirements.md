@@ -406,7 +406,8 @@ spec does not have.
   `web-tests/test_study_runs.py`, `web-tests/test_compressed_tiff.py`.
   </details>
 
-- `req/shell/left-bar/collapse` The left bar collapses to a narrow Steps strip, giving the image its room, and expands again (remembered).
+- `req/shell/left-bar/collapse` The left bar collapses to a narrow Steps strip, giving the image its room, and expands again (remembered):
+  by a chevron in one spot, at the bar's top open or collapsed, or by dragging the gutter past the bar's narrowest and back out.
   <details>
 
   Set by the owner on 2026-11-03. A small tab holding a chevron sits on the gutter between the open
