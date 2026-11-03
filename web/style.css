@@ -149,7 +149,7 @@ body.resizing { cursor: col-resize; user-select: none; }
 .channel input[type=checkbox] { flex: none; width: 15px; height: 15px; margin: 0; cursor: pointer; }
 /* the colour picker: a swatch a little wider than tall in a thick frame, lit from the top left like a picture's; its colour, at
    the centre, a little lighter towards the top left and darker towards the bottom right */
-.channel input[type=color] { flex: none; width: 28px; height: 20px; padding: 0; border: 3px solid; border-radius: 2px; cursor: pointer; background: none;
+.channel input[type=color] { flex: none; width: 22px; height: 15px; padding: 0; border: 3px solid; border-radius: 2px; cursor: pointer; background: none;
   border-color: color-mix(in srgb, var(--dim) 55%, #fff) color-mix(in srgb, var(--dim) 65%, #000) color-mix(in srgb, var(--dim) 65%, #000) color-mix(in srgb, var(--dim) 55%, #fff); }
 .channel input[type=color]:hover, .channel input[type=color]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .channel input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
