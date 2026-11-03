@@ -11,8 +11,9 @@ carried all its pull requests. The `writing-version-history` skill says how.
 ## Next release
 
 A z-stack now opens in 3D only, with no 2D/3D switch, the Image Viewer included, while a flat image
-opens in 2D. Edit Image on a stack leaves out Crop, the cut lines and Imperfections, which draw on a
-flat image. In the Image Viewer the Image box stays open once the image has loaded. (#702, #707)
+opens in 2D; a plain multi-page TIFF opens as a stack in Vascular Measurements too. Edit Image on a
+stack leaves out Crop, the cut lines and Imperfections. In the Image Viewer the Image box stays open
+once loaded. (#702, #707, #713)
 
 ## 0.11103.79
 
