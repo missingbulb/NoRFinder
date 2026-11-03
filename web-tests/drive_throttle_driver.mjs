@@ -16,6 +16,7 @@ import http from "node:http";
 import path from "node:path";
 import { offSite } from "./off_site.mjs";
 import { keptContext } from "./kept_context.mjs";
+import { until } from "./page_until.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -91,7 +92,7 @@ try {
   await menu('#load-menu .item[data-src="drive"]'); await listed();
   await page.dblclick("#drive-list .item:nth-child(2)");
   await page.waitForFunction(() => st.fileName === "b.png");
-  await page.waitForFunction(async () => (await (await caches.open("nor-images-v1")).keys()).length === 1);
+  await until(page, async () => (await (await caches.open("nor-images-v1")).keys()).length === 1);
 
   // throttled: opening a.png is refused
   mode = "throttled";

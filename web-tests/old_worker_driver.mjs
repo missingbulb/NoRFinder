@@ -10,6 +10,7 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { ENGINE } from "./engine.mjs";
+import { until } from "./page_until.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -44,7 +45,7 @@ const page = ctx.pages()[0] || await ctx.newPage();
 const scopes = () => page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).map((r) => new URL(r.scope).pathname));
 try {
   await page.goto(origin + "/");
-  await page.waitForFunction(async () => !!(await navigator.serviceWorker.getRegistration())?.active, null, { timeout: 15000 });
+  await until(page, async () => !!(await navigator.serviceWorker.getRegistration())?.active, null, { timeout: 15000 });
   await page.reload();
   check(await page.evaluate(() => !!navigator.serviceWorker.controller), "before: the old worker controls the site's top");
   before = false;
