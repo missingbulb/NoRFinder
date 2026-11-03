@@ -283,7 +283,8 @@ another baseline, another ground truth or other presets. The numbers are only as
 behind them (R9).
 
 On the page (R8), the finder list shows each finder's precision and recall after its best preset (the
-highest F1), its "How it works" note its own candidates' numbers before any filter, and the
+highest F1), its "How the <finder> algorithm works" note both its own candidates' numbers before any filter and
+those after the best preset, and the
 Postprocessing box (the filters) opens with the three presets, each with its precision and recall after the filters; choosing one sets every filter to its values, and
 it stays lit while the filters hold them. The Postprocessing box has no "restore defaults": there are no
 absolute defaults, and Balanced is the finder's own values.

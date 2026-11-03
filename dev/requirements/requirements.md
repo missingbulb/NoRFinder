@@ -1266,9 +1266,13 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   <details>
 
   They re-run the finder. Each finder names its main settings (its function's `MAIN`), shown first;
-  every setting is under a collapsed Advanced box. Each finder shows a few sentences on how it
-  works, and every setting and filter value has a ? that says what it does
-  (`detection/finder_help.py`; the test fails when one is missing).
+  every setting is under a collapsed Advanced box. Each finder shows how it works under "How the
+  <finder> algorithm works", its steps as a nested list (written as a Markdown outline), and every
+  setting and filter value has a ? that says what it does (`detection/finder_help.py`; the test fails
+  when one is missing). Changed by the owner on 2026-11-03: the note ends by telling its precision and
+  recall before any filter apart from those after the best filter preset, which the finder list shows;
+  each finder in the list carries its own icon, the study's choice; the settings start folded.
+  Test: `studies/nor/tests/test_processing_box.py`.
   </details>
 
 - `req/nor/lab-parity` The page runs the lab's code, and at our settings passes what the lab passes.
@@ -1283,8 +1287,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   <details>
 
   Changed by the owner on 2026-10-30, 2026-10-31 and 2026-11-02. Below the Image box
-  (`req/shell/left-bar/folding`) the left bar holds Processing, the candidates finder (its "how it works"
-  and its settings fold away; its "restore defaults" sits with the settings, not in the title row), open
+  (`req/shell/left-bar/folding`) the left bar holds Processing, the candidates finder (its "how the
+  algorithm works" and its settings fold away, and start folded; its "restore defaults" sits with the settings, not in the title row), open
   from the image's opening until Find Candidates and, folded once Find Candidates has run with the finder and
   settings now chosen, titled "<finder> executed"; Postprocessing, the filters, which only its title
   opens; and Summary, which opens once the candidates are found. Postprocessing and Summary keep
