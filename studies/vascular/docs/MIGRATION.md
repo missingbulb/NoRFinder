@@ -3,7 +3,7 @@
 Every capability of [missingbulb/vascularColoring](https://github.com/missingbulb/vascularColoring)
 (at `54badaa`), and where it stands here. **Moved** is in `studies/vascular/` or its pack;
 **exceeded** is already done, or done better, by NoRFinder; **open** waits on a decision in
-[#620](https://github.com/missingbulb/NoRFinder/pull/620).
+[#620](https://github.com/missingbulb/RaunTruth/pull/620).
 
 | Capability (vascularColoring) | Here | Status |
 |---|---|---|
