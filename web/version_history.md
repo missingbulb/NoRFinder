@@ -11,8 +11,8 @@ carried all its pull requests. The `writing-version-history` skill says how.
 ## Next release
 
 Making ground truth is now a to-do list in the left bar: the finalists, the rejected, then each area
-of the image checked for missed NoRs, one at a time, with big thumbs beside the crop. Whatever you
-finish is cut out of the image, uncovering a golden retriever behind it, and the bar fills per task. (#720)
+of the image checked for missed NoRs, one at a time, with big thumbs under the crop. Whatever you
+finish is cut out of the image, and the bar fills task by task. (#720)
 
 ## 0.11103.80
 
