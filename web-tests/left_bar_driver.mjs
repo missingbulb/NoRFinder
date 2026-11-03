@@ -120,14 +120,18 @@ const viewW = () => page.evaluate(() => Math.round(document.querySelector("#view
 const settled = () => page.waitForFunction(() => !document.getAnimations().some((a) => a.transitionProperty === "grid-template-columns" || a.animationName === "data-in"));
 const wide = await left(), imageW = await viewW();
 await check(await page.evaluate(() => document.querySelector("#data-col").getClientRects().length === 0), "no data manager: no sliver of the Data Management strip beside the bar");
-await check(await page.locator("#left-fold").isVisible(), "the open bar is topped by its collapse chevron");
-await page.click("#left-fold");
+const tab = await page.evaluate(() => { const t = document.querySelector("#left-collapse")?.getBoundingClientRect(), g = document.querySelector("#gutter-left").getBoundingClientRect();
+  return t && { onGutter: t.left < g.right && t.right > g.left, middle: Math.abs((t.top + t.bottom) / 2 - (g.top + g.bottom) / 2) < 2, shown: t.width > 0 }; });
+await check(tab?.onGutter && tab.middle && tab.shown, "the open bar's collapse tab sits on the gutter, at its middle", tab);
+await page.click("#left-collapse");
 await page.waitForTimeout(50); await settled();
 await check((await left()) < 60, "collapsing leaves a narrow strip", await left());
 await check((await viewW()) > imageW + 200, "and gives the image the room", [imageW, await viewW()]);
-const strip = await page.evaluate(() => ({ label: document.querySelector("#left-fold .strip-name").textContent, vertical: getComputedStyle(document.querySelector("#left-fold .strip-name")).writingMode,
-  expanded: document.querySelector("#left-fold").getAttribute("aria-expanded"), drawers: [...document.querySelectorAll("#left > .box")].filter((b) => b.checkVisibility()).length }));
-await check(strip.label === "Steps" && strip.vertical === "vertical-rl" && strip.expanded === "false" && strip.drawers === 0, "the strip reads Steps, upright, and hides the drawers", strip);
+const strip = await page.evaluate(() => ({ label: document.querySelector("#left-strip .strip-name").textContent, vertical: getComputedStyle(document.querySelector("#left-strip .strip-name")).writingMode,
+  marks: [...document.querySelectorAll("#left-marks .step-mark")].map((m) => m.textContent).join(),
+  tab: document.querySelector("#left-collapse").checkVisibility(), drawers: [...document.querySelectorAll("#left > .box")].filter((b) => b.checkVisibility({ visibilityProperty: true })).length }));
+await check(strip.label === "Steps" && strip.vertical === "vertical-rl" && strip.marks === "1,2,3,4" && !strip.tab && strip.drawers === 0,
+  "the strip shows the step marks and Steps, upright, and hides the drawers and the tab", strip);
 const g = await page.locator("#gutter-left").boundingBox();
 await page.mouse.move(g.x + g.width / 2, g.y + 100); await page.mouse.down(); await page.mouse.move(g.x + 300, g.y + 100); await page.mouse.up();
 await check((await left()) < 60, "a collapsed bar cannot be dragged wider", await left());
@@ -136,12 +140,18 @@ await page.waitForFunction(() => document.querySelector("#status").textContent.s
 await settled();
 await check((await left()) < 60, "collapsed stays collapsed on the next visit", await left());
 // expanding: the column slides out as Data Management's does, the drawers sliding in
-const slideOut = page.waitForFunction(() => document.getAnimations().some((a) => a.transitionProperty === "grid-template-columns")
+const slideOut = () => page.waitForFunction(() => document.getAnimations().some((a) => a.transitionProperty === "grid-template-columns")
   && document.getAnimations().some((a) => a.animationName === "data-in" && a.effect?.target?.closest?.("#left"))).then(() => true, () => false);
-await page.click("#left-fold");
-await check(await slideOut, "expanding slides the bar out and the drawers in");
+let slid2 = slideOut();
+await page.click("#left-strip .strip-name");
+await check(await slid2, "clicking the strip slides the bar out and the drawers in");
 await settled();
 await page.waitForFunction(() => !document.querySelector("#left").classList.contains("sliding-in"));
-await check((await left()) === wide && await page.evaluate(() => document.querySelector("#left-fold").getAttribute("aria-expanded")) === "true", "expanding brings the bar back at its width", [wide, await left()]);
+await check((await left()) === wide, "expanding brings the bar back at its width", [wide, await left()]);
 await boxes(["1 Load Image open", "2 Threshold folded", "3 Counted folded", "4 Notes folded"], "with its drawers as they were");
+await page.click("#left-collapse");
+await page.waitForTimeout(50); await settled();
+await page.locator("#left-marks .step-mark").nth(2).click();
+await settled();
+await boxes(["1 Load Image open", "2 Threshold folded", "3 Counted open", "4 Notes folded"], "clicking a step mark expands the bar with that drawer open");
 await done(0);

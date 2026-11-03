@@ -1389,8 +1389,6 @@ function foldFor(key) {
 // the folded box sums up what was done and the open one shows its data-done-name, else its name.
 const summaries = new WeakMap(); // box -> its summary: text, or a node
 function retitle() {
-  // collapsed (req/shell/left-bar/collapse), no drawer is on show to count: they are titled again on the way back
-  if (document.documentElement.dataset.left === "collapsed") return;
   const shown = [...boxes()].filter((b) => b.checkVisibility());
   [...boxes()].forEach((b) => {
     const k = shown.indexOf(b);
@@ -1406,6 +1404,14 @@ function retitle() {
     if (typeof want === "string") { if (t.textContent !== want || t.children.length) t.textContent = want; }
     else if (t.firstChild !== want) t.replaceChildren(want);
   });
+  // the collapsed left bar's strip (req/shell/left-bar/collapse): a mark per drawer on show, opening it
+  $("#left-marks").replaceChildren(...shown.map((b) => {
+    const h = b.querySelector(":scope > .sec-head h2"), m = document.createElement("button");
+    m.type = "button"; m.className = "step-mark"; m.textContent = h.querySelector(".step-mark").textContent;
+    m.classList.toggle("done", b.classList.contains("done")); m.classList.toggle("open", !b.classList.contains("folded"));
+    m.title = h.dataset.name; m.onclick = () => b.classList.remove("folded");
+    return m;
+  }));
 }
 // a box's task done, summed up (text, or a node), or waiting again (null)
 function boxDone(box, summary) {
@@ -1460,6 +1466,7 @@ function showImage() { study.showImage?.(); view.minimapView(); }
   };
   set(saved.left);
   g.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("#left-collapse")) return;
     g.setPointerCapture(e.pointerId); document.body.classList.add("resizing");
     const move = (ev) => { saved.left = ev.clientX - lay.getBoundingClientRect().left; set(saved.left); view?.minimapView(); };
     const up = () => { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); document.body.classList.remove("resizing"); writeJSON(BARS, saved); };
@@ -1467,20 +1474,19 @@ function showImage() { study.showImage?.(); view.minimapView(); }
   });
   g.addEventListener("dblclick", () => { delete saved.left; set(null); writeJSON(BARS, saved); view?.minimapView(); });
   // req/shell/left-bar/collapse: collapsed to its Steps strip, and back, the drawers sliding in on the way out
-  const fold = $("#left-fold"), bar = $("#left"), root = document.documentElement;
-  const collapse = (on) => {
-    if (on) root.dataset.left = "collapsed"; else delete root.dataset.left;
-    fold.setAttribute("aria-expanded", String(!on));
-    fold.title = on ? "Expand the left bar, with the study's steps" : "Collapse the left bar, to give the image its room";
-  };
+  const bar = $("#left"), root = document.documentElement;
+  const collapse = (on) => { if (on) root.dataset.left = "collapsed"; else delete root.dataset.left; };
   collapse(!!saved.collapsed);
-  fold.onclick = () => {
-    saved.collapsed = !saved.collapsed; writeJSON(BARS, saved);
-    if (!saved.collapsed) { bar.classList.add("sliding-in"); setTimeout(() => bar.classList.remove("sliding-in"), 400); }
-    collapse(saved.collapsed);
+  const toggle = (on) => {
+    saved.collapsed = on; writeJSON(BARS, saved);
+    if (!on) { bar.classList.add("sliding-in"); setTimeout(() => bar.classList.remove("sliding-in"), 400); }
+    collapse(on);
     retitle();
     setTimeout(() => view?.minimapView(), 400);
   };
+  $("#left-collapse").onclick = () => toggle(true);
+  // a step mark opens its drawer first, then the click reaches the strip
+  $("#left-strip").onclick = () => toggle(false);
 }
 
 function theme() {

@@ -23,6 +23,13 @@ const width = () => page.evaluate(() => Math.round($("#data-col").getBoundingCli
 await check(await page.evaluate(() => !$("#data-col").hidden && !document.documentElement.dataset.mode), "a data manager sees the strip, collapsed, out of the mode");
 await check((await width()) < 60, "the strip is narrow", await width());
 await shot("1-strip");
+// req/shell/left-bar/collapse: the left bar's strip beside it, the same width, a small gap between them
+await page.click("#left-collapse");
+await page.waitForFunction(() => document.querySelector("#left").getBoundingClientRect().width < 60 && !document.getAnimations().some((a) => a.transitionProperty === "grid-template-columns"));
+const pair = await page.evaluate(() => { const d = $("#data-open").getBoundingClientRect(), s = $("#left-strip").getBoundingClientRect(); return { dm: Math.round(d.width), steps: Math.round(s.width), gap: Math.round(s.left - d.right) }; });
+await check(pair.dm === pair.steps && pair.gap > 0 && pair.gap <= 4, "collapsed, the Steps strip is as wide as Data Management's, a small gap from it", pair);
+await page.click("#left-strip .strip-name");
+await page.waitForFunction(() => document.querySelector("#left").getBoundingClientRect().width > 200 && !document.getAnimations().some((a) => a.transitionProperty === "grid-template-columns"));
 await page.waitForFunction(() => !$("#access-bar").hidden);
 await check(/1 of .*2 folders/.test(await page.textContent("#access-text")), "the bar asks for the one folder not approved yet", await page.textContent("#access-text"));
 
