@@ -1,0 +1,36 @@
+name: Problem report
+description: Something on the page did not work. Opened from the page, it fills in your browser, the study, its state and your last actions.
+title: "Problem: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a problem. Everything you write here is public: read what the page filled in, and remove anything you would rather not share.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what the page did instead. A screenshot helps; drag it into this box.
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser
+      description: Filled in by the page. Its name, version and system.
+  - type: textarea
+    id: state
+    attributes:
+      label: The page's state
+      description: Filled in by the page. The site's version, the study, its steps, and the image open (never its name).
+  - type: textarea
+    id: actions
+    attributes:
+      label: Your last actions
+      description: Filled in by the page, from the actions it keeps on your device, oldest first.
+  - type: textarea
+    id: errors
+    attributes:
+      label: The page's last errors
+      description: Filled in by the page.
