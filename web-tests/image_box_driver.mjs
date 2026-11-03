@@ -194,6 +194,12 @@ await page.mouse.move(meet.x - 3, meet.y); await page.mouse.down(); await page.m
 const dragged = await page.$eval("#channels .channel:nth-child(1)", (r) => [+r.querySelector("input.black").value, +r.querySelector("input.white").value]);
 await check(dragged[0] < 230 && dragged[1] === 255, "the black point, left at the white one, can be dragged back", dragged);
 await level(1, "black", 0);
+// only the colour picker carries the channel's colour: the checkbox and the slider look the same on every row
+await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => { i.value = "#ff0000"; i.dispatchEvent(new Event("input", { bubbles: true })); });
+const plain = await page.$eval("#channels .channel:nth-child(1)", (r) => ({ accent: getComputedStyle(r.querySelector("input[type=checkbox]")).accentColor,
+  ramp: getComputedStyle(r.querySelector(".levels"), "::before").backgroundImage }));
+await check(plain.accent === "auto" && !plain.ramp.includes("255, 0, 0"), "the checkbox and the slider do not take the channel's colour", plain);
+await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => { i.value = "#ffffff"; i.dispatchEvent(new Event("input", { bubbles: true })); });
 // its colour picker starts at the channel's colour and recolours it
 await check((await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => i.value)) === "#ffffff", "its colour picker starts at its colour");
 await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => { i.value = "#ff0000"; i.dispatchEvent(new Event("input", { bubbles: true })); });
