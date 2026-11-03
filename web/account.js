@@ -62,10 +62,11 @@ export function account({ keys, menu, clientId, applied, changed = () => {} }) {
     const body = JSON.stringify(here()), id = await fileId();
     if (id) await google(`${UPLOAD}/${id}?uploadType=media`, { method: "PATCH", headers: { "content-type": "application/json" }, body });
     else {
-      const form = new FormData();
-      form.append("metadata", new Blob([JSON.stringify({ name: FILE_NAME, parents: ["appDataFolder"] })], { type: "application/json" }));
-      form.append("file", new Blob([body], { type: "application/json" }));
-      me.fileId = (await (await google(`${UPLOAD}?uploadType=multipart&fields=id`, { method: "POST", body: form })).json()).id;
+      // Drive's multipart upload: the file's details, then the file, written out as text
+      const cut = "nor-settings-" + Math.random().toString(36).slice(2);
+      const parts = [`--${cut}`, "Content-Type: application/json; charset=UTF-8", "", JSON.stringify({ name: FILE_NAME, parents: ["appDataFolder"] }),
+        `--${cut}`, "Content-Type: application/json", "", body, `--${cut}--`, ""].join("\r\n");
+      me.fileId = (await (await google(`${UPLOAD}?uploadType=multipart&fields=id`, { method: "POST", headers: { "content-type": `multipart/related; boundary=${cut}` }, body: parts })).json()).id;
     }
     me.changed = []; keep();
   }
