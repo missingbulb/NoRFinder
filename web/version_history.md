@@ -10,10 +10,10 @@ carried all its pull requests. The `writing-version-history` skill says how.
 
 ## Next release
 
-Choose the role you work in from the new menu beside your avatar: Viewer, Ground Truth Tagger or
-Data Manager, each with its own view. Everyone starts as Viewer, which makes no ground truth; sign in
-to tag. Data Manager opens the folder tree straight away, and asks for folder access only there.
-(#705)
+Pick the role you work in from the new menu beside your avatar: each role has its own view.
+Everyone starts as Viewer, which shows what a study finds. Signed in, you can switch to Ground Truth
+Tagger to make ground truth; a study's data managers can switch to Data Manager, which opens its
+folders at once. (#705)
 
 A z-stack now opens in 3D only, with no 2D/3D switch, the Image Viewer included, while a flat image
 opens in 2D; a plain multi-page TIFF opens as a stack in Vascular Measurements too. Edit Image on a
