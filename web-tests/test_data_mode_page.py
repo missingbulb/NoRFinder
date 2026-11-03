@@ -54,3 +54,11 @@ def test_data_management(answers, tmp_path):
     meta, planes = viewer.Session(str(out) + '.preview.tif').opened()
     meta = json.loads(meta)
     assert (meta['W'], meta['H']) == (150, 120) and len(planes) == 3 * 150 * 120, (meta, len(planes))
+
+
+@pytest.mark.skipif(not NODE, reason='node missing')
+def test_choose_folders_asks_google(answers, tmp_path):
+    """Choose folders… for a user whose token lasts but lacks Drive's per-file permission asks for it, then shows the picker."""
+    root = tmp_path / 'drive'
+    folder(root)
+    run('drive_approve_driver.mjs', answers[0], answers[1], str(root))

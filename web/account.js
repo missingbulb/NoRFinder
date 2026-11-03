@@ -193,8 +193,11 @@ export function account({ keys, menu, clientId, applied, changed = () => {} }) {
     // whether the token Google gave may do scope, as far as the last one said
     may: (scope) => !!(me && (me.scopes || "").split(" ").includes(scope)),
     // asks Google, in the user's click, to add scope to the token: true once it has
-    more(scope) {
-      if (!me || !client || !navigator.userActivation?.isActive) return Promise.resolve(false);
+    async more(scope) {
+      if (!me) return false;
+      // a live token at load leaves Google's script unloaded
+      if (!client) await ready();
+      if (!client || !navigator.userActivation?.isActive) return false;
       answered("fail", "asked again");
       return new Promise((ok) => {
         waiting = { ok: () => ok(true), fail: () => ok(false) };
