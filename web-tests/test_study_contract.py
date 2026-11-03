@@ -135,8 +135,9 @@ def test_the_header_offers_the_listed_studies_by_title(tmp_path):
     import build
     for sid, title, listed in (('zeta', 'Zeta Counter', True), ('alpha', 'Alpha Viewer', True), ('test-only', 'A Fixture', False)):
         os.makedirs(tmp_path / 'studies' / sid)
-        (tmp_path / 'studies' / sid / 'study.json').write_text(json.dumps(dict(id=sid, title=title, listed=listed)))
-    assert build.studies(str(tmp_path)) == [{'id': 'alpha', 'title': 'Alpha Viewer'}, {'id': 'zeta', 'title': 'Zeta Counter'}]
+        icon = dict(icon='web/icon.svg') if sid == 'zeta' else {}
+        (tmp_path / 'studies' / sid / 'study.json').write_text(json.dumps(dict(id=sid, title=title, listed=listed, **icon)))
+    assert build.studies(str(tmp_path)) == [{'id': 'alpha', 'title': 'Alpha Viewer'}, {'id': 'zeta', 'title': 'Zeta Counter', 'icon': 'web/icon.svg'}]
 
 
 def test_the_build_vendors_every_studys_wheels():

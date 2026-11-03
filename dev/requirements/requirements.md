@@ -327,7 +327,8 @@ spec does not have.
   GitHub's repository switcher, for studies: the study's title and a solid caret form one 32 px
   control; it opens, under the caret, a 320 px panel headed "Switch study", a search box (focused,
   filtering by title as the user types) and every study whose `study.json` says `"listed": true`,
-  by title, each with a study icon, a rule under its name, and a tick on the one on show. Arrow
+  by title, each with its own icon (the tab's icon its `study.json` names; the generic study icon
+  when it names none, or the icon does not load), a rule under its name, and a tick on the one on show. Arrow
   keys move through the list, Enter opens the one marked, Escape closes it. Each entry is a link to
   the study's address (`req/shell/study/folder-and-address`), so a middle click opens it in a new tab. The header's spacing follows
   GitHub's: 64 px tall, 16 px at the sides, a 32 px logo. Test: `web-tests/test_study_runs.py`.
