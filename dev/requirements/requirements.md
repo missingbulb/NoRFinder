@@ -189,7 +189,8 @@ spec does not have.
   Set by the owner on 2026-11-02. Choosing an image in the tree or the folder view opens its preview
   in the study's viewer, a stack in 3D, quick and the same for everyone; the Image box's Load becomes
   Load Original, which opens the image itself from the copy kept on this device when it has one,
-  else from Drive. A data manager can mark an image as needing ground truth: the page creates an
+  else from Drive. A preview that cannot be read (a damaged previews file) shows as no preview, and the image,
+  chosen, opens itself instead. A data manager can mark an image as needing ground truth: the page creates an
   empty `<name>.ground_truth.MISSING` beside it, and unmarking trashes only a marker the page made.
   Whoever makes the ground truth adds its file and drops the marker. Test:
   `web-tests/test_data_mode_page.py`, `web-tests/test_previews_writer.py`.

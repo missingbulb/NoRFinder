@@ -169,7 +169,11 @@ $("#ram-gc").onclick = () => working($("#ram-gc"), () => { const told = until("m
 
 // the disk: what the site keeps on this device, as Manage storage counts it
 async function diskBar() {
-  const { sections, settings, overhead } = await inventory();
+  let got;
+  // what the site keeps can change while it is counted (a cache entry deleted between listing and reading it):
+  // the bar keeps its last count until the next one
+  try { got = await inventory(); } catch (e) { return console.warn("what the site keeps could not be counted:", e); }
+  const { sections, settings, overhead } = got;
   showDisk(sections.reduce((a, x) => a + x.entries.reduce((b, e) => b + e.size, 0), settings + overhead));
 }
 const showDisk = (n) => showNumber($("#sb-disk"), sizeText(n));

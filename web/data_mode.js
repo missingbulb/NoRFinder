@@ -158,8 +158,10 @@ export function dataMode(ctx) {
   const previewsOf = async (n) => { const f = previewsFile(n); return f ? ctx.folderPreviews(n, f) : null; };
   async function picture(pic, pv, f) {
     const e = pv?.entry(f.name, f.sha);
-    if (!e) { pic.classList.add("none"); return; }
-    const i = new Image(); i.alt = ""; i.src = await pv.picture(e); pic.replaceChildren(i);
+    let src = null;
+    if (e) try { src = await pv.picture(e); } catch (err) { console.warn(`${f.name}'s preview could not be read:`, err); }
+    if (!src) { pic.classList.add("none"); return; }
+    const i = new Image(); i.alt = ""; i.src = src; pic.replaceChildren(i);
   }
   // each image's state in the folder: {f, entry, stale, truth, marker}
   function states(n, pv) {
@@ -280,7 +282,12 @@ export function dataMode(ctx) {
     drawTree(); ctx.showFolder(false);
     const pv = await previewsOf(n), e = pv?.entry(f.name, f.sha), source = { kind: "drive", id: f.id, name: f.name, folder: n.id };
     if (!e) { ctx.status(`${f.name} has no preview yet: opening the image itself.`); return ctx.loadOriginal(source); }
-    ctx.openPreview(stemOf(f.name) + ".preview.tif", previewTiff(e, await pv.pages(e)), { ...source, kind: "preview" });
+    let pages;
+    try { pages = await pv.pages(e); } catch (err) {
+      console.warn(`${f.name}'s preview could not be read:`, err);
+      ctx.status(`${f.name}'s preview could not be read: opening the image itself.`); return ctx.loadOriginal(source);
+    }
+    ctx.openPreview(stemOf(f.name) + ".preview.tif", previewTiff(e, pages), { ...source, kind: "preview" });
   }
 
 
