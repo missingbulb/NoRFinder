@@ -13,6 +13,8 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { repoFile } from "./repo_file.mjs";
+import { offSite } from "./off_site.mjs";
+import { ENGINE } from "./engine.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -42,12 +44,12 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
+const browser = await pw[ENGINE].launch();
 const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
 const check = async (ok, what, seen) => { if (!ok) { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); } console.log("ok: " + what); };
 
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
-await ctx.route((u) => !u.href.startsWith(origin), (r) => r.abort());
+await ctx.route(offSite(origin), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
 const page = await ctx.newPage();
 page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
@@ -89,7 +91,9 @@ await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted f
 // a drawer slides open or shut, and the drawers below slide to their new places
 const slid = page.waitForFunction(() => document.getAnimations().filter((a) => /^::view-transition-group\(drawer-/.test(a.effect?.pseudoElement)).length >= 2).then(() => true, () => false);
 await title(0);
-await check(await slid, "a drawer slides open, and the drawers below it slide down");
+// where the browser has the view transitions it takes; elsewhere the drawers change at once
+const slides = await page.evaluate(() => !!document.startViewTransition && CSS.supports("view-transition-group", "contain"));
+await check(!slides || await slid, slides ? "a drawer slides open, and the drawers below it slide down" : "a browser without the view transitions the slide takes: the drawers change at once");
 await page.waitForFunction(() => !document.getAnimations().some((a) => a.effect?.pseudoElement?.startsWith("::view-transition")));
 await boxes(["✓ Loaded Image open", "2 Threshold open", "3 Counted folded", "4 Notes folded"], "its title opens a folded drawer, done: Loaded Image");
 await title(0);

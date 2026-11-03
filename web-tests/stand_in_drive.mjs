@@ -11,6 +11,9 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { repoFile } from "./repo_file.mjs";
+import { ENGINE } from "./engine.mjs";
+import { offSite } from "./off_site.mjs";
+import { cutShort } from "./page_errors.mjs";
 
 // uploaded(file): each file the page creates or replaces, {name, bytes}
 export async function standIn({ answers, studies, rootDir, uploaded = () => {} }) {
@@ -66,7 +69,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
   await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
   const origin = `http://127.0.0.1:${server.address().port}`;
 
-  const browser = await pw.chromium.launch();
+  const browser = await pw[ENGINE].launch();
   const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
   const check = async (ok, what, seen) => { if (!ok) { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); } console.log("ok: " + what); };
   // a page or a check gone wrong ends the run
@@ -140,7 +143,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
   async function open(signedIn) {
     const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
     await ctx.route("https://www.googleapis.com/**", google);
-    await ctx.route((u) => !u.href.startsWith(origin) && !u.href.startsWith("https://www.googleapis.com/"), (r) => r.abort());
+    await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
     // the welcome popup answered before, and remembered (req/shell/account/welcome)
     await ctx.addInitScript((who) => {
       delete Navigator.prototype.serviceWorker;
@@ -148,7 +151,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
       localStorage.setItem("nor-welcome", JSON.stringify({ choice: who ? "google" : "anonymous", remember: true }));
     }, signedIn ? SIGNED_IN : null);
     const page = await ctx.newPage();
-    page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
+    page.on("pageerror", async (e) => { if (cutShort(e)) return; console.error("page error: " + e.message); await done(1); });
     page.setDefaultTimeout(10000);
     await page.goto(origin + "/web/fixture");
     await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));

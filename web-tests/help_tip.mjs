@@ -3,8 +3,9 @@
 // when no help shows. The help is drawn by the stylesheet, so its box is found by hit-testing around the element.
 export async function helpTip(page, selector, { focus = false } = {}) {
   await page.addStyleTag({ content: "[data-help]::before { pointer-events: auto !important; }" });
-  // a key pressed first, so the focus reads as the keyboard's, as a user tabbing to it
-  if (focus) { await page.keyboard.press("Shift"); await page.focus(selector); } else await page.hover(selector);
+  // the keyboard's focus as a user tabbing to it gives it: on the element, Tab away and Shift+Tab back to it, since an
+  // engine may count a script's focus, or a lone Shift, as no keyboard's
+  if (focus) { await page.focus(selector); await page.keyboard.press("Tab"); await page.keyboard.press("Shift+Tab"); } else await page.hover(selector);
   await page.waitForFunction((s) => getComputedStyle(document.querySelector(s), "::before").content !== "none", selector, { timeout: 3000 }).catch(() => {});
   return page.evaluate((s) => {
     const e = document.querySelector(s), r = e.getBoundingClientRect(), shown = getComputedStyle(e, "::before").content !== "none";

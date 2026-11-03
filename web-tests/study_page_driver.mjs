@@ -18,6 +18,9 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { offSite } from "./off_site.mjs";
+import { ENGINE } from "./engine.mjs";
+import { cutShort } from "./page_errors.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -58,14 +61,14 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
+const browser = await pw[ENGINE].launch();
 const problems = [];
 const done = async () => { await browser.close(); server.close(); for (const p of problems) console.error(p); process.exitCode = problems.length ? 1 : 0; };
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
-await ctx.route((u) => !u.href.startsWith(origin), (r) => r.abort());
+await ctx.route(offSite(origin), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
 const page = await ctx.newPage();
-page.on("pageerror", (e) => problems.push("page error: " + e.message));
+page.on("pageerror", (e) => { if (!cutShort(e)) problems.push("page error: " + e.message); });
 page.setDefaultTimeout(10000);
 try {
   await page.goto(origin + "/web/index.html?study=fixture");
@@ -102,8 +105,10 @@ try {
   if (result[0] !== "400 pixels above the threshold" || !result[1]) problems.push("the call's answer did not reach the study, or its layer was not drawn");
 
   // the switcher swaps studies in place: found by search, the image kept, the fixture's panels gone
-  const cdp = await ctx.newCDPSession(page);
+  // the listeners on the shell's own objects, as only Chromium's DevTools count them: null, not counted, in another engine
+  const cdp = ENGINE === "chromium" ? await ctx.newCDPSession(page) : null;
   const listeners = async () => {
+    if (!cdp) return null;
     let n = 0;
     for (const expression of ["document", "window", "document.querySelector('#scroller')", "document.querySelector('#overlay')"]) {
       const { result } = await cdp.send("Runtime.evaluate", { expression });
@@ -187,10 +192,10 @@ try {
     if (!fs.existsSync(f)) return r.fulfill({ status: 404, body: "" });
     r.fulfill({ body: fs.readFileSync(f), contentType: TYPES[path.extname(f)] || "application/octet-stream", headers: { "access-control-allow-origin": "*" } });
   });
-  await real.route((u) => !u.href.startsWith(origin) && !u.href.startsWith("https://cdn.jsdelivr.net/pyodide/"), (r) => r.abort());
+  await real.route(offSite(origin, "https://cdn.jsdelivr.net/pyodide/"), (r) => r.abort());
   await real.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
   const live = await real.newPage();
-  live.on("pageerror", (e) => problems.push("page error: " + e.message));
+  live.on("pageerror", (e) => { if (!cutShort(e)) problems.push("page error: " + e.message); });
   live.setDefaultTimeout(60000);
   await live.goto(origin + "/web/index.html?study=fixture");
   await live.waitForFunction(() => /^(Ready|Error)/.test(document.querySelector("#status").textContent));

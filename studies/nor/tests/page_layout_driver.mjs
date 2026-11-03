@@ -11,6 +11,8 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { offSite } from "../../../web-tests/off_site.mjs";
+import { ENGINE } from "../../../web-tests/engine.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -48,7 +50,7 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
+const browser = await pw[ENGINE].launch();
 const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
 // every drawn canvas and image: how far its shown width / height strays from its pixels' own
 const measure = (page) => page.evaluate(() => [...document.querySelectorAll("canvas, img")].filter((c) => c.offsetWidth && c.offsetHeight).map((c) => {
@@ -59,7 +61,7 @@ let seen = 0, worst = { skew: 0 };
 // the side bars at their narrowest, in a narrow and a wide window
 for (const width of [1000, 1600]) {
   const ctx = await browser.newContext({ viewport: { width, height: 900 } });
-  await ctx.route((u) => !u.href.startsWith(origin), (r) => r.abort());
+  await ctx.route(offSite(origin), (r) => r.abort());
   await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; localStorage.setItem("nor-bars-v1", JSON.stringify({ left: 200, right: 200 })); });
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });

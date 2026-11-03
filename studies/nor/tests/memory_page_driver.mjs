@@ -10,6 +10,8 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { offSite } from "../../../web-tests/off_site.mjs";
+import { ENGINE } from "../../../web-tests/engine.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -49,11 +51,11 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
+const browser = await pw[ENGINE].launch();
 const fail = async (why) => { console.error(why); await browser.close(); server.close(); process.exit(1); };
 const ctx = await browser.newContext();
 // nothing leaves this machine, and the cache of third-party files, which the stand-in never needs, is off
-await ctx.route((u) => !u.href.startsWith(origin), (r) => r.abort());
+await ctx.route(offSite(origin), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
 const page = await ctx.newPage();
 page.on("pageerror", (e) => fail("page error: " + e.message));
@@ -109,6 +111,9 @@ async function measure() {
   // The status bar's numbers hold a few nodes for each character that rolled in their last change, and the network's
   // rolls every second as its rate falls: written plain, and measured again whenever one rolled meanwhile, the count
   // is the same whatever they last read.
+  // the page's frames done first: the item view draws its cards in them as they come near, which a slow machine
+  // can still be doing when the work itself has settled
+  await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(ok, 100)))));
   for (let tries = 0; ; tries++) {
     await page.evaluate(() => { for (const v of document.querySelectorAll("#statusbar .sb-item .v")) v.textContent = v.textContent; });
     // twice: DOM nodes freed by the first collection are swept only after it

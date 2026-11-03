@@ -18,6 +18,8 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { repoFile } from "./repo_file.mjs";
+import { offSite } from "./off_site.mjs";
+import { ENGINE } from "./engine.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -66,7 +68,7 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
+const browser = await pw[ENGINE].launch();
 const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
 const check = async (ok, what, seen) => { if (!ok) { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); } console.log("ok: " + what); };
 const shot = async (page, name) => { if (shots) await page.locator("#statusbar").screenshot({ path: path.join(shots, name + ".png") }); };
@@ -74,7 +76,7 @@ const shot = async (page, name) => { if (shots) await page.locator("#statusbar")
 // mode: the resources block's setting the visit starts with, unless the page has kept another; none: the page's own
 async function open(study, mode) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
-  await ctx.route((u) => !u.href.startsWith(origin), (r) => r.abort());
+  await ctx.route(offSite(origin), (r) => r.abort());
   await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
   if (mode) await ctx.addInitScript((m) => { if (localStorage.getItem("nor-resources") === null) localStorage.setItem("nor-resources", JSON.stringify(m)); }, mode);
   const page = await ctx.newPage();
@@ -401,13 +403,16 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await isOpen(true, "the tab holding over 1 GB opens it", 2500);
   await page.evaluate(() => { window.st.heap = window.st.heapWas; });
   await foldsLater("memory back under 1 GB");
-  // the page's thread busy for 7 s: not at once, only once it has been over half a core for 5 s
-  const busy = page.evaluate(async () => { const end = Date.now() + 7500; while (Date.now() < end) { const t = Date.now(); while (Date.now() - t < 400); await new Promise((r) => setTimeout(r, 40)); } });
-  await page.waitForTimeout(2500);
-  await isOpen(false, "a CPU over 50% for 2 s does not open it yet", 100);
-  await busy;
-  await isOpen(true, "over 50% for more than 5 s opens it", 2500);
-  await foldsLater("the CPU calm again");
+  // the page's thread busy for 7 s: not at once, only once it has been over half a core for 5 s. Only Chromium
+  // reports the page's own thread's load, so another engine is not asked.
+  if (ENGINE === "chromium") {
+    const busy = page.evaluate(async () => { const end = Date.now() + 7500; while (Date.now() < end) { const t = Date.now(); while (Date.now() - t < 400); await new Promise((r) => setTimeout(r, 40)); } });
+    await page.waitForTimeout(2500);
+    await isOpen(false, "a CPU over 50% for 2 s does not open it yet", 100);
+    await busy;
+    await isOpen(true, "over 50% for more than 5 s opens it", 2500);
+    await foldsLater("the CPU calm again");
+  } else console.log(`not checked in ${ENGINE}: the page's own thread's load opening the gauge, which only Chromium reports`);
   // downloading: kb KB every 250 ms for 8 s
   const download = (kb) => page.evaluate(async (u) => { const end = Date.now() + 8000; while (Date.now() < end) { await fetch(u, { cache: "no-store" }).then((r) => r.arrayBuffer()); await new Promise((r) => setTimeout(r, 250)); } }, origin + "/some/" + kb);
   await download(25);

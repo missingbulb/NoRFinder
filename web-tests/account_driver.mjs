@@ -19,6 +19,9 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { offSite } from "./off_site.mjs";
+import { ENGINE } from "./engine.mjs";
+import { cutShort } from "./page_errors.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -81,7 +84,7 @@ async function google(route) {
   return json(404, { error: "not a call this test knows" });
 }
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
+const browser = await pw[ENGINE].launch();
 let failed = false;
 const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: " + what); } else console.log("ok: " + what); };
 const until = async (fn, ms = 5000) => { for (const end = Date.now() + ms; Date.now() < end; await new Promise((ok) => setTimeout(ok, 50))) if (await fn()) return true; return false; };
@@ -94,7 +97,7 @@ async function device(seed) {
   ctx.on("request", (q) => { if (!q.url().startsWith(origin)) outside.push(new URL(q.url()).origin + new URL(q.url()).pathname); });
   await ctx.route(GSI, (route) => { scriptLoads++; route.fulfill({ status: 200, contentType: "text/javascript", body: SCRIPT }); });
   await ctx.route(/^https:\/\/(www|openidconnect)\.googleapis\.com\//, google);
-  await ctx.route((u) => !u.href.startsWith(origin) && u.href !== GSI && !/^https:\/\/(www|openidconnect)\.googleapis\.com\//.test(u.href), (r) => r.abort());
+  await ctx.route((u) => offSite(origin)(u) && u.href !== GSI && !/^https:\/\/(www|openidconnect)\.googleapis\.com\//.test(u.href), (r) => r.abort());
   await ctx.addInitScript((seed) => {
     delete Navigator.prototype.serviceWorker;
     if (sessionStorage.getItem("primed")) return;
@@ -102,7 +105,7 @@ async function device(seed) {
     for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v);
   }, seed);
   const page = await ctx.newPage();
-  page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.message); });
+  page.on("pageerror", (e) => { if (cutShort(e)) return; failed = true; console.error("page error: " + e.message); });
   page.setDefaultTimeout(10000);
   await page.goto(origin + "/web/index.html");
   await page.waitForFunction(() => document.querySelector("#title").textContent);

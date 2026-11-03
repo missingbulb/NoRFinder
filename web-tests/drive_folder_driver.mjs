@@ -11,6 +11,8 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { offSite } from "./off_site.mjs";
+import { ENGINE } from "./engine.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -39,7 +41,7 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
+const browser = await pw[ENGINE].launch();
 let failed = false;
 const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: " + what); } else console.log("ok: " + what); };
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
@@ -47,7 +49,7 @@ const cors = { "access-control-allow-origin": "*" };
 // every folder is empty: what the dialog opens on is what is checked, not what it lists
 await ctx.route("https://www.googleapis.com/**", (route) =>
   route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ files: [] }) }));
-await ctx.route((u) => !u.href.startsWith(origin) && !u.href.startsWith("https://www.googleapis.com/"), (r) => r.abort());
+await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
 const page = await ctx.newPage();
 page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.message); });

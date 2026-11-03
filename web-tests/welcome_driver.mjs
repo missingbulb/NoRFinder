@@ -16,6 +16,9 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { offSite } from "./off_site.mjs";
+import { ENGINE } from "./engine.mjs";
+import { cutShort } from "./page_errors.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -48,7 +51,7 @@ await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, content-type", "access-control-allow-methods": "GET, POST, PATCH" };
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
+const browser = await pw[ENGINE].launch();
 let failed = false;
 const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: " + what); } else console.log("ok: " + what); };
 const pause = (ms) => new Promise((ok) => setTimeout(ok, ms));
@@ -64,14 +67,14 @@ async function device({ offline = false, seed = {} } = {}) {
     const body = u.pathname === "/v1/userinfo" ? { name: "Ada Lovelace", email: "ada@acme.example" } : u.pathname === "/drive/v3/files" ? { files: [] } : { id: "acmefile" };
     route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify(body) });
   });
-  await ctx.route((u) => !u.href.startsWith(origin) && u.href !== GSI && !/^https:\/\/(www|openidconnect)\.googleapis\.com\//.test(u.href), (r) => r.abort());
+  await ctx.route((u) => offSite(origin)(u) && u.href !== GSI && !/^https:\/\/(www|openidconnect)\.googleapis\.com\//.test(u.href), (r) => r.abort());
   await ctx.addInitScript(([offline, seed]) => {
     delete Navigator.prototype.serviceWorker;
     if (offline) { window.netDown = sessionStorage.getItem("net") !== "up"; Object.defineProperty(Navigator.prototype, "onLine", { get: () => !window.netDown }); }
     if (!localStorage.getItem("primed")) { localStorage.setItem("primed", "1"); for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v); }
   }, [offline, seed]);
   const page = await ctx.newPage();
-  page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.message); });
+  page.on("pageerror", (e) => { if (cutShort(e)) return; failed = true; console.error("page error: " + e.message); });
   page.setDefaultTimeout(10000);
   const open = async () => { await page.goto(origin + "/web/index.html"); await page.waitForFunction(() => document.querySelector("#title").textContent); await pause(300); };
   await open();

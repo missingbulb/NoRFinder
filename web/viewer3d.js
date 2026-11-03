@@ -413,8 +413,10 @@ export function viewer3d(shell, flat) {
   // ---------- the image ----------
   function take(im) {
     const C = im && im.Z > 1 ? Math.floor(im.planes.length / (im.W * im.H * (1 + im.Z))) : 0;
-    if (!active || !C || !initGL()) { vol = null; sw.hidden = true; show3d(false); return; }
-    const bin = Math.max(1, Math.ceil(Math.max(im.W, im.H) / Math.min(MAX_SIDE, gl.getParameter(gl.MAX_3D_TEXTURE_SIZE))));
+    if (!active || !C) { vol = null; sw.hidden = true; show3d(false); return; }
+    // the volume is the study's to read as well as the 3D view's to draw: made without WebGL2 too, which only the view needs
+    const drawn = !!initGL();
+    const bin = Math.max(1, Math.ceil(Math.max(im.W, im.H) / (drawn ? Math.min(MAX_SIDE, gl.getParameter(gl.MAX_3D_TEXTURE_SIZE)) : MAX_SIDE)));
     const { vols, X, Y } = binned(im.planes, C * im.W * im.H, Math.min(C, CHANNELS), im.Z, im.W, im.H, bin);
     // an edit redrawn (req/shell/data/edit) is the same image: the view stays as the user left it, 2D or 3D, turned
     const again = im.edited && !!vol, was3d = mode3d;
@@ -427,7 +429,8 @@ export function viewer3d(shell, flat) {
     if (im.spacing) { S.zs = im.spacing; spacingNote("file"); }
     else if (v.spacing) { S.zs = v.spacing; spacingNote(v.spacingSource || "the study"); }
     else { S.zs = 1; spacingNote(null); }
-    upload(); sw.hidden = false; sync(); show3d(true);
+    if (drawn) upload();
+    sw.hidden = !drawn; sync(); show3d(drawn);
   }
   page.watch("image", take);
 

@@ -4,7 +4,7 @@
 // shows its cards and approves a low-confidence vessel from one; Submit Ground Truth stays off until the model carries
 // a correction and then exports the corrected model, from the Item View only; undo takes the approval back; the model's canvas leaves the 3D
 // view with the study. Exits 1 on a failed check, 2 when it cannot run.
-//   node studies/vascular/tests/model_page_driver.mjs
+//   node studies/vascular/tests/model_page_driver.mjs STUDIES
 import { repoFile } from "../../../web-tests/repo_file.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
@@ -12,6 +12,8 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { offSite } from "../../../web-tests/off_site.mjs";
+import { ENGINE } from "../../../web-tests/engine.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -19,6 +21,8 @@ try { pw = require("playwright"); } catch {
   try { pw = require(path.join(execSync("npm root -g").toString().trim(), "playwright")); } catch { console.error("no playwright: npm i -g playwright"); process.exit(2); }
 }
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+// the build's list of studies, which the switcher reads
+const [studies] = process.argv.slice(2);
 const drafts = JSON.parse(fs.readFileSync(path.join(repo, "studies", "vascular", "web", "models", "index.json"), "utf8"));
 const draft = JSON.parse(fs.readFileSync(path.join(repo, "studies", "vascular", "web", "models", drafts[0].file), "utf8"));
 const NAME = drafts[0].source;
@@ -42,18 +46,18 @@ const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
   if (u === "/web/vendor/wheels.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end("[]"); }
-  const f = repoFile(repo, u);
+  const f = u === "/web/studies.json" ? studies : repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
+const browser = await pw[ENGINE].launch();
 let failed = false;
 const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: " + what); } else console.log("ok: " + what); };
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
-await ctx.route((u) => !u.href.startsWith(origin), (r) => r.abort());
+await ctx.route(offSite(origin), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
 const page = await ctx.newPage();
 page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.message); });
@@ -82,11 +86,14 @@ try {
   await page.click('#model-mode [data-v="overlay"]');
   check(await page.evaluate(() => !$("#v3-stage").classList.contains("split") && !!$("#v3-stage #mcv")), "Overlay draws it over the stack");
 
-  const all = await brightness();
-  await page.click('#review-mode [data-v="detected"]');
-  const detected = await brightness();
-  check(detected < all * 0.8, `Detected keeps only the signal near the model's vessels: ${all.toFixed(2)} → ${detected.toFixed(2)}`);
-  await page.click('#review-mode [data-v="all"]');
+  // what the 3D view draws needs WebGL2, which a headless browser may lack
+  if (await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"))) {
+    const all = await brightness();
+    await page.click('#review-mode [data-v="detected"]');
+    const detected = await brightness();
+    check(detected < all * 0.8, `Detected keeps only the signal near the model's vessels: ${all.toFixed(2)} → ${detected.toFixed(2)}`);
+    await page.click('#review-mode [data-v="all"]');
+  } else console.log(`not checked in this ${ENGINE}: what Detected leaves in the 3D view, which needs the WebGL2 it lacks`);
 
   check(await page.isHidden("#vm-truth"), "Submit Ground Truth is not in the image view");
   await page.click("#switch");
@@ -115,6 +122,8 @@ try {
   await page.click("#m-undo");
   check(/0 approved/.test(await facts()), "Undo takes the approval back");
 
+  // the switcher lists the studies once it has read them
+  await page.waitForFunction(() => [...document.querySelectorAll("#study-list a")].some((x) => x.textContent.includes("Image Viewer")));
   await page.evaluate(() => { const a = [...document.querySelectorAll("#study-list a")].find((x) => x.textContent.includes("Image Viewer")); a.click(); });
   await page.waitForFunction(() => $("#title").textContent === "Image Viewer");
   check(await page.evaluate(() => !document.querySelector("#mcv")), "the model's canvas leaves the 3D view with the study");

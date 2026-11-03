@@ -11,6 +11,8 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { offSite } from "../../../web-tests/off_site.mjs";
+import { ENGINE } from "../../../web-tests/engine.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -48,11 +50,11 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
+const browser = await pw[ENGINE].launch();
 const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
 const fail = async (what, seen) => { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); };
 const ctx = await browser.newContext({ viewport: { width: 1200, height: 560 } });
-await ctx.route((u) => !u.href.startsWith(origin), (r) => r.abort());
+await ctx.route(offSite(origin), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
 const page = await ctx.newPage();
 page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
@@ -145,7 +147,8 @@ await page.setViewportSize({ width: 760, height: 420 });
 await page.click("#switch");
 let checked = 0, near = 0;
 for (const tab of ["#tab-pass", "#tab-fail"]) {
-  await page.click(tab); await page.evaluate(() => { $("#items-view").scrollTop = 0; }); await settled();
+  // to the top before switching: the new list shows at the scroll it is switched at, and draws what is near there
+  await page.evaluate(() => { $("#items-view").scrollTop = 0; }); await page.click(tab); await settled();
   const rows = () => page.evaluate(() => {
     const v = $("#items-view").getBoundingClientRect(), cards = [...document.querySelectorAll("#list .card")];
     const tops = [...new Set(cards.map((d) => Math.round(d.getBoundingClientRect().top)))].sort((a, b) => a - b);

@@ -17,6 +17,7 @@ ROOT = os.path.normpath(os.path.join(HERE, '..'))
 NODE = shutil.which('node')
 
 
+@pytest.mark.chromium_only
 @pytest.mark.skipif(not NODE, reason='node missing')
 def test_the_site_runs_offline(tmp_path):
     subprocess.run([sys.executable, os.path.join(ROOT, 'dev', 'tools', 'build', 'build.py')], check=True, timeout=300,

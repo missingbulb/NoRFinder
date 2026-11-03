@@ -456,6 +456,9 @@ $("#sb-steps").onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.
 const waiting = {};
 const kindOf = (m) => (m.type === "result" ? "result:" + m.action : m.type);
 const until = (kind) => new Promise((ok, bad) => (waiting[kind] ||= []).push({ ok, bad }));
+// a wait that working() takes up a frame later: its failure counted as handled from the start, so the study leaving
+// within that frame is no uncaught error
+const taken = (p) => { p.catch(() => {}); return p; };
 function settle(m) {
   if (m.type === "error") for (const w of Object.values(waiting)) w.splice(0).forEach((x) => x.bad(new Error(m.text)));
   else if (waiting[kindOf(m)] && !study.holds?.(m)) waiting[kindOf(m)].splice(0).forEach((x) => x.ok(m));
@@ -588,7 +591,7 @@ page.watch("image", imageBox); page.watch("opening", imageBox);
 
 // source: where the image came from, {kind: "local"} or {kind: "drive", id}
 async function openBytes(name, bytes, source) {
-  const opened = until("opened"); working($("#load-main"), () => opened);
+  const opened = taken(until("opened")); working($("#load-main"), () => opened);
   st.fileName = name; st.source = source;
   for (const p of steps) Object.assign(p, { done: false, info: "", at: null, pressed: false });
   drawSteps(); boxes().forEach((b) => summaries.delete(b)); retitle();
@@ -611,7 +614,7 @@ function send(name, bytes) {
 }
 // the image on show, opened again in a study that has just come in
 function reopen() {
-  const { name, source, bytes } = st.kept, opened = until("opened");
+  const { name, source, bytes } = st.kept, opened = taken(until("opened"));
   working($("#load-main"), () => opened);
   st.reopening = true; study.opening?.(name, source);
   send(name, bytes.slice(0));
@@ -1756,7 +1759,7 @@ $("#sign-in").addEventListener("click", () => { welcomed.chose(); closeTip("sign
 $("#sign-out").addEventListener("click", () => welcomed.forgot());
 $("#user-menu").addEventListener("toggle", () => { if ($("#user-menu").open) closeTip("sign-in"); });
 // for the page's tests, which drive it from outside
-window.st = st; window.$ = $; window.shellForTests = { saveThumb, page };
+window.st = st; window.$ = $; window.shellForTests = { saveThumb, page, get viewer() { return view; } };
 
 // an old address, ?study=<id> or index.html, becomes the study's own
 if (new URLSearchParams(location.search).has("study") || location.pathname.endsWith("/index.html")) history.replaceState(null, "", addressOf(studyOf(location)) + location.hash);

@@ -13,6 +13,8 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { repoFile } from "./repo_file.mjs";
+import { offSite } from "./off_site.mjs";
+import { ENGINE } from "./engine.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -48,7 +50,7 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
+const browser = await pw[ENGINE].launch();
 const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
 const check = async (ok, what, seen) => { if (!ok) { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); } console.log("ok: " + what); };
 const shot = async (page, name) => { if (shots) await page.locator("#view").screenshot({ path: path.join(shots, name + ".png") }); };
@@ -81,7 +83,7 @@ const openPop = async (page) => { await page.hover("#grid-btn"); await page.wait
 const closePop = async (page) => { await page.mouse.move(700, 600); await page.keyboard.press("Escape"); await page.waitForFunction(() => !document.querySelector("#grid-pop").matches(":popover-open")); };
 
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
-await ctx.route((u) => !u.href.startsWith(origin), (r) => r.abort());
+await ctx.route(offSite(origin), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
 const page = await ctx.newPage();
 page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
@@ -103,10 +105,14 @@ await set(page, "#grid-spacing", "5"); await set(page, "#grid-colour", "#00ff00"
 g = await grid(page);
 await check(g.w === 25 && g.h === 10 && g.colour === "#00ff00", "the popup's spacing and colour redraw the grid", g);
 await closePop(page);
+// a pointer's hover, with nothing focused: closing by Escape left the button focused, which WebKit then counts as the
+// keyboard's focus, and that keeps the popup open
+await page.evaluate(() => document.activeElement.blur());
 await page.hover("#grid-btn");
 await page.waitForFunction(() => document.querySelector("#grid-pop").matches(":popover-open")).catch(() => {});
 await check((await pop(page)).open, "hovering the button opens the popup");
-await check(await page.evaluate(() => $("#grid-btn").interestForElement === $("#grid-pop")), "the browser's own hover, the button an interest invoker of the popup");
+await check(await page.evaluate(() => ("interestForElement" in HTMLButtonElement.prototype ? $("#grid-btn").interestForElement === $("#grid-pop") : !$("#grid-btn").hasAttribute("interestfor"))),
+  "the browser's own hover where it has interest invokers, the button one for the popup; the page's own elsewhere");
 await check(await placed(page), "the popup sits under its button, their right edges lined up", await placed(page, true));
 await page.mouse.move(700, 600);
 await page.waitForFunction(() => !document.querySelector("#grid-pop").matches(":popover-open")).catch(() => {});
@@ -146,7 +152,7 @@ await check(listed.some((t) => t.includes("Grid colour and spacing")), "Settings
 // a browser without interest invokers: the page's own hover opens and closes the popup, in the same place
 {
   const old = await browser.newContext({ viewport: { width: 1400, height: 900 } });
-  await old.route((u) => !u.href.startsWith(origin), (r) => r.abort());
+  await old.route(offSite(origin), (r) => r.abort());
   await old.addInitScript(() => { delete Navigator.prototype.serviceWorker; delete HTMLButtonElement.prototype.interestForElement; });
   const p2 = await old.newPage();
   p2.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });

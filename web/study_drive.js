@@ -3,6 +3,7 @@
 // picker showing just the study's folders), and the writes the page makes there. The page only creates files,
 // each marked as its own, and changes or trashes only the files so marked.
 "use strict";
+import { multipart, media } from "./drive_upload.js";
 
 export const DRIVE_FILE = "https://www.googleapis.com/auth/drive.file";
 // the roles a study's permissions may give
@@ -76,10 +77,8 @@ export function studyDrive({ account, apiKey, clientId }) {
     access, approve,
     // a new file in folder parent: its id
     async create(parent, name, blob) {
-      const form = new FormData();
-      form.append("metadata", new Blob([JSON.stringify({ name, parents: [parent], appProperties: MINE })], { type: "application/json" }));
-      form.append("file", blob);
-      return (await (await google(`${UPLOAD}?uploadType=multipart&fields=id,sha256Checksum&supportsAllDrives=true`, { method: "POST", body: form })).json());
+      const upload = await multipart({ name, parents: [parent], appProperties: MINE }, blob, blob.type || "application/octet-stream");
+      return (await (await google(`${UPLOAD}?uploadType=multipart&fields=id,sha256Checksum&supportsAllDrives=true`, { method: "POST", ...upload })).json());
     },
     // a new folder in folder parent, the page's own: its id
     async folder(parent, name) {
@@ -95,7 +94,7 @@ export function studyDrive({ account, apiKey, clientId }) {
     },
     // new bytes for a file the page made
     async replace(id, blob) {
-      return (await (await google(`${UPLOAD}/${encodeURIComponent(id)}?uploadType=media&fields=id,sha256Checksum&supportsAllDrives=true`, { method: "PATCH", body: blob })).json());
+      return (await (await google(`${UPLOAD}/${encodeURIComponent(id)}?uploadType=media&fields=id,sha256Checksum&supportsAllDrives=true`, { method: "PATCH", ...(await media(blob)) })).json());
     },
     // a file the page made, to Drive's bin
     async trash(id) {

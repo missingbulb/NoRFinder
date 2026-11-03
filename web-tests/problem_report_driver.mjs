@@ -13,6 +13,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { offSite } from "./off_site.mjs";
+import { ENGINE } from "./engine.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -70,7 +72,7 @@ const server = http.createServer((q, r) => {
 });
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
+const browser = await pw[ENGINE].launch();
 const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
 const check = async (ok, what) => { report(ok, what); if (!ok) await done(1); };
 
@@ -78,7 +80,7 @@ const check = async (ok, what) => { report(ok, what); if (!ok) await done(1); };
 // window.open records the address it is given
 async function open(ua) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, ...(ua && { userAgent: ua }) });
-  await ctx.route((u) => !u.href.startsWith(origin), (r) => r.abort());
+  await ctx.route(offSite(origin), (r) => r.abort());
   await ctx.addInitScript((secret) => {
     delete Navigator.prototype.serviceWorker;
     window.open = (url) => { window.opened = url; return null; };
@@ -104,7 +106,7 @@ const reportIcon = (page) => page.evaluate(() => { const b = $("#sb-report"); re
 
 // ---- a supported browser: the plain report icon, opening a report ----
 {
-  const { ctx, page } = await open(null);
+  const { ctx, page } = await open(UA.chrome);
   const icon = await reportIcon(page);
   await check(icon.shown && icon.right && !icon.warns && icon.label === "Report a problem" && /GitHub issue/.test(icon.title),
     `in a supported browser the status bar's right side shows the plain report icon: "${icon.title}"`);
@@ -169,7 +171,7 @@ const reportIcon = (page) => page.evaluate(() => { const b = $("#sb-report"); re
 
 // ---- a supported browser: Report a problem in the menu too ----
 {
-  const { ctx, page } = await open(null);
+  const { ctx, page } = await open(UA.chrome);
   await page.click("#user-menu summary");
   await page.click("#report-problem");
   const q = await issue(page);

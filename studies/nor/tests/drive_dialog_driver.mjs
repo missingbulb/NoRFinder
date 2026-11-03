@@ -14,6 +14,8 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { offSite } from "../../../web-tests/off_site.mjs";
+import { ENGINE } from "../../../web-tests/engine.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -56,7 +58,7 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
+const browser = await pw[ENGINE].launch();
 const done = async (code, why) => { if (why) console.error(why); await browser.close(); server.close(); process.exit(code); };
 const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
 // what the page took from Drive: per file, how often the whole file and how often a piece of it
@@ -81,7 +83,7 @@ await ctx.route("https://www.googleapis.com/**", (route) => {
   asked[id].whole++;
   return route.fulfill({ status: 200, headers: cors, contentType: "image/tiff", body: f.bytes });
 });
-await ctx.route((u) => !u.href.startsWith(origin) && !u.href.startsWith("https://www.googleapis.com/"), (r) => r.abort());
+await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; localStorage.setItem("nor-load-source", JSON.stringify("drive")); });
 const page = await ctx.newPage();
 page.on("pageerror", (e) => done(1, "page error: " + e.message));

@@ -5,6 +5,8 @@ import os
 
 import pytest
 
+pytestmark = pytest.mark.full
+
 SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'dev', 'tools', 'build', 'other_engines.py')
 spec = importlib.util.spec_from_file_location('other_engines', SCRIPT)
 other_engines = importlib.util.module_from_spec(spec)
@@ -31,3 +33,20 @@ def test_a_failure_is_reported_and_kept_green_where_the_browser_is_not_supported
     assert 'Firefox' in capsys.readouterr().out
     assert other_engines.verdict('firefox', 1, WITH_FIREFOX) == 1
     assert other_engines.verdict('firefox', 0, WITH_FIREFOX) == 0
+
+
+def test_the_run_leaves_out_only_what_chromium_alone_can_measure():
+    """A test marked chromium_only (it needs what only Playwright's Chromium offers) is left out; the rest of the
+    memory test's module, and every other full test, is run."""
+    import subprocess
+    import sys
+    root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+    out = subprocess.run([sys.executable, '-m', 'pytest', '--collect-only', '-q', '-p', 'no:cacheprovider', *other_engines.SELECTED,
+                          'studies/nor/tests/test_memory.py', 'web-tests/test_offline_page.py', 'web-tests/test_grid_page.py'],
+                         cwd=root, capture_output=True, text=True).stdout
+    collected = [line for line in out.splitlines() if '::' in line]
+    assert len(collected) >= 2, out
+    assert not any('test_page_holds_no_more_after_repeats' in line for line in collected), collected
+    assert not any('test_offline_page.py' in line for line in collected), collected
+    assert any('test_grid_page.py' in line for line in collected), collected
+

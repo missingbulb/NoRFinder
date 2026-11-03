@@ -118,6 +118,7 @@ def page_answers(crop, tmp_path_factory):
     return str(d)
 
 
+@pytest.mark.chromium_only
 @needs_slide
 @needs_node
 def test_page_holds_no_more_after_repeats(crop, page_answers):

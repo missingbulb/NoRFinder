@@ -15,6 +15,8 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { offSite } from "./off_site.mjs";
+import { keptContext } from "./kept_context.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -46,10 +48,9 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
 let failed = false;
 const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: " + what); } else console.log("ok: " + what); };
-const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+const ctx = await keptContext(pw, { viewport: { width: 1400, height: 900 } });
 const cors = { "access-control-allow-origin": "*" };
 // checksums: whether Drive gives SHA-256s; details: whether file details answer; calls: every request, by kind
 let checksums = true, details = true;
@@ -65,7 +66,7 @@ await ctx.route("https://www.googleapis.com/**", async (route) => {
   if (!details) return route.abort();
   return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify(meta) });
 });
-await ctx.route((u) => !u.href.startsWith(origin) && !u.href.startsWith("https://www.googleapis.com/"), (r) => r.abort());
+await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
 await ctx.addInitScript((link) => {
   delete Navigator.prototype.serviceWorker;
   if (sessionStorage.getItem("primed")) return;
@@ -197,5 +198,5 @@ try {
 } catch (e) {
   failed = true; console.error("FAILED: " + e.message);
 }
-await browser.close(); server.close();
+await ctx.close(); server.close();
 process.exitCode = failed ? 1 : 0;

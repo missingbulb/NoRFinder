@@ -12,6 +12,8 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { offSite } from "./off_site.mjs";
+import { ENGINE } from "./engine.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -52,11 +54,11 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
+const browser = await pw[ENGINE].launch();
 let failed = false;
 const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: " + what); } else console.log("ok: " + what); };
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
-await ctx.route((u) => !u.href.startsWith(origin), (r) => r.abort());
+await ctx.route(offSite(origin), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
 const page = await ctx.newPage();
 page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.message); });
@@ -82,56 +84,77 @@ const level = async (k, which, v) => page.evaluate(([k, which, v]) => {
 try {
   await page.goto(origin + "/web/vascular");
   await page.waitForFunction(() => window.$ && $("#status").textContent.startsWith("Ready"));
-  await page.setInputFiles("#file", { name: "stack.tif", mimeType: "image/tiff", buffer: Buffer.from([0x49, 0x49, 42, 0]) });
-  await page.waitForFunction(() => !$("#v3-stage").hidden);
-  check(await page.isVisible("#v3-switch"), "a stack opens on the 3D view, with the 2D/3D switch in the toolbar");
-  const tools = await page.evaluate(() => ["#v3-render-btn", "#v3-depth", "#v3-look-btn", "#v3-slices-btn"].map((s) => {
-    const b = document.querySelector(s); return !!b && b.matches(".toolbar button.tool") && b.offsetParent !== null;
-  }));
-  check(tools.every(Boolean) && !(await page.$("#v3-stage #v3-tools")), `the 3D tools are toolbar buttons like the 2D ones, not a panel over the stack: ${tools}`);
-  check(await page.isHidden("#ruler-btn") && await page.isHidden("#zoom-in"), "the 2D tools step aside in 3D");
-  const rows = await page.evaluate(() => [...document.querySelectorAll("#channels .channel")].map((r) => r.querySelector("label").textContent));
-  check(rows.join() === "CD31,DAPI", `the channel rows are the stack's: ${rows}`);
-  await level(0, "black", 0);
-  const all = await picture();
-  check(all.lit > 500, `the 3D view draws the stack: ${all.lit} lit pixels`);
-  if (shot) await page.locator("#view").screenshot({ path: shot });
+  // the 3D view needs WebGL2, which a headless browser may lack: then only the rest is checked
+  const gl3d = await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"));
+  if (gl3d) {
+    await page.setInputFiles("#file", { name: "stack.tif", mimeType: "image/tiff", buffer: Buffer.from([0x49, 0x49, 42, 0]) });
+    await page.waitForFunction(() => !$("#v3-stage").hidden);
+    check(await page.isVisible("#v3-switch"), "a stack opens on the 3D view, with the 2D/3D switch in the toolbar");
+    const tools = await page.evaluate(() => ["#v3-render-btn", "#v3-depth", "#v3-look-btn", "#v3-slices-btn"].map((s) => {
+      const b = document.querySelector(s); return !!b && b.matches(".toolbar button.tool") && b.offsetParent !== null;
+    }));
+    check(tools.every(Boolean) && !(await page.$("#v3-stage #v3-tools")), `the 3D tools are toolbar buttons like the 2D ones, not a panel over the stack: ${tools}`);
+    check(await page.isHidden("#ruler-btn") && await page.isHidden("#zoom-in"), "the 2D tools step aside in 3D");
+    const rows = await page.evaluate(() => [...document.querySelectorAll("#channels .channel")].map((r) => r.querySelector("label").textContent));
+    check(rows.join() === "CD31,DAPI", `the channel rows are the stack's: ${rows}`);
+    await level(0, "black", 0);
+    const all = await picture();
+    check(all.lit > 500, `the 3D view draws the stack: ${all.lit} lit pixels`);
+    if (shot) await page.locator("#view").screenshot({ path: shot });
 
-  await show(0, false);
-  const noCd31 = await picture();
-  check(noCd31.r < all.r * 0.5, `hiding CD31 takes its red out of the 3D view: red ${all.r.toFixed(1)} → ${noCd31.r.toFixed(1)}`);
-  await show(0, true);
-  await level(0, "black", 240);
-  const dark = await picture();
-  check(dark.r < all.r * 0.5, `raising CD31's black point darkens it in 3D: red ${all.r.toFixed(1)} → ${dark.r.toFixed(1)}`);
-  await level(0, "black", 0);
+    await show(0, false);
+    const noCd31 = await picture();
+    check(noCd31.r < all.r * 0.5, `hiding CD31 takes its red out of the 3D view: red ${all.r.toFixed(1)} → ${noCd31.r.toFixed(1)}`);
+    await show(0, true);
+    await level(0, "black", 240);
+    const dark = await picture();
+    check(dark.r < all.r * 0.5, `raising CD31's black point darkens it in 3D: red ${all.r.toFixed(1)} → ${dark.r.toFixed(1)}`);
+    await level(0, "black", 0);
 
-  const depthOn = await page.getAttribute("#v3-depth", "aria-pressed") === "true";
-  await page.click("#v3-depth");
-  const other = await picture();
-  const plain = depthOn ? other : all, byDepth = depthOn ? all : other;
-  check(byDepth.g > plain.g + 1, `Colour by depth paints the tubes in depth colours, not CD31's red: green ${plain.g.toFixed(1)} → ${byDepth.g.toFixed(1)}`);
-  if (!depthOn) await page.click("#v3-depth");
+    const depthOn = await page.getAttribute("#v3-depth", "aria-pressed") === "true";
+    await page.click("#v3-depth");
+    const other = await picture();
+    const plain = depthOn ? other : all, byDepth = depthOn ? all : other;
+    check(byDepth.g > plain.g + 1, `Colour by depth paints the tubes in depth colours, not CD31's red: green ${plain.g.toFixed(1)} → ${byDepth.g.toFixed(1)}`);
+    if (!depthOn) await page.click("#v3-depth");
 
-  const top = await picture();
-  await page.hover("#v3-look-btn"); await page.click('#v3-look [data-look="side"]');
-  const side = await picture();
-  check(Math.abs(side.lit - top.lit) > top.lit * 0.2, `Side turns the view: ${top.lit} → ${side.lit} lit pixels`);
-  await page.hover("#v3-look-btn"); await page.click('#v3-look [data-look="top"]');
+    const top = await picture();
+    await page.hover("#v3-look-btn"); await page.click('#v3-look [data-look="side"]');
+    const side = await picture();
+    check(Math.abs(side.lit - top.lit) > top.lit * 0.2, `Side turns the view: ${top.lit} → ${side.lit} lit pixels`);
+    await page.hover("#v3-look-btn"); await page.click('#v3-look [data-look="top"]');
 
-  await page.evaluate(() => { const s = $("#v3-z1"); s.value = 0; s.dispatchEvent(new Event("input", { bubbles: true })); });
-  const slab = await picture();
-  check(slab.r < top.r * 0.6, `showing only the first slice hides the rest: red ${top.r.toFixed(1)} → ${slab.r.toFixed(1)}`);
+    await page.evaluate(() => { const s = $("#v3-z1"); s.value = 0; s.dispatchEvent(new Event("input", { bubbles: true })); });
+    const slab = await picture();
+    check(slab.r < top.r * 0.6, `showing only the first slice hides the rest: red ${top.r.toFixed(1)} → ${slab.r.toFixed(1)}`);
 
-  const note = await page.textContent("#v3-note");
-  check(/owner/i.test(note), `the spacing says who stated it: "${note}"`);
+    const note = await page.textContent("#v3-note");
+    check(/owner/i.test(note), `the spacing says who stated it: "${note}"`);
 
-  await page.click("#v3-2d");
-  check(await page.isHidden("#v3-stage") && await page.isVisible("#stage"), "2D shows the flattened stack again");
+    await page.click("#v3-2d");
+    check(await page.isHidden("#v3-stage") && await page.isVisible("#stage"), "2D shows the flattened stack again");
+  } else console.log(`not checked in this ${ENGINE}: the 3D view, which needs the WebGL2 it lacks`);
 
   await page.goto(origin + "/web/fixture");
   await page.waitForFunction(() => window.$ && $("#title").textContent === "Fixture");
   check(await page.isHidden("#v3-switch"), "a 2D study has no 2D/3D switch");
+
+  // a browser without WebGL2: the stack still opens, flattened, its volume there for the study to read
+  const noGl = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  await noGl.route(offSite(origin), (r) => r.abort());
+  await noGl.addInitScript(() => {
+    delete Navigator.prototype.serviceWorker;
+    const get = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (kind, ...rest) { return kind === "webgl2" ? null : get.call(this, kind, ...rest); };
+  });
+  const p2 = await noGl.newPage();
+  p2.on("pageerror", (e) => { failed = true; console.error("page error, no WebGL2: " + e.message); });
+  await p2.goto(origin + "/web/vascular");
+  await p2.waitForFunction(() => window.$ && $("#status").textContent.startsWith("Ready"));
+  await p2.setInputFiles("#file", { name: "stack.tif", mimeType: "image/tiff", buffer: Buffer.from([0x49, 0x49, 42, 0]) });
+  await p2.waitForFunction(() => window.shellForTests.page.get("image"));
+  const seen = await p2.evaluate(() => ({ shape: window.shellForTests.viewer.three?.meta?.shape || null, flat: !$("#stage").hidden, switch: !$("#v3-switch").hidden }));
+  check(seen.shape?.length === 3 && seen.flat && !seen.switch, `with no WebGL2 the stack opens flattened, with no 2D/3D switch, its volume there: ${JSON.stringify(seen)}`);
 } catch (e) {
   failed = true; console.error(e);
 }
