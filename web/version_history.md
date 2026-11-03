@@ -10,6 +10,8 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- Collapse the left bar to a narrow Steps strip with the ‹ at its top, to give the image the whole width; click the strip to bring it back. The page remembers which you chose. (#690)
+- The Data Management strip no longer peeks out beside the left bar for people who are not data managers. (#690)
 - The study switcher shows each study's own icon beside its name. (#684)
 - In Data Management, a folder whose previews file is damaged shows its images without previews, and an image chosen opens itself, instead of failing. (#683)
 - LZW-compressed TIFFs, as ImageJ and bfconvert write them, open. (#676)
