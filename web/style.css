@@ -138,19 +138,22 @@ body.resizing { cursor: col-resize; user-select: none; }
 #file-info dt { color: var(--dim); }
 #file-info dd { margin: 0; overflow-wrap: anywhere; }
 #file-info dd.none { grid-column: 1 / -1; margin-top: 2px; }
-/* a row per channel, on one line: its checkbox, its colour picker, the one part in the channel's colour, its
-   name, its description behind a (?), the file's own name for it, and one slider holding its black and white
-   points over a ramp from black to white */
-#channels { display: grid; grid-template-columns: auto auto minmax(0, max-content) minmax(60px, 1fr); gap: 6px; font-size: 13px; }
+/* a row per channel, on one line: its checkbox, its name, its description behind a (?), the file's own name
+   for it, one slider holding its black and white points over a ramp from black to white, and its colour
+   picker, the one part in the channel's colour */
+#channels { display: grid; grid-template-columns: auto minmax(0, max-content) minmax(60px, 1fr) auto; gap: 6px; font-size: 13px; }
 #channels:empty { display: none; }
 .channel { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; }
 .channel .ch-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .channel label { flex: 0 1 auto; min-width: 2em; overflow: hidden; text-overflow: ellipsis; cursor: pointer; white-space: nowrap; }
 .channel input[type=checkbox] { flex: none; width: 15px; height: 15px; margin: 0; cursor: pointer; }
-.channel input[type=color] { flex: none; width: 18px; height: 18px; padding: 0; border: 1px solid var(--line); border-radius: var(--r-ctl); cursor: pointer; background: none; }
-.channel input[type=color]::-webkit-color-swatch-wrapper { padding: 2px; }
-.channel input[type=color]::-webkit-color-swatch { border: 0; border-radius: 2px; }
-.channel input[type=color]::-moz-color-swatch { border: 0; border-radius: 2px; }
+/* the colour picker: a swatch of the channel's colour in a rainbow ring */
+.channel input[type=color] { flex: none; width: 18px; height: 18px; padding: 3px; border: 0; border-radius: 50%; cursor: pointer;
+  background: conic-gradient(#f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
+.channel input[type=color]:hover, .channel input[type=color]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.channel input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+.channel input[type=color]::-webkit-color-swatch { border: 2px solid var(--panel); border-radius: 50%; }
+.channel input[type=color]::-moz-color-swatch { border: 2px solid var(--panel); border-radius: 50%; }
 .channel .from-file { flex: 0 2 auto; min-width: 0; color: var(--dim); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .channel.off .levels { opacity: .4; }
 /* a slider of two points: the track and its thumbs, each thumb a triangle drawn by the channel's own rules */

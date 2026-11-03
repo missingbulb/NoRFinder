@@ -42,7 +42,7 @@ export function viewer(shell) {
   // ---------- the channels ----------
   // One row per channel of the image on show, or per channel the study names before one: what the study says
   // of it, else what the file says, else its place (channels.js). Each row's checkbox shows or hides it, its
-  // colour picker recolours it and its slider holds its black and white points; a double click on the slider
+  // slider holds its black and white points and its colour picker recolours it; a double click on the slider
   // puts the points back. They start over with every image.
   function rows() {
     $("#channels").replaceChildren(...chans.map((c, k) => {
@@ -73,7 +73,7 @@ export function viewer(shell) {
       black.oninput = () => { c.black = Math.min(+black.value, c.white - 1); black.value = c.black; tell(black); later(); };
       white.oninput = () => { c.white = Math.max(+white.value, c.black + 1); white.value = c.white; tell(white); later(); };
       levels.ondblclick = () => { c.black = black.value = c.base.black; c.white = white.value = c.base.white; redraw(); };
-      row.append(box, pick, name, levels);
+      row.append(box, name, levels, pick);
       return row;
     }));
   }
