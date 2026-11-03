@@ -10,15 +10,15 @@ carried all its pull requests. The `writing-version-history` skill says how.
 
 ## Next release
 
-Pick your role from the new menu beside your avatar. Viewer shows what a study finds. Signed in,
-Ground Truth Tagger turns the left bar into a to-do list: the finalists, the rejected, then each
-area checked for missed NoRs, one at a time, each finished one cut out of the image. Data Manager
-opens a study's folders at once. (#705, #720)
+Pick your role from the new menu beside your avatar. Viewer shows what a study finds. Ground Truth
+Tagger turns the left bar into a to-do list, one item at a time, each finished one cut out of the
+image: NoR Finder's finalists, rejected and areas; in Vascular Measurements, once Execute draws the
+vessel model, its vessels, junctions and areas. (#705, #720, #731)
 
-A z-stack opens in 3D only and a flat image in 2D, in every study; a plain multi-page TIFF opens as
-a stack too. Edit Image on a stack leaves out Crop, the cut lines and Imperfections. Each channel in
-the Image box fits on one line, with a swatch to recolour it and triangle black and white points.
-(#702, #707, #708, #713)
+A z-stack opens in 3D only and a flat image in 2D, in every study, a plain multi-page TIFF as
+a stack too. The Image box holds each channel on one line and, for a stack, the slices shown and
+their spacing; the 3D view keeps Zoom and Look from. Edit Image on stacks leaves out Crop and
+Imperfections. (#702, #707, #708, #713, #731)
 
 The left bar collapses and opens from the chevron at its top, or by dragging its edge, and a folded
 drawer opens from a click anywhere on it. In NoR Finder an opening image builds in grey while it
