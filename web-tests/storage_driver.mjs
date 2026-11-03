@@ -21,6 +21,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { offSite } from "./off_site.mjs";
+import { keptContext } from "./kept_context.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -51,7 +52,6 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
 let failed = false;
 const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: " + what); } else console.log("ok: " + what); };
 
@@ -81,7 +81,7 @@ const LISTED = JSON.stringify(fs.readdirSync(path.join(repo, "studies")).filter(
   .map((d) => JSON.parse(fs.readFileSync(path.join(repo, "studies", d, "study.json")))).filter((m) => m.listed)
   .map((m) => ({ id: m.id, title: m.title })).sort((a, b) => a.title.localeCompare(b.title)));
 
-const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+const ctx = await keptContext(pw, { viewport: { width: 1400, height: 900 } });
 // how often each image was downloaded from Drive
 const downloads = Object.fromEntries([...DRIVE, TWIN].map((f) => [f.id, 0]));
 const cors = { "access-control-allow-origin": "*" };
@@ -111,7 +111,9 @@ await ctx.addInitScript((seed) => {
   for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v);
 }, SEED);
 const page = await ctx.newPage();
-page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.message); });
+// the stand-in worker never answers an image's open, so leaving for another study cuts it short: WebKit reports that
+// as an uncaught "Context is stopped", which is no error of the page's
+page.on("pageerror", (e) => { if (e.message === "Context is stopped") return; failed = true; console.error("page error: " + e.message); });
 page.setDefaultTimeout(10000);
 const shot = async (name, sel) => { if (shots) await page.locator(sel).screenshot({ path: path.join(shots, name + ".png") }); };
 try {
@@ -311,5 +313,5 @@ try {
 } catch (e) {
   failed = true; console.error("FAILED: " + e.message);
 }
-await browser.close(); server.close();
+await ctx.close(); server.close();
 process.exitCode = failed ? 1 : 0;
