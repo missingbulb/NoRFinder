@@ -1377,11 +1377,11 @@ const boxes = () => document.querySelectorAll(".box.foldable");
 function unfoldFirst() { boxes().forEach((b) => b.classList.toggle("folded", b.hasAttribute("data-opens"))); retitle(); }
 // a step just done: a new image folds every box waiting for a later step
 function foldFor(key) {
-  // a preview keeps the Image box open: Load Original is what comes next
-  const preview = key === "load" && st.source?.kind === "preview";
+  // a preview keeps the Image box open: Load Original is what comes next; so does a study with no step after Load
+  const keep = key === "load" && (st.source?.kind === "preview" || steps.length === 1);
   boxes().forEach((b) => {
-    if (b.dataset.opens === key || (preview && b.id === "image-box")) b.classList.remove("folded");
-    else if ((b.dataset.folds === key && !(preview && b.id === "image-box")) || (key === "load" && b.hasAttribute("data-opens"))) b.classList.add("folded");
+    if (b.dataset.opens === key || (keep && b.id === "image-box")) b.classList.remove("folded");
+    else if ((b.dataset.folds === key && !(keep && b.id === "image-box")) || (key === "load" && b.hasAttribute("data-opens"))) b.classList.add("folded");
   });
   retitle();
 }
