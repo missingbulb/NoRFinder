@@ -100,7 +100,7 @@ const esc = (t) => String(t).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 
 // the page's state: the shell's fields below, and whatever the study keeps beside them
 const st = { worker: null, H: 0, W: 0, um: null, umY: null, img: null, plain: null, zoom: 2, fileName: "", sha: "", source: null, heap: null, files: 0,
-  ready: false, readyInfo: null, queued: null, kept: null, reopening: false, busySince: 0, busyTimer: null, peeked: false, peek: null };
+  ready: false, readyInfo: null, queued: null, kept: null, busySince: 0, busyTimer: null, peeked: false, peek: null };
 // What the shell's controls are drawn from (page_state.js): image, the image open ({name, source, W, H, um, umY,
 // info, planes, channels, Z, spacing}: Z slices, spacing µm between them or null) or null; opening, the one being read ({name}) or null; and the viewer's own fields.
 const page = pageState({ image: null, opening: null });
@@ -546,7 +546,6 @@ function handle(m) {
     $("#ram-gc").disabled = false;
     status("Ready. Load an image.");
     if (st.queued) { const q = st.queued; st.queued = null; send(q.name, q.bytes); }
-    else if (st.kept) reopen();
   } else if (m.type === "opened") {
     st.um = m.meta.um; st.umY = m.meta.um_y;
     page.set({ opening: null, image: { name: st.fileName, source: st.source, W: m.meta.W, H: m.meta.H, um: st.um, umY: st.umY,
@@ -559,9 +558,8 @@ function handle(m) {
     log.add(`Opened an image from ${from}, ${m.meta.W} × ${m.meta.H} px, ${m.meta.Z || 1} slice(s)`);
     status("Image loaded."); // the study's opened hook says what comes next, if anything
     study.opened?.(m.meta);
-    if (!st.reopening && st.source && st.source.kind === "local" && makesTruth()) notice(LOCAL_GT);
-    if (!st.reopening && st.source && st.source.kind === "drive" && st.pictured !== st.source.id) saveThumb(st.source.id, st.fileName);
-    st.reopening = false;
+    if (st.source && st.source.kind === "local" && makesTruth()) notice(LOCAL_GT);
+    if (st.source && st.source.kind === "drive" && st.pictured !== st.source.id) saveThumb(st.source.id, st.fileName);
   } else if (m.type === "result") {
     study.result?.(m.action, m.meta, m.bytes, m.echo);
   } else if (m.type === "memory") {
@@ -595,7 +593,7 @@ async function openBytes(name, bytes, source) {
   st.fileName = name; st.source = source;
   for (const p of steps) Object.assign(p, { done: false, info: "", at: null, pressed: false });
   drawSteps(); boxes().forEach((b) => summaries.delete(b)); retitle();
-  // a copy, for the next study to open: the bytes themselves go to Python
+  // a copy, for Edit Image and the problem report: the bytes themselves go to Python
   st.kept = { name, source, bytes: bytes.slice(0) };
   study.opening?.(name, source);
   st.sha = await sha256(bytes);
@@ -611,13 +609,6 @@ async function sha256(bytes) {
 function send(name, bytes) {
   busy(true, "Reading the image…", st.peeked && "peek");
   st.worker.postMessage({ type: "open", name, bytes }, [bytes]);
-}
-// the image on show, opened again in a study that has just come in
-function reopen() {
-  const { name, source, bytes } = st.kept, opened = taken(until("opened"));
-  working($("#load-main"), () => opened);
-  st.reopening = true; study.opening?.(name, source);
-  send(name, bytes.slice(0));
 }
 // a painter for the image's bytes as they arrive, shown until Python's own drawing replaces it; the study's,
 // when it has one
@@ -642,14 +633,18 @@ function load(src) {
 }
 $("#load-main").onclick = () => { signIn.drive(); load(readJSON(SOURCE, "local")); };
 $("#load-menu summary").addEventListener("click", () => signIn.drive());
-// Unload: no image open, the study starting over as one that has just come in, and Python letting the image go
+// no image open, nor one waiting for Python, and Python letting it go
+function dropImage() {
+  Object.assign(st, { kept: null, queued: null, fileName: "", source: null, sha: "", um: null, umY: null });
+  if (st.ready) st.worker.postMessage({ type: "close" });
+  page.set({ image: null, opening: null }); boxDone($("#image-box"), null);
+}
+// Unload: no image open, the study starting over as one that has just come in
 $("#unload").onclick = () => {
   if (!st.img || $("#load-main").classList.contains("working")) return;
   swapping = swapping.then(async () => {
     const { ready, readyInfo } = st, id = manifest.id;
-    Object.assign(st, { kept: null, queued: null, fileName: "", source: null, sha: "", um: null, umY: null });
-    if (ready) st.worker.postMessage({ type: "close" });
-    page.set({ image: null, opening: null }); boxDone($("#image-box"), null);
+    dropImage();
     leaveStudy();
     try { await mountStudy(id); } catch (e) { return status("Error: " + (e.message || e), true); }
     if (ready) { st.ready = true; $("#ram-gc").disabled = false; study.ready?.(readyInfo); }
@@ -1635,6 +1630,7 @@ function swap() {
   swapping = swapping.then(async () => {
     const id = studyOf(location);
     if (id === manifest?.id) return;
+    dropImage();
     leaveStudy();
     try {
       await mountStudy(id);
@@ -1685,7 +1681,7 @@ async function mountStudy(id) {
 }
 const viewers = {};
 // The study on show leaves: its panels, stylesheet, drawing, listeners and state go, and its Python's late
-// answers are dropped; the image stays on show, to open again in the study that comes in.
+// answers are dropped.
 function leaveStudy() {
   lifetime.abort(); lifetime = new AbortController();
   for (const n of mounted.splice(0)) n.remove();
