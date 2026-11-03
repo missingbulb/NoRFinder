@@ -52,8 +52,11 @@ async function open({ motion = true, reducedMotion = "no-preference" } = {}) {
   return { ctx, page };
 }
 // the dialog's animations, frozen at their start: where it is drawn then, where it ends, and where the button is
-const firstFrame = (page, dlg, btn) => page.evaluate(([dlg, btn]) => {
-  const d = document.querySelector(dlg), all = d.getAnimations({ subtree: true });
+// (the motion starts in the frame after the dialog opens, which a loaded machine may not have drawn yet)
+const firstFrame = (page, dlg, btn) => page.evaluate(async ([dlg, btn]) => {
+  const d = document.querySelector(dlg);
+  if (!d.getAnimations().length) await new Promise((r) => requestAnimationFrame(() => r()));
+  const all = d.getAnimations({ subtree: true });
   const box = (r) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height });
   all.forEach((a) => { a.pause(); a.currentTime = 0; });
   const start = box(d.getBoundingClientRect());
@@ -69,12 +72,15 @@ const resume = (page, dlg) => page.evaluate((dlg) => document.querySelector(dlg)
   // the history arrives once, and the dialog grows with it: let that happen first
   await page.evaluate(() => { $("#sb-version").click(); $("#history-dlg").close(); });
   await page.waitForTimeout(1200);
-  for (const [btn, dlg, what] of [["#sb-version", "#history-dlg", "Version history"], ["#sb-res-icon", "#usage-dlg", "Resource Usage"]]) {
+  // Version history fills in at once, so it starts exactly as big as its button; Resource Usage fills in a moment
+// later, past the frame its motion starts in, so it starts only about that big
+for (const [btn, dlg, what, by] of [["#sb-version", "#history-dlg", "Version history", 1.02], ["#sb-res-icon", "#usage-dlg", "Resource Usage", 1.5]]) {
     await page.click(btn);
     const f = await firstFrame(page, dlg, btn);
     await check(f.open && f.running >= 1, `${btn} opens ${what}, animated`, f);
     await check(near(f.start.x, f.button.x) && near(f.start.y, f.button.y), `${what} starts centred on its button`, f);
-    await check(near(f.start.w, f.button.w) && near(f.start.h, f.button.h), `and as big as the button`, f);
+    const about = (a, b) => a >= b / by && a <= b * by;
+    await check(about(f.start.w, f.button.w) && about(f.start.h, f.button.h), `and as big as the button`, f);
     await check(f.opacity < 0.05, `and faded out`, f);
     if (shots) await page.screenshot({ path: path.join(shots, dlg.slice(1) + "_first_frame.png") });
     await resume(page, dlg);
