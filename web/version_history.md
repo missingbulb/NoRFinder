@@ -11,6 +11,7 @@ writes those versions into this file. Releases with no visible change are left o
 
 ## Next release
 - Choose folders… in Data Management opens Google's permission window again, instead of doing nothing. (#694)
+- Switching study unloads the open image: the new study starts with none open. (#686)
 - A popup opened by a button grows out of that button. (#691)
 - The study switcher shows each study's own icon beside its name. (#684)
 - In Data Management, a folder whose previews file is damaged shows its images without previews, and an image chosen opens itself, instead of failing. (#683)
