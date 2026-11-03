@@ -1,6 +1,6 @@
 // Drives the page (web/) in headless Chromium on the Image Viewer, a study with nothing of its own, with a stand-in
 // worker answering READY (the study's ready()) and an image of IMAGE's size, and checks the shell's Preprocessing
-// drawer: it opens with the image, and its Split into parts waits for an image and opens the dialog on it; 2 × 2 and 3 × 3 draw their parts; a line dragged moves its cut; a part
+// drawer, in Data Management: it opens with the image, and its Split into parts waits for an image and opens the dialog on it; 2 × 2 and 3 × 3 draw their parts; a line dragged moves its cut; a part
 // clicked is left out and clicked again kept; the channels and slices chosen, and the file-name pattern, name the
 // parts, a pattern giving two parts one name holds the download; Upload to Google Drive is off and says why; the
 // pattern outlives a reload. Download all parts saves the ZIP to OUT/parts.zip, and prints the cuts it was made
@@ -46,7 +46,7 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw.chromium.launch();
+const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
 const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
 const check = async (ok, what, seen) => { if (!ok) { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); } console.error("ok: " + what); };
 const shot = async (page, name) => { if (shots) await page.locator("#split-dlg").screenshot({ path: path.join(shots, name + ".png") }); };
@@ -58,6 +58,10 @@ const page = await ctx.newPage();
 page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
 await page.goto(origin + "/web/?study=viewer");
 await page.waitForFunction(() => document.querySelector("#split-open"));
+// Preprocessing is Data Management's (req/shell/preprocessing/split), which a data manager opens; the dialog is what this checks. Once the
+// study is in, which leaves the mode
+await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
+await page.evaluate(() => { document.documentElement.dataset.mode = "data"; });
 
 await check(await page.isDisabled("#split-open"), "Split into parts waits for an image");
 await page.setInputFiles("#file", image);
@@ -131,6 +135,10 @@ const cuts = s.grips;
 await page.click("#split-close");
 await page.reload();
 await page.waitForFunction(() => document.querySelector("#split-open"));
+// Preprocessing is Data Management's (req/shell/preprocessing/split), which a data manager opens; the dialog is what this checks. Once the
+// study is in, which leaves the mode
+await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
+await page.evaluate(() => { document.documentElement.dataset.mode = "data"; });
 await page.setInputFiles("#file", image);
 await page.waitForFunction(() => !document.querySelector("#split-open").disabled);
 await page.click("#split-open");

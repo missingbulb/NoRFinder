@@ -82,6 +82,22 @@ spec does not have.
   follows what it points at when the window resizes. Test: `web-tests/test_welcome_page.py`.
   </details>
 
+- `req/shell/browsers/supported` The page names the browsers it supports; in any other, the status bar's report icon is a warning sign.
+  <details>
+
+  Set by the owner on 2026-11-03. The page supports Chrome and Edge on a desktop or laptop computer, each from
+  the version `web/browsers.json` names, the one place the list is kept; the floor is the first version that
+  places the page's popups by CSS anchor positioning (Chrome and Edge 125; an older one shows each popup at a
+  fixed spot). Firefox, from 147, and Safari, from 26, join the list once the nightly run on their engines
+  (`req/checks/other-engines`) is green. A phone or tablet, iPhone and iPad included, is not supported, nor is any
+  other browser (Opera, Samsung Internet), whatever engine it runs; one that names
+  itself as Chrome (Brave, Vivaldi) counts as Chrome. In a browser not supported, the status bar's report
+  icon (`req/shell/report/bug`) is a warning sign in the warning colour instead of a bug, named Unsupported browser, its
+  tooltip saying why and that clicking it reports a problem; the report it opens is titled "Unsupported browser: ". The site's landing page (`req/shell/site/landing`) lists the
+  same browsers, written in by the build from `web/browsers.json`. Test: `web-tests/test_problem_report_page.py`,
+  `web-tests/test_published_site.py`.
+  </details>
+
 - `req/shell/channels/rows` Each channel has its row: shown or not, its black and white points, its name and its description.
   <details>
 
@@ -96,6 +112,77 @@ spec does not have.
   from its place: red, green and blue, then more colours, a lone channel grey; a channel the file
   colours but does not name is named for its colour. The rows start over with every image. Test:
   `web-tests/test_image_box_page.py`, `studies/viewer/tests/test_viewer.py`.
+  </details>
+
+- `req/shell/data/drive-access` A signed-in user with a role is asked to let the site into the study's folders, just those, and sees which it may write.
+  <details>
+
+  Set by the owner on 2026-11-02. Opening a study where the signed-in user holds a role
+  (`req/shell/data/roles`), the page asks, only for the folders it lacks access to, for Google's
+  per-file permission (`drive.file`) and then Google's own picker showing just the study's folders and
+  their subfolders, to approve all or some. The page then knows, for each folder: not approved for this
+  site; approved but view-only in Drive; or writable; a folder added since, or one left out, is asked
+  for again. The page only creates files and changes or trashes the ones it created; it never changes
+  a file anyone else made. Test: `web-tests/test_data_mode_page.py`.
+  </details>
+
+- `req/shell/data/folder` A folder chosen shows its images as a grid or a list, and the left bar sums it up.
+  <details>
+
+  Set by the owner on 2026-11-02. Choosing a folder in the tree fills the main area with its images,
+  a grid of previews or a list, a button switching them with a slide. The left bar's Selected Folder
+  box replaces the Image box and counts its images, how many have a preview, how many previews are
+  out of date (the image's SHA-256 differs from the preview's), how many have ground truth beside
+  them (`<name>.ground_truth.*`, `<name>` the image's name without its extension) and how many are
+  marked as needing it (`req/shell/data/preview-images`). Test: `web-tests/test_data_mode_page.py`.
+  </details>
+
+- `req/shell/data/mode` Data Management: a column left of the left bar, for data managers only, collapsed until opened.
+  <details>
+
+  Set by the owner on 2026-11-02. For a signed-in data manager (`req/shell/data/roles`) a narrow strip
+  sits left of the left bar; opening it slides out the tree of the study's folders and enters Data
+  Management, closing it leaves. Others see no strip. The tree shows every folder and subfolder, open,
+  each with its access (`req/shell/data/drive-access`); a folder's images stay folded under it until
+  its image count is clicked, each with a small preview. In the mode the left bar keeps the Image box
+  and Preprocessing (`req/shell/preprocessing/split`) and hides the study's own drawers, its item view
+  and the steps; Load vanishes in a puff. Test: `web-tests/test_data_mode_page.py`.
+  </details>
+
+- `req/shell/data/preview-images` An image chosen in Data Management opens from its preview; Load Original opens the image itself.
+  <details>
+
+  Set by the owner on 2026-11-02. Choosing an image in the tree or the folder view opens its preview
+  in the study's viewer, a stack in 3D, quick and the same for everyone; the Image box's Load becomes
+  Load Original, which opens the image itself from the copy kept on this device when it has one,
+  else from Drive. A data manager can mark an image as needing ground truth: the page creates an
+  empty `<name>.ground_truth.MISSING` beside it, and unmarking trashes only a marker the page made.
+  Whoever makes the ground truth adds its file and drops the marker. Test:
+  `web-tests/test_data_mode_page.py`, `web-tests/test_previews_writer.py`.
+  </details>
+
+- `req/shell/data/roles` A study names who may manage its data, and its Google Drive folders.
+  <details>
+
+  Set by the owner on 2026-11-02. A study's `permissions` maps a role to the Google accounts, by
+  email, that hold it: `data_management` (Data Management, `req/shell/data/mode`) and
+  `ground_truth_writer` (writing ground truth to Drive, still to come). Its `files.folders` lists its
+  Drive folders, and Load's Drive dialog opens on the first. A role only shows or hides the page's
+  tools; what anyone can change is still what Drive itself lets them. Test:
+  `web-tests/test_study_contract.py`.
+  </details>
+
+- `req/shell/data/update-previews` Update previews makes the folder's previews for the images that lack one or changed, and keeps the rest.
+  <details>
+
+  Set by the owner on 2026-11-02. Under the folder's summary, Update previews is on while an image
+  lacks a preview or has an out-of-date one. It downloads only those images, makes their previews in
+  the browser as `dev/tools/previews/make_previews.py` does (`req/shell/drive/previews`; a flat image at
+  most 256 px a side, a stack at most 96 px and 24 slices), keeps every still-valid preview as it was,
+  and writes `rauntruth-previews.tiff`: a new file, or the page's own one replaced. A previews file the
+  page did not make is left alone, and the page says to delete it in Drive to let the page manage it;
+  deleting the page's own makes it start over. Test: `web-tests/test_data_mode_page.py`,
+  `web-tests/test_previews_writer.py`.
   </details>
 
 - `req/shell/drive/dialog` Google Drive: paste a shared link, no sign-in; browse folders; open on Open, double click or Enter.
@@ -419,16 +506,15 @@ spec does not have.
   `web-tests/test_image_box_page.py`.
   </details>
 
-- `req/shell/preprocessing/split` Preprocessing, in every study, splits an image into 4 or 9 TIFFs for ground truth, each recording where it lay.
+- `req/shell/preprocessing/split` Preprocessing, in Data Management, splits an image into 4 or 9 TIFFs for ground truth, each recording where it lay.
   <details>
 
   Set by the owner on 2026-10-31. A large image is hard to annotate in one sitting; its parts can be
   annotated one at a time, by several people at once, and give the finders smaller samples to tune on.
-  Changed by the owner on 2026-10-31: it is the shell's, in every study, the Image Viewer included. Below
-  the Image box the shell's Preprocessing drawer opens with the image and folds once the study's first step
-  is done (a study with no steps leaves it as the user left it); a study adds its own preprocessing steps
-  to it through its `preprocessing` slot. Its Split into parts button, off until an image is open, opens
-  the dialog. The dialog shows the image small, cut 2 × 2 or 3 × 3 into evenly spaced parts numbered as `{n}` counts
+  Changed by the owner on 2026-10-31: it is the shell's, in every study, the Image Viewer included.
+  Changed by the owner on 2026-11-02: it exists only in Data Management (`req/shell/data/mode`), below
+  the Image box; out of it no drawer, number or crumb names it. Its Split into parts button, off until
+  an image is open, opens the dialog. The dialog shows the image small, cut 2 × 2 or 3 × 3 into evenly spaced parts numbered as `{n}` counts
   them; dragging a line moves its cut, never closer than a twentieth of the image to the next one, and
   clicking a part leaves it out, clicking again keeping it. It lists the image's channels by the names and
   colours the page gives them, each kept or dropped, and for a stack the slices kept, from one to another.
@@ -466,6 +552,37 @@ spec does not have.
   Test: `web-tests/test_study_runs.py` runs the fixture study through the bridge in Pyodide and through
   the real worker in the page; the NoR study's memory test checks that repeated calls leave nothing
   behind.
+  </details>
+
+- `req/shell/report/action-log` The page keeps the user's last 200 actions on this device, for a problem report, and sends them nowhere.
+  <details>
+
+  Set by the owner on 2026-11-03. Each control the user clicks, ticks, chooses or sets is logged by its name
+  as the page shows it, with where it is (the dialog or popup), and never what they type; opening a study, an
+  image (where from, its size and slices) and a step done are logged too, and kept apart from them the errors
+  the page meets: an error in the status line, and a script error the page did not catch. No image's or
+  folder's name is logged: a control that shows one (Load's recents, the Drive list, the image's name, a
+  part's file name, the Storage tab, the lists in Settings) is logged by what it is. The log keeps the last
+  200 entries in the browser, so a report filed after a reload still has them; Settings lists it among what is
+  kept on this device only, with its size, to clear (`req/shell/account/settings`). The privacy policy says it is kept. Test:
+  `web-tests/test_problem_report_page.py`.
+  </details>
+
+- `req/shell/report/bug` A bug icon in the status bar, always there, opens a new GitHub issue filled in with the browser, the study, its state and the last five actions.
+  <details>
+
+  Set by the owner on 2026-11-03: the regular way to report any problem. A small grey bug, the status bar's
+  first item from the left of its right-hand items, in every browser (in one not supported, a warning sign:
+  `req/shell/browsers/supported`), and **Report a problem…** in the avatar's menu, open a new issue in a new tab on the repo's **Problem report** form
+  (`.github/ISSUE_TEMPLATE/bug-report.yml`), its fields filled in: the browser's name, full version where the
+  browser gives it, system, whether it is supported, and its user-agent string; the page's state (the site's
+  version, the study and its stage, whether Python is ready, the steps and which are done, the image open by
+  where it came from, its size, channels and slices, never its name, the view, whether online and signed in,
+  the window's size and the memory the browser says the computer has); the last five actions
+  (`req/shell/report/action-log`), oldest first, each with its time; and the last three errors. The user writes what happened,
+  reads what was filled in and submits it themselves; the page sends nothing. The title starts "Problem: ",
+  or "Unsupported browser: " in a browser not supported. Offline both are held, as everything that
+  needs the internet (`req/shell/offline/default`). Test: `web-tests/test_problem_report_page.py`.
   </details>
 
 - `req/shell/resources-dialog` Storage, memory, network and CPU are four tabs of one dialog, alike.
@@ -539,7 +656,7 @@ spec does not have.
   the tool. `rauntruth.com/` says what the site does and for whom, that images are analysed in the
   browser and never uploaded, and that it is free and open source; it opens the app (`req/shell/site/app-address`), lists
   every study the switcher offers (`req/shell/header`), each a link to its address, filled in by the build from
-  the studies' `study.json`, and links the privacy policy, the terms and the license. Test:
+  the studies' `study.json`, lists the supported browsers (`req/shell/browsers/supported`), and links the privacy policy, the terms and the license. Test:
   `web-tests/test_published_site.py`.
   </details>
 
@@ -598,7 +715,7 @@ spec does not have.
   the spinner and what the page is doing now (each stage of Python's loading, the study's progress,
   an error in red) and the thumbnails' progress (`req/shell/drive/dialog`). From the right edge inward: the site's
   version (stamped by each release; `req/shell/version-history`, `req/shell/site/out-of-date`), the CPU (`req/shell/status-bar/cpu`), the network (`req/shell/status-bar/network`), the
-  memory (`req/shell/status-bar/memory`) and the disk (`req/shell/status-bar/disk`), these four folded into one icon unless set
+  memory (`req/shell/status-bar/memory`) and the disk (`req/shell/status-bar/disk`), and before them the report icon (`req/shell/report/bug`), a bug, or a warning sign in a browser the page does not support. The four are folded into one icon unless set
   always open (`req/shell/status-bar/resources`). Each of the four before the version is a small grey icon
   and its number, with no word naming it; all five are plain, with no box, alike. A mild vertical
   bar separates each item from the next. Nothing in the status bar turns the pointer into a
@@ -772,8 +889,8 @@ spec does not have.
   with the ground truth exported and submitted (`req/shell/ground-truth/submit`). PostGT: GT with batch actions on top (none
   yet). Set by the owner on 2026-11-02, Published: the study's algorithm is trusted and the page only
   shows what it finds, so it makes no ground truth (no Submit GT, its button hidden, as in PreGT) and
-  drops the steps that serve making it: the shell's Preprocessing (`req/shell/preprocessing/split`) and the study's
-  postprocessing (NoR's filters, `req/nor/filters/live`) are not shown. A GT or PostGT study names its ground truth's label and button. The Image Viewer is PreGT,
+  drops the steps that serve making it: the study's
+  postprocessing (NoR's filters, `req/nor/filters/live`) is not shown. A GT or PostGT study names its ground truth's label and button. The Image Viewer is PreGT,
   NoR Finder GT. Test: `web-tests/test_study_contract.py`, `web-tests/test_status_bar_page.py`.
   </details>
 
@@ -911,7 +1028,20 @@ spec does not have.
   Node nor a browser; every test that drives Node, Pyodide or Chromium, or measures speed or memory,
   is marked `full` and runs only in the full set, nightly (the nor-finder pack's `full-tests` task)
   and on every push to main, so it has run on anything a release can ship: a green full run on main
-  wakes the site release (`.github/workflows/tests-full.yml`, `web-tests/test_ci_split.py`).
+  wakes the site release (`.github/workflows/tests-full.yml`, `web-tests/test_ci_split.py`). The nightly run also
+  runs the full set on Firefox and WebKit (`req/checks/other-engines`).
+  </details>
+
+- `req/checks/other-engines` Every night the full set also runs on Firefox and WebKit; their failures fail the night only once the page supports their browser.
+  <details>
+
+  Set by the owner on 2026-11-03. The nightly full run (the nor-finder pack's `full-tests` task) runs the full
+  set again on Playwright's Firefox and on its WebKit, standing for Safari; a push to main does not, and
+  neither gates a release. An engine whose browser `web/browsers.json` does not list (`req/shell/browsers/supported`) reports
+  its failures as a warning on the run and the night stays green; once its browser is listed, a failure
+  fails the night as any other test does. Each page test's driver launches the engine `PW_ENGINE` names, so the
+  same run can be made by hand: `python3 dev/tools/build/other_engines.py firefox`. Test:
+  `web-tests/test_other_engines.py`.
   </details>
 
 ## `req/nor` The NoR Finder page: detect once, filter live, in the browser
@@ -1070,16 +1200,13 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   finding.
   </details>
 
-- `req/nor/layout` The left bar holds Load Image, Preprocessing, Processing, Postprocessing and Summary; the selected candidate is over the image, Submit Ground Truth in the toolbar.
+- `req/nor/layout` The left bar holds Load Image, Processing, Postprocessing and Summary; the selected candidate is over the image, Submit Ground Truth in the toolbar.
   <details>
 
-  Changed by the owner on 2026-10-30 and 2026-10-31. Below the Image box (`req/shell/left-bar/folding`) the left bar holds
-  the shell's Preprocessing (`req/shell/preprocessing/split`), to which the study adds that Find Candidates works on the image as
-  loaded, open from the image's opening until Find
-  Candidates (once a step marks the parts of the image to leave out, its folded title says how much,
-  "14% imperfections"); Processing, the candidates finder (its "how it works" and its settings fold
-  away; its "restore defaults" sits with the settings, not in the title row), open over the same
-  span and, folded once Find Candidates has run with the finder and
+  Changed by the owner on 2026-10-30, 2026-10-31 and 2026-11-02. Below the Image box
+  (`req/shell/left-bar/folding`) the left bar holds Processing, the candidates finder (its "how it works"
+  and its settings fold away; its "restore defaults" sits with the settings, not in the title row), open
+  from the image's opening until Find Candidates and, folded once Find Candidates has run with the finder and
   settings now chosen, titled "<finder> executed"; Postprocessing, the filters, which only its title
   opens; and Summary, which opens once the candidates are found. Postprocessing and Summary keep
   their names whatever is done. The main area has a toolbar over two views: the image and the

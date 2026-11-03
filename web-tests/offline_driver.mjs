@@ -33,7 +33,7 @@ const shot = async (page, name) => { if (shots) await page.screenshot({ path: pa
 
 // the vascular study's own folder, from its study.json, holding an image and a subfolder with another
 const vascular = JSON.parse(fs.readFileSync(path.join(site, "studies/vascular/study.json")));
-const ROOT = vascular.files.drive.match(/folders\/([\w-]+)/)[1];
+const ROOT = vascular.files.folders[0].match(/folders\/([\w-]+)/)[1];
 const SUB = "acmefolder0000000002";
 const FILES = { [ROOT]: [{ id: "acmestack00000000001", name: "stack one.tif" }, { id: SUB, name: "sub", folder: true }], [SUB]: [{ id: "acmestack00000000002", name: "stack two.tif" }] };
 
@@ -61,7 +61,7 @@ const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: "
 
 // a profile of its own: a browser's private window can install nothing
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), "offline-"));
-const ctx = await pw.chromium.launchPersistentContext(profile, { viewport: { width: 1400, height: 900 } });
+const ctx = await pw[process.env.PW_ENGINE || "chromium"].launchPersistentContext(profile, { viewport: { width: 1400, height: 900 } });
 let driveDownloads = 0;
 await ctx.route("https://www.googleapis.com/**", (route) => {
   const u = new URL(route.request().url()), id = u.pathname.match(/\/drive\/v3\/files\/?(.*)$/)[1];

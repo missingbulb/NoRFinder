@@ -49,7 +49,7 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw.chromium.launch();
+const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
 const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
 const check = async (ok, what, seen) => { if (!ok) { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); } console.log("ok: " + what); };
 
@@ -204,6 +204,6 @@ const clear = await page.evaluate(() => ({ stage: document.querySelector("#stage
 await check(clear.stage && clear.empty && !clear.minimap && !clear.unload && !clear.img, "Unload clears the image, the minimap and itself", clear);
 await check(clear.shine && !clear.done && clear.crumbs === "Load image", "Load shines again, and the steps start over", clear);
 await check(clear.fx === "Nothing counted yet." && !clear.overlay && clear.status.startsWith("Ready"), "the study starts over too", clear);
-await check(await page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].map((b) => b.classList.contains("folded")).join()) === "false,true,true,true,true", "and the boxes fold as before any image");
+await check(await page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].filter((b) => b.checkVisibility()).map((b) => b.classList.contains("folded")).join()) === "false,true,true,true", "and the boxes on show fold as before any image");
 await check((await rows()).map((r) => r.name).join() === "Grey", "and the channels are the study's again");
 await done(0);

@@ -20,7 +20,7 @@ try { pw = require("playwright"); } catch {
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const folder = (id) => `https://drive.google.com/drive/folders/${id}`;
 const FIXTURE_FOLDER = folder("fixturefolder0000001"), PASTED = folder("pastedfolder00000001");
-const NOR_FOLDER = JSON.parse(fs.readFileSync(path.join(repo, "studies", "nor", "study.json"), "utf8")).files.drive;
+const NOR_FOLDER = JSON.parse(fs.readFileSync(path.join(repo, "studies", "nor", "study.json"), "utf8")).files.folders[0];
 const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in" } };`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
@@ -30,7 +30,7 @@ const server = http.createServer((q, r) => {
   if (u === "/studies/fixture/study.json") {
     const m = JSON.parse(fs.readFileSync(path.join(repo, u), "utf8"));
     r.writeHead(200, { "content-type": "application/json" });
-    return r.end(JSON.stringify({ ...m, files: { ...m.files, drive: FIXTURE_FOLDER } }));
+    return r.end(JSON.stringify({ ...m, files: { ...m.files, folders: [FIXTURE_FOLDER] } }));
   }
   const f = repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
@@ -39,7 +39,7 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw.chromium.launch();
+const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
 let failed = false;
 const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: " + what); } else console.log("ok: " + what); };
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });

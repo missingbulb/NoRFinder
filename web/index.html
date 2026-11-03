@@ -47,6 +47,7 @@
       <button class="item" id="sign-in" type="button" data-needs-network hidden>Sign in with Google…</button>
       <button class="item" id="open-settings" type="button">Settings…</button>
       <button class="item" id="manage-storage" type="button">Manage storage…</button>
+      <button class="item" id="report-problem" type="button" data-needs-network>Report a problem…</button>
       <button class="item" id="sign-out" type="button" hidden>Sign out</button>
       <div class="legal"><a href="../privacy">Privacy policy</a> · <a href="../terms">Terms</a> · <a href="../license">License</a></div>
     </div>
@@ -54,10 +55,18 @@
 </header>
 
 <div id="layout">
+  <aside id="data-col" aria-label="Data Management" hidden>
+    <button id="data-open" type="button" aria-expanded="false" title="Data Management: the study's folders and images"><svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg><span class="strip-name">Data Management</span></button>
+    <div id="data-body">
+      <div class="data-head"><h2>Folders</h2><button id="data-approve" type="button" class="link" data-needs-network hidden></button></div>
+      <div id="data-tree" role="tree" aria-label="The study's folders"></div>
+      <p id="data-msg" class="hint" role="status"></p>
+    </div>
+  </aside>
   <aside id="left">
     <section class="box foldable" id="image-box" data-folds="load">
       <div class="sec-head"><h2 data-done-name="Loaded Image">Load Image</h2></div>
-      <details id="file-box" class="empty"><summary id="file-name" class="dim">No image loaded</summary><dl id="file-info"></dl></details>
+      <details id="file-box" class="empty"><summary id="file-name" class="dim" data-log-as="the image's name">No image loaded</summary><dl id="file-info"></dl></details>
       <div id="channels"></div>
       <div id="image-foot">
         <div class="split" id="load">
@@ -65,20 +74,28 @@
             <div class="pop">
               <button class="item" data-src="local"><svg class="computer-logo" aria-hidden="true"><use href="#computer-logo"/></svg>From this computer</button>
               <button class="item" data-src="drive"><svg class="drive-logo" aria-hidden="true"><use href="#drive-logo"/></svg>From Google Drive</button>
-              <div id="recent" hidden><div class="recent-head">Recent</div></div>
+              <div id="recent" data-log-as="a recent image" hidden><div class="recent-head">Recent</div></div>
             </div>
           </details>
         </div>
+        <button id="load-original" class="primary" type="button" hidden title="Open the image itself, not its preview: from this device when it is kept here, else from Google Drive">Load Original</button>
         <button id="unload" type="button" hidden title="Close the image and clear the page">Unload</button>
         <input id="file" type="file" hidden>
         <svg hidden><symbol id="drive-logo" viewBox="0 0 24 21"><path fill="#0f9d58" d="M8 0l4 7-8 14-4-7z"/><path fill="#ffba00" d="M8 0h8l8 14h-8z"/><path fill="#4285f4" d="M8 14h16l-4 7H4z"/></symbol><symbol id="computer-logo" viewBox="0 0 24 21"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2" y="1" width="20" height="14" rx="2"/><path d="M8 20h8M12 15v5"/></g></symbol></svg>
       </div>
     </section>
 
-    <section class="box foldable unpublished" id="preprocessing-box" data-opens="load">
+    <section class="box foldable" id="folder-box">
+      <div class="sec-head"><h2>Selected Folder</h2></div>
+      <div id="folder-name"></div>
+      <dl id="folder-summary"></dl>
+      <div class="folder-actions"><button id="update-previews" type="button" data-needs-network disabled>Update previews</button></div>
+      <p id="folder-msg" class="hint" role="status"></p>
+    </section>
+
+    <section class="box foldable" id="preprocessing-box" data-opens="load">
       <div class="sec-head"><h2>Preprocessing</h2></div>
       <div class="steps">
-        <slot-here data-slot-for="preprocessing"></slot-here>
         <button id="split-open" type="button" disabled title="Cut the image into 4 or 9 parts, each its own TIFF, to annotate one at a time">Split into parts…</button>
       </div>
     </section>
@@ -108,6 +125,7 @@
       </div>
       <slot-here data-slot-for="toolbar-end"></slot-here>
     </div>
+    <div id="access-bar" role="status" hidden><span id="access-text"></span><span class="grow"></span><button id="access-go" class="primary" type="button" data-needs-network>Choose folders…</button><button id="access-x" class="x" type="button" aria-label="Close">×</button></div>
     <div id="tasks-bar" class="for-items" hidden><span class="done"></span><meter min="0" max="1" value="0"></meter><span class="grow"></span><slot-here data-slot-for="tasks-end"></slot-here></div>
     <div id="busy" hidden><div id="scan-light"></div><span class="spin big"></span><div id="busy-text"></div><div id="busy-time"></div></div>
 
@@ -125,6 +143,10 @@
       <slot-here data-slot-for="over-image"></slot-here>
     </div>
 
+    <div id="folder-view" hidden>
+      <div class="folder-bar"><h2 id="folder-title"></h2><span class="grow"></span><div class="tabs" id="folder-layout" role="group" aria-label="Show the images as"><button type="button" data-layout="grid" aria-pressed="true">Grid</button><button type="button" data-layout="list" aria-pressed="false">List</button></div></div>
+      <div id="folder-items" data-layout="grid"></div>
+    </div>
     <slot-here data-slot-for="views"></slot-here>
   </main>
 </div>
@@ -135,6 +157,7 @@
   <span id="sb-now"><span class="spin" id="spin"></span><span id="status">Starting…</span></span>
   <span id="sb-thumbs"></span>
   <span class="grow"></span>
+  <button id="sb-report" class="sb-item" type="button" aria-label="Report a problem" title="Report a problem: opens a new GitHub issue filled in with your browser, the study, where you are in it and your last actions" data-needs-network><svg class="bug" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="6" height="8.5" rx="3"/><path d="M6.3 5a1.7 1.7 0 0 1 3.4 0M8 8v5.5M2.5 7.5 5 8.3M13.5 7.5 11 8.3M2.5 11.5 5 11M13.5 11.5 11 11M3.5 3.5l2 1.7M12.5 3.5l-2 1.7"/></svg><svg class="warn" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.8 14.8 13.6H1.2Z"/><path d="M8 6v3.6"/><circle cx="8" cy="11.6" r=".4"/></svg></button>
   <span id="sb-res" data-mode="auto">
     <span id="sb-res-items">
       <button id="sb-disk" class="sb-item" type="button" title="What this site keeps on this device. Click to manage it." aria-label="Storage"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="13" height="8" rx="1.5"/><path d="M4 9.5h4"/><circle cx="11.5" cy="9.5" r=".4"/></svg><span class="v"></span></button>
@@ -155,7 +178,7 @@
     <p class="hint">Paste the link of an image or a folder shared as "Anyone with the link".</p>
     <div class="drive-row"><input id="drive-link" type="text" placeholder="https://drive.google.com/…" autocomplete="off"><button id="drive-go" type="button" data-needs-network>Go</button></div>
     <div id="drive-path"></div>
-    <div id="drive-list"></div>
+    <div id="drive-list" data-log-as="an item in the Drive list"></div>
     <div id="drive-throttle" hidden><p>Google is throttling this site's downloads. Try again in 15 minutes.</p><div id="drive-clock">15:00</div></div>
     <div class="drive-row end"><label class="hint" id="drive-thumbs-l" title="A small picture of each image, about 8 KB, from this site"><input type="checkbox" id="drive-thumbs" checked>Show thumbnails<span id="drive-thumbs-note"></span></label><label class="hint" id="drive-autosave-l" title="Keep each image opened from Drive on this device, so it opens again without a download"><input type="checkbox" id="drive-autosave" checked>Auto-save images</label><button type="button" class="link" id="drive-storage" title="Manage storage: what thumbnails and saved images take on this device"></button><span id="drive-msg" class="hint"></span><button id="drive-open" class="primary" type="button" disabled>Open</button><button value="close">Close</button></div>
   </form>
@@ -201,7 +224,7 @@
       <p class="hint" id="split-frames" hidden></p>
       <label class="split-field" for="split-pattern"><span class="split-label">File names</span><input id="split-pattern" type="text" spellcheck="false" autocomplete="off"></label>
       <p class="hint">Added to the image's name: {row} {col} {n} {x} {y} {rows} {cols}, or {name} for the name itself.</p>
-      <ul id="split-names"></ul>
+      <ul id="split-names" data-log-as="a part's file name"></ul>
     </div>
   </div>
   <div class="drive-row end"><span id="split-msg" class="hint" role="status"></span><span class="grow"></span><button id="split-drive" type="button" disabled>Upload to Google Drive</button><button id="split-download" class="primary" type="button">Download all parts</button><button id="split-close" type="button">Close</button></div>
@@ -243,7 +266,7 @@
   <form method="dialog">
     <h2 id="usage-title">Resource Usage</h2>
     <div class="tab-head"><div class="tab-row" role="tablist"><button type="button" role="tab" data-tab="storage">Storage</button><button type="button" role="tab" data-tab="memory">Memory</button><button type="button" role="tab" data-tab="network">Network</button><button type="button" role="tab" data-tab="cpu">CPU</button></div><label class="res-mode">In the status bar <select id="res-mode"><option value="hidden">Hidden always</option><option value="auto">Auto-hiding</option><option value="open">Always open</option></select></label></div>
-    <section role="tabpanel" data-tab="storage" hidden><div class="install-row"><span class="hint" id="offline-app-text"></span><button type="button" class="link" id="offline-install">Install as an app</button></div><p class="hint total" id="storage-total"></p><div id="storage-list" class="rows"></div></section>
+    <section role="tabpanel" data-tab="storage" hidden><div class="install-row"><span class="hint" id="offline-app-text"></span><button type="button" class="link" id="offline-install">Install as an app</button></div><p class="hint total" id="storage-total"></p><div id="storage-list" class="rows" data-log-as="an entry in the Storage tab"></div></section>
     <section role="tabpanel" data-tab="memory" hidden><p class="hint total" id="ram-total"></p><div id="ram-list" class="rows"></div></section>
     <section role="tabpanel" data-tab="network" hidden><p class="hint total" id="net-total"></p><div id="net-list" class="rows"></div></section>
     <section role="tabpanel" data-tab="cpu" hidden><p class="hint total" id="cpu-total"></p><div id="cpu-list" class="rows"></div><div class="motion"><label><input id="motion" type="checkbox"> Animations</label><p class="hint">The minimap folding away, the drawers sliding, the light sweeping the image, shining and glowing buttons, and the status bar's rolling, flashing numbers. Spinners still turn.</p></div></section>

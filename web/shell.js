@@ -2,7 +2,7 @@
 // none of them; the header's switcher offers the ones the build lists and swaps one in without a reload. What it gives a study, as shell in mount(shell): loading images (from the
 // computer or Google Drive), Python (the study's own, run in worker.js), the viewer the study asks for,
 // the page's state its controls are drawn from (page: get, set, watch(key, fn, {signal})), the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own), the switch to its item view (views) and the boxes' titles (boxDone(box, summary) once a box's task is done), notices, the user's saved settings, downloads and ground-truth
-// submission; and around them the theme, the left bar, foldable boxes, Preprocessing (Split into parts, and a study's own steps in its slot), the resources dialog (storage, memory,
+// submission; and around them the theme, the left bar, foldable boxes, Data Management (data_mode.js) with its Preprocessing (Split into parts), the resources dialog (storage, memory,
 // network and CPU) and the version history.
 //
 // The study's hooks, all optional, returned from mount: ready(info) once its Python is loaded;
@@ -26,8 +26,15 @@ import { settingsDialog } from "./settings_dialog.js";
 import { splitter, SPLIT_PATTERN } from "./split_dialog.js";
 import { offline, APP_ASKED, markOffline, CONNECTION } from "./offline.js";
 import { welcome, WELCOME } from "./welcome.js";
+import { actionLog, ACTIONS } from "./action_log.js";
+import { identify, verdict } from "./browsers.js";
+import { problemUrl, ACTIONS_QUOTED, ERRORS_QUOTED } from "./problem_report.js";
+import { dataMode } from "./data_mode.js";
 
 const $ = (s) => document.querySelector(s);
+// what the user does here, kept on this device for a problem report (req/shell/report/action-log)
+const log = actionLog();
+log.watch();
 // image3d is the 2D viewer of a stack's flattened planes with a 3D view beside it, sharing the one 2D viewer
 const VIEWERS = { image2d: viewer2d, image3d: (shell) => viewer3d(shell, viewers.image2d ||= viewer2d(shell)) };
 const DEFAULT_STUDY = "viewer";
@@ -76,6 +83,8 @@ const signIn = account({
   menu: $("#user-menu"),
   clientId: ((window.NOR_CONFIG && window.NOR_CONFIG.google) || {}).clientId || "",
   applied: () => reapply(),
+  // after the page's own start, which this may run during
+  changed: () => queueMicrotask(() => data.signedIn()),
 });
 
 function readJSON(key, fallback = {}) {
@@ -101,6 +110,7 @@ let study = {}, view = null, manifest = null, base = "";
 // ---------- status ----------
 function status(text, err) {
   const s = $("#status"); s.textContent = text; s.classList.toggle("err", !!err);
+  if (err) log.add(text, "error");
   if (st.busySince) $("#busy-text").textContent = text;
   if (err) busy(false);
 }
@@ -408,7 +418,7 @@ function step(key, done, info) {
   const p = steps.find((x) => x.key === key);
   if (!p) return;
   if (done && !p.done) {
-    p.at = new Date();
+    p.at = new Date(); log.add(`Step done: ${p.name}`);
     // the boxes follow what the user did, not a dial set back to the last run's
     if (key === "load" || !p.button || p.pressed) foldFor(key);
     p.pressed = false;
@@ -540,7 +550,9 @@ function handle(m) {
     busy(false); statusBar();
     showImage();
     boxDone($("#image-box"), loadedSummary());
-    step("load", true, `${st.fileName}, ${m.meta.W} × ${m.meta.H} px, from ${st.source?.kind === "drive" ? "Google Drive" : "this computer"}`);
+    const from = { drive: "Google Drive", preview: "its preview in Google Drive" }[st.source?.kind] || "this computer";
+    step("load", true, `${st.fileName}, ${m.meta.W} × ${m.meta.H} px, from ${from}`);
+    log.add(`Opened an image from ${from}, ${m.meta.W} × ${m.meta.H} px, ${m.meta.Z || 1} slice(s)`);
     status("Image loaded."); // the study's opened hook says what comes next, if anything
     study.opened?.(m.meta);
     if (!st.reopening && st.source && st.source.kind === "local" && makesTruth()) notice(LOCAL_GT);
@@ -569,6 +581,7 @@ function imageBox() {
   $("#file-name").textContent = name || "No image loaded"; $("#file-name").classList.toggle("dim", !name);
   fileInfo(opening ? null : im?.info || null);
   $("#load").classList.toggle("done", !!im); $("#unload").hidden = !im;
+  $("#load-original").hidden = im?.source?.kind !== "preview";
 }
 page.watch("image", imageBox); page.watch("opening", imageBox);
 
@@ -618,7 +631,7 @@ let driveFrom = "";
 function load(src) {
   writeJSON(SOURCE, src); $("#load-menu").open = false;
   if (src === "local") return $("#file").click();
-  driveFrom = $("#drive-link").value = readJSON(DRIVE_LINKS)[manifest.id] || manifest.files.drive || readJSON(DRIVE_LINK, ""); $("#drive-dlg").showModal(); $("#drive-link").select(); showSaved();
+  driveFrom = $("#drive-link").value = readJSON(DRIVE_LINKS)[manifest.id] || manifest.files.folders?.[0] || readJSON(DRIVE_LINK, ""); $("#drive-dlg").showModal(); $("#drive-link").select(); showSaved();
   if (offlineCopy.offline()) return showKept();
   holdDrive();
   if (!throttled() && NorDrive.parse($("#drive-link").value)?.kind === "folder") $("#drive-go").click();
@@ -1054,7 +1067,7 @@ async function showSaved() {
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
   [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
-  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [RESOURCES]: "The status bar's disk, memory, network and CPU: hidden, auto-hiding or always open", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page",
+  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [RESOURCES]: "The status bar's disk, memory, network and CPU: hidden, auto-hiding or always open", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
 };
 // What the site keeps, by what it takes to work offline (req/shell/storage/manage): a section per study, then what they share; settings
 // apart, which Settings keeps (req/shell/account/settings), and with them what nobody names. An entry: {kind, name, what, size, del, held, ask}, del
@@ -1068,7 +1081,7 @@ async function inventory() {
   const drop = (...keys) => keys.forEach((k) => { try { localStorage.removeItem(k); } catch { /* nothing kept */ } });
   const studies = await offlineCopy.studyFiles().catch((e) => { console.warn("the studies could not be read:", e); return []; });
   const live = await offlineCopy.available().catch(() => new Set());
-  const sections = studies.map((s) => ({ id: "study:" + s.id, study: s.id, title: s.title, mark: live.has(s.id), drive: !!s.manifest.files.drive, entries: [] }));
+  const sections = studies.map((s) => ({ id: "study:" + s.id, study: s.id, title: s.title, mark: live.has(s.id), drive: !!s.manifest.files.folders?.length, entries: [] }));
   const shared = { id: "shared", title: "Shared by every study", about: SHARED_ABOUT, entries: [] };
   // a study's own, else the study on show's: kept before images were told apart by study
   const sectionOf = (id) => sections.find((x) => x.study === id) || sections.find((x) => x.study === manifest?.id) || shared;
@@ -1295,6 +1308,51 @@ function submitTruth(gt) {
 }
 $("#gt-close").onclick = () => $("#gt-dlg").close();
 
+// ---------- problems: a report of what went wrong, from the status bar's icon or the avatar's menu, and whether the
+// page supports this browser (req/shell/report/bug, req/shell/browsers/supported). The verdict is null until browsers.json
+// is read: unknown, and the icon stays the plain one.
+const thisBrowser = identify(navigator.userAgent, navigator.maxTouchPoints);
+let browserVerdict = null, fullVersion = null;
+fetch(new URL("browsers.json", import.meta.url)).then((r) => r.json()).then(({ supported }) => {
+  browserVerdict = verdict(thisBrowser, supported);
+  if (browserVerdict.ok) return;
+  const b = $("#sb-report");
+  b.classList.add("unsupported"); b.setAttribute("aria-label", "Unsupported browser");
+  b.title = `${browserVerdict.why} Click to report a problem.`;
+}).catch((e) => console.warn("the list of supported browsers could not be read:", e));
+// Chromium browsers give their full version only when asked, and the report is opened within the click, so asked now
+const BRANDS = { Chrome: "Google Chrome", Edge: "Microsoft Edge", Opera: "Opera" };
+navigator.userAgentData?.getHighEntropyValues(["fullVersionList"])
+  .then((v) => { fullVersion = v.fullVersionList?.find((b) => b.brand === BRANDS[thisBrowser.name])?.version || null; }, () => {});
+function browserText() {
+  const name = thisBrowser.name || "An unknown browser", unsupported = browserVerdict && !browserVerdict.ok ? ", not supported" : "";
+  return `${name} ${fullVersion || thisBrowser.version || ""} on ${thisBrowser.os}${unsupported} (${navigator.userAgent})`;
+}
+// the page's state as a report quotes it: never the image's name
+function pageNow() {
+  const im = page.get("image"), from = (s) => (s?.kind === "drive" ? "Google Drive" : "this computer");
+  return [
+    ["Site version", VERSION],
+    ["Study", manifest ? `${manifest.title} (${manifest.id}), stage ${manifest.stage}` : "none open"],
+    ["Python", st.ready ? "ready" : "loading"],
+    ["Steps", steps.map((p) => p.name + (p.done ? " (done)" : "")).join(" → ") || "none"],
+    ["Image", im ? `from ${from(im.source)}, ${im.W} × ${im.H} px, ${im.channels?.length ?? "?"} channel(s), ${im.Z} slice(s)` : page.get("opening") ? "opening" : "none open"],
+    ["View", `${views.now}, ${manifest?.viewer || "no viewer"}`],
+    ["Online", navigator.onLine ? "yes" : "no"],
+    ["Signed in", $("#sign-out").hidden ? "no" : "yes"],
+    ["Window", `${innerWidth} × ${innerHeight}, pixel ratio ${devicePixelRatio}`],
+    ["Memory", navigator.deviceMemory ? `about ${navigator.deviceMemory} GB` : "not said by this browser"],
+  ];
+}
+function reportProblem() {
+  $("#user-menu").open = false;
+  const url = problemUrl({ repo: REPO, browser: { text: browserText(), supported: browserVerdict?.ok !== false }, state: pageNow(),
+    actions: log.last(ACTIONS_QUOTED, "action"), errors: log.last(ERRORS_QUOTED, "error") });
+  window.open(url, "_blank", "noopener");
+}
+$("#sb-report").onclick = reportProblem;
+$("#report-problem").onclick = reportProblem;
+
 // ---------- notices: a short message, at the top of the view ----------
 function notice(text) {
   $("#notice-text").textContent = text; $("#notice").hidden = false;
@@ -1310,9 +1368,11 @@ const boxes = () => document.querySelectorAll(".box.foldable");
 function unfoldFirst() { boxes().forEach((b) => b.classList.toggle("folded", b.hasAttribute("data-opens"))); retitle(); }
 // a step just done: a new image folds every box waiting for a later step
 function foldFor(key) {
+  // a preview keeps the Image box open: Load Original is what comes next
+  const preview = key === "load" && st.source?.kind === "preview";
   boxes().forEach((b) => {
-    if (b.dataset.opens === key) b.classList.remove("folded");
-    else if (b.dataset.folds === key || (key === "load" && b.hasAttribute("data-opens"))) b.classList.add("folded");
+    if (b.dataset.opens === key || (preview && b.id === "image-box")) b.classList.remove("folded");
+    else if ((b.dataset.folds === key && !(preview && b.id === "image-box")) || (key === "load" && b.hasAttribute("data-opens"))) b.classList.add("folded");
   });
   retitle();
 }
@@ -1320,7 +1380,9 @@ function foldFor(key) {
 // the folded box sums up what was done and the open one shows its data-done-name, else its name.
 const summaries = new WeakMap(); // box -> its summary: text, or a node
 function retitle() {
-  [...boxes()].forEach((b, k) => {
+  const shown = [...boxes()].filter((b) => b.checkVisibility());
+  [...boxes()].forEach((b) => {
+    const k = shown.indexOf(b);
     const h = b.querySelector(":scope > .sec-head h2");
     if (!h.querySelector(".title")) {
       h.dataset.name ||= h.textContent.trim();
@@ -1589,6 +1651,7 @@ async function mountStudy(id) {
   if (!r.ok) throw new Error(`no study "${id}"`);
   manifest = await r.json();
   document.title = manifest.title; $("#title").textContent = manifest.title; markCurrent();
+  log.add(`Opened the study “${manifest.title}”`);
   $("#favicon").href = manifest.icon ? base + manifest.icon : new URL("icon.svg", import.meta.url).href;
   $("#file").accept = manifest.files.accept; $("#empty-text").textContent = manifest.files.empty;
   if (manifest.web.style) { css = document.createElement("link"); css.rel = "stylesheet"; css.href = base + manifest.web.style; document.head.append(css); }
@@ -1596,12 +1659,10 @@ async function mountStudy(id) {
     const panels = new DOMParser().parseFromString(await (await fetch(base + manifest.web.panels)).text(), "text/html");
     for (const t of panels.querySelectorAll("template[data-slot]")) {
       const nodes = [...document.importNode(t.content, true).childNodes];
+      for (const n of nodes) if (n.nodeType === 1) n.dataset.studyPanel = "";
       $(`slot-here[data-slot-for="${t.dataset.slot}"]`).before(...nodes); mounted.push(...nodes);
     }
   }
-  // Preprocessing comes before the study's own work: it folds once the study's first step is done
-  const first = manifest.phases[0]?.key;
-  if (first) $("#preprocessing-box").dataset.folds = first; else delete $("#preprocessing-box").dataset.folds;
   unfoldFirst(); // before the first paint with them, so they do not fold in view
   view = viewers[manifest.viewer] ||= VIEWERS[manifest.viewer](shell);
   for (const v of new Set(Object.values(viewers))) v.active?.(v === view);
@@ -1615,6 +1676,7 @@ async function mountStudy(id) {
   makeSteps();
   foldable();
   showRecent();
+  data.mount(manifest);
 }
 const viewers = {};
 // The study on show leaves: its panels, stylesheet, drawing, listeners and state go, and its Python's late
@@ -1639,6 +1701,47 @@ const shell = {
 splitter(shell);
 const offlineCopy = offline({ $, esc, sizeText, drive: NorDrive, throttled, throttle, stored: () => diskBar(),
   kept: async (id) => !!(await caches.open(IMAGES).then((c) => c.match(imageUrl(id)), () => null)), keep: saveImage });
+// Data Management (req/shell/data/mode): what it borrows from the shell
+const data = dataMode({
+  $, esc, sizeText, still, status, drive: NorDrive, account: signIn, working, sha256, savedImage, folderPreviews, throttle,
+  // the folder's images in the main area, or the image
+  showFolder(on) {
+    $("#folder-view").hidden = !on; $("#image-view").hidden = on || views.now !== "image";
+    if (!on) view?.minimapView();
+  },
+  modeChanged(on) {
+    retitle(); $("#tip").hidden = true;
+    if (!on && views.now !== "image") views.show("image");
+    view?.minimapView();
+  },
+  // the drawers on show changed: their numbers again
+  relabel: () => retitle(),
+  openPreview: (name, bytes, source) => openBytes(name, bytes, source),
+  loadOriginal,
+});
+// the image itself, for the preview on show: the copy kept on this device, else downloaded from Drive
+async function loadOriginal(source) {
+  if (!source?.id) return;
+  const kept = await savedImage(source.id);
+  if (kept) { peek()(kept.bytes, kept.bytes.byteLength); return openBytes(kept.name, kept.bytes, { kind: "drive", id: source.id }); }
+  if (document.documentElement.classList.contains("offline")) return notice("This image is not kept on this device, and needs the internet: you are offline.");
+  if (throttled()) return notice("Google is throttling this site's downloads. Try again in 15 minutes.");
+  const mb = (n) => (n / 1048576).toFixed(1);
+  let push;
+  try {
+    const f = await NorDrive.file(source.id, source.name, (n) => { push = peek(); busy(true, `Downloading ${n}…`, "peek"); },
+      (buf, got, total) => { push(buf, got); $("#busy-text").textContent = `Downloading ${source.name} · ${mb(got)}${total ? " of " + mb(total) : ""} MB`; });
+    if ($("#drive-autosave").checked) saveImage(source.id, f.name, f.bytes, { study: manifest.id });
+    picture(source.id, f.name, f.bytes);
+    openBytes(f.name, f.bytes, { kind: "drive", id: source.id });
+  } catch (e) {
+    busy(false);
+    if (e.throttled) throttle();
+    status("Error: " + (e.message || e), true);
+  }
+}
+$("#load-original").onclick = () => { signIn.drive(); loadOriginal(page.get("image")?.source); };
+
 // the sign-in popup on opening the page (req/shell/account/welcome); the menu's Sign in and Sign out answer it too
 const welcomed = welcome({ dialog: $("#welcome-dlg"), account: signIn, avatar: $("#user-menu summary"), tip });
 $("#sign-in").addEventListener("click", () => { welcomed.chose(); closeTip("sign-in"); });

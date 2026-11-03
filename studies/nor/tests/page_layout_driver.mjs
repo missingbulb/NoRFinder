@@ -48,7 +48,7 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw.chromium.launch();
+const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
 const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
 // every drawn canvas and image: how far its shown width / height strays from its pixels' own
 const measure = (page) => page.evaluate(() => [...document.querySelectorAll("canvas, img")].filter((c) => c.offsetWidth && c.offsetHeight).map((c) => {
