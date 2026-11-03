@@ -1,0 +1,15 @@
+[
+  {
+    "id": "async-wait-predicate",
+    "on_fail": "block",
+    "failureMessage": "page.waitForFunction takes the promise an async predicate returns as its truthy value and resolves at once, on every engine, so the wait waits for nothing and the test passes only while the page happens to be fast",
+    "fix": "wait with until(page, fn, arg) from web-tests/page_until.mjs, which polls the page until the async predicate resolves truthy",
+    "scanFiles": "/^(web-tests|studies\\/[^/]+\\/tests)\\/.*\\.m?js$/",
+    "matchLines": [
+      {
+        "match": "/\\.waitForFunction\\(\\s*async\\b/",
+        "what": "waits on an async predicate with waitForFunction, which never waits: {match}"
+      }
+    ]
+  }
+]
