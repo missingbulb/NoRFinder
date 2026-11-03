@@ -9,8 +9,9 @@ import { sampleSegment } from './model.js';
 // µm and z is slices; zStepUm is how many µm one slice stands for, which sets how far the tube reaches
 // in depth. reachOfWidth is the reach as a share of the vessel's own width at each point, so a narrow
 // vessel allows less room for error than a thick one. A point the file gives no radius is drawn with
-// the model's median radius.
-export function coverage(m, shape, { zStepUm, reachOfWidth, which }) {
+// the model's median radius. points, each {x, y, z, r} in the model's units, are painted as balls of radius r, and
+// boxes, each {x0, y0, x1, y1} in µm, as columns through every slice.
+export function coverage(m, shape, { zStepUm, reachOfWidth, which, points = [], boxes = [] }) {
   const [Z, Y, X] = shape, [W, H] = m.size_px, um = m.um_per_px;
   const vx = (W * um) / X, vy = (H * um) / Y, vz = zStepUm;
   const mask = new Uint8Array(Z * Y * X);
@@ -22,20 +23,29 @@ export function coverage(m, shape, { zStepUm, reachOfWidth, which }) {
     const len = Math.hypot((b.x - a.x) / vx, (b.y - a.y) / vy, b.z - a.z);
     // samples a third of a voxel apart along the chord, so a curve bending away from it still leaves no gaps
     for (const p of sampleSegment(m, i, Math.max(1, Math.ceil(len * 3)))) {
-      const r = Number.isFinite(p.r) ? p.r : fallback, R = r + reachOfWidth * 2 * r;
-      // at least the voxel the centre line passes through, however thin the vessel
-      const rx = Math.max(R / vx, .5), ry = Math.max(R / vy, .5), rz = Math.max(R / vz, .5);
-      const cx = p.x / vx - .5, cy = p.y / vy - .5, cz = p.z;
-      for (let z = Math.max(0, Math.ceil(cz - rz)); z <= Math.min(Z - 1, Math.floor(cz + rz)); z++) {
-        const dz = (z - cz) / rz;
-        for (let y = Math.max(0, Math.ceil(cy - ry)); y <= Math.min(Y - 1, Math.floor(cy + ry)); y++) {
-          const dy = (y - cy) / ry, left = 1 - dz * dz - dy * dy;
-          if (left < 0) continue;
-          const w = Math.sqrt(left) * rx, row = (z * Y + y) * X;
-          for (let x = Math.max(0, Math.ceil(cx - w)); x <= Math.min(X - 1, Math.floor(cx + w)); x++) mask[row + x] = 255;
-        }
-      }
+      const r = Number.isFinite(p.r) ? p.r : fallback;
+      ball(p, r + reachOfWidth * 2 * r);
     }
   });
+  for (const p of points) ball(p, Number.isFinite(p.r) ? p.r : fallback);
+  for (const b of boxes) {
+    const x0 = Math.max(0, Math.floor(b.x0 / vx)), x1 = Math.min(X, Math.ceil(b.x1 / vx)), y0 = Math.max(0, Math.floor(b.y0 / vy)), y1 = Math.min(Y, Math.ceil(b.y1 / vy));
+    for (let z = 0; z < Z; z++) for (let y = y0; y < y1; y++) mask.fill(255, (z * Y + y) * X + x0, (z * Y + y) * X + x1);
+  }
   return mask;
+
+  // an ellipsoid of radius R µm around p, at least the voxel p is in, however thin
+  function ball(p, R) {
+    const rx = Math.max(R / vx, .5), ry = Math.max(R / vy, .5), rz = Math.max(R / vz, .5);
+    const cx = p.x / vx - .5, cy = p.y / vy - .5, cz = p.z;
+    for (let z = Math.max(0, Math.ceil(cz - rz)); z <= Math.min(Z - 1, Math.floor(cz + rz)); z++) {
+      const dz = (z - cz) / rz;
+      for (let y = Math.max(0, Math.ceil(cy - ry)); y <= Math.min(Y - 1, Math.floor(cy + ry)); y++) {
+        const dy = (y - cy) / ry, left = 1 - dz * dz - dy * dy;
+        if (left < 0) continue;
+        const w = Math.sqrt(left) * rx, row = (z * Y + y) * X;
+        for (let x = Math.max(0, Math.ceil(cx - w)); x <= Math.min(X - 1, Math.floor(cx + w)); x++) mask[row + x] = 255;
+      }
+    }
+  }
 }

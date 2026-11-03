@@ -1,8 +1,8 @@
 // The Items view: the vessel model taken apart into its units of work, a card for each junction and
 // each vessel (an edge from a junction to a junction or a tip), so each can be checked on its own while
-// a ground truth is built. A card shows the stack around its item, flattened over the shown slices,
+// they are looked at. A card shows the stack around its item, flattened over the shown slices,
 // with the model drawn over it, the item's own numbers and the edits that apply to it. Each card can
-// also put its item in the 3D view.
+// also put its item in the 3D view. The items and their pictures are the ground-truth tasks' too.
 import * as Mo from './model.js';
 import * as MV from './model_view.js';
 
@@ -20,12 +20,14 @@ const MODEL = 'rgba(255,79,216,.75)', ITEM = '#fff';
 const FADED = .4;
 const STATE_TEXT = { vessel: 'Vessel', candidate: 'Low confidence', accepted: 'Approved', rejected: 'Declined' };
 
-let kind = 'junctions', filter = 'all', sort = 'open', items = { junctions: [], vessels: [] }, shown = false, selected = null;
+let kind = 'junctions', filter = 'all', sort = 'file', items = { junctions: [], vessels: [] }, shown = false, selected = null;
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const fmt = (v, d = 1) => (Number.isFinite(v) ? v.toFixed(d) : '–');
 
 // ---------- the items and their numbers ----------
-function build(m) {
+// {junctions, vessels} of model m: each vessel an edge with its segments, its path, the state the extractor proposed
+// for it (none when the owner drew it) and its numbers; each junction a point where three or more live edges meet
+export function build(m) {
   if (!m) return { junctions: [], vessels: [] };
   const deg = Mo.degrees(m), all = Mo.degrees(m, Mo.live);
   const zum = V.S.zs;   // µm per slice, as the view draws it
@@ -42,7 +44,7 @@ function build(m) {
     }
     for (const p of path) if (Number.isFinite(p.r)) rs.push(2 * p.r);
     const end = (id) => ((all.get(id) || 0) >= 3 ? 'junction' : (all.get(id) || 0) === 1 ? 'tip' : 'point');
-    return { n: k + 1, ids: e.ids, segments: e.segments, state: e.state, confidence: e.confidence, path, length: len,
+    return { n: k + 1, ids: e.ids, segments: e.segments, state: e.state, proposed: e.proposed, confidence: e.confidence, path, length: len,
       width: rs.length ? rs.reduce((a, b) => a + b) / rs.length : null, wmin: rs.length ? Math.min(...rs) : null, wmax: rs.length ? Math.max(...rs) : null,
       ends: [end(e.ids[0]), end(e.ids.at(-1))] };
   });
@@ -56,8 +58,6 @@ function build(m) {
   return { junctions, vessels };
 }
 
-// a card's task is open: a vessel waiting for its verdict, a junction waiting on one of its vessels
-const open = (it) => +(tasks && (kind === 'vessels' ? it.state === 'candidate' : it.pending));
 function visible() {
   let list = items[kind];
   if (kind === 'vessels') {
@@ -66,7 +66,6 @@ function visible() {
     else list = list.filter((v) => v.state !== 'rejected');
   } else if (filter === 'review') list = list.filter((j) => j.pending || j.branches >= 4 || j.crowd);
   const by = {
-    open: (a, b) => open(b) - open(a),
     file: null,
     short: kind === 'vessels' ? (a, b) => a.length - b.length : null,
     wide: kind === 'vessels' ? (a, b) => (b.width ?? -1) - (a.width ?? -1) : null,
@@ -80,7 +79,8 @@ function visible() {
 // image µm to volume pixels: the model's own size against the volume's, so binning never matters
 function scale(m) { const [, Y, X] = V.meta.shape; return [X / (m.size_px[0] * m.um_per_px), Y / (m.size_px[1] * m.um_per_px)]; }
 
-function picture(cv, m, box, mark) {
+// the stack around box (µm) drawn on canvas cv, px CSS pixels square, the model over it, then mark(c, at, k, dpr)
+function picture(cv, m, box, mark, px = CARD_PX) {
   const [, Y, X] = V.meta.shape, [sx, sy] = scale(m), vol = V.volume(), n = X * Y;
   const cx = (box[0] + box[2]) / 2, cy = (box[1] + box[3]) / 2;
   const half = Math.max(box[2] - box[0], box[3] - box[1], 2 * MIN_HALF_UM) / 2 * 1.15;
@@ -98,7 +98,7 @@ function picture(cv, m, box, mark) {
   }
   c0.putImageData(img, 0, 0);
   const dpr = window.devicePixelRatio || 1;
-  cv.width = CARD_PX * dpr; cv.height = CARD_PX * dpr;
+  cv.width = px * dpr; cv.height = px * dpr;
   const c = cv.getContext('2d');
   c.imageSmoothingEnabled = false;
   c.drawImage(src, 0, 0, cv.width, cv.height);
@@ -120,7 +120,7 @@ function picture(cv, m, box, mark) {
   mark(c, at, k, dpr);
 }
 
-function vesselPicture(cv, m, v) {
+export function vesselPicture(cv, m, v, px) {
   const xs = v.path.map((p) => p.x), ys = v.path.map((p) => p.y);
   picture(cv, m, [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)], (c, at, k, dpr) => {
     // the vessel's own width, where the model gives one, as a translucent band under its centre line;
@@ -142,10 +142,10 @@ function vesselPicture(cv, m, v) {
       if (e === 'junction') { c.arc(x, y, 4 * dpr, 0, 2 * Math.PI); c.strokeStyle = ITEM; c.lineWidth = 1.5 * dpr; c.stroke(); }
       else { c.arc(x, y, 2.5 * dpr, 0, 2 * Math.PI); c.fillStyle = ITEM; c.fill(); }
     }
-  });
+  }, px);
 }
 
-function junctionPicture(cv, m, j) {
+export function junctionPicture(cv, m, j, px) {
   const r = Math.max(MIN_HALF_UM, 3 * (j.r || 0));
   picture(cv, m, [j.x - r, j.y - r, j.x + r, j.y + r], (c, at, k, dpr) => {
     // its branches as far as their next point, in white
@@ -159,7 +159,7 @@ function junctionPicture(cv, m, j) {
     c.globalAlpha = 1;
     const [x, y] = at(j);
     c.beginPath(); c.arc(x, y, Math.max((j.r || 0) * k, 5 * dpr), 0, 2 * Math.PI); c.lineWidth = 1.5 * dpr; c.stroke();
-  });
+  }, px);
 }
 
 // ---------- the cards ----------
@@ -172,7 +172,7 @@ function card(m, it) {
   const el = document.createElement('article'), cv = document.createElement('canvas'), body = document.createElement('div');
   el.className = 'card'; el.tabIndex = 0; body.className = 'card-body';
   const key = kind === 'vessels' ? `v${it.n}` : `j${it.id}`;
-  el.dataset.key = key; el.classList.toggle('on', selected === key); el.classList.toggle('task-open', !!open(it));
+  el.dataset.key = key; el.classList.toggle('on', selected === key);
   const actions = document.createElement('div'); actions.className = 'card-actions';
   if (kind === 'vessels') {
     el.classList.add(`state-${it.state}`);
@@ -212,7 +212,7 @@ function select(key) {
   selected = key;
   for (const c of $('item-list').children) c.classList.toggle('on', c.dataset.key === key);
 }
-let show3d = () => {}, count = () => {}, tasks = false;
+let show3d = () => {}, count = () => {};
 
 function render() {
   const m = MV.current(), list = $('item-list');
@@ -221,8 +221,7 @@ function render() {
     b.setAttribute('aria-pressed', String(b.dataset.v === kind));
     b.querySelector('.count').textContent = counts[b.dataset.v];
   }
-  // the tasks: a verdict on every low-confidence vessel, among every junction and vessel
-  count(m ? items.vessels.filter((v) => v.state === 'candidate').length : null, m ? counts.junctions + counts.vessels : null);
+  count(m ? counts.junctions + counts.vessels : null, m ? counts.junctions + counts.vessels : null);
   $('switch').disabled = !m;
   for (const o of $('item-sort').options) o.hidden = !o.dataset.for.includes(kind);
   if (!$('item-sort').selectedOptions[0] || $('item-sort').selectedOptions[0].hidden) { sort = 'file'; $('item-sort').value = 'file'; }
@@ -247,8 +246,8 @@ function render() {
   list.parentElement.scrollTop = top;
 }
 
-export function init(view, toThreeD, counts, areTasks) {
-  V = view; show3d = toThreeD; count = counts; tasks = areTasks; items = { junctions: [], vessels: [] }; shown = false; selected = null;
+export function init(view, toThreeD, counts) {
+  V = view; show3d = toThreeD; count = counts; items = { junctions: [], vessels: [] }; shown = false; selected = null;
   MV.onChange((m) => { items = build(m); render(); });
   $('item-kind').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { kind = b.dataset.v; render(); } });
   $('item-filter').onchange = (e) => { filter = e.target.value; render(); };
