@@ -166,8 +166,10 @@ angle. Any of the view buttons shows the whole stack again.
 
 **Moving around the view (owner, 2026-10-29).** Dragging turns the view about the centre of the
 screen, wherever panning has put it, and the stack's three axes are drawn there, a fixed size, as the
-one thing that stays put while the view turns. A wheel or pinch zooms, a sideways scroll pans left and
-right, and shift-drag or right-drag pans. The stage carries no instructions of its own. The model's
+one thing that stays put while the view turns. A sideways drag turns it about the screen's up-down
+line, an up-and-down drag about its left-right line, with no stop at looking straight across, and a
+sideways scroll spins the picture about the line of sight, the third axis (owner, 2026-11-03; it
+panned before). A wheel or pinch zooms, and shift-drag or right-drag pans. The stage carries no instructions of its own. The model's
 points, the handles that are dragged to correct it, appear only once the view is zoomed in to twice
 the whole-stack view, so the opening picture is the vessels alone; until then a point cannot be
 picked, and segments still can. While a point is dragged, every other handle is hidden and the stack

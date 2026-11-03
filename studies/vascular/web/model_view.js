@@ -484,7 +484,7 @@ export function frame(ids, marginUm = 10) {
   const lo = toWorld({ x: Math.min(...ps.map((p) => p.x)) - um, y: Math.max(...ps.map((p) => p.y)) + um, z: 0 });
   const hi = toWorld({ x: Math.max(...ps.map((p) => p.x)) + um, y: Math.min(...ps.map((p) => p.y)) - um, z: 0 });
   const h = Math.max(hi[0] - lo[0], hi[1] - lo[1]) / 2;
-  Object.assign(V.S, { yaw: 0, pitch: 0, clip: [lo[0], lo[1], hi[0], hi[1]], pivot: [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, 0], dist: Math.max(.15, h * 5) });
+  Object.assign(V.S, { rot: V.facing(0, 0), clip: [lo[0], lo[1], hi[0], hi[1]], pivot: [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, 0], dist: Math.max(.15, h * 5) });
   if (mode === 'side') setMode('overlay');
   V.redraw();
 }

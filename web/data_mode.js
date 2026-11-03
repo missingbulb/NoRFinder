@@ -87,6 +87,7 @@ export function dataMode(ctx) {
     const want = lacking(), bar = $("#access-bar");
     bar.hidden = barClosed || offline() || !roles.size || !want.length;
     if (bar.hidden) return;
+    account.preload();
     const all = nodes.size;
     $("#access-text").textContent = want.length === all
       ? `To work on ${manifest.title}'s data, let this site into its ${all === 1 ? "folder" : all + " folders"} in your Google Drive. It will only add files there.`

@@ -12,6 +12,10 @@ writes those versions into this file. Releases with no visible change are left o
 ## Next release
 - Collapse the left bar with the ‹ tab between it and the image, to give the image the whole width: a narrow Steps strip keeps the steps' marks, and clicking it, or a step, brings the bar back. The page remembers which you chose. (#690)
 - The Data Management strip no longer peeks out beside the left bar for people who are not data managers. (#690)
+- In the 3D view, a sideways scroll spins the stack about the line of sight (it panned before), and dragging no longer stops at a side-on view: it turns on, like a trackball. (#689)
+- Choose folders… in Data Management opens Google's permission window again, instead of doing nothing. (#694)
+- Switching study unloads the open image: the new study starts with none open. (#686)
+- A popup opened by a button grows out of that button. (#691)
 - The study switcher shows each study's own icon beside its name. (#684)
 - In Data Management, a folder whose previews file is damaged shows its images without previews, and an image chosen opens itself, instead of failing. (#683)
 - LZW-compressed TIFFs, as ImageJ and bfconvert write them, open. (#676)
