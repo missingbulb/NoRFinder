@@ -19,6 +19,7 @@ import http from "node:http";
 import path from "node:path";
 import { offSite } from "../../../web-tests/off_site.mjs";
 import { ENGINE } from "../../../web-tests/engine.mjs";
+import { asTagger } from "../../../web-tests/tagger.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -66,6 +67,7 @@ const bytes = fs.readFileSync(image);
 
 async function open(drive) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
+  await asTagger(ctx);
   const asked = []; // what was asked of github.com
   await ctx.route(offSite(origin), (r) => {
     const u = new URL(r.request().url());
@@ -75,7 +77,7 @@ async function open(drive) {
     if (u.searchParams.get("alt") === "media") return r.fulfill({ status: 200, headers: { ...headers, "content-length": String(bytes.length) }, body: bytes });
     return r.fulfill({ status: 200, headers, contentType: "application/json", body: JSON.stringify({ name: "corner.tif", mimeType: "image/tiff" }) });
   });
-  await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; localStorage.setItem("nor-role", "tagger"); });
+  await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);

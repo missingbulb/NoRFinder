@@ -6,10 +6,10 @@
 export const ROLE = "nor-role";
 export const ROLE_NAMES = { viewer: "Viewer", tagger: "Ground Truth Tagger", data: "Data Manager" };
 
-// the roles held, in the menu's order: signedIn, whether anyone is; signsIn, whether the site signs anyone in;
-// truth, whether the study makes ground truth; manager, whether its permissions name the user its data manager
-export function held({ signedIn, signsIn, truth, manager }) {
-  return ["viewer", ...(truth && (signedIn || !signsIn) ? ["tagger"] : []), ...(signedIn && manager ? ["data"] : [])];
+// the roles held, in the menu's order: signedIn, whether anyone is; truth, whether the study makes ground truth;
+// manager, whether its permissions name the user its data manager
+export function held({ signedIn, truth, manager }) {
+  return ["viewer", ...(signedIn && truth ? ["tagger"] : []), ...(signedIn && manager ? ["data"] : [])];
 }
 // the role shown: the one kept when it is held, else Viewer
 export const shown = (roles, kept) => (roles.includes(kept) ? kept : "viewer");

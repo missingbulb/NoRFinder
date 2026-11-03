@@ -29,8 +29,7 @@ spec does not have.
   Manager sees Data Management (`req/shell/data/mode`). Moving between Viewer and Ground Truth Tagger
   opens the study afresh on the same image. The page opens as Viewer; the role chosen follows the user
   (`req/shell/account/sign-in`) and Settings lists it (`req/shell/account/settings`). A role not held in
-  the study on show, or no longer held, shows as Viewer, and the choice stays for where it is held. A site
-  with no Google client signs no one in, so there every visitor may also choose Ground Truth Tagger. Test:
+  the study on show, or no longer held, shows as Viewer, and the choice stays for where it is held. Test:
   `web-tests/test_roles_page.py`.
   </details>
 

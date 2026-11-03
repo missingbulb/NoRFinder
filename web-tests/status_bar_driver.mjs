@@ -20,6 +20,7 @@ import path from "node:path";
 import { repoFile } from "./repo_file.mjs";
 import { offSite } from "./off_site.mjs";
 import { ENGINE } from "./engine.mjs";
+import { asTagger } from "./tagger.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -76,8 +77,9 @@ const shot = async (page, name) => { if (shots) await page.locator("#statusbar")
 // mode: the resources block's setting the visit starts with, unless the page has kept another; none: the page's own
 async function open(study, mode) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
+  await asTagger(ctx);
   await ctx.route(offSite(origin), (r) => r.abort());
-  await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; localStorage.setItem("nor-role", "tagger"); });
+  await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
   if (mode) await ctx.addInitScript((m) => { if (localStorage.getItem("nor-resources") === null) localStorage.setItem("nor-resources", JSON.stringify(m)); }, mode);
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });

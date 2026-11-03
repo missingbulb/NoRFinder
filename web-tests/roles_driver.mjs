@@ -90,8 +90,8 @@ s = await seen(page);
 await check(!s.data && !s.mode, "choosing Viewer leaves Data Management", s);
 await page.context().close();
 
-// a site with no Google client signs no one in: there anyone may tag ground truth
+// a site with no Google client signs no one in, so no one there may tag ground truth
 page = await open(false, { prepare: (ctx) => ctx.route("**/web/config.js", (r) => r.fulfill({ contentType: "text/javascript", body: 'window.NOR_CONFIG = { google: { apiKey: "stand-in", clientId: "" } };' })) });
 s = await seen(page);
-await check(s.list.join() === "Viewer,Ground Truth Tagger" && s.role === "Viewer", "with no sign-in on the site, everyone is offered Ground Truth Tagger", s);
+await check(s.list.join() === "Viewer" && s.role === "Viewer", "with no sign-in on the site, Viewer alone is offered", s);
 await done(0);

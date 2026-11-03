@@ -377,7 +377,7 @@ const makesTruth = () => stageTruth() && role === "tagger";
 
 // ---------- the role the user works in (req/shell/account/role) ----------
 let role = "viewer";
-const rolesHeld = () => held({ signedIn: signIn.signedIn(), signsIn: signIn.offered, truth: stageTruth(), manager: data.manager });
+const rolesHeld = () => held({ signedIn: signIn.signedIn(), truth: stageTruth(), manager: data.manager });
 const keptRole = () => { try { return localStorage.getItem(ROLE); } catch { return null; } };
 // the role shown, as the study comes in: before its steps are drawn from it
 function takeRole() {
