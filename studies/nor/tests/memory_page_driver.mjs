@@ -111,6 +111,9 @@ async function measure() {
   // The status bar's numbers hold a few nodes for each character that rolled in their last change, and the network's
   // rolls every second as its rate falls: written plain, and measured again whenever one rolled meanwhile, the count
   // is the same whatever they last read.
+  // the page's frames done first: the item view draws its cards in them as they come near, which a slow machine
+  // can still be doing when the work itself has settled
+  await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(ok, 100)))));
   for (let tries = 0; ; tries++) {
     await page.evaluate(() => { for (const v of document.querySelectorAll("#statusbar .sb-item .v")) v.textContent = v.textContent; });
     // twice: DOM nodes freed by the first collection are swept only after it
