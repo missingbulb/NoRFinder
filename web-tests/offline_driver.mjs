@@ -7,9 +7,9 @@
 // before Download; the page names no app manifest until Install as an app is clicked, and then the browser finds
 // the site installable.
 // Then req/shell/offline/default, with the network gone (the browser offline and the server refusing): the page opens at its address
-// and the Python already on this device runs; the status bar says Offline; what needs the network is held; a
+// and the Python already on this device runs; the status bar's network carries a red no-network mark; what needs the network is held; a
 // prepared study runs, and From Google Drive lists the images kept here and opens one; a study whose Python is not
-// here says so.
+// here says so; and the network going and coming back mid-session, the browser saying online all along, shows.
 // TIFF: a small z-stack the vascular study can open. Optional SHOTS: a directory for screenshots.
 // Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/offline_driver.mjs SITE TIFF [SHOTS]
@@ -164,9 +164,11 @@ try {
   check(!!(await page.textContent("#title")), "offline, the page opens at its address: " + (await page.textContent("#title")));
   await ready(60000);
   check(true, "offline, the Python already on this device runs");
-  check(await page.isVisible("#sb-offline"), "the status bar says Offline");
-  await page.click("#sb-offline");
-  check(await page.evaluate(() => document.querySelector("#usage-dlg").open && document.querySelector("#usage-dlg").dataset.tab === "storage"), "clicking it opens the Storage tab");
+  check(await page.isVisible("#sb-net .no-net"), "the status bar's network carries the red no-network mark");
+  check(/offline/i.test(await page.getAttribute("#sb-net", "title")), "its tooltip says the page is offline: " + (await page.getAttribute("#sb-net", "title")));
+  await page.click("#sb-net");
+  check(await page.evaluate(() => document.querySelector("#usage-dlg").open && document.querySelector("#usage-dlg").dataset.tab === "network"), "clicking it still opens the Network tab");
+  check(/offline/i.test(await page.textContent("#net-total")), "whose total says the page is offline: " + (await page.textContent("#net-total")));
   await page.keyboard.press("Escape");
   check(await page.$eval("#study-request", (a) => a.getAttribute("aria-disabled") === "true" && /offline/i.test(a.title)), "Submit New Study Request is held, its tooltip saying why");
   // a click on it opens nothing
@@ -194,9 +196,18 @@ try {
 
   await ctx.setOffline(false); down = false;
   // the browser here still says it is online, as on a plane's Wi-Fi: the page notices the site answering again
-  await page.waitForFunction(() => document.querySelector("#sb-offline").hidden, null, { timeout: 40000 }).catch(() => {});
-  check(!(await page.isVisible("#sb-offline")), "back online, Offline leaves the status bar");
+  await page.waitForSelector("#sb-net .no-net", { state: "hidden", timeout: 40000 }).catch(() => {});
+  check(!(await page.isVisible("#sb-net .no-net")), "back online, the no-network mark leaves the status bar");
+  check(!/offline/i.test(await page.getAttribute("#sb-net", "title")), "and the network's tooltip is its own again");
   check(await page.$eval("#study-request", (a) => !a.hasAttribute("aria-disabled")), "back online, Submit New Study Request is offered again");
+
+  // the network goes mid-session while the browser still says it is online (a dead Wi-Fi): the page notices by itself
+  down = true;
+  await page.waitForSelector("#sb-net .no-net", { state: "visible", timeout: 40000 }).catch(() => {});
+  check(await page.isVisible("#sb-net .no-net"), "mid-session, with the browser still saying online, the page notices the site not answering");
+  down = false;
+  await page.waitForSelector("#sb-net .no-net", { state: "hidden", timeout: 40000 }).catch(() => {});
+  check(!(await page.isVisible("#sb-net .no-net")), "and notices it answering again");
 } catch (e) {
   failed = true; console.error("FAILED: " + (e.stack || e));
   console.error("status: " + (await statusText().catch(() => "(no page)")));

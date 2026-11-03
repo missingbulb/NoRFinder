@@ -1,13 +1,14 @@
 // Working without the internet. Offline by default (req/shell/offline/default): the service worker keeps the site's copy,
 // which keepSite() brings up to the release now published; with no network the page says Offline in the status
-// bar, and each control marked data-needs-network says so and does nothing. No network is the browser saying so,
-// or the site not answering: a plane's Wi-Fi with no internet beyond it leaves the browser saying it is online.
+// bar's network, a red mark on its icon, and each control marked data-needs-network says so and does nothing. No
+// network is the browser saying so, or the site not answering, asked every AGAIN_MS all session long: a plane's
+// Wi-Fi with no internet beyond it leaves the browser saying it is online.
 // Making a study available offline (req/shell/offline/per-study), from the Storage tab: a popup of what the study's Python and the images
 // in its Google Drive folder take, beside the room left and the time at this session's speeds, then the download;
 // and Install as an app, at the top of the tab.
 // deps: $, esc, sizeText; drive, the Drive module; kept(id), whether an image is kept on this device;
 // keep(id, name, bytes, {path, study}), keeping one; throttled() and throttle(), Google's wait (req/shell/drive/throttle); stored(),
-// once something is kept; showStorage(), opening the Storage tab.
+// once something is kept.
 import { CORE, packagesOf } from "./python_files.js";
 import { PREVIEWS } from "./previews.js";
 
@@ -36,16 +37,17 @@ export function markOffline(el, what, on) {
 // a ticked study's Drive folder is read this deep and this far at most
 const MAX_FOLDERS = 200, MAX_FILES = 2000;
 
-export function offline({ $, esc, sizeText, drive, kept, keep, throttled, throttle, stored, showStorage }) {
+export function offline({ $, esc, sizeText, drive, kept, keep, throttled, throttle, stored }) {
   // ---------- offline by default ----------
   const NEEDS = "[data-needs-network]", WHY = "Needs the internet: you are offline.", AGAIN_MS = 30000;
-  let unreached = false, again = 0;
+  const NET_OFF = "Offline: no internet. The page runs what is on this device. Click for more.";
+  let unreached = false;
   const isOffline = () => !navigator.onLine || unreached;
+  const net = $("#sb-net"), netTitle = net.title;
   const mark = () => {
     const off = isOffline();
-    clearInterval(again); again = off ? setInterval(keepSite, AGAIN_MS) : 0;
     document.documentElement.classList.toggle("offline", off);
-    $("#sb-offline").hidden = !off;
+    net.title = off ? NET_OFF : netTitle;
     for (const el of document.querySelectorAll(NEEDS)) {
       if (off && el.dataset.onlineTitle === undefined) { el.dataset.onlineTitle = el.title; el.title = WHY; el.setAttribute("aria-disabled", "true"); }
       if (!off && el.dataset.onlineTitle !== undefined) { el.title = el.dataset.onlineTitle; delete el.dataset.onlineTitle; el.removeAttribute("aria-disabled"); }
@@ -54,10 +56,10 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
   addEventListener("online", () => { mark(); keepSite(); });
   addEventListener("offline", mark);
   mark();
+  setInterval(keepSite, AGAIN_MS);
   document.addEventListener("click", (e) => {
     if (isOffline() && e.target.closest?.(NEEDS)) { e.preventDefault(); e.stopImmediatePropagation(); }
   }, true);
-  $("#sb-offline").onclick = () => showStorage();
 
   // the site's copy, brought up to date by the service worker: {files, unreached, cache} once it answers
   let siteCache = null;

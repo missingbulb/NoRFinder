@@ -251,7 +251,8 @@ function netRate(total) {
 }
 const speedText = (r) => `${sizeText(r)}/s`;
 function netList(n, rate) {
-  $("#net-total").textContent = `This tab is downloading ${speedText(rate)} and has downloaded ${sizeText(n.total)} since it opened.`;
+  const off = document.documentElement.classList.contains("offline") ? "Offline: no internet. " : "";
+  $("#net-total").textContent = `${off}This tab is downloading ${speedText(rate)} and has downloaded ${sizeText(n.total)} since it opened.`;
   $("#net-list").replaceChildren(
     entry("The page", "Its own files; what this browser had kept counts nothing", sizeText(n.page)),
     entry("Python", "Python, its packages and the study's Python", sizeText(n.python)),
@@ -1623,7 +1624,7 @@ const shell = {
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; },
 };
 splitter(shell);
-const offlineCopy = offline({ $, esc, sizeText, drive: NorDrive, throttled, throttle, stored: () => diskBar(), showStorage: () => usage("storage"),
+const offlineCopy = offline({ $, esc, sizeText, drive: NorDrive, throttled, throttle, stored: () => diskBar(),
   kept: async (id) => !!(await caches.open(IMAGES).then((c) => c.match(imageUrl(id)), () => null)), keep: saveImage });
 // the sign-in popup on opening the page (req/shell/account/welcome); the menu's Sign in and Sign out answer it too
 const welcomed = welcome({ dialog: $("#welcome-dlg"), account: signIn, avatar: $("#user-menu summary"), tip });
