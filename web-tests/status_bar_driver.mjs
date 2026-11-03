@@ -384,6 +384,15 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
 // ---- the resources block: folded into one icon at first, opened by hovering it, by what needs watching, or always ----
 {
   const { ctx, page } = await open("fixture");
+  // a bar between every two items on show, whether the block is folded or not; folded, the four are clipped away
+  const bars = () => page.evaluate(() => {
+    const clip = document.querySelector("#sb-res-items").getBoundingClientRect().width;
+    const shown = [...document.querySelectorAll("#statusbar > *")].flatMap((e) => (e.id === "sb-res" ? [...e.querySelectorAll("#sb-res-items > *, #sb-res-icon")] : [e]))
+      .filter((e) => e.offsetWidth && !e.matches(".grow, #whats-new") && (clip > 0 || !e.matches("#sb-res-items > *")));
+    return shown.slice(1).map((b, k) => [shown[k].id, b.id, getComputedStyle(shown[k]).borderRightWidth === "1px" || getComputedStyle(b).borderLeftWidth === "1px"]);
+  });
+  // from the right edge: the version, the report icon, then the resources block, which unfolds leftward moving neither
+  const fixed = () => page.evaluate(() => ["#sb-res-icon", "#sb-report", "#sb-version"].map((id) => Math.round(document.querySelector(id).getBoundingClientRect().left)));
   // open: the four items take their room, once the animation is over; folded, only the icon shows
   const block = () => page.evaluate(() => ({ items: Math.round(document.querySelector("#sb-res-items").getBoundingClientRect().width),
     icon: Math.round(document.querySelector("#sb-res-icon").getBoundingClientRect().width) }));
@@ -395,11 +404,19 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   };
   await isOpen(false, "on opening the page, the disk, memory, network and CPU are folded into one icon");
   await shot(page, "9-resources-folded");
+  const folded = await bars();
+  await check(folded.every((x) => x[2]), "folded, a bar between every two items on show, the icon among them", folded);
+  const before = await fixed();
+  await check(before[0] < before[1] && before[1] < before[2], "the resources icon, then the report icon, then the version, toward the right edge", before);
   const look = await page.evaluate(() => { const s = getComputedStyle(document.querySelector("#sb-res-items")); return { property: s.transitionProperty, ms: parseFloat(s.transitionDuration) * 1000 }; });
   await check(/max-width|width|all/.test(look.property) && look.ms >= 150, "folding and unfolding is animated", look);
   await page.hover("#sb-res-icon");
   await isOpen(true, "hovering the icon unfolds the four as they look always open");
   await check((await block()).icon > 10, "the icon staying beside them, to be clicked");
+  const unfolded = await bars();
+  await check(unfolded.every((x) => x[2]), "unfolded, a bar between every two items, the CPU and the icon too", unfolded);
+  const after = await fixed();
+  await check(after.every((x, k) => x === before[k]), "unfolding moves neither the icon, the report icon nor the version", { before, after });
   await shot(page, "10-resources-hovered");
   await page.mouse.move(700, 300);
   await isOpen(false, "and they fold again once the pointer leaves");

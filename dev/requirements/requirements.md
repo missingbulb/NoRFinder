@@ -746,10 +746,10 @@ spec does not have.
   the spinner and what the page is doing now (each stage of Python's loading, the study's progress,
   an error in red) and the thumbnails' progress (`req/shell/drive/dialog`). From the right edge inward: the site's
   version (stamped by each release; `req/shell/version-history`, `req/shell/site/out-of-date`), the CPU (`req/shell/status-bar/cpu`), the network (`req/shell/status-bar/network`), the
-  memory (`req/shell/status-bar/memory`) and the disk (`req/shell/status-bar/disk`), and before them the report icon (`req/shell/report/bug`), a bug, or a warning sign in a browser the page does not support. The four are folded into one icon unless set
-  always open (`req/shell/status-bar/resources`). Each of the four before the version is a small grey icon
+  memory (`req/shell/status-bar/memory`) and the disk (`req/shell/status-bar/disk`); between the version and those four, the report icon (`req/shell/report/bug`), a bug, or a warning sign in a browser the page does not support. The four are folded into one icon unless set
+  always open (`req/shell/status-bar/resources`), and unfolding them moves neither the report icon nor the version. Each of the four before the version is a small grey icon
   and its number, with no word naming it; all five are plain, with no box, alike. A mild vertical
-  bar separates each item from the next. Nothing in the status bar turns the pointer into a
+  bar separates each item from the next, the resources icon included, folded or not. Nothing in the status bar turns the pointer into a
   question mark. The image's name and the study's counts are in the
   breadcrumbs' popups: Load image names the image, the study's own step gives its counts. Test:
   `web-tests/test_status_bar_page.py`.
@@ -822,7 +822,7 @@ spec does not have.
   <details>
 
   Set by the owner on 2026-11-03. The four sit in one block with a gauge icon at its right, next to the
-  version. A setting in the resources dialog, above its tabs on every tab, chooses how the block shows:
+  report icon. A setting in the resources dialog, above its tabs on every tab, chooses how the block shows:
   Auto-hiding, the default, Hidden always, or Always open, as the status bar was before. Auto-hiding,
   the page opens with the four folded away and the icon alone showing; hovering the block unfolds the
   four as they look always open, the icon staying beside them, and leaving folds them again, both ways
