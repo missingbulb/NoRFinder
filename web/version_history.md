@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- A toolbar's popup (Grid, Minimap, the 3D tools) closes when the pointer leaves it, also after you clicked its button. (#662)
 - The status bar's storage, memory, network and CPU now fold into one gauge icon: hover it to see them, click it for the details. They also open by themselves while you are offline, the CPU or network is busy, or the tab uses over 1 GB. In Resource Usage you can set them to always open or always hidden instead. (#659)
 - Data Management, for a study's data managers: a strip left of the left bar opens the tree of the study's Google Drive folders, each saying whether you may add files there; the page asks Google to let it into just those folders. Choose a folder to see its images as a grid or a list and how many have previews and ground truth; Update previews makes the missing ones; mark images as needing ground truth; open an image quickly from its preview, then Load Original. Preprocessing, with Split into parts, is now only in Data Management. (#651)
 - A bug icon in the status bar, and Report a problem… in your menu, open a GitHub issue already filled in with your browser, the study, where you are in it and your last five actions. In a browser the page does not support, the icon is a warning sign. (#658)

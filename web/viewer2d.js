@@ -24,7 +24,7 @@ export function hoverPop(btn, pop, fill) {
   else {
     let leaving = null;
     const stay = () => clearTimeout(leaving);
-    const leave = () => { stay(); leaving = setTimeout(() => { if (!pop.matches(":hover, :focus-within") && !btn.matches(":hover, :focus")) pop.hidePopover(); }, 300); };
+    const leave = () => { stay(); leaving = setTimeout(() => { if (!pop.matches(":hover, :focus-within") && !btn.matches(":hover, :focus-visible")) pop.hidePopover(); }, 300); };
     for (const on of ["mouseenter", "focus"]) btn.addEventListener(on, () => { stay(); show(); });
     for (const off of ["mouseleave", "blur"]) btn.addEventListener(off, leave);
     pop.addEventListener("mouseenter", stay); pop.addEventListener("mouseleave", leave);
