@@ -10,7 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
-- In the 3D view, a sideways scroll spins the stack about the line of sight (it panned before), and dragging no longer stops at a side-on view: it turns on, like a trackball. (#PR)
+- In the 3D view, a sideways scroll spins the stack about the line of sight (it panned before), and dragging no longer stops at a side-on view: it turns on, like a trackball. (#689)
 - The study switcher shows each study's own icon beside its name. (#684)
 - LZW-compressed TIFFs, as ImageJ and bfconvert write them, open. (#676)
 - The big spinner shows again while the page waits for Python. (#674)
