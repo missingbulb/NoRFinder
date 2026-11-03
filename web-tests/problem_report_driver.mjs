@@ -105,7 +105,7 @@ const reportIcon = (page) => page.evaluate(() => { const b = $("#sb-report"); re
 
 // ---- a supported browser: the plain report icon, opening a report ----
 {
-  const { ctx, page } = await open(null);
+  const { ctx, page } = await open(UA.chrome);
   const icon = await reportIcon(page);
   await check(icon.shown && icon.right && !icon.warns && icon.label === "Report a problem" && /GitHub issue/.test(icon.title),
     `in a supported browser the status bar's right side shows the plain report icon: "${icon.title}"`);
@@ -170,7 +170,7 @@ const reportIcon = (page) => page.evaluate(() => { const b = $("#sb-report"); re
 
 // ---- a supported browser: Report a problem in the menu too ----
 {
-  const { ctx, page } = await open(null);
+  const { ctx, page } = await open(UA.chrome);
   await page.click("#user-menu summary");
   await page.click("#report-problem");
   const q = await issue(page);

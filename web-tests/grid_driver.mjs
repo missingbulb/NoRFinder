@@ -104,10 +104,14 @@ await set(page, "#grid-spacing", "5"); await set(page, "#grid-colour", "#00ff00"
 g = await grid(page);
 await check(g.w === 25 && g.h === 10 && g.colour === "#00ff00", "the popup's spacing and colour redraw the grid", g);
 await closePop(page);
+// a pointer's hover, with nothing focused: closing by Escape left the button focused, which WebKit then counts as the
+// keyboard's focus, and that keeps the popup open
+await page.evaluate(() => document.activeElement.blur());
 await page.hover("#grid-btn");
 await page.waitForFunction(() => document.querySelector("#grid-pop").matches(":popover-open")).catch(() => {});
 await check((await pop(page)).open, "hovering the button opens the popup");
-await check(await page.evaluate(() => $("#grid-btn").interestForElement === $("#grid-pop")), "the browser's own hover, the button an interest invoker of the popup");
+await check(await page.evaluate(() => ("interestForElement" in HTMLButtonElement.prototype ? $("#grid-btn").interestForElement === $("#grid-pop") : !$("#grid-btn").hasAttribute("interestfor"))),
+  "the browser's own hover where it has interest invokers, the button one for the popup; the page's own elsewhere");
 await check(await placed(page), "the popup sits under its button, their right edges lined up", await placed(page, true));
 await page.mouse.move(700, 600);
 await page.waitForFunction(() => !document.querySelector("#grid-pop").matches(":popover-open")).catch(() => {});
