@@ -1,138 +1,279 @@
 # Version history
 
 What changed on the NoR Finder page, newest first, in the words its users read: clicking the
-version in the status bar shows this list.
+version in the status bar shows this history.
 
-Each pull request that changes what a user sees adds one terse line under **Next release**, ending
-with its number, `(#123)`. The site build files every such line under the release that first
-carried that pull request (`dev/tools/build/version_history.py`, from the release commits on `main`), so
-nobody has to know the version a change will ship in; `python3 dev/tools/build/version_history.py fold`
-writes those versions into this file. Releases with no visible change are left out.
+Each release is told in at most three paragraphs of at most 60 words, each ending with the pull
+requests it tells of, `(#12, #34)`. A pull request that changes what a user sees works itself into
+the story under **Next release**, and the site build files each paragraph under the release that
+carried all its pull requests. The `writing-version-history` skill says how.
 
 ## Next release
-- The problem-report bug sits beside the version, and no longer moves when the storage, memory, network and CPU unfold; a bar separates the status bar's items, but those four. (#692)
-- A Wi-Fi icon in the status bar says whether you are online, crossed out in red offline, and opens where you set up working offline; the gauge steps aside while the four show. (#692)
-- Losing the internet while a study loads says plainly what it needs, instead of showing an error. (#692)
-- The Image Viewer has its own icon, a microscope, in the browser tab and the study switcher. (#697)
-- The study switcher's button shows the open study's icon beside its name. (#697)
-- Collapse the left bar with the ‹ tab between it and the image, to give the image the whole width: a narrow Steps strip keeps the steps' marks, and clicking it, or a step, brings the bar back. The page remembers which you chose. (#690)
-- The Data Management strip no longer peeks out beside the left bar for people who are not data managers. (#690)
-- In the 3D view, a sideways scroll spins the stack about the line of sight (it panned before), and dragging no longer stops at a side-on view: it turns on, like a trackball. (#689)
-- Choose folders… in Data Management opens Google's permission window again, instead of doing nothing. (#694)
-- Switching study unloads the open image: the new study starts with none open. (#686)
-- A popup opened by a button grows out of that button. (#691)
-- The study switcher shows each study's own icon beside its name. (#684)
-- In Data Management, a folder whose previews file is damaged shows its images without previews, and an image chosen opens itself, instead of failing. (#683)
-- LZW-compressed TIFFs, as ImageJ and bfconvert write them, open. (#676)
-- The big spinner shows again while the page waits for Python. (#674)
-- Firefox 147 and Safari 26, and later, are supported browsers: the status bar no longer warns in them, and the site lists them. (#672)
-- In a browser without 3D graphics (WebGL2, off when hardware acceleration is), a z-stack opens flattened, and Vascular Measurements' cards show its pictures instead of failing. (#662)
-- A toolbar's popup (Grid, Minimap, the 3D tools) closes when the pointer leaves it, also after you clicked its button. (#662)
-- Edit Image replaces Split into parts, in Data Management's Preprocessing: it opens the image itself, and lets you split it 2 × 2 or 3 × 3 (drag the cut lines, click a part to leave it out), crop it, keep a range of slices (a band marks the slices with signal), drop channels, and lasso imperfections to leave out of every slice, seeing the result in 2D and 3D as you go. Save… puts the files in a folder named after the image, beside it in Google Drive, or downloads them; the folder then stands in the image's place in every list. (#667)
-- The status bar's storage, memory, network and CPU now fold into one gauge icon: hover it to see them, click it for the details. They also open by themselves while you are offline, the CPU or network is busy, or the tab uses over 1 GB. In Resource Usage you can set them to always open or always hidden instead. (#659)
-- Data Management, for a study's data managers: a strip left of the left bar opens the tree of the study's Google Drive folders, each saying whether you may add files there; the page asks Google to let it into just those folders. Choose a folder to see its images as a grid or a list and how many have previews and ground truth; Update previews makes the missing ones; mark images as needing ground truth; open an image quickly from its preview, then Load Original. Preprocessing, with Split into parts, is now only in Data Management. (#651)
-- A bug icon in the status bar, and Report a problem… in your menu, open a GitHub issue already filled in with your browser, the study, where you are in it and your last five actions. In a browser the page does not support, the icon is a warning sign. (#658)
-- Offline, the network icon in the status bar now carries a red mark, and notices the connection dropping or returning while you work, even when the Wi-Fi still says connected. It replaces the yellow Offline item. When the connection comes back, a study that could not load its Python loads it without a reload, and an open Google Drive or Make available offline popup refreshes by itself. (#656)
-- Popups and tips stay attached to their button when the window is resized, and the toolbar's popups and the stage's list also open when you reach their button with the keyboard. (#657)
-- Opening the page asks whether to sign in with Google or continue anonymously, and remembers your answer if you tick Remember this choice. Anonymous, a tip by your avatar offers signing in later. Offline, signing in waits until you are back online. (#649)
-- Item View is now Tasks, and says how many are left: in NoR Finder, the finalists and added NoRs still waiting for your verdict; in Vascular Measurements, the low-confidence vessels. It reads "Tasks done" once none are left. Submit Ground Truth moved from over the image to the top of Tasks, beside how many are done; cards still waiting for you are marked with a blue edge and listed first. (#648)
-- The app moved to rauntruth.com/app, and each study to rauntruth.com/app/<study>; rauntruth.com itself now explains what the site is. The site has a license page (MIT), and the site, the app and each study show their own tab icon and link-preview picture. Old addresses like rauntruth.com/nor no longer open. (#650)
-- Works offline: once opened, the site opens and runs without the internet, with the images kept on this device in Load › From Google Drive. Manage storage now lists what is kept study by study: make a study available offline there, with its Drive images, after seeing the space and time it takes, or delete a whole study's; install the site as an app from its top. A small grey mark shows which studies and Drive images work offline. Settings kept on this device moved into Settings. (#645)
-- Load's recent images are listed per study: each study shows only the images opened in it. Animations turned off stay off on your next visit and follow you when signed in (also in Settings), and buttons that would shine look plain. (#632)
-- Sign in with Google from your avatar's menu to carry your settings to every device, kept in a hidden file in your own Google Drive: the theme, the tips you closed, where Load reads from, your last Drive links and your recent Drive images. Not signing in changes nothing. (#624)
-- Settings… in your avatar's menu lists your settings (the theme, where Load reads from, thumbnails, the low-memory popup, your last Drive links, the tips you closed, your recent Drive images) to change and save in one place. The dialog behind the disk, memory, network and CPU is now titled Resource Usage. (#624)
-- The site's privacy policy and terms of service, at rauntruth.com/privacy and rauntruth.com/terms, are linked from your avatar's menu. (#624)
-- Hiding the minimap folds it into its toolbar button, and the button unfolds it again; the left bar's drawers slide open and shut. An Animations checkbox in the CPU tab turns every animation on the page off. (#630)
-- Vascular Measurements opens the draft vessel model drawn for a stack, beside it or over it: drag its points, delete or join pieces, approve or decline faded vessels, keep only the signal near the model (Detected) or away from it (Missed) to find what it missed, draw a missed vessel, and mark damaged areas. Item View shows every junction and vessel as a card, and Submit Ground Truth sends the corrected model. (#620)
-- A new study, Vascular Measurements (rauntruth.com/vascular), opens confocal z-stacks of blood vessels in 3D: drag to turn the stack, switch between Brightest and Surface, colour by depth so crossings at different depths read apart, show only some slices, and switch to 2D for the flattened picture. Each channel's row sets its brightness in both views. (#620)
-- Load from Google Drive opens on each study's own folder, and remembers the last link you pasted in each study separately. (#620)
-- The status bar's numbers roll to each new value like a clock, and the CPU or network flashes when it jumps. The network now shows how fast the page is downloading; its tab still gives the total. (#628)
-- Load's dropdown stays inside the left bar instead of running off the window's edge; a long recent name is cut short. (#629)
-- Preprocessing, with Split into parts, is now in every study, the Image Viewer included, right below the image. (#627)
-- Preprocessing has Split into parts: cut a large image into 4 or 9 TIFFs to annotate one at a time. Drag the cut lines, click a part to leave it out, drop channels or slices, name the files, and download them all as one ZIP. Each part keeps the image's scale and colours, and remembers where it lay in the image. (#621)
-- Double click a candidate on the image to open its card in the item views, or double click a card to see it on the image. Long lists of cards open at once, drawing the cards as you scroll to them. Dragging the image from beside a number or the ruler's length no longer selects text. (#617)
-- The left bar's boxes are now drawers stacked in one panel, each numbered and checked off once done. A folded drawer's title says what was done: the image's preview, name and channels, or which finder ran. Algorithms and Post-processing are renamed Processing and Postprocessing, restore defaults sits with the settings, and Add mask sits below Summary's title. The status bar no longer moves on to Submit GT while the Submit Ground Truth button still says something is missing. (#616)
-- A minimap with a white frame now hovers over the image's top left corner whenever the image is larger than the view: collapse it with ^, hide it with its X, bring it back from the toolbar, and hover that button to set how see-through it is. Each channel has its own brightness slider (black and white points), its name and a (?) explaining it; the Image Viewer uses the names and colours the file gives its channels. Load moved to the bottom of the Image box, and Unload beside it clears the page. The right bar is gone: the selected candidate's card floats over the image's top right corner, with previous and next on its picture, and Submit Ground Truth sits at the right of the toolbar. (#612)
-- The status bar's disk and memory are small grey icons now, joined by what this tab downloaded and how busy it is; each opens its own tab of one dialog (Storage, Memory, Network, CPU). The study's stage is a traffic light (red PreGT, yellow GT, green PostGT): hover it to see the stages and what comes next. Clicking the glowing step takes you to its button and presses it. (#610)
-- A Drive folder can carry a rauntruth-previews.tiff: the dialog then shows every image it covers at once, with no download each, and a stack turns while you point at it. (#605)
-- An image you pick from Google Drive opens from the copy on this device only if it is still the same file on Drive; otherwise it is downloaded. Recent files open from this device at once, and a tip by Load's arrow points them out. (#595)
-- The left bar is now Load Image, Preprocessing, Algorithms, Post-processing and Summary (moved from the right). Each box opens once it is useful and folds again when its step is done; Post-processing opens only when you click its title. (#597)
-- A Grid button, beside the Ruler, draws a grid over the image; hover it to choose the grid's colour and the distance between its lines, in µm when the file gives a pixel size and in pixels otherwise. Your choices are kept for next time. (#596)
-- A Ruler button beside Zoom: drag across the image to measure a distance, in µm when the file gives a pixel size (its width and height each counted on their own) and in pixels otherwise; press it again to clear the ruler. The image box shows both sides of a pixel that is not square. (#594)
-- The Drive dialog loads thumbnails only for the rows you can see and the next few, and no longer mixes in a folder you have just left. Each TIFF says whether it is a 3D stack or a flat image, and a stack you open gets a small 3D thumbnail. When Google throttles the site's downloads, the dialog says so and counts down 15 minutes before trying again. (#586)
-- The status bar shows the study's stage and the steps you've done, with the next one glowing; hover a step to see what was done. RAM opens what uses memory, with Run GC, and Disk opens Manage storage. (#587)
-- Switching study no longer reloads the page: the image you have open stays open in the new study, and each study has its own address, like rauntruth.com/nor. The study menu looks like GitHub's, with a search box, and ends with Submit New Study Request. (#585)
-- Load's dropdown now lists the images you opened lately from Google Drive, each opening at once from the copy kept on this device; a small Drive logo marks them and From Google Drive, and a computer marks From this computer. (#583)
-- The title at the top is now a menu for switching between studies. The page opens on a plain Image Viewer that shows any TIFF or PNG; NoR Finder is one pick away, at rauntruth.com/?study=nor. (#574)
-- The finder list shows each finder's precision and recall, and the Filters box opens with the Precise, Balanced and Recalling presets. (#572)
-- The page now opens at rauntruth.com/ itself; old /web/ links forward there. The Drive dialog no longer shows ready-made thumbnails of the lab's images, only of images you have opened. (#566)
-- The page has a new address, rauntruth.com; the old one forwards there. Settings and saved images stay with the old address, so set them again once. (#546)
-- The Drive dialog auto-saves the images you open, so they open again without a download (untick Auto-save images to stop); "Download thumbnails" is now "Show thumbnails", and the size beside them opens Manage storage, whose sections now start folded. (#446)
-- Click your avatar, top right, and choose Manage storage to see and delete what the site keeps on this device. (#438)
-- Animations out of view pause, so they no longer keep the CPU busy; Memory Usage now comes close to Chrome's own count. (#377)
-- Find candidates leaves about 130 MB less memory behind. (#379)
-- NoRs you add are numbered after the found candidates, and that one number is used on the image, the cards, the CSV and the ground truth. (#373)
-- Each item view can sort its cards: by number, verified first or last, or (rejected) most filters first. (#374)
-- Click the version in the status bar to see this history; after an update, a bubble points at it. (#369)
+
+This version history tells each release in a few short paragraphs, instead of a line for every
+change. (#701)
+
+A Wi-Fi icon in the status bar says whether you are online, crossed out in red when offline, and
+opens where you set up working offline. The bug icon sits beside the version and stays put as the
+gauge unfolds, and losing the internet while a study loads says plainly what it needs, instead of
+an error. (#692)
+
+## 0.11103.78
+
+Collapse the left bar with the ‹ tab beside the image to give the image the whole width: a narrow
+Steps strip keeps the steps' marks, and clicking it brings the bar back. The study switcher's button
+shows the open study's icon, and the Image Viewer has its own, a microscope. (#690, #697)
+
+## 0.11103.77
+
+In the 3D view, a sideways scroll spins the stack about the line of sight, and dragging turns on
+like a trackball instead of stopping side-on. Switching study unloads the open image, and a popup
+grows out of the button that opened it. Choose folders… in Data Management opens Google's
+permission window again. (#686, #689, #691, #694)
+
+## 0.11103.76
+
+The study switcher shows each study's own icon beside its name. In Data Management, a folder whose
+previews file is damaged shows its images without previews instead of failing. (#683, #684)
+
+## 0.11103.75
+
+LZW-compressed TIFFs, as ImageJ and bfconvert write them, open. (#676)
+
+## 0.11103.74
+
+The big spinner shows again while the page waits for Python. (#674)
+
+## 0.11103.73
+
+Firefox 147 and Safari 26, and later, are supported browsers: the status bar no longer warns in
+them, and the site lists them. (#672)
+
+## 0.11103.72
+
+In a browser without 3D graphics, a z-stack opens flattened and Vascular Measurements' cards show
+their pictures instead of failing. A toolbar's popup closes when the pointer leaves it. (#662)
+
+## 0.11103.71
+
+Edit Image replaces Split into parts in Data Management's Preprocessing: split an image 2 × 2 or 3 ×
+3, crop it, keep a range of slices, drop channels and lasso imperfections out of every slice, seeing
+the result in 2D and 3D. Save… puts the files in a folder beside the image in Google Drive, or
+downloads them. (#667)
+
+## 0.11103.70
+
+Data Management, for a study's data managers: browse the study's Google Drive folders, see which
+images have previews and ground truth, make the missing previews, mark images as needing ground
+truth and open one quickly from its preview. Preprocessing now lives there. (#651)
+
+The status bar's storage, memory, network and CPU fold into one gauge icon that opens by itself
+when something needs attention; offline, the network icon carries a red mark and the page recovers
+by itself when the connection returns. A bug icon opens a GitHub issue already filled in with what
+you were doing. (#656, #658, #659)
+
+Popups and tips stay attached to their button when the window is resized, and open from the
+keyboard too. (#657)
+
+## 0.11102.69
+
+The site works offline: once opened it runs without the internet, and Manage storage makes a whole
+study available offline, with its Drive images, or deletes it. It can be installed as an app. (#645)
+
+The app moved to rauntruth.com/app, each study to rauntruth.com/app/<study>, and rauntruth.com
+explains what the site is. Opening the page asks whether to sign in with Google or continue
+anonymously. (#649, #650)
+
+Item View is now Tasks, counting what still waits for your verdict, with Submit Ground Truth at its
+top and waiting cards marked blue and listed first. (#648)
+
+## 0.11101.68
+
+Load's recent images are listed per study. Animations turned off stay off on your next visit and
+follow you when signed in. (#632)
+
+## 0.11031.67
+
+A new study, Vascular Measurements, opens confocal z-stacks of blood vessels in 3D, turning them,
+colouring by depth and flattening to 2D, and opens the draft vessel model drawn for a stack: correct
+its vessels, draw the missed ones, mark damaged areas, and submit the corrected model as ground
+truth. Load from Google Drive opens on each study's own folder. (#620)
+
+Sign in with Google to carry your settings to every device, kept in a hidden file in your own
+Drive, and change them all in one place in Settings…. The privacy policy and terms of service are
+linked from your avatar's menu. (#624)
+
+Animations can be turned off, the minimap folds into its toolbar button, the status bar's numbers
+roll like a clock, and Preprocessing is in every study. (#627, #628, #629, #630)
+
+## 0.11031.66
+
+Preprocessing has Split into parts: cut a large image into 4 or 9 TIFFs to annotate one at a time,
+leaving out parts, channels or slices, and download them all as one ZIP. Each part keeps the image's
+scale and colours. (#621)
+
+## 0.11031.65
+
+Double click a candidate on the image to open its card, or a card to see it on the image. Long
+lists of cards open at once. (#617)
+
+## 0.11031.64
+
+The left bar's boxes are now numbered drawers in one panel, each checked off once done, its folded
+title saying what was done. Algorithms and Post-processing are renamed Processing and
+Postprocessing. (#616)
+
+## 0.11031.63
+
+A minimap hovers over the image's corner whenever the image is larger than the view, and each
+channel has its own brightness slider and name. The right bar is gone: the selected candidate's card
+floats over the image, and Submit Ground Truth sits in the toolbar. (#612)
+
+The status bar's resources are small icons opening one dialog, and the study's stage is a traffic
+light; clicking the glowing step presses its button. (#610)
+
+## 0.11031.62
+
+A Drive folder can carry a rauntruth-previews.tiff: the dialog then shows every image it covers at
+once, with no download each. (#605)
+
+## 0.11031.61
+
+Switching study no longer reloads the page, and each study has its own address. The left bar is now
+Load Image, Preprocessing, Algorithms, Post-processing and Summary, each box opening once useful.
+The status bar shows the study's stage and your steps, the next one glowing. (#585, #587, #597)
+
+Ruler and Grid buttons measure the image and draw a grid over it, in µm when the file gives a pixel
+size. (#594, #596)
+
+Load lists the images you opened lately from Google Drive, opening them at once from this device
+while they are unchanged on Drive. The Drive dialog loads thumbnails only as you scroll, marks 3D
+stacks, and waits out Google's throttling. (#583, #586, #595)
+
+## 0.11030.60
+
+The title at the top is now a menu for switching between studies. The page opens on a plain Image
+Viewer that shows any TIFF or PNG; NoR Finder is one pick away. (#574)
+
+## 0.11030.58
+
+The finder list shows each finder's precision and recall, and the Filters box opens with the
+Precise, Balanced and Recalling presets. (#572)
+
+## 0.11030.55
+
+The page has a new address, rauntruth.com, and opens there itself; old links forward. Settings and
+saved images stay with the old address, so set them again once. The Drive dialog shows thumbnails
+only of images you have opened. (#546, #566)
+
+## 0.11011.35
+
+The Drive dialog auto-saves the images you open, so they open again without a download, and the
+size beside its thumbnails opens Manage storage. (#446)
+
+## 0.11011.34
+
+Click your avatar, top right, and choose Manage storage to see and delete what the site keeps on
+this device. (#438)
+
+## 0.11007.26
+
+Animations out of view pause, so they no longer keep the CPU busy; Memory Usage now comes close to
+Chrome's own count. (#377)
+
+## 0.11007.25
+
+Find candidates leaves about 130 MB less memory behind. (#379)
+
+## 0.11007.24
+
+Each item view can sort its cards: by number, verified first or last, or (rejected) most filters
+first. (#374)
+
+## 0.11007.23
+
+NoRs you add are numbered after the found candidates, and that one number is used on the image, the
+cards, the CSV and the ground truth. (#373)
+
+## 0.11007.22
+
+Click the version in the status bar to see this history; after an update, a bubble points at it.
+(#369)
 
 ## 0.11007.21
-- The status bar shows how much memory the page is using. (#358)
+
+The status bar shows how much memory the page is using. (#358)
 
 ## 0.11007.20
-- The Summary box draws richer histograms (mean, SD and count) and holds the CSV downloads; the Downloads box becomes Ground Truth. (#361)
-- Drive thumbnails come with the site, so the dialog no longer stalls the next image. (#362)
-- The ground truth checklist is shorter and lists only what applies. (#360)
-- The Add mask button is blue. (#357)
-- A red measuring end slides only along the NoR's axis. (#359)
-- Filter presets fold away with the Filters box; the presets replace "restore defaults". (#356)
+
+The Summary box draws richer histograms and holds the CSV downloads; the Downloads box becomes
+Ground Truth, with a shorter checklist. Drive thumbnails come with the site, so the dialog no longer
+stalls the next image. (#360, #361, #362)
+
+Filter presets fold away with the Filters box, a red measuring end slides only along the NoR's
+axis, and Add mask is blue. (#356, #357, #359)
 
 ## 0.11007.19
-- Slow buttons show a spinner until their work is done, and a popup suggests freeing memory when the computer is low on it. (#339)
-- The Image box shows what the file says about the image: field size, pixel size, bit depth and more. (#337)
-- The ground truth button shows how complete your verdicts are, and Add mask lassoes the area the summary counts. (#335)
+
+Slow buttons show a spinner until their work is done, and a popup suggests freeing memory when the
+computer is low on it. The Image box shows what the file says about the image. The ground truth
+button shows how complete your verdicts are, and Add mask lassoes the area the summary counts.
+(#335, #337, #339)
 
 ## 0.11007.18
-- Each finder shows its precision and recall, and the Filters box offers three presets. (#342)
-- In the Drive dialog a click selects and Open opens; TIFFs get colour thumbnails. (#341)
-- Measuring ends drag freely, and a right click adds a NoR you measure yourself. (#336)
-- Packages download while Python starts, and the status bar names each stage. (#338)
+
+Each finder shows its precision and recall, and the Filters box offers three presets. In the Drive
+dialog a click selects and Open opens, with colour TIFF thumbnails. Measuring ends drag freely, a
+right click adds a NoR you measure yourself, and packages download while Python starts. (#336,
+#338, #341, #342)
 
 ## 0.11003.14
-- Mark candidates the finder missed and submit your ground truth as a GitHub issue. (#299)
+
+Mark candidates the finder missed and submit your ground truth as a GitHub issue. (#299)
 
 ## 0.10930.10
-- Crops keep their proportions in narrow boxes. (#270)
+
+Crops keep their proportions in narrow boxes. (#270)
 
 ## 0.10929.9
-- The item views follow the selected candidate, verdicts are thumbs up or down, and each view has its own options. (#267)
+
+The item views follow the selected candidate, verdicts are thumbs up or down, and each view has its
+own options. (#267)
 
 ## 0.10929.8
-- The Drive dialog keeps one size and shows each file's size and date. (#265)
+
+The Drive dialog keeps one size and shows each file's size and date. (#265)
 
 ## 0.10929.7
-- The version box lights up when a newer version of the page is out. (#256)
-- A light sweeps over the image while candidates are found. (#258)
-- The image paints while it downloads. (#260)
-- The page no longer piles up memory when you open image after image. (#262)
+
+The version box lights up when a newer version of the page is out. A light sweeps over the image
+while candidates are found, the image paints while it downloads, and the page no longer piles up
+memory when you open image after image. (#256, #258, #260, #262)
 
 ## 0.10929.6
-- One kind of control for every finder and filter setting. (#254)
+
+One kind of control for every finder and filter setting. (#254)
 
 ## 0.10929.5
-- Each filter shows what it rejects alone and in all; a moved dial marks our value with a tick. (#252)
-- Load from Google Drive opens on the lab's folder. (#250)
+
+Each filter shows what it rejects alone and in all; a moved dial marks our value with a tick. Load
+from Google Drive opens on the lab's folder. (#250, #252)
 
 ## 0.10929.4
-- Load images from Google Drive by pasting a shared link. (#242)
-- Python starts while you choose an image; cards carry Approve and Reject. (#246)
+
+Load images from Google Drive by pasting a shared link. Python starts while you choose an image;
+cards carry Approve and Reject. (#242, #246)
 
 ## 0.10929.3
-- Drag, zoom and step between candidates; select one to see its card; Finalists and Rejected views; ground truth downloads. (#235)
+
+Drag, zoom and step between candidates; select one to see its card; Finalists and Rejected views;
+ground truth downloads. (#235)
 
 ## 0.10928.2
-- A help note for every finder and setting, a Show menu, and a tidier toolbar and footer. (#232)
+
+A help note for every finder and setting, a Show menu, and a tidier toolbar and footer. (#232)
 
 ## 1.10928.1
-- The NoR Finder page: open an image, find candidates once and filter them live. (#225)
-- A new layout, with Find Candidates run on demand. (#228)
-- A fixed frame with scrolling columns and the site version in the footer. (#230)
+
+The NoR Finder page: open an image, find candidates once and filter them live, in a fixed frame
+with scrolling columns and the site version in the footer. (#225, #228, #230)

@@ -18,6 +18,7 @@ and an edit made another way is caught at Stop.
 | `**/engine/checks/**`, `**/packs/*/worldRules/**`, `**/packs/*/workRules/**`, `**/packs/*/skills/*/checks.mjs`, `**/declared-checks.json` | `writing-repo-scanning-checks` | basics | How a repo-scanning check picks its files, strips comments, and proves itself silent on real sources. Loaded for any edit of a coded or declared check. |
 | `**/tasks/**` | `writing-tasks` | claudinite | The contract a Claudinite task is written to. Use when writing or changing a tasks/<name>/task.json or its worker, or when a task-declaration check fires. |
 | `**/*.test.*`, `**/*.spec.*`, `**/*_test.*`, `**/test_*.*`, `**/test/**`, `**/tests/**`, `**/__tests__/**`, `**/spec/**` | `writing-tests` | basics | Practices for writing tests you can trust. Use before writing or changing any test — see-it-fail discipline, snapshot/golden rules, CI-only and heavy-browser tests, fuzzy-metric gating. |
+| `web/version_history.md` | `writing-version-history` | nor-finder | Telling a change in the page's version history, web/version_history.md - folding what shipped, then working the change into the Next release story of at most three short paragraphs. Loaded for any edit of that file. |
 | `product-wiki/**` | `writing-wiki-pages` | product-wiki | How a product-wiki page is written and grown: key insights, citation, what a source supports, correction without deletion. Loaded for any edit under product-wiki/. |
 
 ## By activity

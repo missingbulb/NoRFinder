@@ -24,10 +24,10 @@ not belong here — propose it to the Claudinite canon instead, where every repo
 
 ## The page's version history
 
-- **Changing what a user of the NoR Finder page sees** — add one terse line, in the user's words,
-  under "Next release" in `web/version_history.md`, ending with the pull request's number `(#123)`,
-  in the same pull request; the page's Version history popup shows it once released. A change
-  nobody using the page would notice adds nothing. (page-version-history)
+- **Changing what a user of the NoR Finder page sees** — work it into the "Next release" story in
+  `web/version_history.md`, ending its paragraph with the pull request's number `(#123)`, in the
+  same pull request; editing the file loads the `writing-version-history` skill. A change nobody
+  using the page would notice adds nothing. (page-version-history)
 
 ## Merging
 
