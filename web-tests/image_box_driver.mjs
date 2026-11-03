@@ -187,10 +187,22 @@ const line = await page.$eval("#channels .channel:nth-child(1)", (r) => {
   const x = (q) => r.querySelector(q).getBoundingClientRect();
   return { h: r.getBoundingClientRect().height, mids: ["input[type=checkbox]", "label", ".levels", "input[type=color]"].map(mid),
     order: [x("input[type=checkbox]").right <= x("label").left, x("label").right <= x(".levels").left, x(".levels").right <= x("input[type=color]").left],
-    ring: getComputedStyle(r.querySelector("input[type=color]")).backgroundImage };
+    frame: (() => { const i = r.querySelector("input[type=color]"), b = i.getBoundingClientRect(), cs = getComputedStyle(i);
+      return { wide: b.width > b.height, thick: parseFloat(cs.paddingTop) + parseFloat(cs.borderTopWidth) >= 3 }; })() };
 });
 await check(line.h <= 24 && Math.max(...line.mids) - Math.min(...line.mids) <= 4 && line.order.every(Boolean), "the row is one line: checkbox, name, slider, then the colour picker", line);
-await check(line.ring.includes("conic-gradient"), "the colour picker is a swatch in a rainbow ring", line.ring);
+await check(line.frame.wide && line.frame.thick, "the colour picker is a swatch wider than tall in a thick frame", line.frame);
+// its swatch is shaded on the diagonal: lighter at the top left, darker at the bottom right, the colour at the centre
+await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => { i.value = "#808080"; i.dispatchEvent(new Event("input", { bubbles: true })); });
+const swatch = await page.locator("#channels .channel:nth-child(1) input[type=color]").screenshot();
+const shade = await page.evaluate(async (b64) => {
+  const im = new Image(); im.src = "data:image/png;base64," + b64; await im.decode();
+  const c = new OffscreenCanvas(im.width, im.height), g = c.getContext("2d"); g.drawImage(im, 0, 0);
+  const at = (fx, fy) => g.getImageData(Math.round(fx * (im.width - 1)), Math.round(fy * (im.height - 1)), 1, 1).data[0];
+  return { topLeft: at(0.3, 0.3), centre: at(0.5, 0.5), bottomRight: at(0.7, 0.7) };
+}, swatch.toString("base64"));
+await check(shade.topLeft > shade.centre + 4 && shade.bottomRight < shade.centre - 4 && Math.abs(shade.centre - 128) <= 8, "its colour is shaded on the diagonal, the channel's colour at the centre", shade);
+await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => { i.value = "#ffffff"; i.dispatchEvent(new Event("input", { bubbles: true })); });
 // the slider's track sits in the middle of the row, its points on it
 const mids = await page.$eval("#channels .channel:nth-child(1) .levels", (l) => { const b = l.getBoundingClientRect(), t = getComputedStyle(l, "::before");
   return { row: b.height / 2, track: parseFloat(t.top) + parseFloat(t.height) / 2 }; });
