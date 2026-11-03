@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- Data Management, for a study's data managers: a strip left of the left bar opens the tree of the study's Google Drive folders, each saying whether you may add files there; the page asks Google to let it into just those folders. Choose a folder to see its images as a grid or a list and how many have previews and ground truth; Update previews makes the missing ones; mark images as needing ground truth; open an image quickly from its preview, then Load Original. Preprocessing, with Split into parts, is now only in Data Management. (#651)
 - A bug icon in the status bar, and Report a problem… in your menu, open a GitHub issue already filled in with your browser, the study, where you are in it and your last five actions. In a browser the page does not support, the icon is a warning sign. (#658)
 - Offline, the network icon in the status bar now carries a red mark, and notices the connection dropping or returning while you work, even when the Wi-Fi still says connected. It replaces the yellow Offline item. When the connection comes back, a study that could not load its Python loads it without a reload, and an open Google Drive or Make available offline popup refreshes by itself. (#656)
 - Popups and tips stay attached to their button when the window is resized, and the toolbar's popups and the stage's list also open when you reach their button with the keyboard. (#657)

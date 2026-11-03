@@ -55,6 +55,8 @@ export function readPreviews(buf) {
       g.putImageData(im, 0, 0);
       return cv.toDataURL("image/jpeg", 0.85);
     },
+    // an image's pages as they are, to write into a new file: [{W, H, spp, data}]
+    pages: (e) => Promise.all(Array.from({ length: e.pages }, (_, i) => pixels(e.page + i))),
     // a stack's mini-volume, as drawVolume takes it: its depth one pixel a slice
     async volume(e) {
       const [Z, C] = e.volume, planes = await Promise.all(Array.from({ length: e.pages }, (_, i) => pixels(e.page + i)));

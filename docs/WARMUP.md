@@ -12,7 +12,7 @@ Working on a study? Read its own warm-up next: [NoR Finder](../studies/nor/docs/
 
 | Layer | Where | Swapped by |
 |---|---|---|
-| Shell: loading (computer, Google Drive), the Python runtime, status and memory, notices, theme, side bars, version history, downloads, ground-truth submission, splitting an image into parts (`web/split.js`, its dialog `web/split_dialog.js`), working offline and making a study available offline from the Storage tab (`web/offline.js`, with the service worker `web/sw.js`) | `web/` | — |
+| Shell: loading (computer, Google Drive), the Python runtime, status and memory, notices, theme, side bars, version history, downloads, ground-truth submission, Data Management for a study's data managers (`web/data_mode.js`: the folder tree, previews made in the browser by `web/previews_writer.js`, and the study's Drive folders and their access in `web/study_drive.js`), splitting an image into parts (`web/split.js`, its dialog `web/split_dialog.js`), working offline and making a study available offline from the Storage tab (`web/offline.js`, with the service worker `web/sw.js`) | `web/` | — |
 | Viewer: shows the opened image and what a study draws over it, zoom, pan, the minimap, each channel's row and its black and white points (`web/channels.js`) | `web/viewer2d.js`; `web/viewer3d.js` adds a 3D view of a z-stack | a study's `viewer` |
 | Study: its panels, its flow, its Python | `studies/<id>/` | `/app/<id>` (rauntruth.com/app/nor) |
 | The site's own pages around the app: the landing page, privacy, terms, license, icons, poster, the retired root service worker | `site/` | — |
@@ -35,13 +35,16 @@ A study is a folder with a `study.json`:
   by `dev/tools/build/build.py`).
 - `web` — `module`, an ES module exporting `mount(shell)`; optionally `panels`, an HTML file of
   `<template data-slot="…">` elements the shell puts into its slots before mounting, and `style`, its
-  stylesheet. The slots: `preprocessing` (the shell's Preprocessing drawer, above its Split into parts), `left` (the left bar, below Preprocessing), `toolbar` (the main area's
+  stylesheet. The slots: `left` (the left bar, below the Image box), `toolbar` (the main area's
   toolbar, at its left), `toolbar-end` (its right end), `view-top`, `views` (beside the image view),
   `over-image` (floating over the image) and `body`; there is no right bar. A `box foldable` section folds
   with the steps: its `data-opens` names the step (`load`, one of its `phases`, `submit`) after which it
   opens, or `user` for one only its title opens, and `data-folds` the step after which it folds again.
-- `files` — what Load accepts, the text the empty view shows, and optionally `drive`, the Google Drive
-  folder the Drive dialog opens on in this study.
+- `files` — what Load accepts, the text the empty view shows, and optionally `folders`, the study's Google
+  Drive folders: the Drive dialog opens on the first, and Data Management works on them all.
+- `permissions` — optional, the Google accounts (by email) holding each role: `data_management` sees Data
+  Management, `ground_truth_writer` will write ground truth to Drive. A study's panels step aside while Data
+  Management is open.
 - `channels` — what the study says of the image's channels, by place: `name`, `colour` (`#rrggbb`),
   `shown` at first, and optionally `about` (the (?)'s description, at most 100 words) and `black` and
   `white` (its first points, 0–255). A channel it leaves out takes what the file says, then its place

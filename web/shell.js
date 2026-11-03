@@ -2,7 +2,7 @@
 // none of them; the header's switcher offers the ones the build lists and swaps one in without a reload. What it gives a study, as shell in mount(shell): loading images (from the
 // computer or Google Drive), Python (the study's own, run in worker.js), the viewer the study asks for,
 // the page's state its controls are drawn from (page: get, set, watch(key, fn, {signal})), the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own), the switch to its item view (views) and the boxes' titles (boxDone(box, summary) once a box's task is done), notices, the user's saved settings, downloads and ground-truth
-// submission; and around them the theme, the left bar, foldable boxes, Preprocessing (Split into parts, and a study's own steps in its slot), the resources dialog (storage, memory,
+// submission; and around them the theme, the left bar, foldable boxes, Data Management (data_mode.js) with its Preprocessing (Split into parts), the resources dialog (storage, memory,
 // network and CPU) and the version history.
 //
 // The study's hooks, all optional, returned from mount: ready(info) once its Python is loaded;
@@ -29,6 +29,7 @@ import { welcome, WELCOME } from "./welcome.js";
 import { actionLog, ACTIONS } from "./action_log.js";
 import { identify, verdict } from "./browsers.js";
 import { problemUrl, ACTIONS_QUOTED, ERRORS_QUOTED } from "./problem_report.js";
+import { dataMode } from "./data_mode.js";
 
 const $ = (s) => document.querySelector(s);
 // what the user does here, kept on this device for a problem report (req/shell/report/action-log)
@@ -81,6 +82,8 @@ const signIn = account({
   menu: $("#user-menu"),
   clientId: ((window.NOR_CONFIG && window.NOR_CONFIG.google) || {}).clientId || "",
   applied: () => reapply(),
+  // after the page's own start, which this may run during
+  changed: () => queueMicrotask(() => data.signedIn()),
 });
 
 function readJSON(key, fallback = {}) {
@@ -522,8 +525,9 @@ function handle(m) {
     busy(false); statusBar();
     showImage();
     boxDone($("#image-box"), loadedSummary());
-    step("load", true, `${st.fileName}, ${m.meta.W} × ${m.meta.H} px, from ${st.source?.kind === "drive" ? "Google Drive" : "this computer"}`);
-    log.add(`Opened an image from ${st.source?.kind === "drive" ? "Google Drive" : "this computer"}, ${m.meta.W} × ${m.meta.H} px, ${m.meta.Z || 1} slice(s)`);
+    const from = { drive: "Google Drive", preview: "its preview in Google Drive" }[st.source?.kind] || "this computer";
+    step("load", true, `${st.fileName}, ${m.meta.W} × ${m.meta.H} px, from ${from}`);
+    log.add(`Opened an image from ${from}, ${m.meta.W} × ${m.meta.H} px, ${m.meta.Z || 1} slice(s)`);
     status("Image loaded."); // the study's opened hook says what comes next, if anything
     study.opened?.(m.meta);
     if (!st.reopening && st.source && st.source.kind === "local" && makesTruth()) notice(LOCAL_GT);
@@ -552,6 +556,7 @@ function imageBox() {
   $("#file-name").textContent = name || "No image loaded"; $("#file-name").classList.toggle("dim", !name);
   fileInfo(opening ? null : im?.info || null);
   $("#load").classList.toggle("done", !!im); $("#unload").hidden = !im;
+  $("#load-original").hidden = im?.source?.kind !== "preview";
 }
 page.watch("image", imageBox); page.watch("opening", imageBox);
 
@@ -601,7 +606,7 @@ let driveFrom = "";
 function load(src) {
   writeJSON(SOURCE, src); $("#load-menu").open = false;
   if (src === "local") return $("#file").click();
-  driveFrom = $("#drive-link").value = readJSON(DRIVE_LINKS)[manifest.id] || manifest.files.drive || readJSON(DRIVE_LINK, ""); $("#drive-dlg").showModal(); $("#drive-link").select(); showSaved();
+  driveFrom = $("#drive-link").value = readJSON(DRIVE_LINKS)[manifest.id] || manifest.files.folders?.[0] || readJSON(DRIVE_LINK, ""); $("#drive-dlg").showModal(); $("#drive-link").select(); showSaved();
   if (offlineCopy.offline()) return showKept();
   holdDrive();
   if (!throttled() && NorDrive.parse($("#drive-link").value)?.kind === "folder") $("#drive-go").click();
@@ -1051,7 +1056,7 @@ async function inventory() {
   const drop = (...keys) => keys.forEach((k) => { try { localStorage.removeItem(k); } catch { /* nothing kept */ } });
   const studies = await offlineCopy.studyFiles().catch((e) => { console.warn("the studies could not be read:", e); return []; });
   const live = await offlineCopy.available().catch(() => new Set());
-  const sections = studies.map((s) => ({ id: "study:" + s.id, study: s.id, title: s.title, mark: live.has(s.id), drive: !!s.manifest.files.drive, entries: [] }));
+  const sections = studies.map((s) => ({ id: "study:" + s.id, study: s.id, title: s.title, mark: live.has(s.id), drive: !!s.manifest.files.folders?.length, entries: [] }));
   const shared = { id: "shared", title: "Shared by every study", about: SHARED_ABOUT, entries: [] };
   // a study's own, else the study on show's: kept before images were told apart by study
   const sectionOf = (id) => sections.find((x) => x.study === id) || sections.find((x) => x.study === manifest?.id) || shared;
@@ -1337,9 +1342,11 @@ const boxes = () => document.querySelectorAll(".box.foldable");
 function unfoldFirst() { boxes().forEach((b) => b.classList.toggle("folded", b.hasAttribute("data-opens"))); retitle(); }
 // a step just done: a new image folds every box waiting for a later step
 function foldFor(key) {
+  // a preview keeps the Image box open: Load Original is what comes next
+  const preview = key === "load" && st.source?.kind === "preview";
   boxes().forEach((b) => {
-    if (b.dataset.opens === key) b.classList.remove("folded");
-    else if (b.dataset.folds === key || (key === "load" && b.hasAttribute("data-opens"))) b.classList.add("folded");
+    if (b.dataset.opens === key || (preview && b.id === "image-box")) b.classList.remove("folded");
+    else if ((b.dataset.folds === key && !(preview && b.id === "image-box")) || (key === "load" && b.hasAttribute("data-opens"))) b.classList.add("folded");
   });
   retitle();
 }
@@ -1347,7 +1354,9 @@ function foldFor(key) {
 // the folded box sums up what was done and the open one shows its data-done-name, else its name.
 const summaries = new WeakMap(); // box -> its summary: text, or a node
 function retitle() {
-  [...boxes()].forEach((b, k) => {
+  const shown = [...boxes()].filter((b) => b.checkVisibility());
+  [...boxes()].forEach((b) => {
+    const k = shown.indexOf(b);
     const h = b.querySelector(":scope > .sec-head h2");
     if (!h.querySelector(".title")) {
       h.dataset.name ||= h.textContent.trim();
@@ -1624,12 +1633,10 @@ async function mountStudy(id) {
     const panels = new DOMParser().parseFromString(await (await fetch(base + manifest.web.panels)).text(), "text/html");
     for (const t of panels.querySelectorAll("template[data-slot]")) {
       const nodes = [...document.importNode(t.content, true).childNodes];
+      for (const n of nodes) if (n.nodeType === 1) n.dataset.studyPanel = "";
       $(`slot-here[data-slot-for="${t.dataset.slot}"]`).before(...nodes); mounted.push(...nodes);
     }
   }
-  // Preprocessing comes before the study's own work: it folds once the study's first step is done
-  const first = manifest.phases[0]?.key;
-  if (first) $("#preprocessing-box").dataset.folds = first; else delete $("#preprocessing-box").dataset.folds;
   unfoldFirst(); // before the first paint with them, so they do not fold in view
   view = viewers[manifest.viewer] ||= VIEWERS[manifest.viewer](shell);
   for (const v of new Set(Object.values(viewers))) v.active?.(v === view);
@@ -1643,6 +1650,7 @@ async function mountStudy(id) {
   makeSteps();
   foldable();
   showRecent();
+  data.mount(manifest);
 }
 const viewers = {};
 // The study on show leaves: its panels, stylesheet, drawing, listeners and state go, and its Python's late
@@ -1667,6 +1675,47 @@ const shell = {
 splitter(shell);
 const offlineCopy = offline({ $, esc, sizeText, drive: NorDrive, throttled, throttle, stored: () => diskBar(),
   kept: async (id) => !!(await caches.open(IMAGES).then((c) => c.match(imageUrl(id)), () => null)), keep: saveImage });
+// Data Management (req/shell/data/mode): what it borrows from the shell
+const data = dataMode({
+  $, esc, sizeText, still, status, drive: NorDrive, account: signIn, working, sha256, savedImage, folderPreviews, throttle,
+  // the folder's images in the main area, or the image
+  showFolder(on) {
+    $("#folder-view").hidden = !on; $("#image-view").hidden = on || views.now !== "image";
+    if (!on) view?.minimapView();
+  },
+  modeChanged(on) {
+    retitle(); $("#tip").hidden = true;
+    if (!on && views.now !== "image") views.show("image");
+    view?.minimapView();
+  },
+  // the drawers on show changed: their numbers again
+  relabel: () => retitle(),
+  openPreview: (name, bytes, source) => openBytes(name, bytes, source),
+  loadOriginal,
+});
+// the image itself, for the preview on show: the copy kept on this device, else downloaded from Drive
+async function loadOriginal(source) {
+  if (!source?.id) return;
+  const kept = await savedImage(source.id);
+  if (kept) { peek()(kept.bytes, kept.bytes.byteLength); return openBytes(kept.name, kept.bytes, { kind: "drive", id: source.id }); }
+  if (document.documentElement.classList.contains("offline")) return notice("This image is not kept on this device, and needs the internet: you are offline.");
+  if (throttled()) return notice("Google is throttling this site's downloads. Try again in 15 minutes.");
+  const mb = (n) => (n / 1048576).toFixed(1);
+  let push;
+  try {
+    const f = await NorDrive.file(source.id, source.name, (n) => { push = peek(); busy(true, `Downloading ${n}…`, "peek"); },
+      (buf, got, total) => { push(buf, got); $("#busy-text").textContent = `Downloading ${source.name} · ${mb(got)}${total ? " of " + mb(total) : ""} MB`; });
+    if ($("#drive-autosave").checked) saveImage(source.id, f.name, f.bytes, { study: manifest.id });
+    picture(source.id, f.name, f.bytes);
+    openBytes(f.name, f.bytes, { kind: "drive", id: source.id });
+  } catch (e) {
+    busy(false);
+    if (e.throttled) throttle();
+    status("Error: " + (e.message || e), true);
+  }
+}
+$("#load-original").onclick = () => { signIn.drive(); loadOriginal(page.get("image")?.source); };
+
 // the sign-in popup on opening the page (req/shell/account/welcome); the menu's Sign in and Sign out answer it too
 const welcomed = welcome({ dialog: $("#welcome-dlg"), account: signIn, avatar: $("#user-menu summary"), tip });
 $("#sign-in").addEventListener("click", () => { welcomed.chose(); closeTip("sign-in"); });

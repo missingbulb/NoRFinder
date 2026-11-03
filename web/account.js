@@ -2,7 +2,8 @@
 // in its own window and hands this page a token, and the page keeps the user's settings in their own Google Drive,
 // in the app's hidden folder, as one file it reads whole and replaces whole: {browser key: the string this device
 // keeps under it}, for the keys whose settings follow the user. The services it reaches: Google's sign-in script
-// and window, Google's account details (name, email, picture), and the Drive API for that one file.
+// and window, Google's account details (name, email, picture), and the Drive API for that one file. A study may
+// ask for more (more(scope), req/shell/data/drive-access): Google's per-file Drive permission, added to the same token.
 "use strict";
 import { CONNECTION } from "./offline.js";
 
@@ -15,12 +16,13 @@ const FILE_NAME = "rauntruth-settings.json";
 // a token this close to running out is renewed rather than used
 const MARGIN_MS = 60 * 1000;
 const SAVE_AFTER_MS = 400;
-// who is signed in on this device: {user: {name, email, picture}, token, until (ms), fileId, changed}, changed the
-// keys whose settings this device changed since Drive last had them
+// who is signed in on this device: {user: {name, email, picture}, token, until (ms), scopes (what the token may do,
+// as Google listed it), fileId, changed}, changed the keys whose settings this device changed since Drive last had them
 export const SIGNED_IN = "nor-google-sign-in";
 
-// keys: the browser keys whose settings follow the user; applied(): runs once Drive's settings have replaced them
-export function account({ keys, menu, clientId, applied }) {
+// keys: the browser keys whose settings follow the user; applied(): runs once Drive's settings have replaced them;
+// changed(): runs whenever who is signed in may have changed
+export function account({ keys, menu, clientId, applied, changed = () => {} }) {
   const $ = (s) => menu.querySelector(s);
   // waiting: {ok, fail} of a sign-in the popup is waiting on (req/shell/account/welcome)
   let me = read(), client = null, script = null, saving = null, waiting = null;
@@ -95,6 +97,7 @@ export function account({ keys, menu, clientId, applied }) {
       was.outerHTML = summary.dataset.anonymous;
     }
     summary.title = summary.ariaLabel = user ? `${user.name}, signed in` : "You, on this device";
+    changed();
   };
 
   // Google's script, loaded only for someone signing in or signed in; its token client asks for the token
@@ -105,7 +108,7 @@ export function account({ keys, menu, clientId, applied }) {
         callback: async (t) => {
           if (t.error) { console.warn("Google gave no token:", t.error); return answered("fail", t.error); }
           const first = !me || !me.user;
-          me = { ...(me || {}), token: t.access_token, until: Date.now() + t.expires_in * 1000 };
+          me = { ...(me || {}), token: t.access_token, until: Date.now() + t.expires_in * 1000, scopes: t.scope || SCOPES };
           if (first) {
             try {
               const u = await (await google(USER_INFO)).json();
@@ -184,5 +187,20 @@ export function account({ keys, menu, clientId, applied }) {
     // the user is reaching for Sign in: Google's script, so their click can ask at once
     preload() { if (clientId) ready(); },
     signIn, signOut,
+    email: () => (me && me.user && me.user.email) || null,
+    // the token while it lasts, else null; renewing it needs the user's click (renew)
+    token: () => (live() ? me.token : null),
+    renew,
+    // whether the token Google gave may do scope, as far as the last one said
+    may: (scope) => !!(me && (me.scopes || "").split(" ").includes(scope)),
+    // asks Google, in the user's click, to add scope to the token: true once it has
+    more(scope) {
+      if (!me || !client || !navigator.userActivation?.isActive) return Promise.resolve(false);
+      answered("fail", "asked again");
+      return new Promise((ok) => {
+        waiting = { ok: () => ok(true), fail: () => ok(false) };
+        client.requestAccessToken({ scope: SCOPES + " " + scope, include_granted_scopes: true, login_hint: me.user.email });
+      }).then((got) => got && this.may(scope));
+    },
   };
 }

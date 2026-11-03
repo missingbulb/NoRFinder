@@ -8,7 +8,7 @@ import hashlib, json, os, sys
 import numpy as np, tifffile
 from PIL import Image
 
-FLAT, VOL, SLICES = 96, 48, 16
+FLAT, VOL, SLICES = 256, 96, 24
 COLOURS = {1: [(1, 1, 1)], 2: [(0, 1, 0), (1, 0, 1)], 3: [(1, 0, 0), (0, 1, 0), (0, 0, 1)]}
 
 
