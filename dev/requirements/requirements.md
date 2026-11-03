@@ -42,7 +42,7 @@ spec does not have.
   Signed in, the avatar is the user's picture, the menu names them and offers Sign out. These
   settings follow the user: dark or light, the tips closed, the version last seen, the low-memory
   popup turned off, where Load reads from, the last Drive link (in each study too), Show thumbnails,
-  the images opened from Drive lately, and whether animations are on (`req/shell/resources-dialog/animations`). These stay with the device: the left bar's width,
+  the images opened from Drive lately, whether animations are on (`req/shell/resources-dialog/animations`) and how the status bar shows its resources (`req/shell/status-bar/resources`). These stay with the device: the left bar's width,
   Auto-save images, and everything kept for images. Google's token lasts about an hour and is kept on
   this device for that hour. A new one can be asked for only in the user's own click or key press, so
   once it has run out the page asks only in one that needs Google: a change to a setting that follows
@@ -598,7 +598,8 @@ spec does not have.
   the spinner and what the page is doing now (each stage of Python's loading, the study's progress,
   an error in red) and the thumbnails' progress (`req/shell/drive/dialog`). From the right edge inward: the site's
   version (stamped by each release; `req/shell/version-history`, `req/shell/site/out-of-date`), the CPU (`req/shell/status-bar/cpu`), the network (`req/shell/status-bar/network`), the
-  memory (`req/shell/status-bar/memory`) and the disk (`req/shell/status-bar/disk`). Each of the four before the version is a small grey icon
+  memory (`req/shell/status-bar/memory`) and the disk (`req/shell/status-bar/disk`), these four folded into one icon unless set
+  always open (`req/shell/status-bar/resources`). Each of the four before the version is a small grey icon
   and its number, with no word naming it; all five are plain, with no box, alike. A mild vertical
   bar separates each item from the next. Nothing in the status bar turns the pointer into a
   question mark. The image's name and the study's counts are in the
@@ -667,6 +668,24 @@ spec does not have.
   packages and the study's Python, and Google Drive. What comes from this browser's caches counts
   nothing; Google's small pictures of images in the Drive dialog are not counted, since Google does
   not let a page read their size. Test: `web-tests/test_status_bar_page.py`.
+  </details>
+
+- `req/shell/status-bar/resources` The disk, memory, network and CPU fold into one icon, unfolding on hover and while something needs watching.
+  <details>
+
+  Set by the owner on 2026-11-03. The four sit in one block with a gauge icon at its right, next to the
+  version. A setting in the resources dialog, above its tabs on every tab, chooses how the block shows:
+  Auto-hiding, the default, Hidden always, or Always open, as the status bar was before. Auto-hiding,
+  the page opens with the four folded away and the icon alone showing; hovering the block unfolds the
+  four as they look always open, the icon staying beside them, and leaving folds them again, both ways
+  animated (at once with animations off, `req/shell/resources-dialog/animations`, or reduced motion asked for). It unfolds by
+  itself, and stays unfolded, while the page is offline (`req/shell/offline/default`), the CPU has been over 50% of one core for more than
+  5 seconds, the network has been downloading over 250 kbps (kilobits a second) for more than 5
+  seconds, or the tab holds over 1 GB, and folds 8 seconds after the last of these ends. Hidden
+  always, only the icon shows, and neither hovering nor any of these unfolds it; offline, the icon
+  carries the red no-network mark. Always open, the icon does not show. Clicking the icon opens the
+  resources dialog (`req/shell/resources-dialog`) on the tab last shown, Storage at first. The choice is kept as the user's setting and,
+  signed in, follows the user (`req/shell/account/sign-in`). Test: `web-tests/test_status_bar_page.py`.
   </details>
 
 - `req/shell/status-bar/rolling` The status bar's numbers roll to each new value, and a sharp rise in the CPU or network flashes.
