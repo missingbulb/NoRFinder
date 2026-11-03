@@ -94,6 +94,18 @@ try {
   console.log(JSON.stringify(fixtureMenu));
   if (fixtureMenu.items.join() !== titles.join()) problems.push("the switcher does not list the listed studies, or ticks one not on show: " + fixtureMenu.items);
   if (fixtureMenu.right) problems.push("the page still has a right bar");
+  // each study's own icon beside its title, loaded; the generic one for a study naming none
+  await page.waitForFunction(() => [...document.querySelectorAll("#study-list img")].every((i) => i.complete));
+  const icons = await page.evaluate(() => [...document.querySelectorAll("#study-list a")].map((a) => {
+    const img = a.querySelector("img.study-icon");
+    return { id: a.dataset.id, src: img && !img.hidden && img.naturalWidth ? new URL(img.src).pathname : null, generic: !!a.querySelector("svg.study-icon:not([hidden])") };
+  }));
+  console.log(JSON.stringify(icons));
+  for (const s of JSON.parse(fs.readFileSync(studies, "utf8"))) {
+    const got = icons.find((i) => i.id === s.id) || {};
+    const want = s.icon ? `/studies/${s.id}/${s.icon}` : null;
+    if (got.src !== want || got.generic === !!s.icon) problems.push(`the switcher shows ${s.id} with ${got.src || (got.generic ? "the generic icon" : "no icon")}, not ${want || "the generic icon"}`);
+  }
   await page.setInputFiles("#file", image);
   await page.waitForFunction(() => !document.querySelector("#fx-count").disabled);
   const base = await page.evaluate(() => [document.querySelector("#base").width, document.querySelector("#base").height]);

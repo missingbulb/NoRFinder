@@ -189,7 +189,8 @@ spec does not have.
   Set by the owner on 2026-11-02. Choosing an image in the tree or the folder view opens its preview
   in the study's viewer, a stack in 3D, quick and the same for everyone; the Image box's Load becomes
   Load Original, which opens the image itself from the copy kept on this device when it has one,
-  else from Drive. A data manager can mark an image as needing ground truth: the page creates an
+  else from Drive. A preview that cannot be read (a damaged previews file) shows as no preview, and the image,
+  chosen, opens itself instead. A data manager can mark an image as needing ground truth: the page creates an
   empty `<name>.ground_truth.MISSING` beside it, and unmarking trashes only a marker the page made.
   Whoever makes the ground truth adds its file and drops the marker. Test:
   `web-tests/test_data_mode_page.py`, `web-tests/test_previews_writer.py`.
@@ -217,6 +218,17 @@ spec does not have.
   page did not make is left alone, and the page says to delete it in Drive to let the page manage it;
   deleting the page's own makes it start over. Test: `web-tests/test_data_mode_page.py`,
   `web-tests/test_previews_writer.py`.
+  </details>
+
+- `req/shell/dialogs/open-from-button` A popup dialog a button opens grows out of that button.
+  <details>
+
+  Set by the owner on 2026-11-03. Every modal dialog on the page, the shell's and a study's, opened by
+  a click on a button or a link (or the keyboard pressing one), grows from that button's place and size
+  to its own in a fifth of a second, fading in, while its backdrop darkens. A dialog nothing pressed
+  opens, the Welcome on arrival say, appears at once, as does every dialog with animations off
+  (`req/shell/resources-dialog/animations`) or reduced motion asked for. Test:
+  `web-tests/test_dialog_motion_page.py`.
   </details>
 
 - `req/shell/drive/dialog` Google Drive: paste a shared link, no sign-in; browse folders; open on Open, double click or Enter.
@@ -327,7 +339,8 @@ spec does not have.
   GitHub's repository switcher, for studies: the study's title and a solid caret form one 32 px
   control; it opens, under the caret, a 320 px panel headed "Switch study", a search box (focused,
   filtering by title as the user types) and every study whose `study.json` says `"listed": true`,
-  by title, each with a study icon, a rule under its name, and a tick on the one on show. Arrow
+  by title, each with its own icon (the tab's icon its `study.json` names; the generic study icon
+  when it names none, or the icon does not load), a rule under its name, and a tick on the one on show. Arrow
   keys move through the list, Enter opens the one marked, Escape closes it. Each entry is a link to
   the study's address (`req/shell/study/folder-and-address`), so a middle click opens it in a new tab. The header's spacing follows
   GitHub's: 64 px tall, 16 px at the sides, a 32 px logo. Test: `web-tests/test_study_runs.py`.

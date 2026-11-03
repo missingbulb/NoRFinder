@@ -31,6 +31,7 @@ import { problemUrl, ACTIONS_QUOTED, ERRORS_QUOTED } from "./problem_report.js";
 import { dataMode } from "./data_mode.js";
 import { imageEditor, SPLIT_PATTERN } from "./image_edit.js";
 import { replacedBy } from "./edit.js";
+import { dialogMotion } from "./dialog_motion.js";
 
 const $ = (s) => document.querySelector(s);
 // what the user does here, kept on this device for a problem report (req/shell/report/action-log)
@@ -169,7 +170,11 @@ $("#ram-gc").onclick = () => working($("#ram-gc"), () => { const told = until("m
 
 // the disk: what the site keeps on this device, as Manage storage counts it
 async function diskBar() {
-  const { sections, settings, overhead } = await inventory();
+  let got;
+  // what the site keeps can change while it is counted (a cache entry deleted between listing and reading it):
+  // the bar keeps its last count until the next one
+  try { got = await inventory(); } catch (e) { return console.warn("what the site keeps could not be counted:", e); }
+  const { sections, settings, overhead } = got;
   showDisk(sections.reduce((a, x) => a + x.entries.reduce((b, e) => b + e.size, 0), settings + overhead));
 }
 const showDisk = (n) => showNumber($("#sb-disk"), sizeText(n));
@@ -246,6 +251,7 @@ const showMotion = () => {
 showMotion();
 motion.onchange = () => { writeJSON(MOTION, motion.checked); showMotion(); };
 function still() { return !motion.checked || matchMedia("(prefers-reduced-motion: reduce)").matches; }
+dialogMotion(still);
 
 $("#sb-net").onclick = () => usage("network");
 $("#sb-cpu").onclick = () => usage("cpu");
@@ -1560,12 +1566,20 @@ const addressOf = (id) => (id === DEFAULT_STUDY ? HOME : HOME + encodeURICompone
 async function studyMenu() {
   let listed = [];
   try { listed = await (await fetch(HOME + "studies.json", { cache: "no-cache" })).json(); } catch (e) { console.warn("no list of studies:", e); }
-  const use = (n) => `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">${$(`#icons .${n}`).innerHTML}</svg>`;
+  const use = (n) => `<svg class="${n}-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">${$(`#icons .${n}`).innerHTML}</svg>`;
   $("#study-list").replaceChildren(...listed.map((s) => {
     const a = document.createElement("a");
     a.href = addressOf(s.id); a.dataset.id = s.id;
     a.innerHTML = `<span class="tick">${use("tick")}</span>${use("study")}<span class="name"></span>`;
     a.querySelector(".name").textContent = s.title;
+    // the study's own icon; the generic one stays while it is missing or fails to load
+    if (s.icon) {
+      const img = Object.assign(new Image(16, 16), { className: "study-icon", alt: "", hidden: true });
+      img.onload = () => { img.hidden = false; a.querySelector("svg.study-icon").setAttribute("hidden", ""); };
+      img.onerror = () => img.remove();
+      img.src = new URL(`../studies/${s.id}/${s.icon}`, location.origin + HOME).href;
+      a.querySelector("svg.study-icon").after(img);
+    }
     a.onclick = (e) => {
       if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       e.preventDefault(); goTo(s.id);
