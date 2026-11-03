@@ -41,7 +41,7 @@ const VIEWERS = { image2d: viewer2d, image3d: (shell) => viewer3d(shell, viewers
 const DEFAULT_STUDY = "viewer";
 // the browser keys the shell saves under; their names predate studies, and a user's saved state lives in them
 const THEME = "nor-theme"; // "dark" | "light"; absent = follow the system
-const BARS = "nor-bars-v1"; // {left}: the left bar's width in pixels (a right bar's, from before it went, is ignored)
+const BARS = "nor-bars-v1"; // {left, collapsed}: the left bar's width in pixels, and whether it is collapsed (a right bar's, from before it went, is ignored)
 const SOURCE = "nor-load-source"; // "local" | "drive": where Load reads from
 const DRIVE_LINK = "nor-drive-link"; // the last Google Drive link pasted, in any study
 const DRIVE_LINKS = "nor-drive-links"; // {study id: the last Google Drive link pasted in that study}
@@ -1075,7 +1075,7 @@ async function showSaved() {
 // ---------- the user: whoever opened the page on this device, and what the site keeps here ----------
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
-  [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
+  [THEME]: "Theme", [BARS]: "Left bar width, and whether it is collapsed", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
   [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [RESOURCES]: "The status bar's disk, memory, network and CPU: hidden, auto-hiding or always open", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
 };
 // What the site keeps, by what it takes to work offline (req/shell/storage/manage): a section per study, then what they share; settings
@@ -1389,6 +1389,8 @@ function foldFor(key) {
 // the folded box sums up what was done and the open one shows its data-done-name, else its name.
 const summaries = new WeakMap(); // box -> its summary: text, or a node
 function retitle() {
+  // collapsed (req/shell/left-bar/collapse), no drawer is on show to count: they are titled again on the way back
+  if (document.documentElement.dataset.left === "collapsed") return;
   const shown = [...boxes()].filter((b) => b.checkVisibility());
   [...boxes()].forEach((b) => {
     const k = shown.indexOf(b);
@@ -1464,6 +1466,21 @@ function showImage() { study.showImage?.(); view.minimapView(); }
     g.addEventListener("pointermove", move); g.addEventListener("pointerup", up);
   });
   g.addEventListener("dblclick", () => { delete saved.left; set(null); writeJSON(BARS, saved); view?.minimapView(); });
+  // req/shell/left-bar/collapse: collapsed to its Steps strip, and back, the drawers sliding in on the way out
+  const fold = $("#left-fold"), bar = $("#left"), root = document.documentElement;
+  const collapse = (on) => {
+    if (on) root.dataset.left = "collapsed"; else delete root.dataset.left;
+    fold.setAttribute("aria-expanded", String(!on));
+    fold.title = on ? "Expand the left bar, with the study's steps" : "Collapse the left bar, to give the image its room";
+  };
+  collapse(!!saved.collapsed);
+  fold.onclick = () => {
+    saved.collapsed = !saved.collapsed; writeJSON(BARS, saved);
+    if (!saved.collapsed) { bar.classList.add("sliding-in"); setTimeout(() => bar.classList.remove("sliding-in"), 400); }
+    collapse(saved.collapsed);
+    retitle();
+    setTimeout(() => view?.minimapView(), 400);
+  };
 }
 
 function theme() {

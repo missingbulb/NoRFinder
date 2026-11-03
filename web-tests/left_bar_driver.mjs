@@ -112,4 +112,35 @@ await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted f
 await title(0); await page.click("#unload");
 await page.waitForFunction(() => document.querySelector("#unload").hidden && [...document.querySelectorAll("#left > .box.foldable")].filter((b) => b.checkVisibility()).length === 4);
 await boxes(["1 Load Image open", "2 Threshold folded", "3 Counted folded", "4 Notes folded"], "Unload: every drawer waits again, as at first");
+
+// req/shell/left-bar/collapse: the bar collapses to a narrow Steps strip and expands again, sliding, remembered
+const left = () => page.evaluate(() => Math.round(document.querySelector("#left").getBoundingClientRect().width));
+const viewW = () => page.evaluate(() => Math.round(document.querySelector("#view").getBoundingClientRect().width));
+// the column's slide over: the grid's transition and the drawers' slide in done
+const settled = () => page.waitForFunction(() => !document.getAnimations().some((a) => a.transitionProperty === "grid-template-columns" || a.animationName === "data-in"));
+const wide = await left(), imageW = await viewW();
+await check(await page.locator("#left-fold").isVisible(), "the open bar is topped by its collapse chevron");
+await page.click("#left-fold");
+await page.waitForTimeout(50); await settled();
+await check((await left()) < 60, "collapsing leaves a narrow strip", await left());
+await check((await viewW()) > imageW + 200, "and gives the image the room", [imageW, await viewW()]);
+const strip = await page.evaluate(() => ({ label: document.querySelector("#left-fold .strip-name").textContent, vertical: getComputedStyle(document.querySelector("#left-fold .strip-name")).writingMode,
+  expanded: document.querySelector("#left-fold").getAttribute("aria-expanded"), drawers: [...document.querySelectorAll("#left > .box")].filter((b) => b.checkVisibility()).length }));
+await check(strip.label === "Steps" && strip.vertical === "vertical-rl" && strip.expanded === "false" && strip.drawers === 0, "the strip reads Steps, upright, and hides the drawers", strip);
+const g = await page.locator("#gutter-left").boundingBox();
+await page.mouse.move(g.x + g.width / 2, g.y + 100); await page.mouse.down(); await page.mouse.move(g.x + 300, g.y + 100); await page.mouse.up();
+await check((await left()) < 60, "a collapsed bar cannot be dragged wider", await left());
+await page.reload();
+await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
+await settled();
+await check((await left()) < 60, "collapsed stays collapsed on the next visit", await left());
+// expanding: the column slides out as Data Management's does, the drawers sliding in
+const slideOut = page.waitForFunction(() => document.getAnimations().some((a) => a.transitionProperty === "grid-template-columns")
+  && document.getAnimations().some((a) => a.animationName === "data-in" && a.effect?.target?.closest?.("#left"))).then(() => true, () => false);
+await page.click("#left-fold");
+await check(await slideOut, "expanding slides the bar out and the drawers in");
+await settled();
+await page.waitForFunction(() => !document.querySelector("#left").classList.contains("sliding-in"));
+await check((await left()) === wide && await page.evaluate(() => document.querySelector("#left-fold").getAttribute("aria-expanded")) === "true", "expanding brings the bar back at its width", [wide, await left()]);
+await boxes(["1 Load Image open", "2 Threshold folded", "3 Counted folded", "4 Notes folded"], "with its drawers as they were");
 await done(0);
