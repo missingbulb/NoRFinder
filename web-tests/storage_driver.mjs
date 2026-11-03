@@ -39,6 +39,7 @@ const PNG = noisePng();
 const DRIVE = [{ id: "acmeimage00000000001", name: "acme one.png" }, { id: "acmeimage00000000002", name: "acme two.png" }];
 // a subfolder, listed after the images, holding an image named as the first one
 const SUB = { id: "acmefolder0000000002", name: "sub" }, TWIN = { id: "acmeimage00000000003", name: "acme one.png" };
+const OWN_PACKAGE = "acmepkg";
 const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in" } };`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
@@ -47,6 +48,11 @@ const server = http.createServer((q, r) => {
   if (u === "/web/studies.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end(LISTED); }
   if (u === "/web/vendor/wheels.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end("[]"); }
   if (u === "/web/config.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(CONFIG); }
+  // NoR Finder with a package of its own, which no other study names
+  if (u === "/studies/nor/study.json") {
+    const m = JSON.parse(fs.readFileSync(path.join(repo, u), "utf8"));
+    r.writeHead(200, { "content-type": "application/json" }); return r.end(JSON.stringify({ ...m, python: { ...m.python, packages: [...m.python.packages, OWN_PACKAGE] } }));
+  }
   const f = repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
@@ -74,10 +80,10 @@ const SEED = {
   "acme-key": "x",
 };
 // Python as the CDN holds it: itself, a lock naming a stand-in file per package, the packages two studies or more
-// use and one only NoR Finder does; the build's vendored wheels, none here
+// use and one only NoR Finder does, as it is served here; the build's vendored wheels, none here
 const { PYODIDE, CORE } = await import(path.join(repo, "web", "python_files.js"));
-const LOCK = { packages: Object.fromEntries(["numpy", "scipy", "scikit-image", "lazy-loader", "packaging", "pillow"].map((n) => [n, { file_name: `${n}-1-py3-none-any.whl`, sha256: "" }])) };
-const SHARED = ["numpy", "pillow"].map((n) => PYODIDE + LOCK.packages[n].file_name), OWN = PYODIDE + LOCK.packages.scipy.file_name;
+const LOCK = { packages: Object.fromEntries(["numpy", "scipy", "scikit-image", "lazy-loader", "packaging", "pillow", OWN_PACKAGE].map((n) => [n, { file_name: `${n}-1-py3-none-any.whl`, sha256: "" }])) };
+const SHARED = ["numpy", "pillow"].map((n) => PYODIDE + LOCK.packages[n].file_name), OWN = PYODIDE + LOCK.packages[OWN_PACKAGE].file_name;
 // the studies the build lists, as it lists them
 const LISTED = JSON.stringify(fs.readdirSync(path.join(repo, "studies")).filter((d) => fs.existsSync(path.join(repo, "studies", d, "study.json")))
   .map((d) => JSON.parse(fs.readFileSync(path.join(repo, "studies", d, "study.json")))).filter((m) => m.listed)
@@ -159,7 +165,7 @@ try {
   check(Object.keys(g).join() === "study:viewer,study:nor,study:vascular,shared", `a section per study, by title, then the shared: ${Object.keys(g)}`);
   const titles = await page.$$eval("#storage-list .group > summary", (ss) => ss.map((s) => ({ text: s.textContent, mark: !!s.querySelector(".offline-mark") })));
   check(titles[0].mark && !titles[1].mark && /Image Viewer/.test(titles[0].text) && /NoR Finder/.test(titles[1].text), `a study's title says whether it is available offline: ${JSON.stringify(titles)}`);
-  check(names("study:nor", "python").join() === "scipy" && /300 KB/.test(g["study:nor"].find((e) => e.kind === "python").size), `a study's own Python packages, by package: ${JSON.stringify(g["study:nor"])}`);
+  check(names("study:nor", "python").join() === OWN_PACKAGE && /300 KB/.test(g["study:nor"].find((e) => e.kind === "python").size), `a study's own Python packages, by package: ${JSON.stringify(g["study:nor"])}`);
   check(names("study:nor", "image").sort().join() === "old.tif,slide 1.tif", `the images kept in a study, by name, one kept before studies were told apart with the study on show: ${names("study:nor", "image")}`);
   const pics = g["study:nor"].filter((e) => e.kind === "thumb");
   check(pics.length === 1 && /2 images/.test(pics[0].what), `the study's thumbnails, one record for all: ${JSON.stringify(pics)}`);
