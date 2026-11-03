@@ -82,11 +82,12 @@ const resume = (page, dlg) => page.evaluate((dlg) => document.querySelector(dlg)
     await check(near(last.w, last.ow) && near(last.h, last.oh) && last.n === 0, `then grows to its own size and stops`, last);
     await page.keyboard.press("Escape");
   }
-  // nothing pressed lately: the page opens it at once
+  // a button that opens nothing, pressed over a second ago, does not lend the dialog its place
+  await page.click("#theme"); await page.click("#theme");
   await page.waitForTimeout(1200);
   await page.evaluate(() => $("#history-dlg").showModal());
   const f = await firstFrame(page, "#history-dlg", "#sb-version");
-  await check(f.open && f.count === 0, "a dialog opened with nothing pressed appears at once", f);
+  await check(f.open && f.count === 0, "a dialog opened with nothing pressed lately appears at once", f);
   await ctx.close();
 }
 
