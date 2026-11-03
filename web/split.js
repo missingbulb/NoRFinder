@@ -354,9 +354,10 @@ function description(src, C, Z, T, x0, y0, z0, ranges) {
 // The parts, each an ImageJ TIFF: src from readTiff or fromPlanes; parts from gridParts (those left out are
 // skipped); channels, the image's channels to keep, by place; slices, [first, last] of the slices to keep (from
 // 0, both kept); look, each channel's [{name, colour}] as the page shows it, for a channel the file neither names
-// nor colours; source, {name, sha256, ...where it came from}. progress(done, of) after each plane read, awaited.
-// Gives [{name, bytes, record}], record what the part's Info says of where it came from.
-export async function splitImage(src, { xs, ys, parts, channels, slices, look = [], pattern = DEFAULT_PATTERN, source, progress }) {
+// nor colours; source, {name, sha256, ...where it came from}; removed, polygons ([[x, y], ...] in the image's pixels)
+// left blank in every plane, with mask (W × H, 1 where they are) to blank by. progress(done, of) after each plane
+// read, awaited. Gives [{name, bytes, record}], record what the part's Info says of where it came from.
+export async function splitImage(src, { xs, ys, parts, channels, slices, look = [], pattern = DEFAULT_PATTERN, source, progress, removed = [], mask = null }) {
   const keep = parts.filter((p) => !p.left), [z0, z1] = slices || [0, src.Z - 1], Z = z1 - z0 + 1, C = channels.length, T = src.T;
   if (!keep.length) throw new Error("every part is left out");
   if (!C) throw new Error("keep at least one channel");
@@ -369,6 +370,7 @@ export async function splitImage(src, { xs, ys, parts, channels, slices, look = 
     for (const o of out) {
       const { x, y, w, h } = o.p, part = new Uint8Array(w * h * bps);
       for (let r = 0; r < h; r++) part.set(plane.subarray(((y + r) * src.W + x) * bps, ((y + r) * src.W + x + w) * bps), r * w * bps);
+      if (mask) for (let r = 0; r < h; r++) for (let q = 0; q < w; q++) if (mask[(y + r) * src.W + x + q]) part.fill(0, (r * w + q) * bps, (r * w + q + 1) * bps);
       o.planes.push(part);
     }
     await progress?.(++done, T * Z * C);
@@ -393,6 +395,7 @@ export async function splitImage(src, { xs, ys, parts, channels, slices, look = 
       grid: { rows, cols, xs, ys },
       part: { row: p.row, col: p.col, n: p.n, x: p.x, y: p.y, width: p.w, height: p.h },
       channels, slices: [z0, z1],
+      ...(removed.length && { removed }),
       ...(parent && { root: { ...(parent.root || parent.source), x: (parent.root || parent.part).x + p.x, y: (parent.root || parent.part).y + p.y } }),
     };
     const info = (otherInfo ? otherInfo + "\n" : "") + `${SPLIT_KEY}=${JSON.stringify(record)}`;

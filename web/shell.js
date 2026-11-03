@@ -23,13 +23,14 @@ import { shape, stackPicture, holds, drawVolume, TURN } from "./stack.js";
 import { PREVIEWS, readPreviews } from "./previews.js";
 import { account, SIGNED_IN } from "./account.js";
 import { settingsDialog } from "./settings_dialog.js";
-import { splitter, SPLIT_PATTERN } from "./split_dialog.js";
 import { offline, APP_ASKED, markOffline, CONNECTION } from "./offline.js";
 import { welcome, WELCOME } from "./welcome.js";
 import { actionLog, ACTIONS } from "./action_log.js";
 import { identify, verdict } from "./browsers.js";
 import { problemUrl, ACTIONS_QUOTED, ERRORS_QUOTED } from "./problem_report.js";
 import { dataMode } from "./data_mode.js";
+import { imageEditor, SPLIT_PATTERN } from "./image_edit.js";
+import { replacedBy } from "./edit.js";
 
 const $ = (s) => document.querySelector(s);
 // what the user does here, kept on this device for a problem report (req/shell/report/action-log)
@@ -809,7 +810,8 @@ function driveDialog() {
     try {
       const all = await NorDrive.list(at.id);
       if (asked !== listing) return;
-      const file = all.find((f) => !f.folder && f.name === PREVIEWS), items = all.filter((f) => f !== file);
+      // an image an edit replaced is not listed: the folder of its edits stands in its place
+      const file = all.find((f) => !f.folder && f.name === PREVIEWS), edited = replacedBy(all), items = all.filter((f) => f !== file && !edited(f));
       thumbs.cover(file ? folderPreviews(at, file) : null);
       msg(items.length ? "" : "No TIFF or PNG images here.");
       for (const [k, f] of items.entries()) {
@@ -1698,7 +1700,6 @@ const shell = {
   views: { show: (v) => views.show(v), on: (fn) => views.on(fn), count: (l, t) => views.count(l, t), get now() { return views.now; }, get tasks() { return views.tasks; } },
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; },
 };
-splitter(shell);
 const offlineCopy = offline({ $, esc, sizeText, drive: NorDrive, throttled, throttle, stored: () => diskBar(),
   kept: async (id) => !!(await caches.open(IMAGES).then((c) => c.match(imageUrl(id)), () => null)), keep: saveImage });
 // Data Management (req/shell/data/mode): what it borrows from the shell
@@ -1723,7 +1724,9 @@ const data = dataMode({
 async function loadOriginal(source) {
   if (!source?.id) return;
   const kept = await savedImage(source.id);
-  if (kept) { peek()(kept.bytes, kept.bytes.byteLength); return openBytes(kept.name, kept.bytes, { kind: "drive", id: source.id }); }
+  // where it is in the study's folders goes with it, for Edit Image to save beside it
+  const opened = { kind: "drive", id: source.id, name: source.name, folder: source.folder };
+  if (kept) { peek()(kept.bytes, kept.bytes.byteLength); return openBytes(kept.name, kept.bytes, opened); }
   if (document.documentElement.classList.contains("offline")) return notice("This image is not kept on this device, and needs the internet: you are offline.");
   if (throttled()) return notice("Google is throttling this site's downloads. Try again in 15 minutes.");
   const mb = (n) => (n / 1048576).toFixed(1);
@@ -1733,7 +1736,7 @@ async function loadOriginal(source) {
       (buf, got, total) => { push(buf, got); $("#busy-text").textContent = `Downloading ${source.name} · ${mb(got)}${total ? " of " + mb(total) : ""} MB`; });
     if ($("#drive-autosave").checked) saveImage(source.id, f.name, f.bytes, { study: manifest.id });
     picture(source.id, f.name, f.bytes);
-    openBytes(f.name, f.bytes, { kind: "drive", id: source.id });
+    openBytes(f.name, f.bytes, opened);
   } catch (e) {
     busy(false);
     if (e.throttled) throttle();
@@ -1741,6 +1744,11 @@ async function loadOriginal(source) {
   }
 }
 $("#load-original").onclick = () => { signIn.drive(); loadOriginal(page.get("image")?.source); };
+// Edit Image (req/shell/data/edit): what it borrows from the shell and Data Management
+imageEditor({
+  $, page, state: st, still, status, notice, readJSON, writeJSON, saveFile, boxDone, relabel: () => retitle(), loadOriginal,
+  viewer: () => view, original: () => st.kept, accessOf: (f) => data.accessOf(f), saveEdits: (...a) => data.saveEdits(...a),
+});
 
 // the sign-in popup on opening the page (req/shell/account/welcome); the menu's Sign in and Sign out answer it too
 const welcomed = welcome({ dialog: $("#welcome-dlg"), account: signIn, avatar: $("#user-menu summary"), tip });
