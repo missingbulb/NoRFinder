@@ -23,6 +23,7 @@ import path from "node:path";
 import { offSite } from "./off_site.mjs";
 import { keptContext } from "./kept_context.mjs";
 import { cutShort } from "./page_errors.mjs";
+import { until } from "./page_until.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -233,7 +234,7 @@ try {
   const before = await page.textContent("#drive-storage");
   await shot("drive_row", "#drive-dlg");
   await openRow(1);
-  await page.waitForFunction(async () => (await (await caches.open("nor-images-v1")).keys()).length === 1);
+  await until(page, async () => (await (await caches.open("nor-images-v1")).keys()).length === 1);
   check(downloads[DRIVE[0].id] === 1, "an image opened from Drive is downloaded once");
   await drive();
   const after = await page.textContent("#drive-storage");
@@ -283,7 +284,7 @@ try {
   await page.dblclick("#drive-list .item.folder");
   await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 1 && /sub/.test($("#drive-path").textContent));
   await page.dblclick("#drive-list .item:nth-child(1)"); await page.waitForFunction(() => !$("#drive-dlg").open);
-  await page.waitForFunction(async () => (await (await caches.open("nor-images-v1")).keys()).length === 2);
+  await until(page, async () => (await (await caches.open("nor-images-v1")).keys()).length === 2);
   r = await recents();
   check(r.length === 3 && r[0].name === TWIN.name && r[2].name === DRIVE[0].name && /sub/.test(r[0].where) && r[0].where !== r[2].where,
     `two images of one name are listed apart, by where they are in Drive: ${JSON.stringify(r)}`);

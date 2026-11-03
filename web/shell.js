@@ -1569,12 +1569,20 @@ const addressOf = (id) => (id === DEFAULT_STUDY ? HOME : HOME + encodeURICompone
 async function studyMenu() {
   let listed = [];
   try { listed = await (await fetch(HOME + "studies.json", { cache: "no-cache" })).json(); } catch (e) { console.warn("no list of studies:", e); }
-  const use = (n) => `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">${$(`#icons .${n}`).innerHTML}</svg>`;
+  const use = (n) => `<svg class="${n}-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">${$(`#icons .${n}`).innerHTML}</svg>`;
   $("#study-list").replaceChildren(...listed.map((s) => {
     const a = document.createElement("a");
     a.href = addressOf(s.id); a.dataset.id = s.id;
     a.innerHTML = `<span class="tick">${use("tick")}</span>${use("study")}<span class="name"></span>`;
     a.querySelector(".name").textContent = s.title;
+    // the study's own icon; the generic one stays while it is missing or fails to load
+    if (s.icon) {
+      const img = Object.assign(new Image(16, 16), { className: "study-icon", alt: "", hidden: true });
+      img.onload = () => { img.hidden = false; a.querySelector("svg.study-icon").setAttribute("hidden", ""); };
+      img.onerror = () => img.remove();
+      img.src = new URL(`../studies/${s.id}/${s.icon}`, location.origin + HOME).href;
+      a.querySelector("svg.study-icon").after(img);
+    }
     a.onclick = (e) => {
       if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       e.preventDefault(); goTo(s.id);

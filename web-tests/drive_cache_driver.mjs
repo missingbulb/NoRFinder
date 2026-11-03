@@ -17,6 +17,7 @@ import http from "node:http";
 import path from "node:path";
 import { offSite } from "./off_site.mjs";
 import { keptContext } from "./kept_context.mjs";
+import { until } from "./page_until.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -114,7 +115,7 @@ try {
   await page.waitForFunction(() => window.$ && $("#title").textContent);
 
   await fromDialog();
-  await page.waitForFunction(async () => (await (await caches.open("nor-images-v1")).keys()).length === 1);
+  await until(page, async () => (await (await caches.open("nor-images-v1")).keys()).length === 1);
   check(downloads() === 1 && (await tip()) === null, "a first open downloads the image, and shows no tip");
 
   // ---- req/shell/drive/kept-images ----
@@ -141,7 +142,7 @@ try {
   FILE.bytes = Buffer.concat([PNG, Buffer.from([0])]);
   calls.length = 0;
   await fromDialog();
-  await page.waitForFunction(async (want) => {
+  await until(page, async (want) => {
     const c = await caches.open("nor-images-v1"), [q] = await c.keys(), b = await (await c.match(q)).arrayBuffer();
     return b.byteLength === want;
   }, FILE.bytes.length);
