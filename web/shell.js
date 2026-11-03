@@ -1751,7 +1751,7 @@ $("#sign-in").addEventListener("click", () => { welcomed.chose(); closeTip("sign
 $("#sign-out").addEventListener("click", () => welcomed.forgot());
 $("#user-menu").addEventListener("toggle", () => { if ($("#user-menu").open) closeTip("sign-in"); });
 // for the page's tests, which drive it from outside
-window.st = st; window.$ = $; window.shellForTests = { saveThumb, page };
+window.st = st; window.$ = $; window.shellForTests = { saveThumb, page, get viewer() { return view; } };
 
 // an old address, ?study=<id> or index.html, becomes the study's own
 if (new URLSearchParams(location.search).has("study") || location.pathname.endsWith("/index.html")) history.replaceState(null, "", addressOf(studyOf(location)) + location.hash);

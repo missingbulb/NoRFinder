@@ -134,6 +134,23 @@ try {
   await page.goto(origin + "/web/fixture");
   await page.waitForFunction(() => window.$ && $("#title").textContent === "Fixture");
   check(await page.isHidden("#v3-switch"), "a 2D study has no 2D/3D switch");
+
+  // a browser without WebGL2: the stack still opens, flattened, its volume there for the study to read
+  const noGl = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  await noGl.route(offSite(origin), (r) => r.abort());
+  await noGl.addInitScript(() => {
+    delete Navigator.prototype.serviceWorker;
+    const get = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (kind, ...rest) { return kind === "webgl2" ? null : get.call(this, kind, ...rest); };
+  });
+  const p2 = await noGl.newPage();
+  p2.on("pageerror", (e) => { failed = true; console.error("page error, no WebGL2: " + e.message); });
+  await p2.goto(origin + "/web/vascular");
+  await p2.waitForFunction(() => window.$ && $("#status").textContent.startsWith("Ready"));
+  await p2.setInputFiles("#file", { name: "stack.tif", mimeType: "image/tiff", buffer: Buffer.from([0x49, 0x49, 42, 0]) });
+  await p2.waitForFunction(() => window.shellForTests.page.get("image"));
+  const seen = await p2.evaluate(() => ({ shape: window.shellForTests.viewer.three?.meta?.shape || null, flat: !$("#stage").hidden, switch: !$("#v3-switch").hidden }));
+  check(seen.shape?.length === 3 && seen.flat && !seen.switch, `with no WebGL2 the stack opens flattened, with no 2D/3D switch, its volume there: ${JSON.stringify(seen)}`);
 } catch (e) {
   failed = true; console.error(e);
 }
