@@ -7,7 +7,7 @@
 // a Published study dropping Preprocessing, its postprocessing and Submit GT; switching study in place bringing its own stage and steps; the disk, memory, network and CPU as grey icons and
 // numbers, each opening its own tab of one dialog, each rolling its changed characters to a new value, the CPU and
 // the network flashing on a sharp rise and rolling nothing when reduced motion is asked for; a separator between every two items; no question-mark pointer; the four folded into one icon at first, unfolded by hovering it, by going offline,
-// a busy CPU or network or a tab over 1 GB, folding back 5 to 10 s after, or set always open or hidden.
+// a CPU over 50% or a network over 250 KB/s for 5 s or a tab over 1 GB, at once with animations off, folding back 5 to 10 s after, or set always open or hidden.
 // Optional SHOTS: a directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/status_bar_driver.mjs ANSWERS IMAGE.png STUDIES [SHOTS]
 import { createRequire } from "node:module";
@@ -56,7 +56,7 @@ const server = http.createServer((q, r) => {
     r.writeHead(200, { "content-type": "application/json" });
     return r.end(JSON.stringify({ ...JSON.parse(fs.readFileSync(path.join(repo, u))), stage }));
   }
-  if (u === "/some") { r.writeHead(200, { "content-type": "application/octet-stream", "cache-control": "no-store" }); return r.end(Buffer.alloc(64 * 1024)); }
+  if (u.startsWith("/some/")) { r.writeHead(200, { "content-type": "application/octet-stream", "cache-control": "no-store" }); return r.end(Buffer.alloc(Number(u.slice(6)) * 1024)); }
   if (u === "/big") { r.writeHead(200, { "content-type": "application/octet-stream", "cache-control": "no-store" }); return r.end(Buffer.alloc(BIG)); }
   if (u === "/web/vendor/wheels.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end("[]"); }
   const f = u === "/web/answers.json" ? answers : u === "/web/studies.json" ? studies : repoFile(repo, u);
@@ -408,12 +408,15 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await busy;
   await isOpen(true, "over 50% for more than 5 s opens it", 2500);
   await foldsLater("the CPU calm again");
-  // downloading over 250 kbps for 8 s: opened only after 5 s of it
-  const pull = page.evaluate(async (u) => { const end = Date.now() + 8000; while (Date.now() < end) { await fetch(u, { cache: "no-store" }).then((r) => r.arrayBuffer()); await new Promise((r) => setTimeout(r, 200)); } }, origin + "/some");
+  // downloading: kb KB every 250 ms for 8 s
+  const download = (kb) => page.evaluate(async (u) => { const end = Date.now() + 8000; while (Date.now() < end) { await fetch(u, { cache: "no-store" }).then((r) => r.arrayBuffer()); await new Promise((r) => setTimeout(r, 250)); } }, origin + "/some/" + kb);
+  await download(25);
+  await isOpen(false, "about 100 KB/s for 8 s does not open it: under 250 KB/s", 100);
+  const pull = download(200);
   await page.waitForTimeout(2500);
-  await isOpen(false, "the network over 250 kbps for 2 s does not open it yet", 100);
+  await isOpen(false, "the network over 250 KB/s for 2 s does not open it yet", 100);
   await pull;
-  await isOpen(true, "over 250 kbps for more than 5 s opens it", 2500);
+  await isOpen(true, "over 250 KB/s for more than 5 s opens it", 2500);
   await foldsLater("the network quiet again");
   await ctx.setOffline(true);
   await isOpen(true, "going offline opens it", 2500);
@@ -421,6 +424,12 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await isOpen(true, "and it stays open while offline", 100);
   await ctx.setOffline(false);
   await foldsLater("back online");
+
+  // with the page's animations off, it folds and unfolds at once
+  await page.evaluate(() => { document.documentElement.dataset.motion = "off"; });
+  const still = await page.evaluate(() => getComputedStyle(document.querySelector("#sb-res-items")).transitionDuration);
+  await check(still.split(",").every((d) => parseFloat(d) === 0), "with Animations off, folding and unfolding is not animated", still);
+  await page.evaluate(() => { document.documentElement.dataset.motion = "on"; });
 
   // always open: as before; kept for the next visit
   await page.click("#sb-res-icon"); await page.selectOption("#res-mode", "open"); await page.keyboard.press("Escape"); await page.mouse.move(700, 300);

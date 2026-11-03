@@ -680,7 +680,7 @@ spec does not have.
   four as they look always open, the icon staying beside them, and leaving folds them again, both ways
   animated (at once with animations off, `req/shell/resources-dialog/animations`, or reduced motion asked for). It unfolds by
   itself, and stays unfolded, while the page is offline (`req/shell/offline/default`), the CPU has been over 50% of one core for more than
-  5 seconds, the network has been downloading over 250 kbps (kilobits a second) for more than 5
+  5 seconds, the network has been downloading over 250 KB/s for more than 5
   seconds, or the tab holds over 1 GB, and folds 8 seconds after the last of these ends. Hidden
   always, only the icon shows, and neither hovering nor any of these unfolds it; offline, the icon
   carries the red no-network mark. Always open, the icon does not show. Clicking the icon opens the
