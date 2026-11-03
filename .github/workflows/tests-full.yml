@@ -5,6 +5,9 @@ on:
   pull_request:
     paths: ['.github/workflows/tests-full.yml']
   workflow_dispatch:
+# the Playwright the page tests drive the browsers with; its Chromium must have what the page uses, interest invokers among them
+env:
+  PLAYWRIGHT: 1.63.0
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -35,10 +38,10 @@ jobs:
           path: |
             web-tests/node_modules
             ~/.cache/ms-playwright
-          key: browser-${{ runner.os }}-pyodide-314.0.7-playwright-1.56.1
+          key: browser-${{ runner.os }}-pyodide-314.0.7-playwright-${{ env.PLAYWRIGHT }}
       - name: Install Pyodide and Chromium for the page tests
         run: |
-          npm i -g playwright@1.56.1
+          npm i -g "playwright@$PLAYWRIGHT"
           if [ "${{ steps.browser.outputs.cache-hit }}" != 'true' ]; then
             npm i --prefix web-tests pyodide@314.0.7
             playwright install chromium
@@ -109,7 +112,7 @@ jobs:
       - run: echo ~/venv/bin >> "$GITHUB_PATH"
       - name: Install Pyodide and the engine with its system libraries
         run: |
-          npm i -g playwright@1.56.1
+          npm i -g "playwright@$PLAYWRIGHT"
           npm i --prefix web-tests pyodide@314.0.7
           playwright install --with-deps ${{ matrix.engine }}
       - name: Restore the ground-truth images

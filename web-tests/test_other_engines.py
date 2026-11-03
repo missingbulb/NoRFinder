@@ -1,12 +1,14 @@
 """req/checks/other-engines: the nightly run on Firefox and WebKit fails the night only for an engine whose browser the page
 supports (web/browsers.json); for any other its failures are reported and the night stays green."""
+import importlib.util
 import os
-import sys
 
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'dev', 'tools', 'build'))
-import other_engines  # noqa: E402
+SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'dev', 'tools', 'build', 'other_engines.py')
+spec = importlib.util.spec_from_file_location('other_engines', SCRIPT)
+other_engines = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(other_engines)
 
 CHROMIUM_ONLY = [{'name': 'Chrome', 'from': 114}, {'name': 'Edge', 'from': 114}]
 WITH_FIREFOX = CHROMIUM_ONLY + [{'name': 'Firefox', 'from': 125}]
