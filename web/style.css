@@ -166,11 +166,11 @@ body.resizing { cursor: col-resize; user-select: none; }
 .levels input[type=range]::-moz-range-thumb { pointer-events: auto; cursor: ew-resize; width: 6px; height: 14px; border-radius: 2px; border: 1px solid var(--dim); }
 .levels input:focus-visible { outline: none; }
 .levels input:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--accent); }
-/* a channel's points: right-angled triangles pointing up at their value, the black one left of it and the white
-   one right, so the two meet in one larger triangle and neither covers the other. Each input is a thumb's width
+/* a channel's points: right-angled triangles on the track, the black one left of its value and the white one
+   right, so the two meet in one larger triangle and neither covers the other. Each input is a thumb's width
    short of the slider, the white one starting a thumb's width in, so both put their value at the same place */
 .channel .levels { --t: 7px; min-width: 0; height: 14px; margin: 0; }
-.channel .levels::before { left: var(--t); right: var(--t); top: 0; height: 5px; border-radius: 2px; background: linear-gradient(90deg, #000, #fff); }
+.channel .levels::before { left: var(--t); right: var(--t); top: 5px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, #000, #fff); }
 .channel .levels input[type=range] { inset: 0 auto 0 0; width: calc(100% - var(--t)); height: 14px; --edge: var(--dim); }
 .channel .levels input.white { left: var(--t); }
 .channel .levels input:focus-visible { --edge: var(--accent); }
@@ -179,16 +179,16 @@ body.resizing { cursor: col-resize; user-select: none; }
 .channel .levels input[type=range]::-moz-range-thumb { width: var(--t); height: 14px; border: 0; border-radius: 0; background-repeat: no-repeat; }
 .channel .levels input.black::-webkit-slider-thumb {
   background-image: linear-gradient(to top left, #000 50%, transparent 50%), linear-gradient(to top left, var(--edge) 50%, transparent 50%);
-  background-size: calc(100% - 2px) 7px, 100% 10px; background-position: right 1px bottom 1px, right bottom; }
+  background-size: calc(100% - 2px) calc(100% - 3px), 100% 100%; background-position: right 1px bottom 1px, right bottom; }
 .channel .levels input.black::-moz-range-thumb {
   background-image: linear-gradient(to top left, #000 50%, transparent 50%), linear-gradient(to top left, var(--edge) 50%, transparent 50%);
-  background-size: calc(100% - 2px) 7px, 100% 10px; background-position: right 1px bottom 1px, right bottom; }
+  background-size: calc(100% - 2px) calc(100% - 3px), 100% 100%; background-position: right 1px bottom 1px, right bottom; }
 .channel .levels input.white::-webkit-slider-thumb {
   background-image: linear-gradient(to top right, #fff 50%, transparent 50%), linear-gradient(to top right, var(--edge) 50%, transparent 50%);
-  background-size: calc(100% - 2px) 7px, 100% 10px; background-position: left 1px bottom 1px, left bottom; }
+  background-size: calc(100% - 2px) calc(100% - 3px), 100% 100%; background-position: left 1px bottom 1px, left bottom; }
 .channel .levels input.white::-moz-range-thumb {
   background-image: linear-gradient(to top right, #fff 50%, transparent 50%), linear-gradient(to top right, var(--edge) 50%, transparent 50%);
-  background-size: calc(100% - 2px) 7px, 100% 10px; background-position: left 1px bottom 1px, left bottom; }
+  background-size: calc(100% - 2px) calc(100% - 3px), 100% 100%; background-position: left 1px bottom 1px, left bottom; }
 .row { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; }
 /* a button shines while it is the next thing to press */
 .shine { position: relative; overflow: hidden; box-shadow: 0 0 10px var(--accent); }
