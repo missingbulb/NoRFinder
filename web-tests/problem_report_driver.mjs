@@ -31,6 +31,8 @@ const report = (ok, what) => { console.log((ok ? "ok: " : "FAILED: ") + what); i
 const UA = {
   chrome: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36",
   oldChrome: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
+  chromeAtFloor: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+  chromeBelowFloor: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
   edge: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0",
   firefox: "Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0",
   firefoxEsr115: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:115.0) Gecko/20100101 Firefox/115.0",
@@ -43,7 +45,8 @@ const UA = {
   headless: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
 };
 const table = [
-  ["chrome", 0, "Chrome", 153, true], ["oldChrome", 0, "Chrome", 109, false], ["edge", 0, "Edge", 150, true],
+  ["chrome", 0, "Chrome", 153, true], ["oldChrome", 0, "Chrome", 109, false], ["chromeAtFloor", 0, "Chrome", 125, true], ["chromeBelowFloor", 0, "Chrome", 124, false],
+  ["edge", 0, "Edge", 150, true],
   ["firefox", 0, "Firefox", 140, false], ["firefoxEsr115", 0, "Firefox", 115, false],
   ["safari", 0, "Safari", 18, false], ["oldSafari", 0, "Safari", 16, false],
   ["opera", 0, "Opera", 120, false], ["samsung", 5, "Samsung Internet", 28, false],

@@ -86,8 +86,9 @@ spec does not have.
   <details>
 
   Set by the owner on 2026-11-03. The page supports Chrome and Edge on a desktop or laptop computer, each from
-  the version `web/browsers.json` names, the one place the list is kept; the floor is the newest web feature
-  the page relies on with no fallback. Firefox and Safari join the list once the nightly run on their engines
+  the version `web/browsers.json` names, the one place the list is kept; the floor is the first version that
+  places the page's popups by CSS anchor positioning (Chrome and Edge 125; an older one shows each popup at a
+  fixed spot). Firefox, from 147, and Safari, from 26, join the list once the nightly run on their engines
   (`req/checks/other-engines`) is green. A phone or tablet, iPhone and iPad included, is not supported, nor is any
   other browser (Opera, Samsung Internet), whatever engine it runs; one that names
   itself as Chrome (Brave, Vivaldi) counts as Chrome. In a browser not supported, the status bar's report

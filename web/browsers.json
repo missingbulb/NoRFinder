@@ -1,13 +1,13 @@
 {
-  "about": "The browsers the page supports, on a desktop or laptop computer, each from the version named; any other browser shows the status bar's unsupported-browser icon. The site's landing page lists the same browsers. Firefox (from 125) and Safari (from 17) join once the nightly run on their engines is green.",
+  "about": "The browsers the page supports, on a desktop or laptop computer, each from the version named: the first to place the page's popups by CSS anchor positioning. Any other browser shows the status bar's report icon as a warning sign. The site's landing page lists the same browsers. Firefox (from 147) and Safari (from 26) join once the nightly run on their engines is green.",
   "supported": [
     {
       "name": "Chrome",
-      "from": 114
+      "from": 125
     },
     {
       "name": "Edge",
-      "from": 114
+      "from": 125
     }
   ]
 }
