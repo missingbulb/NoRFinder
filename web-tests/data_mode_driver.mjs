@@ -123,4 +123,33 @@ await page.click("#data-open");
 await page.waitForTimeout(600);
 await check((await width()) < 60 && await page.evaluate(() => !$("#load").classList.contains("gone") && !$("#preprocessing-box").checkVisibility() && !document.documentElement.dataset.mode),
   "closing the column leaves the mode: Load back, Preprocessing gone");
+
+// a previews file whose pictures cannot be read, its index intact: each image shows no preview, and one chosen
+// opens itself, with nothing left uncaught; nor is it when what the site keeps cannot be counted as it is stored
+await page.evaluate(() => { CacheStorage.prototype.keys = () => Promise.reject(new Error("keys refused for the test")); });
+const damage = (bytes) => {
+  const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), le = v.getUint16(0) === 0x4949;
+  const values = (e) => {
+    const type = v.getUint16(e + 2, le), count = v.getUint32(e + 4, le), one = type === 3 ? 2 : 4;
+    const at = count * one <= 4 ? e + 8 : v.getUint32(e + 8, le);
+    return Array.from({ length: count }, (_, i) => (one === 2 ? v.getUint16(at + 2 * i, le) : v.getUint32(at + 4 * i, le)));
+  };
+  for (let ifd = v.getUint32(4, le); ifd; ) {
+    const n = v.getUint16(ifd, le), tags = {};
+    for (let i = 0; i < n; i++) { const e = ifd + 2 + 12 * i; tags[v.getUint16(e, le)] = e; }
+    const offsets = values(tags[273]), counts = values(tags[279]);
+    offsets.forEach((o, i) => bytes.fill(0xff, o + 2, o + counts[i]));
+    ifd = v.getUint32(ifd + 2 + 12 * n, le);
+  }
+  return bytes;
+};
+const kept = FILES.find((f) => f.name === "rauntruth-previews.tiff");
+kept.bytes = damage(Buffer.from(kept.bytes));
+await page.click("#data-open");
+await page.click("#data-tree .tree-folder .name");
+await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell .pic.none").length === 3, null, { timeout: 5000 }).catch(() => {});
+await check(await page.evaluate(() => document.querySelectorAll("#folder-items .cell .pic.none").length === 3), "a previews file that cannot be read: each image shows no preview");
+await page.click(cell("a flat.tif"));
+await page.waitForFunction(() => st.fileName === "a flat.tif", null, { timeout: 5000 }).catch(() => {});
+await check(await page.evaluate(() => st.fileName === "a flat.tif"), "and an image chosen opens itself");
 await done(0);
