@@ -74,7 +74,7 @@ const PAGE_GB = 1, LOW_GB = 4;
 // browser's own share; measured once as Chrome's private memory for the tab against the readable total (2026-10-07)
 const UNREAD_MB = 190;
 // where ground truth is submitted: an issue with the study's label, which the repo's intake reads
-const REPO = "missingbulb/NoRFinder";
+const REPO = "missingbulb/RaunTruth";
 const LOCAL_GT = "Ground truth cannot be sent from local files, only from Google Drive.";
 // the issue form a proposal for a new study is written on
 const STUDY_REQUEST = "new-study.yml";
@@ -1453,8 +1453,10 @@ function slide(change) {
 function foldable() {
   document.querySelectorAll(".box.foldable > .sec-head h2").forEach((h) => {
     h.tabIndex = 0; h.setAttribute("role", "button");
-    const flip = () => slide(() => { h.closest(".box").classList.toggle("folded"); retitle(); });
-    h.onclick = flip; h.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } };
+    const box = h.closest(".box"), flip = () => slide(() => { box.classList.toggle("folded"); retitle(); });
+    // folded, the whole drawer opens it; open, only its title folds it
+    box.onclick = (e) => { if (box.classList.contains("folded") || h.contains(e.target)) flip(); };
+    h.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } };
   });
   unfoldFirst();
 }
