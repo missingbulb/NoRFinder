@@ -53,7 +53,7 @@ await drag([[10, 10], [40, 30], [70, 50]]);
 await page.waitForFunction(() => shellForTests.page.get("image").W === 60);
 await check(JSON.stringify(await size()) === JSON.stringify([60, 40]) && /60 × 40 px/.test(await page.textContent("#edit-crop-size")), "Crop shows only the rectangle drawn", await size());
 await page.click('#edit-split button[data-n="2"]');
-await page.waitForFunction(() => shellForTests.page.get("image").W === 64);
+await page.waitForFunction((w) => shellForTests.page.get("image").W === w, 60 + gap);
 // the vertical cut, at the crop's middle, dragged 6 pixels right
 await drag([[30 + gap / 2, 5], [36 + gap / 2, 5]]);
 await page.waitForFunction((g) => [...document.querySelectorAll("#overlay .edit-cut.v")].some((l) => +l.getAttribute("x1") === 36 + g / 2), gap);
