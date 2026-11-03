@@ -175,31 +175,27 @@ body.resizing { cursor: col-resize; user-select: none; }
 /* a channel's points: right-angled triangles on the track, the black one left of its value and the white one
    right, so the two meet in one larger triangle and neither covers the other. Each input is a thumb's width
    short of the slider, the white one starting a thumb's width in, so both put their value at the same place */
-.channel .levels { --t: 7px; min-width: 0; height: 14px; margin: 0; }
+.channel .levels { --t: 10px; min-width: 0; height: 14px; margin: 0; }
 .channel .levels::before { left: var(--t); right: var(--t); top: 5px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, #000, #fff); }
-.channel .levels input[type=range] { inset: 0 auto 0 0; width: calc(100% - var(--t)); height: 14px; --edge: var(--dim); }
+.channel .levels input[type=range] { inset: 0 auto 0 0; width: calc(100% - var(--t)); height: 14px; }
 .channel .levels input.white { left: var(--t); }
-.channel .levels input:focus-visible { --edge: var(--accent); }
 .channel .levels input[type=range]::-webkit-slider-runnable-track { height: 14px; }
-.channel .levels input[type=range]::-webkit-slider-thumb { width: var(--t); height: 14px; border: 0; border-radius: 0; outline: none; background-repeat: no-repeat; }
-.channel .levels input[type=range]::-moz-range-thumb { width: var(--t); height: 14px; border: 0; border-radius: 0; background-repeat: no-repeat; }
+.channel .levels input[type=range]::-webkit-slider-thumb { width: var(--t); height: 14px; border: 0; border-radius: 0; outline: none; background: none 0 0 / 100% 100% no-repeat; }
+.channel .levels input[type=range]::-moz-range-thumb { width: var(--t); height: 14px; border: 0; border-radius: 0; background: none 0 0 / 100% 100% no-repeat; }
 /* the value of the point in hand, above where it points */
 .channel .levels .bubble { position: absolute; bottom: calc(100% + 3px); left: calc(var(--t) + var(--v) * (100% - 2 * var(--t)));
   transform: translateX(-50%); z-index: 5; padding: 1px 5px; border-radius: 4px; background: var(--tipbg); color: var(--text);
   border: 1px solid var(--line); font-size: 11px; line-height: 1.3; font-variant-numeric: tabular-nums; pointer-events: none; white-space: nowrap; }
 .channel .levels .bubble[hidden] { display: none; }
-.channel .levels input.black::-webkit-slider-thumb {
-  background-image: linear-gradient(to top left, #000 50%, transparent 50%), linear-gradient(to top left, var(--edge) 50%, transparent 50%);
-  background-size: calc(100% - 2px) calc(100% - 3px), 100% 100%; background-position: right 1px bottom 1px, right bottom; }
-.channel .levels input.black::-moz-range-thumb {
-  background-image: linear-gradient(to top left, #000 50%, transparent 50%), linear-gradient(to top left, var(--edge) 50%, transparent 50%);
-  background-size: calc(100% - 2px) calc(100% - 3px), 100% 100%; background-position: right 1px bottom 1px, right bottom; }
-.channel .levels input.white::-webkit-slider-thumb {
-  background-image: linear-gradient(to top right, #fff 50%, transparent 50%), linear-gradient(to top right, var(--edge) 50%, transparent 50%);
-  background-size: calc(100% - 2px) calc(100% - 3px), 100% 100%; background-position: left 1px bottom 1px, left bottom; }
-.channel .levels input.white::-moz-range-thumb {
-  background-image: linear-gradient(to top right, #fff 50%, transparent 50%), linear-gradient(to top right, var(--edge) 50%, transparent 50%);
-  background-size: calc(100% - 2px) calc(100% - 3px), 100% 100%; background-position: left 1px bottom 1px, left bottom; }
+/* each point shaded from the top and casting a soft shadow, its edge in the accent colour while it has the keyboard's focus */
+.channel .levels input.black::-webkit-slider-thumb { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cdefs%3E%3ClinearGradient id='g' x2='0' y2='1'%3E%3Cstop stop-color='%23555b64'/%3E%3Cstop offset='1' stop-color='%230a0a0a'/%3E%3C/linearGradient%3E%3Cfilter id='s'%3E%3CfeDropShadow dy='.7' stdDeviation='.6' flood-opacity='.5'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M9.5,0.8 L9.5,12.4 L0.9,12.4Z' fill='url(%23g)' stroke='%238a9099' stroke-linejoin='round' filter='url(%23s)'/%3E%3C/svg%3E"); }
+.channel .levels input.black::-moz-range-thumb { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cdefs%3E%3ClinearGradient id='g' x2='0' y2='1'%3E%3Cstop stop-color='%23555b64'/%3E%3Cstop offset='1' stop-color='%230a0a0a'/%3E%3C/linearGradient%3E%3Cfilter id='s'%3E%3CfeDropShadow dy='.7' stdDeviation='.6' flood-opacity='.5'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M9.5,0.8 L9.5,12.4 L0.9,12.4Z' fill='url(%23g)' stroke='%238a9099' stroke-linejoin='round' filter='url(%23s)'/%3E%3C/svg%3E"); }
+.channel .levels input.black:focus-visible::-webkit-slider-thumb { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cdefs%3E%3ClinearGradient id='g' x2='0' y2='1'%3E%3Cstop stop-color='%23555b64'/%3E%3Cstop offset='1' stop-color='%230a0a0a'/%3E%3C/linearGradient%3E%3Cfilter id='s'%3E%3CfeDropShadow dy='.7' stdDeviation='.6' flood-opacity='.5'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M9.5,0.8 L9.5,12.4 L0.9,12.4Z' fill='url(%23g)' stroke='%234c8dff' stroke-linejoin='round' filter='url(%23s)'/%3E%3C/svg%3E"); }
+.channel .levels input.black:focus-visible::-moz-range-thumb { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cdefs%3E%3ClinearGradient id='g' x2='0' y2='1'%3E%3Cstop stop-color='%23555b64'/%3E%3Cstop offset='1' stop-color='%230a0a0a'/%3E%3C/linearGradient%3E%3Cfilter id='s'%3E%3CfeDropShadow dy='.7' stdDeviation='.6' flood-opacity='.5'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M9.5,0.8 L9.5,12.4 L0.9,12.4Z' fill='url(%23g)' stroke='%234c8dff' stroke-linejoin='round' filter='url(%23s)'/%3E%3C/svg%3E"); }
+.channel .levels input.white::-webkit-slider-thumb { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cdefs%3E%3ClinearGradient id='g' x2='0' y2='1'%3E%3Cstop stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23c9ced6'/%3E%3C/linearGradient%3E%3Cfilter id='s'%3E%3CfeDropShadow dy='.7' stdDeviation='.6' flood-opacity='.5'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M0.5,0.8 L0.5,12.4 L9.1,12.4Z' fill='url(%23g)' stroke='%238a9099' stroke-linejoin='round' filter='url(%23s)'/%3E%3C/svg%3E"); }
+.channel .levels input.white::-moz-range-thumb { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cdefs%3E%3ClinearGradient id='g' x2='0' y2='1'%3E%3Cstop stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23c9ced6'/%3E%3C/linearGradient%3E%3Cfilter id='s'%3E%3CfeDropShadow dy='.7' stdDeviation='.6' flood-opacity='.5'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M0.5,0.8 L0.5,12.4 L9.1,12.4Z' fill='url(%23g)' stroke='%238a9099' stroke-linejoin='round' filter='url(%23s)'/%3E%3C/svg%3E"); }
+.channel .levels input.white:focus-visible::-webkit-slider-thumb { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cdefs%3E%3ClinearGradient id='g' x2='0' y2='1'%3E%3Cstop stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23c9ced6'/%3E%3C/linearGradient%3E%3Cfilter id='s'%3E%3CfeDropShadow dy='.7' stdDeviation='.6' flood-opacity='.5'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M0.5,0.8 L0.5,12.4 L9.1,12.4Z' fill='url(%23g)' stroke='%234c8dff' stroke-linejoin='round' filter='url(%23s)'/%3E%3C/svg%3E"); }
+.channel .levels input.white:focus-visible::-moz-range-thumb { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 14'%3E%3Cdefs%3E%3ClinearGradient id='g' x2='0' y2='1'%3E%3Cstop stop-color='%23ffffff'/%3E%3Cstop offset='1' stop-color='%23c9ced6'/%3E%3C/linearGradient%3E%3Cfilter id='s'%3E%3CfeDropShadow dy='.7' stdDeviation='.6' flood-opacity='.5'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M0.5,0.8 L0.5,12.4 L9.1,12.4Z' fill='url(%23g)' stroke='%234c8dff' stroke-linejoin='round' filter='url(%23s)'/%3E%3C/svg%3E"); }
 .row { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; }
 /* a button shines while it is the next thing to press */
 .shine { position: relative; overflow: hidden; box-shadow: 0 0 10px var(--accent); }
