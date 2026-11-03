@@ -1,29 +1,34 @@
 // Drives the role menu beside the avatar (req/shell/account/role) in headless Chromium on the fixture study (a GT study),
 // against the stand-in Google of stand_in_drive.mjs serving ROOT: what each visitor may choose, and what each role's
-// view shows. Exits 1 on a failed check, 2 when it cannot run.
-//   node web-tests/roles_driver.mjs ANSWERS STUDIES ROOT IMAGE
+// view shows. Optional SHOTS: a directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
+//   node web-tests/roles_driver.mjs ANSWERS STUDIES ROOT IMAGE [SHOTS]
+import path from "node:path";
 import { standIn } from "./stand_in_drive.mjs";
 
-const [answers, studies, rootDir, image] = process.argv.slice(2);
+const [answers, studies, rootDir, image, shots] = process.argv.slice(2);
+const shot = (page, name) => shots && page.screenshot({ path: path.join(shots, name + ".png") });
 const { open, check, done } = await standIn({ answers, studies, rootDir });
 const OTHER = "someone@example.com";
 
-// what the page shows: the role named, the roles listed, the line under them, and each role's tools
+// what the page shows: the role named, the roles listed, the line under them, and each role's tools (the ground-truth
+// button, in the item view's bar, as not hidden)
 const seen = (page) => page.evaluate(() => {
   const shows = (s) => !!document.querySelector(s)?.checkVisibility();
   return {
     role: $("#role-name").textContent.trim(),
     list: [...document.querySelectorAll("#role-list .item")].map((b) => b.textContent.trim()),
     hint: $("#role-hint").hidden ? "" : $("#role-hint").textContent.trim(),
-    truth: shows("#fx-truth"), counted: shows("#fx-counted"), submit: steps().includes("Submit GT"),
+    truth: !$("#fx-truth").hidden, counted: shows("#fx-counted"),
     data: shows("#data-col"), mode: document.documentElement.dataset.mode || "", bar: !!document.querySelector("#access-bar"),
   };
-  function steps() { return [...document.querySelectorAll("#sb-steps .crumb, #sb-steps > *")].map((e) => e.textContent).join(" ") || st.steps?.map?.((p) => p.name).join(" ") || ""; }
 });
-const choose = async (page, name) => {
+// remount: the study opens afresh, its panels replaced, before the page is read again
+const choose = async (page, name, remount) => {
+  await page.evaluate(() => { window.panelsBefore = $("#fx-box"); });
   await page.click("#role-menu summary");
   await page.click(`#role-list .item:text-is("${name}")`);
-  await page.waitForFunction((n) => $("#role-name").textContent.trim() === n && document.querySelector("#status").textContent.startsWith("Ready"), name);
+  await page.waitForFunction(([n, again]) => $("#role-name").textContent.trim() === n && (!again || ($("#fx-box") && $("#fx-box") !== window.panelsBefore))
+    && /^(Ready|Image loaded)/.test(document.querySelector("#status").textContent), [name, remount]);
 };
 const role = (page) => page.evaluate(() => localStorage.getItem("nor-role"));
 
@@ -41,7 +46,7 @@ await check(s.role === "Viewer" && s.list.join() === "Viewer,Ground Truth Tagger
 await page.setInputFiles("#file", image);
 await page.waitForFunction(() => !document.querySelector("#fx-count").disabled);
 const before = await page.evaluate(() => st.fileName);
-await choose(page, "Ground Truth Tagger");
+await choose(page, "Ground Truth Tagger", true);
 await page.waitForFunction((n) => st.fileName === n && !document.querySelector("#fx-count").disabled, before);
 s = await seen(page);
 await check(s.truth && s.counted && !s.data, "as Ground Truth Tagger the ground-truth button and the postprocessing show", s);
@@ -51,7 +56,7 @@ await page.reload();
 await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
 s = await seen(page);
 await check(s.role === "Ground Truth Tagger" && s.truth, "and the page opens in it again", s);
-await choose(page, "Viewer");
+await choose(page, "Viewer", true);
 s = await seen(page);
 await check(!s.truth && !s.counted, "back as Viewer, the ground-truth tools go", s);
 await page.context().close();
@@ -66,16 +71,18 @@ await page.context().close();
 // the study's data manager: Data Manager offered; choosing it opens the tree, asking only there
 page = await open(true);
 s = await seen(page);
+await page.click("#role-menu summary"); await shot(page, "menu"); await page.click("#role-menu summary");
 await check(s.list.join() === "Viewer,Ground Truth Tagger,Data Manager" && !s.data, "a data manager is offered Data Manager, and sees no Data Management until choosing it", s);
 await choose(page, "Data Manager");
 await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder").length === 2);
 await page.waitForTimeout(500);
 s = await seen(page);
 const width = () => page.evaluate(() => Math.round($("#data-col").getBoundingClientRect().width));
+await shot(page, "data-manager");
 await check(s.data && s.mode === "data" && (await width()) > 200, "as Data Manager the folder tree shows, open", { ...s, width: await width() });
 await check(await page.isVisible("#data-approve") && !s.bar, "the tree offers to approve the folder not approved yet, and no bar over the image asks", s);
 await page.click("#data-open"); await page.waitForTimeout(500);
-await check((await width()) < 60 && document !== null && (await seen(page)).mode === "data", "its chevron folds the tree to a strip", await width());
+await check((await width()) < 60 && (await seen(page)).mode === "data", "its chevron folds the tree to a strip", await width());
 await page.click("#data-open"); await page.waitForTimeout(500);
 await check((await width()) > 200, "and opens it again", await width());
 await choose(page, "Viewer");

@@ -10,6 +10,11 @@ carried all its pull requests. The `writing-version-history` skill says how.
 
 ## Next release
 
+Choose the role you work in from the new menu beside your avatar: Viewer, Ground Truth Tagger or
+Data Manager, each with its own view. Everyone starts as Viewer, which makes no ground truth; sign in
+to tag. Data Manager opens the folder tree straight away, and asks for folder access only there.
+(#705)
+
 This version history tells each release in a few short paragraphs, instead of a line for every
 change. (#701)
 

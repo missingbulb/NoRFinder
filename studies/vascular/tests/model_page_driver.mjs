@@ -58,7 +58,7 @@ let failed = false;
 const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: " + what); } else console.log("ok: " + what); };
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
 await ctx.route(offSite(origin), (r) => r.abort());
-await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
+await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; localStorage.setItem("nor-role", "tagger"); });
 const page = await ctx.newPage();
 page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.message); });
 page.setDefaultTimeout(10000);

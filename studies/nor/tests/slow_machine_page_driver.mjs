@@ -64,7 +64,7 @@ async function open(gb) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   await ctx.route(offSite(origin), (r) => r.abort());
   await ctx.addInitScript((gb) => {
-    delete Navigator.prototype.serviceWorker;
+    delete Navigator.prototype.serviceWorker; localStorage.setItem("nor-role", "tagger");
     Object.defineProperty(Navigator.prototype, "deviceMemory", { get: () => gb, configurable: true });
   }, gb);
   const page = await ctx.newPage();

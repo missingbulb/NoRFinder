@@ -164,5 +164,12 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
   }
 
 
-  return { ROOT, FILES, SUB, writes, approved, open, check, done, origin };
+  // the role menu's choice (req/shell/account/role), the page then showing it
+  async function role(page, name) {
+    await page.click("#role-menu summary");
+    await page.click(`#role-list .item:text-is("${name}")`);
+    await page.waitForFunction((n) => document.querySelector("#role-name").textContent.trim() === n, name);
+  }
+
+  return { ROOT, FILES, SUB, writes, approved, open, role, check, done, origin };
 }

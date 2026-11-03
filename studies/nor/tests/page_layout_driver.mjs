@@ -62,7 +62,7 @@ let seen = 0, worst = { skew: 0 };
 for (const width of [1000, 1600]) {
   const ctx = await browser.newContext({ viewport: { width, height: 900 } });
   await ctx.route(offSite(origin), (r) => r.abort());
-  await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; localStorage.setItem("nor-bars-v1", JSON.stringify({ left: 200, right: 200 })); });
+  await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; localStorage.setItem("nor-role", "tagger"); localStorage.setItem("nor-bars-v1", JSON.stringify({ left: 200, right: 200 })); });
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);

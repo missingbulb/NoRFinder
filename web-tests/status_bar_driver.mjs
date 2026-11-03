@@ -77,7 +77,7 @@ const shot = async (page, name) => { if (shots) await page.locator("#statusbar")
 async function open(study, mode) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
   await ctx.route(offSite(origin), (r) => r.abort());
-  await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
+  await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; localStorage.setItem("nor-role", "tagger"); });
   if (mode) await ctx.addInitScript((m) => { if (localStorage.getItem("nor-resources") === null) localStorage.setItem("nor-resources", JSON.stringify(m)); }, mode);
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });

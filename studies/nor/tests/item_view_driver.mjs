@@ -55,7 +55,7 @@ const done = async (code) => { await browser.close(); server.close(); process.ex
 const fail = async (what, seen) => { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); };
 const ctx = await browser.newContext({ viewport: { width: 1200, height: 560 } });
 await ctx.route(offSite(origin), (r) => r.abort());
-await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
+await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; localStorage.setItem("nor-role", "tagger"); });
 const page = await ctx.newPage();
 page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
 page.setDefaultTimeout(10000);
