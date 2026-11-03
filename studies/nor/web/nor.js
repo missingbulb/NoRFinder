@@ -87,9 +87,6 @@ export function mount(shell) {
     .then((q) => (here.signal.aborted ? new Promise(() => {}) : q));
   const two = (x) => x.toFixed(2).replace(/^0/, "");
   const pr = (r) => `P\u00a0${two(r.precision)}\u00a0·\u00a0R\u00a0${two(r.recall)}`; // one unbroken pair
-  // the preset with the highest F1: the finder's best combined result
-  const best = (per) => Object.values(per).reduce((a, r) => (f1(r) > f1(a) ? r : a));
-  const f1 = (r) => (2 * r.tp) / Math.max(1, 2 * r.tp + r.fp + r.fn);
   async function buildPresets() {
     const q = await quality, box = $("#presets"), per = q && q.finders[st.filtersFor] && q.finders[st.filtersFor].filtered;
     box.hidden = !per; if (!per) return;
@@ -500,10 +497,11 @@ export function mount(shell) {
     quality.then((q) => {
       const own = q && q.finders[finder];
       if (!own || $("#finder").value !== finder) return;
-      const pr0 = (r) => `P:\u00a0${r.precision.toFixed(2)}, R:\u00a0${r.recall.toFixed(2)}`, n = q.images.length;
+      const said = (r) => `precision of ${r.precision.toFixed(2)} and recall of ${r.recall.toFixed(2)}`, n = q.images.length;
+      const name = st.names[finder][0].toUpperCase() + st.names[finder].slice(1);
       const p = document.createElement("p"), b = document.createElement("strong");
-      b.textContent = `Algorithm and filters give ${pr0(best(own.filtered))} based on ${n} image${n > 1 ? "s" : ""} (without filters ${pr0(own.finder)})`;
-      p.append(b); note.append(p);
+      b.textContent = `${name} algorithm plus default filters show ${said(own.filtered.balanced)} based on ${n} image${n > 1 ? "s" : ""}`;
+      p.append(b, ` (without filters: ${said(own.finder)})`); note.append(p);
     });
     const row = (k) => dial(k, defs[k], vals[k], (v) => {
       vals[k] = v;
@@ -1162,8 +1160,8 @@ export function mount(shell) {
       st.names = info.finders;
       sel.replaceChildren(...Object.entries(info.finders).map(([k, v]) => new Option(`${info.about[k].icon} ${v}`.trim(), k)));
       quality.then((q) => {
-        if (q) sel.title = "Precision (P) and recall (R) of each finder with its best filter preset";
-        for (const o of sel.options) if (q && q.finders[o.value]) o.textContent += ` (${pr(best(q.finders[o.value].filtered))})`;
+        if (q) sel.title = "Precision (P) and recall (R) of each finder with its default filters";
+        for (const o of sel.options) if (q && q.finders[o.value]) o.textContent += ` (${pr(q.finders[o.value].filtered.balanced)})`;
       });
       sel.disabled = false;
       st.about = info.about; st.help = Object.values(info.about)[0].help;
