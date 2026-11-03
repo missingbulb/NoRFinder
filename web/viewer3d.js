@@ -13,6 +13,7 @@ const MAX_SIDE = 640; // the GPU's budget: a ray samples every voxel it crosses,
 const CHANNELS = 4;   // the most channels the 3D view adds together
 const LOOKS = { top: [0, 0], tilted: [-0.5, -0.6], side: [Math.PI / 2, 0], front: [0, Math.PI / 2 - 0.001] };
 const FIT_DIST = 4.4, MIN_DIST = 0.15, CLICK_PX = 4, WHEEL_LINE_PX = 16;
+const TURN_PER_PX = 0.008, ROLL_PER_PX = 0.0025; // radians the view turns for a pixel dragged, and for a pixel scrolled sideways
 const TAN_HALF_FOV = Math.tan((15 * Math.PI) / 180);
 
 // ---------- small matrix kit (column-major, as WebGL expects) ----------
@@ -52,6 +53,24 @@ const M = {
     for (let r = 0; r < 4; r++) v[r] = m[r]*p[0] + m[4+r]*p[1] + m[8+r]*p[2] + m[12+r];
     return v; },
 };
+
+// the screen's directions in the world (right, up, back towards the viewer) for a view from `yaw` around the stack's
+// y axis and `pitch` above its x-z plane, upright: the screen's right level
+function facing(yaw, pitch) {
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+  return [[cy, 0, -sy], [-sp * sy, cp, -sp * cy], [cp * sy, sp, cp * cy]];
+}
+// those directions turned by `a` radians about the k-th of them, the other two kept square to it
+function turn(rot, k, a) {
+  const ax = rot[k], c = Math.cos(a), s = Math.sin(a);
+  const r = rot.map((v) => {
+    const d = ax[0] * v[0] + ax[1] * v[1] + ax[2] * v[2], x = [ax[1] * v[2] - ax[2] * v[1], ax[2] * v[0] - ax[0] * v[2], ax[0] * v[1] - ax[1] * v[0]];
+    return v.map((w, i) => w * c + x[i] * s + ax[i] * d * (1 - c));
+  });
+  const nrm = (v) => { const l = Math.hypot(...v); return v.map((w) => w / l); }, dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const b = nrm(r[2]), rt = nrm(r[0].map((w, i) => w - b[i] * dot(r[0], b)));
+  return [rt, [b[1] * rt[2] - b[2] * rt[1], b[2] * rt[0] - b[0] * rt[2], b[0] * rt[1] - b[1] * rt[0]], b];
+}
 
 const VS = `#version 300 es
 in vec2 aPos; out vec2 vNdc;
@@ -157,7 +176,7 @@ export function viewer3d(shell, flat) {
   let active = false, gl = null, U = {}, tex = [], dirty = true, vol = null, mode3d = false;
   // clip: [x0, y0, x1, y1] in world units, the part of the stack shown, or null for all; spot: {x, y, r}, the part of the
   // screen kept clear while the rest dims (x and y fractions of the width and height, r of the height), or null
-  const S = { mode: 0, depth: 1, iso: 0.35, z0: 0, z1: 0, zs: 1, yaw: 0, pitch: 0, dist: FIT_DIST, pivot: [0, 0, 0], dragging: false, clip: null, spot: null };
+  const S = { mode: 0, depth: 1, iso: 0.35, z0: 0, z1: 0, zs: 1, rot: facing(0, 0), dist: FIT_DIST, pivot: [0, 0, 0], dragging: false, clip: null, spot: null };
   let mask = null, keepSide = 0;
   const drawers = [], spacingHeard = [];
   let half = [1, 1, 0.1];
@@ -166,7 +185,7 @@ export function viewer3d(shell, flat) {
   const sw = html("div", { id: "v3-switch", className: "seg for-image", hidden: true });
   sw.setAttribute("role", "group"); sw.setAttribute("aria-label", "2D or 3D");
   const b2 = html("button", { id: "v3-2d", type: "button", textContent: "2D", title: "The stack flattened: each pixel the brightest of the slices shown" });
-  const b3 = html("button", { id: "v3-3d", type: "button", textContent: "3D", title: "The stack in 3D: drag to turn it, the wheel zooms, shift-drag pans" });
+  const b3 = html("button", { id: "v3-3d", type: "button", textContent: "3D", title: "The stack in 3D: drag to turn it, a sideways scroll spins it, the wheel zooms, shift-drag pans" });
   sw.append(b2, b3);
   // the 3D tools, as the 2D ones are: toolbar buttons, each opening its settings while the pointer is over it
   const icon = (paths) => `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">${paths}</g></svg>`;
@@ -234,11 +253,11 @@ export function viewer3d(shell, flat) {
   }
 
   // ---------- the camera: it turns about `pivot`, the world point at the centre of the screen ----------
-  const screenAxes = () => ({ right: [Math.cos(S.yaw), 0, -Math.sin(S.yaw)],
-    up: [-Math.sin(S.pitch) * Math.sin(S.yaw), Math.cos(S.pitch), -Math.sin(S.pitch) * Math.cos(S.yaw)] });
+  // S.rot is the screen's three directions in the world: right, up, and back out of the screen towards the viewer
+  const screenAxes = () => ({ right: S.rot[0], up: S.rot[1] });
   function camera(asp) {
-    const cp = Math.cos(S.pitch), e = [S.dist * cp * Math.sin(S.yaw), S.dist * Math.sin(S.pitch), S.dist * cp * Math.cos(S.yaw)];
-    return M.mul(M.persp(2 * Math.atan(TAN_HALF_FOV), asp, 0.05, 50), M.look(e.map((v, i) => v + S.pivot[i]), S.pivot, screenAxes().up));
+    const e = S.rot[2].map((v, i) => S.pivot[i] + S.dist * v);
+    return M.mul(M.persp(2 * Math.atan(TAN_HALF_FOV), asp, 0.05, 50), M.look(e, S.pivot, S.rot[1]));
   }
   const pan = (dx, dy) => { const { right, up } = screenAxes(); S.pivot = S.pivot.map((v, i) => v + dx * right[i] + dy * up[i]); };
   const perPx = (h) => (2 * TAN_HALF_FOV * S.dist) / h;
@@ -323,7 +342,8 @@ export function viewer3d(shell, flat) {
   new ResizeObserver(redraw).observe(stage);
   flat.onDrawn(redraw);
 
-  // ---------- turning, zooming and panning: drag turns, shift-drag or right-drag pans, wheel or pinch zooms ----------
+  // ---------- turning, zooming and panning: drag turns about the screen's axes, a sideways scroll about the line of
+  // sight, shift-drag or right-drag pans, wheel or pinch zooms ----------
   // on any canvas that shows the stack's camera; grab(e), when given, sees each press first and may take that pointer
   // for its own drag by returning {move(e), up(e), cancel()}; click(e) hears a left press let go where it began
   function controls(el, grab, click) {
@@ -355,7 +375,7 @@ export function viewer3d(shell, flat) {
         if (last) zoomAt(el, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (S.dist * last) / d);
         last = d; pan((-dx * k * S.dist) / 6, (dy * k * S.dist) / 6);
       } else if (e.shiftKey || e.buttons === 2) pan((-dx * k * S.dist) / 3, (dy * k * S.dist) / 3);
-      else { S.yaw -= dx * 0.008; S.pitch = Math.min(Math.max(S.pitch + dy * 0.008, -Math.PI / 2 + 0.001), Math.PI / 2 - 0.001); }
+      else { S.rot = turn(S.rot, 1, -dx * TURN_PER_PX); S.rot = turn(S.rot, 0, -dy * TURN_PER_PX); }
       redraw();
     });
     el.addEventListener("contextmenu", (e) => e.preventDefault());
@@ -363,7 +383,7 @@ export function viewer3d(shell, flat) {
       e.preventDefault();
       const line = e.deltaMode === 1 ? WHEEL_LINE_PX : 1;
       if (e.deltaY) zoomAt(el, e.clientX, e.clientY, S.dist * Math.exp(e.deltaY * line * 0.001));
-      if (e.deltaX) pan(e.deltaX * line * perPx(el.clientHeight), 0);
+      if (e.deltaX) S.rot = turn(S.rot, 2, e.deltaX * line * ROLL_PER_PX);
       redraw();
     }, { passive: false });
     new ResizeObserver(redraw).observe(el);
@@ -391,8 +411,7 @@ export function viewer3d(shell, flat) {
   ui("v3-zs").oninput = (e) => { if (+e.target.value > 0) { S.zs = +e.target.value; spacingNote("you"); sync(); spacingHeard.forEach((fn) => fn()); } };
   ui("v3-look").onclick = (e) => {
     const b = e.target.closest("[data-look]"); if (!b) return;
-    const [yaw, pitch] = LOOKS[b.dataset.look];
-    Object.assign(S, { yaw, pitch, pivot: [0, 0, 0], clip: null, dist: Math.max(S.dist, 2) }); redraw();
+    Object.assign(S, { rot: facing(...LOOKS[b.dataset.look]), pivot: [0, 0, 0], clip: null, dist: Math.max(S.dist, 2) }); redraw();
   };
   function spacingNote(from) {
     note.textContent = from === "file" ? `${S.zs} µm between slices, as the file records.`
@@ -424,7 +443,7 @@ export function viewer3d(shell, flat) {
     const v = shell.study?.view || {};
     if (again) { Object.assign(S, { z0: 0, z1: im.Z - 1 }); ui("v3-z0").max = ui("v3-z1").max = im.Z - 1; upload(); sync(); return show3d(was3d); }
     Object.assign(S, { mode: v.render === "surface" ? 1 : 0, depth: v.depthColour ? 1 : 0, z0: 0, z1: im.Z - 1,
-      yaw: 0, pitch: 0, dist: FIT_DIST, pivot: [0, 0, 0], clip: null, spot: null });
+      rot: facing(0, 0), dist: FIT_DIST, pivot: [0, 0, 0], clip: null, spot: null });
     ui("v3-z0").max = ui("v3-z1").max = im.Z - 1;
     if (im.spacing) { S.zs = im.spacing; spacingNote("file"); }
     else if (v.spacing) { S.zs = v.spacing; spacingNote(v.spacingSource || "the study"); }
@@ -440,7 +459,7 @@ export function viewer3d(shell, flat) {
   const hear = (list, fn, signal) => { list.push(fn); signal?.addEventListener("abort", () => list.splice(list.indexOf(fn), 1)); };
   const first = () => { const rows = flat.levels(); const k = rows.findIndex((c, i) => c.on && i < vol.vols.length); return k < 0 ? 0 : k; };
   const three = {
-    M, S, FIT_DIST,
+    M, S, FIT_DIST, facing,
     get meta() { return vol ? { shape: [vol.Z, vol.Y, vol.X], um_per_px: (page.get("image")?.um || 1) * vol.bin } : null; },
     get half() { return half; },
     get stage() { return stage; },
@@ -470,7 +489,7 @@ export function viewer3d(shell, flat) {
       let p = along + Math.PI / 2;
       p = Math.atan2(Math.sin(p), Math.cos(p)); if (p > Math.PI / 2) p -= Math.PI; if (p < -Math.PI / 2) p += Math.PI;
       p = Math.min(Math.max(p, -Math.PI / 2 + 0.001), Math.PI / 2 - 0.001);
-      Object.assign(S, { yaw: Math.PI / 2, pitch: p, clip: [at[0] - h, at[1] - h, at[0] + h, at[1] + h], pivot: [...at], dist: Math.max(MIN_DIST, h * 5) });
+      Object.assign(S, { rot: facing(Math.PI / 2, p), clip: [at[0] - h, at[1] - h, at[0] + h, at[1] + h], pivot: [...at], dist: Math.max(MIN_DIST, h * 5) });
       redraw();
     },
     // the brightest shown voxel of the first shown channel on the line of sight through a canvas point (ndc -1..1) of

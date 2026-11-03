@@ -988,7 +988,9 @@ spec does not have.
   returns a stack as its flattened planes, which the 2D view shows unchanged, followed by every
   slice of every channel (`Z` in its meta). A 2D/3D switch in the toolbar opens the 3D view, which
   a stack opens on: it casts rays through the stack in the browser (WebGL2), looking straight down
-  as the microscope does. Dragging turns it, the wheel zooms, shift-drag pans, and Top, Tilted,
+  as the microscope does. Dragging turns it about the screen's two axes, on past looking straight
+  across, a sideways scroll spins it about the line of sight (owner, 2026-11-03), the wheel zooms,
+  shift-drag pans, and Top, Tilted,
   Side and Front put the view back. Brightest shows the brightest point along each ray, Surface a lit
   surface where the signal crosses a level, and Colour by depth paints by the depth of that point
   so crossings at different depths read apart. Slices *a*–*b* show part of the depth. The slice
