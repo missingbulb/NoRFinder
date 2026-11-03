@@ -12,6 +12,10 @@
 import { CORE, packagesOf } from "./python_files.js";
 import { PREVIEWS } from "./previews.js";
 
+// the event each part of the page follows the network by, fired on window as it goes or comes back:
+// detail {online}
+export const CONNECTION = "nor-connection";
+
 // the browser key that says the user asked for the app, so the page names its manifest from then on
 export const APP_ASKED = "nor-app-asked";
 
@@ -44,8 +48,11 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
   let unreached = false;
   const isOffline = () => !navigator.onLine || unreached;
   const net = $("#sb-net"), netTitle = net.title;
+  let was = null;
   const mark = () => {
     const off = isOffline();
+    if (was !== null && off !== was) dispatchEvent(new CustomEvent(CONNECTION, { detail: { online: !off } }));
+    was = off;
     document.documentElement.classList.toggle("offline", off);
     net.title = off ? NET_OFF : netTitle;
     for (const el of document.querySelectorAll(NEEDS)) {
@@ -199,8 +206,10 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
   }
 
   // The popup for one study: what making it available offline takes, then the download. done() once it closes.
-  let ctl = null, run = 0, plan = null;
+  let ctl = null, run = 0, plan = null, showing = null;
+  addEventListener(CONNECTION, () => { if ($("#offline-dlg").open && !ctl && showing) makeAvailable(showing.id, showing.done); });
   async function makeAvailable(id, done) {
+    showing = { id, done };
     const dlg = $("#offline-dlg"), msg = (t) => { $("#offline-msg").textContent = t; };
     const s = (await studyFiles()).find((x) => x.id === id);
     if (!s) return;
@@ -208,8 +217,8 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
     for (const el of ["#offline-python", "#offline-total", "#offline-free", "#offline-time", "#offline-warn"]) $(el).textContent = "";
     $("#offline-files").textContent = "Reading its Google Drive folder…"; msg(""); $("#offline-go").disabled = true; $("#offline-go").hidden = false;
     $("#offline-close").onclick = () => dlg.close();
-    dlg.onclose = () => { ctl?.abort(); done?.(); };
-    dlg.showModal();
+    dlg.onclose = () => { ctl?.abort(); showing = null; done?.(); };
+    if (!dlg.open) dlg.showModal();
     const asked = ++run;
     let images = [];
     try { images = await imagesOf(s); } catch (e) {
@@ -296,7 +305,11 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
     stored();
     const soFar = images ? ` ${images === 1 ? "1 image" : images + " images"} kept so far.` : "";
     const keptFor = persisted ? "The browser keeps it until you delete it here." : "The browser may clear it if this device runs low on space.";
-    if (error) msg(`Could not finish: ${error.message || error}.${soFar}`);
+    if (error) {
+      // what is kept stays kept: the popup counts again, Download offered for the rest once the network allows
+      await makeAvailable(s.id, showing?.done);
+      msg(`Could not finish: ${error.message || error}.${soFar}`);
+    }
     else if (signal.aborted) msg(`Stopped.${soFar}`);
     else msg(`${s.title} is available offline: its Python${images ? ` and ${images === 1 ? "1 image" : images + " images"}` : ""}. ${keptFor}`);
   };

@@ -359,7 +359,14 @@ spec does not have.
   The status bar's network carries a red mark on its icon, the one red in the status bar, its tooltip and its
   Network tab saying the page is offline; set by the owner on 2026-11-03, it took the place of an Offline item. No
   network is the browser saying so, or the site not answering, asked every 30 seconds all session long, so the
-  network going or coming back mid-session shows within that, the browser saying online or not. What needs the network says so in
+  network going or coming back mid-session shows within that, the browser saying online or not, and a Wi-Fi's
+  sign-in page answering in the site's place counts as no network. What the page is doing follows it, set by the
+  owner on 2026-11-03: a study whose Python could not load loads it once the network is back, with no reload;
+  an open From Google Drive lists the images kept here once it goes and the study's folder once it is back, and
+  an image it could not download says the internet cannot be reached; an open Make available offline reads the
+  study's folder and counts again, and offers Download again after a run the network cut short, what it kept
+  staying kept; a signed-in user's settings sync, the version is checked and the site's copy brought up to date.
+  What needs the network says so in
   its tooltip and does nothing: Sign in with Google, opening a new GitHub issue and Submit New Study
   Request. A change to a setting that follows the user (`req/shell/account/sign-in`) waits and is saved once the network is
   back. A visit the browser cannot reach a copy for, never opened online, shows the browser's own

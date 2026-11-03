@@ -24,7 +24,7 @@ import { PREVIEWS, readPreviews } from "./previews.js";
 import { account, SIGNED_IN } from "./account.js";
 import { settingsDialog } from "./settings_dialog.js";
 import { splitter, SPLIT_PATTERN } from "./split_dialog.js";
-import { offline, APP_ASKED, markOffline } from "./offline.js";
+import { offline, APP_ASKED, markOffline, CONNECTION } from "./offline.js";
 import { welcome, WELCOME } from "./welcome.js";
 
 const $ = (s) => document.querySelector(s);
@@ -463,10 +463,15 @@ async function start() {
     offlineCopy.keepSite().then(diskBar, (e) => console.warn("no copy of the site for offline:", e));
   }
   status("Loading Python in the background…"); $("#spin").classList.add("on");
+  pythonWorker();
+  if (navigator.deviceMemory <= LOW_GB) memoryTip();
+}
+// Python's thread, on the study the address names, in place of any before it
+function pythonWorker() {
+  st.worker?.terminate();
   st.worker = new Worker("worker.js?study=" + encodeURIComponent(studyOf(location)), { type: "module" });
   st.worker.onmessage = (e) => onWorker(e.data);
   st.worker.onerror = (e) => onWorker({ type: "error", text: e.message || "Python stopped." });
-  if (navigator.deviceMemory <= LOW_GB) memoryTip();
 }
 // one of the study's Python actions; its answer reaches the study's result hook
 function call(action, args, echo) { st.worker.postMessage({ type: "call", action, args, echo }); }
@@ -499,6 +504,7 @@ function handle(m) {
   else if (m.type === "error") {
     // the request that failed is over: its button can be pressed again
     study.error?.();
+    if (!st.ready) st.failed = true;
     status("Error: " + m.text, true); if (OUT_OF_MEMORY.test(m.text)) memoryTip(true);
   } else if (m.type === "ready") {
     st.ready = true; st.readyInfo = m.info; $("#spin").classList.remove("on");
@@ -649,6 +655,7 @@ $("#load-menu").addEventListener("toggle", () => { if ($("#load-menu").open) clo
 // it is, so two of one name stay apart; one kept from before recents had a study belongs to none. openRecent is the Drive dialog's, which opens the copy kept on this device when there is one.
 const RECENT_KEEP = 10;
 let openRecent = () => {}, showKept = () => {};
+const UNREACHED = "The internet cannot be reached, and this image is not kept on this device.";
 const recentHere = (list) => list.filter((r) => r.study === manifest?.id);
 function remember(id, name, path) {
   const study = manifest.id, rest = readJSON(RECENT, []).filter((r) => r.study && !(r.id === id && r.study === study));
@@ -693,7 +700,8 @@ function throttle() { writeJSON(THROTTLE, Date.now() + WAIT); holdDrive(); }
 // click selects and Open (or a double click) opens the selection
 function driveDialog() {
   const msg = (t, err) => { const m = $("#drive-msg"); m.textContent = m.title = t; m.classList.toggle("err", !!err); };
-  let trail = [], chosen = null, listing = 0;
+  // keptOn: the dialog lists the images kept here, offline, in place of a Drive folder
+  let trail = [], chosen = null, listing = 0, keptOn = false;
   // path: the folders the image is in under the link it was opened from; sha: its SHA-256 as the listing gave
   // it (null when Drive gave none), undefined when not yet asked; recent: whether it was chosen from the recents.
   // A recent image opens from its kept copy; one chosen from Drive does only once its SHA-256 matches Drive's.
@@ -724,8 +732,10 @@ function driveDialog() {
       openBytes(f.name, f.bytes, { kind: "drive", id });
     } catch (err) {
       busy(false); if (!$("#drive-dlg").open) $("#drive-dlg").showModal();
+      // what the download had painted goes: the image open before, or none
+      if (push) page.get("image") ? showImage() : view.clear();
       if (err.throttled) { msg(""); return throttle(); }
-      msg(err.message || String(err), true);
+      msg(err instanceof TypeError || offlineCopy.offline() ? UNREACHED : err.message || String(err), true);
     }
   };
   const choose = (f, b) => {
@@ -735,7 +745,7 @@ function driveDialog() {
   const enter = (f) => (f.folder ? (trail.push(f), show()) : f.kept ? take(f.id, f.name, f.path, undefined, true) : take(f.id, f.name, trail.slice(1).map((t) => t.name), f.sha));
   // offline, in place of a Drive folder: the images kept on this device, the study's own first (req/shell/offline/default)
   showKept = async () => {
-    thumbs.stop(); trail = []; choose(null);
+    keptOn = true; thumbs.stop(); trail = []; choose(null);
     $("#drive-path").textContent = "You are offline: the images kept on this device"; $("#drive-list").replaceChildren();
     const kept = [];
     try {
@@ -763,6 +773,7 @@ function driveDialog() {
   };
   openRecent = (r) => take(r.id, r.name, r.path || [], undefined, true);
   const show = async () => {
+    keptOn = false;
     const at = trail[trail.length - 1];
     $("#drive-path").innerHTML = trail.map((t, k) => `<button type="button" class="link" data-k="${k}">${esc(t.name)}</button>`).join(" / ");
     $("#drive-path").querySelectorAll("button").forEach((b) => (b.onclick = () => { trail = trail.slice(0, +b.dataset.k + 1); show(); }));
@@ -894,6 +905,7 @@ function driveDialog() {
   }
   const open = () => {
     if (offlineCopy.offline()) return showKept();
+    keptOn = false;
     const link = $("#drive-link").value, ref = NorDrive.parse(link);
     $("#drive-list").replaceChildren(); $("#drive-path").replaceChildren(); choose(null);
     if (!ref) return msg("That does not look like a Google Drive link.", true);
@@ -903,6 +915,14 @@ function driveDialog() {
   };
   $("#drive-go").onclick = open;
   waitEnded = () => { if ($("#drive-dlg").open) open(); };
+  // the open dialog follows the network: the images kept here once it goes, the Drive folder once it is back
+  addEventListener(CONNECTION, (e) => {
+    if (!$("#drive-dlg").open) return;
+    if (!e.detail.online) { if (!keptOn) showKept(); return; }
+    if (!keptOn) return;
+    if (NorDrive.parse($("#drive-link").value)) return open();
+    keptOn = false; $("#drive-path").replaceChildren(); $("#drive-list").replaceChildren(); msg("");
+  });
   holdDrive();
   $("#drive-link").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); open(); } });
 }
@@ -1416,6 +1436,7 @@ $("#sb-version").textContent = "v" + VERSION;
     } catch { /* offline: try again next time */ }
   };
   setInterval(check, 5 * 60 * 1000);
+  addEventListener(CONNECTION, (e) => { if (e.detail.online) check(); });
 }
 
 // Version history: the version box opens it; after an update, a bubble points at the box
@@ -1551,6 +1572,15 @@ function goTo(id) {
   swap();
 }
 addEventListener("popstate", () => swap());
+// the network back: a study whose Python could not load loads again, on a Python of its own, since a worker
+// keeps a module it failed to download failed; and the storage it then kept shows
+addEventListener(CONNECTION, (e) => {
+  if (!e.detail.online) return;
+  offlineCopy.keepSite().then(diskBar, () => {});
+  if (!st.failed || st.ready || !st.worker || !manifest) return;
+  st.failed = false; status("Loading Python in the background…"); $("#spin").classList.add("on");
+  pythonWorker();
+});
 function swap() {
   swapping = swapping.then(async () => {
     const id = studyOf(location);
