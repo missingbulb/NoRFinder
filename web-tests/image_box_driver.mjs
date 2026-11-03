@@ -208,4 +208,13 @@ await check(clear.shine && !clear.done && clear.crumbs === "Load image", "Load s
 await check(clear.fx === "Nothing counted yet." && !clear.overlay && clear.status.startsWith("Ready"), "the study starts over too", clear);
 await check(await page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].filter((b) => b.checkVisibility()).map((b) => b.classList.contains("folded")).join()) === "false,true,true,true", "and the boxes on show fold as before any image");
 await check((await rows()).map((r) => r.name).join() === "Grey", "and the channels are the study's again");
+
+// ---- after Unload, the next image's switch still shows the item view ----
+await loadImage();
+await page.click("#fx-count");
+await page.waitForFunction(() => !document.querySelector("#switch").disabled);
+await page.click("#switch");
+await page.waitForFunction(() => !document.querySelector("#switch").classList.contains("working"));
+const shownAfter = await page.evaluate(() => ({ items: !document.querySelector("#items-view").hidden, image: !document.querySelector("#image-view").hidden }));
+await check(shownAfter.items && !shownAfter.image, "after Unload, the next image's switch shows the item view", shownAfter);
 await done(0);

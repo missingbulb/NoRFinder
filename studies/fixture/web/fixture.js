@@ -14,6 +14,8 @@ export function mount(shell) {
     shell.submitTruth({ doc: { labels: counted ? [counted] : [] }, count: counted ? 1 : 0, file: name + "_gt.json", items: [], issue: { title: "Ground truth: " + name, body: "" },
       empty: "Count first." });
   };
+  // the shell's own switch, slow as a study's slow action is, again each time the study mounts
+  shell.slow($("#switch"));
   return {
     ready(info) { $("#fx-threshold").value = info.threshold; ready = true; },
     opened() {
