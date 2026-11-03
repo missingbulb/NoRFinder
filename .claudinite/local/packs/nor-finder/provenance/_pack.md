@@ -34,3 +34,12 @@
   pack.
 - **Rejected:** a third pack for the shell's one rule (owner's choice, two packs).
 - **Landed:** #559
+
+## 2026-11-03 · reworded · env setup force-installs Pillow over a broken system copy
+- **Reason:** the routine's environment runs Python 3.11, which imports the image's apt Pillow
+  (compiled for 3.12 only, no `_imaging`); pip counts it as installed and skips it, so the probe
+  failed and every routine run died in setup.
+- **Actor:** @missingbulb (owner).
+- **Model:** claude-opus-5-5
+- **Rejected:** fixing the environment instead (owner's choice): the next image with the same mix
+  breaks the same way.
