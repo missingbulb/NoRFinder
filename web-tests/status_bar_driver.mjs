@@ -166,6 +166,27 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await page.waitForFunction(() => !document.querySelector("#stage-pop").matches(":popover-open"));
   await steps(page, ["Load image*"], ["#load-main", "#sb-load"]);
   await shot(page, "1-start");
+  // req/shell/waiting/visible: the waiting overlay's big spinner shows while Python loads or works, and gives way
+  // to the sweeping light over an image (scan) or to the image painting in (peek)
+  const looks = await page.evaluate(() => {
+    const b = document.querySelector("#busy"), s = b.querySelector(".spin.big"), was = b.hidden, seen = {};
+    b.hidden = false;
+    for (const look of ["", "scan", "peek"]) {
+      b.classList.remove("scan", "peek"); if (look) b.classList.add(look);
+      seen[look || "plain"] = { spinner: getComputedStyle(s).display !== "none" && getComputedStyle(s).visibility === "visible", light: getComputedStyle(b.querySelector("#scan-light")).display !== "none" };
+    }
+    b.classList.remove("scan", "peek"); b.hidden = was;
+    return seen;
+  });
+  await check(looks.plain.spinner && !looks.plain.light, "waiting shows the big spinner", looks.plain);
+  await check(!looks.scan.spinner && looks.scan.light, "work over an image shows the sweeping light, not the spinner", looks.scan);
+  await check(!looks.peek.spinner && !looks.peek.light, "an image painting in shows neither", looks.peek);
+  // a held button keeps its own small spinner wherever it sits
+  const held = await page.evaluate(() => {
+    const t = document.createElement("button"); t.className = "working"; t.disabled = true; t.textContent = "x"; document.body.append(t);
+    const a = getComputedStyle(t, "::after").animationName; t.remove(); return a;
+  });
+  await check(held === "spin", "a working button turns a small spinner after its label", held);
   // the right side: from the edge, version, CPU, network, memory, disk; each but the version a grey icon and its number
   const ITEMS = ["#sb-disk", "#sb-memory", "#sb-net", "#sb-cpu", "#sb-version"];
   await page.waitForFunction(() => /\d/.test(document.querySelector("#sb-disk").textContent));
