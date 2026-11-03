@@ -84,11 +84,14 @@ try {
   await page.click('#model-mode [data-v="overlay"]');
   check(await page.evaluate(() => !$("#v3-stage").classList.contains("split") && !!$("#v3-stage #mcv")), "Overlay draws it over the stack");
 
-  const all = await brightness();
-  await page.click('#review-mode [data-v="detected"]');
-  const detected = await brightness();
-  check(detected < all * 0.8, `Detected keeps only the signal near the model's vessels: ${all.toFixed(2)} → ${detected.toFixed(2)}`);
-  await page.click('#review-mode [data-v="all"]');
+  // what the 3D view draws needs WebGL2, which a headless browser may lack
+  if (await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"))) {
+    const all = await brightness();
+    await page.click('#review-mode [data-v="detected"]');
+    const detected = await brightness();
+    check(detected < all * 0.8, `Detected keeps only the signal near the model's vessels: ${all.toFixed(2)} → ${detected.toFixed(2)}`);
+    await page.click('#review-mode [data-v="all"]');
+  } else console.log(`not checked in this ${ENGINE}: what Detected leaves in the 3D view, which needs the WebGL2 it lacks`);
 
   check(await page.isHidden("#vm-truth"), "Submit Ground Truth is not in the image view");
   await page.click("#switch");
@@ -117,6 +120,8 @@ try {
   await page.click("#m-undo");
   check(/0 approved/.test(await facts()), "Undo takes the approval back");
 
+  // the switcher lists the studies once it has read them
+  await page.waitForFunction(() => [...document.querySelectorAll("#study-list a")].some((x) => x.textContent.includes("Image Viewer")));
   await page.evaluate(() => { const a = [...document.querySelectorAll("#study-list a")].find((x) => x.textContent.includes("Image Viewer")); a.click(); });
   await page.waitForFunction(() => $("#title").textContent === "Image Viewer");
   check(await page.evaluate(() => !document.querySelector("#mcv")), "the model's canvas leaves the 3D view with the study");
