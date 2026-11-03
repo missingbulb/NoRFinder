@@ -98,6 +98,15 @@ await page.waitForFunction(() => !document.getAnimations().some((a) => a.effect?
 await boxes(["✓ Loaded Image open", "2 Threshold open", "3 Counted folded", "4 Notes folded"], "its title opens a folded drawer, done: Loaded Image");
 await title(0);
 await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted folded", "4 Notes folded"], "and folds it again");
+// a folded drawer opens from anywhere on it, not only its title: a click at the far end of its row; an open one folds
+// only from its title
+const rowEnd = async (k) => { const r = await page.locator("#left > .box.foldable:visible > .sec-head").nth(k).boundingBox();
+  await page.mouse.click(r.x + r.width - 4, r.y + r.height / 2); await page.waitForFunction(() => !document.documentElement.hasAttribute("data-drawers")); };
+await rowEnd(3);
+await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted folded", "4 Notes open"], "a click anywhere on a folded drawer opens it");
+await rowEnd(3);
+await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted folded", "4 Notes open"], "a click beside an open drawer's title leaves it open");
+await title(3);
 await page.click("#fx-count");
 await page.waitForFunction(() => /pixels/.test(document.querySelector("#fx-result").textContent));
 await boxes(["✓ [img] " + name + "2D folded", "✓ Counted at 100 folded", "3 Counted open", "4 Notes folded"],
