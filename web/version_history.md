@@ -10,16 +10,23 @@ carried all its pull requests. The `writing-version-history` skill says how.
 
 ## Next release
 
+The Tasks button switches to the tasks again after you Unload an image and load another; before,
+it did nothing until the page was reloaded. (#711)
+
+## 0.11103.80
+
+A z-stack now opens in 3D only, with no 2D/3D switch. Edit Image on a stack leaves out Crop, the cut
+lines and Imperfections, which draw on a flat image. (#702)
+
+## 0.11103.79
+
 This version history tells each release in a few short paragraphs, instead of a line for every
 change. (#701)
 
 A Wi-Fi icon in the status bar says whether you are online, crossed out in red when offline, and
 opens where you set up working offline. The bug icon sits beside the version and stays put as the
-gauge unfolds, and losing the internet while a study loads says plainly what it needs, instead of
-an error. (#692)
-
-A z-stack now opens in 3D only, with no 2D/3D switch. Edit Image on a stack leaves out Crop, the cut
-lines and Imperfections, which draw on a flat image. (#702)
+gauge unfolds, and losing the internet while a study loads says plainly what it needs, instead of an
+error. (#692)
 
 ## 0.11103.78
 
@@ -31,8 +38,8 @@ shows the open study's icon, and the Image Viewer has its own, a microscope. (#6
 
 In the 3D view, a sideways scroll spins the stack about the line of sight, and dragging turns on
 like a trackball instead of stopping side-on. Switching study unloads the open image, and a popup
-grows out of the button that opened it. Choose folders… in Data Management opens Google's
-permission window again. (#686, #689, #691, #694)
+grows out of the button that opened it. Choose folders… in Data Management opens Google's permission
+window again. (#686, #689, #691, #694)
 
 ## 0.11103.76
 
@@ -70,13 +77,13 @@ Data Management, for a study's data managers: browse the study's Google Drive fo
 images have previews and ground truth, make the missing previews, mark images as needing ground
 truth and open one quickly from its preview. Preprocessing now lives there. (#651)
 
-The status bar's storage, memory, network and CPU fold into one gauge icon that opens by itself
-when something needs attention; offline, the network icon carries a red mark and the page recovers
-by itself when the connection returns. A bug icon opens a GitHub issue already filled in with what
-you were doing. (#656, #658, #659)
+The status bar's storage, memory, network and CPU fold into one gauge icon that opens by itself when
+something needs attention; offline, the network icon carries a red mark and the page recovers by
+itself when the connection returns. A bug icon opens a GitHub issue already filled in with what you
+were doing. (#656, #658, #659)
 
-Popups and tips stay attached to their button when the window is resized, and open from the
-keyboard too. (#657)
+Popups and tips stay attached to their button when the window is resized, and open from the keyboard
+too. (#657)
 
 ## 0.11102.69
 
@@ -102,9 +109,9 @@ colouring by depth and flattening to 2D, and opens the draft vessel model drawn 
 its vessels, draw the missed ones, mark damaged areas, and submit the corrected model as ground
 truth. Load from Google Drive opens on each study's own folder. (#620)
 
-Sign in with Google to carry your settings to every device, kept in a hidden file in your own
-Drive, and change them all in one place in Settings…. The privacy policy and terms of service are
-linked from your avatar's menu. (#624)
+Sign in with Google to carry your settings to every device, kept in a hidden file in your own Drive,
+and change them all in one place in Settings…. The privacy policy and terms of service are linked
+from your avatar's menu. (#624)
 
 Animations can be turned off, the minimap folds into its toolbar button, the status bar's numbers
 roll like a clock, and Preprocessing is in every study. (#627, #628, #629, #630)
@@ -117,8 +124,8 @@ scale and colours. (#621)
 
 ## 0.11031.65
 
-Double click a candidate on the image to open its card, or a card to see it on the image. Long
-lists of cards open at once. (#617)
+Double click a candidate on the image to open its card, or a card to see it on the image. Long lists
+of cards open at once. (#617)
 
 ## 0.11031.64
 
@@ -171,8 +178,8 @@ only of images you have opened. (#546, #566)
 
 ## 0.11011.35
 
-The Drive dialog auto-saves the images you open, so they open again without a download, and the
-size beside its thumbnails opens Manage storage. (#446)
+The Drive dialog auto-saves the images you open, so they open again without a download, and the size
+beside its thumbnails opens Manage storage. (#446)
 
 ## 0.11011.34
 
@@ -213,8 +220,8 @@ The Summary box draws richer histograms and holds the CSV downloads; the Downloa
 Ground Truth, with a shorter checklist. Drive thumbnails come with the site, so the dialog no longer
 stalls the next image. (#360, #361, #362)
 
-Filter presets fold away with the Filters box, a red measuring end slides only along the NoR's
-axis, and Add mask is blue. (#356, #357, #359)
+Filter presets fold away with the Filters box, a red measuring end slides only along the NoR's axis,
+and Add mask is blue. (#356, #357, #359)
 
 ## 0.11007.19
 
@@ -227,8 +234,8 @@ button shows how complete your verdicts are, and Add mask lassoes the area the s
 
 Each finder shows its precision and recall, and the Filters box offers three presets. In the Drive
 dialog a click selects and Open opens, with colour TIFF thumbnails. Measuring ends drag freely, a
-right click adds a NoR you measure yourself, and packages download while Python starts. (#336,
-#338, #341, #342)
+right click adds a NoR you measure yourself, and packages download while Python starts. (#336, #338,
+#341, #342)
 
 ## 0.11003.14
 
@@ -278,5 +285,5 @@ A help note for every finder and setting, a Show menu, and a tidier toolbar and 
 
 ## 1.10928.1
 
-The NoR Finder page: open an image, find candidates once and filter them live, in a fixed frame
-with scrolling columns and the site version in the footer. (#225, #228, #230)
+The NoR Finder page: open an image, find candidates once and filter them live, in a fixed frame with
+scrolling columns and the site version in the footer. (#225, #228, #230)
