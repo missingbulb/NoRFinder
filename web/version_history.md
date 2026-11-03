@@ -10,10 +10,20 @@ carried all its pull requests. The `writing-version-history` skill says how.
 
 ## Next release
 
-A z-stack now opens in 3D only, with no 2D/3D switch. Edit Image on a stack leaves out Crop, the cut
-lines and Imperfections, which draw on a flat image. (#702)
+A z-stack now opens in 3D only, with no 2D/3D switch, the Image Viewer included, while a flat image
+opens in 2D; a plain multi-page TIFF opens as a stack in Vascular Measurements too. Edit Image on a
+stack leaves out Crop, the cut lines and Imperfections. In the Image Viewer the Image box stays open
+once loaded. (#702, #707, #713)
 
-Each channel in the Image box fits on one line, ending in a framed swatch of its colour that shows it in any other. Its black and white points are small triangles on the slider that meet in one, so neither hides the other, and dragging one shows its value. (#708)
+The left bar collapses from the chevron at its top or by dragging its edge left, and opens the same
+ways; a folded drawer opens from a click anywhere on it. Each channel in the Image box fits on one
+line, with a framed swatch to recolour it and triangle black and white points that show their value
+while dragged. (#708, #709, #714)
+
+In NoR Finder, an opening image builds in grey while it downloads, then its colours wipe in. Each
+finder in Processing has its own icon, Settings start folded, and "How the fill algorithm works"
+lists its steps, then its precision and recall with default filters and without. Tasks works again
+after Unload. (#710, #711, #715)
 
 ## 0.11103.79
 

@@ -101,6 +101,7 @@ export function viewer(shell) {
   function show(im) {
     const fit = Math.floor(im.planes.length / (im.W * im.H));
     const n = Math.min(fit, im.channels ? im.channels.length : declared.length || fit);
+    st.peek?.stop?.();
     st.W = im.W; st.H = im.H; st.img = { planes: im.planes, n, file: im.channels || null }; st.plain = null; st.peeked = false;
     choose(n, st.img.file);
     ruler.reset(); draw();
@@ -109,6 +110,7 @@ export function viewer(shell) {
   }
   // no image: the page as before any
   function blank() {
+    st.peek?.stop?.();
     st.img = null; st.plain = null; st.peeked = false; st.W = st.H = 0;
     ruler.reset(); clear();
     const c = $("#base"); c.width = c.height = 0;
@@ -370,7 +372,7 @@ export function viewer(shell) {
 
   // the screen while the image's bytes arrive, before Python has read it: the study's painter draws them
   function preview(painter) {
-    st.peeked = false;
+    st.peek?.stop?.(); st.peeked = false;
     return (st.peek = painter($("#base"), shown, (W, H) => {
       st.img = null; st.plain = null; st.W = W; st.H = H; st.peeked = true; ruler.reset();
       $("#overlay").innerHTML = ""; $("#empty").hidden = true; $("#stage").hidden = false;
