@@ -43,10 +43,16 @@ def source_hash(version):
 
 
 def run(version, path, z_cache={}):
-    mod = importlib.import_module(VERSIONS[version])
     vol, um, z_step = vm.read_cd31(path, None)
+    return run_volume(version, vol, um, os.path.basename(path), z_step)
+
+
+def run_volume(version, vol, um, source, z_step):
+    """A version run on a CD31 volume [Z, Y, X] (float, µm per pixel um, z_step µm between slices or None), its
+    model scored: the model with its score card in it, and the card with the scorer's own fields."""
+    mod = importlib.import_module(VERSIONS[version])
     t = time.time()
-    m = mod.extract(vol, um, os.path.basename(path), z_step)
+    m = mod.extract(vol, um, source, z_step)
     t_extract = time.time() - t
     flat = sc.flat_signal(vol, um)
     card = sc.score(m, flat)

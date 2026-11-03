@@ -1,6 +1,7 @@
 """The vascular study's page: a TIFF z-stack read whole, every channel scaled by one window over the whole stack, never
 per slice, so signal that fades with depth still looks faded; returned flattened (each pixel the brightest of every
-slice), then slice by slice, for the shell's 3D viewer."""
+slice), then slice by slice, for the shell's 3D viewer. Its CD31 channel is kept as read, for the extraction lab's
+versions to draw a vessel model from (analysis/extraction/lab.py)."""
 import json
 
 import numpy as np
@@ -13,8 +14,22 @@ CD31 = {'name': 'CD31', 'colour': '#ff0000'}
 DAPI = {'name': 'DAPI', 'colour': '#0000ff'}
 
 
+def algorithms():
+    """The lab's versions the page offers, the lab's default first, then the newest first: each its key, its name in
+    the model it draws, its title and its whole docstring, which says how it works."""
+    import importlib
+    import lab
+    keys = [lab.DEFAULT] + sorted((k for k in lab.VERSIONS if k != lab.DEFAULT), reverse=True)
+    out = []
+    for k in keys:
+        mod = importlib.import_module(lab.VERSIONS[k])
+        doc = (mod.__doc__ or '').strip()
+        out.append({'key': k, 'name': mod.NAME, 'title': doc.split(':', 1)[0] if ':' in doc.split('\n', 1)[0] else k, 'about': doc})
+    return out
+
+
 def ready():
-    return json.dumps({})
+    return json.dumps({'algorithms': algorithms()})
 
 
 def window(c):
@@ -64,6 +79,7 @@ class Session:
         stack, self.um, self.spacing = read_stack(path)
         C, Z, H, W = stack.shape
         order = [1, 0] if C == 2 else list(range(C))
+        self.cd31 = np.ascontiguousarray(stack[order[0]])
         self.volume = np.stack([stretch(stack[k]) for k in order])
         self.planes = self.volume.max(axis=1)
         self.Z = Z
@@ -80,4 +96,15 @@ class Session:
         return json.dumps(meta), self.planes.tobytes() + self.volume.tobytes()
 
     def call(self, action, args):
+        if action == 'extract':
+            return self.extract(**args)
         raise ValueError(f'unknown action {action!r}')
+
+    def extract(self, algorithm, source, z_step=None):
+        """The vessel model the lab's version `algorithm` draws from the stack's CD31, as the lab runs it: scored, its
+        source the stack's file name; z_step the µm between slices the page shows, None while unknown."""
+        if not self.um:
+            raise ValueError('The file records no pixel size in µm, which the extraction measures every vessel in.')
+        import lab
+        m, _ = lab.run_volume(algorithm, self.cd31.astype(np.float32), self.um, source, z_step)
+        return json.dumps(m), None
