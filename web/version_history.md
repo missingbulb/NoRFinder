@@ -19,6 +19,8 @@ The left bar collapses from the chevron at its top, where the collapsed strip sh
 same spot opens it again. Dragging the bar's edge to the left also collapses it, and dragging the
 strip's edge out opens it. (#709)
 
+An image opening in NoR Finder now builds in grey while it downloads, and its colours wipe down over it once it is in; one opened from this computer fades in. No more stray colours that looked like a glitch before the image settled. (#715)
+
 ## 0.11103.79
 
 This version history tells each release in a few short paragraphs, instead of a line for every

@@ -382,9 +382,12 @@ spec does not have.
   <details>
 
   An uncompressed TIFF like the lab's paints onto the page from its bytes as they arrive from
-  Google Drive, one channel after another in its own colour, with the megabytes so far and the
-  elapsed time below; a file from the computer shows at once. Python's own drawing replaces it once
-  the image is read. Any other image shows the byte count.
+  Google Drive, in grey from the channels in so far, with the megabytes so far and the elapsed
+  time below. Once every byte is in, its colours wipe down over the grey; a file from the computer,
+  or one already kept, fades up from black into its colours instead, quickly. No pixel ever shows a
+  colour its final one lacks: each is grey, black, or a darker shade of the colour it ends in, and
+  the colours it ends in are the brightness Python draws, so Python's own drawing, which replaces it
+  once the image is read, changes nothing visible. Any other image shows the byte count.
   </details>
 
 - `req/shell/image/proportions` No image is ever drawn out of its proportions.
