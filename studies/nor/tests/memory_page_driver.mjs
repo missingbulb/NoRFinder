@@ -106,14 +106,19 @@ async function tune() {
 // what the page holds once garbage is collected; usedSize is the JavaScript heap, backingStorageSize
 // the array buffers outside it (the image, the segments)
 async function measure() {
-  // the status bar's numbers hold a few nodes for each character that rolled in their last change, however many
-  // that was: written plain, the count is the same whatever the numbers last read
-  await page.evaluate(() => { for (const v of document.querySelectorAll("#statusbar .sb-item .v")) v.textContent = v.textContent; });
-  // twice: DOM nodes freed by the first collection are swept only after it
-  await cdp.send("HeapProfiler.collectGarbage"); await page.waitForTimeout(50); await cdp.send("HeapProfiler.collectGarbage");
-  const h = await cdp.send("Runtime.getHeapUsage");
-  const perf = Object.fromEntries((await cdp.send("Performance.getMetrics")).metrics.map((m) => [m.name, m.value]));
-  return { heap: h.usedSize, buffers: h.backingStorageSize, nodes: perf.Nodes, listeners: perf.JSEventListeners, where: await where() };
+  // The status bar's numbers hold a few nodes for each character that rolled in their last change, and the network's
+  // rolls every second as its rate falls: written plain, and measured again whenever one rolled meanwhile, the count
+  // is the same whatever they last read.
+  for (let tries = 0; ; tries++) {
+    await page.evaluate(() => { for (const v of document.querySelectorAll("#statusbar .sb-item .v")) v.textContent = v.textContent; });
+    // twice: DOM nodes freed by the first collection are swept only after it
+    await cdp.send("HeapProfiler.collectGarbage"); await page.waitForTimeout(50); await cdp.send("HeapProfiler.collectGarbage");
+    const h = await cdp.send("Runtime.getHeapUsage");
+    const perf = Object.fromEntries((await cdp.send("Performance.getMetrics")).metrics.map((m) => [m.name, m.value]));
+    const rolled = await page.evaluate(() => document.querySelectorAll("#statusbar .roll").length);
+    if (rolled && tries < 10) continue;
+    return { heap: h.usedSize, buffers: h.backingStorageSize, nodes: perf.Nodes, listeners: perf.JSEventListeners, where: await where() };
+  }
 }
 // the nodes in the document, by the nearest ancestor with an id, and how many that is in all
 const where = () => page.evaluate(() => {
