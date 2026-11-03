@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- Firefox 147 and Safari 26, and later, are supported browsers: the status bar no longer warns in them, and the site lists them. (#672)
 - In a browser without 3D graphics (WebGL2, off when hardware acceleration is), a z-stack opens flattened, and Vascular Measurements' cards show its pictures instead of failing. (#662)
 - A toolbar's popup (Grid, Minimap, the 3D tools) closes when the pointer leaves it, also after you clicked its button. (#662)
 - Edit Image replaces Split into parts, in Data Management's Preprocessing: it opens the image itself, and lets you split it 2 × 2 or 3 × 3 (drag the cut lines, click a part to leave it out), crop it, keep a range of slices (a band marks the slices with signal), drop channels, and lasso imperfections to leave out of every slice, seeing the result in 2D and 3D as you go. Save… puts the files in a folder named after the image, beside it in Google Drive, or downloads them; the folder then stands in the image's place in every list. (#667)
