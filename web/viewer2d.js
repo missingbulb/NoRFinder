@@ -59,11 +59,19 @@ export function viewer(shell) {
       const black = html("input", { type: "range", className: "black", min: 0, max: 255, value: c.black });
       const white = html("input", { type: "range", className: "white", min: 0, max: 255, value: c.white });
       black.setAttribute("aria-label", c.name + " black point"); white.setAttribute("aria-label", c.name + " white point");
-      levels.append(black, white);
+      const bubble = html("span", { className: "bubble", hidden: true });
+      levels.append(black, white, bubble);
+      // the value of the point being dragged, or holding the keyboard's focus, above it
+      const tell = (i) => { bubble.textContent = i.value; bubble.style.setProperty("--v", i.value / 255); bubble.hidden = false; };
+      for (const i of [black, white]) {
+        i.addEventListener("pointerdown", () => { tell(i); addEventListener("pointerup", () => { bubble.hidden = true; }, { once: true }); });
+        i.addEventListener("focus", () => { if (i.matches(":focus-visible")) tell(i); });
+        i.addEventListener("blur", () => { bubble.hidden = true; });
+      }
       pick.oninput = () => { c.colour = pick.value; row.dataset.colour = c.colour; row.style.setProperty("--ch", c.colour); later(); };
       box.onchange = () => { c.on = box.checked; row.classList.toggle("off", !c.on); redraw(); };
-      black.oninput = () => { c.black = Math.min(+black.value, c.white - 1); black.value = c.black; later(); };
-      white.oninput = () => { c.white = Math.max(+white.value, c.black + 1); white.value = c.white; later(); };
+      black.oninput = () => { c.black = Math.min(+black.value, c.white - 1); black.value = c.black; tell(black); later(); };
+      white.oninput = () => { c.white = Math.max(+white.value, c.black + 1); white.value = c.white; tell(white); later(); };
       levels.ondblclick = () => { c.black = black.value = c.base.black; c.white = white.value = c.base.white; redraw(); };
       row.append(box, pick, name, levels);
       return row;

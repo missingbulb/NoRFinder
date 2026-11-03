@@ -177,6 +177,11 @@ body.resizing { cursor: col-resize; user-select: none; }
 .channel .levels input[type=range]::-webkit-slider-runnable-track { height: 14px; }
 .channel .levels input[type=range]::-webkit-slider-thumb { width: var(--t); height: 14px; border: 0; border-radius: 0; outline: none; background-repeat: no-repeat; }
 .channel .levels input[type=range]::-moz-range-thumb { width: var(--t); height: 14px; border: 0; border-radius: 0; background-repeat: no-repeat; }
+/* the value of the point in hand, above where it points */
+.channel .levels .bubble { position: absolute; bottom: calc(100% + 3px); left: calc(var(--t) + var(--v) * (100% - 2 * var(--t)));
+  transform: translateX(-50%); z-index: 5; padding: 1px 5px; border-radius: 4px; background: var(--tipbg); color: var(--text);
+  border: 1px solid var(--line); font-size: 11px; line-height: 1.3; font-variant-numeric: tabular-nums; pointer-events: none; white-space: nowrap; }
+.channel .levels .bubble[hidden] { display: none; }
 .channel .levels input.black::-webkit-slider-thumb {
   background-image: linear-gradient(to top left, #000 50%, transparent 50%), linear-gradient(to top left, var(--edge) 50%, transparent 50%);
   background-size: calc(100% - 2px) calc(100% - 3px), 100% 100%; background-position: right 1px bottom 1px, right bottom; }
