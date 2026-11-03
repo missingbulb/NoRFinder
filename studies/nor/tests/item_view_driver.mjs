@@ -147,7 +147,8 @@ await page.setViewportSize({ width: 760, height: 420 });
 await page.click("#switch");
 let checked = 0, near = 0;
 for (const tab of ["#tab-pass", "#tab-fail"]) {
-  await page.click(tab); await page.evaluate(() => { $("#items-view").scrollTop = 0; }); await settled();
+  // to the top before switching: the new list shows at the scroll it is switched at, and draws what is near there
+  await page.evaluate(() => { $("#items-view").scrollTop = 0; }); await page.click(tab); await settled();
   const rows = () => page.evaluate(() => {
     const v = $("#items-view").getBoundingClientRect(), cards = [...document.querySelectorAll("#list .card")];
     const tops = [...new Set(cards.map((d) => Math.round(d.getBoundingClientRect().top)))].sort((a, b) => a - b);
