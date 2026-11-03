@@ -32,6 +32,7 @@ and an edit made another way is caught at Stop.
 | `bug-investigation` | basics | Pinning down a bug's root cause. Use when investigating a bug report, when a fix didn't hold or a bug recurs, or when a report doesn't reproduce. |
 | `ci-performance-evaluation` | basics | Finding where a repo's CI time goes and what is worth fixing. Use when CI feels slow, on a runtime regression, or on a ci-performance finding. |
 | `committing` | basics | How a commit is cut: one concern per commit, the issue it references, files staged by name. Use before any git commit. |
+| `designing-ground-truth-tasks` | nor-finder | How a study's page lets a person make ground truth - the left bar's tasks, one item at a time, area by area, what is done cut out of the image. Use when building or changing any study's ground-truth controls (its GT or PostGT stage), or reviewing them. |
 | `explore-link` | product-wiki | Mine one URL for product, market, usage and pricing insights and fold them into a product-wiki page. Use on "/explore-link <url>", or when handed a link for the wiki. |
 | `extract-from-activity` | claudinite | Mine a window of a repo's commits, merged PRs and issues for durable lessons and land them in its local packs. Use when asked what recent work taught. |
 | `extract-from-conversations` | claudinite | Mine an agent-user conversation for friction-driven lessons and land them in the repo's local packs. Use on a session transcript or conversation log, or when asked for a retrospective. |
