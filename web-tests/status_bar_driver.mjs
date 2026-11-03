@@ -403,13 +403,16 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await isOpen(true, "the tab holding over 1 GB opens it", 2500);
   await page.evaluate(() => { window.st.heap = window.st.heapWas; });
   await foldsLater("memory back under 1 GB");
-  // the page's thread busy for 7 s: not at once, only once it has been over half a core for 5 s
-  const busy = page.evaluate(async () => { const end = Date.now() + 7500; while (Date.now() < end) { const t = Date.now(); while (Date.now() - t < 400); await new Promise((r) => setTimeout(r, 40)); } });
-  await page.waitForTimeout(2500);
-  await isOpen(false, "a CPU over 50% for 2 s does not open it yet", 100);
-  await busy;
-  await isOpen(true, "over 50% for more than 5 s opens it", 2500);
-  await foldsLater("the CPU calm again");
+  // the page's thread busy for 7 s: not at once, only once it has been over half a core for 5 s. Only Chromium
+  // reports the page's own thread's load, so another engine is not asked.
+  if (ENGINE === "chromium") {
+    const busy = page.evaluate(async () => { const end = Date.now() + 7500; while (Date.now() < end) { const t = Date.now(); while (Date.now() - t < 400); await new Promise((r) => setTimeout(r, 40)); } });
+    await page.waitForTimeout(2500);
+    await isOpen(false, "a CPU over 50% for 2 s does not open it yet", 100);
+    await busy;
+    await isOpen(true, "over 50% for more than 5 s opens it", 2500);
+    await foldsLater("the CPU calm again");
+  } else console.log(`not checked in ${ENGINE}: the page's own thread's load opening the gauge, which only Chromium reports`);
   // downloading: kb KB every 250 ms for 8 s
   const download = (kb) => page.evaluate(async (u) => { const end = Date.now() + 8000; while (Date.now() < end) { await fetch(u, { cache: "no-store" }).then((r) => r.arrayBuffer()); await new Promise((r) => setTimeout(r, 250)); } }, origin + "/some/" + kb);
   await download(25);
