@@ -690,8 +690,10 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 #v3-look { display: flex; gap: 6px; }
 #v3-look button { padding: 4px 10px; font-size: 13px; }
 #v3-note { position: absolute; left: 8px; bottom: 6px; margin: 0; color: rgba(225, 232, 238, .75); font-size: 12px; pointer-events: none; }
-#view[data-v3] #minimap, #view[data-v3] #ruler-btn, #view[data-v3] #grid-btn, #view[data-v3] #minimap-btn,
-#view[data-v3] #zoom-in, #view[data-v3] #zoom-out, #view[data-v3] #zoom-label { display: none; }
+#view[data-v3] #minimap, #view[data-v3] #ruler-btn, #view[data-v3] #grid-btn, #view[data-v3] #minimap-btn { display: none; }
+/* the slices' row: the channels' row with the depth's start and end on a plain track, and the spacing in the colour's place */
+.channel.v3-slices .levels::before { background: var(--line); }
+.channel.v3-slices input[type=number] { width: 48px; padding: 1px 3px; font-size: 11px; }
 #v3-stage.split #v3-gl, #v3-stage.split #v3-hud { width: 50%; }
 #v3-stage .v3-side { position: absolute; top: 0; left: 50%; width: 50%; height: 100%; border-left: 1px solid #333; }
 #v3-stage:not(.split) .v3-side { left: 0; width: 100%; border-left: 0; }

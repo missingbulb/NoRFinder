@@ -43,7 +43,8 @@ export function viewer(shell) {
   // One row per channel of the image on show, or per channel the study names before one: what the study says
   // of it, else what the file says, else its place (channels.js). Each row's checkbox shows or hides it, its
   // slider holds its black and white points and its colour picker recolours it; a double click on the slider
-  // puts the points back. They start over with every image.
+  // puts the points back. They start over with every image. Rows another viewer puts under them (rowsAfter) follow.
+  let added = [];
   function rows() {
     $("#channels").replaceChildren(...chans.map((c, k) => {
       const row = html("div", { className: "channel" + (c.on ? "" : " off") });
@@ -75,7 +76,7 @@ export function viewer(shell) {
       levels.ondblclick = () => { c.black = black.value = c.base.black; c.white = white.value = c.base.white; redraw(); };
       row.append(box, name, levels, pick);
       return row;
-    }));
+    }), ...added);
   }
   // the channels for n planes and what the file says of them, each with the points it starts from
   function choose(n, file) {
@@ -367,8 +368,10 @@ export function viewer(shell) {
     spacing.addEventListener("input", () => { const v = parseFloat(spacing.value); if (v > 0) { saved[unit()] = v; save(); } });
     return { draw: () => { draw(); pop.refill(); } };
   })();
-  $("#zoom-in").onclick = () => setZoom(st.zoom * 1.25);
-  $("#zoom-out").onclick = () => setZoom(st.zoom / 1.25);
+  // the zoom buttons zoom this view, or the view that took them over (zoomWith)
+  let zoomer = null;
+  $("#zoom-in").onclick = () => (zoomer ? zoomer(1.25) : setZoom(st.zoom * 1.25));
+  $("#zoom-out").onclick = () => (zoomer ? zoomer(1 / 1.25) : setZoom(st.zoom / 1.25));
 
   // the screen while the image's bytes arrive, before Python has read it: the study's painter draws them
   function preview(painter) {
@@ -387,6 +390,9 @@ export function viewer(shell) {
     use(h) { hooks = h || {}; }, channels: setChannels,
     // the rows as they stand, [{on, colour, black, white}] in plane order, and a listener for every redraw of them
     levels: () => chans, onDrawn: (fn) => drawnHeard.push(fn),
+    // another viewer's rows under the channels' rows, none to take them away, and the zoom buttons taken over by it
+    // (fn(factor)) or given back (null)
+    rowsAfter(els) { added = els; rows(); }, zoomWith(fn) { zoomer = fn; if (!fn) $("#zoom-label").textContent = Math.round(st.zoom * 100) + "%"; },
     draw, setZoom, fit, focus, toImage, layer, channelList: () => chans.map(({ name, colour }) => ({ name, colour })), minimapView: () => minimap.place(), preview, clear, shown, picture,
     get overlay() { return $("#overlay"); }, get scroller() { return $("#scroller"); },
   };
