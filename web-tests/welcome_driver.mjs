@@ -17,6 +17,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { offSite } from "./off_site.mjs";
+import { ENGINE } from "./engine.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -49,7 +50,7 @@ await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, content-type", "access-control-allow-methods": "GET, POST, PATCH" };
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
+const browser = await pw[ENGINE].launch();
 let failed = false;
 const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: " + what); } else console.log("ok: " + what); };
 const pause = (ms) => new Promise((ok) => setTimeout(ok, ms));

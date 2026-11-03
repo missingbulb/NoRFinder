@@ -20,6 +20,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { offSite } from "./off_site.mjs";
+import { ENGINE } from "./engine.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -82,7 +83,7 @@ async function google(route) {
   return json(404, { error: "not a call this test knows" });
 }
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
+const browser = await pw[ENGINE].launch();
 let failed = false;
 const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: " + what); } else console.log("ok: " + what); };
 const until = async (fn, ms = 5000) => { for (const end = Date.now() + ms; Date.now() < end; await new Promise((ok) => setTimeout(ok, 50))) if (await fn()) return true; return false; };

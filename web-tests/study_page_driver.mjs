@@ -19,6 +19,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { offSite } from "./off_site.mjs";
+import { ENGINE } from "./engine.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -59,7 +60,7 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
+const browser = await pw[ENGINE].launch();
 const problems = [];
 const done = async () => { await browser.close(); server.close(); for (const p of problems) console.error(p); process.exitCode = problems.length ? 1 : 0; };
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
@@ -103,8 +104,10 @@ try {
   if (result[0] !== "400 pixels above the threshold" || !result[1]) problems.push("the call's answer did not reach the study, or its layer was not drawn");
 
   // the switcher swaps studies in place: found by search, the image kept, the fixture's panels gone
-  const cdp = await ctx.newCDPSession(page);
+  // the listeners on the shell's own objects, as only Chromium's DevTools count them: null, not counted, in another engine
+  const cdp = ENGINE === "chromium" ? await ctx.newCDPSession(page) : null;
   const listeners = async () => {
+    if (!cdp) return null;
     let n = 0;
     for (const expression of ["document", "window", "document.querySelector('#scroller')", "document.querySelector('#overlay')"]) {
       const { result } = await cdp.send("Runtime.evaluate", { expression });

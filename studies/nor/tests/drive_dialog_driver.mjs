@@ -15,6 +15,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { offSite } from "../../../web-tests/off_site.mjs";
+import { ENGINE } from "../../../web-tests/engine.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -57,7 +58,7 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
+const browser = await pw[ENGINE].launch();
 const done = async (code, why) => { if (why) console.error(why); await browser.close(); server.close(); process.exit(code); };
 const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
 // what the page took from Drive: per file, how often the whole file and how often a piece of it

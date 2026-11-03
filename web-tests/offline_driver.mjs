@@ -21,6 +21,7 @@ import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
+import { ENGINE } from "./engine.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -61,7 +62,7 @@ const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: "
 
 // a profile of its own: a browser's private window can install nothing
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), "offline-"));
-const ctx = await pw[process.env.PW_ENGINE || "chromium"].launchPersistentContext(profile, { viewport: { width: 1400, height: 900 } });
+const ctx = await pw[ENGINE].launchPersistentContext(profile, { viewport: { width: 1400, height: 900 } });
 let driveDownloads = 0;
 await ctx.route("https://www.googleapis.com/**", (route) => {
   const u = new URL(route.request().url()), id = u.pathname.match(/\/drive\/v3\/files\/?(.*)$/)[1];
@@ -147,14 +148,17 @@ try {
   // Install as an app: only now does the page name its manifest, and the browser finds the site installable
   await page.click("#offline-install");
   await page.waitForSelector("link[rel=manifest]", { state: "attached" });
-  const cdp = await ctx.newCDPSession(page);
-  let errors = ["not asked"];
-  for (let t = 0; t < 20; t++) {
-    errors = (await cdp.send("Page.getInstallabilityErrors")).installabilityErrors.map((e) => e.errorId);
-    if (!errors.length) break;
-    await page.waitForTimeout(500);
-  }
-  check(!errors.length, "once asked for, the site is installable" + (errors.length ? ": " + errors.join(", ") : ""));
+  // only Chromium's DevTools say whether a site is installable; another engine is not asked
+  if (ENGINE === "chromium") {
+    const cdp = await ctx.newCDPSession(page);
+    let errors = ["not asked"];
+    for (let t = 0; t < 20; t++) {
+      errors = (await cdp.send("Page.getInstallabilityErrors")).installabilityErrors.map((e) => e.errorId);
+      if (!errors.length) break;
+      await page.waitForTimeout(500);
+    }
+    check(!errors.length, "once asked for, the site is installable" + (errors.length ? ": " + errors.join(", ") : ""));
+  } else console.log(`not checked in ${ENGINE}: whether the site is installable, which only Chromium's DevTools say`);
   await page.keyboard.press("Escape");
 
   // req/shell/offline/default: the network goes
