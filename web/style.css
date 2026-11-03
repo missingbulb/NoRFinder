@@ -432,11 +432,7 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
    it sweeps a copier's light bar back and forth over the image */
 #scan-light { display: none; }
 #busy.scan, #busy.peek { background: none; justify-content: flex-end; padding-bottom: 28px; pointer-events: none; overflow: hidden; }
-#busy.scan .spin.big, #busy.peek /* a button at work: held, with a small spinner after its label */
-button.working:disabled { opacity: 1; cursor: progress; }
-button.working::after { content: ""; display: inline-block; width: .75em; height: .75em; margin-left: .45em; vertical-align: -.1em;
-  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
-.spin.big { display: none; }
+#busy.scan .spin.big, #busy.peek .spin.big { display: none; }
 #busy.scan #busy-text, #busy.scan #busy-time, #busy.peek #busy-text, #busy.peek #busy-time { position: relative; z-index: 1; }
 #busy.scan #busy-text, #busy.peek #busy-text { padding: 5px 14px; border-radius: 999px; background: var(--shade); font-weight: 600; font-variant-numeric: tabular-nums; }
 #busy.scan #busy-time, #busy.peek #busy-time { margin-top: -6px; padding: 1px 10px; border-radius: 999px; background: var(--shade); color: var(--text); }
