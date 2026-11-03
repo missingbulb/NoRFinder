@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { offSite } from "./off_site.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -64,7 +65,7 @@ async function device({ offline = false, seed = {} } = {}) {
     const body = u.pathname === "/v1/userinfo" ? { name: "Ada Lovelace", email: "ada@acme.example" } : u.pathname === "/drive/v3/files" ? { files: [] } : { id: "acmefile" };
     route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify(body) });
   });
-  await ctx.route((u) => !u.href.startsWith(origin) && u.href !== GSI && !/^https:\/\/(www|openidconnect)\.googleapis\.com\//.test(u.href), (r) => r.abort());
+  await ctx.route((u) => offSite(origin)(u) && u.href !== GSI && !/^https:\/\/(www|openidconnect)\.googleapis\.com\//.test(u.href), (r) => r.abort());
   await ctx.addInitScript(([offline, seed]) => {
     delete Navigator.prototype.serviceWorker;
     if (offline) { window.netDown = sessionStorage.getItem("net") !== "up"; Object.defineProperty(Navigator.prototype, "onLine", { get: () => !window.netDown }); }

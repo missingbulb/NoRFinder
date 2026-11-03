@@ -18,6 +18,7 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { offSite } from "./off_site.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -62,7 +63,7 @@ const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
 const problems = [];
 const done = async () => { await browser.close(); server.close(); for (const p of problems) console.error(p); process.exitCode = problems.length ? 1 : 0; };
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
-await ctx.route((u) => !u.href.startsWith(origin), (r) => r.abort());
+await ctx.route(offSite(origin), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
 const page = await ctx.newPage();
 page.on("pageerror", (e) => problems.push("page error: " + e.message));
@@ -187,7 +188,7 @@ try {
     if (!fs.existsSync(f)) return r.fulfill({ status: 404, body: "" });
     r.fulfill({ body: fs.readFileSync(f), contentType: TYPES[path.extname(f)] || "application/octet-stream", headers: { "access-control-allow-origin": "*" } });
   });
-  await real.route((u) => !u.href.startsWith(origin) && !u.href.startsWith("https://cdn.jsdelivr.net/pyodide/"), (r) => r.abort());
+  await real.route(offSite(origin, "https://cdn.jsdelivr.net/pyodide/"), (r) => r.abort());
   await real.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
   const live = await real.newPage();
   live.on("pageerror", (e) => problems.push("page error: " + e.message));

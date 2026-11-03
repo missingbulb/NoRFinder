@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { offSite } from "../../../web-tests/off_site.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -53,7 +54,7 @@ const browser = await pw[process.env.PW_ENGINE || "chromium"].launch();
 const fail = async (why) => { console.error(why); await browser.close(); server.close(); process.exit(1); };
 const ctx = await browser.newContext();
 // nothing leaves this machine, and the cache of third-party files, which the stand-in never needs, is off
-await ctx.route((u) => !u.href.startsWith(origin), (r) => r.abort());
+await ctx.route(offSite(origin), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
 const page = await ctx.newPage();
 page.on("pageerror", (e) => fail("page error: " + e.message));

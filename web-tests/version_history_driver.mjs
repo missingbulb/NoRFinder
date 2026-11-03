@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { offSite } from "./off_site.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -53,7 +54,7 @@ const shot = async (page, name, sel) => { if (shots) await (sel ? page.locator(s
 // a page whose browser last saw `seen` (null: never visited)
 async function open(seen, theme = "dark") {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
-  await ctx.route((u) => !u.href.startsWith(origin), (r) => r.abort());
+  await ctx.route(offSite(origin), (r) => r.abort());
   await ctx.addInitScript(([seen, theme]) => {
     delete Navigator.prototype.serviceWorker;
     if (sessionStorage.getItem("primed")) return;

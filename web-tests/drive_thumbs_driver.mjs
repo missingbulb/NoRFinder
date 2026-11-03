@@ -13,6 +13,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import zlib from "node:zlib";
+import { offSite } from "./off_site.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -79,7 +80,7 @@ await ctx.route(`${origin}/studies/viewer/thumbs/*.jpg`, async (route) => {
   await new Promise((ok) => setTimeout(ok, delay(k)));
   try { await route.fulfill({ status: 200, contentType: "image/png", body: png(k + 1) }); } catch { /* aborted by the page */ }
 });
-await ctx.route((u) => !u.href.startsWith(origin) && !u.href.startsWith("https://www.googleapis.com/"), (r) => r.abort());
+await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
 await ctx.addInitScript((link) => {
   delete Navigator.prototype.serviceWorker;
   localStorage.setItem("nor-drive-link", JSON.stringify(link));

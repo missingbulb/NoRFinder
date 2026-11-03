@@ -13,6 +13,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { offSite } from "./off_site.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -78,7 +79,7 @@ const check = async (ok, what) => { report(ok, what); if (!ok) await done(1); };
 // window.open records the address it is given
 async function open(ua) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, ...(ua && { userAgent: ua }) });
-  await ctx.route((u) => !u.href.startsWith(origin), (r) => r.abort());
+  await ctx.route(offSite(origin), (r) => r.abort());
   await ctx.addInitScript((secret) => {
     delete Navigator.prototype.serviceWorker;
     window.open = (url) => { window.opened = url; return null; };

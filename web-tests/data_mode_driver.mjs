@@ -13,6 +13,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { repoFile } from "./repo_file.mjs";
+import { offSite } from "./off_site.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -132,7 +133,7 @@ const SIGNED_IN = { user: { name: "Tester", email: EMAIL, picture: null }, token
 async function open(signedIn) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   await ctx.route("https://www.googleapis.com/**", google);
-  await ctx.route((u) => !u.href.startsWith(origin) && !u.href.startsWith("https://www.googleapis.com/"), (r) => r.abort());
+  await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
   // the welcome popup answered before, and remembered (req/shell/account/welcome)
   await ctx.addInitScript((who) => {
     delete Navigator.prototype.serviceWorker;

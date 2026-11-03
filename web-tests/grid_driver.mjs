@@ -13,6 +13,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { repoFile } from "./repo_file.mjs";
+import { offSite } from "./off_site.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -81,7 +82,7 @@ const openPop = async (page) => { await page.hover("#grid-btn"); await page.wait
 const closePop = async (page) => { await page.mouse.move(700, 600); await page.keyboard.press("Escape"); await page.waitForFunction(() => !document.querySelector("#grid-pop").matches(":popover-open")); };
 
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
-await ctx.route((u) => !u.href.startsWith(origin), (r) => r.abort());
+await ctx.route(offSite(origin), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
 const page = await ctx.newPage();
 page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
@@ -146,7 +147,7 @@ await check(listed.some((t) => t.includes("Grid colour and spacing")), "Settings
 // a browser without interest invokers: the page's own hover opens and closes the popup, in the same place
 {
   const old = await browser.newContext({ viewport: { width: 1400, height: 900 } });
-  await old.route((u) => !u.href.startsWith(origin), (r) => r.abort());
+  await old.route(offSite(origin), (r) => r.abort());
   await old.addInitScript(() => { delete Navigator.prototype.serviceWorker; delete HTMLButtonElement.prototype.interestForElement; });
   const p2 = await old.newPage();
   p2.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });

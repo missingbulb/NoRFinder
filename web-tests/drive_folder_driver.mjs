@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { offSite } from "./off_site.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -47,7 +48,7 @@ const cors = { "access-control-allow-origin": "*" };
 // every folder is empty: what the dialog opens on is what is checked, not what it lists
 await ctx.route("https://www.googleapis.com/**", (route) =>
   route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ files: [] }) }));
-await ctx.route((u) => !u.href.startsWith(origin) && !u.href.startsWith("https://www.googleapis.com/"), (r) => r.abort());
+await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
 const page = await ctx.newPage();
 page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.message); });
