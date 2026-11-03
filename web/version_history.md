@@ -10,7 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
-- The status bar's storage, memory, network and CPU now fold into one gauge icon: hover it to see them, click it for the details. They also open by themselves while you are offline, the CPU or network is busy, or the tab uses over 1 GB. In Resource Usage you can set them to always open or always hidden instead. (#PR)
+- The status bar's storage, memory, network and CPU now fold into one gauge icon: hover it to see them, click it for the details. They also open by themselves while you are offline, the CPU or network is busy, or the tab uses over 1 GB. In Resource Usage you can set them to always open or always hidden instead. (#659)
 - Offline, the network icon in the status bar now carries a red mark, and notices the connection dropping or returning while you work, even when the Wi-Fi still says connected. It replaces the yellow Offline item. When the connection comes back, a study that could not load its Python loads it without a reload, and an open Google Drive or Make available offline popup refreshes by itself. (#656)
 - Popups and tips stay attached to their button when the window is resized, and the toolbar's popups and the stage's list also open when you reach their button with the keyboard. (#657)
 - Opening the page asks whether to sign in with Google or continue anonymously, and remembers your answer if you tick Remember this choice. Anonymous, a tip by your avatar offers signing in later. Offline, signing in waits until you are back online. (#649)
