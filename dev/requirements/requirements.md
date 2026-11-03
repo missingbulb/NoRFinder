@@ -1269,9 +1269,9 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   every setting is under a collapsed Advanced box. Each finder shows how it works under "How the
   <finder> algorithm works", its steps as a nested list (written as a Markdown outline), and every
   setting and filter value has a ? that says what it does (`detection/finder_help.py`; the test fails
-  when one is missing). Changed by the owner on 2026-11-03: the note ends with one highlighted line,
-  "Algorithm and filters give P, R based on N images (without filters P, R)": the finder list's precision
-  and recall after the best filter preset, the ground truth they rest on, and the finder's own before any filter;
+  when one is missing). Changed by the owner on 2026-11-03: the note ends with "<Finder> algorithm plus
+  default filters show precision of X and recall of Y based on N images", in bold, the numbers the finder
+  list shows, then "(without filters: …)", the finder's own, not bold;
   each finder in the list carries its own icon, the study's choice; the settings start folded.
   Test: `studies/nor/tests/test_processing_box.py`.
   </details>

@@ -1,8 +1,8 @@
 // Drives the page (web/) in headless Chromium with a stand-in worker that answers only the study's ready() (READY,
 // written by tests/test_processing_box.py), and checks the Processing box before any image: its settings and its
 // algorithm note start folded; each finder in the list carries its icon; the note's title names the chosen
-// algorithm, its explanation is drawn as a nested list of steps, and it highlights its precision and recall after the
-// filters, as the list shows them, with those before any filter beside them. Prints what it saw; exits 1 on a failure, 2
+// algorithm, its explanation is drawn as a nested list of steps, and it gives in bold its precision and recall with its
+// default filters, as the list shows them, with those before any filter after them, not bold. Prints what it saw; exits 1 on a failure, 2
 // when it cannot run.
 //   node tests/processing_box_driver.mjs READY
 import { repoFile } from "../../../web-tests/repo_file.mjs";
@@ -69,20 +69,22 @@ try {
       const n = document.querySelector("#finder-note"), sel = document.querySelector("#finder");
       return {
         title: document.querySelector("#about-box summary").textContent, nested: !!n.querySelector("li > ul > li, li > ol > li"),
-        text: n.textContent, strong: n.querySelector("strong")?.textContent, raw: /(^|\n)\s*- /.test(n.innerText), option: sel.selectedOptions[0].textContent,
+        text: n.textContent, strong: n.querySelector("strong")?.textContent, line: n.querySelector("strong")?.parentElement.textContent, raw: /(^|\n)\s*- /.test(n.innerText), option: sel.selectedOptions[0].textContent,
       };
     });
     console.log(k, JSON.stringify(note));
     if (note.nested) nested++;
-    const name = READY.finders[k];
-    if (note.title !== `How the ${name} algorithm works`) problems.push(`${k}: the note's title does not name the algorithm: ${note.title}`);
+    if (note.title !== `How the ${READY.finders[k]} algorithm works`) problems.push(`${k}: the note's title does not name the algorithm: ${note.title}`);
     if (note.raw) problems.push(`${k}: the note shows its list's markup instead of a list`);
-    // the highlighted numbers are the list's, after the best filter preset, with the finder's own before any filter
+    // the bold line gives the finder with its default filters, as the list does; the finder alone follows, not bold
+    const def = QUALITY.finders[k].filtered.balanced, own = QUALITY.finders[k].finder, n = QUALITY.images.length;
     const [, lp, lr] = note.option.match(/\(P\s(\.\d+)\s·\sR\s(\.\d+)\)/) || [];
-    const own = QUALITY.finders[k].finder, m = (note.strong || "").match(/^Algorithm and filters give P:\s([\d.]+), R:\s([\d.]+) based on (\d+) images? \(without filters P:\s([\d.]+), R:\s([\d.]+)\)$/);
-    if (!m) problems.push(`${k}: the note does not highlight "Algorithm and filters give P, R based on N images (without filters P, R)": ${note.strong}`);
-    else if (+m[1] !== +lp || +m[2] !== +lr || +m[3] !== QUALITY.images.length || +m[4] !== +own.precision.toFixed(2) || +m[5] !== +own.recall.toFixed(2))
-      problems.push(`${k}: the highlighted numbers ${m.slice(1)} are not the list's ${lp}, ${lr} on ${QUALITY.images.length} images, without filters ${own.precision}, ${own.recall}`);
+    if (+lp !== +def.precision.toFixed(2) || +lr !== +def.recall.toFixed(2)) problems.push(`${k}: the list's ${lp}, ${lr} are not its default filters' ${def.precision}, ${def.recall}`);
+    const name = READY.finders[k][0].toUpperCase() + READY.finders[k].slice(1);
+    const bold = `${name} algorithm plus default filters show precision of ${def.precision.toFixed(2)} and recall of ${def.recall.toFixed(2)} based on ${n} image${n > 1 ? "s" : ""}`;
+    const plain = `(without filters: precision of ${own.precision.toFixed(2)} and recall of ${own.recall.toFixed(2)})`;
+    if (note.strong !== bold) problems.push(`${k}: the bold line reads "${note.strong}", not "${bold}"`);
+    if (!note.line || note.line.replace(/\s+/g, " ") !== `${bold} ${plain}`) problems.push(`${k}: the numbers' line reads "${note.line}", not "${bold} ${plain}"`);
   }
   if (!nested) problems.push("no finder's note draws a step with steps of its own");
 } catch (e) {
