@@ -14,6 +14,7 @@ import http from "node:http";
 import path from "node:path";
 import { offSite } from "../../../web-tests/off_site.mjs";
 import { ENGINE } from "../../../web-tests/engine.mjs";
+import { asTagger } from "../../../web-tests/tagger.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -66,6 +67,7 @@ const check = async (ok, what, seen) => { console.log((ok ? "ok    " : "FAIL  ")
 async function open() {
   const ctx = await browser.newContext({ viewport: { width: 1200, height: 700 } });
   await ctx.route(offSite(origin), (r) => r.abort());
+  await asTagger(ctx); // ground truth is made by a Ground Truth Tagger (req/shell/account/role)
   await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
