@@ -14,19 +14,21 @@ export const GRID = "nor-grid";
 // the user's minimap: {mode: "open" | "collapsed" | "hidden", opacity: 0.1 to 1, how opaque it is at rest}
 export const MINIMAP = "nor-minimap";
 
-// a popup that opens while the pointer is over its button or itself, and stays while the user is at one of
-// its fields; fill() writes the current values into it as it opens
+// a popup that opens while the pointer is over its button or itself, or the button has the keyboard's focus, and
+// stays while the user is at one of its fields; the button is its anchor, which the stylesheet places it by. The
+// browser's own interest invoker does this where it has one. fill() writes the current values into it as it opens
 export function hoverPop(btn, pop, fill) {
-  let leaving = null;
-  function show() {
-    clearTimeout(leaving); fill();
-    if (!pop.matches(":popover-open")) pop.showPopover();
-    const r = btn.getBoundingClientRect();
-    Object.assign(pop.style, { top: r.bottom + 6 + "px", left: Math.max(8, Math.min(r.right - pop.offsetWidth, innerWidth - pop.offsetWidth - 8)) + "px" });
+  pop.addEventListener("beforetoggle", (e) => { if (e.newState === "open") fill(); });
+  const show = () => { if (!pop.matches(":popover-open")) pop.showPopover({ source: btn }); };
+  if ("interestForElement" in HTMLButtonElement.prototype) btn.interestForElement = pop;
+  else {
+    let leaving = null;
+    const stay = () => clearTimeout(leaving);
+    const leave = () => { stay(); leaving = setTimeout(() => { if (!pop.matches(":hover, :focus-within") && !btn.matches(":hover, :focus")) pop.hidePopover(); }, 300); };
+    for (const on of ["mouseenter", "focus"]) btn.addEventListener(on, () => { stay(); show(); });
+    for (const off of ["mouseleave", "blur"]) btn.addEventListener(off, leave);
+    pop.addEventListener("mouseenter", stay); pop.addEventListener("mouseleave", leave);
   }
-  const leave = () => { clearTimeout(leaving); leaving = setTimeout(() => { if (!pop.matches(":hover, :focus-within") && !btn.matches(":hover")) pop.hidePopover(); }, 300); };
-  btn.addEventListener("mouseenter", show); btn.addEventListener("mouseleave", leave);
-  pop.addEventListener("mouseenter", () => clearTimeout(leaving)); pop.addEventListener("mouseleave", leave);
   return { show, refill: () => { if (pop.matches(":popover-open")) fill(); } };
 }
 

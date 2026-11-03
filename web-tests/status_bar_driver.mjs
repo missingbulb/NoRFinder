@@ -12,6 +12,7 @@
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { helpTip, anyHelp } from "./help_tip.mjs";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
@@ -104,13 +105,17 @@ const steps = async (page, want, shining) => {
   const b = await bar(page);
   await check(b.crumbs.join() === want.join() && b.shining.join() === shining.join(), `crumbs ${want.join(" › ")}, shining ${shining.join() || "nothing"}`, b);
 };
-// what hovering a crumb says
+// what hovering a crumb says, shown above the crumb and gone once the pointer leaves; focusing it says the same
 const tip = async (page, name) => {
-  await page.hover(`#sb-steps .crumb >> text=${name}`);
-  await page.waitForFunction(() => !document.querySelector("#tip").hidden);
-  const t = await page.textContent("#tip");
+  const sel = `#sb-${await page.evaluate((n) => [...document.querySelectorAll("#sb-steps .crumb")].find((c) => c.textContent === n).id.slice(3), name)}`;
+  const t = await helpTip(page, sel);
+  await check(t.side === "above", `${name}'s help shows above it`, t);
   await page.mouse.move(700, 300);
-  return t;
+  await check(!(await anyHelp(page)), `and goes when the pointer leaves`);
+  const f = await helpTip(page, sel, { focus: true });
+  await check(f.text === t.text && f.side === "above", `focusing ${name} shows the same help`, f);
+  await page.evaluate(() => document.activeElement.blur());
+  return t.text || "";
 };
 // the stage: a traffic light lit in its colour, with no words
 const stageIs = async (page, stage, light) => {

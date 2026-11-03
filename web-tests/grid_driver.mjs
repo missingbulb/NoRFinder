@@ -1,6 +1,7 @@
 // Drives the page (web/) in headless Chromium on the fixture study, with a stand-in worker answering from
 // ANSWERS (tests/test_study_runs.py), and checks the grid: its button draws it and takes it away; a click or a
-// hover opens the popup of its colour and spacing; the spacing is in µm with a scale, the cells square in µm
+// hover opens the popup of its colour and spacing, under the button, by the browser's interest invoker or, in a
+// browser without one, the page's own hover and focus; the spacing is in µm with a scale, the cells square in µm
 // on a pixel taller than wide, and in pixels without one, each kept apart; the grid stays on from one image to
 // the next and through zoom; the choices outlive a reload and Settings lists them. Optional SHOTS: a
 // directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
@@ -70,6 +71,12 @@ const pop = (page) => page.evaluate(() => {
   return { open: el.matches(":popover-open"), unit: el.querySelector("#grid-unit").textContent, spacing: el.querySelector("#grid-spacing").value, colour: el.querySelector("#grid-colour").value };
 });
 const set = (page, sel, v) => page.evaluate(([sel, v]) => { const i = document.querySelector(sel); i.value = v; i.dispatchEvent(new Event("input", { bubbles: true })); }, [sel, v]);
+// whether the popup is open under its button, their right edges lined up and inside the window; seen: the numbers
+const placed = (page, seen) => page.evaluate((seen) => {
+  const p = $("#grid-pop").getBoundingClientRect(), b = $("#grid-btn").getBoundingClientRect();
+  const m = { open: $("#grid-pop").matches(":popover-open"), gap: p.top - b.bottom, right: p.right - b.right, left: p.left, rightEdge: innerWidth - p.right };
+  return seen ? m : m.open && m.gap >= 4 && m.gap <= 8 && Math.abs(m.right) <= 1 && m.left >= 0 && m.rightEdge >= 0;
+}, !!seen);
 const openPop = async (page) => { await page.hover("#grid-btn"); await page.waitForFunction(() => document.querySelector("#grid-pop").matches(":popover-open")); };
 const closePop = async (page) => { await page.mouse.move(700, 600); await page.keyboard.press("Escape"); await page.waitForFunction(() => !document.querySelector("#grid-pop").matches(":popover-open")); };
 
@@ -99,6 +106,8 @@ await closePop(page);
 await page.hover("#grid-btn");
 await page.waitForFunction(() => document.querySelector("#grid-pop").matches(":popover-open")).catch(() => {});
 await check((await pop(page)).open, "hovering the button opens the popup");
+await check(await page.evaluate(() => $("#grid-btn").interestForElement === $("#grid-pop")), "the browser's own hover, the button an interest invoker of the popup");
+await check(await placed(page), "the popup sits under its button, their right edges lined up", await placed(page, true));
 await page.mouse.move(700, 600);
 await page.waitForFunction(() => !document.querySelector("#grid-pop").matches(":popover-open")).catch(() => {});
 await check(!(await pop(page)).open, "moving away from the button and the popup closes it");
@@ -133,4 +142,26 @@ await page.click("#user-menu summary"); await page.click("#open-settings");
 await page.waitForFunction(() => document.querySelector("#settings-dlg").open);
 const listed = await page.$$eval('#settings-dlg input[name="device-only"]', (is) => is.map((i) => i.closest("label").textContent));
 await check(listed.some((t) => t.includes("Grid colour and spacing")), "Settings lists the grid's settings, kept on this device only", listed);
+
+// a browser without interest invokers: the page's own hover opens and closes the popup, in the same place
+{
+  const old = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  await old.route((u) => !u.href.startsWith(origin), (r) => r.abort());
+  await old.addInitScript(() => { delete Navigator.prototype.serviceWorker; delete HTMLButtonElement.prototype.interestForElement; });
+  const p2 = await old.newPage();
+  p2.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
+  await p2.goto(origin + "/web/fixture");
+  await p2.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
+  await load(p2, [0.2, 0.5]);
+  await check(!(await p2.evaluate(() => $("#grid-btn").hasAttribute("interestfor"))), "without interest invokers the button carries none");
+  await p2.hover("#grid-btn");
+  await p2.waitForFunction(() => document.querySelector("#grid-pop").matches(":popover-open")).catch(() => {});
+  await check(await placed(p2), "hovering opens the popup under its button all the same", await placed(p2, true));
+  await p2.mouse.move(700, 600);
+  await p2.waitForFunction(() => !document.querySelector("#grid-pop").matches(":popover-open")).catch(() => {});
+  await check(!(await pop(p2)).open, "and moving away closes it");
+  await p2.focus("#grid-btn");
+  await p2.waitForFunction(() => document.querySelector("#grid-pop").matches(":popover-open")).catch(() => {});
+  await check((await pop(p2)).open, "focusing the button opens it too");
+}
 await done(0);
