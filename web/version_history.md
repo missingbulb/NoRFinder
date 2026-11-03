@@ -10,9 +10,6 @@ carried all its pull requests. The `writing-version-history` skill says how.
 
 ## Next release
 
-The Tasks button switches to the tasks again after you Unload an image and load another; before,
-it did nothing until the page was reloaded. (#711)
-
 A z-stack now opens in 3D only, with no 2D/3D switch, the Image Viewer included, while a flat image
 opens in 2D; a plain multi-page TIFF opens as a stack in Vascular Measurements too. Edit Image on a
 stack leaves out Crop, the cut lines and Imperfections. In the Image Viewer the Image box stays open
@@ -23,7 +20,9 @@ same spot opens it again. Dragging the bar's edge to the left also collapses it,
 strip's edge out opens it. A folded drawer opens from a click anywhere on it, not just its title.
 (#709, #714)
 
-An image opening in NoR Finder now builds in grey while it downloads, and its colours wipe down over it once it is in; one opened from this computer fades in. No more stray colours that looked like a glitch before the image settled. (#715)
+An image opening in NoR Finder now builds in grey while it downloads, and its colours wipe down
+over it once it is in; one opened from this computer fades in, with no stray colours. The Tasks
+button works again after you Unload an image and load another. (#711, #715)
 
 ## 0.11103.79
 
