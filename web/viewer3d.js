@@ -1,6 +1,6 @@
-// The 3D viewer: the 2D viewer of a stack's flattened planes (viewer2d.js, whose interface it keeps), and beside it
-// a 3D view of every slice, a WebGL2 ray-caster the toolbar's 2D/3D switch turns to. Each shown channel is drawn
-// in its colour between its row's black and white points, so the rows drive both views. The study's `view` in
+// The 3D viewer: a stack shown in 3D only, a WebGL2 ray-caster through every slice, in the place of the 2D viewer of
+// its flattened planes (viewer2d.js), whose interface it keeps; that flat view shows only where WebGL2 is missing.
+// Each shown channel is drawn in its colour between its row's black and white points, so the rows drive it. The study's `view` in
 // study.json sets what the 3D view opens with: render ("brightest" | "surface"), depthColour, and the spacing
 // between slices when the file does not say, with who stated it (spacingSource).
 //
@@ -181,12 +181,7 @@ export function viewer3d(shell, flat) {
   const drawers = [], spacingHeard = [];
   let half = [1, 1, 0.1];
 
-  // ---------- the page's parts: the switch in the toolbar, the stage beside the 2D one with its tools over it ----------
-  const sw = html("div", { id: "v3-switch", className: "seg for-image", hidden: true });
-  sw.setAttribute("role", "group"); sw.setAttribute("aria-label", "2D or 3D");
-  const b2 = html("button", { id: "v3-2d", type: "button", textContent: "2D", title: "The stack flattened: each pixel the brightest of the slices shown" });
-  const b3 = html("button", { id: "v3-3d", type: "button", textContent: "3D", title: "The stack in 3D: drag to turn it, a sideways scroll spins it, the wheel zooms, shift-drag pans" });
-  sw.append(b2, b3);
+  // ---------- the page's parts: the 3D tools in the toolbar, the stage in the 2D one's place ----------
   // the 3D tools, as the 2D ones are: toolbar buttons, each opening its settings while the pointer is over it
   const icon = (paths) => `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">${paths}</g></svg>`;
   const tools = html("div", { id: "v3-tools", className: "group", hidden: true });
@@ -210,8 +205,7 @@ export function viewer3d(shell, flat) {
       <label>Spacing <input id="v3-zs" type="number" min="0.05" max="50" step="0.05" aria-label="Spacing between slices, µm"> µm</label>
     </div>`;
   const bar = $("#view .toolbar"), zoom = $("#zoom-out").parentElement;
-  bar.insertBefore(sw, zoom.parentElement === bar ? zoom : bar.firstChild);
-  bar.insertBefore(tools, sw);
+  bar.insertBefore(tools, zoom.parentElement === bar ? zoom : bar.firstChild);
   const stage = html("div", { id: "v3-stage", hidden: true });
   const cv = html("canvas", { id: "v3-gl" }), hudCv = html("canvas", { id: "v3-hud" }), note = html("p", { id: "v3-note" });
   stage.append(cv, hudCv, note);
@@ -423,25 +417,22 @@ export function viewer3d(shell, flat) {
     mode3d = on && !!vol;
     stage.hidden = !mode3d; tools.hidden = !mode3d; $("#scroller").hidden = mode3d;
     if (mode3d) $("#view").dataset.v3 = ""; else delete $("#view").dataset.v3;
-    b2.setAttribute("aria-pressed", String(!mode3d)); b3.setAttribute("aria-pressed", String(mode3d));
     redraw();
   }
-  b2.onclick = () => show3d(false);
-  b3.onclick = () => show3d(true);
 
   // ---------- the image ----------
   function take(im) {
     const C = im && im.Z > 1 ? Math.floor(im.planes.length / (im.W * im.H * (1 + im.Z))) : 0;
-    if (!active || !C) { vol = null; sw.hidden = true; show3d(false); return; }
+    if (!active || !C) { vol = null; show3d(false); return; }
     // the volume is the study's to read as well as the 3D view's to draw: made without WebGL2 too, which only the view needs
     const drawn = !!initGL();
     const bin = Math.max(1, Math.ceil(Math.max(im.W, im.H) / (drawn ? Math.min(MAX_SIDE, gl.getParameter(gl.MAX_3D_TEXTURE_SIZE)) : MAX_SIDE)));
     const { vols, X, Y } = binned(im.planes, C * im.W * im.H, Math.min(C, CHANNELS), im.Z, im.W, im.H, bin);
-    // an edit redrawn (req/shell/data/edit) is the same image: the view stays as the user left it, 2D or 3D, turned
-    const again = im.edited && !!vol, was3d = mode3d;
+    // an edit redrawn (req/shell/data/edit) is the same image: the view stays as the user left it, turned
+    const again = im.edited && !!vol;
     vol = { vols, X, Y, Z: im.Z, bin };
     const v = shell.study?.view || {};
-    if (again) { Object.assign(S, { z0: 0, z1: im.Z - 1 }); ui("v3-z0").max = ui("v3-z1").max = im.Z - 1; upload(); sync(); return show3d(was3d); }
+    if (again) { Object.assign(S, { z0: 0, z1: im.Z - 1 }); ui("v3-z0").max = ui("v3-z1").max = im.Z - 1; upload(); sync(); return show3d(drawn); }
     Object.assign(S, { mode: v.render === "surface" ? 1 : 0, depth: v.depthColour ? 1 : 0, z0: 0, z1: im.Z - 1,
       rot: facing(0, 0), dist: FIT_DIST, pivot: [0, 0, 0], clip: null, spot: null });
     ui("v3-z0").max = ui("v3-z1").max = im.Z - 1;
@@ -449,7 +440,7 @@ export function viewer3d(shell, flat) {
     else if (v.spacing) { S.zs = v.spacing; spacingNote(v.spacingSource || "the study"); }
     else { S.zs = 1; spacingNote(null); }
     if (drawn) upload();
-    sw.hidden = !drawn; sync(); show3d(drawn);
+    sync(); show3d(drawn);
   }
   page.watch("image", take);
 

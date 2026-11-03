@@ -26,8 +26,8 @@ second study needs it, not before.
 A study is a folder with a `study.json`:
 
 - `listed` — whether the header's study switcher offers it (`true` or `false`; the fixture is not).
-- `viewer` — the viewer it is shown in (`image2d`, or `image3d` for z-stacks: the 2D view of the flattened
-  stack plus a 3D one), and optionally `view`, what the 3D view opens with: `render` (`brightest` or
+- `viewer` — the viewer it is shown in (`image2d`, or `image3d` for z-stacks: the stack in 3D
+  only, no switch to a flat view), and optionally `view`, what the 3D view opens with: `render` (`brightest` or
   `surface`), `depthColour`, `spacing` (µm between slices when the file does not say) and
   `spacingSource` (who stated it).
 - `python` — `paths` (folders, relative to the study, its modules are imported from), `entry` (the
