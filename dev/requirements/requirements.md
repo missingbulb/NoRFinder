@@ -189,7 +189,8 @@ spec does not have.
   Set by the owner on 2026-11-02. Choosing an image in the tree or the folder view opens its preview
   in the study's viewer, a stack in 3D, quick and the same for everyone; the Image box's Load becomes
   Load Original, which opens the image itself from the copy kept on this device when it has one,
-  else from Drive. A data manager can mark an image as needing ground truth: the page creates an
+  else from Drive. A preview that cannot be read (a damaged previews file) shows as no preview, and the image,
+  chosen, opens itself instead. A data manager can mark an image as needing ground truth: the page creates an
   empty `<name>.ground_truth.MISSING` beside it, and unmarking trashes only a marker the page made.
   Whoever makes the ground truth adds its file and drops the marker. Test:
   `web-tests/test_data_mode_page.py`, `web-tests/test_previews_writer.py`.
@@ -217,6 +218,17 @@ spec does not have.
   page did not make is left alone, and the page says to delete it in Drive to let the page manage it;
   deleting the page's own makes it start over. Test: `web-tests/test_data_mode_page.py`,
   `web-tests/test_previews_writer.py`.
+  </details>
+
+- `req/shell/dialogs/open-from-button` A popup dialog a button opens grows out of that button.
+  <details>
+
+  Set by the owner on 2026-11-03. Every modal dialog on the page, the shell's and a study's, opened by
+  a click on a button or a link (or the keyboard pressing one), grows from that button's place and size
+  to its own in a fifth of a second, fading in, while its backdrop darkens. A dialog nothing pressed
+  opens, the Welcome on arrival say, appears at once, as does every dialog with animations off
+  (`req/shell/resources-dialog/animations`) or reduced motion asked for. Test:
+  `web-tests/test_dialog_motion_page.py`.
   </details>
 
 - `req/shell/drive/dialog` Google Drive: paste a shared link, no sign-in; browse folders; open on Open, double click or Enter.
@@ -924,12 +936,13 @@ spec does not have.
   NoR Finder GT. Test: `web-tests/test_study_contract.py`, `web-tests/test_status_bar_page.py`.
   </details>
 
-- `req/shell/study/switch-in-place` Switching study happens in place: no reload, and the open image stays open.
+- `req/shell/study/switch-in-place` Switching study happens in place: no reload, and the new study starts with no image open.
   <details>
 
   Choosing a study in the switcher, or going back and forward between studies, changes the address
   and swaps the study without reloading the page: Python stays loaded and adds only the packages the
-  new study needs, and the image on show opens in the new study at once. The study that leaves
+  new study needs. The image on show is unloaded, as Unload does, and nothing of it carries over (its
+  steps, its results, Python's copy of it), so the new study starts as one just opened. The study that leaves
   takes its panels, its stylesheet, its drawing and its listeners with it (each listener it adds
   outside its own panels carries `shell.signal`), and an answer its Python was still working on is
   dropped. Test: `web-tests/test_study_runs.py`.

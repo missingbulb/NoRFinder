@@ -11,7 +11,10 @@ writes those versions into this file. Releases with no visible change are left o
 
 ## Next release
 - In the 3D view, a sideways scroll spins the stack about the line of sight (it panned before), and dragging no longer stops at a side-on view: it turns on, like a trackball. (#689)
+- Switching study unloads the open image: the new study starts with none open. (#686)
+- A popup opened by a button grows out of that button. (#691)
 - The study switcher shows each study's own icon beside its name. (#684)
+- In Data Management, a folder whose previews file is damaged shows its images without previews, and an image chosen opens itself, instead of failing. (#683)
 - LZW-compressed TIFFs, as ImageJ and bfconvert write them, open. (#676)
 - The big spinner shows again while the page waits for Python. (#674)
 - Firefox 147 and Safari 26, and later, are supported browsers: the status bar no longer warns in them, and the site lists them. (#672)
