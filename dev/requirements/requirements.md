@@ -404,6 +404,20 @@ spec does not have.
   `web-tests/test_study_runs.py`, `web-tests/test_compressed_tiff.py`.
   </details>
 
+- `req/shell/left-bar/collapse` The left bar collapses to a narrow Steps strip, giving the image its room, and expands again (remembered).
+  <details>
+
+  Set by the owner on 2026-11-03. A small tab holding a chevron sits on the gutter between the open
+  left bar and the image, at its middle; clicking it collapses the bar to a narrow strip like the
+  Data Management strip (`req/shell/data/mode`), the same width and a small gap from it: the chevron,
+  the drawers' step marks (a number, or a check once done), and "Steps" upright. Clicking the strip
+  expands the bar again; clicking a step mark expands it with that drawer open. Collapsing and
+  expanding slide as Data Management's column does, the drawers sliding in on the way out. The bar's
+  width is kept for its return, and it cannot be dragged while collapsed. Collapsed or not stays with
+  the device, beside the width (`req/shell/left-bar/width`).
+  Test: `web-tests/test_left_bar_page.py`.
+  </details>
+
 - `req/shell/left-bar/folding` The left bar's boxes stay folded until their step makes them useful, and fold again once it is done.
   <details>
 
