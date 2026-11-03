@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>rauntruth.com app</title>
-<meta name="version" id="site-version" title="version 0.11103.78">
+<meta name="version" id="site-version" title="version 0.11103.83">
 <meta name="description" content="Image studies that run in your browser: find, count and measure in microscopy images, then review every result. Online or offline.">
 <link rel="icon" id="favicon" href="icon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
@@ -73,6 +73,7 @@
   </aside>
   <aside id="left">
     <div id="left-strip" title="Expand the left bar, with the study's steps"><button id="left-expand" type="button" aria-expanded="false" aria-controls="left" aria-label="Expand the left bar"><svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button><div id="left-marks" aria-label="The steps"></div><span class="strip-name">Steps</span></div>
+    <div id="left-head"><button id="left-collapse" type="button" aria-expanded="true" aria-controls="left" title="Collapse the left bar, to give the image its room" aria-label="Collapse the left bar"><svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button><span class="strip-name">Steps</span></div>
     <section class="box foldable" id="image-box" data-folds="load">
       <div class="sec-head"><h2 data-done-name="Loaded Image">Load Image</h2></div>
       <details id="file-box" class="empty"><summary id="file-name" class="dim" data-log-as="the image's name">No image loaded</summary><dl id="file-info"></dl></details>
@@ -113,19 +114,19 @@
       <div class="sec-head"><h2>Edit Image</h2></div>
       <div class="edit-row"><span class="edit-label">Split</span><div class="tabs" id="edit-split" role="group" aria-label="Split"><button type="button" data-n="1">None</button><button type="button" data-n="2">2 × 2</button><button type="button" data-n="3">3 × 3</button></div></div>
       <p class="hint" id="edit-split-hint" hidden>Drag a cut line on the image to move it; click a part to leave it out, and again to keep it.</p>
-      <div class="edit-row"><span class="edit-label">Crop</span><button id="edit-crop" type="button" aria-pressed="false" title="Draw the rectangle to keep on the image">Draw</button><span id="edit-crop-size" class="hint"></span><button id="edit-crop-reset" type="button" class="link" hidden>whole image</button></div>
+      <div class="edit-row" id="edit-crop-row"><span class="edit-label">Crop</span><button id="edit-crop" type="button" aria-pressed="false" title="Draw the rectangle to keep on the image">Draw</button><span id="edit-crop-size" class="hint"></span><button id="edit-crop-reset" type="button" class="link" hidden>whole image</button></div>
       <div id="edit-slices-sec">
         <div class="edit-row"><span class="edit-label">Slices</span><span id="edit-z-text" class="hint"></span><span class="grow"></span><button id="edit-suggest" type="button" class="link">Use suggested</button></div>
         <div class="levels slices" id="edit-slices" title="The first and the last slice kept; the band marks the slices that hold signal"><div id="edit-band"></div><input type="range" id="edit-z0" step="1" aria-label="First slice kept"><input type="range" id="edit-z1" step="1" aria-label="Last slice kept"></div>
       </div>
       <div class="edit-row top"><span class="edit-label">Channels</span><div id="edit-channels"></div></div>
-      <div class="edit-row top"><span class="edit-label">Imperfections</span><div><button id="edit-lasso" type="button" aria-pressed="false" title="Draw around a part of the image to leave it out of every slice">Mark</button><ul id="edit-flaws"></ul></div></div>
+      <div class="edit-row top" id="edit-flaws-row"><span class="edit-label">Imperfections</span><div><button id="edit-lasso" type="button" aria-pressed="false" title="Draw around a part of the image to leave it out of every slice">Mark</button><ul id="edit-flaws"></ul></div></div>
       <div class="edit-row end"><button id="edit-save" class="primary" type="button">Save…</button><button id="edit-done" type="button" title="Leave Edit Image and show the image as it was">Done</button></div>
     </section>
 
     <slot-here data-slot-for="left"></slot-here>
   </aside>
-  <div class="gutter" id="gutter-left" title="Drag to resize"><button id="left-collapse" type="button" aria-expanded="true" aria-controls="left" title="Collapse the left bar, to give the image its room" aria-label="Collapse the left bar"><svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button></div>
+  <div class="gutter" id="gutter-left" title="Drag to resize; drag it to the left edge to collapse the bar"></div>
 
   <main id="view">
     <div class="toolbar">
@@ -179,16 +180,17 @@
   <span id="sb-now"><span class="spin" id="spin"></span><span id="status">Starting…</span></span>
   <span id="sb-thumbs"></span>
   <span class="grow"></span>
-  <button id="sb-report" class="sb-item" type="button" aria-label="Report a problem" title="Report a problem: opens a new GitHub issue filled in with your browser, the study, where you are in it and your last actions" data-needs-network><svg class="bug" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="6" height="8.5" rx="3"/><path d="M6.3 5a1.7 1.7 0 0 1 3.4 0M8 8v5.5M2.5 7.5 5 8.3M13.5 7.5 11 8.3M2.5 11.5 5 11M13.5 11.5 11 11M3.5 3.5l2 1.7M12.5 3.5l-2 1.7"/></svg><svg class="warn" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.8 14.8 13.6H1.2Z"/><path d="M8 6v3.6"/><circle cx="8" cy="11.6" r=".4"/></svg></button>
   <span id="sb-res" data-mode="auto">
     <span id="sb-res-items">
       <button id="sb-disk" class="sb-item" type="button" title="What this site keeps on this device. Click to manage it." aria-label="Storage"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="13" height="8" rx="1.5"/><path d="M4 9.5h4"/><circle cx="11.5" cy="9.5" r=".4"/></svg><span class="v"></span></button>
       <button id="sb-memory" class="sb-item" type="button" aria-label="Memory"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="13" height="6.5" rx="1"/><path d="M4.5 6.5v1.5M7 6.5v1.5M9 6.5v1.5M11.5 6.5v1.5M3.5 10.5v2M6 10.5v2M8 10.5v2M10 10.5v2M12.5 10.5v2"/></svg><span class="v"></span></button>
-      <button id="sb-net" class="sb-item" type="button" title="How fast this tab is downloading now. Click for more." aria-label="Network"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8.5M4.5 7 8 10.5 11.5 7M2.5 13.5h11"/></svg><svg class="no-net" viewBox="0 0 10 10" width="10" height="10" aria-hidden="true"><circle cx="5" cy="5" r="4.5"/><path d="M3.2 3.2l3.6 3.6M6.8 3.2 3.2 6.8"/></svg><span class="v"></span></button>
+      <button id="sb-net" class="sb-item" type="button" title="How fast this tab is downloading now. Click for more." aria-label="Network"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8.5M4.5 7 8 10.5 11.5 7M2.5 13.5h11"/></svg><span class="v"></span></button>
       <button id="sb-cpu" class="sb-item" type="button" title="How busy this tab's threads are now, as a share of one core. Click for more." aria-label="CPU"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="8" height="8" rx="1"/><rect x="6.5" y="6.5" width="3" height="3"/><path d="M6 1.5V4M10 1.5V4M6 12v2.5M10 12v2.5M1.5 6H4M1.5 10H4M12 6h2.5M12 10h2.5"/></svg><span class="v"></span></button>
     </span>
-    <button id="sb-res-icon" class="sb-item" type="button" title="Storage, memory, network and CPU. Hover to see them, click for more." aria-label="Resources"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 11.5a6 6 0 0 1 12 0"/><path d="M8 11.5 10.6 7.3"/><circle cx="8" cy="11.5" r=".7"/><path d="M4.2 8 5 8.6M8 5.5v1M11.8 8l-.8.6"/></svg><svg class="no-net" viewBox="0 0 10 10" width="10" height="10" aria-hidden="true"><circle cx="5" cy="5" r="4.5"/><path d="M3.2 3.2l3.6 3.6M6.8 3.2 3.2 6.8"/></svg></button>
+    <button id="sb-res-icon" class="sb-item" type="button" title="Storage, memory, network and CPU. Hover to see them, click for more." aria-label="Resources"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 11.5a6 6 0 0 1 12 0"/><path d="M8 11.5 10.6 7.3"/><circle cx="8" cy="11.5" r=".7"/><path d="M4.2 8 5 8.6M8 5.5v1M11.8 8l-.8.6"/></svg></button>
   </span>
+  <button id="sb-online" class="sb-item" type="button" aria-label="Online or offline"><svg class="on" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 6.3a9.3 9.3 0 0 1 13 0M3.7 8.8a6.1 6.1 0 0 1 8.6 0M5.9 11.2a2.9 2.9 0 0 1 4.2 0"/><circle cx="8" cy="13.4" r=".6"/></svg><svg class="off" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 6.3a9.3 9.3 0 0 1 13 0M3.7 8.8a6.1 6.1 0 0 1 8.6 0M5.9 11.2a2.9 2.9 0 0 1 4.2 0"/><circle cx="8" cy="13.4" r=".6"/><path d="M2 2l12 12"/></svg></button>
+  <button id="sb-report" class="sb-item" type="button" aria-label="Report a problem" title="Report a problem: opens a new GitHub issue filled in with your browser, the study, where you are in it and your last actions" data-needs-network><svg class="bug" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="6" height="8.5" rx="3"/><path d="M6.3 5a1.7 1.7 0 0 1 3.4 0M8 8v5.5M2.5 7.5 5 8.3M13.5 7.5 11 8.3M2.5 11.5 5 11M13.5 11.5 11 11M3.5 3.5l2 1.7M12.5 3.5l-2 1.7"/></svg><svg class="warn" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.8 14.8 13.6H1.2Z"/><path d="M8 6v3.6"/><circle cx="8" cy="11.6" r=".4"/></svg></button>
   <button id="sb-version" class="sb-item" type="button"></button>
   <div id="whats-new" role="status" hidden><button id="whats-new-open" type="button"></button><button id="whats-new-x" class="x" type="button" aria-label="Close">×</button></div>
 </footer>

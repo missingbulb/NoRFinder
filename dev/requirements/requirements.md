@@ -153,16 +153,18 @@ spec does not have.
   Set by the owner on 2026-11-03. In Data Management, Preprocessing's Edit Image (off until an image is
   open) opens the image itself, from the copy on this device or Drive, when a preview is on show, and
   opens the Edit Image box below Preprocessing. Every choice there redraws the image as it will be saved,
-  in 2D and in 3D, the view staying as the user left it (2D or 3D, turned as it was): Split cuts it 2 × 2 or 3 × 3, the parts drawn apart with a gap between them, so a
-  stack in 3D looks cut; the cut lines over the image drag, never closer than a twentieth of the crop
+  the view staying as the user left it (a stack turned as it was): Split cuts it 2 × 2 or 3 × 3, the parts drawn apart with a gap between them, so a
+  stack in 3D looks cut; on a flat image the cut lines over the image drag, never closer than a twentieth of the crop
   to the next, and a click on a part leaves it out (drawn dim) and keeps it again. Crop draws a rectangle
   on the whole image and then shows only it. Slices, for a stack, is one slider with two marks, the first
   and the last slice kept, the slices outside dropped from the view; a band on the slider marks the
   suggested slices, those holding signal (each slice's 99th percentile above its median, at least a
   quarter of the best slice's), and Use suggested sets the marks there. Channels ticks each channel kept,
-  a dropped one shown empty. Imperfections lassoes a part on the image (in 3D, on the 2D top view) to
-  leave out of every slice, drawn as if no data were there; each is listed with its share of the image
-  and can be removed, and the box's folded title sums them up ("4% imperfections"). Done leaves the box
+  a dropped one shown empty. Imperfections lassoes a part on the image to
+  leave out, drawn as if no data were there; each is listed with its share of the image
+  and can be removed, and the box's folded title sums them up ("4% imperfections"). Crop, the cut lines and Imperfections
+  draw on a flat image, so a stack, shown in 3D only (`req/shell/viewer-3d`), has none of them (owner,
+  2026-11-03: each viewer gets tools made for it). Done leaves the box
   and shows the image as it was. Test: `web-tests/test_image_edit_page.py`, `web-tests/test_image_edit.py`.
   </details>
 
@@ -402,9 +404,12 @@ spec does not have.
   <details>
 
   An uncompressed TIFF like the lab's paints onto the page from its bytes as they arrive from
-  Google Drive, one channel after another in its own colour, with the megabytes so far and the
-  elapsed time below; a file from the computer shows at once. Python's own drawing replaces it once
-  the image is read. Any other image shows the byte count.
+  Google Drive, in grey from the channels in so far, with the megabytes so far and the elapsed
+  time below. Once every byte is in, its colours wipe down over the grey; a file from the computer,
+  or one already kept, fades up from black into its colours instead, quickly. No pixel ever shows a
+  colour its final one lacks: each is grey, black, or a darker shade of the colour it ends in, and
+  the colours it ends in are the brightness Python draws, so Python's own drawing, which replaces it
+  once the image is read, changes nothing visible. Any other image shows the byte count.
   </details>
 
 - `req/shell/image/proportions` No image is ever drawn out of its proportions.
@@ -416,17 +421,21 @@ spec does not have.
 - `req/shell/image-viewer` The Image Viewer: the page with no study's tools, the one it opens on.
   <details>
 
-  A study with no panels and no actions (`studies/viewer/`): it loads any TIFF or PNG and shows each
+  A study with no panels and no actions (`studies/viewer/`): it loads any TIFF or PNG and opens it in the viewer
+  its shape asks for (owner, 2026-11-03): a z-stack (a TIFF's Z axis, or the pages of one that names none of its
+  axes) in 3D (`req/shell/viewer-3d`), a flat image in 2D. Load being its only step, the Image box stays open once
+  the image has loaded (owner, 2026-11-03). It shows each
   channel, up to 8, under the name the file gives it (an OME channel name, an ImageJ label, never
   ImageJ's own made-up "c:1/3 - …") and in the colour the file displays it in (an ImageJ LUT, mixed
   colours included), leaving what the file does not say to `req/shell/channels/rows`; the image box says what the file
   states, its scale only when the file gives one in µm. A side bar it leaves empty gives its room to the image, and it
   has no ground truth, so a local image earns no notice about sending one. A TIFF opens uncompressed or
   compressed with LZW, Deflate or PackBits. Test: `studies/viewer/tests/test_viewer.py`,
-  `web-tests/test_study_runs.py`, `web-tests/test_compressed_tiff.py`.
+  `web-tests/test_study_runs.py`, `web-tests/test_compressed_tiff.py`, `web-tests/test_viewer3d_page.py`.
   </details>
 
-- `req/shell/left-bar/collapse` The left bar collapses to a narrow Steps strip, giving the image its room, and expands again (remembered).
+- `req/shell/left-bar/collapse` The left bar collapses to a narrow Steps strip, giving the image its room, and expands again (remembered):
+  by a chevron in one spot, at the bar's top open or collapsed, or by dragging the gutter past the bar's narrowest and back out.
   <details>
 
   Set by the owner on 2026-11-03. A small tab holding a chevron sits on the gutter between the open
@@ -456,12 +465,14 @@ spec does not have.
   check once the drawer's task is done; the open drawers carry an accent bar at their left. A
   drawer's title describes its task while the task waits, open or folded; once it is done, the
   folded title sums up what was done and the open one names the drawer. The Image box, titled Load
-  Image while no image is open (and again after Unload), folds once done to
+  Image while no image is open (and again after Unload), folds once done (in a study with a step after Load) to
   a small preview of the image, its name and what it holds ("2D", "3 channels", from the file;
   only "2D" when the file does not say), and opens as "Loaded Image". A study's drawer is done
   when the study gives it a summary, and waits again when the study takes it back. A drawer opening or
   folding slides open or shut, and the drawers below it slide to their new places (set by the owner on
-  2026-10-31). Test: `web-tests/test_left_bar_page.py`, `web-tests/test_study_contract.py`.
+  2026-10-31). Changed by the owner on 2026-11-03: a folded drawer opens from a click anywhere on it,
+  not only on its title or number; an open one still folds only from its title.
+  Test: `web-tests/test_left_bar_page.py`, `web-tests/test_study_contract.py`.
   </details>
 
 - `req/shell/left-bar/width` The left bar drags wider or narrower (remembered; a double click restores it); there is no right bar.
@@ -525,10 +536,11 @@ spec does not have.
   `offline.json` with each file's SHA-256, each checked against that list and refetched only when it
   changed. With no network the page then opens at its own address and at every study's, from that
   copy. A study whose Python is already on this device runs; one whose Python is not says so: it
-  needs the internet once, or Make available offline (`req/shell/offline/per-study`). An image kept on this device (`req/shell/drive/kept-images`,
+  needs the internet once, or Make available offline (`req/shell/offline/per-study`). It says so plainly, not as an error
+  and with no traceback, the spinner stopping, the network dropping as the study's own modules load too (set by the owner on 2026-11-03). An image kept on this device (`req/shell/drive/kept-images`,
   `req/shell/offline/per-study`) opens: offline, From Google Drive lists the images kept here instead of a Drive folder.
-  The status bar's network carries a red mark on its icon, the one red in the status bar, its tooltip and its
-  Network tab saying the page is offline; set by the owner on 2026-11-03, it took the place of an Offline item. No
+  The status bar's online icon (`req/shell/status-bar/online`) shows it, the network's tooltip and its
+  Network tab saying the page is offline too. No
   network is the browser saying so, or the site not answering, asked every 30 seconds all session long, so the
   network going or coming back mid-session shows within that, the browser saying online or not, and a Wi-Fi's
   sign-in page answering in the site's place counts as no network. What the page is doing follows it, set by the
@@ -793,10 +805,12 @@ spec does not have.
   the spinner and what the page is doing now (each stage of Python's loading, the study's progress,
   an error in red) and the thumbnails' progress (`req/shell/drive/dialog`). From the right edge inward: the site's
   version (stamped by each release; `req/shell/version-history`, `req/shell/site/out-of-date`), the CPU (`req/shell/status-bar/cpu`), the network (`req/shell/status-bar/network`), the
-  memory (`req/shell/status-bar/memory`) and the disk (`req/shell/status-bar/disk`), and before them the report icon (`req/shell/report/bug`), a bug, or a warning sign in a browser the page does not support. The four are folded into one icon unless set
-  always open (`req/shell/status-bar/resources`). Each of the four before the version is a small grey icon
+  memory (`req/shell/status-bar/memory`) and the disk (`req/shell/status-bar/disk`); between the version and those four, the report icon (`req/shell/report/bug`), a bug, or a warning sign in a browser the page does not support,
+  and then the online icon (`req/shell/status-bar/online`). The four are folded into one icon unless set
+  always open (`req/shell/status-bar/resources`), and unfolding them moves neither the online icon, the report icon nor the version. Each of the four before the version is a small grey icon
   and its number, with no word naming it; all five are plain, with no box, alike. A mild vertical
-  bar separates each item from the next. Nothing in the status bar turns the pointer into a
+  bar separates each item from the next, the resources icon included, folded or not, but the four, which sit
+  together with none between them. Nothing in the status bar turns the pointer into a
   question mark. The image's name and the study's counts are in the
   breadcrumbs' popups: Load image names the image, the study's own step gives its counts. Test:
   `web-tests/test_status_bar_page.py`.
@@ -865,20 +879,30 @@ spec does not have.
   not let a page read their size. Test: `web-tests/test_status_bar_page.py`.
   </details>
 
+- `req/shell/status-bar/online` The online icon says whether the page is online, and opens where offline is set up.
+  <details>
+
+  Set by the owner on 2026-11-03, in the place of a red mark on the network's and the resources' icons. Between the
+  resources and the report icon, a grey Wi-Fi icon while online; offline, the same crossed out, in red, the one red in the
+  status bar. Its tooltip says which, and that clicking it sets up working offline: it opens the Storage tab of the
+  resources dialog (`req/shell/resources-dialog`), where the page installs as an app and each study is made available
+  offline (`req/shell/offline/per-study`). Online and offline are what `req/shell/offline/default` says. Tests:
+  `web-tests/test_status_bar_page.py`, `web-tests/test_offline_page.py`.
+  </details>
+
 - `req/shell/status-bar/resources` The disk, memory, network and CPU fold into one icon, unfolding on hover and while something needs watching.
   <details>
 
   Set by the owner on 2026-11-03. The four sit in one block with a gauge icon at its right, next to the
-  version. A setting in the resources dialog, above its tabs on every tab, chooses how the block shows:
+  online icon (`req/shell/status-bar/online`). A setting in the resources dialog, above its tabs on every tab, chooses how the block shows:
   Auto-hiding, the default, Hidden always, or Always open, as the status bar was before. Auto-hiding,
   the page opens with the four folded away and the icon alone showing; hovering the block unfolds the
-  four as they look always open, the icon staying beside them, and leaving folds them again, both ways
+  four as they look always open, the icon going away as they come (set by the owner on 2026-11-03), and leaving folds them again, the icon coming back, both ways
   animated (at once with animations off, `req/shell/resources-dialog/animations`, or reduced motion asked for). It unfolds by
   itself, and stays unfolded, while the page is offline (`req/shell/offline/default`), the CPU has been over 50% of one core for more than
   5 seconds, the network has been downloading over 250 KB/s for more than 5
   seconds, or the tab holds over 1 GB, and folds 8 seconds after the last of these ends. Hidden
-  always, only the icon shows, and neither hovering nor any of these unfolds it; offline, the icon
-  carries the red no-network mark. Always open, the icon does not show. Clicking the icon opens the
+  always, only the icon shows, and neither hovering nor any of these unfolds it. Always open, the icon does not show. Clicking the icon opens the
   resources dialog (`req/shell/resources-dialog`) on the tab last shown, Storage at first. The choice is kept as the user's setting and,
   signed in, follows the user (`req/shell/account/sign-in`). Test: `web-tests/test_status_bar_page.py`.
   </details>
@@ -989,8 +1013,8 @@ spec does not have.
 
   The image a study works on is shown by a viewer the study names (`viewer` in `study.json`),
   behind one interface: show the opened image, draw the study's layers over it, report a pick and a
-  lasso in image coordinates, zoom and pan. The 3D viewer (`req/shell/viewer-3d`) keeps that interface and adds
-  a 3D view beside the 2D one, with no change to the studies that keep the 2D viewer.
+  lasso in image coordinates, zoom and pan. The 3D viewer (`req/shell/viewer-3d`) keeps that interface and shows
+  a stack in 3D in the 2D view's place, with no change to the studies that keep the 2D viewer.
   </details>
 
 - `req/shell/tools/grid` A Grid button beside the Ruler draws a grid over the image, its colour and spacing the user's.
@@ -1036,8 +1060,9 @@ spec does not have.
 
   Set by the owner on 2026-10-31, moving the 3D MicroViewer into the shell. The study's Python
   returns a stack as its flattened planes, which the 2D view shows unchanged, followed by every
-  slice of every channel (`Z` in its meta). A 2D/3D switch in the toolbar opens the 3D view, which
-  a stack opens on: it casts rays through the stack in the browser (WebGL2), looking straight down
+  slice of every channel (`Z` in its meta). A stack is shown in 3D only, with no switch to a flat view
+  (owner, 2026-11-03: a 2D image makes no sense in 3D, nor a 3D one in 2D); only where the browser lacks
+  WebGL2 does the flattened stack show instead. The 3D view casts rays through the stack in the browser (WebGL2), looking straight down
   as the microscope does. Dragging turns it about the screen's two axes, on past looking straight
   across, a sideways scroll spins it about the line of sight (owner, 2026-11-03), the wheel zooms,
   shift-drag pans, and Top, Tilted,
@@ -1272,9 +1297,14 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   <details>
 
   They re-run the finder. Each finder names its main settings (its function's `MAIN`), shown first;
-  every setting is under a collapsed Advanced box. Each finder shows a few sentences on how it
-  works, and every setting and filter value has a ? that says what it does
-  (`detection/finder_help.py`; the test fails when one is missing).
+  every setting is under a collapsed Advanced box. Each finder shows how it works under "How the
+  <finder> algorithm works", its steps as a nested list (written as a Markdown outline), and every
+  setting and filter value has a ? that says what it does (`detection/finder_help.py`; the test fails
+  when one is missing). Changed by the owner on 2026-11-03: the note ends with "<Finder> algorithm plus
+  default filters show precision of X and recall of Y based on N images", in bold, the numbers the finder
+  list shows, then "(without filters: …)", the finder's own, not bold;
+  each finder in the list carries its own icon, the study's choice; the settings start folded.
+  Test: `studies/nor/tests/test_processing_box.py`.
   </details>
 
 - `req/nor/lab-parity` The page runs the lab's code, and at our settings passes what the lab passes.
@@ -1289,8 +1319,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   <details>
 
   Changed by the owner on 2026-10-30, 2026-10-31 and 2026-11-02. Below the Image box
-  (`req/shell/left-bar/folding`) the left bar holds Processing, the candidates finder (its "how it works"
-  and its settings fold away; its "restore defaults" sits with the settings, not in the title row), open
+  (`req/shell/left-bar/folding`) the left bar holds Processing, the candidates finder (its "how the
+  algorithm works" and its settings fold away, and start folded; its "restore defaults" sits with the settings, not in the title row), open
   from the image's opening until Find Candidates and, folded once Find Candidates has run with the finder and
   settings now chosen, titled "<finder> executed"; Postprocessing, the filters, which only its title
   opens; and Summary, which opens once the candidates are found. Postprocessing and Summary keep

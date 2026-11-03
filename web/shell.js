@@ -75,7 +75,7 @@ const PAGE_GB = 1, LOW_GB = 4;
 // browser's own share; measured once as Chrome's private memory for the tab against the readable total (2026-10-07)
 const UNREAD_MB = 190;
 // where ground truth is submitted: an issue with the study's label, which the repo's intake reads
-const REPO = "missingbulb/NoRFinder";
+const REPO = "missingbulb/RaunTruth";
 const LOCAL_GT = "Ground truth cannot be sent from local files, only from Google Drive.";
 // the issue form a proposal for a new study is written on
 const STUDY_REQUEST = "new-study.yml";
@@ -210,6 +210,7 @@ function showResources() {
 showResources();
 $("#res-mode").onchange = (e) => { writeJSON(RESOURCES, e.target.value); showResources(); };
 $("#sb-res-icon").onclick = () => usage(usageTab || "storage");
+$("#sb-online").onclick = () => usage("storage"); // where the page installs as an app and each study is made available offline
 function raiseResources(cpuShare, rate) {
   const t = Date.now(), long = (since) => since != null && t - since > RAISE_AFTER_MS;
   raise.cpuSince = cpuShare > RAISE_CPU ? raise.cpuSince ?? t : null;
@@ -518,7 +519,12 @@ async function working(btn, action) {
     hold.disconnect(); btn.classList.remove("working"); btn.disabled = false; study.idle?.();
   }
 }
-const slow = (btn) => { const act = btn.onclick; btn.onclick = (e) => working(btn, () => act.call(btn, e)); };
+// once only: the shell's own buttons outlive a study, so a study slowing one again on its next mount would hold
+// it from inside its own hold, and the click would do nothing
+const slow = (btn) => {
+  if (btn.onclick?.slow) return;
+  const act = btn.onclick; btn.onclick = Object.assign((e) => working(btn, () => act.call(btn, e)), { slow: true });
+};
 
 // ---------- Python ----------
 async function start() {
@@ -576,8 +582,10 @@ function handle(m) {
   else if (m.type === "error") {
     // the request that failed is over: its button can be pressed again
     study.error?.();
-    if (!st.ready) st.failed = true;
-    status("Error: " + m.text, true); if (OUT_OF_MEMORY.test(m.text)) memoryTip(true);
+    if (!st.ready) { st.failed = true; $("#spin").classList.remove("on"); }
+    // what being offline stops is said plainly: the online icon already says why (req/shell/offline/default)
+    if (m.offline) status(m.text); else status("Error: " + m.text, true);
+    if (OUT_OF_MEMORY.test(m.text)) memoryTip(true);
   } else if (m.type === "ready") {
     st.ready = true; st.readyInfo = m.info; $("#spin").classList.remove("on");
     study.ready?.(m.info); statusBar(); diskBar();
@@ -1412,11 +1420,11 @@ const boxes = () => document.querySelectorAll(".box.foldable");
 function unfoldFirst() { boxes().forEach((b) => b.classList.toggle("folded", b.hasAttribute("data-opens"))); retitle(); }
 // a step just done: a new image folds every box waiting for a later step
 function foldFor(key) {
-  // a preview keeps the Image box open: Load Original is what comes next
-  const preview = key === "load" && st.source?.kind === "preview";
+  // a preview keeps the Image box open: Load Original is what comes next; so does a study with no step after Load
+  const keep = key === "load" && (st.source?.kind === "preview" || steps.length === 1);
   boxes().forEach((b) => {
-    if (b.dataset.opens === key || (preview && b.id === "image-box")) b.classList.remove("folded");
-    else if ((b.dataset.folds === key && !(preview && b.id === "image-box")) || (key === "load" && b.hasAttribute("data-opens"))) b.classList.add("folded");
+    if (b.dataset.opens === key || (keep && b.id === "image-box")) b.classList.remove("folded");
+    else if ((b.dataset.folds === key && !(keep && b.id === "image-box")) || (key === "load" && b.hasAttribute("data-opens"))) b.classList.add("folded");
   });
   retitle();
 }
@@ -1483,8 +1491,10 @@ function slide(change) {
 function foldable() {
   document.querySelectorAll(".box.foldable > .sec-head h2").forEach((h) => {
     h.tabIndex = 0; h.setAttribute("role", "button");
-    const flip = () => slide(() => { h.closest(".box").classList.toggle("folded"); retitle(); });
-    h.onclick = flip; h.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } };
+    const box = h.closest(".box"), flip = () => slide(() => { box.classList.toggle("folded"); retitle(); });
+    // folded, the whole drawer opens it; open, only its title folds it
+    box.onclick = (e) => { if (box.classList.contains("folded") || h.contains(e.target)) flip(); };
+    h.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } };
   });
   unfoldFirst();
 }
@@ -1492,33 +1502,39 @@ function foldable() {
 function showImage() { study.showImage?.(); view.minimapView(); }
 
 // ---------- the left bar and theme ----------
-// the left bar takes the width it is dragged to; a double click puts it back
+// the left bar takes the width it is dragged to; a double click puts it back. Dragged past its narrowest it
+// collapses (req/shell/left-bar/collapse), and dragged out from the strip it opens again under the pointer
 {
-  const lay = $("#layout"), saved = readJSON(BARS), g = $("#gutter-left");
+  const lay = $("#layout"), saved = readJSON(BARS), g = $("#gutter-left"), bar = $("#left"), root = document.documentElement;
+  const MIN = 200, STRIP = 32, SHUT = (MIN + STRIP) / 2;
   const set = (w) => {
     if (w == null) { lay.style.removeProperty("--lw"); return; }
-    lay.style.setProperty("--lw", Math.round(Math.max(200, Math.min(w, innerWidth * 0.4))) + "px");
+    lay.style.setProperty("--lw", Math.round(Math.max(MIN, Math.min(w, innerWidth * 0.4))) + "px");
   };
   set(saved.left);
-  g.addEventListener("pointerdown", (e) => {
-    if (e.target.closest("#left-collapse")) return;
-    g.setPointerCapture(e.pointerId); document.body.classList.add("resizing");
-    const move = (ev) => { saved.left = ev.clientX - lay.getBoundingClientRect().left; set(saved.left); view?.minimapView(); };
-    const up = () => { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); document.body.classList.remove("resizing"); writeJSON(BARS, saved); };
-    g.addEventListener("pointermove", move); g.addEventListener("pointerup", up);
-  });
-  g.addEventListener("dblclick", () => { delete saved.left; set(null); writeJSON(BARS, saved); view?.minimapView(); });
-  // req/shell/left-bar/collapse: collapsed to its Steps strip, and back, the drawers sliding in on the way out
-  const bar = $("#left"), root = document.documentElement;
   const collapse = (on) => { if (on) root.dataset.left = "collapsed"; else delete root.dataset.left; };
   collapse(!!saved.collapsed);
   const toggle = (on) => {
+    if (!!saved.collapsed === on) return;
     saved.collapsed = on; writeJSON(BARS, saved);
     if (!on) { bar.classList.add("sliding-in"); setTimeout(() => bar.classList.remove("sliding-in"), 400); }
     collapse(on);
     retitle();
     setTimeout(() => view?.minimapView(), 400);
   };
+  g.addEventListener("pointerdown", (e) => {
+    g.setPointerCapture(e.pointerId); document.body.classList.add("resizing");
+    const was = saved.left;
+    const move = (ev) => {
+      const w = ev.clientX - bar.getBoundingClientRect().left;
+      if (w < SHUT) { saved.left = was; toggle(true); }
+      else { saved.left = w; set(w); toggle(false); }
+      view?.minimapView();
+    };
+    const up = () => { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); document.body.classList.remove("resizing"); writeJSON(BARS, saved); };
+    g.addEventListener("pointermove", move); g.addEventListener("pointerup", up);
+  });
+  g.addEventListener("dblclick", () => { delete saved.left; set(null); writeJSON(BARS, saved); view?.minimapView(); });
   $("#left-collapse").onclick = () => toggle(true);
   // a step mark opens its drawer first, then the click reaches the strip
   $("#left-strip").onclick = () => toggle(false);

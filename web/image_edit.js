@@ -72,7 +72,7 @@ export function imageEditor(ctx) {
   // ---------- the box ----------
   function controls() {
     for (const b of $("#edit-split").children) b.setAttribute("aria-pressed", String(+b.dataset.n === n));
-    $("#edit-split-hint").hidden = n === 1;
+    $("#edit-split-hint").hidden = n === 1 || (base.Z || 1) > 1;
     $("#edit-crop").setAttribute("aria-pressed", String(tool === "crop"));
     $("#edit-lasso").setAttribute("aria-pressed", String(tool === "lasso"));
     const c = e.crop, cropped = c.x0 || c.y0 || c.x1 !== base.W || c.y1 !== base.H;
@@ -80,6 +80,8 @@ export function imageEditor(ctx) {
     $("#edit-crop-reset").hidden = !cropped;
     const Z = base.Z || 1;
     $("#edit-slices-sec").hidden = Z < 2;
+    // crop, the lasso and the cut lines draw on a flat image; a stack is shown in 3D, which has tools of its own
+    for (const id of ["#edit-crop-row", "#edit-flaws-row"]) $(id).hidden = Z > 1;
     if (Z > 1) {
       for (const [id, v] of [["#edit-z0", e.z[0]], ["#edit-z1", e.z[1]]]) Object.assign($(id), { min: 1, max: Z, value: v + 1 });
       $("#edit-z-text").textContent = `${e.z[0] + 1}–${e.z[1] + 1} of ${Z}`;
@@ -116,8 +118,6 @@ export function imageEditor(ctx) {
   }
   const arm = (t) => {
     tool = tool === t ? null : t;
-    // the lasso draws on the top view: a stack in 3D turns to 2D
-    if (tool && $("#v3-2d") && $("#v3-2d").getAttribute("aria-pressed") !== "true") $("#v3-2d").click();
     root.toggleAttribute("data-edit-tool", !!tool);
     controls(); later();
   };
