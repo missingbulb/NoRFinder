@@ -10,9 +10,9 @@ carried all its pull requests. The `writing-version-history` skill says how.
 
 ## Next release
 
-Making ground truth is now a to-do list in the left bar: review the finalists, then the rejected, then
-mark the NoRs the finder missed, then Submit, one candidate at a time with its card and options. They
-come area by area, and the image shows each reviewed one filled, blue for a NoR, darkened for not one. (#720)
+Making ground truth is now a to-do list in the left bar: the finalists, the rejected, then each area
+of the image checked for missed NoRs, one at a time, with big thumbs beside the crop. Whatever you
+finish is cut out of the image, uncovering a golden retriever behind it, and the bar fills per task. (#720)
 
 ## 0.11103.80
 

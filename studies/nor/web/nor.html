@@ -35,20 +35,16 @@
 
     <section class="box foldable" id="tasks-box" data-opens="find" hidden>
       <div class="sec-head"><h2>Ground Truth Tasks</h2></div>
-      <div class="gt-progress"><span id="gt-done">No tasks yet</span><meter id="gt-meter" min="0" max="1" value="0"></meter></div>
+      <div id="gt-bar"><span data-task="pass"></span><span data-task="fail"></span><span data-task="missed"></span></div>
       <ol id="gt-tasks">
-        <li data-task="pass"><button class="task-head" type="button"><span class="tick" aria-hidden="true"></span><span class="t">Review the finalists</span><span class="n"></span></button><div class="task-body"></div></li>
-        <li data-task="fail"><button class="task-head" type="button"><span class="tick" aria-hidden="true"></span><span class="t">Review the rejected</span><span class="n"></span></button><div class="task-body"></div></li>
-        <li data-task="missed"><button class="task-head" type="button"><span class="tick" aria-hidden="true"></span><span class="t">Mark the NoRs the finder missed</span><span class="n"></span></button>
-          <div class="task-body"><p class="hint">Right-click the image where the finder missed a NoR to add one, then correct its lines and approve it on its card.</p>
-            <div class="missed-slot"></div>
-            <label class="missed-done"><input type="checkbox" id="missed-done"> I looked over the whole image: no other NoR is missing</label></div></li>
+        <li data-task="pass"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button"><span class="n"></span> Finalists</button></div><div class="task-body"></div></li>
+        <li data-task="fail"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button"><span class="n"></span> Rejected</button></div><div class="task-body"></div></li>
+        <li data-task="missed"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button" title="The image's areas, each checked for NoRs the finder missed"><span class="n"></span> Areas</button></div>
+          <div class="task-body"><p class="hint">Right-click where the finder missed a NoR in the framed area.</p><div class="missed-slot"></div><button id="area-ok" class="primary" type="button">No missed NoRs here</button></div></li>
         <li data-task="submit"><div class="task-head"><span class="tick" aria-hidden="true"></span><button id="dl-truth" disabled><span class="gt-ico" aria-hidden="true"></span>Submit Ground Truth</button></div></li>
       </ol>
-      <div id="task-now">
-        <div class="task-step"><button id="task-back" class="link" type="button" title="The previous candidate in this task">‹ Go back</button><span id="task-place"></span><button id="task-skip" class="link" type="button" title="The next candidate in this task, leaving this one for later">Skip ›</button></div>
-        <div id="task-stage"><div id="task-card"></div></div>
-      </div>
+      <span id="task-tools"><button id="task-skip" class="link" type="button" title="The next one, leaving this one for later">Skip ›</button></span>
+      <div id="task-now"><div id="task-stage"><div id="task-card"></div></div></div>
     </section>
 </template>
 <template data-slot="toolbar">

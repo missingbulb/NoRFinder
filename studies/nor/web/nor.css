@@ -185,63 +185,59 @@
   background: var(--shade); border: 1px solid var(--line); font-weight: 600; font-size: 13px; pointer-events: none; }
 #lasso-hint[hidden] { display: none; }
 
-/* Ground Truth Tasks, in Summary's place while the study makes ground truth: the tasks in order, the open one
-   showing its candidate's card */
-#summary-box[hidden], #tasks-box[hidden], #task-now[hidden], #card-menu[hidden] { display: none; }
-#tasks-box .gt-progress { display: flex; align-items: center; gap: 10px; font-size: 13px; margin-bottom: 10px; font-variant-numeric: tabular-nums; }
-#tasks-box .gt-progress meter { flex: 1; height: 8px; }
-#gt-tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-#gt-tasks > li { border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--bg); }
-#gt-tasks > li.now { border-color: var(--accent); }
-#gt-tasks .task-head { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px; border: 0; background: none; text-align: left; font-size: 13px; color: var(--text); }
-#gt-tasks button.task-head:hover .t { color: var(--accent); }
-#gt-tasks .task-head .t { flex: 1; font-weight: 600; }
-#gt-tasks .task-head .n { color: var(--dim); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-#gt-tasks .tick { flex: none; width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--dim); box-sizing: border-box; }
-#gt-tasks li.now .tick { border-color: var(--accent); }
-#gt-tasks li.done .tick { border-color: var(--yes); background: var(--yes); box-shadow: inset 0 0 0 2px var(--bg); }
+/* Ground Truth Tasks, in Summary's place while the study makes ground truth: a bar of a part per task, then a
+   row per task, the open one with its tools on its row and its item's card under it */
+#summary-box[hidden], #tasks-box[hidden], #task-now[hidden], #card-menu[hidden], #task-tools[hidden] { display: none; }
+#gt-bar { display: flex; gap: 3px; height: 8px; margin-bottom: 10px; }
+#gt-bar > span { flex: 1 1 0; min-width: 6px; border-radius: 4px; --done: 0;
+  background: linear-gradient(to right, var(--yes) calc(var(--done) * 100%), var(--line) calc(var(--done) * 100%)); }
+#gt-tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+#gt-tasks > li + li { border-top: 1px solid var(--line); }
+#gt-tasks .task-head { display: flex; align-items: center; gap: 8px; min-height: 34px; font-size: 13px; }
+#gt-tasks .task-head .t { flex: 1; min-width: 0; text-align: left; border: 0; background: none; padding: 4px 0; font-size: 13px; color: var(--text); white-space: nowrap; }
+#gt-tasks .task-head .t:hover { color: var(--accent); }
+#gt-tasks .task-head .n { font-weight: 600; font-variant-numeric: tabular-nums; }
+#gt-tasks li.now .t { font-weight: 600; }
+/* a done task's check, after its name; nothing marks the others */
+#gt-tasks .tick { order: 1; display: none; color: var(--yes); font-weight: 700; }
+#gt-tasks li.done .tick { display: inline; }
+#gt-tasks .tick::after { content: "✓"; }
 #gt-tasks li.done .t { color: var(--dim); }
-#gt-tasks li[data-task="submit"] .task-head { padding: 6px 10px; }
+#gt-tasks .task-head .t { order: 0; }
+#gt-tasks .task-head #task-tools { order: 2; }
+#gt-tasks li[data-task="submit"] .task-head { padding: 6px 0 0; }
 #gt-tasks li[data-task="submit"] #dl-truth { flex: 1; }
 #gt-tasks li:not(.now) .task-body { display: none; }
-#gt-tasks .task-body { padding: 0 10px 10px; }
-#gt-tasks .task-body .hint { margin-top: 0; }
-#gt-tasks .missed-done { display: flex; gap: 6px; align-items: flex-start; font-size: 12px; margin-top: 6px; }
-/* Go back and Skip at the top, the place and the cogwheel between them */
-#task-now .task-step { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
-#task-now .task-step #task-place { flex: 1; text-align: center; }
-#task-now .task-step .link { font-size: 12px; padding: 2px 0; white-space: nowrap; }
-#task-now .task-step .link:disabled { opacity: .4; }
-#task-now #card-menu summary { padding: 2px 4px; border: 0; background: none; color: var(--dim); display: inline-flex; }
-#task-now #card-menu summary::after { content: none; }
-#task-now #card-menu summary:hover, #task-now #card-menu[open] summary { color: var(--accent); }
-#task-now #card-menu .pop { left: auto; right: 0; }
+#gt-tasks .task-body { padding: 0 0 10px; }
+#gt-tasks .task-body .hint { margin: 0 0 6px; }
+#area-ok { width: 100%; margin-top: 6px; }
+#task-tools { display: inline-flex; align-items: center; gap: 6px; }
+#task-tools .link { font-size: 12px; padding: 2px 0; white-space: nowrap; }
+#task-tools .link:disabled { opacity: .4; }
+#task-tools #card-menu summary { padding: 2px 4px; border: 0; background: none; color: var(--dim); display: inline-flex; }
+#task-tools #card-menu summary::after { content: none; }
+#task-tools #card-menu summary:hover, #task-tools #card-menu[open] summary { color: var(--accent); }
+#task-tools #card-menu .pop { left: auto; right: 0; }
 /* the card: the crop taking most of it, big thumbs beside it; the next card slides in over the last */
 #task-stage { position: relative; overflow: hidden; }
 #task-stage .leaving { position: absolute; left: 0; top: 0; width: 100%; pointer-events: none; }
-.card.task { background: var(--panel); cursor: default; margin: 0; padding: 8px; }
-.card.task .task-row { display: flex; gap: 8px; align-items: center; }
-.card.task .crop-wrap { flex: 1; min-width: 0; margin: 0; }
-.card.task .side { flex: none; display: flex; flex-direction: column; gap: 6px; }
-.card.task .side .verdict { flex-direction: column; margin: 0; border-radius: var(--r-ctl); }
-.card.task .side .verdict button { width: 48px; height: 48px; }
-.card.task .side .verdict button + button { border-left: 0; border-top: 1px solid var(--line); }
+.card.task { background: none; border: 0; cursor: default; margin: 0; padding: 0; }
+.card.task .task-row { display: flex; flex-direction: column; gap: 8px; }
+.card.task .crop-wrap, .card.task .crop { width: 100%; margin: 0; }
+.card.task .crop canvas { width: 100% !important; }
+.card.task .side .verdict { display: flex; width: 100%; margin: 0; border-radius: var(--r-ctl); }
+.card.task .side .verdict button { flex: 1; height: 44px; }
 .card.task .side .verdict svg { width: 24px; height: 24px; }
 .card.task .side .verdict .remove { height: 32px; font-size: 16px; }
 .card.task .tag, .card.task .why { margin-top: 6px; }
 
-/* the image while the study makes ground truth: a candidate waiting is a faint outline and nothing more; a
-   reviewed one is filled, blue when voted up (a colour the slide's red and green do not carry), darkened when
-   voted down; the current one has a yellow ring */
-#overlay .area { display: none; }
-#overlay.gt { --gt-yes: #3b82ff; }
+/* the image while the study makes ground truth: a candidate waiting is a faint outline and nothing more, the
+   current one has a yellow ring; what is done is cut out, the picture behind showing there; the area being
+   checked for missed NoRs is framed */
 #overlay.gt .num, #overlay.gt .let, #overlay.gt .red, #overlay.gt .lines, #overlay.gt .added text { display: none; }
 #overlay.gt g[data-i] path { stroke: #fff; stroke-width: 1px; stroke-opacity: .3; stroke-dasharray: none; }
-#overlay.gt g.yes .area, #overlay.gt g.no .area { display: inline; stroke: none; pointer-events: none; }
-#overlay.gt g.yes .area { fill: var(--gt-yes); fill-opacity: .55; }
-#overlay.gt g.yes path:not(.area) { stroke: var(--gt-yes); stroke-opacity: 1; stroke-width: 1.5px; }
-#overlay.gt g.no .area { fill: #000; fill-opacity: .6; }
-#overlay.gt g.no path:not(.area) { stroke: #000; stroke-opacity: .6; }
-#overlay.gt .added.yes .area { fill: var(--gt-yes); fill-opacity: .45; stroke: var(--gt-yes); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
-#overlay.gt .added.no .area { fill: #000; fill-opacity: .5; }
+#overlay.gt g.yes path, #overlay.gt g.no path, #overlay.gt .added.yes, #overlay.gt .added.no { display: none; }
+#overlay .reveal-marks { pointer-events: none; }
+#overlay .reveal-bg { fill: #000; }
+#overlay .area-frame { fill: none; stroke: #ffd400; stroke-width: 2; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke; pointer-events: none; }
 #overlay.gt .ring { stroke: #ffd400; stroke-opacity: 1; stroke-width: 2; }

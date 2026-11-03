@@ -182,21 +182,20 @@ async function markAndVote(page) {
   await check(waiting.state === "todo" && /Approve or reject the 1 NoR you added/.test(waiting.why), `an added NoR without a verdict keeps the button red: "${waiting.why}"`);
   await page.click("#task-card .verdict .up");
   await check(await page.$$eval("#overlay .added .glow", (c) => c.length) === 0, "approving it stops the glow");
-  // in the finalists' task, a thumbs up on the first candidate, a thumbs down on the third; the second stays undecided
-  await page.click('#gt-tasks > li[data-task="pass"] .task-head');
+  // in the finalists' task, a thumbs up on the first candidate, a thumbs down on the third; the second, skipped, stays undecided
+  await page.click('#gt-tasks > li[data-task="pass"] .task-head .t');
   await page.click("#task-card .verdict .up");
-  await page.click("#task-skip"); await page.click("#task-card .verdict .down"); await page.click("#task-back");
+  await page.click("#task-skip");
   // a found candidate's red end dragged off the axis only slides along it: the green ends stay put
   L = await page.evaluate(() => nor.linesOf(nor.candOf(st.sel)));
   if (L) {
-    await page.click("#task-card .verdict .down"); // back to a finalist, which has handles
     await drag(page, await handle(page, "red", 0), 15, 20);
     const M = await page.evaluate(() => nor.linesOf(nor.candOf(st.sel)));
     const moved = Math.hypot(M.red[0][0] - L.red[0][0], M.red[0][1] - L.red[0][1]);
     await check(offAxis(M) < 0.05 && JSON.stringify(M.length) === JSON.stringify(L.length.map((p) => p.map((v) => Math.round(v * 100) / 100))) && moved > 0.5,
       `a red end dragged off the axis slides along it (${moved.toFixed(1)} px), the green ends unmoved (${offAxis(M).toFixed(3)} px off)`);
-    await page.click("#task-card .verdict .down");
   }
+  await page.click("#task-card .verdict .down");
   await check(await gtColour(page) === "part", "with some verdicts but a finalist left the button is orange");
   return page.evaluate(() => ({ undecided: st.order.length - st.forced.size }));
 }
@@ -352,8 +351,8 @@ async function mask(page) {
   await check(!asked.length && issue.off && /local files/.test(issue.why), `no issue opens for a local image, and the button says why: "${issue.why}"`);
   await page.click("#gt-close");
   await page.evaluate(() => st.order.filter((c) => !st.forced.has(c.i)).forEach((c) => nor.decide(c.i, "approve")));
-  await check(await gtColour(page) === "part", "with every candidate voted on but the image not looked over the button is orange");
-  await page.click('#gt-tasks > li[data-task="missed"] .task-head'); await page.check("#missed-done");
+  await check(await gtColour(page) === "part", "with every candidate voted on but the areas not checked the button is orange");
+  await page.click('#gt-tasks > li[data-task="missed"] .task-head .t'); for (let k = 0; k < 100; k++) await page.click("#area-ok");
   await check(await gtColour(page) === "done", "with every task done the button is green");
   const all_ = await crumbs(page);
   await check(all_ === "Load image › Run algorithm › Review all items › Submit GT | ", `with every task done and the file exported, every step is done: ${all_}`);

@@ -21,7 +21,7 @@ export function mount(shell) {
   const ADDED = "nor-added-v1:";
   const MISSING = "nor-missing-v1:"; // + file name: [[x, y]], what ADDED replaced; read once and converted
   const MASK = "nor-mask-v1:"; // + file name: [[[x, y]...]...], the lassoed areas the summary counts, combined by exclusive or
-  const LOOKED = "nor-looked-v1:"; // + file name: true once the user looked over the whole image for missed NoRs
+  const AREAS_KEY = "nor-areas-v1:"; // + file name: [area], the image's areas the user checked for missed NoRs
   // while the study makes ground truth its tasks are in the left bar, one candidate at a time, and the image is the only view
   const TRUTH = shell.makesTruth;
   // the image cut into GRID × GRID areas, each task's candidates taken area by area so the review fills one area after another
@@ -51,7 +51,7 @@ export function mount(shell) {
     meta: null, seg: null, cands: [],
     fails: [], alone: null, forced: new Map(), edits: new Map(), defaults: {}, values: {}, off: new Set(),
     about: {}, detectValues: {}, lastRun: null, filtersFor: null, seq: 0, inflight: false, pending: false,
-    added: [], mask: [], looked: false, task: null, lasso: null, numbers: new Map(), order: [], sel: null, tab: "pass",
+    added: [], mask: [], areas: new Set(), area: null, task: null, lasso: null, numbers: new Map(), order: [], sel: null, tab: "pass",
     show: { ...SHOW_DEFAULTS, ...readJSON(SHOW) }, opt: readOpts(), sort: { pass: "number", fail: "number", ...readJSON(SORT) }, crops: new Map(),
   });
 
@@ -68,7 +68,7 @@ export function mount(shell) {
 
   // what each of the study's browser keys holds, for the shell's Manage storage dialog
   const SETTINGS = { [STORE]: "Filter settings", [SHOW]: "Show menu of the image view", [SORT]: "Sort menus of the item views", [CARDS]: "Options menus of the item views" };
-  const PER_FILE = [[MARKS, "keepers and removals"], [EDITS, "measurements"], [ADDED, "added NoRs"], [MISSING, "added NoRs"], [MASK, "mask"], [LOOKED, "looked for missed NoRs"]];
+  const PER_FILE = [[MARKS, "keepers and removals"], [EDITS, "measurements"], [ADDED, "added NoRs"], [MISSING, "added NoRs"], [MASK, "mask"], [AREAS_KEY, "areas checked for missed NoRs"]];
   function stored(key) {
     if (SETTINGS[key]) return { group: "settings", what: SETTINGS[key] };
     const [prefix, what] = PER_FILE.find(([p]) => key.startsWith(p)) || [];
@@ -197,17 +197,6 @@ export function mount(shell) {
     return d;
   }
 
-  // the candidate's pixels as one filled shape: a rectangle per run of them along each row
-  function area(c, blk) {
-    const { h, w, x0, y0 } = c; let d = "";
-    for (let y = 0; y < h; y++) for (let x = 0, run = -1; x <= w; x++) {
-      const on = x < w && blk[y * w + x];
-      if (on && run < 0) run = x;
-      if (!on && run >= 0) { d += `M${x0 + run} ${y0 + y}h${x - run}v1h${run - x}z`; run = -1; }
-    }
-    return d;
-  }
-
   function onDetected(meta, seg) {
     st.meta = meta; st.seg = seg; st.crops = new Map(); st.sel = null; st.alone = null; st.task = null;
     if (st.filtersFor !== meta.finder) useFilters(meta.finder);
@@ -241,7 +230,6 @@ export function mount(shell) {
     const frag = document.createDocumentFragment();
     for (const c of st.order) {
       const g = el("g", { "data-i": c.i });
-      if (TRUTH) g.append(el("path", { class: "area", d: area(c, c.blk) }));
       g.append(el("path", { class: "red", d: outline(c, c.blk, 1) }), el("path", { d: outline(c, c.blk, 2) }));
       c.lineEl = el("g", { class: "lines" }); g.append(c.lineEl);
       const t = el("text", { x: c.bb[2] + 0.5, y: c.bb[1] });
@@ -311,8 +299,9 @@ export function mount(shell) {
   }
   function addAdded(x, y) {
     st.added.push({ lines: typicalLines(Math.round(x * 10) / 10, Math.round(y * 10) / 10), verdict: null });
-    st.sel = "u" + st.added.length; if (TRUTH) st.task = "missed";
-    addedChanged(); if (TRUTH) renderTasks();
+    st.sel = "u" + st.added.length;
+    if (TRUTH) { st.task = "missed"; st.area = areaOf(addedCand(st.added.length - 1)); }
+    addedChanged(); if (TRUTH) { renderTasks(); frameArea(); }
   }
   function removeAdded(k) {
     const was = st.sel; st.added.splice(k, 1);
@@ -330,7 +319,6 @@ export function mount(shell) {
     const g = el("g", { class: "added-marks" });
     for (const c of addedCands()) {
       const v = st.added[c.k].verdict, a = el("g", { "data-i": c.i, class: "added" + (v === "out" ? " out" : "") + (TRUTH ? " " + reviewed(v) : "") });
-      if (TRUTH && v) a.append(el("circle", { class: "area", cx: c.cx, cy: c.cy, r: radiusOf(c) }));
       const t = el("text", { x: c.cx + radiusOf(c) + 1, y: c.cy - radiusOf(c) }); t.textContent = numOf(c);
       if (!v) a.append(el("circle", { class: "glow", cx: c.cx, cy: c.cy, r: radiusOf(c) }));
       const lines = el("g", { class: "lines" });
@@ -707,18 +695,20 @@ export function mount(shell) {
       d.ondblclick = (e) => { if (!e.target.closest("button, .handle")) { getSelection().removeAllRanges(); show(); } };
     }
     const wrap = document.createElement("div"); wrap.className = "crop-wrap";
-    // a task's crop takes the box's width, less the thumbs beside it
-    wrap.append(crop(c, where === "list" ? 170 : where === "task" ? Math.max(160, Math.round(($("#tasks-box").clientWidth || 300) - 110)) : 320));
-    wrap.insertAdjacentHTML("beforeend", `<button class="goto" title="Show it on the image" aria-label="Show it on the image">${GOTO}</button>`);
-    const show = () => { if (where !== "task") select(c.i); showView("image"); focusOn(c); };
-    wrap.querySelector(".goto").onclick = show;
+    // a task's crop takes the box's whole width
+    wrap.append(crop(c, where === "list" ? 170 : where === "task" ? Math.max(160, Math.round($("#gt-tasks").clientWidth || 280)) : 320));
+    const show = () => { select(c.i); showView("image"); focusOn(c); };
+    if (where !== "task") {
+      wrap.insertAdjacentHTML("beforeend", `<button class="goto" title="Show it on the image" aria-label="Show it on the image">${GOTO}</button>`);
+      wrap.querySelector(".goto").onclick = show;
+    }
     d.append(wrap);
     const e = st.edits.get(c.i) || {};
     if (e.length || e.red || e.width) {
       d.insertAdjacentHTML("beforeend", `<div class="tag">Lengths adjusted <button class="link">reset</button></div>`);
       d.querySelector(".tag button").onclick = () => edit(c.i, { length: null, red: null, width: null });
     }
-    // a task's card: the crop and, beside it, the thumbs; no number or state
+    // a task's card: the crop, the thumbs under it; no number or state
     if (where === "task") {
       const row = document.createElement("div"), side = document.createElement("div");
       row.className = "task-row"; side.className = "side"; side.append(acts);
@@ -958,11 +948,11 @@ export function mount(shell) {
       { level: "error", grade: true, ok: voted > 0, text: "Vote on at least one candidate" },
       { level: "warn", grade: true, ok: voted > 0 && !open, text: open ? `Vote on every finalist: ${open} of ${finalists.length} have no vote and won't be exported` : "Vote on every finalist" },
       TRUTH && { level: "warn", grade: true, ok: voted > 0 && !left, text: left ? `Vote on every rejected candidate: ${left} of ${rejected.length} have no vote and won't be exported` : "Vote on every rejected candidate" },
-      TRUTH && { level: "warn", grade: true, ok: st.looked, text: "Look over the whole image for NoRs the finder missed" },
+      TRUTH && { level: "warn", grade: true, ok: st.areas.size === AREAS, text: st.areas.size === AREAS ? "Check every area for missed NoRs" : `Check every area for missed NoRs: ${AREAS - st.areas.size} of ${AREAS} left` },
       st.mask.length && { level: "warn", ok: false, text: "The mask is not exported: the file covers the whole image" },
       { level: "warn", ok: !local, text: "Only images from Google Drive can be exported" },
     ].filter(Boolean);
-    return { state: !voted || waiting ? "todo" : open || left || (TRUTH && !st.looked) ? "part" : "done", items };
+    return { state: !voted || waiting ? "todo" : open || left || (TRUTH && st.areas.size < AREAS) ? "part" : "done", items };
   }
   function gtButton() {
     const b = $("#dl-truth"); b.disabled = !st.img;
@@ -982,17 +972,23 @@ export function mount(shell) {
   };
 
 
-  // ---------- the ground-truth tasks: in the left bar, one candidate at a time, area by area ----------
-  // Review the finalists, review the rejected, mark the missed NoRs, then Submit. The open task shows its
-  // current candidate's card; a verdict moves on to the next candidate with none.
+  // ---------- the ground-truth tasks: in the left bar, one item at a time, area by area ----------
+  // The finalists, the rejected, the image's areas checked for missed NoRs, then Submit. The open task shows its
+  // current item; a verdict moves on to the next with none. What is done is cut out of the image.
   const TASKS = ["pass", "fail", "missed", "submit"];
+  const AREAS = GRID * GRID;
   const verdictOf = (c) => (c.added ? st.added[c.k]?.verdict : st.forced.get(c.i));
   const reviewed = (v) => (v === "in" ? "yes" : v === "out" ? "no" : "todo");
-  // the area a candidate lies in: rows of areas top to bottom, each the way back from the last, so the next
-  // area always borders the one before
+  // the image's areas by their place in the review: rows of areas top to bottom, each the way back from the
+  // last, so the next area always borders the one before
   function areaOf(c) {
     const r = Math.min(GRID - 1, Math.floor((c.cy / st.H) * GRID)), k = Math.min(GRID - 1, Math.floor((c.cx / st.W) * GRID));
     return r * GRID + (r % 2 ? GRID - 1 - k : k);
+  }
+  // an area's rectangle on the image: [x, y, w, h]
+  function areaRect(a) {
+    const r = Math.floor(a / GRID), k = r % 2 ? GRID - 1 - (a % GRID) : a % GRID, w = st.W / GRID, h = st.H / GRID;
+    return [k * w, r * h, w, h];
   }
   function taskItems(t) {
     if (t === "missed") return addedCands();
@@ -1000,70 +996,145 @@ export function mount(shell) {
     return st.order.filter((c) => groupOf(c) === t).map((c) => [areaOf(c), c])
       .sort((a, b) => a[0] - b[0] || a[1].cy - b[1].cy || a[1].cx - b[1].cx).map(([, c]) => c);
   }
-  const taskDone = (t) => t !== "submit" && !!st.passes && taskItems(t).every(verdictOf) && (t !== "missed" || st.looked);
+  // an added NoR in area a with no verdict yet: the area waits for it
+  const waitingIn = (a) => addedCands().find((c) => !verdictOf(c) && areaOf(c) === a);
+  const taskDone = (t) => t !== "submit" && !!st.passes && taskItems(t).every(verdictOf) && (t !== "missed" || st.areas.size === AREAS);
   const firstOpen = () => TASKS.find((t) => !taskDone(t));
-  // the task opened at its first candidate with no verdict
+  // the area to check next from a: the next one not checked, else one an added NoR still waits in
+  function nextArea(a) {
+    for (let k = 0; k < AREAS; k++) { const b = (a + k) % AREAS; if (!st.areas.has(b)) return b; }
+    const c = addedCands().find((x) => !verdictOf(x));
+    return c ? areaOf(c) : null;
+  }
+  // the areas' task: the area framed, and the added NoR waiting in it, if any, on the card
+  function goArea(a) {
+    st.task = "missed"; st.area = a; const c = a == null ? null : waitingIn(a); st.sel = c ? c.i : null;
+    renderTasks(); placeRing(); frameArea(true);
+  }
+  // the task opened at its first item not done
   function goTask(t) {
+    if (t === "missed") return goArea(nextArea(0));
     const xs = taskItems(t), c = xs.find((x) => !verdictOf(x)) || xs[0];
     st.task = t; st.sel = c ? c.i : null;
-    renderTasks(); placeRing(); if (c) bringIntoView(c);
+    renderTasks(); placeRing(); frameArea(); if (c) bringIntoView(c);
   }
-  function goTo(c) { st.task = groupOf(c); st.sel = c.i; renderTasks(); placeRing(); bringIntoView(c); }
+  function goTo(c) {
+    if (c.added) { st.task = "missed"; st.area = areaOf(c); st.sel = c.i; renderTasks(); placeRing(); frameArea(); return bringIntoView(c); }
+    st.task = groupOf(c); st.sel = c.i; renderTasks(); placeRing(); frameArea(); bringIntoView(c);
+  }
   // a candidate picked on the image becomes the current one, in its task
   const takeUp = (c) => goTo(c);
-  // after a verdict on c: the task's next candidate with none, else the first task not done; the missed NoRs'
-  // task waits for the user to say they looked over the image
+  // after a verdict on c: the task's next candidate with none, else the first task not done; in the areas'
+  // task the area stays until it is checked
   function moveOn(c) {
+    st.taskDir = 1;
+    if (st.task === "missed") return goArea(st.area);
     const xs = taskItems(st.task), k = xs.findIndex((x) => x.i === c.i);
     const next = [...xs.slice(k + 1), ...xs.slice(0, Math.max(k, 0))].find((x) => !verdictOf(x));
-    st.taskDir = 1;
     if (next) return goTo(next);
-    if (st.task === "missed" && !st.looked) return renderTasks();
     goTask(firstOpen());
   }
+  // Skip: the next item without a verdict, or the next area without checking this one
   function stepTask(dir) {
+    st.taskDir = dir;
+    if (st.task === "missed") { if (st.area != null) goArea((st.area + dir + AREAS) % AREAS); return; }
     const xs = taskItems(st.task); if (!xs.length) return;
     const k = xs.findIndex((x) => x.i === st.sel), c = xs[k < 0 ? (dir > 0 ? 0 : xs.length - 1) : (k + dir + xs.length) % xs.length];
-    st.taskDir = dir; goTo(c);
+    goTo(c);
   }
-  $("#task-back").onclick = () => stepTask(-1);
   $("#task-skip").onclick = () => stepTask(1);
+  $("#area-ok").onclick = () => {
+    if (st.area == null) return;
+    st.areas.add(st.area); writeJSON(AREAS_KEY + st.fileName, [...st.areas]); drawReveal(); gtButton(); st.taskDir = 1;
+    const next = nextArea(st.area);
+    next == null ? goTask(firstOpen()) : goArea(next);
+  };
   // the image pans to the candidate only when it is out of the middle of the view
   function bringIntoView(c) {
-    const sc = $("#scroller"), x = c.cx * st.zoom - sc.scrollLeft, y = c.cy * st.zoom - sc.scrollTop;
-    if (x < sc.clientWidth * 0.15 || x > sc.clientWidth * 0.85 || y < sc.clientHeight * 0.15 || y > sc.clientHeight * 0.85) focusOn(c);
+    const sc = $("#scroller"), x = c.cx * st.zoom - sc.clientWidth / 2 - sc.scrollLeft, y = c.cy * st.zoom - sc.clientHeight / 2 - sc.scrollTop;
+    if (Math.abs(x) > sc.clientWidth * 0.35 || Math.abs(y) > sc.clientHeight * 0.35) focusOn(c);
+  }
+  // the area being checked, framed on the image; zoomed in to fill much of the view when it is small there
+  function frameArea(go) {
+    const svg = $("#overlay"); let f = svg.querySelector(".area-frame");
+    const on = TRUTH && st.task === "missed" && st.area != null && !!st.W;
+    if (!on) { if (f) f.style.display = "none"; return; }
+    if (!f) { f = el("rect", { class: "area-frame" }); svg.append(f); }
+    const [x, y, w, h] = areaRect(st.area);
+    for (const [k, v] of Object.entries({ x, y, width: w, height: h })) f.setAttribute(k, v);
+    f.style.display = ""; svg.append(f);
+    if (!go) return;
+    const sc = $("#scroller"), fit = 0.6 * Math.min(sc.clientWidth / w, sc.clientHeight / h);
+    if (st.zoom < fit * 0.6) shell.viewer.setZoom(Math.min(fit, 8));
+    shell.viewer.focus(x + w / 2, y + h / 2);
+  }
+  // What is done, cut out of the image: the rectangle around each decided candidate's pixels, two pixels wider
+  // each way, and each checked area. A picture behind the image shows there, black when it cannot load.
+  // the picture is the study's own (study.json's groundTruth.reveal, a path in the study); none: black
+  const REVEAL = shell.study.groundTruth?.reveal ? new URL("../" + shell.study.groundTruth.reveal, import.meta.url).href : null;
+  function drawReveal() {
+    if (!TRUTH || !st.W) return;
+    const svg = $("#overlay");
+    let g = svg.querySelector(".reveal-marks");
+    if (!g) {
+      g = el("g", { class: "reveal-marks" });
+      const defs = el("defs"), clip = el("clipPath", { id: "gt-reveal" }); defs.append(clip);
+      g.append(defs, el("rect", { class: "reveal-bg", x: 0, y: 0, width: st.W, height: st.H, "clip-path": "url(#gt-reveal)" }),
+        ...(REVEAL ? [el("image", { class: "reveal", href: REVEAL, x: 0, y: 0, width: st.W, height: st.H, preserveAspectRatio: "xMidYMid slice", "clip-path": "url(#gt-reveal)" })] : []));
+      svg.prepend(g);
+    }
+    const holes = [];
+    for (const c of st.order) if (st.forced.get(c.i)) holes.push([c.bb[0] - 2, c.bb[1] - 2, c.bb[2] - c.bb[0] + 4, c.bb[3] - c.bb[1] + 4]);
+    for (const c of addedCands()) if (verdictOf(c)) { const r = radiusOf(c); holes.push([c.cx - r, c.cy - r, 2 * r, 2 * r]); }
+    for (const a of st.areas) holes.push(areaRect(a));
+    g.querySelector("clipPath").replaceChildren(...holes.map(([x, y, width, height]) => el("rect", { x, y, width, height })));
   }
   function renderTasks() {
     if (!TRUTH) return;
     const ready = !!st.meta && !!st.passes, lists = Object.fromEntries(TASKS.map((t) => [t, taskItems(t)]));
-    if (ready && !st.task) { st.task = firstOpen(); const c = lists[st.task].find((x) => !verdictOf(x)) || lists[st.task][0]; st.sel = c ? c.i : null; placeRing(); }
-    let done = 0, all = 0;
-    for (const li of $("#gt-tasks").children) {
-      const t = li.dataset.task, xs = lists[t], n = xs.filter(verdictOf).length;
-      if (t !== "submit") { done += n; all += xs.length; }
-      li.classList.toggle("done", ready && taskDone(t)); li.classList.toggle("now", ready && t === st.task);
-      const nb = li.querySelector(".n"); if (nb) nb.textContent = !ready || (t === "missed" && !xs.length) ? "" : `${n} of ${xs.length}`;
+    if (ready && !st.task) {
+      st.task = firstOpen();
+      if (st.task === "missed") { st.area = nextArea(0); st.sel = st.area == null ? null : waitingIn(st.area)?.i ?? null; }
+      else { const c = lists[st.task].find((x) => !verdictOf(x)) || lists[st.task][0]; st.sel = c ? c.i : null; }
+      placeRing(); frameArea();
     }
-    $("#gt-done").textContent = ready ? `${done} of ${all} reviewed` : "No tasks yet";
-    $("#gt-meter").max = all || 1; $("#gt-meter").value = done;
-    // the open task's candidate, its place in the task and, for the finalists and the rejected, its card's options
-    const now = $("#task-now"), li = ready && $(`#gt-tasks > li[data-task="${st.task}"]`), xs = ready ? lists[st.task] : [];
+    // a row per task, counting what is done of it; the bar a part per task, as long as it and filled as far as done
+    const count = { pass: lists.pass.length, fail: lists.fail.length, missed: AREAS };
+    const did = { pass: lists.pass.filter(verdictOf).length, fail: lists.fail.filter(verdictOf).length, missed: st.areas.size };
+    for (const li of $("#gt-tasks").children) {
+      const t = li.dataset.task;
+      li.classList.toggle("done", ready && taskDone(t)); li.classList.toggle("now", ready && t === st.task);
+      const nb = li.querySelector(".n"); if (nb) nb.textContent = ready ? `${did[t]}/${count[t]}` : "";
+    }
+    for (const b of $("#gt-bar").children) {
+      const t = b.dataset.task;
+      b.style.flexGrow = ready ? count[t] : 1; b.style.setProperty("--done", ready && count[t] ? did[t] / count[t] : 0);
+      b.title = ready ? `${b.closest("#tasks-box").querySelector(`#gt-tasks > li[data-task="${t}"] .t`).textContent.trim()}` : "";
+    }
+    // the open task: its tools on its row, and its item's card under it
+    const li = ready && $(`#gt-tasks > li[data-task="${st.task}"]`), now = $("#task-now"), tools = $("#task-tools");
+    const xs = ready ? (st.task === "missed" ? lists.missed : lists[st.task]) : [];
     const c = xs.find((x) => x.i === st.sel) || null;
-    now.hidden = !c;
-    if (li && st.task !== "submit") (st.task === "missed" ? li.querySelector(".missed-slot") : li.querySelector(".task-body")).append(now);
+    if (li && st.task !== "submit") {
+      li.querySelector(".task-head").append(tools);
+      (st.task === "missed" ? li.querySelector(".missed-slot") : li.querySelector(".task-body")).append(now);
+    } else $("#tasks-box").append(tools);
+    tools.hidden = !li || st.task === "submit";
     if (st.task === "pass" || st.task === "fail") {
       if (st.tab !== st.task) setTab(st.task);
       $("#task-skip").before($("#card-menu"));
-    } else $("#tasks-box").append($("#card-menu"));
+    } else tools.append($("#card-menu"));
     $("#card-menu").hidden = !(st.task === "pass" || st.task === "fail");
-    $("#task-place").textContent = c ? `${xs.indexOf(c) + 1} of ${xs.length}` : "";
-    $("#task-back").disabled = $("#task-skip").disabled = xs.length < 2;
+    $("#task-skip").disabled = st.task === "missed" ? false : xs.length < 2;
+    $("#area-ok").disabled = st.area == null || !!waitingIn(st.area);
+    now.hidden = !c;
     const was = $("#task-card .card"), fresh = c ? card(c, "task") : null;
     $("#task-card").replaceChildren(...(fresh ? [fresh] : []));
     if (was && fresh && was.dataset.i !== fresh.dataset.i) slideIn(was, fresh, st.taskDir || 1);
     st.taskDir = 0;
+    drawReveal();
   }
-  // the next candidate's card slides in over the last one's, which slides out the other way
+  // the next item's card slides in over the last one's, which slides out the other way
   function slideIn(was, fresh, dir) {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     $("#task-stage").querySelectorAll(".leaving").forEach((e) => e.remove());
@@ -1075,15 +1146,9 @@ export function mount(shell) {
   }
   if (TRUTH) {
     $("#summary-box").hidden = true; $("#tasks-box").hidden = false; $("#show-menu").hidden = true;
-    // the card's options fold under the task's card instead of opening over the image
-    const menu = $("#card-menu"); menu.open = false;
+    $("#card-menu").open = false;
     $("#overlay").classList.add("gt"); shell.signal.addEventListener("abort", () => $("#overlay").classList.remove("gt"));
-    for (const li of $("#gt-tasks").children) li.querySelector("button.task-head")?.addEventListener("click", () => { if (st.meta) goTask(li.dataset.task); });
-    $("#missed-done").onchange = () => {
-      st.looked = $("#missed-done").checked; writeJSON(LOOKED + st.fileName, st.looked);
-      gtButton();
-      if (st.looked && st.task === "missed" && taskDone("missed")) goTask(firstOpen()); else renderTasks();
-    };
+    for (const li of $("#gt-tasks").children) li.querySelector("button.t")?.addEventListener("click", () => { if (st.meta) goTask(li.dataset.task); });
   }
 
   // ---------- the summary mask: areas lassoed on the image, combined by exclusive or ----------
@@ -1286,7 +1351,7 @@ export function mount(shell) {
       buildDetect(); useFilters(sel.value);
     },
     opening(name) {
-      st.added = loadAdded(name); st.mask = readJSON(MASK + name, []); st.looked = readJSON(LOOKED + name, false) === true; st.task = null; $("#missed-done").checked = st.looked; endLasso(); st.meta = null; st.lastRun = null; st.cands = []; st.order = []; st.passes = st.rejects = null; st.sel = null; st.ring = null; st.crops = new Map();
+      st.added = loadAdded(name); st.mask = readJSON(MASK + name, []); st.areas = new Set(readJSON(AREAS_KEY + name, [])); st.task = null; st.area = null; endLasso(); st.meta = null; st.lastRun = null; st.cands = []; st.order = []; st.passes = st.rejects = null; st.sel = null; st.ring = null; st.crops = new Map();
       $("#list").replaceChildren(); $("#summary").textContent = "No candidates yet.";
       $("#switch").disabled = true; downloads(false); renderSelected(); renderTasks();
     },

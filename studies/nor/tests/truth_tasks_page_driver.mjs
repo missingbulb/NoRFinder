@@ -45,9 +45,11 @@ const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/cs
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
-  if (u === "/studies/nor/study.json" && stage) {
+  // the study as served: its stage, and a picture to reveal (the file need not exist: black shows under it)
+  if (u === "/studies/nor/study.json") {
+    const m = JSON.parse(fs.readFileSync(path.join(repo, u)));
     r.writeHead(200, { "content-type": "application/json" });
-    return r.end(JSON.stringify({ ...JSON.parse(fs.readFileSync(path.join(repo, u))), stage }));
+    return r.end(JSON.stringify({ ...m, stage: stage || m.stage, groundTruth: { ...m.groundTruth, reveal: "web/acme-dog.jpg" } }));
   }
   const f = u.startsWith("/web/answers/") ? path.join(answers, u.slice("/web/answers/".length)) : repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
@@ -86,7 +88,6 @@ await check(!(await shown(page, "#switch")) && !(await shown(page, "#tasks-bar")
 const tasks = await page.$$eval("#gt-tasks > li", (li) => li.map((l) => l.dataset.task));
 await check(JSON.stringify(tasks) === JSON.stringify(["pass", "fail", "missed", "submit"]), "the tasks in order: the finalists, the rejected, the missed NoRs, Submit", tasks);
 await check(await page.$eval("#dl-truth", (b) => !!b.closest('#gt-tasks > li[data-task="submit"]')), "Submit Ground Truth is the last task");
-await check(await page.$eval("#card-menu", (d) => !!d.closest("#tasks-box") && !d.open && !!d.querySelector("summary svg") && !d.querySelector("summary").textContent.trim()), "the card's options are behind a cogwheel in the task, closed");
 
 // req/nor/truth/order: area by area, the rows of areas back and forth, top to bottom inside an area
 const order = await page.evaluate(() => {
@@ -98,67 +99,76 @@ for (const [t, xs] of [["finalists", order[0]], ["rejected", order[1]]]) {
   const areas = new Set(xs.map((x) => x.a[2])).size;
   await check(xs.length > 2 && areas > 1 && sorted && xs.every((x) => x.pass === (t === "finalists")), `the ${t} (${xs.length}) come area by area, in ${areas} areas`, xs.map((x) => x.a));
 }
-const total = order[0].length + order[1].length;
+const [P, F] = [order[0].length, order[1].length];
 
-const now = () => page.evaluate(() => ({ task: st.task, sel: st.sel, card: document.querySelector("#task-card .card")?.dataset.i, cards: document.querySelectorAll("#task-card .card").length, place: $("#task-place")?.textContent,
-  done: $("#gt-done").textContent, n: [...document.querySelectorAll("#gt-tasks > li")].map((l) => l.querySelector(".n")?.textContent || "") }));
+const now = () => page.evaluate(() => ({ task: st.task, sel: st.sel, card: document.querySelector("#task-card .card")?.dataset.i,
+  rows: [...document.querySelectorAll("#gt-tasks > li")].map((l) => l.querySelector(".task-head").textContent.replace(/\s+/g, " ").trim()),
+  bar: [...document.querySelectorAll("#gt-bar > span")].map((b) => ({ grow: +getComputedStyle(b).flexGrow, fill: +b.style.getPropertyValue("--done") })) }));
 let s = await now();
 await check(s.task === "pass" && s.card === String(order[0][0].i) && s.sel === order[0][0].i, "the finalists' task opens on its first candidate", s);
-await check(s.done === `0 of ${total} reviewed` && /^1 of \d+$/.test(s.place), `the progress reads "${s.done}", the place "${s.place}"`, s);
+// one row per task, each counting once, never saying "review"
+await check(s.rows[0].startsWith(`0/${P} Finalists`) && s.rows[1] === `0/${F} Rejected` && s.rows[2] === "0/100 Areas" && /Submit Ground Truth/.test(s.rows[3])
+  && !s.rows.some((r) => /review/i.test(r)) && await page.$$eval("#tasks-box", (b) => !/\d+ of \d+/.test(b[0].textContent)), "one row per task: 0/N Finalists, 0/N Rejected, 0/100 Areas, Submit", s.rows);
+// the bar, a part per task as long as the task, filled as far as done
+await check(s.bar.length === 3 && s.bar[0].grow === P && s.bar[1].grow === F && s.bar[2].grow === 100 && s.bar.every((b) => b.fill === 0), "the bar has a part per task, as long as the task", s.bar);
 await check(await page.$$eval("#tasks-box .card", (c) => c.length) === 1, "one card at a time");
-// the crop takes most of the card, the thumbs big beside it, no number or state; Go back and Skip at the top
+await check(!(await page.$("#task-back")), "no Go back");
+// the open row carries the cogwheel and Skip; the card is the crop and big thumbs beside it
 const look = await page.evaluate(() => {
   const r = (e) => e.getBoundingClientRect(), d = $("#task-card .card"), crop = r(d.querySelector(".crop canvas")), up = r(d.querySelector(".verdict .up")), card = r(d);
-  const back = r($("#task-back")), skip = r($("#task-skip"));
-  return { share: crop.width / card.width, beside: up.left >= crop.right - 1, big: up.width >= 40 && up.height >= 40, head: !!d.querySelector(".head, .num, .state"),
-    top: back.bottom <= card.top + 1 && skip.bottom <= card.top + 1, links: [back.left < skip.left, $("#task-back").textContent.trim(), $("#task-skip").textContent.trim()] };
+  const head = document.querySelector("#gt-tasks > li.now .task-head");
+  const box = r($("#gt-tasks")), down = r(d.querySelector(".verdict .down"));
+  return { share: crop.width / box.width, under: up.top >= crop.bottom - 1 && Math.abs(up.top - down.top) < 1 && down.left > up.left, big: up.width >= 60 && up.height >= 36,
+    head: !!d.querySelector(".head, .num, .state, .goto"), ticks: [...document.querySelectorAll("#gt-tasks > li:not(.done) .tick")].filter((t) => t.offsetParent).length,
+    cog: !!head.querySelector("#card-menu summary svg") && !$("#card-menu summary").textContent.trim() && !$("#card-menu").open, skip: head.contains($("#task-skip")) && /skip/i.test($("#task-skip").textContent) };
 });
-await check(look.share >= 0.6 && look.beside && look.big && !look.head && look.top && look.links[0] && /back/i.test(look.links[1]) && /skip/i.test(look.links[2]),
-  "the crop takes most of the card, big thumbs beside it, no number, Go back and Skip at the top", look);
+await check(look.share >= 0.97 && look.under && look.big && !look.head && !look.ticks && look.cog && look.skip,
+  "the open row has the cogwheel and Skip; the crop takes the box's width, big thumbs side by side under it, no number or go-to, no marks on tasks not done", look);
 await page.click("#card-menu summary");
 await check(await page.evaluate(() => { const p = $("#card-menu .pop"), r = p.getBoundingClientRect(); return getComputedStyle(p).position === "absolute" && r.height > 40 && !!$("#opt-borders").offsetParent; }), "the cogwheel opens the options as a popup");
 await page.click("#card-menu summary");
 
-// req/nor/truth/marks: waiting, a faint outline and nothing else
+// req/nor/truth/marks: waiting, a faint outline and nothing else; decided, cut out of the image
 const mark = (i) => page.evaluate((i) => {
-  const g = document.querySelector(`#overlay g[data-i="${i}"]`), out = g.querySelector("path:not(.red):not(.area)"), area = g.querySelector(".area");
-  const cs = getComputedStyle(out), as = area && getComputedStyle(area), num = getComputedStyle(g.querySelector(".num"));
-  return { cls: g.getAttribute("class"), stroke: cs.stroke, opacity: +cs.strokeOpacity, area: as ? as.display : "none", fill: as?.fill, fillOpacity: as ? +as.fillOpacity : 0, num: num.display };
+  const g = document.querySelector(`#overlay g[data-i="${i}"]`), out = g.querySelector("path:not(.red)"), cs = getComputedStyle(out);
+  const c = nor.candOf(i), holes = [...document.querySelectorAll("#gt-reveal rect")].map((r) => ["x", "y", "width", "height"].map((k) => +r.getAttribute(k)));
+  const cut = holes.some(([x, y, w, h]) => x <= c.bb[0] - 2 + 1e-6 && y <= c.bb[1] - 2 + 1e-6 && x + w >= c.bb[2] + 2 - 1e-6 && y + h >= c.bb[3] + 2 - 1e-6);
+  return { cls: g.getAttribute("class"), stroke: cs.stroke, opacity: +cs.strokeOpacity, outline: cs.display, num: getComputedStyle(g.querySelector(".num")).display, cut };
 }, i);
 let m = await mark(order[0][1].i);
-await check(/\btodo\b/.test(m.cls) && m.opacity <= 0.4 && m.area === "none" && m.num === "none" && m.stroke === "rgb(255, 255, 255)", "a candidate waiting is a faint white outline, no number", m);
+await check(/\btodo\b/.test(m.cls) && m.opacity <= 0.4 && !m.cut && m.num === "none" && m.stroke === "rgb(255, 255, 255)", "a candidate waiting is a faint white outline, no number", m);
 const ring = await page.$eval("#overlay .ring", (r) => ({ shown: r.style.display !== "none", stroke: getComputedStyle(r).stroke }));
 await check(ring.shown && ring.stroke === "rgb(255, 212, 0)", "the current candidate has a yellow ring", ring);
+// the picture the study names stands behind the whole image, shown only where it is cut out; black under it
+const pic = await page.evaluate(() => { const im = document.querySelector("#overlay image.reveal"), bg = document.querySelector("#overlay .reveal-bg"); return { href: im?.getAttribute("href"), clip: im?.getAttribute("clip-path"), w: +im?.getAttribute("width"), bg: bg && getComputedStyle(bg).fill, bgClip: bg?.getAttribute("clip-path") }; });
+await check(/acme-dog\.jpg$/.test(pic.href) && /gt-reveal/.test(pic.clip) && /gt-reveal/.test(pic.bgClip) && pic.bg === "rgb(0, 0, 0)" && pic.w === (await page.evaluate(() => st.W)), "the study's picture behind the whole image, black under it, shown only where it is cut out", pic);
 
-// a verdict moves on to the next candidate, and fills the reviewed one
+// a verdict moves on to the next candidate, and cuts the reviewed one out
 await page.click("#task-card .verdict .up");
 s = await now();
-await check(s.sel === order[0][1].i && s.card === String(order[0][1].i) && s.done === `1 of ${total} reviewed` && /^2 of /.test(s.place), "a thumbs up moves on to the next candidate", s);
+await check(s.sel === order[0][1].i && s.card === String(order[0][1].i) && s.rows[0].startsWith(`1/${P} Finalists`) && s.bar[0].fill > 0, "a thumbs up moves on to the next candidate and fills the bar", s);
 m = await mark(order[0][0].i);
-await check(/\byes\b/.test(m.cls) && m.area !== "none" && m.fillOpacity >= 0.4 && /^rgb\(\d+, \d+, 255\)$/.test(m.fill), "voted up, it is a filled blue shape", m);
+await check(/\byes\b/.test(m.cls) && m.cut && m.outline === "none", "voted up, its area is cut out of the image", m);
 await page.click("#task-card .verdict .down");
 m = await mark(order[0][1].i);
-await check(/\bno\b/.test(m.cls) && m.area !== "none" && m.fill === "rgb(0, 0, 0)" && m.fillOpacity >= 0.4, "voted down, it is darkened", m);
+await check(/\bno\b/.test(m.cls) && m.cut && m.outline === "none", "voted down, its area is cut out too", m);
 s = await now();
 await check(s.sel === order[0][2].i, "and on again", s);
-// the card slides in: an animation runs on it, and the card it replaces leaves beside it
-const slide = await page.evaluate(() => { $("#task-skip").click(); return { anims: $("#task-card").getAnimations({ subtree: true }).length, leaving: document.querySelectorAll("#task-stage .leaving").length, cards: document.querySelectorAll("#task-card .card").length }; });
-await check(slide.anims > 0 && slide.leaving === 1 && slide.cards === 1, "Skip slides the next card in over the last", slide);
-await page.click("#task-back");
-await page.click("#task-back");
-s = await now();
-await check(s.sel === order[0][1].i && s.done === `2 of ${total} reviewed`, "Go back steps back without a verdict", s);
+// Skip slides the next card in over the last, with no verdict
+const slide = await page.evaluate(() => { $("#task-skip").click(); return { sel: st.sel, anims: $("#task-card").getAnimations({ subtree: true }).length, leaving: document.querySelectorAll("#task-stage .leaving").length, cards: document.querySelectorAll("#task-card .card").length }; });
+await check(slide.sel === order[0][3].i && slide.anims > 0 && slide.leaving === 1 && slide.cards === 1, "Skip slides the next card in over the last", slide);
+await check((await now()).rows[0].startsWith(`2/${P} Finalists`), "and leaves the skipped one without a verdict");
 
 // the last finalist decided moves on to the rejected
 await page.evaluate((xs) => { for (const x of xs.slice(0, -1)) if (!st.forced.get(x.i)) nor.decide(x.i, "approve"); }, order[0]);
-await page.click('#gt-tasks > li[data-task="pass"] .task-head');
+await page.click('#gt-tasks > li[data-task="pass"] .task-head .t');
 s = await now();
 await check(s.sel === order[0].at(-1).i, "clicking a task opens it at its first candidate with no verdict", s);
 await page.click("#task-card .verdict .up");
 s = await now();
-await check(s.task === "fail" && s.sel === order[1][0].i && s.n[0] === `${order[0].length} of ${order[0].length}`, "the finalists done, the rejected's task opens on its first", s);
+await check(s.task === "fail" && s.sel === order[1][0].i && s.rows[0].startsWith(`${P}/${P} Finalists`) && s.bar[0].fill === 1, "the finalists done, the rejected's task opens on its first", s);
 await check(await page.$eval('#gt-tasks > li[data-task="pass"]', (l) => l.classList.contains("done")), "a done task is checked");
-await check(await page.evaluate(() => st.tab === "fail" && /Rejected/.test($("#card-menu summary").getAttribute("aria-label"))), "the rejected's card options are those of the rejected");
+await check(await page.evaluate(() => st.tab === "fail" && /Rejected/.test($("#card-menu summary").getAttribute("aria-label")) && !!document.querySelector('#gt-tasks > li[data-task="fail"] #card-menu')), "the rejected's row has the rejected's options");
 
 // a candidate clicked on the image becomes the current one
 const target = order[0][2].i;
@@ -170,19 +180,32 @@ s = await now();
 await check(s.task === "pass" && s.sel === target && s.card === String(target), "a candidate clicked on the image is the current task's", s);
 await check(!(await shown(page, "#selected-box")), "no card hovers over the image");
 
-// the missed NoRs: added by a right click, decided on their card, done once looked over
-const sc = await page.$eval("#stage", (e) => { const r = e.getBoundingClientRect(); return { x: r.left + 5, y: r.top + 5 }; });
-await page.mouse.click(sc.x, sc.y, { button: "right" });
+// the areas: each framed in turn; a right click adds a NoR there; No missed NoRs here checks the area and cuts it out
+await page.click('#gt-tasks > li[data-task="missed"] .task-head .t');
+await page.waitForTimeout(700); // the view pans smoothly to the area
+const area = () => page.evaluate(() => { const f = document.querySelector("#overlay .area-frame"); return { a: st.area, frame: f && f.style.display !== "none" && ["x", "y", "width", "height"].map((k) => +f.getAttribute(k)), W: st.W, H: st.H }; });
+let a = await area();
+await check(a.a === 0 && a.frame && a.frame[0] === 0 && a.frame[1] === 0 && Math.abs(a.frame[2] - a.W / 10) < 1e-6, "the areas' task frames the first area on the image", a);
+// Skip moves to the next area without checking it; five on, the area is clear of the minimap over the view's top left
+for (let k = 0; k < 5; k++) await page.click("#task-skip");
+await page.waitForTimeout(700);
+a = await area();
+await check(a.a === 5 && (await now()).rows[2].startsWith("0/100 Areas"), "Skip frames the next area, checking none", a);
+const fr = await page.$eval("#overlay .area-frame", (f) => { const r = f.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+await page.mouse.click(fr.x, fr.y, { button: "right" });
 await page.click("#ctx button");
 s = await now();
-await check(s.task === "missed" && s.sel === "u1" && s.card === "u1", "an added NoR opens the missed NoRs' task at its card", s);
+await check(s.task === "missed" && s.sel === "u1" && s.card === "u1" && await page.isDisabled("#area-ok"), "an added NoR shows its card in the areas' task, and the area waits for its verdict", s);
 await page.click("#task-card .verdict .up");
-await check(!(await page.$eval('#gt-tasks > li[data-task="missed"]', (l) => l.classList.contains("done"))), "the missed NoRs' task waits for the look over the image");
+await page.click("#area-ok");
+a = await area();
+const cutArea = await page.evaluate(() => [...document.querySelectorAll("#gt-reveal rect")].some((r) => Math.abs(+r.getAttribute("x") - st.W / 2) < 1e-6 && +r.getAttribute("y") === 0 && Math.abs(+r.getAttribute("width") - st.W / 10) < 1e-6));
+await check(a.a === 6 && cutArea && (await now()).rows[2].startsWith("1/100 Areas"), "No missed NoRs here checks the area, cuts it out and frames the next", { a, cutArea });
 await page.evaluate((xs) => { for (const x of xs) if (!st.forced.get(x.i)) nor.decide(x.i, "reject"); }, order[1]);
-await page.check("#missed-done");
+for (let k = 0; k < 120 && await page.evaluate(() => st.task === "missed"); k++) await page.click("#area-ok");
 s = await now();
-await check(s.task === "submit" && (await page.$eval("#dl-truth", (b) => b.dataset.state)) === "done", "every task done: Submit, its icon a check", s);
-await check(await page.$eval('#gt-tasks > li[data-task="missed"]', (l) => l.classList.contains("done")), "the missed NoRs' task is done");
+await check(s.task === "submit" && s.rows[2] === "100/100 Areas" && (await page.$eval("#dl-truth", (b) => b.dataset.state)) === "done", "every area checked and every task done: Submit, its icon a check", s);
+await check(await page.$eval('#gt-tasks > li[data-task="missed"]', (l) => l.classList.contains("done")), "the areas' task is done");
 await page.close();
 
 // ---- a PreGT study: the summary and the item views, no tasks ----

@@ -1326,13 +1326,13 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 
   Changed by the owner on 2026-10-06, twice on 2026-10-07 and on 2026-11-03. A small icon beside the Submit Ground
   Truth button's text says how finished the work is: a green check when every task before it is
-  done (every finalist and every rejected candidate has the user's verdict, and the user looked
-  for missed NoRs), an orange warning when some candidates have a verdict but a task is not done, and a red
+  done (every finalist and every rejected candidate has the user's verdict, and every area is
+  checked for missed NoRs), an orange warning when some candidates have a verdict but a task is not done, and a red
   error when no candidate has one yet or a candidate the user added still waits for a verdict; the
   warning and the error pulse gently. Any animation scrolled out of view is paused, since Chrome
   would keep drawing it. The button itself stays plain. Its popup (`req/shell/ground-truth/submit`) carries a checklist of
   short instructions (approve or reject the NoRs you added, vote on at least one candidate, vote on
-  every finalist, vote on every rejected candidate, look over the image for missed NoRs, only
+  every finalist, vote on every rejected candidate, check every area for missed NoRs, only
   images from Google Drive can be exported), each done one crossed out with a
   green check; the added-NoRs line shows only when the user added some, and while a summary mask is
   on a warning that the mask is not exported, never crossed out. The issue names the image (name,
@@ -1372,17 +1372,18 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   file name (`studies/nor/tests/test_ground_truth_page.py`).
   </details>
 
-- `req/nor/truth/marks` While the study makes ground truth, the image shows what is reviewed: a faint outline waiting, a filled shape done.
+- `req/nor/truth/marks` While the study makes ground truth, what is reviewed is cut out of the image, revealing a picture behind it.
   <details>
 
   Set by the owner on 2026-11-03. The markings that look at what was found (pink and blue, numbers,
   rejection letters, measuring lines) give way to the tasks' own. A candidate waiting for the
-  user's verdict is only a faint thin white outline, finalist and rejected alike. Once reviewed it
-  is filled: voted up, a solid blue shape (a colour the slide's red and green channels do not
-  carry); voted down, darkened. An added NoR glows until decided (`req/nor/candidates/add-missed`),
-  then fills the same way. The current task's candidate has a yellow ring. As the tasks go area by
-  area (`req/nor/truth/order`), a finished area reads as done at a glance. Test:
-  `studies/nor/tests/test_truth_tasks_page.py`.
+  user's verdict is only a faint thin white outline, finalist and rejected alike, and the current
+  one has a yellow ring. Once the user decides a candidate, up or down, its area (the rectangle
+  around its pixels, two pixels wider each way) is removed from the image, and so is each area
+  checked for missed NoRs (`req/nor/truth/tasks`), which is framed in yellow while it is checked.
+  Where the image is removed, a picture shows instead, one picture behind the whole image (the
+  study's `groundTruth.reveal`, a golden retriever; black while the study names none or it cannot
+  load), so the review uncovers more and more of it. Test: `studies/nor/tests/test_truth_tasks_page.py`.
   </details>
 
 - `req/nor/truth/order` The candidates come area by area, so the review fills the image one area after another.
@@ -1395,26 +1396,26 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   `studies/nor/tests/test_truth_tasks_page.py`.
   </details>
 
-- `req/nor/truth/tasks` Ground Truth Tasks lists the tasks in order, the current one showing one candidate at a time.
+- `req/nor/truth/tasks` Ground Truth Tasks lists the tasks, one row each; the open one shows one item at a time.
   <details>
 
   Set by the owner on 2026-11-03. In Summary's place while the study makes ground truth, opening
-  once the candidates are found, the box lists four tasks: review the finalists, review the
-  rejected, mark the NoRs the finder missed, and Submit Ground Truth (`req/nor/downloads`). Above
-  them, how many candidates are reviewed of all, as words and a meter ("12 of 230 reviewed"), and
-  each task says how many of its own are done; a done task is checked. The current task is open:
-  its candidate's card (`req/nor/candidates/decide`), with its place in the task ("3 of 40") and
-  the card's options (`req/nor/cards/views`). A
-  verdict moves on to the task's next candidate with none, and once a task has none left to the
-  first task not done; the image pans to the candidate when it is out of the middle of the view.
-  Clicking a task opens it at its first candidate with no verdict. Mark the missed NoRs says to
-  right-click the image to add one, shows the added NoR's card to correct and decide, and is done
-  once every added NoR is decided and the user ticks that they looked over the whole image (kept per
-  file name). Changed by the owner on 2026-11-03: the card gives most of its room to the crop, with
-  no number, state or separator; big thumbs up and down stand beside the crop; small Go back and
-  Skip links sit at the card's top, the place between them; the options open from a cogwheel as a
-  popup. Each verdict, skip or go back slides the next card in over the last one (no motion when
-  the user asks for reduced motion). Test: `studies/nor/tests/test_truth_tasks_page.py`.
+  once the candidates are found. A bar split into one part per task, each as wide as the task is
+  long and filled as far as it is done, heads one row per task, each counting only once and never
+  repeating that it is a review: "13/47 Finalists", "0/68 Rejected", "0/100 Areas" (the areas
+  checked for NoRs the finder missed), and Submit Ground Truth (`req/nor/downloads`); a done task
+  is marked done with a check (no marks on the others). Clicking a task opens it at its first item not done. The open task's row carries a
+  cogwheel that opens its card's options as a popup (`req/nor/cards/views`, finalists and
+  rejected) and a small Skip link; under it, its candidate's card (`req/nor/candidates/decide`),
+  no number, state, separator or go-to button: the crop across the box's whole width, with big
+  thumbs up and down side by side under it. A verdict or a skip slides the next card in over the last one (no motion when the user asks
+  for reduced motion): the task's next candidate with no verdict, and once none is left the first
+  task not done; the image pans to it when it is out of the middle of the view. The areas task
+  takes the image's areas in the order of `req/nor/truth/order`, framing each on the image (zoomed
+  in to fill much of the view when it is small there) and saying to right-click where the finder
+  missed a NoR; an added NoR's card waits for its verdict, and "No missed NoRs here" marks the
+  area checked. It is done once every area is checked and every added NoR decided. The added NoRs
+  and the checked areas are kept per file name. Test: `studies/nor/tests/test_truth_tasks_page.py`.
   </details>
 
 ## `req/vascular` The Vascular Measurements page: cerebral vessels in CD31 z-stacks
