@@ -61,6 +61,7 @@ const IMAGE_PATH = "x-nor-path", IMAGE_STUDY = "x-nor-study";
 // Cache Storage, + Drive folder id: the folder's rauntruth-previews.tiff, its SHA-256, the folder's name and the study it was read in in the headers
 const FOLDER_PREVIEWS = "nor-previews-v1", PREVIEWS_SHA = "x-nor-sha256";
 const MOTION = "nor-motion"; // false: the user turned the page's animations off
+const RESOURCES = "nor-resources"; // the status bar's disk, memory, network and CPU: "hidden" | "auto" | "open"; absent = "auto"
 const SEEN_VERSION = "nor-seen-version"; // the site version the user last saw, to tell them what changed since
 const MEMORY_TIP = "nor-memory-tip-off"; // true: the user asked never to see the low-memory popup again
 // the page's memory with a study's Python loaded (studies/nor/detection/browser/MEMORY.md), and the device
@@ -76,7 +77,7 @@ const LOCAL_GT = "Ground truth cannot be sent from local files, only from Google
 // the issue form a proposal for a new study is written on
 const STUDY_REQUEST = "new-study.yml";
 // signing in (req/shell/account/sign-in): these settings follow the user to every device, in their own Google Drive; the rest stay with this one
-const FOLLOWS = [THEME, TIPS, SEEN_VERSION, MEMORY_TIP, SOURCE, DRIVE_LINK, DRIVE_LINKS, THUMBS, RECENT, MOTION];
+const FOLLOWS = [THEME, TIPS, SEEN_VERSION, MEMORY_TIP, SOURCE, DRIVE_LINK, DRIVE_LINKS, THUMBS, RECENT, MOTION, RESOURCES];
 const signIn = account({
   keys: FOLLOWS,
   menu: $("#user-menu"),
@@ -187,6 +188,29 @@ function usage(tab) {
   else usageNow();
 }
 $("#usage-dlg .tab-row").onclick = (e) => { const t = e.target.closest("[role=tab]"); if (t) usage(t.dataset.tab); };
+
+// ---------- the resources block: the disk, memory, network and CPU folded into one icon ----------
+// (req/shell/status-bar/resources) Auto-hiding, it unfolds while hovered, and while something needs watching: the
+// page offline, the CPU over RAISE_CPU or the network over RAISE_RATE for RAISE_AFTER_MS, the tab over RAISE_RAM;
+// it folds RAISE_LINGER_MS after the last of them ends.
+const RES_MODES = ["hidden", "auto", "open"];
+const RAISE_CPU = 0.5, RAISE_RATE = 250 * 1024, RAISE_RAM = 2 ** 30, RAISE_AFTER_MS = 5000, RAISE_LINGER_MS = 8000;
+const raise = { cpuSince: null, netSince: null, until: 0 };
+function showResources() {
+  const m = readJSON(RESOURCES, "auto");
+  $("#sb-res").dataset.mode = $("#res-mode").value = RES_MODES.includes(m) ? m : "auto";
+}
+showResources();
+$("#res-mode").onchange = (e) => { writeJSON(RESOURCES, e.target.value); showResources(); };
+$("#sb-res-icon").onclick = () => usage(usageTab || "storage");
+function raiseResources(cpuShare, rate) {
+  const t = Date.now(), long = (since) => since != null && t - since > RAISE_AFTER_MS;
+  raise.cpuSince = cpuShare > RAISE_CPU ? raise.cpuSince ?? t : null;
+  raise.netSince = rate > RAISE_RATE ? raise.netSince ?? t : null;
+  const watch = document.documentElement.classList.contains("offline") || long(raise.cpuSince) || long(raise.netSince) || memoryNow().total > RAISE_RAM;
+  if (watch) raise.until = t + RAISE_LINGER_MS;
+  $("#sb-res").classList.toggle("raised", t < raise.until);
+}
 // ---------- the status bar's numbers: each changed character rolls up to its new one ----------
 // Characters are paired from the right, so "9%" to "12%" rolls the 9 to a 2 and brings the 1 in from nothing;
 // the old character is the rolling one's data-from, so the number reads as its new value throughout.
@@ -305,6 +329,7 @@ function usageNow() {
   showNumber($("#sb-net"), speedText(rate), sharp(rate, last.rate, SHARP_RATE));
   showNumber($("#sb-cpu"), pct(c.total), sharp(c.total, last.cpu, SHARP_CPU));
   last.rate = rate; last.cpu = c.total;
+  raiseResources(c.total, rate);
   if (tabOn("network")) netList(n, rate);
   if (tabOn("cpu")) cpuList(c);
 }
@@ -1042,7 +1067,7 @@ async function showSaved() {
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
   [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
-  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
+  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [RESOURCES]: "The status bar's disk, memory, network and CPU: hidden, auto-hiding or always open", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
 };
 // What the site keeps, by what it takes to work offline (req/shell/storage/manage): a section per study, then what they share; settings
 // apart, which Settings keeps (req/shell/account/settings), and with them what nobody names. An entry: {kind, name, what, size, del, held, ask}, del
@@ -1216,6 +1241,7 @@ const settings = settingsDialog({
     { key: TIPS, label: "Tips you closed (clear one to see it again)", kind: "set" },
     { key: RECENT, label: "Recent images from Google Drive (clear one to drop it)", kind: "list", name: (r) => (r.study ? `${r.study}: ` : "") + (r.path?.length ? `${r.path.join("/")}/` : "") + r.name },
     { key: MOTION, label: "Animations", kind: "toggle", on: true, off: false, fallback: true },
+    { key: RESOURCES, label: "The status bar's disk, memory, network and CPU", kind: "choice", fallback: "auto", options: [["hidden", "Hidden always"], ["auto", "Auto-hiding"], ["open", "Always open"]] },
     { key: SEEN_VERSION, label: "Version you saw last", kind: "text" },
     { key: "device-only", label: "Kept on this device only", kind: "device", entries: deviceSettings },
   ],
@@ -1232,7 +1258,7 @@ function reapply() {
   let t = null;
   try { t = localStorage.getItem(THEME); } catch { /* no storage */ }
   if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
-  showMotion(); showRecent();
+  showMotion(); showResources(); showRecent();
 }
 $("#open-settings").onclick = () => { $("#user-menu").open = false; settings.open(); };
 $("#storage-reload").onclick = () => location.reload();

@@ -6,7 +6,8 @@
 // the second view's switch reading Tasks with what is left while the study makes ground truth, Items otherwise;
 // a Published study dropping its postprocessing and Submit GT; switching study in place bringing its own stage and steps; the disk, memory, network and CPU as grey icons and
 // numbers, each opening its own tab of one dialog, each rolling its changed characters to a new value, the CPU and
-// the network flashing on a sharp rise and rolling nothing when reduced motion is asked for; a separator between every two items; no question-mark pointer.
+// the network flashing on a sharp rise and rolling nothing when reduced motion is asked for; a separator between every two items; no question-mark pointer; the four folded into one icon at first, unfolded by hovering it, by going offline,
+// a CPU over 50% or a network over 250 KB/s for 5 s or a tab over 1 GB, at once with animations off, folding back 5 to 10 s after, or set always open or hidden.
 // Optional SHOTS: a directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/status_bar_driver.mjs ANSWERS IMAGE.png STUDIES [SHOTS]
 import { createRequire } from "node:module";
@@ -55,6 +56,7 @@ const server = http.createServer((q, r) => {
     r.writeHead(200, { "content-type": "application/json" });
     return r.end(JSON.stringify({ ...JSON.parse(fs.readFileSync(path.join(repo, u))), stage }));
   }
+  if (u.startsWith("/some/")) { r.writeHead(200, { "content-type": "application/octet-stream", "cache-control": "no-store" }); return r.end(Buffer.alloc(Number(u.slice(6)) * 1024)); }
   if (u === "/big") { r.writeHead(200, { "content-type": "application/octet-stream", "cache-control": "no-store" }); return r.end(Buffer.alloc(BIG)); }
   if (u === "/web/vendor/wheels.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end("[]"); }
   const f = u === "/web/answers.json" ? answers : u === "/web/studies.json" ? studies : repoFile(repo, u);
@@ -69,10 +71,12 @@ const done = async (code) => { await browser.close(); server.close(); process.ex
 const check = async (ok, what, seen) => { if (!ok) { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); } console.log("ok: " + what); };
 const shot = async (page, name) => { if (shots) await page.locator("#statusbar").screenshot({ path: path.join(shots, name + ".png") }); };
 
-async function open(study) {
+// mode: the resources block's setting the visit starts with, unless the page has kept another; none: the page's own
+async function open(study, mode) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
   await ctx.route((u) => !u.href.startsWith(origin), (r) => r.abort());
   await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
+  if (mode) await ctx.addInitScript((m) => { if (localStorage.getItem("nor-resources") === null) localStorage.setItem("nor-resources", JSON.stringify(m)); }, mode);
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);
@@ -141,9 +145,9 @@ const switchIs = async (page, want, on, what) => {
 const loadImage = async (page) => { await page.setInputFiles("#file", image); await page.waitForFunction(() => !document.querySelector("#fx-count").disabled); };
 const count = async (page) => { await page.click("#fx-count"); await page.waitForFunction(() => /pixels/.test(document.querySelector("#fx-result").textContent)); };
 
-// ---- a GT study: Load image, its Count, Submit GT ----
+// ---- a GT study: Load image, its Count, Submit GT; the resources block always open, as it was before it could fold ----
 {
-  const { ctx, page } = await open("fixture");
+  const { ctx, page } = await open("fixture", "open");
   await stageIs(page, "GT", "yellow");
   // hovering the stage lists the stages, its own highlighted and the ones before it crossed out
   await page.hover("#sb-stage");
@@ -179,7 +183,9 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await check(left[0] < 40 && left[0] < left[1] && left[1] < left[2], "the stage, then the crumbs, then what the page is doing, from the left", left);
   // a mild bar between every two items on show
   const seps = await page.evaluate(() => {
-    const shown = [...document.querySelectorAll("#statusbar > *")].filter((e) => e.offsetWidth && !e.matches(".grow, #whats-new"));
+    // the resources block counts as the items within it
+    const shown = [...document.querySelectorAll("#statusbar > *")].flatMap((e) => (e.id === "sb-res" ? [...e.querySelectorAll("#sb-res-items > *, #sb-res-icon")] : [e]))
+      .filter((e) => e.offsetWidth && !e.matches(".grow, #whats-new"));
     return shown.slice(1).map((e, k) => {
       const a = shown[k], b = e;
       return [a.id, b.id, getComputedStyle(a).borderRightWidth === "1px" || getComputedStyle(b).borderLeftWidth === "1px"];
@@ -349,6 +355,98 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await check(quiet.rolled > net0 && quiet.anim.slice(-1)[0] === "none" && !quiet.spiked, "a fast download neither rolls nor flashes the network", quiet);
   const alike = (a, b) => a.total && b.total && a.name === b.name && a.size === b.size && (!a.what || !b.what || a.what === b.what);
   await check([memLook, netLook, cpuLook].every((l) => alike(l, storeLook) && alike(l, memLook)), "the four tabs look alike", [storeLook, memLook, netLook, cpuLook]);
+  await ctx.close();
+}
+
+// ---- the resources block: folded into one icon at first, opened by hovering it, by what needs watching, or always ----
+{
+  const { ctx, page } = await open("fixture");
+  // open: the four items take their room, once the animation is over; folded, only the icon shows
+  const block = () => page.evaluate(() => ({ items: Math.round(document.querySelector("#sb-res-items").getBoundingClientRect().width),
+    icon: Math.round(document.querySelector("#sb-res-icon").getBoundingClientRect().width) }));
+  const isOpen = async (want, what, ms = 1500) => {
+    await page.waitForFunction((w) => (document.querySelector("#sb-res-items").getBoundingClientRect().width > 150) === w, want, { timeout: ms }).catch(() => {});
+    await page.waitForTimeout(500);
+    const b = await block();
+    await check((b.items > 150) === want && (want || (b.icon > 10 && b.items === 0)), what, b);
+  };
+  await isOpen(false, "on opening the page, the disk, memory, network and CPU are folded into one icon");
+  await shot(page, "9-resources-folded");
+  const look = await page.evaluate(() => { const s = getComputedStyle(document.querySelector("#sb-res-items")); return { property: s.transitionProperty, ms: parseFloat(s.transitionDuration) * 1000 }; });
+  await check(/max-width|width|all/.test(look.property) && look.ms >= 150, "folding and unfolding is animated", look);
+  await page.hover("#sb-res-icon");
+  await isOpen(true, "hovering the icon unfolds the four as they look always open");
+  await check((await block()).icon > 10, "the icon staying beside them, to be clicked");
+  await shot(page, "10-resources-hovered");
+  await page.mouse.move(700, 300);
+  await isOpen(false, "and they fold again once the pointer leaves");
+  await page.click("#sb-res-icon");
+  await page.waitForFunction(() => document.querySelector("#usage-dlg").open);
+  if (shots) await page.screenshot({ path: path.join(shots, "12-resources-setting.png") });
+  const mode = await page.evaluate(() => ({ value: document.querySelector("#res-mode")?.value, options: [...document.querySelectorAll("#res-mode option")].map((o) => o.value) }));
+  await check(mode.value === "auto" && mode.options.join() === "hidden,auto,open", "clicking the icon opens the resources dialog, whose setting for the block offers hidden, auto-hiding and always open, auto-hiding chosen", mode);
+  await page.keyboard.press("Escape"); await page.mouse.move(700, 300);
+  await isOpen(false, "closed, the block is folded again");
+
+  // what opens it while auto-hiding, and folds it 5 to 10 seconds after it ends
+  const foldsLater = async (what) => {
+    const t0 = Date.now();
+    await page.waitForTimeout(3000);
+    await isOpen(true, `${what}: still open 3 s after it ends`, 100);
+    await page.waitForFunction(() => document.querySelector("#sb-res-items").getBoundingClientRect().width < 5, null, { timeout: 12000 }).catch(() => {});
+    const s = (Date.now() - t0) / 1000;
+    await check(s >= 5 && s <= 11, `${what}: folded again ${s.toFixed(1)} s after it ends`, s);
+  };
+  await page.evaluate(() => { window.st.heapWas = window.st.heap; window.st.heap = 1.2 * 2 ** 30; });
+  await isOpen(true, "the tab holding over 1 GB opens it", 2500);
+  await page.evaluate(() => { window.st.heap = window.st.heapWas; });
+  await foldsLater("memory back under 1 GB");
+  // the page's thread busy for 7 s: not at once, only once it has been over half a core for 5 s
+  const busy = page.evaluate(async () => { const end = Date.now() + 7500; while (Date.now() < end) { const t = Date.now(); while (Date.now() - t < 400); await new Promise((r) => setTimeout(r, 40)); } });
+  await page.waitForTimeout(2500);
+  await isOpen(false, "a CPU over 50% for 2 s does not open it yet", 100);
+  await busy;
+  await isOpen(true, "over 50% for more than 5 s opens it", 2500);
+  await foldsLater("the CPU calm again");
+  // downloading: kb KB every 250 ms for 8 s
+  const download = (kb) => page.evaluate(async (u) => { const end = Date.now() + 8000; while (Date.now() < end) { await fetch(u, { cache: "no-store" }).then((r) => r.arrayBuffer()); await new Promise((r) => setTimeout(r, 250)); } }, origin + "/some/" + kb);
+  await download(25);
+  await isOpen(false, "about 100 KB/s for 8 s does not open it: under 250 KB/s", 100);
+  const pull = download(200);
+  await page.waitForTimeout(2500);
+  await isOpen(false, "the network over 250 KB/s for 2 s does not open it yet", 100);
+  await pull;
+  await isOpen(true, "over 250 KB/s for more than 5 s opens it", 2500);
+  await foldsLater("the network quiet again");
+  await ctx.setOffline(true);
+  await isOpen(true, "going offline opens it", 2500);
+  await page.waitForTimeout(11000);
+  await isOpen(true, "and it stays open while offline", 100);
+  await ctx.setOffline(false);
+  await foldsLater("back online");
+
+  // with the page's animations off, it folds and unfolds at once
+  await page.evaluate(() => { document.documentElement.dataset.motion = "off"; });
+  const still = await page.evaluate(() => getComputedStyle(document.querySelector("#sb-res-items")).transitionDuration);
+  await check(still.split(",").every((d) => parseFloat(d) === 0), "with Animations off, folding and unfolding is not animated", still);
+  await page.evaluate(() => { document.documentElement.dataset.motion = "on"; });
+
+  // always open: as before; kept for the next visit
+  await page.click("#sb-res-icon"); await page.selectOption("#res-mode", "open"); await page.keyboard.press("Escape"); await page.mouse.move(700, 300);
+  await isOpen(true, "always open, the four show");
+  await check((await block()).icon === 0, "with no icon");
+  await check(await page.evaluate(() => JSON.parse(localStorage.getItem("nor-resources"))) === "open", "the choice is kept for the next visit");
+  // hidden always: only the icon, which hovering and the network going do not unfold, the icon itself saying offline
+  await page.click("#sb-disk"); await page.selectOption("#res-mode", "hidden"); await page.keyboard.press("Escape");
+  await isOpen(false, "hidden always, only the icon shows");
+  await page.hover("#sb-res-icon");
+  await isOpen(false, "and hovering it does not unfold the four");
+  await page.mouse.move(700, 300);
+  await ctx.setOffline(true);
+  await isOpen(false, "nor does going offline", 2500);
+  await check(await page.isVisible("#sb-res-icon .no-net"), "the icon carries the red no-network mark instead");
+  await shot(page, "11-resources-hidden-offline");
+  await ctx.setOffline(false);
   await ctx.close();
 }
 
