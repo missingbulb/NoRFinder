@@ -1057,18 +1057,20 @@ spec does not have.
   was found, and it reads "Items" with how many there are. In the item view it reads "Image". The
   study counts its own (`views.count(left, total)`; NoR: the finalists and added NoRs with no
   verdict, among all; Vascular: the low-confidence vessels with no verdict, among all junctions and
-  vessels) and hears which view is shown (`views.on(fn)`). Test: `web-tests/test_status_bar_page.py`.
+  vessels) and hears which view is shown (`views.on(fn)`). Set by the owner on 2026-11-03: an item
+  view marked `data-viewing` only shows what was found, so while its study makes ground truth there
+  is no second view and no switch: the study lists its tasks itself (NoR: `req/nor/truth/tasks`).
+  Test: `web-tests/test_status_bar_page.py`, `studies/nor/tests/test_truth_tasks_page.py`.
   </details>
 
 - `req/shell/views/submit-task` Submit Ground Truth is the last task: it sits in the Tasks view's bar, and each card says whether its task is open.
   <details>
 
-  Set by the owner on 2026-11-02. In a GT or PostGT study a bar heads the Tasks view (`req/shell/views/second`): how
+  Set by the owner on 2026-11-02. In a GT or PostGT study whose item view is Tasks, a bar heads the Tasks view (`req/shell/views/second`): how
   many tasks are done of all ("28 of 40 done", as words and a meter), and at its end the study's
   Submit Ground Truth (its `tasks-end` slot); the image view has no submit button. The Submit GT
   crumb (`req/shell/status-bar/breadcrumbs`) opens Tasks and presses it. A card whose task is still open is marked so, and the
-  cards list open tasks first unless the user chose another order (NoR's finalists open sorted
-  Verified last; Vascular's cards open Open tasks first, an open junction being one that waits on
+  cards list open tasks first unless the user chose another order (Vascular's cards open Open tasks first, an open junction being one that waits on
   a vessel's review). In a PreGT or Published study there is no bar and no card is marked. Test:
   `web-tests/test_status_bar_page.py`, `studies/nor/tests/test_page_layout.py`.
   </details>
@@ -1157,8 +1159,11 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   views opens the tab that lists the selected candidate and scrolls its card into sight; the
   previous and next buttons step through that tab's cards. Set by the owner on 2026-10-31: double
   clicking a candidate on the image selects it and opens the item views at its card, and double
-  clicking a card selects it and shows it on the image, as its go-to button does. Test:
-  `studies/nor/tests/test_item_view_page.py`.
+  clicking a card selects it and shows it on the image, as its go-to button does. Changed by the
+  owner on 2026-11-03: while the study makes ground truth no card hovers over the image; the
+  selected candidate is the current task's, its card in the Ground Truth Tasks box
+  (`req/nor/truth/tasks`), and clicking or double clicking a candidate on the image makes it the
+  current one there. Test: `studies/nor/tests/test_item_view_page.py`.
   </details>
 
 - `req/nor/candidates/numbering` Each candidate keeps one number for as long as a detection lasts.
@@ -1201,18 +1206,20 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 - `req/nor/cards/views` The item views show the finalists and the rejected as cards, each with its own Options.
   <details>
 
-  Each candidate cropped on a card: its number, state and decision buttons on top, the crop below
+  Changed by the owner on 2026-11-03: the item views are only for looking at what was found
+  (`data-viewing`, `req/shell/views/second`); while the study makes ground truth they are not
+  shown, and each card is shown one at a time as its task (`req/nor/truth/tasks`). Each candidate cropped on a card: its number, state and decision buttons on top, the crop below
   (with a faint go-to button in its corner that shows it on the image), then "Lengths adjusted"
   with a reset, and the rest. A rejected card names every filter that rejects it by itself, or says
   the user rejected it. Each view has its own Options menu (remembered per view) that sets the order
-  of its cards (by number; verified first; verified last, the finalists' default while the study
-  makes ground truth (`req/shell/views/submit-task`, changed by the owner on 2026-11-02); by number for the rest; and on the rejected, the most
+  of its cards (by number, the default; verified first; verified last; and on the rejected, the most
   rejecting filters first; ties by number; set by the owner on 2026-10-07), the crop's context
   padding, turns each crop so the NoR lies level (finalists only; the rejected are never turned),
   and shows or hides the NoR borders, the measurement bars, the lengths on the crop, the lengths on
   the card and the measurement adjusters. The finalists open with a 4 px padding and everything on
   but the lengths on the card; the rejected open with a 10 px padding and only the NoR borders on.
-  The selected card over the image uses the options of the view that lists it.
+  The selected card over the image uses the options of the view that lists it, and a task's card
+  those of its task: the finalists' or the rejected's, under the card's Card options.
   </details>
 
 - `req/nor/downloads` Download Candidates and Download Summary give CSVs; Submit Ground Truth gives the ground truth.
@@ -1221,8 +1228,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   Moved by the owner on 2026-10-07. At the bottom of the Summary box, side by side across its width,
   Download Candidates gives the candidates as CSV (every candidate, its status, its reasons, the
   user's decision and its measurements) and Download Summary the summary as CSV. Submit Ground
-  Truth, at the right end of the main area's toolbar (moved there by the owner on 2026-10-31, and
-  shown only in a GT or PostGT study, `req/shell/study/stage`), gives the ground truth
+  Truth, the last of the Ground Truth Tasks (`req/nor/truth/tasks`, moved there by the owner on
+  2026-11-03, and shown only in a GT or PostGT study, `req/shell/study/stage`), gives the ground truth
   (`norfinder-ground-truth/2`): a JSON file naming the image (its SHA-256, and where it was loaded
   from: its Google Drive id and link, or "local") that lists only what the user marked: every
   candidate voted up (label 1, with its lengths and length lines, marked adjusted or approved) or
@@ -1279,7 +1286,7 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   finding.
   </details>
 
-- `req/nor/layout` The left bar holds Load Image, Processing, Postprocessing and Summary; the selected candidate is over the image, Submit Ground Truth in the toolbar.
+- `req/nor/layout` The left bar holds Load Image, Processing, Postprocessing and Summary, or Ground Truth Tasks while the study makes ground truth.
   <details>
 
   Changed by the owner on 2026-10-30, 2026-10-31 and 2026-11-02. Below the Image box
@@ -1289,10 +1296,11 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   settings now chosen, titled "<finder> executed"; Postprocessing, the filters, which only its title
   opens; and Summary, which opens once the candidates are found. Postprocessing and Summary keep
   their names whatever is done. The main area has a toolbar over two views: the image and the
-  tasks, a card for each candidate to decide, with the shell's switch between them at its left (`req/shell/views/second`); Submit Ground Truth (`req/nor/downloads`) heads
-  the tasks, in their bar (`req/shell/views/submit-task`). Changed by the owner on 2026-11-02: it is no longer in the
-  image view. Changed by the owner on 2026-10-31: there is no right bar
-  (`req/shell/left-bar/width`).
+  items, a card for each candidate, with the shell's switch between them at its left (`req/shell/views/second`).
+  Changed by the owner on 2026-11-03: while the study makes ground truth, Ground Truth Tasks
+  (`req/nor/truth/tasks`) takes Summary's place, and the main area is the image alone, with no
+  switch, no item view and no Show menu: the image's markings are the tasks' (`req/nor/truth/marks`).
+  Changed by the owner on 2026-10-31: there is no right bar (`req/shell/left-bar/width`).
   </details>
 
 - `req/nor/metrics` On the released site each finder and each filter preset shows its precision and recall.
@@ -1309,20 +1317,23 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   <details>
 
   Accepted and rejected markings, each with its own line width and colour, and the candidate
-  numbers, the rejection letters and the measuring lines.
+  numbers, the rejection letters and the measuring lines. Not shown while the study makes ground
+  truth (`req/nor/truth/marks`).
   </details>
 
 - `req/nor/submit/progress` The submit button's icon says how finished the work is; its popup lists what is left.
   <details>
 
-  Changed by the owner on 2026-10-06 and twice on 2026-10-07. A small icon beside the Submit Ground
-  Truth button's text says how finished the work is: a green check when every finalist has the
-  user's verdict, an orange warning when some candidates have one but a finalist does not, and a red
+  Changed by the owner on 2026-10-06, twice on 2026-10-07 and on 2026-11-03. A small icon beside the Submit Ground
+  Truth button's text says how finished the work is: a green check when every task before it is
+  done (every finalist and every rejected candidate has the user's verdict, and the user looked
+  for missed NoRs), an orange warning when some candidates have a verdict but a task is not done, and a red
   error when no candidate has one yet or a candidate the user added still waits for a verdict; the
   warning and the error pulse gently. Any animation scrolled out of view is paused, since Chrome
   would keep drawing it. The button itself stays plain. Its popup (`req/shell/ground-truth/submit`) carries a checklist of
   short instructions (approve or reject the NoRs you added, vote on at least one candidate, vote on
-  every finalist, only images from Google Drive can be exported), each done one crossed out with a
+  every finalist, vote on every rejected candidate, look over the image for missed NoRs, only
+  images from Google Drive can be exported), each done one crossed out with a
   green check; the added-NoRs line shows only when the user added some, and while a summary mask is
   on a warning that the mask is not exported, never crossed out. The issue names the image (name,
   SHA-256, Drive link, finder, what was marked). With nothing marked the popup says how to mark and
@@ -1332,6 +1343,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 
 - `req/nor/summary/density` The summary gives the finalists' density, in NoRs per mm² when the file has a scale.
   <details>
+
+  Like all of Summary, shown only while the study does not make ground truth (`req/nor/layout`).
 
   Set by the owner on 2026-10-06. The summary and the Summary CSV give the finalists' density over
   the area counted (the mask, else the whole image) in NoRs per mm², from the scale in the file, or
@@ -1357,6 +1370,47 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   pulsing dashed line, and its inside is tinted a very transparent white only when areas overlap or
   nest. Clear mask, shown while a mask is on, removes it. The mask is remembered in the browser per
   file name (`studies/nor/tests/test_ground_truth_page.py`).
+  </details>
+
+- `req/nor/truth/marks` While the study makes ground truth, the image shows what is reviewed: a faint outline waiting, a filled shape done.
+  <details>
+
+  Set by the owner on 2026-11-03. The markings that look at what was found (pink and blue, numbers,
+  rejection letters, measuring lines) give way to the tasks' own. A candidate waiting for the
+  user's verdict is only a faint thin white outline, finalist and rejected alike. Once reviewed it
+  is filled: voted up, a solid blue shape (a colour the slide's red and green channels do not
+  carry); voted down, darkened. An added NoR glows until decided (`req/nor/candidates/add-missed`),
+  then fills the same way. The current task's candidate has a yellow ring. As the tasks go area by
+  area (`req/nor/truth/order`), a finished area reads as done at a glance. Test:
+  `studies/nor/tests/test_truth_tasks_page.py`.
+  </details>
+
+- `req/nor/truth/order` The candidates come area by area, so the review fills the image one area after another.
+  <details>
+
+  Set by the owner on 2026-11-03. Each task's candidates are ordered by the area they lie in, the
+  image cut into 10 by 10 areas taken row by row, each row the way back from the last (so the next
+  area always borders the one just done), and inside an area top to bottom. The areas are not
+  drawn: the user only sees an area of the image fill up after ten or twenty verdicts. Test:
+  `studies/nor/tests/test_truth_tasks_page.py`.
+  </details>
+
+- `req/nor/truth/tasks` Ground Truth Tasks lists the tasks in order, the current one showing one candidate at a time.
+  <details>
+
+  Set by the owner on 2026-11-03. In Summary's place while the study makes ground truth, opening
+  once the candidates are found, the box lists four tasks: review the finalists, review the
+  rejected, mark the NoRs the finder missed, and Submit Ground Truth (`req/nor/downloads`). Above
+  them, how many candidates are reviewed of all, as words and a meter ("12 of 230 reviewed"), and
+  each task says how many of its own are done; a done task is checked. The current task is open:
+  its candidate's card (`req/nor/candidates/decide`), with previous and next buttons and its place
+  in the task ("3 of 40"), and under it the card's options folded (`req/nor/cards/views`). A
+  verdict moves on to the task's next candidate with none, and once a task has none left to the
+  first task not done; the image pans to the candidate when it is out of the middle of the view.
+  Clicking a task opens it at its first candidate with no verdict. Mark the missed NoRs says to
+  right-click the image to add one, shows the added NoR's card to correct and decide, and is done
+  once every added NoR is decided and the user ticks that they looked over the whole image (kept per
+  file name). Test: `studies/nor/tests/test_truth_tasks_page.py`.
   </details>
 
 ## `req/vascular` The Vascular Measurements page: cerebral vessels in CD31 z-stacks
