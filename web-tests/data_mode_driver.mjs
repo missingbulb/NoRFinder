@@ -14,6 +14,7 @@ import http from "node:http";
 import path from "node:path";
 import { repoFile } from "./repo_file.mjs";
 import { offSite } from "./off_site.mjs";
+import { ENGINE } from "./engine.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -67,7 +68,7 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw.chromium.launch();
+const browser = await pw[ENGINE].launch();
 const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
 const check = async (ok, what, seen) => { if (!ok) { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); } console.log("ok: " + what); };
 

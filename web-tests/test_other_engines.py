@@ -5,6 +5,8 @@ import os
 
 import pytest
 
+pytestmark = pytest.mark.full
+
 SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'dev', 'tools', 'build', 'other_engines.py')
 spec = importlib.util.spec_from_file_location('other_engines', SCRIPT)
 other_engines = importlib.util.module_from_spec(spec)
