@@ -142,8 +142,8 @@ try {
   if (inViewer.path !== "/web/") problems.push("the Image Viewer's address is not the bare one: " + inViewer.path);
   if (inViewer.image || inViewer.file !== "No image loaded" || inViewer.unload || inViewer.loaded) problems.push("switching study did not unload the image: " + JSON.stringify(inViewer));
   if (inViewer.fixture || inViewer.css.length) problems.push("the fixture left its panels or stylesheet behind: " + inViewer.css);
-  // the Image Viewer names no channels: the fixture's one plane, named by nothing, is grey
-  if (inViewer.channels !== "Grey" || !inViewer.noHelp) problems.push("the channels are still the old study's: " + inViewer.channels);
+  // the Image Viewer names no channels, and no image is open to give any: none are listed
+  if (inViewer.channels !== "" || !inViewer.noHelp) problems.push("the channels are still the old study's: " + inViewer.channels);
   // the last row asks GitHub for a new study, on the form the repo carries
   const request = await page.evaluate(() => {
     const a = document.querySelector("#study-request"), rows = [...document.querySelectorAll("#study-menu .pop a")];
