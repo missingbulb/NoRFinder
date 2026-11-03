@@ -33,8 +33,6 @@ await check((await width()) > 200, "opening slides the column out", await width(
 const access = await page.evaluate(() => [...document.querySelectorAll("#data-tree .tree-folder")].map((f) => [f.querySelector(":scope > .row .name").textContent, f.querySelector(":scope > .row .access").textContent]));
 await check(JSON.stringify(access) === JSON.stringify([["Study folder one", "Writable"], ["sub", "Not approved"]]), "the tree shows every folder with its access", access);
 await check(await page.evaluate(() => [...document.querySelectorAll(".tree-images")].every((b) => b.hidden)), "the images stay folded under their folders");
-// Load goes once its puff is over, which headless WebKit at times ends a few frames late
-await page.waitForFunction(() => $("#load").getClientRects().length === 0).catch(() => {});
 // Load by the boxes it draws: WebKit's checkVisibility() calls it visible though it is display: none
 const shown = await page.evaluate(() => ({ load: $("#load").getClientRects().length > 0, pre: $("#preprocessing-box").checkVisibility(), study: $("#fx-box").checkVisibility(), image: $("#image-box").checkVisibility(), steps: $("#sb-steps").checkVisibility() }));
 await check(!shown.load && shown.pre && !shown.study && shown.image && !shown.steps, "in the mode: Load gone, Preprocessing and the Image box shown, the study's drawers and the steps hidden", shown);
