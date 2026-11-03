@@ -678,10 +678,15 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 
 /* working offline (req/shell/offline/default) and making a study available offline (req/shell/offline/per-study) */
 html.offline [data-needs-network] { opacity: .45; cursor: not-allowed; }
-#statusbar #sb-offline, #statusbar #sb-report.unsupported, #statusbar #sb-report.unsupported svg { color: var(--warn); }
+#statusbar #sb-report.unsupported, #statusbar #sb-report.unsupported svg { color: var(--warn); }
 #sb-report .warn, #sb-report.unsupported .bug { display: none; }
 #sb-report.unsupported .warn { display: inline; }
-#statusbar #sb-offline[hidden] { display: none; }
+/* no network: a red mark on the network's icon, the one red in the status bar */
+#sb-net { position: relative; }
+#statusbar #sb-net .no-net { display: none; position: absolute; left: 8px; top: -1px; }
+html.offline #statusbar #sb-net .no-net { display: block; }
+#sb-net .no-net circle { fill: var(--no); stroke: var(--panel); stroke-width: 1; }
+#sb-net .no-net path { stroke: #fff; stroke-width: 1.4; stroke-linecap: round; }
 #offline-dlg { width: min(560px, calc(100vw - 32px)); }
 #offline-dlg h2 { margin: 0 0 6px; }
 #offline-dlg p { margin: 4px 0; }

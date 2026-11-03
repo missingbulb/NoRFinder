@@ -4,6 +4,8 @@
 // keeps under it}, for the keys whose settings follow the user. The services it reaches: Google's sign-in script
 // and window, Google's account details (name, email, picture), and the Drive API for that one file.
 "use strict";
+import { CONNECTION } from "./offline.js";
+
 const GOOGLE_SCRIPT = "https://accounts.google.com/gsi/client";
 const SCOPES = "openid email profile https://www.googleapis.com/auth/drive.appdata";
 const USER_INFO = "https://openidconnect.googleapis.com/v1/userinfo";
@@ -156,8 +158,13 @@ export function account({ keys, menu, clientId, applied }) {
     if (!me) clearTimeout(saving);
     show();
   });
-  // a change made offline waits for the network, then syncs while the token lasts
-  addEventListener("online", () => { if (live()) syncing(); });
+  // a change made offline waits for the network, then syncs while the token lasts; with none, Google's script
+  // loads so the next click can ask for one
+  addEventListener(CONNECTION, (e) => {
+    if (!e.detail.online) return;
+    if (live()) syncing();
+    else if (me) ready();
+  });
 
   return {
     // a setting the shell just wrote: saved to Drive now; with no token, a token is asked for when the user just
