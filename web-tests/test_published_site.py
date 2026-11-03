@@ -200,7 +200,7 @@ def test_the_landing_page_lists_the_supported_browsers_the_page_checks_for(tmp_p
     build.assemble(ROOT, str(tmp_path), {})
     landing = (tmp_path / 'index.html').read_text()
     supported = json.load(open(os.path.join(ROOT, 'web', 'browsers.json')))['supported']
-    assert len(supported) >= 4
+    assert len(supported) >= 2
     listed = re.search(r'<ul [^>]*id="browsers"[^>]*>(.*?)</ul>', landing, re.S)
     assert listed, 'the landing page has no list of supported browsers'
     items = re.findall(r'<li>([^<]*)</li>', listed.group(1))

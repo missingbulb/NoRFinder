@@ -44,8 +44,8 @@ const UA = {
 };
 const table = [
   ["chrome", 0, "Chrome", 153, true], ["oldChrome", 0, "Chrome", 109, false], ["edge", 0, "Edge", 150, true],
-  ["firefox", 0, "Firefox", 140, true], ["firefoxEsr115", 0, "Firefox", 115, false],
-  ["safari", 0, "Safari", 18, true], ["oldSafari", 0, "Safari", 16, false],
+  ["firefox", 0, "Firefox", 140, false], ["firefoxEsr115", 0, "Firefox", 115, false],
+  ["safari", 0, "Safari", 18, false], ["oldSafari", 0, "Safari", 16, false],
   ["opera", 0, "Opera", 120, false], ["samsung", 5, "Samsung Internet", 28, false],
   ["iphone", 5, "Safari", 18, false], ["androidChrome", 5, "Chrome", 153, false], ["headless", 0, "Chrome", 153, true],
   // an iPad asking for the desktop page reads as a Mac with a touch screen

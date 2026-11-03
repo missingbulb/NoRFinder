@@ -85,10 +85,11 @@ spec does not have.
 - `req/shell/browsers/supported` The page names the browsers it supports; in any other, a warning sign in the status bar reports a problem.
   <details>
 
-  Set by the owner on 2026-11-03. The page supports Chrome, Edge, Firefox and Safari on a desktop or laptop
-  computer, each from the version `web/browsers.json` names, the one place the list is kept; the floor is the
-  newest web feature the page relies on with no fallback. A phone or tablet, iPhone and iPad included, is not
-  supported, nor is any other browser (Opera, Samsung Internet), whatever engine it runs; one that names
+  Set by the owner on 2026-11-03. The page supports Chrome and Edge on a desktop or laptop computer, each from
+  the version `web/browsers.json` names, the one place the list is kept; the floor is the newest web feature
+  the page relies on with no fallback. Firefox and Safari join the list once the nightly run on their engines
+  (`req/checks/other-engines`) is green. A phone or tablet, iPhone and iPad included, is not supported, nor is any
+  other browser (Opera, Samsung Internet), whatever engine it runs; one that names
   itself as Chrome (Brave, Vivaldi) counts as Chrome. In a browser not supported, the status bar shows a
   warning sign at the left of its right-hand items (`req/shell/status-bar`), whose tooltip says why and that clicking it reports a
   problem; clicking it opens the problem report (`req/shell/report/bug`). The site's landing page (`req/shell/site/landing`) lists the
@@ -927,7 +928,20 @@ spec does not have.
   Node nor a browser; every test that drives Node, Pyodide or Chromium, or measures speed or memory,
   is marked `full` and runs only in the full set, nightly (the nor-finder pack's `full-tests` task)
   and on every push to main, so it has run on anything a release can ship: a green full run on main
-  wakes the site release (`.github/workflows/tests-full.yml`, `web-tests/test_ci_split.py`).
+  wakes the site release (`.github/workflows/tests-full.yml`, `web-tests/test_ci_split.py`). The nightly run also
+  runs the full set on Firefox and WebKit (`req/checks/other-engines`).
+  </details>
+
+- `req/checks/other-engines` Every night the full set also runs on Firefox and WebKit; their failures fail the night only once the page supports their browser.
+  <details>
+
+  Set by the owner on 2026-11-03. The nightly full run (the nor-finder pack's `full-tests` task) runs the full
+  set again on Playwright's Firefox and on its WebKit, standing for Safari; a push to main does not, and
+  neither gates a release. An engine whose browser `web/browsers.json` does not list (`req/shell/browsers/supported`) reports
+  its failures as a warning on the run and the night stays green; once its browser is listed, a failure
+  fails the night as any other test does. Each page test's driver launches the engine `PW_ENGINE` names, so the
+  same run can be made by hand: `python3 dev/tools/build/other_engines.py firefox`. Test:
+  `web-tests/test_other_engines.py`.
   </details>
 
 ## `req/nor` The NoR Finder page: detect once, filter live, in the browser
