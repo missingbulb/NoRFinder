@@ -113,8 +113,19 @@ async function measure() {
   await cdp.send("HeapProfiler.collectGarbage"); await page.waitForTimeout(50); await cdp.send("HeapProfiler.collectGarbage");
   const h = await cdp.send("Runtime.getHeapUsage");
   const perf = Object.fromEntries((await cdp.send("Performance.getMetrics")).metrics.map((m) => [m.name, m.value]));
-  return { heap: h.usedSize, buffers: h.backingStorageSize, nodes: perf.Nodes, listeners: perf.JSEventListeners };
+  return { heap: h.usedSize, buffers: h.backingStorageSize, nodes: perf.Nodes, listeners: perf.JSEventListeners, where: await where() };
 }
+// the nodes in the document, by the nearest ancestor with an id, and how many that is in all
+const where = () => page.evaluate(() => {
+  const by = {}, walk = document.createTreeWalker(document, NodeFilter.SHOW_ALL);
+  let all = 1; // the document itself
+  for (let x = walk.nextNode(); x; x = walk.nextNode()) {
+    all++;
+    const e = (x.nodeType === 1 ? x : x.parentElement)?.closest("[id]"), k = e ? "#" + e.id : "(no id)";
+    by[k] = (by[k] || 0) + 1;
+  }
+  return { by, all };
+});
 const KB = 1024;
 // the heap settles by a few kilobytes of compiled code and caches over the first rounds; the image
 // alone is a quarter of a megabyte and a candidate's card several kilobytes
@@ -131,6 +142,12 @@ for (const [name, act] of Object.entries({ open, find, tune })) {
   const m = await measure();
   console.log(name.padEnd(5), Object.keys(LIMITS).map((k) => `${k} ${base[k]} -> ${m[k]}`).join(", "));
   for (const [k, lim] of Object.entries(LIMITS)) if (m[k] - base[k] > lim) problems.push(`${name}: ${k} grew by ${m[k] - base[k]} over 4 rounds`);
+  // where the nodes went, so a growth seen only on another machine says where to look
+  if (m.nodes > base.nodes) {
+    const a = base.where.by, b = m.where.by;
+    const grew = Object.keys({ ...a, ...b }).filter((k) => (a[k] || 0) !== (b[k] || 0)).map((k) => `${k} ${a[k] || 0} -> ${b[k] || 0}`);
+    problems.push(`${name}: in the document ${grew.join(", ") || "nothing changed"}; outside it ${base.nodes - base.where.all} -> ${m.nodes - m.where.all}`);
+  }
 }
 await browser.close(); server.close();
 for (const p of problems) console.error(p);
