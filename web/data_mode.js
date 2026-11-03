@@ -300,7 +300,8 @@ export function dataMode(ctx) {
     if (ctx.still()) return l.classList.add("gone");
     void l.offsetWidth;
     l.classList.add("poof");
-    l.addEventListener("animationend", () => { l.classList.remove("poof"); if (on()) l.classList.add("gone"); }, { once: true });
+    // gone once the puff is over, whether it ran out, was cut short or (WebKit, at times) never started
+    Promise.all(l.getAnimations().map((x) => x.finished.catch(() => {}))).then(() => { l.classList.remove("poof"); if (on()) l.classList.add("gone"); });
   }
   $("#data-open").onclick = () => enter(!on());
   // the network back: the folders read afresh, if they could not be read before
