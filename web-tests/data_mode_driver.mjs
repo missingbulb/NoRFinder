@@ -110,6 +110,8 @@ await check(await page.evaluate(() => st.fileName === "a flat.tif" && shellForTe
 // offline (req/shell/offline/default): no bar asking for folders, and nothing written to Drive
 await page.click("#data-tree .tree-folder .name");
 await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell").length === 3);
+// its previews drawn first: Playwright's WebKit, set offline, fails every read of a Blob's bytes, the previews' among them
+await page.waitForFunction(() => [...document.querySelectorAll("#folder-items .cell .pic")].every((p) => p.querySelector("img") || p.classList.contains("none")));
 const before = writes.length;
 await page.context().setOffline(true);
 await page.waitForFunction(() => document.documentElement.classList.contains("offline"));
