@@ -181,6 +181,25 @@ await check(dim[0] === Math.round((200 - 150) / (255 - 150) * 255) || Math.abs(d
 await level(1, "black", 250); await level(1, "white", 240);
 const pts = await page.$eval("#channels .channel:nth-child(1)", (r) => [+r.querySelector("input.black").value, +r.querySelector("input.white").value]);
 await check(pts[0] < pts[1], "the black point stays below the white point", pts);
+// the row is one line: its checkbox, colour, name and slider side by side
+const line = await page.$eval("#channels .channel:nth-child(1)", (r) => {
+  const mid = (q) => { const b = r.querySelector(q).getBoundingClientRect(); return b.top + b.height / 2; };
+  return { h: r.getBoundingClientRect().height, mids: ["input[type=checkbox]", "input[type=color]", "label", ".levels"].map(mid) };
+});
+await check(line.h <= 24 && Math.max(...line.mids) - Math.min(...line.mids) <= 4, "the row is one line: checkbox, colour, name and slider", line);
+// the two points meet at the top of the slider and each can still be dragged away from there
+await level(1, "white", 255); await level(1, "black", 254);
+const meet = await page.$eval("#channels .channel:nth-child(1) input.black", (i) => { const b = i.getBoundingClientRect(); return { x: b.right, y: b.top + b.height * 0.75 }; });
+await page.mouse.move(meet.x - 3, meet.y); await page.mouse.down(); await page.mouse.move(meet.x - 60, meet.y, { steps: 5 }); await page.mouse.up();
+const dragged = await page.$eval("#channels .channel:nth-child(1)", (r) => [+r.querySelector("input.black").value, +r.querySelector("input.white").value]);
+await check(dragged[0] < 230 && dragged[1] === 255, "the black point, left at the white one, can be dragged back", dragged);
+await level(1, "black", 0);
+// its colour picker starts at the channel's colour and recolours it
+await check((await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => i.value)) === "#ffffff", "its colour picker starts at its colour");
+await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => { i.value = "#ff0000"; i.dispatchEvent(new Event("input", { bubbles: true })); });
+await page.waitForTimeout(100);
+await check((await pixel(15, 15)).join() === "200,0,0", "picking a colour recolours the channel", await pixel(15, 15));
+await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => { i.value = "#ffffff"; i.dispatchEvent(new Event("input", { bubbles: true })); });
 await page.dblclick("#channels .channel:nth-child(1) .levels");
 await check((await pixel(15, 15)).join() === "200,200,200", "a double click puts the points back", await pixel(15, 15));
 await page.click("#channels .channel:nth-child(1) input[type=checkbox]");
