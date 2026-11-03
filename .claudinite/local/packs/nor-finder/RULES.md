@@ -29,6 +29,12 @@ not belong here — propose it to the Claudinite canon instead, where every repo
   same pull request; editing the file loads the `writing-version-history` skill. A change nobody
   using the page would notice adds nothing. (page-version-history)
 
+## Ground truth
+
+- **Building or changing a study's ground-truth controls** (what its page shows in a GT or PostGT
+  stage) — load the `designing-ground-truth-tasks` skill first: the tasks in the left bar, one
+  item at a time, area by area, what is done cut out of the image. (designing-ground-truth-tasks)
+
 ## Merging
 
 - **A small pull request fixing a bug** — merge it yourself, unasked, once its first commit added
