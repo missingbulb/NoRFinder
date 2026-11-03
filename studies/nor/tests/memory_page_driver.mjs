@@ -2,6 +2,7 @@
 // of real results written by tests/test_memory.py, and checks that opening IMAGE, finding and moving
 // filters over and over leaves the page holding no more JavaScript heap, array buffers, DOM nodes or
 // event listeners. Prints what it measured; exits 1 on growth, 2 when it cannot run.
+// THROTTLE=n slows its CPU n times over, as a slow test machine is.
 //   node tests/memory_page_driver.mjs ANSWERS IMAGE
 import { repoFile } from "../../../web-tests/repo_file.mjs";
 import { createRequire } from "node:module";
@@ -62,6 +63,7 @@ page.on("pageerror", (e) => fail("page error: " + e.message));
 page.setDefaultTimeout(10000);
 const cdp = await ctx.newCDPSession(page);
 await cdp.send("Performance.enable");
+if (process.env.THROTTLE) await cdp.send("Emulation.setCPUThrottlingRate", { rate: +process.env.THROTTLE });
 
 // resolves with the worker's next message of this type, or answer to this action (the page's own handler still gets it)
 const next = (action) => page.evaluate((action) => new Promise((ok) => {
@@ -108,22 +110,32 @@ async function tune() {
 // what the page holds once garbage is collected; usedSize is the JavaScript heap, backingStorageSize
 // the array buffers outside it (the image, the segments)
 async function measure() {
-  // The status bar's numbers hold a few nodes for each character that rolled in their last change, and the network's
-  // rolls every second as its rate falls: written plain, and measured again whenever one rolled meanwhile, the count
-  // is the same whatever they last read.
+  // The status bar's numbers hold a node or more for each character of their last change, and the network's
+  // changes every second as its rate falls: written plain, and measured again whenever one changed meanwhile, the
+  // count is the same whatever they last read.
   // the page's frames done first: the item view draws its cards in them as they come near, which a slow machine
   // can still be doing when the work itself has settled
   await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(ok, 100)))));
   for (let tries = 0; ; tries++) {
     await page.evaluate(() => { for (const v of document.querySelectorAll("#statusbar .sb-item .v")) v.textContent = v.textContent; });
-    // twice: DOM nodes freed by the first collection are swept only after it
-    await cdp.send("HeapProfiler.collectGarbage"); await page.waitForTimeout(50); await cdp.send("HeapProfiler.collectGarbage");
+    // A node and its listeners leave the counts only when a collection's sweep reaches them, which on a slow
+    // machine can trail the collection: collected again until two readings agree, garbage still unswept keeps
+    // falling and a node something holds stays.
+    let perf = await collected(), sweeps = 1;
+    for (let was = null; sweeps < 10 && !(was && perf.Nodes === was.Nodes && perf.JSEventListeners === was.JSEventListeners); sweeps++) {
+      was = perf; perf = await collected();
+    }
     const h = await cdp.send("Runtime.getHeapUsage");
-    const perf = Object.fromEntries((await cdp.send("Performance.getMetrics")).metrics.map((m) => [m.name, m.value]));
-    const rolled = await page.evaluate(() => document.querySelectorAll("#statusbar .roll").length);
+    // one that changed without rolling, "12%" to "2%", is still its characters a node each
+    const rolled = await page.evaluate(() => [...document.querySelectorAll("#statusbar .sb-item .v")].some((v) => v.children.length || v.childNodes.length > 1));
     if (rolled && tries < 10) continue;
-    return { heap: h.usedSize, buffers: h.backingStorageSize, nodes: perf.Nodes, listeners: perf.JSEventListeners, where: await where() };
+    return { heap: h.usedSize, buffers: h.backingStorageSize, nodes: perf.Nodes, listeners: perf.JSEventListeners, sweeps, where: await where() };
   }
+}
+// the page's counts after a collection; twice, as DOM nodes freed by the first are swept only after it
+async function collected() {
+  await cdp.send("HeapProfiler.collectGarbage"); await page.waitForTimeout(50); await cdp.send("HeapProfiler.collectGarbage");
+  return Object.fromEntries((await cdp.send("Performance.getMetrics")).metrics.map((m) => [m.name, m.value]));
 }
 // the nodes in the document, by the nearest ancestor with an id, and how many that is in all
 const where = () => page.evaluate(() => {
@@ -150,7 +162,7 @@ for (const [name, act] of Object.entries({ open, find, tune })) {
   const base = await measure();
   for (let r = 0; r < +(process.env.ROUNDS || 4); r++) await act();
   const m = await measure();
-  console.log(name.padEnd(5), Object.keys(LIMITS).map((k) => `${k} ${base[k]} -> ${m[k]}`).join(", "));
+  console.log(name.padEnd(5), Object.keys(LIMITS).map((k) => `${k} ${base[k]} -> ${m[k]}`).join(", "), `(collections ${base.sweeps}, ${m.sweeps})`);
   for (const [k, lim] of Object.entries(LIMITS)) if (m[k] - base[k] > lim) problems.push(`${name}: ${k} grew by ${m[k] - base[k]} over 4 rounds`);
   // where the nodes went, so a growth seen only on another machine says where to look
   if (m.nodes > base.nodes) {
