@@ -24,11 +24,11 @@ export function settingsDialog({ dialog, fields, get, set, where, saved }) {
     let control;
     if (f.kind === "choice") {
       const now = v === undefined ? f.fallback : v;
-      control = `<select ${name}>${f.options.map(([o, l]) => `<option value="${esc(o)}"${o === now ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+      control = `<select ${name} aria-label="${esc(f.label)}">${f.options.map(([o, l]) => `<option value="${esc(o)}"${o === now ? " selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
     } else if (f.kind === "toggle") {
       return `<div class="setting">${box("", f.label, (v === undefined ? f.fallback : v) === f.on)}</div>`;
     } else if (f.kind === "text") {
-      control = `<input type="text" ${name} value="${esc(v || "")}" spellcheck="false">`;
+      control = `<input type="text" ${name} aria-label="${esc(f.label)}" value="${esc(v || "")}" spellcheck="false">`;
     } else if (f.kind === "device") {
       const items = f.entries();
       control = items.length ? items.map((e) => `<label class="tick"><input type="checkbox" ${name} value="${esc(e.key)}" checked> ${esc(e.label)} <span class="dim">${esc(e.size)}</span></label>`).join("") +
@@ -40,7 +40,9 @@ export function settingsDialog({ dialog, fields, get, set, where, saved }) {
       const items = Array.isArray(v) ? v : [];
       control = items.length ? items.map((e, i) => box(f.kind === "set" ? e : String(i), f.kind === "set" ? e : f.name(e), true)).join("") : `<span class="dim">None yet</span>`;
     }
-    return `<div class="setting"><span class="name">${esc(f.label)}</span><div class="control">${control}</div></div>`;
+    // an entry of a list holds what the user named or opened: logged by the list's name (req/shell/report/action-log)
+    const own = ["text", "choice"].includes(f.kind) ? "" : ` data-log-as="an entry of “${esc(f.label)}”"`;
+    return `<div class="setting"><span class="name">${esc(f.label)}</span><div class="control"${own}>${control}</div></div>`;
   }
 
   // what the dialog now says each field holds, as the browser would keep it: null to forget it

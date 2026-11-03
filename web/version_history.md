@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- A bug icon in the status bar, and Report a problem… in your menu, open a GitHub issue already filled in with your browser, the study, where you are in it and your last five actions. In a browser the page does not support, the icon is a warning sign. (#658)
 - Offline, the network icon in the status bar now carries a red mark, and notices the connection dropping or returning while you work, even when the Wi-Fi still says connected. It replaces the yellow Offline item. When the connection comes back, a study that could not load its Python loads it without a reload, and an open Google Drive or Make available offline popup refreshes by itself. (#656)
 - Popups and tips stay attached to their button when the window is resized, and the toolbar's popups and the stage's list also open when you reach their button with the keyboard. (#657)
 - Opening the page asks whether to sign in with Google or continue anonymously, and remembers your answer if you tick Remember this choice. Anonymous, a tip by your avatar offers signing in later. Offline, signing in waits until you are back online. (#649)

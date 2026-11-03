@@ -82,6 +82,22 @@ spec does not have.
   follows what it points at when the window resizes. Test: `web-tests/test_welcome_page.py`.
   </details>
 
+- `req/shell/browsers/supported` The page names the browsers it supports; in any other, the status bar's report icon is a warning sign.
+  <details>
+
+  Set by the owner on 2026-11-03. The page supports Chrome and Edge on a desktop or laptop computer, each from
+  the version `web/browsers.json` names, the one place the list is kept; the floor is the first version that
+  places the page's popups by CSS anchor positioning (Chrome and Edge 125; an older one shows each popup at a
+  fixed spot). Firefox, from 147, and Safari, from 26, join the list once the nightly run on their engines
+  (`req/checks/other-engines`) is green. A phone or tablet, iPhone and iPad included, is not supported, nor is any
+  other browser (Opera, Samsung Internet), whatever engine it runs; one that names
+  itself as Chrome (Brave, Vivaldi) counts as Chrome. In a browser not supported, the status bar's report
+  icon (`req/shell/report/bug`) is a warning sign in the warning colour instead of a bug, named Unsupported browser, its
+  tooltip saying why and that clicking it reports a problem; the report it opens is titled "Unsupported browser: ". The site's landing page (`req/shell/site/landing`) lists the
+  same browsers, written in by the build from `web/browsers.json`. Test: `web-tests/test_problem_report_page.py`,
+  `web-tests/test_published_site.py`.
+  </details>
+
 - `req/shell/channels/rows` Each channel has its row: shown or not, its black and white points, its name and its description.
   <details>
 
@@ -468,6 +484,37 @@ spec does not have.
   behind.
   </details>
 
+- `req/shell/report/action-log` The page keeps the user's last 200 actions on this device, for a problem report, and sends them nowhere.
+  <details>
+
+  Set by the owner on 2026-11-03. Each control the user clicks, ticks, chooses or sets is logged by its name
+  as the page shows it, with where it is (the dialog or popup), and never what they type; opening a study, an
+  image (where from, its size and slices) and a step done are logged too, and kept apart from them the errors
+  the page meets: an error in the status line, and a script error the page did not catch. No image's or
+  folder's name is logged: a control that shows one (Load's recents, the Drive list, the image's name, a
+  part's file name, the Storage tab, the lists in Settings) is logged by what it is. The log keeps the last
+  200 entries in the browser, so a report filed after a reload still has them; Settings lists it among what is
+  kept on this device only, with its size, to clear (`req/shell/account/settings`). The privacy policy says it is kept. Test:
+  `web-tests/test_problem_report_page.py`.
+  </details>
+
+- `req/shell/report/bug` A bug icon in the status bar, always there, opens a new GitHub issue filled in with the browser, the study, its state and the last five actions.
+  <details>
+
+  Set by the owner on 2026-11-03: the regular way to report any problem. A small grey bug, the status bar's
+  first item from the left of its right-hand items, in every browser (in one not supported, a warning sign:
+  `req/shell/browsers/supported`), and **Report a problem…** in the avatar's menu, open a new issue in a new tab on the repo's **Problem report** form
+  (`.github/ISSUE_TEMPLATE/bug-report.yml`), its fields filled in: the browser's name, full version where the
+  browser gives it, system, whether it is supported, and its user-agent string; the page's state (the site's
+  version, the study and its stage, whether Python is ready, the steps and which are done, the image open by
+  where it came from, its size, channels and slices, never its name, the view, whether online and signed in,
+  the window's size and the memory the browser says the computer has); the last five actions
+  (`req/shell/report/action-log`), oldest first, each with its time; and the last three errors. The user writes what happened,
+  reads what was filled in and submits it themselves; the page sends nothing. The title starts "Problem: ",
+  or "Unsupported browser: " in a browser not supported. Offline both are held, as everything that
+  needs the internet (`req/shell/offline/default`). Test: `web-tests/test_problem_report_page.py`.
+  </details>
+
 - `req/shell/resources-dialog` Storage, memory, network and CPU are four tabs of one dialog, alike.
   <details>
 
@@ -539,7 +586,7 @@ spec does not have.
   the tool. `rauntruth.com/` says what the site does and for whom, that images are analysed in the
   browser and never uploaded, and that it is free and open source; it opens the app (`req/shell/site/app-address`), lists
   every study the switcher offers (`req/shell/header`), each a link to its address, filled in by the build from
-  the studies' `study.json`, and links the privacy policy, the terms and the license. Test:
+  the studies' `study.json`, lists the supported browsers (`req/shell/browsers/supported`), and links the privacy policy, the terms and the license. Test:
   `web-tests/test_published_site.py`.
   </details>
 
@@ -598,7 +645,7 @@ spec does not have.
   the spinner and what the page is doing now (each stage of Python's loading, the study's progress,
   an error in red) and the thumbnails' progress (`req/shell/drive/dialog`). From the right edge inward: the site's
   version (stamped by each release; `req/shell/version-history`, `req/shell/site/out-of-date`), the CPU (`req/shell/status-bar/cpu`), the network (`req/shell/status-bar/network`), the
-  memory (`req/shell/status-bar/memory`) and the disk (`req/shell/status-bar/disk`). Each of the four before the version is a small grey icon
+  memory (`req/shell/status-bar/memory`) and the disk (`req/shell/status-bar/disk`), and before them the report icon (`req/shell/report/bug`), a bug, or a warning sign in a browser the page does not support. Each of the four before the version is a small grey icon
   and its number, with no word naming it; all five are plain, with no box, alike. A mild vertical
   bar separates each item from the next. Nothing in the status bar turns the pointer into a
   question mark. The image's name and the study's counts are in the
@@ -892,7 +939,20 @@ spec does not have.
   Node nor a browser; every test that drives Node, Pyodide or Chromium, or measures speed or memory,
   is marked `full` and runs only in the full set, nightly (the nor-finder pack's `full-tests` task)
   and on every push to main, so it has run on anything a release can ship: a green full run on main
-  wakes the site release (`.github/workflows/tests-full.yml`, `web-tests/test_ci_split.py`).
+  wakes the site release (`.github/workflows/tests-full.yml`, `web-tests/test_ci_split.py`). The nightly run also
+  runs the full set on Firefox and WebKit (`req/checks/other-engines`).
+  </details>
+
+- `req/checks/other-engines` Every night the full set also runs on Firefox and WebKit; their failures fail the night only once the page supports their browser.
+  <details>
+
+  Set by the owner on 2026-11-03. The nightly full run (the nor-finder pack's `full-tests` task) runs the full
+  set again on Playwright's Firefox and on its WebKit, standing for Safari; a push to main does not, and
+  neither gates a release. An engine whose browser `web/browsers.json` does not list (`req/shell/browsers/supported`) reports
+  its failures as a warning on the run and the night stays green; once its browser is listed, a failure
+  fails the night as any other test does. Each page test's driver launches the engine `PW_ENGINE` names, so the
+  same run can be made by hand: `python3 dev/tools/build/other_engines.py firefox`. Test:
+  `web-tests/test_other_engines.py`.
   </details>
 
 ## `req/nor` The NoR Finder page: detect once, filter live, in the browser

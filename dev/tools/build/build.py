@@ -144,7 +144,7 @@ def assemble(root, out, env):
         with open(os.path.join(app, page), 'w') as f:
             f.write(study_head(index, json.load(open(os.path.join(root, 'studies', sid, 'study.json')))))
     landing = os.path.join(out, 'index.html')
-    text = list_studies(open(landing).read(), studies(root))
+    text = list_browsers(list_studies(open(landing).read(), studies(root)), json.load(open(os.path.join(root, 'web', 'browsers.json')))['supported'])
     with open(landing, 'w') as f:
         f.write(text)
     for d, _, fs in os.walk(out):
@@ -209,6 +209,15 @@ def list_studies(landing, listed):
         raise ValueError('the landing page has no empty <ul id="studies">')
     return got[0]
 
+
+
+def list_browsers(landing, supported):
+    """The landing page with the browsers the page supports, as the status bar checks for them (req/shell/browsers/supported)."""
+    items = ''.join(f'\n<li>{escape(b["name"])} {b["from"]} or later</li>' for b in supported)
+    got = re.subn(r'(<ul [^>]*id="browsers"[^>]*>)(</ul>)', lambda m: m.group(1) + items + '\n' + m.group(2), landing, count=1)
+    if not got[1]:
+        raise ValueError('the landing page has no empty <ul id="browsers">')
+    return got[0]
 
 def site_pages(out):
     """The addresses of the site's own pages, never the app's or a study's (req/shell/site/crawlers)."""
