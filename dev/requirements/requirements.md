@@ -936,12 +936,13 @@ spec does not have.
   NoR Finder GT. Test: `web-tests/test_study_contract.py`, `web-tests/test_status_bar_page.py`.
   </details>
 
-- `req/shell/study/switch-in-place` Switching study happens in place: no reload, and the open image stays open.
+- `req/shell/study/switch-in-place` Switching study happens in place: no reload, and the new study starts with no image open.
   <details>
 
   Choosing a study in the switcher, or going back and forward between studies, changes the address
   and swaps the study without reloading the page: Python stays loaded and adds only the packages the
-  new study needs, and the image on show opens in the new study at once. The study that leaves
+  new study needs. The image on show is unloaded, as Unload does, and nothing of it carries over (its
+  steps, its results, Python's copy of it), so the new study starts as one just opened. The study that leaves
   takes its panels, its stylesheet, its drawing and its listeners with it (each listener it adds
   outside its own panels carries `shell.signal`), and an answer its Python was still working on is
   dropped. Test: `web-tests/test_study_runs.py`.
