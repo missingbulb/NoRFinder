@@ -194,6 +194,19 @@ def test_the_landing_page_opens_the_app_and_lists_every_listed_study(tmp_path):
     assert 'src="analytics.js"' in landing
 
 
+
+def test_the_landing_page_lists_the_supported_browsers_the_page_checks_for(tmp_path):
+    """req/shell/browsers/supported: the landing page's list is the one the status bar's icon is drawn from."""
+    build.assemble(ROOT, str(tmp_path), {})
+    landing = (tmp_path / 'index.html').read_text()
+    supported = json.load(open(os.path.join(ROOT, 'web', 'browsers.json')))['supported']
+    assert len(supported) >= 4
+    listed = re.search(r'<ul [^>]*id="browsers"[^>]*>(.*?)</ul>', landing, re.S)
+    assert listed, 'the landing page has no list of supported browsers'
+    items = re.findall(r'<li>([^<]*)</li>', listed.group(1))
+    assert items == [f'{b["name"]} {b["from"]} or later' for b in supported], items
+
+
 def meta(html, prop):
     m = re.search(rf'<meta (?:property|name)="{prop}" content="([^"]*)"', html)
     return m and m.group(1)

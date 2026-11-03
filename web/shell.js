@@ -26,8 +26,14 @@ import { settingsDialog } from "./settings_dialog.js";
 import { splitter, SPLIT_PATTERN } from "./split_dialog.js";
 import { offline, APP_ASKED, markOffline } from "./offline.js";
 import { welcome, WELCOME } from "./welcome.js";
+import { actionLog, ACTIONS } from "./action_log.js";
+import { identify, verdict } from "./browsers.js";
+import { problemUrl, ACTIONS_QUOTED, ERRORS_QUOTED } from "./problem_report.js";
 
 const $ = (s) => document.querySelector(s);
+// what the user does here, kept on this device for a problem report (req/shell/report/action-log)
+const log = actionLog();
+log.watch();
 // image3d is the 2D viewer of a stack's flattened planes with a 3D view beside it, sharing the one 2D viewer
 const VIEWERS = { image2d: viewer2d, image3d: (shell) => viewer3d(shell, viewers.image2d ||= viewer2d(shell)) };
 const DEFAULT_STUDY = "viewer";
@@ -100,6 +106,7 @@ let study = {}, view = null, manifest = null, base = "";
 // ---------- status ----------
 function status(text, err) {
   const s = $("#status"); s.textContent = text; s.classList.toggle("err", !!err);
+  if (err) log.add(text, "error");
   if (st.busySince) $("#busy-text").textContent = text;
   if (err) busy(false);
 }
@@ -387,7 +394,7 @@ function step(key, done, info) {
   const p = steps.find((x) => x.key === key);
   if (!p) return;
   if (done && !p.done) {
-    p.at = new Date();
+    p.at = new Date(); log.add(`Step done: ${p.name}`);
     // the boxes follow what the user did, not a dial set back to the last run's
     if (key === "load" || !p.button || p.pressed) foldFor(key);
     p.pressed = false;
@@ -514,6 +521,7 @@ function handle(m) {
     showImage();
     boxDone($("#image-box"), loadedSummary());
     step("load", true, `${st.fileName}, ${m.meta.W} × ${m.meta.H} px, from ${st.source?.kind === "drive" ? "Google Drive" : "this computer"}`);
+    log.add(`Opened an image from ${st.source?.kind === "drive" ? "Google Drive" : "this computer"}, ${m.meta.W} × ${m.meta.H} px, ${m.meta.Z || 1} slice(s)`);
     status("Image loaded."); // the study's opened hook says what comes next, if anything
     study.opened?.(m.meta);
     if (!st.reopening && st.source && st.source.kind === "local" && makesTruth()) notice(LOCAL_GT);
@@ -1021,7 +1029,7 @@ async function showSaved() {
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
   [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
-  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page",
+  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
 };
 // What the site keeps, by what it takes to work offline (req/shell/storage/manage): a section per study, then what they share; settings
 // apart, which Settings keeps (req/shell/account/settings), and with them what nobody names. An entry: {kind, name, what, size, del, held, ask}, del
@@ -1260,6 +1268,48 @@ function submitTruth(gt) {
   $("#gt-dlg").showModal();
 }
 $("#gt-close").onclick = () => $("#gt-dlg").close();
+
+// ---------- problems: whether the page supports this browser, and a report of what went wrong ----------
+// (req/shell/browsers/supported, req/shell/report/bug). The verdict is null until browsers.json is read: unknown, no icon.
+const thisBrowser = identify(navigator.userAgent, navigator.maxTouchPoints);
+let browserVerdict = null, fullVersion = null;
+fetch(new URL("browsers.json", import.meta.url)).then((r) => r.json()).then(({ supported }) => {
+  browserVerdict = verdict(thisBrowser, supported);
+  $("#sb-browser").hidden = browserVerdict.ok;
+  $("#sb-browser").title = `${browserVerdict.why} Click to report a problem.`;
+}).catch((e) => console.warn("the list of supported browsers could not be read:", e));
+// Chromium browsers give their full version only when asked, and the report is opened within the click, so asked now
+const BRANDS = { Chrome: "Google Chrome", Edge: "Microsoft Edge", Opera: "Opera" };
+navigator.userAgentData?.getHighEntropyValues(["fullVersionList"])
+  .then((v) => { fullVersion = v.fullVersionList?.find((b) => b.brand === BRANDS[thisBrowser.name])?.version || null; }, () => {});
+function browserText() {
+  const name = thisBrowser.name || "An unknown browser", unsupported = browserVerdict && !browserVerdict.ok ? ", not supported" : "";
+  return `${name} ${fullVersion || thisBrowser.version || ""} on ${thisBrowser.os}${unsupported} (${navigator.userAgent})`;
+}
+// the page's state as a report quotes it: never the image's name
+function pageNow() {
+  const im = page.get("image"), from = (s) => (s?.kind === "drive" ? "Google Drive" : "this computer");
+  return [
+    ["Site version", VERSION],
+    ["Study", manifest ? `${manifest.title} (${manifest.id}), stage ${manifest.stage}` : "none open"],
+    ["Python", st.ready ? "ready" : "loading"],
+    ["Steps", steps.map((p) => p.name + (p.done ? " (done)" : "")).join(" → ") || "none"],
+    ["Image", im ? `from ${from(im.source)}, ${im.W} × ${im.H} px, ${im.channels?.length ?? "?"} channel(s), ${im.Z} slice(s)` : page.get("opening") ? "opening" : "none open"],
+    ["View", `${views.now}, ${manifest?.viewer || "no viewer"}`],
+    ["Online", navigator.onLine ? "yes" : "no"],
+    ["Signed in", $("#sign-out").hidden ? "no" : "yes"],
+    ["Window", `${innerWidth} × ${innerHeight}, pixel ratio ${devicePixelRatio}`],
+    ["Memory", navigator.deviceMemory ? `about ${navigator.deviceMemory} GB` : "not said by this browser"],
+  ];
+}
+function reportProblem() {
+  $("#user-menu").open = false;
+  const url = problemUrl({ repo: REPO, browser: { text: browserText(), supported: browserVerdict?.ok !== false }, state: pageNow(),
+    actions: log.last(ACTIONS_QUOTED, "action"), errors: log.last(ERRORS_QUOTED, "error") });
+  window.open(url, "_blank", "noopener");
+}
+$("#sb-browser").onclick = reportProblem;
+$("#report-problem").onclick = reportProblem;
 
 // ---------- notices: a short message, at the top of the view or under the button it is about ----------
 function notice(text, anchor) {
@@ -1575,6 +1625,7 @@ async function mountStudy(id) {
   if (!r.ok) throw new Error(`no study "${id}"`);
   manifest = await r.json();
   document.title = manifest.title; $("#title").textContent = manifest.title; markCurrent();
+  log.add(`Opened the study “${manifest.title}”`);
   $("#favicon").href = manifest.icon ? base + manifest.icon : new URL("icon.svg", import.meta.url).href;
   $("#file").accept = manifest.files.accept; $("#empty-text").textContent = manifest.files.empty;
   if (manifest.web.style) { css = document.createElement("link"); css.rel = "stylesheet"; css.href = base + manifest.web.style; document.head.append(css); }
