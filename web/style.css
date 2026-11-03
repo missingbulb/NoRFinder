@@ -714,7 +714,8 @@ html:not(.offline) #welcome-offline { display: none; }
 #data-col { grid-column: 1; } #left { grid-column: 2; } #gutter-left { grid-column: 3; } #view { grid-column: 4; }
 :root[data-manager] #layout { --tw: 36px; }
 :root[data-manager][data-mode=data] #layout { --tw: 300px; }
-#data-col { position: relative; padding: var(--pad) 0 var(--pad) 8px; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+#data-col[hidden] { display: none; }
+#data-col { position: relative; padding: var(--pad) 0 var(--pad) 8px; overflow: hidden; scrollbar-gutter: auto; display: flex; flex-direction: column; min-width: 0; }
 /* its strip, and the left bar's collapsed (req/shell/left-bar/collapse): a chevron over an upright name, the whole
    column's height; open, the chevron alone tops the column */
 #data-open, #left-fold { display: flex; align-items: center; gap: 6px; padding: 8px 4px; border-radius: var(--r-panel); white-space: nowrap; }

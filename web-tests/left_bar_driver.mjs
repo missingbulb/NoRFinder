@@ -119,6 +119,7 @@ const viewW = () => page.evaluate(() => Math.round(document.querySelector("#view
 // the column's slide over: the grid's transition and the drawers' slide in done
 const settled = () => page.waitForFunction(() => !document.getAnimations().some((a) => a.transitionProperty === "grid-template-columns" || a.animationName === "data-in"));
 const wide = await left(), imageW = await viewW();
+await check(await page.evaluate(() => document.querySelector("#data-col").getClientRects().length === 0), "no data manager: no sliver of the Data Management strip beside the bar");
 await check(await page.locator("#left-fold").isVisible(), "the open bar is topped by its collapse chevron");
 await page.click("#left-fold");
 await page.waitForTimeout(50); await settled();
