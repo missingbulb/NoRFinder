@@ -73,7 +73,8 @@ async function open(um) {
 // where an image point is on the screen
 const screen = (page, x, y) => page.evaluate(([x, y]) => {
   const r = document.querySelector("#base").getBoundingClientRect();
-  return [r.left + x * st.zoom, r.top + y * st.zoom];
+  // a whole CSS pixel, as every engine can place the pointer: WebKit moves it to whole pixels only
+  return [Math.round(r.left + x * st.zoom), Math.round(r.top + y * st.zoom)];
 }, [x, y]);
 const ruler = (page) => page.evaluate(() => ({
   pressed: document.querySelector("#ruler-btn").getAttribute("aria-pressed"),

@@ -91,7 +91,9 @@ await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted f
 // a drawer slides open or shut, and the drawers below slide to their new places
 const slid = page.waitForFunction(() => document.getAnimations().filter((a) => /^::view-transition-group\(drawer-/.test(a.effect?.pseudoElement)).length >= 2).then(() => true, () => false);
 await title(0);
-await check(await slid, "a drawer slides open, and the drawers below it slide down");
+// where the browser has the view transitions it takes; elsewhere the drawers change at once
+const slides = await page.evaluate(() => !!document.startViewTransition && CSS.supports("view-transition-group", "contain"));
+await check(!slides || await slid, slides ? "a drawer slides open, and the drawers below it slide down" : "a browser without the view transitions the slide takes: the drawers change at once");
 await page.waitForFunction(() => !document.getAnimations().some((a) => a.effect?.pseudoElement?.startsWith("::view-transition")));
 await boxes(["✓ Loaded Image open", "2 Threshold open", "3 Counted folded", "4 Notes folded"], "its title opens a folded drawer, done: Loaded Image");
 await title(0);
