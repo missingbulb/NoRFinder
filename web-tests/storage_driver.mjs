@@ -22,6 +22,7 @@ import http from "node:http";
 import path from "node:path";
 import { offSite } from "./off_site.mjs";
 import { keptContext } from "./kept_context.mjs";
+import { cutShort } from "./page_errors.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -111,9 +112,7 @@ await ctx.addInitScript((seed) => {
   for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v);
 }, SEED);
 const page = await ctx.newPage();
-// the stand-in worker never answers an image's open, so leaving for another study cuts it short: WebKit reports that
-// as an uncaught "Context is stopped", which is no error of the page's
-page.on("pageerror", (e) => { if (e.message === "Context is stopped") return; failed = true; console.error("page error: " + e.message); });
+page.on("pageerror", (e) => { if (cutShort(e)) return; failed = true; console.error("page error: " + e.message); });
 page.setDefaultTimeout(10000);
 const shot = async (name, sel) => { if (shots) await page.locator(sel).screenshot({ path: path.join(shots, name + ".png") }); };
 try {

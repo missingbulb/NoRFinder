@@ -20,6 +20,7 @@ import http from "node:http";
 import path from "node:path";
 import { offSite } from "./off_site.mjs";
 import { ENGINE } from "./engine.mjs";
+import { cutShort } from "./page_errors.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -67,7 +68,7 @@ const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } })
 await ctx.route(offSite(origin), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
 const page = await ctx.newPage();
-page.on("pageerror", (e) => problems.push("page error: " + e.message));
+page.on("pageerror", (e) => { if (!cutShort(e)) problems.push("page error: " + e.message); });
 page.setDefaultTimeout(10000);
 try {
   await page.goto(origin + "/web/index.html?study=fixture");
@@ -194,7 +195,7 @@ try {
   await real.route(offSite(origin, "https://cdn.jsdelivr.net/pyodide/"), (r) => r.abort());
   await real.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
   const live = await real.newPage();
-  live.on("pageerror", (e) => problems.push("page error: " + e.message));
+  live.on("pageerror", (e) => { if (!cutShort(e)) problems.push("page error: " + e.message); });
   live.setDefaultTimeout(60000);
   await live.goto(origin + "/web/index.html?study=fixture");
   await live.waitForFunction(() => /^(Ready|Error)/.test(document.querySelector("#status").textContent));
