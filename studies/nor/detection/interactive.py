@@ -84,7 +84,7 @@ def describe(finder):
     dp = detection_params(P)
     return dict(filters=filters(P), detection_params=dp, main_params=[k for k in getattr(fn, 'MAIN', ()) if k in dp],
                 exact_refilter=finder in EXACT_REFILTER, reasons=reasons(),
-                about=finder_help.ABOUT.get(finder, ''), help=finder_help.HELP)
+                about=finder_help.ABOUT.get(finder, ''), icon=finder_help.ICON.get(finder, ''), help=finder_help.HELP)
 
 
 def ready():

@@ -86,7 +86,7 @@ export function mount(shell) {
   const quality = fetch(new URL("finder_metrics.json", import.meta.url)).then((r) => (r.ok ? r.json() : null)).catch(() => null)
     .then((q) => (here.signal.aborted ? new Promise(() => {}) : q));
   const two = (x) => x.toFixed(2).replace(/^0/, "");
-  const pr = (r) => `P ${two(r.precision)} · R ${two(r.recall)}`;
+  const pr = (r) => `P\u00a0${two(r.precision)}\u00a0·\u00a0R\u00a0${two(r.recall)}`; // one unbroken pair
   // the preset with the highest F1: the finder's best combined result
   const best = (per) => Object.values(per).reduce((a, r) => (f1(r) > f1(a) ? r : a));
   const f1 = (r) => (2 * r.tp) / Math.max(1, 2 * r.tp + r.fp + r.fn);
@@ -468,15 +468,39 @@ export function mount(shell) {
     for (const p of document.querySelectorAll("#filters .param")) p.set(st.values[p.dataset.name]);
   }
 
+  // a Markdown outline drawn as HTML: paragraphs split by blank lines, "- " or "1. " items nested by their indent
+  function outline(text) {
+    const out = document.createDocumentFragment();
+    for (const para of text.split(/\n\s*\n/)) {
+      const lists = []; // the open lists, outermost first: {indent, el}
+      for (const line of para.split("\n").filter((l) => l.trim())) {
+        const m = line.match(/^(\s*)(-|\d+\.)\s+(.*)$/);
+        if (!m) { const p = document.createElement("p"); p.textContent = line.trim(); out.append(p); lists.length = 0; continue; }
+        const indent = m[1].length, tag = m[2] === "-" ? "UL" : "OL";
+        while (lists.length && lists.at(-1).indent > indent) lists.pop();
+        if (lists.length && lists.at(-1).indent === indent && lists.at(-1).el.tagName !== tag) lists.pop();
+        if (!lists.length || lists.at(-1).indent < indent) {
+          const el = document.createElement(tag);
+          (lists.length ? lists.at(-1).el.lastElementChild : out).append(el);
+          lists.push({ indent, el });
+        }
+        const li = document.createElement("li"); li.textContent = m[3]; lists.at(-1).el.append(li);
+      }
+    }
+    return out;
+  }
+
   // the finder's settings: its main ones on show, every one under Advanced; both edit the same values
   function buildDetect() {
     const finder = $("#finder").value, about = st.about[finder];
     const defs = about.detection_params, vals = (st.detectValues[finder] ||= { ...defs });
-    $("#finder-note").textContent = about.about + (about.exact_refilter ? "" : " It picks between alternatives using the filters, so after a filter change, find again for its exact result.");
+    $("#about-box summary").textContent = `How the ${st.names[finder]} algorithm works`;
+    const note = $("#finder-note");
+    note.replaceChildren(outline(about.about + (about.exact_refilter ? "" : "\n\nIt picks between alternatives using the filters, so after a filter change, find again for its exact result.")));
     quality.then((q) => {
-      const own = q && q.finders[finder] && q.finders[finder].finder;
+      const own = q && q.finders[finder];
       if (own && $("#finder").value === finder)
-        $("#finder-note").append(document.createElement("br"), `Before any filter: ${own.candidates} candidates, ${pr(own)}.`);
+        note.append(outline(`Precision (P) and recall (R) on the ground truth:\n- its ${own.finder.candidates} candidates, before any filter: ${pr(own.finder)}\n- after the best filter preset, as in the list: ${pr(best(own.filtered))}`));
     });
     const row = (k) => dial(k, defs[k], vals[k], (v) => {
       vals[k] = v;
@@ -506,7 +530,7 @@ export function mount(shell) {
   // says the ground truth is complete, so the crumb never moves on while the button says it cannot
   function steps() {
     const ran = !!st.meta && runKey() === st.lastRun, finalists = (st.passes || []).filter((c) => !c.added);
-    const name = $("#finder").selectedOptions[0]?.textContent.replace(/ \(.*\)$/, "");
+    const name = st.names[$("#finder").value];
     shell.step("find", ran, ran ? `${name}: ${st.order.length} candidates, ${finalists.length} finalists` : st.lastRun ? "The finder or its settings changed since the last run." : "");
     shell.boxDone($("#finder-box"), ran ? `${name} executed` : null);
     const gt = gtState(), left = gt.items.filter((t) => t.grade && !t.ok).map((t) => t.text + ".");
@@ -1132,7 +1156,8 @@ export function mount(shell) {
     painter: (canvas, shown, onSize) => NorPeek.painter(canvas, shown, onSize),
     ready(info) {
       const sel = $("#finder");
-      sel.innerHTML = Object.entries(info.finders).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+      st.names = info.finders;
+      sel.replaceChildren(...Object.entries(info.finders).map(([k, v]) => new Option(`${info.about[k].icon} ${v}`.trim(), k)));
       quality.then((q) => {
         if (q) sel.title = "Precision (P) and recall (R) of each finder with its best filter preset";
         for (const o of sel.options) if (q && q.finders[o.value]) o.textContent += ` (${pr(best(q.finders[o.value].filtered))})`;
