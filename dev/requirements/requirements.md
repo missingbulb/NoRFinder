@@ -85,11 +85,11 @@ spec does not have.
 - `req/shell/browsers/supported` The page names the browsers it supports; in any other, the status bar's report icon is a warning sign.
   <details>
 
-  Set by the owner on 2026-11-03. The page supports Chrome and Edge on a desktop or laptop computer, each from
-  the version `web/browsers.json` names, the one place the list is kept; the floor is the first version that
-  places the page's popups by CSS anchor positioning (Chrome and Edge 125; an older one shows each popup at a
-  fixed spot). Firefox, from 147, and Safari, from 26, join the list once the nightly run on their engines
-  (`req/checks/other-engines`) is green. A phone or tablet, iPhone and iPad included, is not supported, nor is any
+  Set by the owner on 2026-11-03. The page supports Chrome, Edge, Firefox and Safari on a desktop or laptop computer, each
+  from the version `web/browsers.json` names, the one place the list is kept; the floor is the first version that
+  places the page's popups by CSS anchor positioning (Chrome and Edge 125, Firefox 147, Safari 26; an older one
+  shows each popup at a fixed spot). Firefox and Safari joined on 2026-11-03, the owner's call once the nightly
+  run on their engines (`req/checks/other-engines`) was green. A phone or tablet, iPhone and iPad included, is not supported, nor is any
   other browser (Opera, Samsung Internet), whatever engine it runs; one that names
   itself as Chrome (Brave, Vivaldi) counts as Chrome. In a browser not supported, the status bar's report
   icon (`req/shell/report/bug`) is a warning sign in the warning colour instead of a bug, named Unsupported browser, its
