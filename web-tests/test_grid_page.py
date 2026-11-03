@@ -1,4 +1,4 @@
-"""1.40: the Grid, on the fixture study in headless Chromium with a stand-in worker (grid_driver.mjs)."""
+"""req/shell/tools/grid: the Grid, on the fixture study in headless Chromium with a stand-in worker (grid_driver.mjs)."""
 from test_study_runs import NODE, answers, png, run  # noqa: F401  (fixtures)
 import pytest
 

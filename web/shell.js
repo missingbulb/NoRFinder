@@ -16,7 +16,7 @@
 // study's own large holdings for the Memory tab, [{name, what, size}]; and the viewer's hooks (viewer2d.js).
 // A listener a study adds outside its own panels takes shell.signal, which ends it when the study leaves.
 "use strict";
-import { viewer as viewer2d, GRID, MINIMAP } from "./viewer2d.js";
+import { viewer as viewer2d, hoverPop, GRID, MINIMAP } from "./viewer2d.js";
 import { viewer3d } from "./viewer3d.js";
 import { pageState } from "./page_state.js";
 import { shape, stackPicture, holds, drawVolume, TURN } from "./stack.js";
@@ -24,7 +24,8 @@ import { PREVIEWS, readPreviews } from "./previews.js";
 import { account, SIGNED_IN } from "./account.js";
 import { settingsDialog } from "./settings_dialog.js";
 import { splitter, SPLIT_PATTERN } from "./split_dialog.js";
-import { offline, APP_ASKED, markOffline } from "./offline.js";
+import { offline, APP_ASKED, markOffline, CONNECTION } from "./offline.js";
+import { welcome, WELCOME } from "./welcome.js";
 import { dataMode } from "./data_mode.js";
 
 const $ = (s) => document.querySelector(s);
@@ -68,7 +69,7 @@ const REPO = "missingbulb/NoRFinder";
 const LOCAL_GT = "Ground truth cannot be sent from local files, only from Google Drive.";
 // the issue form a proposal for a new study is written on
 const STUDY_REQUEST = "new-study.yml";
-// signing in (1.50): these settings follow the user to every device, in their own Google Drive; the rest stay with this one
+// signing in (req/shell/account/sign-in): these settings follow the user to every device, in their own Google Drive; the rest stay with this one
 const FOLLOWS = [THEME, TIPS, SEEN_VERSION, MEMORY_TIP, SOURCE, DRIVE_LINK, DRIVE_LINKS, THUMBS, RECENT, MOTION];
 const signIn = account({
   keys: FOLLOWS,
@@ -253,7 +254,8 @@ function netRate(total) {
 }
 const speedText = (r) => `${sizeText(r)}/s`;
 function netList(n, rate) {
-  $("#net-total").textContent = `This tab is downloading ${speedText(rate)} and has downloaded ${sizeText(n.total)} since it opened.`;
+  const off = document.documentElement.classList.contains("offline") ? "Offline: no internet. " : "";
+  $("#net-total").textContent = `${off}This tab is downloading ${speedText(rate)} and has downloaded ${sizeText(n.total)} since it opened.`;
   $("#net-list").replaceChildren(
     entry("The page", "Its own files; what this browser had kept counts nothing", sizeText(n.page)),
     entry("Python", "Python, its packages and the study's Python", sizeText(n.python)),
@@ -328,12 +330,7 @@ function showStage() {
   $("#stage-next").textContent = STAGES[manifest.stage].next;
 }
 // the stages pop up while the stage is hovered or focused
-{
-  const pop = $("#stage-pop"), e = $("#sb-stage");
-  const show = (on) => { try { on ? pop.showPopover() : pop.hidePopover(); } catch { /* already so, or no popovers */ } };
-  e.addEventListener("mouseenter", () => show(true)); e.addEventListener("mouseleave", () => show(false));
-  e.addEventListener("focus", () => show(true)); e.addEventListener("blur", () => show(false));
-}
+hoverPop($("#sb-stage"), $("#stage-pop"), () => {});
 const makesTruth = () => manifest.stage === "GT" || manifest.stage === "PostGT";
 
 // ---------- the image and the item view ----------
@@ -464,10 +461,15 @@ async function start() {
     offlineCopy.keepSite().then(diskBar, (e) => console.warn("no copy of the site for offline:", e));
   }
   status("Loading Python in the background…"); $("#spin").classList.add("on");
+  pythonWorker();
+  if (navigator.deviceMemory <= LOW_GB) memoryTip();
+}
+// Python's thread, on the study the address names, in place of any before it
+function pythonWorker() {
+  st.worker?.terminate();
   st.worker = new Worker("worker.js?study=" + encodeURIComponent(studyOf(location)), { type: "module" });
   st.worker.onmessage = (e) => onWorker(e.data);
   st.worker.onerror = (e) => onWorker({ type: "error", text: e.message || "Python stopped." });
-  if (navigator.deviceMemory <= LOW_GB) memoryTip();
 }
 // one of the study's Python actions; its answer reaches the study's result hook
 function call(action, args, echo) { st.worker.postMessage({ type: "call", action, args, echo }); }
@@ -500,6 +502,7 @@ function handle(m) {
   else if (m.type === "error") {
     // the request that failed is over: its button can be pressed again
     study.error?.();
+    if (!st.ready) st.failed = true;
     status("Error: " + m.text, true); if (OUT_OF_MEMORY.test(m.text)) memoryTip(true);
   } else if (m.type === "ready") {
     st.ready = true; st.readyInfo = m.info; $("#spin").classList.remove("on");
@@ -629,8 +632,7 @@ function tip(id, anchor, text) {
     document.body.append(t);
   }
   t.querySelector("span").textContent = text;
-  const r = anchor.getBoundingClientRect();
-  t.style.left = Math.max(8, r.left + r.width / 2 - 22) + "px"; t.style.top = r.bottom + 10 + "px";
+  anchor.style.anchorName = "--tip-" + id; t.style.setProperty("--anchor", "--tip-" + id);
 }
 function closeTip(id) {
   const t = document.querySelector(`.tip-bubble[data-tip="${id}"]`);
@@ -644,6 +646,7 @@ $("#load-menu").addEventListener("toggle", () => { if ($("#load-menu").open) clo
 // it is, so two of one name stay apart; one kept from before recents had a study belongs to none. openRecent is the Drive dialog's, which opens the copy kept on this device when there is one.
 const RECENT_KEEP = 10;
 let openRecent = () => {}, showKept = () => {};
+const UNREACHED = "The internet cannot be reached, and this image is not kept on this device.";
 const recentHere = (list) => list.filter((r) => r.study === manifest?.id);
 function remember(id, name, path) {
   const study = manifest.id, rest = readJSON(RECENT, []).filter((r) => r.study && !(r.id === id && r.study === study));
@@ -688,7 +691,8 @@ function throttle() { writeJSON(THROTTLE, Date.now() + WAIT); holdDrive(); }
 // click selects and Open (or a double click) opens the selection
 function driveDialog() {
   const msg = (t, err) => { const m = $("#drive-msg"); m.textContent = m.title = t; m.classList.toggle("err", !!err); };
-  let trail = [], chosen = null, listing = 0;
+  // keptOn: the dialog lists the images kept here, offline, in place of a Drive folder
+  let trail = [], chosen = null, listing = 0, keptOn = false;
   // path: the folders the image is in under the link it was opened from; sha: its SHA-256 as the listing gave
   // it (null when Drive gave none), undefined when not yet asked; recent: whether it was chosen from the recents.
   // A recent image opens from its kept copy; one chosen from Drive does only once its SHA-256 matches Drive's.
@@ -719,8 +723,10 @@ function driveDialog() {
       openBytes(f.name, f.bytes, { kind: "drive", id });
     } catch (err) {
       busy(false); if (!$("#drive-dlg").open) $("#drive-dlg").showModal();
+      // what the download had painted goes: the image open before, or none
+      if (push) page.get("image") ? showImage() : view.clear();
       if (err.throttled) { msg(""); return throttle(); }
-      msg(err.message || String(err), true);
+      msg(err instanceof TypeError || offlineCopy.offline() ? UNREACHED : err.message || String(err), true);
     }
   };
   const choose = (f, b) => {
@@ -728,9 +734,9 @@ function driveDialog() {
     $("#drive-list").querySelectorAll(".item").forEach((e) => e.setAttribute("aria-selected", e === b));
   };
   const enter = (f) => (f.folder ? (trail.push(f), show()) : f.kept ? take(f.id, f.name, f.path, undefined, true) : take(f.id, f.name, trail.slice(1).map((t) => t.name), f.sha));
-  // offline, in place of a Drive folder: the images kept on this device, the study's own first (1.55)
+  // offline, in place of a Drive folder: the images kept on this device, the study's own first (req/shell/offline/default)
   showKept = async () => {
-    thumbs.stop(); trail = []; choose(null);
+    keptOn = true; thumbs.stop(); trail = []; choose(null);
     $("#drive-path").textContent = "You are offline: the images kept on this device"; $("#drive-list").replaceChildren();
     const kept = [];
     try {
@@ -758,6 +764,7 @@ function driveDialog() {
   };
   openRecent = (r) => take(r.id, r.name, r.path || [], undefined, true);
   const show = async () => {
+    keptOn = false;
     const at = trail[trail.length - 1];
     $("#drive-path").innerHTML = trail.map((t, k) => `<button type="button" class="link" data-k="${k}">${esc(t.name)}</button>`).join(" / ");
     $("#drive-path").querySelectorAll("button").forEach((b) => (b.onclick = () => { trail = trail.slice(0, +b.dataset.k + 1); show(); }));
@@ -889,6 +896,7 @@ function driveDialog() {
   }
   const open = () => {
     if (offlineCopy.offline()) return showKept();
+    keptOn = false;
     const link = $("#drive-link").value, ref = NorDrive.parse(link);
     $("#drive-list").replaceChildren(); $("#drive-path").replaceChildren(); choose(null);
     if (!ref) return msg("That does not look like a Google Drive link.", true);
@@ -898,6 +906,14 @@ function driveDialog() {
   };
   $("#drive-go").onclick = open;
   waitEnded = () => { if ($("#drive-dlg").open) open(); };
+  // the open dialog follows the network: the images kept here once it goes, the Drive folder once it is back
+  addEventListener(CONNECTION, (e) => {
+    if (!$("#drive-dlg").open) return;
+    if (!e.detail.online) { if (!keptOn) showKept(); return; }
+    if (!keptOn) return;
+    if (NorDrive.parse($("#drive-link").value)) return open();
+    keptOn = false; $("#drive-path").replaceChildren(); $("#drive-list").replaceChildren(); msg("");
+  });
   holdDrive();
   $("#drive-link").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); open(); } });
 }
@@ -1017,10 +1033,10 @@ async function showSaved() {
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
   [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
-  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [APP_ASKED]: "Asked for the site as an app",
+  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page",
 };
-// What the site keeps, by what it takes to work offline (1.6): a section per study, then what they share; settings
-// apart, which Settings keeps (1.52), and with them what nobody names. An entry: {kind, name, what, size, del, held, ask}, del
+// What the site keeps, by what it takes to work offline (req/shell/storage/manage): a section per study, then what they share; settings
+// apart, which Settings keeps (req/shell/account/settings), and with them what nobody names. An entry: {kind, name, what, size, del, held, ask}, del
 // absent for what cannot go alone. Kinds in a section's order:
 const KINDS = ["site", "python", "code", "image", "thumb", "selections", "other"];
 const SHARED_ABOUT = "The site itself, so it opens offline; Python itself; and the packages two studies or more use.";
@@ -1178,7 +1194,7 @@ function deviceSettings() {
     return label && { key: k, label, size: sizeText(bytesOf(k)) };
   }).filter(Boolean).sort((a, b) => a.label.localeCompare(b.label));
 }
-// Settings (1.52): the settings that follow the user, as the shell keeps them, and those kept on this device only
+// Settings (req/shell/account/settings): the settings that follow the user, as the shell keeps them, and those kept on this device only
 const settings = settingsDialog({
   dialog: $("#settings-dlg"),
   fields: () => [
@@ -1257,35 +1273,12 @@ function submitTruth(gt) {
 }
 $("#gt-close").onclick = () => $("#gt-dlg").close();
 
-// ---------- notices: a short message, at the top of the view or under the button it is about ----------
-function notice(text, anchor) {
-  const n = $("#notice");
-  $("#notice-text").textContent = text; n.hidden = false; n.classList.toggle("anchored", !!anchor);
-  if (anchor) {
-    const r = anchor.getBoundingClientRect();
-    const top = r.bottom + 8 + n.offsetHeight > innerHeight ? r.top - 8 - n.offsetHeight : r.bottom + 8;
-    Object.assign(n.style, { left: Math.max(8, Math.min(r.left, innerWidth - n.offsetWidth - 8)) + "px", top: top + "px" });
-  } else {
-    const r = $("#view").getBoundingClientRect();
-    Object.assign(n.style, { left: r.left + (r.width - n.offsetWidth) / 2 + "px", top: r.top + 56 + "px" });
-  }
+// ---------- notices: a short message, at the top of the view ----------
+function notice(text) {
+  $("#notice-text").textContent = text; $("#notice").hidden = false;
   $("#notice-ok").focus();
 }
 $("#notice-ok").onclick = () => { $("#notice").hidden = true; };
-
-// a setting's help, or a step's: hovering or focusing what carries data-help shows it, beside it or, in the
-// status bar, above it
-function helpTip(e) {
-  const h = e.target.closest && e.target.closest("[data-help]"), t = $("#tip");
-  if (!h) return;
-  const r = h.getBoundingClientRect();
-  t.textContent = h.dataset.help; t.hidden = false;
-  if (h.closest("#statusbar")) { t.style.left = Math.min(r.left, innerWidth - 330) + "px"; t.style.top = r.top - 6 - t.offsetHeight + "px"; }
-  else { t.style.left = Math.min(r.right + 8, innerWidth - 330) + "px"; t.style.top = r.top + "px"; }
-}
-const hideHelp = (e) => { if (e.target.closest && e.target.closest("[data-help]")) $("#tip").hidden = true; };
-document.addEventListener("mouseover", helpTip); document.addEventListener("focusin", helpTip);
-document.addEventListener("mouseout", hideHelp); document.addEventListener("focusout", hideHelp);
 
 // ---------- boxes that fold with the steps ----------
 // A box's data-opens names the step after which it opens ("user": only its title opens it), and data-folds
@@ -1415,6 +1408,7 @@ $("#sb-version").textContent = "v" + VERSION;
     } catch { /* offline: try again next time */ }
   };
   setInterval(check, 5 * 60 * 1000);
+  addEventListener(CONNECTION, (e) => { if (e.detail.online) check(); });
 }
 
 // Version history: the version box opens it; after an update, a bubble points at the box
@@ -1448,11 +1442,6 @@ async function showHistory(since) {
   const v = $("#sb-version"), bubble = $("#whats-new");
   const seen = readJSON(SEEN_VERSION, null);
   const dismiss = () => { bubble.hidden = true; writeJSON(SEEN_VERSION, VERSION); };
-  const place = () => { // the bubble's arrow points at the middle of the version box
-    const r = v.getBoundingClientRect();
-    bubble.style.right = Math.max(8, innerWidth - r.right) + "px";
-    bubble.style.setProperty("--arrow", Math.max(10, r.width / 2 - 6) + "px");
-  };
   v.onclick = () => {
     if (v.classList.contains("stale")) return location.reload();
     const since = bubble.hidden ? null : seen;
@@ -1467,8 +1456,7 @@ async function showHistory(since) {
     loadHistory().then((releases) => {
       if (!releases.some((r) => build(r.version) > build(seen))) return writeJSON(SEEN_VERSION, VERSION);
       $("#whats-new-open").textContent = `Click here to see what was updated since v${seen}.`;
-      bubble.hidden = false; place();
-      addEventListener("resize", place);
+      bubble.hidden = false;
     }).catch(() => { historyLoad = null; /* no history to point at: ask again on the next visit */ });
   }
 }
@@ -1523,7 +1511,6 @@ function filterStudies() {
 $("#study-menu").addEventListener("toggle", () => {
   if (!$("#study-menu").open) return;
   offlineCopy.available().then((ids) => { for (const a of $("#study-list").children) markOffline(a, "study", ids.has(a.dataset.id)); }, () => {});
-  $("#study-menu .pop").style.left = $("#study-menu .caret").offsetLeft + "px";
   $("#study-search").value = ""; filterStudies(); $("#study-search").focus();
 });
 $("#study-request").href = `https://github.com/${REPO}/issues/new?template=${STUDY_REQUEST}`;
@@ -1550,6 +1537,15 @@ function goTo(id) {
   swap();
 }
 addEventListener("popstate", () => swap());
+// the network back: a study whose Python could not load loads again, on a Python of its own, since a worker
+// keeps a module it failed to download failed; and the storage it then kept shows
+addEventListener(CONNECTION, (e) => {
+  if (!e.detail.online) return;
+  offlineCopy.keepSite().then(diskBar, () => {});
+  if (!st.failed || st.ready || !st.worker || !manifest) return;
+  st.failed = false; status("Loading Python in the background…"); $("#spin").classList.add("on");
+  pythonWorker();
+});
 function swap() {
   swapping = swapping.then(async () => {
     const id = studyOf(location);
@@ -1622,9 +1618,9 @@ const shell = {
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; },
 };
 splitter(shell);
-const offlineCopy = offline({ $, esc, sizeText, drive: NorDrive, throttled, throttle, stored: () => diskBar(), showStorage: () => usage("storage"),
+const offlineCopy = offline({ $, esc, sizeText, drive: NorDrive, throttled, throttle, stored: () => diskBar(),
   kept: async (id) => !!(await caches.open(IMAGES).then((c) => c.match(imageUrl(id)), () => null)), keep: saveImage });
-// Data Management (1.66): what it borrows from the shell
+// Data Management (req/shell/data/mode): what it borrows from the shell
 const data = dataMode({
   $, esc, sizeText, still, status, drive: NorDrive, account: signIn, working, sha256, savedImage, folderPreviews, throttle,
   // the folder's images in the main area, or the image
@@ -1647,7 +1643,8 @@ async function loadOriginal(source) {
   if (!source?.id) return;
   const kept = await savedImage(source.id);
   if (kept) { peek()(kept.bytes, kept.bytes.byteLength); return openBytes(kept.name, kept.bytes, { kind: "drive", id: source.id }); }
-  if (throttled()) return notice("Google is throttling this site's downloads. Try again in 15 minutes.", $("#load-original"));
+  if (document.documentElement.classList.contains("offline")) return notice("This image is not kept on this device, and needs the internet: you are offline.");
+  if (throttled()) return notice("Google is throttling this site's downloads. Try again in 15 minutes.");
   const mb = (n) => (n / 1048576).toFixed(1);
   let push;
   try {
@@ -1664,6 +1661,11 @@ async function loadOriginal(source) {
 }
 $("#load-original").onclick = () => { signIn.drive(); loadOriginal(page.get("image")?.source); };
 
+// the sign-in popup on opening the page (req/shell/account/welcome); the menu's Sign in and Sign out answer it too
+const welcomed = welcome({ dialog: $("#welcome-dlg"), account: signIn, avatar: $("#user-menu summary"), tip });
+$("#sign-in").addEventListener("click", () => { welcomed.chose(); closeTip("sign-in"); });
+$("#sign-out").addEventListener("click", () => welcomed.forgot());
+$("#user-menu").addEventListener("toggle", () => { if ($("#user-menu").open) closeTip("sign-in"); });
 // for the page's tests, which drive it from outside
 window.st = st; window.$ = $; window.shellForTests = { saveThumb, page };
 

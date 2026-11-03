@@ -1,7 +1,8 @@
 // Drives Data Management (web/data_mode.js) in headless Chromium on the fixture study, given permissions and a Drive
 // folder, against a stand-in Google: the folder ROOT (its files, and its subfolders' files) served through the
 // Drive API as a public folder, and the signed-in user's token approved for ROOT alone. With a stand-in worker
-// answering ANSWERS (tests/test_study_runs.py). Checks 1.65–1.69; the previews file the page writes is saved to OUT.
+// answering ANSWERS (tests/test_study_runs.py). Checks req/shell/data/drive-access, req/shell/data/mode,
+// req/shell/data/folder, req/shell/data/update-previews and req/shell/data/preview-images; the previews file the page writes is saved to OUT.
 // Optional SHOTS: a directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/data_mode_driver.mjs ANSWERS STUDIES ROOT OUT [SHOTS]
 import { createRequire } from "node:module";
@@ -132,7 +133,12 @@ async function open(signedIn) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   await ctx.route("https://www.googleapis.com/**", google);
   await ctx.route((u) => !u.href.startsWith(origin) && !u.href.startsWith("https://www.googleapis.com/"), (r) => r.abort());
-  await ctx.addInitScript((who) => { delete Navigator.prototype.serviceWorker; if (who) localStorage.setItem("nor-google-sign-in", JSON.stringify(who)); }, signedIn ? SIGNED_IN : null);
+  // the welcome popup answered before, and remembered (req/shell/account/welcome)
+  await ctx.addInitScript((who) => {
+    delete Navigator.prototype.serviceWorker;
+    if (who) localStorage.setItem("nor-google-sign-in", JSON.stringify(who));
+    localStorage.setItem("nor-welcome", JSON.stringify({ choice: who ? "google" : "anonymous", remember: true }));
+  }, signedIn ? SIGNED_IN : null);
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);
@@ -232,6 +238,18 @@ fs.writeFileSync(out + ".preview.tif", Buffer.from(got.bytes));
 await page.click("#load-original");
 await page.waitForFunction(() => st.fileName === "a flat.tif");
 await check(await page.evaluate(() => shellForTests.page.get("image").source.kind === "drive" && $("#load-original").hidden), "Load Original opens the image itself");
+
+// offline (req/shell/offline/default): no bar asking for folders, and nothing written to Drive
+await page.click("#data-tree .tree-folder .name");
+await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell").length === 3);
+const before = writes.length;
+await page.context().setOffline(true);
+await page.waitForFunction(() => document.documentElement.classList.contains("offline"));
+await page.click(cell("e plain.tif") + " .mark-gt", { force: true });
+await page.waitForTimeout(300);
+await check(writes.length === before, "offline, marking an image does nothing", writes.slice(before));
+await page.context().setOffline(false);
+await page.waitForFunction(() => !document.documentElement.classList.contains("offline"));
 
 await page.click("#data-open");
 await page.waitForTimeout(600);

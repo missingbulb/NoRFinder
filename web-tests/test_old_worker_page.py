@@ -1,4 +1,4 @@
-"""1.27: a browser still holding the service worker the app registered at the site's top, before the app moved
+"""req/shell/site/app-address: a browser still holding the service worker the app registered at the site's top, before the app moved
 to /app/, gets the landing page at / and loses that registration, and the app registers its own
 (old_worker_driver.mjs, in headless Chromium, with the worker as it was at the top)."""
 import os

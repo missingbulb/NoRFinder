@@ -1,4 +1,5 @@
-"""1.65–1.69: Data Management on the fixture study, in headless Chromium against a stand-in Google
+"""req/shell/data/drive-access, req/shell/data/mode, req/shell/data/folder, req/shell/data/update-previews,
+req/shell/data/preview-images: Data Management on the fixture study, in headless Chromium against a stand-in Google
 (data_mode_driver.mjs): the strip for a data manager only, the tree with each folder's access, the folder's view and
 sums, Update previews, the ground-truth marker, an image opened from its preview, and Load Original."""
 import json

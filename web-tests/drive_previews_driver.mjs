@@ -1,6 +1,6 @@
 // Drives the Google Drive dialog (web/) in headless Chromium against a stand-in Drive API serving the folder
 // IMAGES, its rauntruth-previews.tiff among them, each file with its SHA-256 where a request's fields ask, as
-// Drive gives it. Checks 1.42: the file is not listed and is downloaded once; the images it covers show their
+// Drive gives it. Checks req/shell/drive/previews: the file is not listed and is downloaded once; the images it covers show their
 // preview and what they hold with no read of their own, a stack turning while the pointer is over its row; one
 // it lacks, or one changed since it was made, is read as without it; a reload reads the kept copy, and a new
 // file on Drive is downloaded again; Manage storage counts it with its study's thumbnails.

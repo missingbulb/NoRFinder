@@ -66,13 +66,13 @@ every call and knows none of their meanings; Unload has it let the open image go
 what `shell` offers, heads `web/shell.js`, and the viewer's own heads `web/viewer2d.js`; a study draws over the 3D
 view through `shell.viewer.three` (its camera, the stack's place in it and its hooks, listed where `web/viewer3d.js` builds it). The header's
 switcher swaps studies in place, in the same page and the same Python, so a study must be able to
-leave: every listener it adds outside its own panels takes `shell.signal` (requirement 1.30).
+leave: every listener it adds outside its own panels takes `shell.signal` (req/shell/study/switch-in-place).
 `studies/fixture/` is the smallest study there is; the shell's own tests run on it.
 `studies/viewer/`, the Image Viewer the page opens on, is the study with nothing of its own: what the
 shell shows there is what every study gets.
 
 The shell publishes a study's `study.json`, its `web/` folder (Python there stays home) and the
-modules directly in its `python.paths` folders, and nothing else of it (requirement 1.8): keep the
+modules directly in its `python.paths` folders, and nothing else of it (req/shell/site/published-files): keep the
 page's files in those places, and everything else in the study is research that never ships.
 
 ## Run
@@ -88,9 +88,9 @@ then open `http://localhost:8000/` (the landing page), `http://localhost:8000/ap
 `http://localhost:8000/app/nor` or `http://localhost:8000/app/fixture`. `serve.py` serves `/app/nor` from
 the `app/nor.html` the build writes, as Cloudflare does; a plain file server would answer a reload there
 with a 404.
-The build assembles under `dev/build/site/` exactly what is published (requirement 1.8), with the
+The build assembles under `dev/build/site/` exactly what is published (req/shell/site/published-files), with the
 site's pages at the top, the app under `app/` and the studies under `studies/`, as rauntruth.com serves
-them (requirement 1.27); serving the repo root instead and
+them (req/shell/site/app-address); serving the repo root instead and
 opening `/web/` shows the page with every file of every study reachable.
 The full set (`python3 -m pytest web-tests studies`) also needs Node, Pyodide
 (`npm i --prefix web-tests pyodide@314.0.7`, as CI does) and Playwright's Chromium.

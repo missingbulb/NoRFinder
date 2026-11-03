@@ -1,4 +1,4 @@
-// A Drive folder's rauntruth-previews.tiff (requirement 1.42): its index, the first page's description, and its
+// A Drive folder's rauntruth-previews.tiff (req/shell/drive/previews): its index, the first page's description, and its
 // pages, each deflate-compressed with the horizontal predictor; a flat image's preview is a colour picture of
 // its page, a stack's a mini-volume drawn by drawVolume.
 "use strict";

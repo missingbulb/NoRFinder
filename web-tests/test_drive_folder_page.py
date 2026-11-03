@@ -1,4 +1,4 @@
-"""1.18: the Google Drive dialog opens on the link last pasted in this study, else on the folder the study's
+"""req/shell/drive/dialog: the Google Drive dialog opens on the link last pasted in this study, else on the folder the study's
 own study.json names, else on the link last pasted anywhere (drive_folder_driver.mjs, in headless Chromium)."""
 import os
 import shutil

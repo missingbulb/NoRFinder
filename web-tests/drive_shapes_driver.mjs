@@ -1,6 +1,6 @@
 // Drives the Google Drive dialog (web/) in headless Chromium against a stand-in Drive API that answers Range
 // requests, listing ImageJ TIFFs: a flat three-channel image, an eight-slice stack, a TIFF with no ImageJ header
-// and a run of stacks below them. Checks 1.36: each row says what its file holds, read from the file's first 64 KB
+// and a run of stacks below them. Checks req/shell/drive/stacks: each row says what its file holds, read from the file's first 64 KB
 // for the rows in view and the next 10, remembered so a reload reads nothing again, and not read while Show
 // thumbnails is off; opening the stack saves a 3D thumbnail at once, opening the flat image does not.
 // Optional SHOTS: a directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.

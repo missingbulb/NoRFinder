@@ -1,4 +1,5 @@
-// Data Management (requirements 1.65–1.69): for a signed-in user a study's permissions name, the study's Drive
+// Data Management (req/shell/data/mode, req/shell/data/drive-access, req/shell/data/folder,
+// req/shell/data/update-previews, req/shell/data/preview-images): for a signed-in user a study's permissions name, the study's Drive
 // folders as a tree in a column left of the left bar, opened from its strip; a folder chosen fills the main area
 // with its images and the left bar with their sums, and its actions; an image chosen opens from its preview. It
 // asks for the folders' access when the study opens (study_drive.js), and writes only files it creates.
@@ -7,6 +8,7 @@ import { rolesOf, studyDrive } from "./study_drive.js";
 import { PREVIEWS } from "./previews.js";
 import { makePreview, buildPreviews } from "./previews_writer.js";
 import { readTiff, fromPlanes, writeTiff } from "./split.js";
+import { CONNECTION } from "./offline.js";
 
 const IMAGE = /\.(tiff?|png)$/i;
 const MAX_FOLDERS = 200;
@@ -41,12 +43,15 @@ export function dataMode(ctx) {
   // the study's folders, by id: {id, name, parent, files, folders (ids), access, el}; roots their ids
   let nodes = new Map(), roots = [], roles = new Set(), manifest = null, who = null, epoch = 0, loaded = null, chosen = null, layout = "grid";
   const on = () => root.dataset.mode === "data";
+  const offline = () => root.classList.contains("offline");
   const msg = (el, text, err) => { el.textContent = text; el.classList.toggle("err", !!err); };
 
   // ---------- the folders and their access ----------
   // every folder under the study's own, listed with every file in it; once per study
   function load() {
     if (loaded) return loaded;
+    if (offline()) { msg($("#data-msg"), "You are offline: the study's folders can be read once you are back online."); return Promise.resolve(); }
+    msg($("#data-msg"), "");
     const of = epoch;
     return (loaded = (async () => {
       const queue = roots.map((id) => ({ id, parent: null, name: null }));
@@ -80,7 +85,7 @@ export function dataMode(ctx) {
   let barClosed = false;
   function askBar() {
     const want = lacking(), bar = $("#access-bar");
-    bar.hidden = barClosed || !roles.size || !want.length;
+    bar.hidden = barClosed || offline() || !roles.size || !want.length;
     if (bar.hidden) return;
     const all = nodes.size;
     $("#access-text").textContent = want.length === all
@@ -197,7 +202,7 @@ export function dataMode(ctx) {
       const tag = s.entry ? "" : s.stale ? "Preview out of date" : "No preview";
       cell.innerHTML = `<span class="pic"></span><span class="name">${esc(s.f.name)}</span><span class="meta">${esc(s.f.size == null ? "" : sizeText(s.f.size))}</span>` +
         `<span class="tags">${tag ? `<span class="tag warn">${tag}</span>` : ""}${s.truth ? '<span class="tag yes">Ground truth</span>' : ""}</span>` +
-        `<button type="button" class="mark-gt" aria-pressed="${!!s.marker}" title="Mark it as needing ground truth: a ${esc(truthMarker(s.f.name))} file beside it">Needs GT</button>`;
+        `<button type="button" class="mark-gt" data-needs-network aria-pressed="${!!s.marker}" title="Mark it as needing ground truth: a ${esc(truthMarker(s.f.name))} file beside it">Needs GT</button>`;
       cell.onclick = (e) => { if (!e.target.closest(".mark-gt")) chooseImage(n, s.f); };
       cell.onkeydown = (e) => { if (e.key === "Enter" && e.target === cell) chooseImage(n, s.f); };
       const mark = cell.querySelector(".mark-gt");
@@ -298,6 +303,11 @@ export function dataMode(ctx) {
     l.addEventListener("animationend", () => { l.classList.remove("poof"); if (on()) l.classList.add("gone"); }, { once: true });
   }
   $("#data-open").onclick = () => enter(!on());
+  // the network back: the folders read afresh, if they could not be read before
+  addEventListener(CONNECTION, (e) => {
+    if (!e.detail.online || !manifest || !roles.size || nodes.size) return;
+    loaded = null; load();
+  });
 
   return {
     // a study comes in (or the user signs in or out): who may do what in it

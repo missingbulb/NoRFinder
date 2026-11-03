@@ -6,7 +6,7 @@
 // room to the image; and that the header's switcher lists the studies in STUDIES (the build's list), ticks
 // the one on show, finds one by search, and swaps studies in place: no reload, the open image kept, the
 // leaving study's panels and listeners gone, back and forward too; and that the tab's icon is the study's own, or
-// the app's for a study naming none (1.60).
+// the app's for a study naming none (req/shell/site/icons).
 // Then the same with the real worker (web/worker.js), Pyodide served from the copy installed beside the
 // tests, since the fixture needs none of its packages. Prints what it saw; exits 1 on a failure, 2 when it
 // cannot run.
@@ -122,6 +122,8 @@ try {
   await page.click("#study-menu summary");
   const focused = await page.waitForFunction(() => document.activeElement?.type === "search").then(() => true, () => false);
   if (!focused) problems.push("the switcher does not open on its search box");
+  const lined = await page.evaluate(() => $("#study-menu .pop").getBoundingClientRect().left - $("#study-menu .caret").getBoundingClientRect().left);
+  if (Math.abs(lined) > 1) problems.push(`the switcher's popup does not open under its caret: ${lined} px off`);
   await page.keyboard.type("image");
   const found = await page.evaluate(() => [...document.querySelectorAll("#study-list a")].filter((a) => !a.hidden).map((a) => a.textContent).join());
   if (found !== "Image Viewer") problems.push("searching 'image' leaves " + found);

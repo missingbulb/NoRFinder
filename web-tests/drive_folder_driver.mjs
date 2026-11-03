@@ -1,6 +1,6 @@
 // Drives the Google Drive dialog (web/) in headless Chromium, in three studies: a stand-in fixture whose
 // study.json names a Drive folder, the NoR study with the folder its own study.json names, and the Image
-// Viewer, which names none. Checks 1.18: the dialog opens on the link last pasted in this study, else on the
+// Viewer, which names none. Checks req/shell/drive/dialog: the dialog opens on the link last pasted in this study, else on the
 // study's own folder, else on the link last pasted anywhere.
 // Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/drive_folder_driver.mjs

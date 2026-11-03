@@ -1,4 +1,4 @@
-"""1.68: the page's previews writer (web/previews_writer.js, under Node by previews_writer_driver.mjs) makes the same
+"""req/shell/data/update-previews: the page's previews writer (web/previews_writer.js, under Node by previews_writer_driver.mjs) makes the same
 file dev/tools/previews/make_previews.py makes: the same index, pages of the same sizes and nearly the same
 pixels; and, given an older file, keeps the previews still valid and makes only the rest."""
 import json
@@ -77,7 +77,7 @@ def test_it_keeps_the_previews_still_valid(tmp_path):
 
 @pytest.mark.skipif(not NODE, reason='node missing')
 def test_a_stacks_preview_opens_in_3d(tmp_path):
-    """1.69: the TIFF Data Management hands Python for a stack's preview opens in Vascular Measurements' own reader
+    """req/shell/data/preview-images: the TIFF Data Management hands Python for a stack's preview opens in Vascular Measurements' own reader
     as a stack: its mini-volume's slices and channels, the slice spacing scaled to them."""
     images, tiffs = tmp_path / 'images', tmp_path / 'tiffs'
     images.mkdir()

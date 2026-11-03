@@ -240,7 +240,7 @@ proposing a candidate at a missing mark fails the tests; a loss the owner agreed
 `python3 tests/test_quality.py --accept`, so the PR's diff names every spot that moved. Gains are
 written into the baseline by a local test run and locked from then on
 (`tests/test_quality.py`). Until submissions cover it, the reference slide is scored on Claude's
-labels, not the owner's (`detection/STATE.md`), so the lock is only as right as they are. How CI runs these tests is the repo's `2.1` ([`dev/requirements/requirements.md`](../../../dev/requirements/requirements.md)).
+labels, not the owner's (`detection/STATE.md`), so the lock is only as right as they are. How CI runs these tests is the repo's `req/checks/ci-sets` ([`dev/requirements/requirements.md`](../../../dev/requirements/requirements.md)).
 
 ## R10 — Submitted ground truth joins the data set by code, and outranks older labels
 

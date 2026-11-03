@@ -1,5 +1,5 @@
-// Making a folder's rauntruth-previews.tiff in the browser (requirement 1.68), page for page as
-// dev/tools/previews/make_previews.py makes it (1.42): a flat image one RGB page, its channels stretched and added in
+// Making a folder's rauntruth-previews.tiff in the browser (req/shell/data/update-previews), page for page as
+// dev/tools/previews/make_previews.py makes it (req/shell/drive/previews): a flat image one RGB page, its channels stretched and added in
 // their colours; a stack a mini-volume, one 8-bit page per slice and channel. Pages are deflate-compressed with
 // the horizontal predictor, the index the first page's description.
 "use strict";

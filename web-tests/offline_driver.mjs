@@ -1,15 +1,17 @@
 // Drives the built site (SITE, as dev/tools/build/build.py assembles it with a stand-in GOOGLE_API_KEY) in headless Chromium with the real worker
 // and the real Pyodide from its CDN, over a server that answers as Cloudflare does and a stand-in Drive API, and
-// checks 1.55 and 1.56.
-// 1.56 first, online: the Storage tab offers each study not all here Make available offline, whose popup lists the
+// checks req/shell/offline/default and req/shell/offline/per-study.
+// req/shell/offline/per-study first, online: the Storage tab offers each study not all here Make available offline, whose popup lists the
 // study's Drive folder with its subfolder's images, the total beside the room left and the time at this session's
 // speeds, refuses a choice larger than that room, and downloads the study's Python and images, nothing from Drive
 // before Download; the page names no app manifest until Install as an app is clicked, and then the browser finds
 // the site installable.
-// Then 1.55, with the network gone (the browser offline and the server refusing): the page opens at its address
-// and the Python already on this device runs; the status bar says Offline; what needs the network is held; a
+// Then req/shell/offline/default, with the network gone (the browser offline and the server refusing): the page opens at its address
+// and the Python already on this device runs; the status bar's network carries a red no-network mark; what needs the network is held; a
 // prepared study runs, and From Google Drive lists the images kept here and opens one; a study whose Python is not
-// here says so.
+// here says so, and once the network is back loads its Python and reads its folder in an open Make available
+// offline, with no reload; and the network going and coming back mid-session, the browser saying online all
+// along, shows, an open Drive dialog following.
 // TIFF: a small z-stack the vascular study can open. Optional SHOTS: a directory for screenshots.
 // Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/offline_driver.mjs SITE TIFF [SHOTS]
@@ -85,7 +87,7 @@ try {
   await page.goto(origin + "/app/fixture");
   await ready();
   check(true, "the fixture study's Python runs online");
-  check(!(await page.$("link[rel=manifest]")), "the page names no app manifest before the user asks for the app (1.56)");
+  check(!(await page.$("link[rel=manifest]")), "the page names no app manifest before the user asks for the app (req/shell/offline/per-study)");
 
   // every file offline.json lists is kept, once the page has run
   const listed = JSON.parse(fs.readFileSync(path.join(site, "app", "offline.json"))).files.map((f) => f.path);
@@ -101,7 +103,7 @@ try {
   for (let t = 0; t < 60 && left.length; t++) { left = await missing(); if (left.length) await page.waitForTimeout(500); }
   check(listed.length > 30 && !left.length, `the site's own ${listed.length} files are kept on this device` + (left.length ? `; missing ${left.slice(0, 5)}` : ""));
 
-  // 1.56: the Storage tab, where each study is made available offline
+  // req/shell/offline/per-study: the Storage tab, where each study is made available offline
   await page.click("#user-menu summary");
   await page.click("#manage-storage");
   await page.waitForFunction(() => document.querySelector("#usage-dlg").open && !/Reading/.test(document.querySelector("#storage-list").textContent));
@@ -155,7 +157,7 @@ try {
   check(!errors.length, "once asked for, the site is installable" + (errors.length ? ": " + errors.join(", ") : ""));
   await page.keyboard.press("Escape");
 
-  // 1.55: the network goes
+  // req/shell/offline/default: the network goes
   await ctx.setOffline(true); down = true;
   const reached = await page.evaluate(() => fetch("https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide-lock.json?offline-probe").then(() => true, () => false));
   check(!reached, "offline, nothing the cache lacks is reached, the service worker's own downloads included");
@@ -164,9 +166,11 @@ try {
   check(!!(await page.textContent("#title")), "offline, the page opens at its address: " + (await page.textContent("#title")));
   await ready(60000);
   check(true, "offline, the Python already on this device runs");
-  check(await page.isVisible("#sb-offline"), "the status bar says Offline");
-  await page.click("#sb-offline");
-  check(await page.evaluate(() => document.querySelector("#usage-dlg").open && document.querySelector("#usage-dlg").dataset.tab === "storage"), "clicking it opens the Storage tab");
+  check(await page.isVisible("#sb-net .no-net"), "the status bar's network carries the red no-network mark");
+  check(/offline/i.test(await page.getAttribute("#sb-net", "title")), "its tooltip says the page is offline: " + (await page.getAttribute("#sb-net", "title")));
+  await page.click("#sb-net");
+  check(await page.evaluate(() => document.querySelector("#usage-dlg").open && document.querySelector("#usage-dlg").dataset.tab === "network"), "clicking it still opens the Network tab");
+  check(/offline/i.test(await page.textContent("#net-total")), "whose total says the page is offline: " + (await page.textContent("#net-total")));
   await page.keyboard.press("Escape");
   check(await page.$eval("#study-request", (a) => a.getAttribute("aria-disabled") === "true" && /offline/i.test(a.title)), "Submit New Study Request is held, its tooltip saying why");
   // a click on it opens nothing
@@ -191,12 +195,47 @@ try {
   await page.goto(origin + "/app/nor");
   await page.waitForFunction(() => /not on this device/i.test(document.querySelector("#status").textContent), null, { timeout: 60000 }).catch(() => {});
   check(/not on this device/i.test(await statusText()), "offline, a study whose Python is not here says so: " + (await statusText()));
+  // its Make available offline, opened offline: nothing to read yet, Download held
+  await page.click("#user-menu summary");
+  await page.click("#manage-storage");
+  await page.waitForSelector('#storage-list .group[data-group="study:nor"] .make-offline', { state: "attached", timeout: 20000 });
+  await page.$eval('#storage-list .group[data-group="study:nor"] .make-offline', (b) => b.click());
+  await page.waitForSelector("#offline-dlg[open]");
+  await page.waitForFunction(() => /once you are online/.test(document.querySelector("#offline-files").textContent), null, { timeout: 10000 }).catch(() => {});
+  check(/once you are online/.test(await page.textContent("#offline-files")) && (await page.$eval("#offline-go", (b) => b.disabled)),
+    "offline, Make available offline says the study's folder waits for the network, Download held");
 
   await ctx.setOffline(false); down = false;
+  // what Download would then fetch depends on whether the study's Python, loading again meanwhile, is all here yet
+  await page.waitForFunction(() => /Drive folder holds/.test(document.querySelector("#offline-files").textContent) && document.querySelector("#offline-total").textContent, null, { timeout: 40000 }).catch(() => {});
+  check(/Drive folder holds/.test(await page.textContent("#offline-files")) && !!(await page.textContent("#offline-total")),
+    "back online, the open Make available offline popup reads the study's folder and counts again: " + (await page.textContent("#offline-files")) + " " + (await page.textContent("#offline-total")));
+  await page.click("#offline-close");
+  await page.keyboard.press("Escape");
+  await ready(240000).catch(() => {});
+  check(await page.evaluate(() => !!window.st?.ready), "back online, the study whose Python was not here loads it, with no reload: " + (await statusText()));
   // the browser here still says it is online, as on a plane's Wi-Fi: the page notices the site answering again
-  await page.waitForFunction(() => document.querySelector("#sb-offline").hidden, null, { timeout: 40000 }).catch(() => {});
-  check(!(await page.isVisible("#sb-offline")), "back online, Offline leaves the status bar");
+  await page.waitForSelector("#sb-net .no-net", { state: "hidden", timeout: 40000 }).catch(() => {});
+  check(!(await page.isVisible("#sb-net .no-net")), "back online, the no-network mark leaves the status bar");
+  check(!/offline/i.test(await page.getAttribute("#sb-net", "title")), "and the network's tooltip is its own again");
   check(await page.$eval("#study-request", (a) => !a.hasAttribute("aria-disabled")), "back online, Submit New Study Request is offered again");
+
+  // the network goes mid-session while the browser still says it is online (a dead Wi-Fi), the Drive dialog open on
+  // the study's folder: the page notices by itself, and the dialog follows
+  await page.click("#load-menu summary");
+  await page.click('#load-menu .item[data-src="drive"]');
+  await page.waitForSelector("#drive-dlg[open]");
+  const drivePath = () => page.textContent("#drive-path");
+  down = true;
+  await page.waitForSelector("#sb-net .no-net", { state: "visible", timeout: 40000 }).catch(() => {});
+  check(await page.isVisible("#sb-net .no-net"), "mid-session, with the browser still saying online, the page notices the site not answering");
+  await page.waitForFunction(() => /offline/.test(document.querySelector("#drive-path").textContent), null, { timeout: 5000 }).catch(() => {});
+  check(/offline/.test(await drivePath()), "the open Drive dialog then lists the images kept here: " + (await drivePath()));
+  down = false;
+  await page.waitForSelector("#sb-net .no-net", { state: "hidden", timeout: 40000 }).catch(() => {});
+  check(!(await page.isVisible("#sb-net .no-net")), "and notices it answering again");
+  await page.waitForFunction(() => !/offline/.test(document.querySelector("#drive-path").textContent), null, { timeout: 5000 }).catch(() => {});
+  check(!/offline/.test(await drivePath()), "and the Drive dialog goes back to the study's folder: " + (await drivePath()));
 } catch (e) {
   failed = true; console.error("FAILED: " + (e.stack || e));
   console.error("status: " + (await statusText().catch(() => "(no page)")));

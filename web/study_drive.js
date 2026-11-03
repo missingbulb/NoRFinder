@@ -1,4 +1,4 @@
-// A study's own Google Drive folders, for the signed-in user its permissions give a role (requirements 1.64, 1.65):
+// A study's own Google Drive folders, for the signed-in user its permissions give a role (req/shell/data/roles, req/shell/data/drive-access):
 // which folders the site may act in for them, asking Google for exactly those (its per-file permission, then its
 // picker showing just the study's folders), and the writes the page makes there. The page only creates files,
 // each marked as its own, and changes or trashes only the files so marked.

@@ -1,7 +1,7 @@
 """Builds the site the release uploads: the shell decides what of the repo is published, from the
-studies' standard layout (requirement 1.8), and assembles it under dev/build/site/, the tree
+studies' standard layout (req/shell/site/published-files), and assembles it under dev/build/site/, the tree
 wrangler.json publishes: the site's own pages (site/) at its top, the shell's page under app/ and the
-studies under studies/ (requirement 1.27). The release runs this through wrangler.json's build command;
+studies under studies/ (req/shell/site/app-address). The release runs this through wrangler.json's build command;
 so does a local preview:
 
   python3 dev/tools/build/build.py
@@ -11,8 +11,8 @@ It also fetches the third-party wheels the studies install into Pyodide (package
 ship, each study's python.wheels) into web/vendor/, so the page never depends on PyPI at run time;
 writes the version history the page shows (version_history.py) and the studies its header offers
 (studies.json); publishes the page again as app/<id>.html for each of them, which Cloudflare serves at
-/app/<id>, carrying the study's own icon and poster (requirement 1.60); lists the studies on the landing
-page (1.58); writes sitemap.xml and robots.txt (1.61); and writes the deployment's
+/app/<id>, carrying the study's own icon and poster (req/shell/site/icons); lists the studies on the landing
+page (req/shell/site/landing); writes sitemap.xml and robots.txt (req/shell/site/crawlers); and writes the deployment's
 settings into the published web/config.js from the repository variables: GOOGLE_API_KEY turns on
 loading from Google Drive, GOOGLE_CLIENT_ID signing in with Google. The folder its dialog opens on is each study's own (the first of files.folders in its study.json).
 """
@@ -32,7 +32,7 @@ OUT = os.path.join(WEB, 'vendor')
 SITE = os.path.join(ROOT, 'dev', 'build', 'site')
 # what the build writes into web/ and the page reads, published under app/
 GENERATED = ('vendor', 'version_history.json', 'studies.json')
-# the list of the app's files, the studies' included, the page keeps a copy of to open offline (requirement 1.55)
+# the list of the app's files, the studies' included, the page keeps a copy of to open offline (req/shell/offline/default)
 OFFLINE = 'offline.json'
 OFFLINE_TREES = (APP, 'studies')
 
@@ -178,7 +178,7 @@ def attr(html, tag, value):
 
 def study_head(index, m):
     """The page as a study's own address serves it: its title, and its icon and poster where its study.json names
-    them (requirement 1.60), each relative to the page, as the shell names them."""
+    them (req/shell/site/icons), each relative to the page, as the shell names them."""
     base = f'../studies/{m["id"]}/'
     html = re.sub(r'<title>[^<]*</title>', lambda _: f'<title>{escape(m["title"])}</title>', index, count=1)
     html = attr(html, '<meta property="og:title"', escape(m['title']))
@@ -202,7 +202,7 @@ def share_links(html, page):
 
 
 def list_studies(landing, listed):
-    """The landing page with every listed study a link to its address in the app (requirement 1.58)."""
+    """The landing page with every listed study a link to its address in the app (req/shell/site/landing)."""
     items = ''.join(f'\n<li><a href="{APP}/{s["id"]}">{escape(s["title"])}</a></li>' for s in listed)
     got = re.subn(r'(<ul [^>]*id="studies"[^>]*>)(</ul>)', lambda m: m.group(1) + items + '\n' + m.group(2), landing, count=1)
     if not got[1]:
@@ -211,7 +211,7 @@ def list_studies(landing, listed):
 
 
 def site_pages(out):
-    """The addresses of the site's own pages, never the app's or a study's (requirement 1.61)."""
+    """The addresses of the site's own pages, never the app's or a study's (req/shell/site/crawlers)."""
     pages = ['/']
     pages += sorted('/' + f[:-len('.html')] for f in os.listdir(out) if f.endswith('.html') and f not in PAGES_NOT_LISTED)
     return [SITE_URL + p for p in pages]
@@ -223,7 +223,7 @@ def sitemap(out):
 
 
 def robots():
-    """Crawlers kept off the app, every study's address in it included (requirement 1.61)."""
+    """Crawlers kept off the app, every study's address in it included (req/shell/site/crawlers)."""
     return f'User-agent: *\nDisallow: /{APP}/\n\nSitemap: {SITE_URL}/sitemap.xml\n'
 
 

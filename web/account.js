@@ -1,10 +1,12 @@
-// Signing in with Google (1.50), from the avatar's menu, with no server of the site's own: Google signs the user in
+// Signing in with Google (req/shell/account/sign-in), from the avatar's menu, with no server of the site's own: Google signs the user in
 // in its own window and hands this page a token, and the page keeps the user's settings in their own Google Drive,
 // in the app's hidden folder, as one file it reads whole and replaces whole: {browser key: the string this device
 // keeps under it}, for the keys whose settings follow the user. The services it reaches: Google's sign-in script
 // and window, Google's account details (name, email, picture), and the Drive API for that one file. A study may
-// ask for more (more(scope), 1.65): Google's per-file Drive permission, added to the same token.
+// ask for more (more(scope), req/shell/data/drive-access): Google's per-file Drive permission, added to the same token.
 "use strict";
+import { CONNECTION } from "./offline.js";
+
 const GOOGLE_SCRIPT = "https://accounts.google.com/gsi/client";
 const SCOPES = "openid email profile https://www.googleapis.com/auth/drive.appdata";
 const USER_INFO = "https://openidconnect.googleapis.com/v1/userinfo";
@@ -22,7 +24,9 @@ export const SIGNED_IN = "nor-google-sign-in";
 // changed(): runs whenever who is signed in may have changed
 export function account({ keys, menu, clientId, applied, changed = () => {} }) {
   const $ = (s) => menu.querySelector(s);
-  let me = read(), client = null, script = null, saving = null, asked = null;
+  // waiting: {ok, fail} of a sign-in the popup is waiting on (req/shell/account/welcome)
+  let me = read(), client = null, script = null, saving = null, waiting = null;
+  const answered = (how, why) => { const w = waiting; waiting = null; if (w) w[how](why); };
 
   function read() { try { return JSON.parse(localStorage.getItem(SIGNED_IN)) || null; } catch { return null; } }
   const keep = () => { try { if (me) localStorage.setItem(SIGNED_IN, JSON.stringify(me)); else localStorage.removeItem(SIGNED_IN); } catch { /* private mode: this page only */ } };
@@ -102,17 +106,19 @@ export function account({ keys, menu, clientId, applied, changed = () => {} }) {
       client = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId, scope: SCOPES,
         callback: async (t) => {
-          const waiting = asked; asked = null;
-          if (t.error) { waiting?.(false); return console.warn("Google gave no token:", t.error); }
+          if (t.error) { console.warn("Google gave no token:", t.error); return answered("fail", t.error); }
           const first = !me || !me.user;
           me = { ...(me || {}), token: t.access_token, until: Date.now() + t.expires_in * 1000, scopes: t.scope || SCOPES };
           if (first) {
-            const u = await (await google(USER_INFO)).json();
-            me.user = { name: u.name || u.email, email: u.email, picture: u.picture || null };
+            try {
+              const u = await (await google(USER_INFO)).json();
+              me.user = { name: u.name || u.email, email: u.email, picture: u.picture || null };
+            } catch (e) { me = null; keep(); console.warn("Google gave no account details:", e.message); return answered("fail", e.message); }
           }
-          keep(); show(); syncing(); waiting?.(true);
+          keep(); show(); syncing(); answered("ok");
         },
-        error_callback: () => { asked?.(false); asked = null; },
+        // Google's window did not open, or was closed before it answered
+        error_callback: (e) => { console.warn("Google's sign-in window:", e.type); answered("fail", e.type); },
       });
     })
     .catch((e) => { script = null; console.warn("Google sign-in did not load:", e); }));
@@ -124,19 +130,44 @@ export function account({ keys, menu, clientId, applied, changed = () => {} }) {
     return true;
   };
 
-  $("#sign-in").onclick = () => { if (client) client.requestAccessToken(); };
-  menu.addEventListener("toggle", () => { if (menu.open && clientId && !me) ready(); });
-  $("#sign-out").onclick = () => {
+  // in the user's click: the signed-in user goes on as themselves, asked nothing while their token lasts; settles
+  // once Google has answered, failing when it gave no token
+  const signIn = () => new Promise((ok, fail) => {
+    if (!clientId) return fail(new Error("no Google client"));
+    if (live()) return ok();
+    answered("fail", "asked again");
+    waiting = { ok, fail: (why) => fail(new Error(why)) };
+    ready().then(() => {
+      if (!client) return answered("fail", "Google's sign-in did not load");
+      client.requestAccessToken(me?.user ? { prompt: "", login_hint: me.user.email } : undefined);
+    });
+  });
+  const signOut = () => {
     clearTimeout(saving);
     me = null; keep(); show(); menu.open = false;
   };
+  $("#sign-in").onclick = () => { if (client) client.requestAccessToken(); };
+  menu.addEventListener("toggle", () => { if (menu.open && clientId && !me) ready(); });
+  $("#sign-out").onclick = signOut;
 
   if (!clientId) me = null;
   show();
   if (live()) syncing();
   else if (me) ready(); // so a click that needs Google can ask at once
-  // a change made offline waits for the network, then syncs while the token lasts
-  addEventListener("online", () => { if (live()) syncing(); });
+  // another tab signed in or out: this one follows, so its next save cannot undo that
+  addEventListener("storage", (e) => {
+    if (e.key !== SIGNED_IN && e.key !== null) return;
+    me = clientId ? read() : null;
+    if (!me) clearTimeout(saving);
+    show();
+  });
+  // a change made offline waits for the network, then syncs while the token lasts; with none, Google's script
+  // loads so the next click can ask for one
+  addEventListener(CONNECTION, (e) => {
+    if (!e.detail.online) return;
+    if (live()) syncing();
+    else if (me) ready();
+  });
 
   return {
     // a setting the shell just wrote: saved to Drive now; with no token, a token is asked for when the user just
@@ -151,6 +182,11 @@ export function account({ keys, menu, clientId, applied, changed = () => {} }) {
     // the user is about to use Google Drive (Load): a token run out is renewed in their click, and the settings sync
     drive() { renew(); },
     signedIn: () => !!(me && me.user),
+    user: () => (me && me.user) || null,
+    offered: !!clientId,
+    // the user is reaching for Sign in: Google's script, so their click can ask at once
+    preload() { if (clientId) ready(); },
+    signIn, signOut,
     email: () => (me && me.user && me.user.email) || null,
     // the token while it lasts, else null; renewing it needs the user's click (renew)
     token: () => (live() ? me.token : null),
@@ -160,12 +196,11 @@ export function account({ keys, menu, clientId, applied, changed = () => {} }) {
     // asks Google, in the user's click, to add scope to the token: true once it has
     more(scope) {
       if (!me || !client || !navigator.userActivation?.isActive) return Promise.resolve(false);
+      answered("fail", "asked again");
       return new Promise((ok) => {
-        asked = ok;
+        waiting = { ok: () => ok(true), fail: () => ok(false) };
         client.requestAccessToken({ scope: SCOPES + " " + scope, include_granted_scopes: true, login_hint: me.user.email });
       }).then((got) => got && this.may(scope));
     },
-    // Google's sign-in script, loaded
-    ready: () => ready(),
   };
 }
