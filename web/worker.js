@@ -5,6 +5,7 @@
 // A module worker: its imports are fetched with CORS, so the service worker can cache them.
 import { bridge } from "./bridge.js";
 import { PYODIDE, packagesOf } from "./python_files.js";
+import { tiffCodecs } from "./tiff_codecs.js";
 
 const say = (text) => post({ type: "progress", text });
 let py, manifest, current;
@@ -43,6 +44,7 @@ async function loadStudy(id) {
   working(() => {
     const site = py.runPython("import sysconfig; sysconfig.get_path('purelib')");
     for (const { url, buf } of bufs) { py.unpackArchive(buf, "wheel", { extractDir: site }); unpacked.add(url); }
+    tiffCodecs(py);
   });
   say(m.progress?.load || "Loading the study…");
   // the study's Python modules are read straight from the repo's layout as they are imported: a new module

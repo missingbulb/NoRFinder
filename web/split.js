@@ -51,7 +51,7 @@ function ifds(buf) {
 }
 
 // LZW as TIFF writes it: codes most significant bit first, the code width growing one code early
-function lzw(src, size) {
+export function lzw(src, size) {
   const out = new Uint8Array(size), prefix = new Int32Array(4096), suffix = new Uint8Array(4096), first = new Uint8Array(4096), len = new Int32Array(4096);
   for (let i = 0; i < 256; i++) { prefix[i] = -1; suffix[i] = first[i] = i; len[i] = 1; }
   let next = 258, width = 9, old = -1, bit = 0, op = 0;
