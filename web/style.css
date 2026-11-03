@@ -655,8 +655,9 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 
 /* working offline (req/shell/offline/default) and making a study available offline (req/shell/offline/per-study) */
 html.offline [data-needs-network] { opacity: .45; cursor: not-allowed; }
-#statusbar #sb-offline, #statusbar #sb-browser { color: var(--warn); }
-#statusbar #sb-browser[hidden] { display: none; }
+#statusbar #sb-offline, #statusbar #sb-report.unsupported, #statusbar #sb-report.unsupported svg { color: var(--warn); }
+#sb-report .warn, #sb-report.unsupported .bug { display: none; }
+#sb-report.unsupported .warn { display: inline; }
 #statusbar #sb-offline[hidden] { display: none; }
 #offline-dlg { width: min(560px, calc(100vw - 32px)); }
 #offline-dlg h2 { margin: 0 0 6px; }

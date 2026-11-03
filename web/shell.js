@@ -1269,14 +1269,17 @@ function submitTruth(gt) {
 }
 $("#gt-close").onclick = () => $("#gt-dlg").close();
 
-// ---------- problems: whether the page supports this browser, and a report of what went wrong ----------
-// (req/shell/browsers/supported, req/shell/report/bug). The verdict is null until browsers.json is read: unknown, no icon.
+// ---------- problems: a report of what went wrong, from the status bar's icon or the avatar's menu, and whether the
+// page supports this browser (req/shell/report/bug, req/shell/browsers/supported). The verdict is null until browsers.json
+// is read: unknown, and the icon stays the plain one.
 const thisBrowser = identify(navigator.userAgent, navigator.maxTouchPoints);
 let browserVerdict = null, fullVersion = null;
 fetch(new URL("browsers.json", import.meta.url)).then((r) => r.json()).then(({ supported }) => {
   browserVerdict = verdict(thisBrowser, supported);
-  $("#sb-browser").hidden = browserVerdict.ok;
-  $("#sb-browser").title = `${browserVerdict.why} Click to report a problem.`;
+  if (browserVerdict.ok) return;
+  const b = $("#sb-report");
+  b.classList.add("unsupported"); b.setAttribute("aria-label", "Unsupported browser");
+  b.title = `${browserVerdict.why} Click to report a problem.`;
 }).catch((e) => console.warn("the list of supported browsers could not be read:", e));
 // Chromium browsers give their full version only when asked, and the report is opened within the click, so asked now
 const BRANDS = { Chrome: "Google Chrome", Edge: "Microsoft Edge", Opera: "Opera" };
@@ -1308,7 +1311,7 @@ function reportProblem() {
     actions: log.last(ACTIONS_QUOTED, "action"), errors: log.last(ERRORS_QUOTED, "error") });
   window.open(url, "_blank", "noopener");
 }
-$("#sb-browser").onclick = reportProblem;
+$("#sb-report").onclick = reportProblem;
 $("#report-problem").onclick = reportProblem;
 
 // ---------- notices: a short message, at the top of the view or under the button it is about ----------

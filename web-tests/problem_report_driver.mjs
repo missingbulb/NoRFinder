@@ -95,19 +95,28 @@ async function open(ua) {
 const kept = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("nor-actions")) || []);
 const issue = async (page) => { const u = new URL(await page.evaluate(() => window.opened)); return Object.fromEntries(u.searchParams); };
 
-// ---- a supported browser: no icon ----
+// the status bar's report icon: shown, at the bar's right, its look and words
+const reportIcon = (page) => page.evaluate(() => { const b = $("#sb-report"); return { shown: !b.hidden && b.getBoundingClientRect().width > 0,
+  right: b.getBoundingClientRect().left > innerWidth / 2, warns: b.classList.contains("unsupported"), label: b.getAttribute("aria-label"), title: b.title }; });
+
+// ---- a supported browser: the plain report icon, opening a report ----
 {
   const { ctx, page } = await open(null);
-  await check(await page.evaluate(() => $("#sb-browser").hidden), "a supported browser shows no unsupported-browser icon");
+  const icon = await reportIcon(page);
+  await check(icon.shown && icon.right && !icon.warns && icon.label === "Report a problem" && /GitHub issue/.test(icon.title),
+    `in a supported browser the status bar's right side shows the plain report icon: "${icon.title}"`);
+  await page.click("#sb-report");
+  const q = await issue(page);
+  await check(q.template === "bug-report.yml" && q.title === "Problem: " && !/not supported/.test(q.browser), `it opens a new issue on the bug-report form titled "${q.title}": ${q.browser}`);
   await ctx.close();
 }
 
 // ---- an unsupported browser: the icon, and the report it opens ----
 {
   const { ctx, page } = await open(UA.opera);
-  const icon = await page.evaluate(() => ({ shown: !$("#sb-browser").hidden, title: $("#sb-browser").title, right: $("#sb-browser").getBoundingClientRect().left > innerWidth / 2 }));
-  await check(icon.shown && icon.right && /Opera is not one the page supports/.test(icon.title) && /report a problem/i.test(icon.title),
-    `in Opera the status bar's right side shows the icon, saying why: "${icon.title}"`);
+  const icon = await reportIcon(page);
+  await check(icon.shown && icon.right && icon.warns && icon.label === "Unsupported browser" && /Opera is not one the page supports/.test(icon.title) && /report a problem/i.test(icon.title),
+    `in Opera the same icon is a warning sign, saying why: "${icon.title}"`);
 
   // six actions, the last five quoted, oldest first; the recent image is logged by what it is, never its name
   await page.click("#load-menu summary");
@@ -122,7 +131,7 @@ const issue = async (page) => { const u = new URL(await page.evaluate(() => wind
   await page.click("#settings-cancel");
   await page.evaluate(() => setTimeout(() => { throw new Error("thrown-for-the-test"); }));
   await page.waitForTimeout(100);
-  await page.click("#sb-browser");
+  await page.click("#sb-report");
   const q = await issue(page);
   await check(q.template === "bug-report.yml" && q.title === "Unsupported browser: ", `the icon opens a new issue on the bug-report form: ${q.template}, "${q.title}"`);
   await check(/^Opera 120 on Windows, not supported \(Mozilla/.test(q.browser), `it names the browser: ${q.browser}`);
@@ -155,7 +164,7 @@ const issue = async (page) => { const u = new URL(await page.evaluate(() => wind
   await ctx.close();
 }
 
-// ---- a supported browser: Report a problem is in the menu too ----
+// ---- a supported browser: Report a problem in the menu too ----
 {
   const { ctx, page } = await open(null);
   await page.click("#user-menu summary");
