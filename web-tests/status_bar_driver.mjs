@@ -401,7 +401,7 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await isOpen(false, "on opening the page, the disk, memory, network and CPU are folded into one icon");
   await shot(page, "9-resources-folded");
   const folded = await bars(page);
-  await check(folded.every((x) => x[2] === x[3]), "folded, a bar between every two items on show, the icon among them", folded);
+  await check(folded.length >= 4 && folded.every((x) => x[2] === x[3]), "folded, a bar between every two items on show, the icon among them", folded);
   const before = await fixed();
   await check(before.every((x, k) => k === 0 || before[k - 1] < x), "the resources icon, the online icon, the report icon, then the version, toward the right edge", before);
   const look = await page.evaluate(() => { const s = getComputedStyle(document.querySelector("#sb-res-items")); return { property: s.transitionProperty, ms: parseFloat(s.transitionDuration) * 1000 }; });
