@@ -12,6 +12,8 @@ writes those versions into this file. Releases with no visible change are left o
 ## Next release
 - The Image Viewer has its own icon, a microscope, in the browser tab and the study switcher. (#697)
 - The study switcher's button shows the open study's icon beside its name. (#697)
+- Collapse the left bar with the ‹ tab between it and the image, to give the image the whole width: a narrow Steps strip keeps the steps' marks, and clicking it, or a step, brings the bar back. The page remembers which you chose. (#690)
+- The Data Management strip no longer peeks out beside the left bar for people who are not data managers. (#690)
 - In the 3D view, a sideways scroll spins the stack about the line of sight (it panned before), and dragging no longer stops at a side-on view: it turns on, like a trackball. (#689)
 - Choose folders… in Data Management opens Google's permission window again, instead of doing nothing. (#694)
 - Switching study unloads the open image: the new study starts with none open. (#686)

@@ -42,7 +42,7 @@ const VIEWERS = { image2d: viewer2d, image3d: (shell) => viewer3d(shell, viewers
 const DEFAULT_STUDY = "viewer";
 // the browser keys the shell saves under; their names predate studies, and a user's saved state lives in them
 const THEME = "nor-theme"; // "dark" | "light"; absent = follow the system
-const BARS = "nor-bars-v1"; // {left}: the left bar's width in pixels (a right bar's, from before it went, is ignored)
+const BARS = "nor-bars-v1"; // {left, collapsed}: the left bar's width in pixels, and whether it is collapsed (a right bar's, from before it went, is ignored)
 const SOURCE = "nor-load-source"; // "local" | "drive": where Load reads from
 const DRIVE_LINK = "nor-drive-link"; // the last Google Drive link pasted, in any study
 const DRIVE_LINKS = "nor-drive-links"; // {study id: the last Google Drive link pasted in that study}
@@ -1072,7 +1072,7 @@ async function showSaved() {
 // ---------- the user: whoever opened the page on this device, and what the site keeps here ----------
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
-  [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
+  [THEME]: "Theme", [BARS]: "Left bar width, and whether it is collapsed", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
   [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [RESOURCES]: "The status bar's disk, memory, network and CPU: hidden, auto-hiding or always open", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
 };
 // What the site keeps, by what it takes to work offline (req/shell/storage/manage): a section per study, then what they share; settings
@@ -1401,6 +1401,14 @@ function retitle() {
     if (typeof want === "string") { if (t.textContent !== want || t.children.length) t.textContent = want; }
     else if (t.firstChild !== want) t.replaceChildren(want);
   });
+  // the collapsed left bar's strip (req/shell/left-bar/collapse): a mark per drawer on show, opening it
+  $("#left-marks").replaceChildren(...shown.map((b) => {
+    const h = b.querySelector(":scope > .sec-head h2"), m = document.createElement("button");
+    m.type = "button"; m.className = "step-mark"; m.textContent = h.querySelector(".step-mark").textContent;
+    m.classList.toggle("done", b.classList.contains("done")); m.classList.toggle("open", !b.classList.contains("folded"));
+    m.title = h.dataset.name; m.onclick = () => b.classList.remove("folded");
+    return m;
+  }));
 }
 // a box's task done, summed up (text, or a node), or waiting again (null)
 function boxDone(box, summary) {
@@ -1455,12 +1463,27 @@ function showImage() { study.showImage?.(); view.minimapView(); }
   };
   set(saved.left);
   g.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("#left-collapse")) return;
     g.setPointerCapture(e.pointerId); document.body.classList.add("resizing");
     const move = (ev) => { saved.left = ev.clientX - lay.getBoundingClientRect().left; set(saved.left); view?.minimapView(); };
     const up = () => { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); document.body.classList.remove("resizing"); writeJSON(BARS, saved); };
     g.addEventListener("pointermove", move); g.addEventListener("pointerup", up);
   });
   g.addEventListener("dblclick", () => { delete saved.left; set(null); writeJSON(BARS, saved); view?.minimapView(); });
+  // req/shell/left-bar/collapse: collapsed to its Steps strip, and back, the drawers sliding in on the way out
+  const bar = $("#left"), root = document.documentElement;
+  const collapse = (on) => { if (on) root.dataset.left = "collapsed"; else delete root.dataset.left; };
+  collapse(!!saved.collapsed);
+  const toggle = (on) => {
+    saved.collapsed = on; writeJSON(BARS, saved);
+    if (!on) { bar.classList.add("sliding-in"); setTimeout(() => bar.classList.remove("sliding-in"), 400); }
+    collapse(on);
+    retitle();
+    setTimeout(() => view?.minimapView(), 400);
+  };
+  $("#left-collapse").onclick = () => toggle(true);
+  // a step mark opens its drawer first, then the click reaches the strip
+  $("#left-strip").onclick = () => toggle(false);
 }
 
 function theme() {
