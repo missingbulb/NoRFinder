@@ -505,10 +505,11 @@ spec does not have.
   `offline.json` with each file's SHA-256, each checked against that list and refetched only when it
   changed. With no network the page then opens at its own address and at every study's, from that
   copy. A study whose Python is already on this device runs; one whose Python is not says so: it
-  needs the internet once, or Make available offline (`req/shell/offline/per-study`). An image kept on this device (`req/shell/drive/kept-images`,
+  needs the internet once, or Make available offline (`req/shell/offline/per-study`). It says so plainly, not as an error
+  and with no traceback, the spinner stopping, the network dropping as the study's own modules load too (set by the owner on 2026-11-03). An image kept on this device (`req/shell/drive/kept-images`,
   `req/shell/offline/per-study`) opens: offline, From Google Drive lists the images kept here instead of a Drive folder.
-  The status bar's network carries a red mark on its icon, the one red in the status bar, its tooltip and its
-  Network tab saying the page is offline; set by the owner on 2026-11-03, it took the place of an Offline item. No
+  The status bar's online icon (`req/shell/status-bar/online`) shows it, the network's tooltip and its
+  Network tab saying the page is offline too. No
   network is the browser saying so, or the site not answering, asked every 30 seconds all session long, so the
   network going or coming back mid-session shows within that, the browser saying online or not, and a Wi-Fi's
   sign-in page answering in the site's place counts as no network. What the page is doing follows it, set by the
@@ -773,10 +774,12 @@ spec does not have.
   the spinner and what the page is doing now (each stage of Python's loading, the study's progress,
   an error in red) and the thumbnails' progress (`req/shell/drive/dialog`). From the right edge inward: the site's
   version (stamped by each release; `req/shell/version-history`, `req/shell/site/out-of-date`), the CPU (`req/shell/status-bar/cpu`), the network (`req/shell/status-bar/network`), the
-  memory (`req/shell/status-bar/memory`) and the disk (`req/shell/status-bar/disk`), and before them the report icon (`req/shell/report/bug`), a bug, or a warning sign in a browser the page does not support. The four are folded into one icon unless set
-  always open (`req/shell/status-bar/resources`). Each of the four before the version is a small grey icon
+  memory (`req/shell/status-bar/memory`) and the disk (`req/shell/status-bar/disk`); between the version and those four, the report icon (`req/shell/report/bug`), a bug, or a warning sign in a browser the page does not support,
+  and then the online icon (`req/shell/status-bar/online`). The four are folded into one icon unless set
+  always open (`req/shell/status-bar/resources`), and unfolding them moves neither the online icon, the report icon nor the version. Each of the four before the version is a small grey icon
   and its number, with no word naming it; all five are plain, with no box, alike. A mild vertical
-  bar separates each item from the next. Nothing in the status bar turns the pointer into a
+  bar separates each item from the next, the resources icon included, folded or not, but the four, which sit
+  together with none between them. Nothing in the status bar turns the pointer into a
   question mark. The image's name and the study's counts are in the
   breadcrumbs' popups: Load image names the image, the study's own step gives its counts. Test:
   `web-tests/test_status_bar_page.py`.
@@ -845,20 +848,30 @@ spec does not have.
   not let a page read their size. Test: `web-tests/test_status_bar_page.py`.
   </details>
 
+- `req/shell/status-bar/online` The online icon says whether the page is online, and opens where offline is set up.
+  <details>
+
+  Set by the owner on 2026-11-03, in the place of a red mark on the network's and the resources' icons. Between the
+  resources and the report icon, a grey Wi-Fi icon while online; offline, the same crossed out, in red, the one red in the
+  status bar. Its tooltip says which, and that clicking it sets up working offline: it opens the Storage tab of the
+  resources dialog (`req/shell/resources-dialog`), where the page installs as an app and each study is made available
+  offline (`req/shell/offline/per-study`). Online and offline are what `req/shell/offline/default` says. Tests:
+  `web-tests/test_status_bar_page.py`, `web-tests/test_offline_page.py`.
+  </details>
+
 - `req/shell/status-bar/resources` The disk, memory, network and CPU fold into one icon, unfolding on hover and while something needs watching.
   <details>
 
   Set by the owner on 2026-11-03. The four sit in one block with a gauge icon at its right, next to the
-  version. A setting in the resources dialog, above its tabs on every tab, chooses how the block shows:
+  online icon (`req/shell/status-bar/online`). A setting in the resources dialog, above its tabs on every tab, chooses how the block shows:
   Auto-hiding, the default, Hidden always, or Always open, as the status bar was before. Auto-hiding,
   the page opens with the four folded away and the icon alone showing; hovering the block unfolds the
-  four as they look always open, the icon staying beside them, and leaving folds them again, both ways
+  four as they look always open, the icon going away as they come (set by the owner on 2026-11-03), and leaving folds them again, the icon coming back, both ways
   animated (at once with animations off, `req/shell/resources-dialog/animations`, or reduced motion asked for). It unfolds by
   itself, and stays unfolded, while the page is offline (`req/shell/offline/default`), the CPU has been over 50% of one core for more than
   5 seconds, the network has been downloading over 250 KB/s for more than 5
   seconds, or the tab holds over 1 GB, and folds 8 seconds after the last of these ends. Hidden
-  always, only the icon shows, and neither hovering nor any of these unfolds it; offline, the icon
-  carries the red no-network mark. Always open, the icon does not show. Clicking the icon opens the
+  always, only the icon shows, and neither hovering nor any of these unfolds it. Always open, the icon does not show. Clicking the icon opens the
   resources dialog (`req/shell/resources-dialog`) on the tab last shown, Storage at first. The choice is kept as the user's setting and,
   signed in, follows the user (`req/shell/account/sign-in`). Test: `web-tests/test_status_bar_page.py`.
   </details>
