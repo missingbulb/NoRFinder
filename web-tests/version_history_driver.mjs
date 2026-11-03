@@ -100,6 +100,20 @@ const tags = async (page) => (await page.waitForFunction(() => !/Loading/.test($
   await check(text === `Click here to see what was updated since v${seen}.`, `after an update the bubble says: "${text}"`);
   const pos = await page.evaluate(() => { const b = $("#whats-new").getBoundingClientRect(), v = $("#sb-version").getBoundingClientRect(); return { above: b.bottom <= v.top, over: b.left < v.right && b.right > v.left }; });
   await check(pos.above && pos.over, "it sits above the version box");
+  // its arrow points into the version box, and both follow the box when the window is resized
+  const aim = () => page.evaluate(() => {
+    const s = document.createElement("style"); s.textContent = "#whats-new::after { pointer-events: auto !important; }"; document.head.append(s);
+    const b = $("#whats-new").getBoundingClientRect(), v = $("#sb-version").getBoundingClientRect(), x = (v.left + v.right) / 2;
+    const arrow = $("#whats-new").contains(document.elementFromPoint(x, b.bottom + 3));
+    s.remove();
+    return { arrow, above: b.bottom <= v.top, over: b.left < v.right && b.right > v.left, inside: b.left >= 0 && b.right <= innerWidth };
+  });
+  const at = await aim();
+  await check(at.arrow, "its arrow points at the middle of the version box", at);
+  await page.setViewportSize({ width: 900, height: 700 });
+  const after = await aim();
+  await check(after.arrow && after.above && after.over && after.inside, "and both follow the box when the window is resized", after);
+  await page.setViewportSize({ width: 1400, height: 900 });
   await shot(page, "bubble_corner", "body");
   if (shots) await page.screenshot({ path: path.join(shots, "bubble_zoom.png"), clip: { x: 1400 - 420, y: 900 - 160, width: 420, height: 160 } });
   await check(await stored(page) === seen, "until it is closed, the version seen stays the old one");
