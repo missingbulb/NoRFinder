@@ -40,6 +40,14 @@
     <svg class="sun" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
     <svg class="moon" viewBox="0 0 24 24" width="18" height="18"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
   </button>
+  <details class="menu" id="role-menu">
+    <summary aria-label="Role"><span id="role-name">Viewer</span><span class="caret"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z"/></svg></span></summary>
+    <div class="pop right" role="menu" aria-labelledby="role-title">
+      <h2 id="role-title">Work as</h2>
+      <div id="role-list"></div>
+      <p id="role-hint" class="dim" hidden></p>
+    </div>
+  </details>
   <details class="menu" id="user-menu">
     <summary title="You, on this device" aria-label="You, on this device"><svg class="avatar" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><circle cx="16" cy="16" r="16"/><circle cx="16" cy="12.5" r="5.5"/><path d="M5.5 27a11 9 0 0 1 21 0"/></svg></summary>
     <div class="pop right">
@@ -56,7 +64,7 @@
 
 <div id="layout">
   <aside id="data-col" aria-label="Data Management" hidden>
-    <button id="data-open" type="button" aria-expanded="false" title="Data Management: the study's folders and images"><svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg><span class="strip-name">Data Management</span></button>
+    <button id="data-open" type="button" aria-expanded="true" title="Fold or open the study's folders"><svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg><span class="strip-name">Data Management</span></button>
     <div id="data-body">
       <div class="data-head"><h2>Folders</h2><button id="data-approve" type="button" class="link" data-needs-network hidden></button></div>
       <div id="data-tree" role="tree" aria-label="The study's folders" data-log-as="a folder or image in the Data Management tree"></div>
@@ -141,7 +149,6 @@
       </div>
       <slot-here data-slot-for="toolbar-end"></slot-here>
     </div>
-    <div id="access-bar" role="status" hidden><span id="access-text"></span><span class="grow"></span><button id="access-go" class="primary" type="button" data-needs-network>Choose folders…</button><button id="access-x" class="x" type="button" aria-label="Close">×</button></div>
     <div id="tasks-bar" class="for-items" hidden><span class="done"></span><meter min="0" max="1" value="0"></meter><span class="grow"></span><slot-here data-slot-for="tasks-end"></slot-here></div>
     <div id="busy" hidden><div id="scan-light"></div><span class="spin big"></span><div id="busy-text"></div><div id="busy-time"></div></div>
 

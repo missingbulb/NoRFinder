@@ -29,6 +29,7 @@ import { actionLog, ACTIONS } from "./action_log.js";
 import { identify, verdict } from "./browsers.js";
 import { problemUrl, ACTIONS_QUOTED, ERRORS_QUOTED } from "./problem_report.js";
 import { dataMode } from "./data_mode.js";
+import { ROLE, ROLE_NAMES, held, shown, roleMenu } from "./roles.js";
 import { imageEditor, SPLIT_PATTERN } from "./image_edit.js";
 import { replacedBy } from "./edit.js";
 import { dialogMotion } from "./dialog_motion.js";
@@ -79,14 +80,14 @@ const LOCAL_GT = "Ground truth cannot be sent from local files, only from Google
 // the issue form a proposal for a new study is written on
 const STUDY_REQUEST = "new-study.yml";
 // signing in (req/shell/account/sign-in): these settings follow the user to every device, in their own Google Drive; the rest stay with this one
-const FOLLOWS = [THEME, TIPS, SEEN_VERSION, MEMORY_TIP, SOURCE, DRIVE_LINK, DRIVE_LINKS, THUMBS, RECENT, MOTION, RESOURCES];
+const FOLLOWS = [THEME, ROLE, TIPS, SEEN_VERSION, MEMORY_TIP, SOURCE, DRIVE_LINK, DRIVE_LINKS, THUMBS, RECENT, MOTION, RESOURCES];
 const signIn = account({
   keys: FOLLOWS,
   menu: $("#user-menu"),
   clientId: ((window.NOR_CONFIG && window.NOR_CONFIG.google) || {}).clientId || "",
   applied: () => reapply(),
   // after the page's own start, which this may run during
-  changed: () => queueMicrotask(() => data.signedIn()),
+  changed: () => queueMicrotask(() => { data.signedIn(); showRole(); }),
 });
 
 function readJSON(key, fallback = {}) {
@@ -371,7 +372,38 @@ function showStage() {
 }
 // the stages pop up while the stage is hovered or focused
 hoverPop($("#sb-stage"), $("#stage-pop"), () => {});
-const makesTruth = () => manifest.stage === "GT" || manifest.stage === "PostGT";
+const stageTruth = () => manifest.stage === "GT" || manifest.stage === "PostGT";
+// the study makes ground truth for this user: a Ground Truth Tagger in a study that makes it (req/shell/account/role)
+const makesTruth = () => stageTruth() && role === "tagger";
+
+// ---------- the role the user works in (req/shell/account/role) ----------
+let role = "viewer";
+const rolesHeld = () => held({ signedIn: signIn.signedIn(), truth: stageTruth(), manager: data.manager });
+const keptRole = () => { try { return localStorage.getItem(ROLE); } catch { return null; } };
+// the role shown, as the study comes in: before its steps are drawn from it
+function takeRole() {
+  const roles = rolesHeld();
+  role = shown(roles, keptRole());
+  document.documentElement.dataset.role = role;
+  const hint = roles.length > 1 ? "" : !signIn.signedIn() && signIn.offered
+    ? (stageTruth() ? "Sign in with Google to tag ground truth." : "Sign in with Google for the roles your studies give you.") : "";
+  roleChooser.draw(roles, role, hint);
+}
+// the role shown again, once what it rests on may have changed (a choice, a sign-in, the settings synced): a change
+// between viewing and making ground truth opens the study afresh on the same image
+function showRole() {
+  if (!manifest) return;
+  const truth = makesTruth();
+  takeRole();
+  if (makesTruth() !== truth) return restudy();
+  data.role(role === "data");
+}
+const roleChooser = roleMenu($("#role-menu"), (r) => {
+  try { localStorage.setItem(ROLE, r); } catch { /* private mode: this page only */ }
+  signIn.changed(ROLE);
+  log.add(`Chose the role ${ROLE_NAMES[r]}`);
+  showRole();
+});
 
 // ---------- the image and the item view ----------
 // A study with an item view gets the switch between it and the image. While the study makes ground truth its
@@ -656,15 +688,20 @@ function dropImage() {
 // Unload: no image open, the study starting over as one that has just come in
 $("#unload").onclick = () => {
   if (!st.img || $("#load-main").classList.contains("working")) return;
+  restudy(false);
+};
+// the study mounted again in place, Python kept; again: the image open, opened again in it
+function restudy(again = true) {
   swapping = swapping.then(async () => {
-    const { ready, readyInfo } = st, id = manifest.id;
+    const { ready, readyInfo } = st, id = manifest.id, image = again && st.img ? st.kept : null;
     dropImage();
     leaveStudy();
     try { await mountStudy(id); } catch (e) { return status("Error: " + (e.message || e), true); }
     if (ready) { st.ready = true; $("#ram-gc").disabled = false; study.ready?.(readyInfo); }
     statusBar(); status(ready ? "Ready. Load an image." : "Loading Python in the background…");
+    if (image) openBytes(image.name, image.bytes, image.source);
   });
-};
+}
 document.querySelectorAll("#load-menu .item").forEach((b) => (b.onclick = () => load(b.dataset.src)));
 
 // a tip: a bubble below its anchor, pointing at it, until the user closes it, after which it never shows again
@@ -1080,7 +1117,7 @@ async function showSaved() {
 // ---------- the user: whoever opened the page on this device, and what the site keeps here ----------
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
-  [THEME]: "Theme", [BARS]: "Left bar width, and whether it is collapsed", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
+  [THEME]: "Theme", [ROLE]: "The role you work in", [BARS]: "Left bar width, and whether it is collapsed", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
   [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [RESOURCES]: "The status bar's disk, memory, network and CPU: hidden, auto-hiding or always open", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
 };
 // What the site keeps, by what it takes to work offline (req/shell/storage/manage): a section per study, then what they share; settings
@@ -1247,6 +1284,7 @@ const settings = settingsDialog({
   dialog: $("#settings-dlg"),
   fields: () => [
     { key: THEME, label: "Theme", kind: "choice", raw: true, fallback: "", options: [["", "Follow the system"], ["dark", "Dark"], ["light", "Light"]] },
+    { key: ROLE, label: "The role you work in", kind: "choice", raw: true, fallback: "viewer", options: Object.entries(ROLE_NAMES) },
     { key: SOURCE, label: "Load reads from", kind: "choice", fallback: "local", options: [["local", "This computer"], ["drive", "Google Drive"]] },
     { key: THUMBS, label: "Show thumbnails in the Google Drive dialog", kind: "toggle", on: "on", off: "off", fallback: "on" },
     { key: MEMORY_TIP, label: "Show the low-memory popup", kind: "toggle", on: false, off: true, fallback: false },
@@ -1272,7 +1310,7 @@ function reapply() {
   let t = null;
   try { t = localStorage.getItem(THEME); } catch { /* no storage */ }
   if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
-  showMotion(); showResources(); showRecent();
+  showMotion(); showResources(); showRecent(); showRole();
 }
 $("#open-settings").onclick = () => { $("#user-menu").open = false; settings.open(); };
 $("#storage-reload").onclick = () => location.reload();
@@ -1707,6 +1745,8 @@ async function mountStudy(id) {
   const r = await fetch(base + "study.json");
   if (!r.ok) throw new Error(`no study "${id}"`);
   manifest = await r.json();
+  data.mount(manifest);
+  takeRole();
   document.title = manifest.title; $("#title").textContent = manifest.title; $("#title-icon").replaceChildren(...studyIcon(id, manifest.icon)); markCurrent();
   log.add(`Opened the study “${manifest.title}”`);
   $("#favicon").href = manifest.icon ? base + manifest.icon : new URL("icon.svg", import.meta.url).href;
@@ -1733,7 +1773,7 @@ async function mountStudy(id) {
   makeSteps();
   foldable();
   showRecent();
-  data.mount(manifest);
+  data.role(role === "data");
 }
 const viewers = {};
 // The study on show leaves: its panels, stylesheet, drawing, listeners and state go, and its Python's late

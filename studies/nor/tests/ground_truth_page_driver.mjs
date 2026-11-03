@@ -19,6 +19,7 @@ import http from "node:http";
 import path from "node:path";
 import { offSite } from "../../../web-tests/off_site.mjs";
 import { ENGINE } from "../../../web-tests/engine.mjs";
+import { asTagger } from "../../../web-tests/tagger.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -66,6 +67,7 @@ const bytes = fs.readFileSync(image);
 
 async function open(drive) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
+  await asTagger(ctx);
   const asked = []; // what was asked of github.com
   await ctx.route(offSite(origin), (r) => {
     const u = new URL(r.request().url());

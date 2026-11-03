@@ -10,7 +10,7 @@ import { standIn } from "./stand_in_drive.mjs";
 
 const [answers, studies, rootDir, image, out] = process.argv.slice(2);
 fs.mkdirSync(out, { recursive: true });
-const { FILES, writes, open, check, done } = await standIn({ answers, studies, rootDir, uploaded: (f) => fs.writeFileSync(path.join(out, f.name), f.bytes) });
+const { FILES, writes, open, role, check, done } = await standIn({ answers, studies, rootDir, uploaded: (f) => fs.writeFileSync(path.join(out, f.name), f.bytes) });
 const page = await open(true);
 
 // a point of the drawing on the screen, and a drag through points of it
@@ -25,7 +25,7 @@ const size = () => page.evaluate(() => { const im = shellForTests.page.get("imag
 const cuts = () => page.evaluate(() => [...document.querySelectorAll("#overlay .edit-cut")].map((l) => `${l.dataset.cut}=${l.getAttribute(l.dataset.cut[0] === "x" ? "x1" : "y1")}`).join());
 const name = path.basename(image);
 
-await page.click("#data-open");
+await role(page, "Data Manager");
 await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder").length >= 1);
 await page.click("#data-tree .tree-folder .name");
 await page.click(`#folder-items .cell:has(.name:text-is("${name}"))`);
@@ -88,7 +88,7 @@ await page.waitForFunction((n) => !document.querySelector(`#folder-items .cell .
 await check(await page.evaluate((s) => [...document.querySelectorAll("#data-tree .tree-folder .name")].some((e) => e.textContent === s), stem), "the image is listed no more, its folder in the tree in its place");
 
 // Load's Drive dialog, out of the mode, lists the folder and not the image
-await page.click("#data-open");
+await role(page, "Viewer");
 await page.waitForTimeout(500);
 if (await page.evaluate(() => $("#image-box").classList.contains("folded"))) await page.click("#image-box .sec-head h2");
 await page.click("#load-menu summary"); await page.click('#load-menu .item[data-src="drive"]');

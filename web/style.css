@@ -37,6 +37,16 @@ header > .grow { flex: 1; }
 h1 { font-size: 16px; font-weight: 600; margin: 0; }
 /* the study switcher, after GitHub's repository switcher: the title and a solid caret as one control, opening a
    panel under the caret with a search box and the studies, the one on show ticked */
+/* the role menu beside the avatar (req/shell/account/role) */
+#role-menu summary { display: flex; align-items: center; gap: 2px; height: 32px; padding: 0 4px 0 10px; box-sizing: border-box; font-size: 13px; }
+#role-menu summary::after { content: none; }
+#role-menu .caret { display: grid; place-items: center; color: var(--dim); } #role-menu .caret svg { fill: currentColor; }
+#role-menu .pop { width: 240px; }
+#role-menu .pop h2 { font-size: 13px; margin: 0 0 4px; color: var(--dim); font-weight: 600; }
+#role-list { display: flex; flex-direction: column; }
+#role-list .item[aria-checked=true] { font-weight: 600; } #role-list .item[aria-checked=true]::before { content: "✓ "; }
+#role-list .item[aria-checked=false]::before { content: "✓ "; visibility: hidden; }
+#role-hint { margin: 6px 0 0; font-size: 12px; white-space: normal; }
 #study-menu summary { display: flex; align-items: center; height: 32px; padding: 0; border: 0; border-radius: var(--r-chip); background: none; overflow: hidden; }
 #study-menu summary::after { content: none; }
 #study-menu h1 { height: 32px; line-height: 32px; padding: 0 8px; background: color-mix(in srgb, var(--text) 7%, var(--bg)); }
@@ -266,6 +276,8 @@ button.tool[aria-pressed=true] { border-color: var(--accent); box-shadow: inset 
 #view[data-view=image] .for-items, #view[data-view=items] .for-image { display: none; }
 /* a published study shows what it finds: the steps that serve making ground truth go */
 [data-stage=Published] .unpublished { display: none !important; }
+/* nothing that makes ground truth but for a Ground Truth Tagger (req/shell/account/role) */
+:root:is([data-stage=GT], [data-stage=PostGT]):not([data-role=tagger]) .unpublished { display: none !important; }
 #switch .count { opacity: .7; font-weight: 400; }
 #switch .count:empty { display: none; }
 #tasks-bar { display: flex; gap: 10px; align-items: center; min-height: 44px; padding: 0 var(--pad); border-bottom: 1px solid var(--line); font-size: 13px; }
@@ -751,8 +763,8 @@ html:not(.offline) #welcome-offline { display: none; }
 
 /* ---------- Data Management (req/shell/data/mode): the tree's column, left of the left bar, for data managers only ---------- */
 #data-col { grid-column: 1; } #left { grid-column: 2; } #gutter-left { grid-column: 3; } #view { grid-column: 4; }
-:root[data-manager] #layout { --tw: 36px; }
-:root[data-manager][data-mode=data] #layout { --tw: 300px; }
+:root[data-mode=data] #layout { --tw: 300px; }
+:root[data-mode=data][data-tree=folded] #layout { --tw: 36px; }
 #data-col[hidden] { display: none; }
 #data-col { position: relative; padding: var(--pad) 0 var(--pad) 8px; overflow: hidden; scrollbar-gutter: auto; display: flex; flex-direction: column; min-width: 0; }
 #data-open { display: flex; align-items: center; gap: 6px; padding: 8px 4px; border-radius: var(--r-panel); white-space: nowrap; }
@@ -760,11 +772,11 @@ html:not(.offline) #welcome-offline { display: none; }
 #data-open[aria-expanded=true] .chev, #left-collapse .chev { transform: rotate(180deg); }
 /* its strip, and the left bar's collapsed (req/shell/left-bar/collapse): a chevron over an upright name, the whole
    column's height, the left bar's with its steps' marks between */
-:root:not([data-mode=data]) #data-open, #left-strip { flex: 1; flex-direction: column; justify-content: flex-start; gap: 10px; padding: 12px 0; width: 100%; min-width: 0; box-sizing: border-box;
+:root[data-tree=folded] #data-open, #left-strip { flex: 1; flex-direction: column; justify-content: flex-start; gap: 10px; padding: 12px 0; width: 100%; min-width: 0; box-sizing: border-box;
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-panel); color: var(--dim); }
-:root:not([data-mode=data]) #data-open:hover, #left-strip:hover { color: var(--text); border-color: var(--accent); }
-:root:not([data-mode=data]) #data-open .strip-name, #left-strip .strip-name { writing-mode: vertical-rl; font-size: 12px; letter-spacing: .03em; }
-:root[data-mode=data] #data-open { align-self: flex-start; border: 0; background: transparent; color: var(--dim); }
+:root[data-tree=folded] #data-open:hover, #left-strip:hover { color: var(--text); border-color: var(--accent); }
+:root[data-tree=folded] #data-open .strip-name, #left-strip .strip-name { writing-mode: vertical-rl; font-size: 12px; letter-spacing: .03em; }
+:root:not([data-tree=folded]) #data-open { align-self: flex-start; border: 0; background: transparent; color: var(--dim); }
 #left-strip { display: none; align-items: center; cursor: pointer; }
 :root[data-left=collapsed] #left-strip { display: flex; }
 #left-expand { display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: inherit; }
@@ -784,7 +796,7 @@ html:not(.offline) #welcome-offline { display: none; }
 :root[data-left=collapsed] #left > :not(#left-strip) { position: absolute; top: 0; left: 0; width: 300px; visibility: hidden; pointer-events: none; }
 #left.sliding-in > :not(#left-strip) { animation: data-in .35s ease-out; }
 #data-body { display: none; min-width: 240px; flex: 1; min-height: 0; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-panel); padding: 10px 8px; margin-top: 6px; }
-:root[data-mode=data] #data-body { display: flex; animation: data-in .35s ease-out; }
+:root[data-mode=data]:not([data-tree=folded]) #data-body { display: flex; animation: data-in .35s ease-out; }
 @keyframes data-in { from { opacity: 0; transform: translateX(-24px); } }
 .data-head { display: flex; align-items: baseline; gap: 8px; padding: 0 4px 8px; } .data-head h2 { font-size: 14px; margin: 0; flex: 1; }
 #data-tree { overflow: auto; flex: 1; min-height: 0; font-size: 13px; }
@@ -817,9 +829,8 @@ html:not(.offline) #welcome-offline { display: none; }
 #folder-name { font-weight: 600; overflow-wrap: anywhere; }
 #folder-msg { overflow-wrap: anywhere; }
 
-/* the asking bar, and the folder's images in the main area */
-#access-bar { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; padding: 8px 12px; border: 1px solid var(--accent); border-radius: var(--r-panel); background: color-mix(in srgb, var(--accent) 12%, var(--panel)); font-size: 13px; }
-#access-bar[hidden], #folder-view[hidden] { display: none; }
+/* the folder's images in the main area */
+#folder-view[hidden] { display: none; }
 #folder-view { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .folder-bar { display: flex; align-items: center; gap: 8px; padding: 4px 2px 10px; } .folder-bar h2 { margin: 0; font-size: 15px; }
 #folder-layout button[aria-pressed=true] { background: var(--accent); color: #fff; }

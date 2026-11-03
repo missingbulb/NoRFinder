@@ -20,6 +20,7 @@ import path from "node:path";
 import { repoFile } from "./repo_file.mjs";
 import { offSite } from "./off_site.mjs";
 import { ENGINE } from "./engine.mjs";
+import { asTagger } from "./tagger.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -87,6 +88,7 @@ const bars = (page) => page.evaluate(() => {
 
 async function open(study, mode) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
+  await asTagger(ctx);
   await ctx.route(offSite(origin), (r) => r.abort());
   await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
   if (mode) await ctx.addInitScript((m) => { if (localStorage.getItem("nor-resources") === null) localStorage.setItem("nor-resources", JSON.stringify(m)); }, mode);
