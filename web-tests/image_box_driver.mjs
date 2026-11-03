@@ -187,7 +187,11 @@ const line = await page.$eval("#channels .channel:nth-child(1)", (r) => {
   return { h: r.getBoundingClientRect().height, mids: ["input[type=checkbox]", "input[type=color]", "label", ".levels"].map(mid) };
 });
 await check(line.h <= 24 && Math.max(...line.mids) - Math.min(...line.mids) <= 4, "the row is one line: checkbox, colour, name and slider", line);
-// the two points meet at the top of the slider and each can still be dragged away from there
+// the slider's track sits in the middle of the row, its points on it
+const mids = await page.$eval("#channels .channel:nth-child(1) .levels", (l) => { const b = l.getBoundingClientRect(), t = getComputedStyle(l, "::before");
+  return { row: b.height / 2, track: parseFloat(t.top) + parseFloat(t.height) / 2 }; });
+await check(Math.abs(mids.row - mids.track) <= 0.5, "the slider's track is centred in its row", mids);
+// the two points meet on the slider and each can still be dragged away from there
 await level(1, "white", 255); await level(1, "black", 254);
 const meet = await page.$eval("#channels .channel:nth-child(1) input.black", (i) => { const b = i.getBoundingClientRect(); return { x: b.right, y: b.top + b.height * 0.75 }; });
 await page.mouse.move(meet.x - 3, meet.y); await page.mouse.down(); await page.mouse.move(meet.x - 60, meet.y, { steps: 5 }); await page.mouse.up();
