@@ -15,10 +15,10 @@ opens in 2D; a plain multi-page TIFF opens as a stack in Vascular Measurements t
 stack leaves out Crop, the cut lines and Imperfections. In the Image Viewer the Image box stays open
 once loaded. (#702, #707, #713)
 
-The left bar collapses from the chevron at its top, where the collapsed strip shows its own, so the
-same spot opens it again. Dragging the bar's edge to the left also collapses it, and dragging the
-strip's edge out opens it. A folded drawer opens from a click anywhere on it, not just its title.
-(#709, #714)
+The left bar collapses from the chevron at its top or by dragging its edge left, and opens the same
+ways; a folded drawer opens from a click anywhere on it. Each channel in the Image box fits on one
+line, with a framed swatch to recolour it and triangle black and white points that show their value
+while dragged. (#708, #709, #714)
 
 In NoR Finder, an opening image builds in grey while it downloads, then its colours wipe in. Each
 finder in Processing has its own icon, Settings start folded, and "How the fill algorithm works"

@@ -138,18 +138,31 @@ body.resizing { cursor: col-resize; user-select: none; }
 #file-info dt { color: var(--dim); }
 #file-info dd { margin: 0; overflow-wrap: anywhere; }
 #file-info dd.none { grid-column: 1 / -1; margin-top: 2px; }
-/* a row per channel: its checkbox in the channel's colour, its name, its description behind a (?), the file's own
-   name for it, and one slider holding its black and white points over a ramp from black to its colour */
-#channels { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+/* a row per channel, on one line: its checkbox, its name, its description behind a (?), the file's own name
+   for it, one slider holding its black and white points over a ramp from black to white, and its colour
+   picker, the one part in the channel's colour */
+#channels { display: grid; grid-template-columns: auto minmax(0, max-content) minmax(60px, 1fr) auto; gap: 6px; font-size: 13px; }
 #channels:empty { display: none; }
-.channel .ch-head { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.channel label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; }
-.channel input[type=checkbox] { width: 15px; height: 15px; margin: 0; cursor: pointer; accent-color: var(--ch); }
-.channel .from-file { margin-left: auto; color: var(--dim); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.channel { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; }
+.channel .ch-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.channel label { flex: 0 1 auto; min-width: 2em; overflow: hidden; text-overflow: ellipsis; cursor: pointer; white-space: nowrap; }
+.channel input[type=checkbox] { flex: none; width: 15px; height: 15px; margin: 0; cursor: pointer; }
+/* the colour picker: a swatch a little wider than tall in a thick frame, lit from the top left like a picture's; its colour, at
+   the centre, a little lighter towards the top left and darker towards the bottom right */
+.channel input[type=color] { flex: none; width: 22px; height: 15px; padding: 0; border: 3px solid; border-radius: 2px; cursor: pointer; background: none;
+  border-color: color-mix(in srgb, var(--dim) 55%, #fff) color-mix(in srgb, var(--dim) 65%, #000) color-mix(in srgb, var(--dim) 65%, #000) color-mix(in srgb, var(--dim) 55%, #fff); }
+.channel input[type=color]:hover, .channel input[type=color]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.channel input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+.channel input[type=color]::-webkit-color-swatch { border: 0; border-radius: 0; box-shadow: inset 0 0 0 1px #0006;
+  background-image: linear-gradient(135deg, #ffffff59, #fff0 50%, #0000 50%, #00000059); }
+.channel input[type=color]::-moz-color-swatch { border: 0; border-radius: 0; box-shadow: inset 0 0 0 1px #0006;
+  background-image: linear-gradient(135deg, #ffffff59, #fff0 50%, #0000 50%, #00000059); }
+.channel .from-file { flex: 0 2 auto; min-width: 0; color: var(--dim); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.channel.off .levels { opacity: .4; }
+/* a slider of two points: the track and its thumbs, each thumb a triangle drawn by the channel's own rules */
 .levels { position: relative; height: 16px; margin: 4px 0 0 21px; }
 .levels::before { content: ""; position: absolute; left: 0; right: 0; top: 5px; height: 6px; border-radius: 3px;
   background: linear-gradient(90deg, #000, var(--ch)); box-shadow: inset 0 0 0 1px var(--line); }
-.channel.off .levels { opacity: .4; }
 .levels input[type=range] { position: absolute; inset: 0; width: 100%; height: 16px; margin: 0; padding: 0; border: 0; background: none;
   pointer-events: none; -webkit-appearance: none; appearance: none; }
 .levels input[type=range]::-webkit-slider-runnable-track { background: none; height: 16px; }
@@ -157,10 +170,36 @@ body.resizing { cursor: col-resize; user-select: none; }
 .levels input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; cursor: ew-resize; width: 8px; height: 16px;
   border-radius: 2px; border: 1px solid var(--dim); }
 .levels input[type=range]::-moz-range-thumb { pointer-events: auto; cursor: ew-resize; width: 6px; height: 14px; border-radius: 2px; border: 1px solid var(--dim); }
-.levels input.black::-webkit-slider-thumb { background: #000; } .levels input.black::-moz-range-thumb { background: #000; }
-.levels input.white::-webkit-slider-thumb { background: var(--ch); } .levels input.white::-moz-range-thumb { background: var(--ch); }
 .levels input:focus-visible { outline: none; }
 .levels input:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--accent); }
+/* a channel's points: right-angled triangles on the track, the black one left of its value and the white one
+   right, so the two meet in one larger triangle and neither covers the other. Each input is a thumb's width
+   short of the slider, the white one starting a thumb's width in, so both put their value at the same place */
+.channel .levels { --t: 7px; min-width: 0; height: 14px; margin: 0; }
+.channel .levels::before { left: var(--t); right: var(--t); top: 5px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, #000, #fff); }
+.channel .levels input[type=range] { inset: 0 auto 0 0; width: calc(100% - var(--t)); height: 14px; --edge: var(--dim); }
+.channel .levels input.white { left: var(--t); }
+.channel .levels input:focus-visible { --edge: var(--accent); }
+.channel .levels input[type=range]::-webkit-slider-runnable-track { height: 14px; }
+.channel .levels input[type=range]::-webkit-slider-thumb { width: var(--t); height: 14px; border: 0; border-radius: 0; outline: none; background-repeat: no-repeat; }
+.channel .levels input[type=range]::-moz-range-thumb { width: var(--t); height: 14px; border: 0; border-radius: 0; background-repeat: no-repeat; }
+/* the value of the point in hand, above where it points */
+.channel .levels .bubble { position: absolute; bottom: calc(100% + 3px); left: calc(var(--t) + var(--v) * (100% - 2 * var(--t)));
+  transform: translateX(-50%); z-index: 5; padding: 1px 5px; border-radius: 4px; background: var(--tipbg); color: var(--text);
+  border: 1px solid var(--line); font-size: 11px; line-height: 1.3; font-variant-numeric: tabular-nums; pointer-events: none; white-space: nowrap; }
+.channel .levels .bubble[hidden] { display: none; }
+.channel .levels input.black::-webkit-slider-thumb {
+  background-image: linear-gradient(to top left, #000 50%, transparent 50%), linear-gradient(to top left, var(--edge) 50%, transparent 50%);
+  background-size: calc(100% - 2px) calc(100% - 3px), 100% 100%; background-position: right 1px bottom 1px, right bottom; }
+.channel .levels input.black::-moz-range-thumb {
+  background-image: linear-gradient(to top left, #000 50%, transparent 50%), linear-gradient(to top left, var(--edge) 50%, transparent 50%);
+  background-size: calc(100% - 2px) calc(100% - 3px), 100% 100%; background-position: right 1px bottom 1px, right bottom; }
+.channel .levels input.white::-webkit-slider-thumb {
+  background-image: linear-gradient(to top right, #fff 50%, transparent 50%), linear-gradient(to top right, var(--edge) 50%, transparent 50%);
+  background-size: calc(100% - 2px) calc(100% - 3px), 100% 100%; background-position: left 1px bottom 1px, left bottom; }
+.channel .levels input.white::-moz-range-thumb {
+  background-image: linear-gradient(to top right, #fff 50%, transparent 50%), linear-gradient(to top right, var(--edge) 50%, transparent 50%);
+  background-size: calc(100% - 2px) calc(100% - 3px), 100% 100%; background-position: left 1px bottom 1px, left bottom; }
 .row { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; }
 /* a button shines while it is the next thing to press */
 .shine { position: relative; overflow: hidden; box-shadow: 0 0 10px var(--accent); }

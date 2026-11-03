@@ -181,6 +181,56 @@ await check(dim[0] === Math.round((200 - 150) / (255 - 150) * 255) || Math.abs(d
 await level(1, "black", 250); await level(1, "white", 240);
 const pts = await page.$eval("#channels .channel:nth-child(1)", (r) => [+r.querySelector("input.black").value, +r.querySelector("input.white").value]);
 await check(pts[0] < pts[1], "the black point stays below the white point", pts);
+// the row is one line: its checkbox, colour, name and slider side by side
+const line = await page.$eval("#channels .channel:nth-child(1)", (r) => {
+  const mid = (q) => { const b = r.querySelector(q).getBoundingClientRect(); return b.top + b.height / 2; };
+  const x = (q) => r.querySelector(q).getBoundingClientRect();
+  return { h: r.getBoundingClientRect().height, mids: ["input[type=checkbox]", "label", ".levels", "input[type=color]"].map(mid),
+    order: [x("input[type=checkbox]").right <= x("label").left, x("label").right <= x(".levels").left, x(".levels").right <= x("input[type=color]").left],
+    frame: (() => { const i = r.querySelector("input[type=color]"), b = i.getBoundingClientRect(), cs = getComputedStyle(i);
+      return { wide: b.width > b.height, thick: parseFloat(cs.paddingTop) + parseFloat(cs.borderTopWidth) >= 3 }; })() };
+});
+await check(line.h <= 24 && Math.max(...line.mids) - Math.min(...line.mids) <= 4 && line.order.every(Boolean), "the row is one line: checkbox, name, slider, then the colour picker", line);
+await check(line.frame.wide && line.frame.thick, "the colour picker is a swatch wider than tall in a thick frame", line.frame);
+// its swatch is shaded on the diagonal: lighter at the top left, darker at the bottom right, the colour at the centre
+await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => { i.value = "#808080"; i.dispatchEvent(new Event("input", { bubbles: true })); });
+const swatch = await page.locator("#channels .channel:nth-child(1) input[type=color]").screenshot();
+const shade = await page.evaluate(async (b64) => {
+  const im = new Image(); im.src = "data:image/png;base64," + b64; await im.decode();
+  const c = new OffscreenCanvas(im.width, im.height), g = c.getContext("2d"); g.drawImage(im, 0, 0);
+  const at = (fx, fy) => g.getImageData(Math.round(fx * (im.width - 1)), Math.round(fy * (im.height - 1)), 1, 1).data[0];
+  return { topLeft: at(0.3, 0.3), centre: at(0.5, 0.5), bottomRight: at(0.7, 0.7) };
+}, swatch.toString("base64"));
+await check(shade.topLeft > shade.centre + 4 && shade.bottomRight < shade.centre - 4 && Math.abs(shade.centre - 128) <= 8, "its colour is shaded on the diagonal, the channel's colour at the centre", shade);
+await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => { i.value = "#ffffff"; i.dispatchEvent(new Event("input", { bubbles: true })); });
+// the slider's track sits in the middle of the row, its points on it
+const mids = await page.$eval("#channels .channel:nth-child(1) .levels", (l) => { const b = l.getBoundingClientRect(), t = getComputedStyle(l, "::before");
+  return { row: b.height / 2, track: parseFloat(t.top) + parseFloat(t.height) / 2 }; });
+await check(Math.abs(mids.row - mids.track) <= 0.5, "the slider's track is centred in its row", mids);
+// the two points meet on the slider and each can still be dragged away from there
+await level(1, "white", 255); await level(1, "black", 254);
+const meet = await page.$eval("#channels .channel:nth-child(1) input.black", (i) => { const b = i.getBoundingClientRect(); return { x: b.right, y: b.top + b.height * 0.75 }; });
+await page.mouse.move(meet.x - 3, meet.y); await page.mouse.down(); await page.mouse.move(meet.x - 60, meet.y, { steps: 5 });
+const bubble = () => page.$eval("#channels .channel:nth-child(1) .levels", (l) => { const b = l.querySelector(".bubble"); return b && !b.hidden ? b.textContent : null; });
+const held = [await bubble(), await page.$eval("#channels .channel:nth-child(1) input.black", (i) => i.value)];
+await check(held[0] !== null && held[0] === held[1], "while dragged, a point's value shows in a bubble", held);
+await page.mouse.up();
+await check((await bubble()) === null, "and the bubble is gone once it is let go", await bubble());
+const dragged = await page.$eval("#channels .channel:nth-child(1)", (r) => [+r.querySelector("input.black").value, +r.querySelector("input.white").value]);
+await check(dragged[0] < 230 && dragged[1] === 255, "the black point, left at the white one, can be dragged back", dragged);
+await level(1, "black", 0);
+// only the colour picker carries the channel's colour: the checkbox and the slider look the same on every row
+await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => { i.value = "#ff0000"; i.dispatchEvent(new Event("input", { bubbles: true })); });
+const plain = await page.$eval("#channels .channel:nth-child(1)", (r) => ({ accent: getComputedStyle(r.querySelector("input[type=checkbox]")).accentColor,
+  ramp: getComputedStyle(r.querySelector(".levels"), "::before").backgroundImage }));
+await check(plain.accent === "auto" && !plain.ramp.includes("255, 0, 0"), "the checkbox and the slider do not take the channel's colour", plain);
+await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => { i.value = "#ffffff"; i.dispatchEvent(new Event("input", { bubbles: true })); });
+// its colour picker starts at the channel's colour and recolours it
+await check((await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => i.value)) === "#ffffff", "its colour picker starts at its colour");
+await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => { i.value = "#ff0000"; i.dispatchEvent(new Event("input", { bubbles: true })); });
+await page.waitForTimeout(100);
+await check((await pixel(15, 15)).join() === "200,0,0", "picking a colour recolours the channel", await pixel(15, 15));
+await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => { i.value = "#ffffff"; i.dispatchEvent(new Event("input", { bubbles: true })); });
 await page.dblclick("#channels .channel:nth-child(1) .levels");
 await check((await pixel(15, 15)).join() === "200,200,200", "a double click puts the points back", await pixel(15, 15));
 await page.click("#channels .channel:nth-child(1) input[type=checkbox]");
