@@ -148,17 +148,14 @@ try {
   // Install as an app: only now does the page name its manifest, and the browser finds the site installable
   await page.click("#offline-install");
   await page.waitForSelector("link[rel=manifest]", { state: "attached" });
-  // only Chromium's DevTools say whether a site is installable; another engine is not asked
-  if (ENGINE === "chromium") {
-    const cdp = await ctx.newCDPSession(page);
-    let errors = ["not asked"];
-    for (let t = 0; t < 20; t++) {
-      errors = (await cdp.send("Page.getInstallabilityErrors")).installabilityErrors.map((e) => e.errorId);
-      if (!errors.length) break;
-      await page.waitForTimeout(500);
-    }
-    check(!errors.length, "once asked for, the site is installable" + (errors.length ? ": " + errors.join(", ") : ""));
-  } else console.log(`not checked in ${ENGINE}: whether the site is installable, which only Chromium's DevTools say`);
+  const cdp = await ctx.newCDPSession(page);
+  let errors = ["not asked"];
+  for (let t = 0; t < 20; t++) {
+    errors = (await cdp.send("Page.getInstallabilityErrors")).installabilityErrors.map((e) => e.errorId);
+    if (!errors.length) break;
+    await page.waitForTimeout(500);
+  }
+  check(!errors.length, "once asked for, the site is installable" + (errors.length ? ": " + errors.join(", ") : ""));
   await page.keyboard.press("Escape");
 
   // req/shell/offline/default: the network goes

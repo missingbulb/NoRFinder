@@ -34,15 +34,17 @@ def test_a_failure_is_reported_and_kept_green_where_the_browser_is_not_supported
 
 
 def test_the_run_leaves_out_only_what_chromium_alone_can_measure():
-    """A test marked chromium_only (its subject read through Chromium's DevTools) is left out; the rest of the
+    """A test marked chromium_only (it needs what only Playwright's Chromium offers) is left out; the rest of the
     memory test's module, and every other full test, is run."""
     import subprocess
     import sys
     root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
     out = subprocess.run([sys.executable, '-m', 'pytest', '--collect-only', '-q', '-p', 'no:cacheprovider', *other_engines.SELECTED,
-                          'studies/nor/tests/test_memory.py', 'web-tests/test_grid_page.py'], cwd=root, capture_output=True, text=True).stdout
+                          'studies/nor/tests/test_memory.py', 'web-tests/test_offline_page.py', 'web-tests/test_grid_page.py'],
+                         cwd=root, capture_output=True, text=True).stdout
     collected = [line for line in out.splitlines() if '::' in line]
     assert len(collected) >= 2, out
     assert not any('test_page_holds_no_more_after_repeats' in line for line in collected), collected
+    assert not any('test_offline_page.py' in line for line in collected), collected
     assert any('test_grid_page.py' in line for line in collected), collected
 

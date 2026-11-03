@@ -12,7 +12,7 @@ import sys
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 # the browser each Playwright engine stands for
 BROWSER = {'chromium': 'Chrome', 'firefox': 'Firefox', 'webkit': 'Safari'}
-# the full set, but what only Chromium's DevTools can measure
+# the full set, but what needs what only Playwright's Chromium offers
 SELECTED = ['-m', 'full and not chromium_only']
 
 
