@@ -47,7 +47,8 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
   const NET_OFF = "Offline: no internet. The page runs what is on this device. Click for more.";
   let unreached = false;
   const isOffline = () => !navigator.onLine || unreached;
-  const net = $("#sb-net"), netTitle = net.title;
+  const ONLINE = "Online. Click to set up working offline.", OFFLINE = "Offline: no internet. The page runs what is on this device. Click to set up working offline.";
+  const net = $("#sb-net"), netTitle = net.title, online = $("#sb-online");
   let was = null;
   const mark = () => {
     const off = isOffline();
@@ -55,6 +56,7 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
     was = off;
     document.documentElement.classList.toggle("offline", off);
     net.title = off ? NET_OFF : netTitle;
+    online.title = off ? OFFLINE : ONLINE;
     for (const el of document.querySelectorAll(NEEDS)) {
       if (off && el.dataset.onlineTitle === undefined) { el.dataset.onlineTitle = el.title; el.title = WHY; el.setAttribute("aria-disabled", "true"); }
       if (!off && el.dataset.onlineTitle !== undefined) { el.title = el.dataset.onlineTitle; delete el.dataset.onlineTitle; el.removeAttribute("aria-disabled"); }

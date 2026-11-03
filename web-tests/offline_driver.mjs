@@ -7,7 +7,7 @@
 // before Download; the page names no app manifest until Install as an app is clicked, and then the browser finds
 // the site installable.
 // Then req/shell/offline/default, with the network gone (the browser offline and the server refusing): the page opens at its address
-// and the Python already on this device runs; the status bar's network carries a red no-network mark; what needs the network is held; a
+// and the Python already on this device runs; the status bar's online icon shows offline; what needs the network is held; a
 // prepared study runs, and From Google Drive lists the images kept here and opens one; a study whose Python is not
 // here says so, and once the network is back loads its Python and reads its folder in an open Make available
 // offline, with no reload; and the network going and coming back mid-session, the browser saying online all
@@ -167,7 +167,7 @@ try {
   check(!!(await page.textContent("#title")), "offline, the page opens at its address: " + (await page.textContent("#title")));
   await ready(60000);
   check(true, "offline, the Python already on this device runs");
-  check(await page.isVisible("#sb-net .no-net"), "the status bar's network carries the red no-network mark");
+  check(await page.isVisible("#sb-online .off"), "the status bar's online icon shows offline");
   check(/offline/i.test(await page.getAttribute("#sb-net", "title")), "its tooltip says the page is offline: " + (await page.getAttribute("#sb-net", "title")));
   await page.click("#sb-net");
   check(await page.evaluate(() => document.querySelector("#usage-dlg").open && document.querySelector("#usage-dlg").dataset.tab === "network"), "clicking it still opens the Network tab");
@@ -216,8 +216,8 @@ try {
   await ready(240000).catch(() => {});
   check(await page.evaluate(() => !!window.st?.ready), "back online, the study whose Python was not here loads it, with no reload: " + (await statusText()));
   // the browser here still says it is online, as on a plane's Wi-Fi: the page notices the site answering again
-  await page.waitForSelector("#sb-net .no-net", { state: "hidden", timeout: 40000 }).catch(() => {});
-  check(!(await page.isVisible("#sb-net .no-net")), "back online, the no-network mark leaves the status bar");
+  await page.waitForSelector("#sb-online .off", { state: "hidden", timeout: 40000 }).catch(() => {});
+  check(!(await page.isVisible("#sb-online .off")), "back online, the online icon shows online again");
   check(!/offline/i.test(await page.getAttribute("#sb-net", "title")), "and the network's tooltip is its own again");
   check(await page.$eval("#study-request", (a) => !a.hasAttribute("aria-disabled")), "back online, Submit New Study Request is offered again");
 
@@ -228,13 +228,13 @@ try {
   await page.waitForSelector("#drive-dlg[open]");
   const drivePath = () => page.textContent("#drive-path");
   down = true;
-  await page.waitForSelector("#sb-net .no-net", { state: "visible", timeout: 40000 }).catch(() => {});
-  check(await page.isVisible("#sb-net .no-net"), "mid-session, with the browser still saying online, the page notices the site not answering");
+  await page.waitForSelector("#sb-online .off", { state: "visible", timeout: 40000 }).catch(() => {});
+  check(await page.isVisible("#sb-online .off"), "mid-session, with the browser still saying online, the page notices the site not answering");
   await page.waitForFunction(() => /offline/.test(document.querySelector("#drive-path").textContent), null, { timeout: 5000 }).catch(() => {});
   check(/offline/.test(await drivePath()), "the open Drive dialog then lists the images kept here: " + (await drivePath()));
   down = false;
-  await page.waitForSelector("#sb-net .no-net", { state: "hidden", timeout: 40000 }).catch(() => {});
-  check(!(await page.isVisible("#sb-net .no-net")), "and notices it answering again");
+  await page.waitForSelector("#sb-online .off", { state: "hidden", timeout: 40000 }).catch(() => {});
+  check(!(await page.isVisible("#sb-online .off")), "and notices it answering again");
   await page.waitForFunction(() => !/offline/.test(document.querySelector("#drive-path").textContent), null, { timeout: 5000 }).catch(() => {});
   check(!/offline/.test(await drivePath()), "and the Drive dialog goes back to the study's folder: " + (await drivePath()));
 } catch (e) {

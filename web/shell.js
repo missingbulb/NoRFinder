@@ -208,6 +208,7 @@ function showResources() {
 showResources();
 $("#res-mode").onchange = (e) => { writeJSON(RESOURCES, e.target.value); showResources(); };
 $("#sb-res-icon").onclick = () => usage(usageTab || "storage");
+$("#sb-online").onclick = () => usage("storage"); // where the page installs as an app and each study is made available offline
 function raiseResources(cpuShare, rate) {
   const t = Date.now(), long = (since) => since != null && t - since > RAISE_AFTER_MS;
   raise.cpuSince = cpuShare > RAISE_CPU ? raise.cpuSince ?? t : null;

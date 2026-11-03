@@ -74,6 +74,17 @@ const check = async (ok, what, seen) => { if (!ok) { console.error("FAILED: " + 
 const shot = async (page, name) => { if (shots) await page.locator("#statusbar").screenshot({ path: path.join(shots, name + ".png") }); };
 
 // mode: the resources block's setting the visit starts with, unless the page has kept another; none: the page's own
+// each two neighbouring items on show: [left, right, has a bar between, should have one]. The resources block counts
+// as the items within it, the four only while unfolded and the icon only while it shows; none goes between the four.
+const bars = (page) => page.evaluate(() => {
+  const clip = document.querySelector("#sb-res-items").getBoundingClientRect().width;
+  const four = (e) => e.matches("#sb-res-items > *");
+  const shown = [...document.querySelectorAll("#statusbar > *")].flatMap((e) => (e.id === "sb-res" ? [...e.querySelectorAll("#sb-res-items > *, #sb-res-icon")] : [e]))
+    .filter((e) => e.getBoundingClientRect().width >= 1 && !e.matches(".grow, #whats-new") && (clip > 0 || !four(e)));
+  return shown.slice(1).map((b, k) => { const a = shown[k];
+    return [a.id, b.id, getComputedStyle(a).borderRightWidth === "1px" || getComputedStyle(b).borderLeftWidth === "1px", !(four(a) && four(b))]; });
+});
+
 async function open(study, mode) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
   await ctx.route(offSite(origin), (r) => r.abort());
@@ -204,17 +215,9 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await check(/^\d+%$/.test(right[3].text), 'the CPU reads "12%"', right[3].text);
   const left = await page.evaluate(() => ["#sb-stage", "#sb-steps", "#status"].map((id) => document.querySelector(id).getBoundingClientRect().left));
   await check(left[0] < 40 && left[0] < left[1] && left[1] < left[2], "the stage, then the crumbs, then what the page is doing, from the left", left);
-  // a mild bar between every two items on show
-  const seps = await page.evaluate(() => {
-    // the resources block counts as the items within it
-    const shown = [...document.querySelectorAll("#statusbar > *")].flatMap((e) => (e.id === "sb-res" ? [...e.querySelectorAll("#sb-res-items > *, #sb-res-icon")] : [e]))
-      .filter((e) => e.offsetWidth && !e.matches(".grow, #whats-new"));
-    return shown.slice(1).map((e, k) => {
-      const a = shown[k], b = e;
-      return [a.id, b.id, getComputedStyle(a).borderRightWidth === "1px" || getComputedStyle(b).borderLeftWidth === "1px"];
-    });
-  });
-  await check(seps.length >= 7 && seps.every((x) => x[2]), "a vertical bar between every two of the eight items on show", seps);
+  // a mild bar between every two items on show, but the four resources
+  const seps = await bars(page);
+  await check(seps.length >= 5 && seps.every((x) => x[2] === x[3]), "a vertical bar between every two items on show, none between the four resources", seps);
   const pointers = await page.evaluate(() => [...document.querySelectorAll("#statusbar, #statusbar *")].map((e) => getComputedStyle(e).cursor).filter((c) => c === "help"));
   await check(!pointers.length, "nothing in the status bar shows a question-mark pointer", pointers);
 
@@ -384,15 +387,8 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
 // ---- the resources block: folded into one icon at first, opened by hovering it, by what needs watching, or always ----
 {
   const { ctx, page } = await open("fixture");
-  // a bar between every two items on show, whether the block is folded or not; folded, the four are clipped away
-  const bars = () => page.evaluate(() => {
-    const clip = document.querySelector("#sb-res-items").getBoundingClientRect().width;
-    const shown = [...document.querySelectorAll("#statusbar > *")].flatMap((e) => (e.id === "sb-res" ? [...e.querySelectorAll("#sb-res-items > *, #sb-res-icon")] : [e]))
-      .filter((e) => e.offsetWidth && !e.matches(".grow, #whats-new") && (clip > 0 || !e.matches("#sb-res-items > *")));
-    return shown.slice(1).map((b, k) => [shown[k].id, b.id, getComputedStyle(shown[k]).borderRightWidth === "1px" || getComputedStyle(b).borderLeftWidth === "1px"]);
-  });
-  // from the right edge: the version, the report icon, then the resources block, which unfolds leftward moving neither
-  const fixed = () => page.evaluate(() => ["#sb-res-icon", "#sb-report", "#sb-version"].map((id) => Math.round(document.querySelector(id).getBoundingClientRect().left)));
+  // from the right edge: the version, the report icon, the online icon, then the resources block, which unfolds leftward moving none
+  const fixed = () => page.evaluate(() => ["#sb-res-icon", "#sb-online", "#sb-report", "#sb-version"].map((id) => Math.round(document.querySelector(id).getBoundingClientRect().left)));
   // open: the four items take their room, once the animation is over; folded, only the icon shows
   const block = () => page.evaluate(() => ({ items: Math.round(document.querySelector("#sb-res-items").getBoundingClientRect().width),
     icon: Math.round(document.querySelector("#sb-res-icon").getBoundingClientRect().width) }));
@@ -400,26 +396,27 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
     await page.waitForFunction((w) => (document.querySelector("#sb-res-items").getBoundingClientRect().width > 150) === w, want, { timeout: ms }).catch(() => {});
     await page.waitForTimeout(500);
     const b = await block();
-    await check((b.items > 150) === want && (want || (b.icon > 10 && b.items === 0)), what, b);
+    await check((b.items > 150) === want && (want || b.items === 0), what, b);
   };
   await isOpen(false, "on opening the page, the disk, memory, network and CPU are folded into one icon");
   await shot(page, "9-resources-folded");
-  const folded = await bars();
-  await check(folded.every((x) => x[2]), "folded, a bar between every two items on show, the icon among them", folded);
+  const folded = await bars(page);
+  await check(folded.every((x) => x[2] === x[3]), "folded, a bar between every two items on show, the icon among them", folded);
   const before = await fixed();
-  await check(before[0] < before[1] && before[1] < before[2], "the resources icon, then the report icon, then the version, toward the right edge", before);
+  await check(before.every((x, k) => k === 0 || before[k - 1] < x), "the resources icon, the online icon, the report icon, then the version, toward the right edge", before);
   const look = await page.evaluate(() => { const s = getComputedStyle(document.querySelector("#sb-res-items")); return { property: s.transitionProperty, ms: parseFloat(s.transitionDuration) * 1000 }; });
   await check(/max-width|width|all/.test(look.property) && look.ms >= 150, "folding and unfolding is animated", look);
   await page.hover("#sb-res-icon");
   await isOpen(true, "hovering the icon unfolds the four as they look always open");
-  await check((await block()).icon > 10, "the icon staying beside them, to be clicked");
-  const unfolded = await bars();
-  await check(unfolded.every((x) => x[2]), "unfolded, a bar between every two items, the CPU and the icon too", unfolded);
+  await check((await block()).icon === 0, "the icon going away as they come");
+  const unfolded = await bars(page);
+  await check(unfolded.length && unfolded.every((x) => x[2] === x[3]), "unfolded, no bar between the four, one between the CPU and the online icon and between all else", unfolded);
   const after = await fixed();
-  await check(after.every((x, k) => x === before[k]), "unfolding moves neither the icon, the report icon nor the version", { before, after });
+  await check(after.slice(1).every((x, k) => x === before[k + 1]), "unfolding moves neither the online icon, the report icon nor the version", { before, after });
   await shot(page, "10-resources-hovered");
   await page.mouse.move(700, 300);
   await isOpen(false, "and they fold again once the pointer leaves");
+  await check((await block()).icon > 10, "the icon coming back");
   await page.click("#sb-res-icon");
   await page.waitForFunction(() => document.querySelector("#usage-dlg").open);
   if (shots) await page.screenshot({ path: path.join(shots, "12-resources-setting.png") });
@@ -479,17 +476,45 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await isOpen(true, "always open, the four show");
   await check((await block()).icon === 0, "with no icon");
   await check(await page.evaluate(() => JSON.parse(localStorage.getItem("nor-resources"))) === "open", "the choice is kept for the next visit");
-  // hidden always: only the icon, which hovering and the network going do not unfold, the icon itself saying offline
+  // hidden always: only the icon, which hovering and the network going do not unfold
   await page.click("#sb-disk"); await page.selectOption("#res-mode", "hidden"); await page.keyboard.press("Escape");
   await isOpen(false, "hidden always, only the icon shows");
+  await check((await block()).icon > 10, "the icon showing");
   await page.hover("#sb-res-icon");
   await isOpen(false, "and hovering it does not unfold the four");
   await page.mouse.move(700, 300);
   await ctx.setOffline(true);
   await isOpen(false, "nor does going offline", 2500);
-  await check(await page.isVisible("#sb-res-icon .no-net"), "the icon carries the red no-network mark instead");
+  await check(!(await page.$("#sb-res-icon .no-net")), "the icon carries no offline mark: the online icon says so");
   await shot(page, "11-resources-hidden-offline");
   await ctx.setOffline(false);
+  await ctx.close();
+}
+
+// ---- req/shell/status-bar/online: a Wi-Fi icon online, crossed out in red offline, opening where offline is set up ----
+{
+  const { ctx, page } = await open("fixture");
+  const icon = () => page.evaluate(() => {
+    const b = document.querySelector("#sb-online"), seen = (sel) => { const e = b.querySelector(sel); return !!e && e.getBoundingClientRect().width > 0; };
+    return { on: seen(".on"), off: seen(".off"), title: b.title, colour: getComputedStyle(b.querySelector(".off")).color };
+  });
+  const on = await icon();
+  await check(on.on && !on.off && /online/i.test(on.title) && /offline/i.test(on.title), "online, a Wi-Fi icon, its tooltip saying online and that it sets up offline", on);
+  await check(!(await page.$("#statusbar .no-net")), "no other item in the status bar carries an offline mark");
+  await ctx.setOffline(true);
+  await page.waitForFunction(() => document.documentElement.classList.contains("offline"), null, { timeout: 40000 }).catch(() => {});
+  const off = await icon();
+  const [r, g, bl] = off.colour.match(/\d+/g).map(Number);
+  await check(!off.on && off.off && /offline/i.test(off.title) && !/^online/i.test(off.title), "offline, the Wi-Fi crossed out, its tooltip saying offline", off);
+  await check(r > 150 && g < 120 && bl < 120, "in red", off.colour);
+  await shot(page, "13-online-offline");
+  await page.click("#sb-online");
+  const tab = await page.evaluate(() => document.querySelector("#usage-dlg").open && document.querySelector("#usage-dlg").dataset.tab);
+  await check(tab === "storage", "clicking it opens the Storage tab, where offline is set up", tab);
+  await ctx.setOffline(false);
+  await page.waitForFunction(() => !document.documentElement.classList.contains("offline"), null, { timeout: 40000 }).catch(() => {});
+  const back = await icon();
+  await check(back.on && !back.off, "back online, the Wi-Fi icon again", back);
   await ctx.close();
 }
 
