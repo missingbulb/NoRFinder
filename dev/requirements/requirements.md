@@ -101,22 +101,24 @@ spec does not have.
 - `req/shell/channels/rows` Each channel has its row: shown or not, its black and white points, its name and its description.
   <details>
 
-  Set by the owner on 2026-10-31; one line per row, a colour picker and triangle points on 2026-11-03.
-  One row per channel of the image, all on one line: a checkbox that shows or hides it, a colour picker
-  showing its colour that recolours it, its name, a (?) whose hover shows the study's description of it
-  (at most 100 words), the file's own name for it when the study names it otherwise, and one slider
-  holding two points: at or below the black point the channel is dark, at or above the white point its
-  full colour, in proportion between; the black point stays below the white. Only the colour picker
-  carries the channel's colour: the checkbox and the slider, a ramp from black to white, look the same
-  on every row. The slider's track is centred in its row and each point is a right-angled triangle
-  sitting on it, the black one left of its value and the white one right, so that the two meeting make
-  one larger triangle over one value and neither hides the other: each can still be dragged away from
-  there. A double click on the slider puts the points back. The channels are added together, each in its
-  colour. A channel's name, colour, description, whether it shows at first and its first points come
-  from the study's `channels` for the channel at that place, else from what the file says (the study's
-  Python), else from its place: red, green and blue, then more colours, a lone channel grey; a channel
-  the file colours but does not name is named for its colour. The rows start over with every image.
-  Test: `web-tests/test_image_box_page.py`, `studies/viewer/tests/test_viewer.py`.
+  Set by the owner on 2026-10-31; one line per row, a colour picker and triangle points and the value
+  bubble on 2026-11-03. One row per channel of the image, all on one line: a checkbox that shows or
+  hides it, a colour picker showing its colour that recolours it, its name, a (?) whose hover shows the
+  study's description of it (at most 100 words), the file's own name for it when the study names it
+  otherwise, and one slider holding two points: at or below the black point the channel is dark, at or
+  above the white point its full colour, in proportion between; the black point stays below the white.
+  Only the colour picker carries the channel's colour: the checkbox and the slider, a ramp from black to
+  white, look the same on every row. The slider's track is centred in its row and each point is a
+  right-angled triangle sitting on it, the black one left of its value and the white one right, so that
+  the two meeting make one larger triangle over one value and neither hides the other: each can still be
+  dragged away from there. While a point is dragged or has the keyboard's focus, its value (0–255) shows
+  in a small bubble above it, gone once it is let go. A double click on the slider puts the points back.
+  The channels are added together, each in its colour. A channel's name, colour, description, whether it
+  shows at first and its first points come from the study's `channels` for the channel at that place,
+  else from what the file says (the study's Python), else from its place: red, green and blue, then more
+  colours, a lone channel grey; a channel the file colours but does not name is named for its colour.
+  The rows start over with every image. Test: `web-tests/test_image_box_page.py`,
+  `studies/viewer/tests/test_viewer.py`.
   </details>
 
 - `req/shell/data/drive-access` A signed-in user with a role is asked to let the site into the study's folders, just those, and sees which it may write.

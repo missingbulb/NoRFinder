@@ -194,7 +194,12 @@ await check(Math.abs(mids.row - mids.track) <= 0.5, "the slider's track is centr
 // the two points meet on the slider and each can still be dragged away from there
 await level(1, "white", 255); await level(1, "black", 254);
 const meet = await page.$eval("#channels .channel:nth-child(1) input.black", (i) => { const b = i.getBoundingClientRect(); return { x: b.right, y: b.top + b.height * 0.75 }; });
-await page.mouse.move(meet.x - 3, meet.y); await page.mouse.down(); await page.mouse.move(meet.x - 60, meet.y, { steps: 5 }); await page.mouse.up();
+await page.mouse.move(meet.x - 3, meet.y); await page.mouse.down(); await page.mouse.move(meet.x - 60, meet.y, { steps: 5 });
+const bubble = () => page.$eval("#channels .channel:nth-child(1) .levels", (l) => { const b = l.querySelector(".bubble"); return b && !b.hidden ? b.textContent : null; });
+const held = [await bubble(), await page.$eval("#channels .channel:nth-child(1) input.black", (i) => i.value)];
+await check(held[0] !== null && held[0] === held[1], "while dragged, a point's value shows in a bubble", held);
+await page.mouse.up();
+await check((await bubble()) === null, "and the bubble is gone once it is let go", await bubble());
 const dragged = await page.$eval("#channels .channel:nth-child(1)", (r) => [+r.querySelector("input.black").value, +r.querySelector("input.white").value]);
 await check(dragged[0] < 230 && dragged[1] === 255, "the black point, left at the white one, can be dragged back", dragged);
 await level(1, "black", 0);
