@@ -187,13 +187,13 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
   // the images in a study's own Drive folder and the folders under it: [{id, name, size, path, study, kept}], or
   // a sentence saying why there are none
   async function imagesOf(s) {
-    const link = s.manifest.files.drive, ref = link && drive.parse(link);
-    if (!ref || ref.kind !== "folder") return "This study has no Google Drive folder of its own.";
+    const refs = (s.manifest.files.folders || []).map((l) => drive.parse(l)).filter((r) => r?.kind === "folder");
+    if (!refs.length) return "This study has no Google Drive folder of its own.";
     if (!drive.ready) return "Its Google Drive folder needs this site's Google API key.";
     if (isOffline()) return "Its Google Drive folder can be read once you are online.";
     if (throttled()) return "Google is throttling this site's downloads; try again in a while.";
     const found = [];
-    for (const queue = [{ id: ref.id, path: [] }], seen = new Set(); queue.length && seen.size < MAX_FOLDERS && found.length < MAX_FILES; ) {
+    for (const queue = refs.map((r) => ({ id: r.id, path: [] })), seen = new Set(); queue.length && seen.size < MAX_FOLDERS && found.length < MAX_FILES; ) {
       const at = queue.shift();
       if (seen.has(at.id)) continue;
       seen.add(at.id);

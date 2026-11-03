@@ -107,5 +107,27 @@ window.NorDrive = (() => {
       .filter((f) => f.folder || /\.(tiff?|png)$/i.test(f.name));
   }
 
-  return { parse, file, head, checksum, list, ready: !!key, received: () => received, speed: () => ({ ...timed }) };
+  // [{id, name, folder, size, sha}] every file and folder in a public folder, whatever its kind, every page of them
+  async function all(id) {
+    need();
+    const q = encodeURIComponent(`'${id}' in parents and trashed = false`), out = [];
+    for (let page = ""; ; ) {
+      const r = await get(`${API}?q=${q}&fields=nextPageToken,files(id,name,mimeType,size,sha256Checksum)&pageSize=1000&orderBy=folder,name&key=${key}${page && "&pageToken=" + page}`);
+      if (!r.ok) throw refused(r, "folder");
+      const got = await r.json();
+      out.push(...got.files.map((f) => ({ id: f.id, name: f.name, folder: f.mimeType === "application/vnd.google-apps.folder",
+        size: f.size == null ? null : +f.size, sha: f.sha256Checksum || null })));
+      if (!(page = got.nextPageToken)) return out;
+    }
+  }
+
+  // a file's or a folder's name
+  async function name(id) {
+    need();
+    const r = await get(`${API}/${encodeURIComponent(id)}?fields=name&key=${key}`);
+    if (!r.ok) throw refused(r, "folder");
+    return (await r.json()).name;
+  }
+
+  return { parse, file, head, checksum, list, all, name, ready: !!key, received: () => received, speed: () => ({ ...timed }) };
 })();

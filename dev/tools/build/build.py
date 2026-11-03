@@ -14,7 +14,7 @@ writes the version history the page shows (version_history.py) and the studies i
 /app/<id>, carrying the study's own icon and poster (req/shell/site/icons); lists the studies on the landing
 page (req/shell/site/landing); writes sitemap.xml and robots.txt (req/shell/site/crawlers); and writes the deployment's
 settings into the published web/config.js from the repository variables: GOOGLE_API_KEY turns on
-loading from Google Drive, GOOGLE_CLIENT_ID signing in with Google. The folder its dialog opens on is each study's own (files.drive in its study.json).
+loading from Google Drive, GOOGLE_CLIENT_ID signing in with Google. The folder its dialog opens on is each study's own (the first of files.folders in its study.json).
 """
 import glob, hashlib, json, os, re, shutil, subprocess, sys, urllib.parse
 from html import escape

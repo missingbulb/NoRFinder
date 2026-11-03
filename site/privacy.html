@@ -19,8 +19,9 @@ no server of its own: no account database and no store of anything about you. Th
 stays on your device, and what reaches other services, and when.</p>
 
 <h2>Your images and results</h2>
-<p>Images are analysed on your own computer, inside your browser. They are never uploaded to us or to
-anyone else by the site. The results stay in your browser unless you download them yourself or choose
+<p>Images are analysed on your own computer, inside your browser. They are never uploaded to us. The site
+sends them to no one else either, with one exception a person asks for: a study's data manager can have
+it save small previews of a study folder's images back into that same Google Drive folder. The results stay in your browser unless you download them yourself or choose
 to submit ground truth (below).</p>
 
 <h2>What stays on your device</h2>
@@ -56,7 +57,9 @@ sent to us.</p>
   <li><b>Google</b> answers when you open a Google Drive link you pasted (through the Drive API), when
     making a study available offline lists, or downloads, the images in its Drive folder, when
     you sign in with Google, and, while you are signed in, when the page reads or saves your settings
-    file (see below). Your profile picture and Drive's small pictures of images are loaded from
+    file (see below), and, for a study's data managers, when the page lists, checks and adds files in that
+    study's Drive folders (see below); Google's picker, which asks which of those folders the site may
+    use, loads from apis.google.com. Your profile picture and Drive's small pictures of images are loaded from
     Google's image servers. See <a href="https://policies.google.com/privacy">Google's privacy policy</a>.</li>
   <li><b>GitHub</b> is reached only when you click a link to it, for example to submit ground truth or
     propose a study. What you post there is public, under
@@ -71,16 +74,23 @@ permission for the site to:</p>
   <li>see, create and change its own settings file in a hidden folder in your Google Drive
     (the app data folder), to keep your settings the same on every device you sign in on.</li>
 </ul>
-<p>The site can't see, open or change anything else in your Google Drive. The settings file holds only
-the settings listed in the avatar menu's Settings.</p>
+<p>If a study names you as one of its data managers, opening that study also asks Google for its
+per-file Drive permission, and then shows Google's picker with just that study's folders, for you to
+choose the ones the site may use. In the folders you choose, the site adds files for you (preview files,
+and markers saying an image needs ground truth), and changes or moves to the bin only the files it added
+itself. It never changes, moves or deletes a file anyone else made.</p>
+<p>Apart from those folders and the files it made, the site can't see, open or change anything in
+your Google Drive. The settings file holds only the settings listed in the avatar menu's Settings.</p>
 <p>How this data is handled:</p>
 <ul>
   <li><b>Accessed and used:</b> your name, email address and picture are shown in the avatar menu.
     Your settings file is read when you sign in and on later visits, and replaced when you change a
-    setting. Nothing else is done with either.</li>
+    setting. Your email address is compared with the study's list of data managers, in your browser.
+    In the study folders you chose, the site reads which ones you may add files to, and adds the files you
+    ask it to. Nothing else is done with any of it.</li>
   <li><b>Stored:</b> your name, email address, picture and Google's sign-in token (which expires
     after about an hour) are kept in your browser on this device until you sign out. The settings file
-    stays in your own Google Drive. We keep no copy of any of it, anywhere.</li>
+    stays in your own Google Drive, and the files the site adds stay in the study's folders. We keep no copy of any of it, anywhere.</li>
   <li><b>Shared:</b> with no one. Google user data goes only between your browser and Google, never to
     us or to any third party. It is not used for advertising, sold, or used to train any model.</li>
 </ul>
