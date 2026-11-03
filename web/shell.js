@@ -16,7 +16,7 @@
 // study's own large holdings for the Memory tab, [{name, what, size}]; and the viewer's hooks (viewer2d.js).
 // A listener a study adds outside its own panels takes shell.signal, which ends it when the study leaves.
 "use strict";
-import { viewer as viewer2d, GRID, MINIMAP } from "./viewer2d.js";
+import { viewer as viewer2d, hoverPop, GRID, MINIMAP } from "./viewer2d.js";
 import { viewer3d } from "./viewer3d.js";
 import { pageState } from "./page_state.js";
 import { shape, stackPicture, holds, drawVolume, TURN } from "./stack.js";
@@ -326,12 +326,7 @@ function showStage() {
   $("#stage-next").textContent = STAGES[manifest.stage].next;
 }
 // the stages pop up while the stage is hovered or focused
-{
-  const pop = $("#stage-pop"), e = $("#sb-stage");
-  const show = (on) => { try { on ? pop.showPopover() : pop.hidePopover(); } catch { /* already so, or no popovers */ } };
-  e.addEventListener("mouseenter", () => show(true)); e.addEventListener("mouseleave", () => show(false));
-  e.addEventListener("focus", () => show(true)); e.addEventListener("blur", () => show(false));
-}
+hoverPop($("#sb-stage"), $("#stage-pop"), () => {});
 const makesTruth = () => manifest.stage === "GT" || manifest.stage === "PostGT";
 
 // ---------- the image and the item view ----------
@@ -626,16 +621,8 @@ function tip(id, anchor, text) {
     document.body.append(t);
   }
   t.querySelector("span").textContent = text;
-  tipAnchors.set(t, anchor); placeTip(t);
+  anchor.style.anchorName = "--tip-" + id; t.style.setProperty("--anchor", "--tip-" + id);
 }
-// each open tip's anchor, so a tip follows it when the window resizes
-const tipAnchors = new Map();
-function placeTip(t) {
-  const r = tipAnchors.get(t).getBoundingClientRect(), left = Math.max(8, Math.min(r.left + r.width / 2 - 22, innerWidth - t.offsetWidth - 8));
-  t.style.left = left + "px"; t.style.top = r.bottom + 10 + "px";
-  t.style.setProperty("--arrow", r.left + r.width / 2 - left - 6 + "px");
-}
-addEventListener("resize", () => { for (const t of tipAnchors.keys()) if (t.isConnected) placeTip(t); else tipAnchors.delete(t); });
 function closeTip(id) {
   const t = document.querySelector(`.tip-bubble[data-tip="${id}"]`);
   if (!t) return;
@@ -1261,35 +1248,12 @@ function submitTruth(gt) {
 }
 $("#gt-close").onclick = () => $("#gt-dlg").close();
 
-// ---------- notices: a short message, at the top of the view or under the button it is about ----------
-function notice(text, anchor) {
-  const n = $("#notice");
-  $("#notice-text").textContent = text; n.hidden = false; n.classList.toggle("anchored", !!anchor);
-  if (anchor) {
-    const r = anchor.getBoundingClientRect();
-    const top = r.bottom + 8 + n.offsetHeight > innerHeight ? r.top - 8 - n.offsetHeight : r.bottom + 8;
-    Object.assign(n.style, { left: Math.max(8, Math.min(r.left, innerWidth - n.offsetWidth - 8)) + "px", top: top + "px" });
-  } else {
-    const r = $("#view").getBoundingClientRect();
-    Object.assign(n.style, { left: r.left + (r.width - n.offsetWidth) / 2 + "px", top: r.top + 56 + "px" });
-  }
+// ---------- notices: a short message, at the top of the view ----------
+function notice(text) {
+  $("#notice-text").textContent = text; $("#notice").hidden = false;
   $("#notice-ok").focus();
 }
 $("#notice-ok").onclick = () => { $("#notice").hidden = true; };
-
-// a setting's help, or a step's: hovering or focusing what carries data-help shows it, beside it or, in the
-// status bar, above it
-function helpTip(e) {
-  const h = e.target.closest && e.target.closest("[data-help]"), t = $("#tip");
-  if (!h) return;
-  const r = h.getBoundingClientRect();
-  t.textContent = h.dataset.help; t.hidden = false;
-  if (h.closest("#statusbar")) { t.style.left = Math.min(r.left, innerWidth - 330) + "px"; t.style.top = r.top - 6 - t.offsetHeight + "px"; }
-  else { t.style.left = Math.min(r.right + 8, innerWidth - 330) + "px"; t.style.top = r.top + "px"; }
-}
-const hideHelp = (e) => { if (e.target.closest && e.target.closest("[data-help]")) $("#tip").hidden = true; };
-document.addEventListener("mouseover", helpTip); document.addEventListener("focusin", helpTip);
-document.addEventListener("mouseout", hideHelp); document.addEventListener("focusout", hideHelp);
 
 // ---------- boxes that fold with the steps ----------
 // A box's data-opens names the step after which it opens ("user": only its title opens it), and data-folds
@@ -1448,11 +1412,6 @@ async function showHistory(since) {
   const v = $("#sb-version"), bubble = $("#whats-new");
   const seen = readJSON(SEEN_VERSION, null);
   const dismiss = () => { bubble.hidden = true; writeJSON(SEEN_VERSION, VERSION); };
-  const place = () => { // the bubble's arrow points at the middle of the version box
-    const r = v.getBoundingClientRect();
-    bubble.style.right = Math.max(8, innerWidth - r.right) + "px";
-    bubble.style.setProperty("--arrow", Math.max(10, r.width / 2 - 6) + "px");
-  };
   v.onclick = () => {
     if (v.classList.contains("stale")) return location.reload();
     const since = bubble.hidden ? null : seen;
@@ -1467,8 +1426,7 @@ async function showHistory(since) {
     loadHistory().then((releases) => {
       if (!releases.some((r) => build(r.version) > build(seen))) return writeJSON(SEEN_VERSION, VERSION);
       $("#whats-new-open").textContent = `Click here to see what was updated since v${seen}.`;
-      bubble.hidden = false; place();
-      addEventListener("resize", place);
+      bubble.hidden = false;
     }).catch(() => { historyLoad = null; /* no history to point at: ask again on the next visit */ });
   }
 }
@@ -1523,7 +1481,6 @@ function filterStudies() {
 $("#study-menu").addEventListener("toggle", () => {
   if (!$("#study-menu").open) return;
   offlineCopy.available().then((ids) => { for (const a of $("#study-list").children) markOffline(a, "study", ids.has(a.dataset.id)); }, () => {});
-  $("#study-menu .pop").style.left = $("#study-menu .caret").offsetLeft + "px";
   $("#study-search").value = ""; filterStudies(); $("#study-search").focus();
 });
 $("#study-request").href = `https://github.com/${REPO}/issues/new?template=${STUDY_REQUEST}`;
