@@ -82,7 +82,9 @@ export function mount(shell) {
 
   // ---------- filter presets: each finder's precision and recall on the ground truth (detection/finder_metrics.py) ----------
   const PRESETS = { precise: "Precise", balanced: "Balanced", recalling: "Recalling" };
-  const quality = fetch(new URL("finder_metrics.json", import.meta.url)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  // never settles once the study has left: what waited on it would reach for panels that are gone
+  const quality = fetch(new URL("finder_metrics.json", import.meta.url)).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+    .then((q) => (here.signal.aborted ? new Promise(() => {}) : q));
   const two = (x) => x.toFixed(2).replace(/^0/, "");
   const pr = (r) => `P ${two(r.precision)} · R ${two(r.recall)}`;
   // the preset with the highest F1: the finder's best combined result
