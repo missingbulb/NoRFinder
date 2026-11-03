@@ -10,6 +10,7 @@ nobody has to know the version a change will ship in; `python3 dev/tools/build/v
 writes those versions into this file. Releases with no visible change are left out.
 
 ## Next release
+- Popups and tips stay attached to their button when the window is resized, and the toolbar's popups and the stage's list also open when you reach their button with the keyboard. (#657)
 - Opening the page asks whether to sign in with Google or continue anonymously, and remembers your answer if you tick Remember this choice. Anonymous, a tip by your avatar offers signing in later. Offline, signing in waits until you are back online. (#649)
 - Item View is now Tasks, and says how many are left: in NoR Finder, the finalists and added NoRs still waiting for your verdict; in Vascular Measurements, the low-confidence vessels. It reads "Tasks done" once none are left. Submit Ground Truth moved from over the image to the top of Tasks, beside how many are done; cards still waiting for you are marked with a blue edge and listed first. (#648)
 - The app moved to rauntruth.com/app, and each study to rauntruth.com/app/<study>; rauntruth.com itself now explains what the site is. The site has a license page (MIT), and the site, the app and each study show their own tab icon and link-preview picture. Old addresses like rauntruth.com/nor no longer open. (#650)
