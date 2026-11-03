@@ -734,17 +734,15 @@ html:not(.offline) #welcome-offline { display: none; }
 #left-marks .step-mark.open { border-color: var(--accent); color: var(--accent); }
 #left-marks .step-mark.done { border-color: var(--yes); background: var(--yes); color: #fff; }
 #left-marks .step-mark:hover { outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent); }
-/* the open bar's tab on the gutter, at its middle, in place of the gutter's grip */
-#left-collapse { position: absolute; top: 50%; left: 50%; translate: -50% -50%; z-index: 6; display: grid; place-items: center; width: 16px; height: 40px; padding: 0;
-  border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--panel); color: var(--dim); cursor: pointer; }
+/* the open bar's head: its chevron where the strip's is, so the one spot collapses the bar and expands it again */
+#left-head { display: flex; align-items: center; gap: 6px; height: 40px; margin: 0 0 0 -8px; color: var(--dim); }
+#left-head .strip-name { font-size: 12px; letter-spacing: .03em; }
+#left-collapse { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; color: inherit; cursor: pointer; }
 #left-collapse:hover { color: var(--text); border-color: var(--accent); }
-#gutter-left::after { display: none; }
-:root[data-left=collapsed] #left-collapse { display: none; }
 /* collapsed, the drawers are kept laid out out of sight, so their steps are still numbered for the strip */
 :root[data-left=collapsed] #layout { --lw-now: 32px; }
 :root[data-left=collapsed] #left { position: relative; display: flex; flex-direction: column; overflow: hidden; scrollbar-gutter: auto; padding: var(--pad) 0 var(--pad) 4px; }
 :root[data-left=collapsed] #left > :not(#left-strip) { position: absolute; top: 0; left: 0; width: 300px; visibility: hidden; pointer-events: none; }
-:root[data-left=collapsed] #gutter-left { pointer-events: none; }
 #left.sliding-in > :not(#left-strip) { animation: data-in .35s ease-out; }
 #data-body { display: none; min-width: 240px; flex: 1; min-height: 0; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-panel); padding: 10px 8px; margin-top: 6px; }
 :root[data-mode=data] #data-body { display: flex; animation: data-in .35s ease-out; }

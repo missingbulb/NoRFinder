@@ -1377,11 +1377,11 @@ const boxes = () => document.querySelectorAll(".box.foldable");
 function unfoldFirst() { boxes().forEach((b) => b.classList.toggle("folded", b.hasAttribute("data-opens"))); retitle(); }
 // a step just done: a new image folds every box waiting for a later step
 function foldFor(key) {
-  // a preview keeps the Image box open: Load Original is what comes next
-  const preview = key === "load" && st.source?.kind === "preview";
+  // a preview keeps the Image box open: Load Original is what comes next; so does a study with no step after Load
+  const keep = key === "load" && (st.source?.kind === "preview" || steps.length === 1);
   boxes().forEach((b) => {
-    if (b.dataset.opens === key || (preview && b.id === "image-box")) b.classList.remove("folded");
-    else if ((b.dataset.folds === key && !(preview && b.id === "image-box")) || (key === "load" && b.hasAttribute("data-opens"))) b.classList.add("folded");
+    if (b.dataset.opens === key || (keep && b.id === "image-box")) b.classList.remove("folded");
+    else if ((b.dataset.folds === key && !(keep && b.id === "image-box")) || (key === "load" && b.hasAttribute("data-opens"))) b.classList.add("folded");
   });
   retitle();
 }
@@ -1459,33 +1459,39 @@ function foldable() {
 function showImage() { study.showImage?.(); view.minimapView(); }
 
 // ---------- the left bar and theme ----------
-// the left bar takes the width it is dragged to; a double click puts it back
+// the left bar takes the width it is dragged to; a double click puts it back. Dragged past its narrowest it
+// collapses (req/shell/left-bar/collapse), and dragged out from the strip it opens again under the pointer
 {
-  const lay = $("#layout"), saved = readJSON(BARS), g = $("#gutter-left");
+  const lay = $("#layout"), saved = readJSON(BARS), g = $("#gutter-left"), bar = $("#left"), root = document.documentElement;
+  const MIN = 200, STRIP = 32, SHUT = (MIN + STRIP) / 2;
   const set = (w) => {
     if (w == null) { lay.style.removeProperty("--lw"); return; }
-    lay.style.setProperty("--lw", Math.round(Math.max(200, Math.min(w, innerWidth * 0.4))) + "px");
+    lay.style.setProperty("--lw", Math.round(Math.max(MIN, Math.min(w, innerWidth * 0.4))) + "px");
   };
   set(saved.left);
-  g.addEventListener("pointerdown", (e) => {
-    if (e.target.closest("#left-collapse")) return;
-    g.setPointerCapture(e.pointerId); document.body.classList.add("resizing");
-    const move = (ev) => { saved.left = ev.clientX - lay.getBoundingClientRect().left; set(saved.left); view?.minimapView(); };
-    const up = () => { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); document.body.classList.remove("resizing"); writeJSON(BARS, saved); };
-    g.addEventListener("pointermove", move); g.addEventListener("pointerup", up);
-  });
-  g.addEventListener("dblclick", () => { delete saved.left; set(null); writeJSON(BARS, saved); view?.minimapView(); });
-  // req/shell/left-bar/collapse: collapsed to its Steps strip, and back, the drawers sliding in on the way out
-  const bar = $("#left"), root = document.documentElement;
   const collapse = (on) => { if (on) root.dataset.left = "collapsed"; else delete root.dataset.left; };
   collapse(!!saved.collapsed);
   const toggle = (on) => {
+    if (!!saved.collapsed === on) return;
     saved.collapsed = on; writeJSON(BARS, saved);
     if (!on) { bar.classList.add("sliding-in"); setTimeout(() => bar.classList.remove("sliding-in"), 400); }
     collapse(on);
     retitle();
     setTimeout(() => view?.minimapView(), 400);
   };
+  g.addEventListener("pointerdown", (e) => {
+    g.setPointerCapture(e.pointerId); document.body.classList.add("resizing");
+    const was = saved.left;
+    const move = (ev) => {
+      const w = ev.clientX - bar.getBoundingClientRect().left;
+      if (w < SHUT) { saved.left = was; toggle(true); }
+      else { saved.left = w; set(w); toggle(false); }
+      view?.minimapView();
+    };
+    const up = () => { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); document.body.classList.remove("resizing"); writeJSON(BARS, saved); };
+    g.addEventListener("pointermove", move); g.addEventListener("pointerup", up);
+  });
+  g.addEventListener("dblclick", () => { delete saved.left; set(null); writeJSON(BARS, saved); view?.minimapView(); });
   $("#left-collapse").onclick = () => toggle(true);
   // a step mark opens its drawer first, then the click reaches the strip
   $("#left-strip").onclick = () => toggle(false);
