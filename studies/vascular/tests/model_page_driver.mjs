@@ -4,7 +4,7 @@
 // shows its cards and approves a low-confidence vessel from one; Submit Ground Truth stays off until the model carries
 // a correction and then exports the corrected model, from the Item View only; undo takes the approval back; the model's canvas leaves the 3D
 // view with the study. Exits 1 on a failed check, 2 when it cannot run.
-//   node studies/vascular/tests/model_page_driver.mjs
+//   node studies/vascular/tests/model_page_driver.mjs STUDIES
 import { repoFile } from "../../../web-tests/repo_file.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
@@ -21,6 +21,8 @@ try { pw = require("playwright"); } catch {
   try { pw = require(path.join(execSync("npm root -g").toString().trim(), "playwright")); } catch { console.error("no playwright: npm i -g playwright"); process.exit(2); }
 }
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+// the build's list of studies, which the switcher reads
+const [studies] = process.argv.slice(2);
 const drafts = JSON.parse(fs.readFileSync(path.join(repo, "studies", "vascular", "web", "models", "index.json"), "utf8"));
 const draft = JSON.parse(fs.readFileSync(path.join(repo, "studies", "vascular", "web", "models", drafts[0].file), "utf8"));
 const NAME = drafts[0].source;
@@ -44,7 +46,7 @@ const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
   if (u === "/web/vendor/wheels.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end("[]"); }
-  const f = repoFile(repo, u);
+  const f = u === "/web/studies.json" ? studies : repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
