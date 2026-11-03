@@ -448,7 +448,9 @@ spec does not have.
   only "2D" when the file does not say), and opens as "Loaded Image". A study's drawer is done
   when the study gives it a summary, and waits again when the study takes it back. A drawer opening or
   folding slides open or shut, and the drawers below it slide to their new places (set by the owner on
-  2026-10-31). Test: `web-tests/test_left_bar_page.py`, `web-tests/test_study_contract.py`.
+  2026-10-31). Changed by the owner on 2026-11-03: a folded drawer opens from a click anywhere on it,
+  not only on its title or number; an open one still folds only from its title.
+  Test: `web-tests/test_left_bar_page.py`, `web-tests/test_study_contract.py`.
   </details>
 
 - `req/shell/left-bar/width` The left bar drags wider or narrower (remembered; a double click restores it); there is no right bar.

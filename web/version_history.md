@@ -17,7 +17,8 @@ once loaded. (#702, #707, #713)
 
 The left bar collapses from the chevron at its top, where the collapsed strip shows its own, so the
 same spot opens it again. Dragging the bar's edge to the left also collapses it, and dragging the
-strip's edge out opens it. (#709)
+strip's edge out opens it. A folded drawer opens from a click anywhere on it, not just its title.
+(#709, #714)
 
 An image opening in NoR Finder now builds in grey while it downloads, and its colours wipe down over it once it is in; one opened from this computer fades in. No more stray colours that looked like a glitch before the image settled. (#715)
 
