@@ -28,3 +28,10 @@ not belong here — propose it to the Claudinite canon instead, where every repo
   under "Next release" in `web/version_history.md`, ending with the pull request's number `(#123)`,
   in the same pull request; the page's Version history popup shows it once released. A change
   nobody using the page would notice adds nothing. (page-version-history)
+
+## Merging
+
+- **A small pull request fixing a bug** — merge it yourself, unasked, once its first commit added
+  a test that failed on the bug, a later commit fixed the bug, and the same test passed with no
+  test file changed after that first commit. Any other pull request waits for the owner.
+  (merge-proven-fix)
