@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>rauntruth.com app</title>
-<meta name="version" id="site-version" title="version 0.11103.75">
+<meta name="version" id="site-version" title="version 0.11103.78">
 <meta name="description" content="Image studies that run in your browser: find, count and measure in microscopy images, then review every result. Online or offline.">
 <link rel="icon" id="favicon" href="icon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
@@ -26,7 +26,7 @@
 <header>
   <img id="logo" src="logo.svg" alt="Sagol School of Neuroscience, Tel Aviv University">
   <details class="menu" id="study-menu">
-    <summary aria-label="Switch study"><h1 id="title"></h1><span class="caret" title="Switch study"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z"/></svg></span></summary>
+    <summary aria-label="Switch study"><span id="title-icon"></span><h1 id="title"></h1><span class="caret" title="Switch study"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z"/></svg></span></summary>
     <div class="pop" role="dialog" aria-labelledby="study-menu-title">
       <h2 id="study-menu-title">Switch study</h2>
       <label class="search"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"/></svg><input id="study-search" type="search" placeholder="Search studies" autocomplete="off" spellcheck="false" aria-label="Search studies" aria-controls="study-list"></label>
@@ -64,6 +64,7 @@
     </div>
   </aside>
   <aside id="left">
+    <div id="left-strip" title="Expand the left bar, with the study's steps"><button id="left-expand" type="button" aria-expanded="false" aria-controls="left" aria-label="Expand the left bar"><svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button><div id="left-marks" aria-label="The steps"></div><span class="strip-name">Steps</span></div>
     <section class="box foldable" id="image-box" data-folds="load">
       <div class="sec-head"><h2 data-done-name="Loaded Image">Load Image</h2></div>
       <details id="file-box" class="empty"><summary id="file-name" class="dim" data-log-as="the image's name">No image loaded</summary><dl id="file-info"></dl></details>
@@ -116,7 +117,7 @@
 
     <slot-here data-slot-for="left"></slot-here>
   </aside>
-  <div class="gutter" id="gutter-left" title="Drag to resize"></div>
+  <div class="gutter" id="gutter-left" title="Drag to resize"><button id="left-collapse" type="button" aria-expanded="true" aria-controls="left" title="Collapse the left bar, to give the image its room" aria-label="Collapse the left bar"><svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button></div>
 
   <main id="view">
     <div class="toolbar">

@@ -220,6 +220,17 @@ spec does not have.
   `web-tests/test_previews_writer.py`.
   </details>
 
+- `req/shell/dialogs/open-from-button` A popup dialog a button opens grows out of that button.
+  <details>
+
+  Set by the owner on 2026-11-03. Every modal dialog on the page, the shell's and a study's, opened by
+  a click on a button or a link (or the keyboard pressing one), grows from that button's place and size
+  to its own in a fifth of a second, fading in, while its backdrop darkens. A dialog nothing pressed
+  opens, the Welcome on arrival say, appears at once, as does every dialog with animations off
+  (`req/shell/resources-dialog/animations`) or reduced motion asked for. Test:
+  `web-tests/test_dialog_motion_page.py`.
+  </details>
+
 - `req/shell/drive/dialog` Google Drive: paste a shared link, no sign-in; browse folders; open on Open, double click or Enter.
   <details>
 
@@ -325,7 +336,7 @@ spec does not have.
 - `req/shell/header` A header with the logo, the study switcher and a dark/light switch (remembered).
   <details>
 
-  GitHub's repository switcher, for studies: the study's title and a solid caret form one 32 px
+  GitHub's repository switcher, for studies: the study's icon (as in its list, below), its title and a solid caret form one 32 px
   control; it opens, under the caret, a 320 px panel headed "Switch study", a search box (focused,
   filtering by title as the user types) and every study whose `study.json` says `"listed": true`,
   by title, each with its own icon (the tab's icon its `study.json` names; the generic study icon
@@ -391,6 +402,20 @@ spec does not have.
   has no ground truth, so a local image earns no notice about sending one. A TIFF opens uncompressed or
   compressed with LZW, Deflate or PackBits. Test: `studies/viewer/tests/test_viewer.py`,
   `web-tests/test_study_runs.py`, `web-tests/test_compressed_tiff.py`.
+  </details>
+
+- `req/shell/left-bar/collapse` The left bar collapses to a narrow Steps strip, giving the image its room, and expands again (remembered).
+  <details>
+
+  Set by the owner on 2026-11-03. A small tab holding a chevron sits on the gutter between the open
+  left bar and the image, at its middle; clicking it collapses the bar to a narrow strip like the
+  Data Management strip (`req/shell/data/mode`), the same width and a small gap from it: the chevron,
+  the drawers' step marks (a number, or a check once done), and "Steps" upright. Clicking the strip
+  expands the bar again; clicking a step mark expands it with that drawer open. Collapsing and
+  expanding slide as Data Management's column does, the drawers sliding in on the way out. The bar's
+  width is kept for its return, and it cannot be dragged while collapsed. Collapsed or not stays with
+  the device, beside the width (`req/shell/left-bar/width`).
+  Test: `web-tests/test_left_bar_page.py`.
   </details>
 
 - `req/shell/left-bar/folding` The left bar's boxes stay folded until their step makes them useful, and fold again once it is done.
@@ -938,12 +963,13 @@ spec does not have.
   NoR Finder GT. Test: `web-tests/test_study_contract.py`, `web-tests/test_status_bar_page.py`.
   </details>
 
-- `req/shell/study/switch-in-place` Switching study happens in place: no reload, and the open image stays open.
+- `req/shell/study/switch-in-place` Switching study happens in place: no reload, and the new study starts with no image open.
   <details>
 
   Choosing a study in the switcher, or going back and forward between studies, changes the address
   and swaps the study without reloading the page: Python stays loaded and adds only the packages the
-  new study needs, and the image on show opens in the new study at once. The study that leaves
+  new study needs. The image on show is unloaded, as Unload does, and nothing of it carries over (its
+  steps, its results, Python's copy of it), so the new study starts as one just opened. The study that leaves
   takes its panels, its stylesheet, its drawing and its listeners with it (each listener it adds
   outside its own panels carries `shell.signal`), and an answer its Python was still working on is
   dropped. Test: `web-tests/test_study_runs.py`.
@@ -1002,7 +1028,9 @@ spec does not have.
   returns a stack as its flattened planes, which the 2D view shows unchanged, followed by every
   slice of every channel (`Z` in its meta). A 2D/3D switch in the toolbar opens the 3D view, which
   a stack opens on: it casts rays through the stack in the browser (WebGL2), looking straight down
-  as the microscope does. Dragging turns it, the wheel zooms, shift-drag pans, and Top, Tilted,
+  as the microscope does. Dragging turns it about the screen's two axes, on past looking straight
+  across, a sideways scroll spins it about the line of sight (owner, 2026-11-03), the wheel zooms,
+  shift-drag pans, and Top, Tilted,
   Side and Front put the view back. Brightest shows the brightest point along each ray, Surface a lit
   surface where the signal crosses a level, and Colour by depth paints by the depth of that point
   so crossings at different depths read apart. Slices *a*–*b* show part of the depth. The slice

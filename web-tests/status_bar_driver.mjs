@@ -558,11 +558,11 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await steps(page, ["Load image*"], ["#load-main", "#sb-load"]);
   await page.setInputFiles("#file", image);
   await steps(page, ["Load image"], []);
-  // switching study in place: its stage and steps come with it, the image open in it already
+  // switching study in place: its stage and steps come with it, and it starts with no image open
   await page.click("#study-menu summary");
   await page.click("#study-list a >> text=NoR Finder");
   await page.waitForFunction(() => document.querySelector("#sb-stage").dataset.stage === "GT");
-  await steps(page, ["Load image", "Run algorithm*"], ["#find", "#sb-find"]);
+  await steps(page, ["Load image*"], ["#load-main", "#sb-load"]);
   await ctx.close();
 }
 await done(0);

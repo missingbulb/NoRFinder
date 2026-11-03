@@ -4,7 +4,7 @@
 // image, and none of another study's panels; that a study's path opens it and an old ?study= address is
 // rewritten to that path; that the bare address opens the Image Viewer, whose empty right bar gives its
 // room to the image; and that the header's switcher lists the studies in STUDIES (the build's list), ticks
-// the one on show, finds one by search, and swaps studies in place: no reload, the open image kept, the
+// the one on show, finds one by search, and swaps studies in place: no reload, the open image unloaded, the
 // leaving study's panels and listeners gone, back and forward too; and that the tab's icon is the study's own, or
 // the app's for a study naming none (req/shell/site/icons).
 // Then the same with the real worker (web/worker.js), Pyodide served from the copy installed beside the
@@ -98,9 +98,22 @@ try {
   await page.waitForFunction(() => [...document.querySelectorAll("#study-list img")].every((i) => i.complete));
   const icons = await page.evaluate(() => [...document.querySelectorAll("#study-list a")].map((a) => {
     const img = a.querySelector("img.study-icon");
-    return { id: a.dataset.id, src: img && !img.hidden && img.naturalWidth ? new URL(img.src).pathname : null, generic: !!a.querySelector("svg.study-icon:not([hidden])") };
+    return { id: a.dataset.id, src: img && !img.hidden && img.naturalWidth ? new URL(img.src).pathname : null, generic: a.querySelector("svg.study-icon:not([hidden])") instanceof SVGSVGElement };
   }));
   console.log(JSON.stringify(icons));
+  // the control showing the study on show carries its icon too: its own, loaded, or the generic one
+  const headIcon = async (want) => {
+    const got = () => page.evaluate(() => {
+      const img = document.querySelector("#study-menu summary img.study-icon:not([hidden])");
+      if (img) return img.complete && img.naturalWidth ? new URL(img.src).pathname : "loading";
+      const svg = document.querySelector("#study-menu summary svg.study-icon:not([hidden])");
+      return svg instanceof SVGSVGElement ? "generic" : "none";
+    });
+    for (let i = 0; i < 30 && (await got()) !== want; i++) await page.waitForTimeout(100);
+    const seen = await got();
+    if (seen !== want) problems.push(`the switcher's control shows ${seen}, not ${want}`);
+  };
+  await headIcon("/studies/fixture/web/icon.svg");
   for (const s of JSON.parse(fs.readFileSync(studies, "utf8"))) {
     const got = icons.find((i) => i.id === s.id) || {};
     const want = s.icon ? `/studies/${s.id}/${s.icon}` : null;
@@ -116,7 +129,7 @@ try {
   console.log(result[0]);
   if (result[0] !== "400 pixels above the threshold" || !result[1]) problems.push("the call's answer did not reach the study, or its layer was not drawn");
 
-  // the switcher swaps studies in place: found by search, the image kept, the fixture's panels gone
+  // the switcher swaps studies in place: found by search, the image unloaded, the fixture's panels gone
   // the listeners on the shell's own objects, as only Chromium's DevTools count them: null, not counted, in another engine
   const cdp = ENGINE === "chromium" ? await ctx.newCDPSession(page) : null;
   const listeners = async () => {
@@ -131,7 +144,8 @@ try {
   const shown = () => page.evaluate(() => ({
     stayed: !!window.stayed, path: location.pathname, title: document.title, h1: document.querySelector("#title").textContent,
     image: !document.querySelector("#stage").hidden && [document.querySelector("#base").width, document.querySelector("#base").height].join(),
-    file: document.querySelector("#file-name").textContent, fixture: !!document.querySelector("#fx-box, #fx-result"),
+    file: document.querySelector("#file-name").textContent, unload: !document.querySelector("#unload").hidden,
+    loaded: !document.querySelector("#sb-load")?.classList.contains("now"), fixture: !!document.querySelector("#fx-box, #fx-result"),
     css: [...document.querySelectorAll("link[rel=stylesheet]")].map((l) => l.getAttribute("href")).filter((h) => h.includes("studies/")),
     channels: [...document.querySelectorAll("#channels label")].map((l) => l.textContent).join(),
     noHelp: !document.querySelector("#channels .help"), icon: document.querySelector("#favicon").href,
@@ -145,16 +159,16 @@ try {
   const found = await page.evaluate(() => [...document.querySelectorAll("#study-list a")].filter((a) => !a.hidden).map((a) => a.textContent).join());
   if (found !== "Image Viewer") problems.push("searching 'image' leaves " + found);
   await page.keyboard.press("Enter");
-  await page.waitForFunction(() => document.title === "Image Viewer" && document.querySelector("#busy").hidden && document.querySelector("#status").textContent === "Image loaded.");
+  await page.waitForFunction(() => document.title === "Image Viewer" && document.querySelector("#busy").hidden && document.querySelector("#status").textContent === "Ready. Load an image.");
   const inViewer = await shown(), alone = await listeners();
   console.log(JSON.stringify(inViewer), "listeners", alone);
   if (!inViewer.stayed) problems.push("switching study reloaded the page");
-  if (!inViewer.icon.endsWith("/web/icon.svg")) problems.push("the Image Viewer, naming no icon, does not show the app's: " + inViewer.icon);
+  if (!inViewer.icon.endsWith("/studies/viewer/web/icon.svg")) problems.push("switching to the Image Viewer did not swap in its icon: " + inViewer.icon);
   if (inViewer.path !== "/web/") problems.push("the Image Viewer's address is not the bare one: " + inViewer.path);
-  if (inViewer.image !== "80,60" || inViewer.file !== "squares.png") problems.push("the open image did not stay open: " + inViewer.image + " " + inViewer.file);
+  if (inViewer.image || inViewer.file !== "No image loaded" || inViewer.unload || inViewer.loaded) problems.push("switching study did not unload the image: " + JSON.stringify(inViewer));
   if (inViewer.fixture || inViewer.css.length) problems.push("the fixture left its panels or stylesheet behind: " + inViewer.css);
-  // the Image Viewer names no channels: the fixture's one plane, named by nothing, is grey
-  if (inViewer.channels !== "Grey" || !inViewer.noHelp) problems.push("the channels are still the old study's: " + inViewer.channels);
+  // the Image Viewer names no channels, and no image is open to give any: none are listed
+  if (inViewer.channels !== "" || !inViewer.noHelp) problems.push("the channels are still the old study's: " + inViewer.channels);
   // the last row asks GitHub for a new study, on the form the repo carries
   const request = await page.evaluate(() => {
     const a = document.querySelector("#study-request"), rows = [...document.querySelectorAll("#study-menu .pop a")];
@@ -166,6 +180,7 @@ try {
   else if (!form || !fs.existsSync(path.join(repo, ".github", "ISSUE_TEMPLATE", form))) problems.push("Submit New Study Request opens a form the repo does not carry: " + request.href);
   const viewerMenu = await menu();
   if (viewerMenu.items.join() !== titles.map((t) => (t === "Image Viewer" ? t + "*" : t)).join()) problems.push("the switcher does not tick the study on show: " + viewerMenu.items);
+  await headIcon("/studies/viewer/web/icon.svg");
 
   // into NoR Finder by a click, then back: NoR's panels and listeners leave with it
   await page.click("#study-menu summary");
@@ -175,8 +190,9 @@ try {
   const inNor = await shown();
   console.log(JSON.stringify(inNor), "listeners", await listeners());
   if (!inNor.stayed || inNor.path !== "/web/nor" || inNor.title !== "NoR Finder") problems.push("choosing NoR Finder did not swap it in at /web/nor: " + JSON.stringify(inNor));
-  if (inNor.image !== "80,60") problems.push("the image did not open in NoR Finder");
+  if (inNor.image || inNor.file !== "No image loaded") problems.push("an image opened in NoR Finder after the switch: " + JSON.stringify(inNor));
   if (!inNor.icon.endsWith("/studies/nor/web/icon.svg")) problems.push("switching to NoR Finder did not swap in its icon: " + inNor.icon);
+  await headIcon("/studies/nor/web/icon.svg");
   await page.goBack();
   await page.waitForFunction(() => document.title === "Image Viewer" && !document.querySelector("#finder"));
   const back = await shown(), after = await listeners();

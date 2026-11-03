@@ -31,6 +31,7 @@ import { problemUrl, ACTIONS_QUOTED, ERRORS_QUOTED } from "./problem_report.js";
 import { dataMode } from "./data_mode.js";
 import { imageEditor, SPLIT_PATTERN } from "./image_edit.js";
 import { replacedBy } from "./edit.js";
+import { dialogMotion } from "./dialog_motion.js";
 
 const $ = (s) => document.querySelector(s);
 // what the user does here, kept on this device for a problem report (req/shell/report/action-log)
@@ -41,7 +42,7 @@ const VIEWERS = { image2d: viewer2d, image3d: (shell) => viewer3d(shell, viewers
 const DEFAULT_STUDY = "viewer";
 // the browser keys the shell saves under; their names predate studies, and a user's saved state lives in them
 const THEME = "nor-theme"; // "dark" | "light"; absent = follow the system
-const BARS = "nor-bars-v1"; // {left}: the left bar's width in pixels (a right bar's, from before it went, is ignored)
+const BARS = "nor-bars-v1"; // {left, collapsed}: the left bar's width in pixels, and whether it is collapsed (a right bar's, from before it went, is ignored)
 const SOURCE = "nor-load-source"; // "local" | "drive": where Load reads from
 const DRIVE_LINK = "nor-drive-link"; // the last Google Drive link pasted, in any study
 const DRIVE_LINKS = "nor-drive-links"; // {study id: the last Google Drive link pasted in that study}
@@ -100,7 +101,7 @@ const esc = (t) => String(t).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 
 // the page's state: the shell's fields below, and whatever the study keeps beside them
 const st = { worker: null, H: 0, W: 0, um: null, umY: null, img: null, plain: null, zoom: 2, fileName: "", sha: "", source: null, heap: null, files: 0,
-  ready: false, readyInfo: null, queued: null, kept: null, reopening: false, busySince: 0, busyTimer: null, peeked: false, peek: null };
+  ready: false, readyInfo: null, queued: null, kept: null, busySince: 0, busyTimer: null, peeked: false, peek: null };
 // What the shell's controls are drawn from (page_state.js): image, the image open ({name, source, W, H, um, umY,
 // info, planes, channels, Z, spacing}: Z slices, spacing µm between them or null) or null; opening, the one being read ({name}) or null; and the viewer's own fields.
 const page = pageState({ image: null, opening: null });
@@ -251,6 +252,7 @@ const showMotion = () => {
 showMotion();
 motion.onchange = () => { writeJSON(MOTION, motion.checked); showMotion(); };
 function still() { return !motion.checked || matchMedia("(prefers-reduced-motion: reduce)").matches; }
+dialogMotion(still);
 
 $("#sb-net").onclick = () => usage("network");
 $("#sb-cpu").onclick = () => usage("cpu");
@@ -553,7 +555,6 @@ function handle(m) {
     $("#ram-gc").disabled = false;
     status("Ready. Load an image.");
     if (st.queued) { const q = st.queued; st.queued = null; send(q.name, q.bytes); }
-    else if (st.kept) reopen();
   } else if (m.type === "opened") {
     st.um = m.meta.um; st.umY = m.meta.um_y;
     page.set({ opening: null, image: { name: st.fileName, source: st.source, W: m.meta.W, H: m.meta.H, um: st.um, umY: st.umY,
@@ -566,9 +567,8 @@ function handle(m) {
     log.add(`Opened an image from ${from}, ${m.meta.W} × ${m.meta.H} px, ${m.meta.Z || 1} slice(s)`);
     status("Image loaded."); // the study's opened hook says what comes next, if anything
     study.opened?.(m.meta);
-    if (!st.reopening && st.source && st.source.kind === "local" && makesTruth()) notice(LOCAL_GT);
-    if (!st.reopening && st.source && st.source.kind === "drive" && st.pictured !== st.source.id) saveThumb(st.source.id, st.fileName);
-    st.reopening = false;
+    if (st.source && st.source.kind === "local" && makesTruth()) notice(LOCAL_GT);
+    if (st.source && st.source.kind === "drive" && st.pictured !== st.source.id) saveThumb(st.source.id, st.fileName);
   } else if (m.type === "result") {
     study.result?.(m.action, m.meta, m.bytes, m.echo);
   } else if (m.type === "memory") {
@@ -602,7 +602,7 @@ async function openBytes(name, bytes, source) {
   st.fileName = name; st.source = source;
   for (const p of steps) Object.assign(p, { done: false, info: "", at: null, pressed: false });
   drawSteps(); boxes().forEach((b) => summaries.delete(b)); retitle();
-  // a copy, for the next study to open: the bytes themselves go to Python
+  // a copy, for Edit Image and the problem report: the bytes themselves go to Python
   st.kept = { name, source, bytes: bytes.slice(0) };
   study.opening?.(name, source);
   st.sha = await sha256(bytes);
@@ -618,13 +618,6 @@ async function sha256(bytes) {
 function send(name, bytes) {
   busy(true, "Reading the image…", st.peeked && "peek");
   st.worker.postMessage({ type: "open", name, bytes }, [bytes]);
-}
-// the image on show, opened again in a study that has just come in
-function reopen() {
-  const { name, source, bytes } = st.kept, opened = taken(until("opened"));
-  working($("#load-main"), () => opened);
-  st.reopening = true; study.opening?.(name, source);
-  send(name, bytes.slice(0));
 }
 // a painter for the image's bytes as they arrive, shown until Python's own drawing replaces it; the study's,
 // when it has one
@@ -649,14 +642,18 @@ function load(src) {
 }
 $("#load-main").onclick = () => { signIn.drive(); load(readJSON(SOURCE, "local")); };
 $("#load-menu summary").addEventListener("click", () => signIn.drive());
-// Unload: no image open, the study starting over as one that has just come in, and Python letting the image go
+// no image open, nor one waiting for Python, and Python letting it go
+function dropImage() {
+  Object.assign(st, { kept: null, queued: null, fileName: "", source: null, sha: "", um: null, umY: null });
+  if (st.ready) st.worker.postMessage({ type: "close" });
+  page.set({ image: null, opening: null }); boxDone($("#image-box"), null);
+}
+// Unload: no image open, the study starting over as one that has just come in
 $("#unload").onclick = () => {
   if (!st.img || $("#load-main").classList.contains("working")) return;
   swapping = swapping.then(async () => {
     const { ready, readyInfo } = st, id = manifest.id;
-    Object.assign(st, { kept: null, queued: null, fileName: "", source: null, sha: "", um: null, umY: null });
-    if (ready) st.worker.postMessage({ type: "close" });
-    page.set({ image: null, opening: null }); boxDone($("#image-box"), null);
+    dropImage();
     leaveStudy();
     try { await mountStudy(id); } catch (e) { return status("Error: " + (e.message || e), true); }
     if (ready) { st.ready = true; $("#ram-gc").disabled = false; study.ready?.(readyInfo); }
@@ -1078,7 +1075,7 @@ async function showSaved() {
 // ---------- the user: whoever opened the page on this device, and what the site keeps here ----------
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
-  [THEME]: "Theme", [BARS]: "Side bar widths", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
+  [THEME]: "Theme", [BARS]: "Left bar width, and whether it is collapsed", [SOURCE]: "Where Load reads from", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
   [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [RESOURCES]: "The status bar's disk, memory, network and CPU: hidden, auto-hiding or always open", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
 };
 // What the site keeps, by what it takes to work offline (req/shell/storage/manage): a section per study, then what they share; settings
@@ -1407,6 +1404,14 @@ function retitle() {
     if (typeof want === "string") { if (t.textContent !== want || t.children.length) t.textContent = want; }
     else if (t.firstChild !== want) t.replaceChildren(want);
   });
+  // the collapsed left bar's strip (req/shell/left-bar/collapse): a mark per drawer on show, opening it
+  $("#left-marks").replaceChildren(...shown.map((b) => {
+    const h = b.querySelector(":scope > .sec-head h2"), m = document.createElement("button");
+    m.type = "button"; m.className = "step-mark"; m.textContent = h.querySelector(".step-mark").textContent;
+    m.classList.toggle("done", b.classList.contains("done")); m.classList.toggle("open", !b.classList.contains("folded"));
+    m.title = h.dataset.name; m.onclick = () => b.classList.remove("folded");
+    return m;
+  }));
 }
 // a box's task done, summed up (text, or a node), or waiting again (null)
 function boxDone(box, summary) {
@@ -1461,12 +1466,27 @@ function showImage() { study.showImage?.(); view.minimapView(); }
   };
   set(saved.left);
   g.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("#left-collapse")) return;
     g.setPointerCapture(e.pointerId); document.body.classList.add("resizing");
     const move = (ev) => { saved.left = ev.clientX - lay.getBoundingClientRect().left; set(saved.left); view?.minimapView(); };
     const up = () => { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); document.body.classList.remove("resizing"); writeJSON(BARS, saved); };
     g.addEventListener("pointermove", move); g.addEventListener("pointerup", up);
   });
   g.addEventListener("dblclick", () => { delete saved.left; set(null); writeJSON(BARS, saved); view?.minimapView(); });
+  // req/shell/left-bar/collapse: collapsed to its Steps strip, and back, the drawers sliding in on the way out
+  const bar = $("#left"), root = document.documentElement;
+  const collapse = (on) => { if (on) root.dataset.left = "collapsed"; else delete root.dataset.left; };
+  collapse(!!saved.collapsed);
+  const toggle = (on) => {
+    saved.collapsed = on; writeJSON(BARS, saved);
+    if (!on) { bar.classList.add("sliding-in"); setTimeout(() => bar.classList.remove("sliding-in"), 400); }
+    collapse(on);
+    retitle();
+    setTimeout(() => view?.minimapView(), 400);
+  };
+  $("#left-collapse").onclick = () => toggle(true);
+  // a step mark opens its drawer first, then the click reaches the strip
+  $("#left-strip").onclick = () => toggle(false);
 }
 
 function theme() {
@@ -1572,20 +1592,12 @@ const addressOf = (id) => (id === DEFAULT_STUDY ? HOME : HOME + encodeURICompone
 async function studyMenu() {
   let listed = [];
   try { listed = await (await fetch(HOME + "studies.json", { cache: "no-cache" })).json(); } catch (e) { console.warn("no list of studies:", e); }
-  const use = (n) => `<svg class="${n}-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">${$(`#icons .${n}`).innerHTML}</svg>`;
   $("#study-list").replaceChildren(...listed.map((s) => {
     const a = document.createElement("a");
     a.href = addressOf(s.id); a.dataset.id = s.id;
-    a.innerHTML = `<span class="tick">${use("tick")}</span>${use("study")}<span class="name"></span>`;
+    a.innerHTML = `<span class="tick">${glyph("tick")}</span><span class="name"></span>`;
     a.querySelector(".name").textContent = s.title;
-    // the study's own icon; the generic one stays while it is missing or fails to load
-    if (s.icon) {
-      const img = Object.assign(new Image(16, 16), { className: "study-icon", alt: "", hidden: true });
-      img.onload = () => { img.hidden = false; a.querySelector("svg.study-icon").setAttribute("hidden", ""); };
-      img.onerror = () => img.remove();
-      img.src = new URL(`../studies/${s.id}/${s.icon}`, location.origin + HOME).href;
-      a.querySelector("svg.study-icon").after(img);
-    }
+    a.querySelector(".tick").after(...studyIcon(s.id, s.icon));
     a.onclick = (e) => {
       if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       e.preventDefault(); goTo(s.id);
@@ -1594,6 +1606,17 @@ async function studyMenu() {
     return a;
   }));
   markCurrent();
+}
+const glyph = (n) => `<svg class="${n}-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">${$(`#icons .${n}`).innerHTML}</svg>`;
+// a study's own icon (its study.json's, relative to its folder), the generic one standing while it is missing or fails to load
+function studyIcon(id, icon) {
+  const generic = Object.assign(document.createElement("template"), { innerHTML: glyph("study") }).content.firstChild;
+  if (!icon) return [generic];
+  const img = Object.assign(new Image(16, 16), { className: "study-icon", alt: "", hidden: true });
+  img.onload = () => { img.hidden = false; generic.setAttribute("hidden", ""); };
+  img.onerror = () => img.remove();
+  img.src = new URL(`../studies/${id}/${icon}`, location.origin + HOME).href;
+  return [generic, img];
 }
 const rows = () => [...$("#study-list").children].filter((a) => !a.hidden);
 function mark(a) { for (const r of $("#study-list").children) r.classList.toggle("active", r === a); }
@@ -1650,6 +1673,7 @@ function swap() {
   swapping = swapping.then(async () => {
     const id = studyOf(location);
     if (id === manifest?.id) return;
+    dropImage();
     leaveStudy();
     try {
       await mountStudy(id);
@@ -1670,7 +1694,7 @@ async function mountStudy(id) {
   const r = await fetch(base + "study.json");
   if (!r.ok) throw new Error(`no study "${id}"`);
   manifest = await r.json();
-  document.title = manifest.title; $("#title").textContent = manifest.title; markCurrent();
+  document.title = manifest.title; $("#title").textContent = manifest.title; $("#title-icon").replaceChildren(...studyIcon(id, manifest.icon)); markCurrent();
   log.add(`Opened the study “${manifest.title}”`);
   $("#favicon").href = manifest.icon ? base + manifest.icon : new URL("icon.svg", import.meta.url).href;
   $("#file").accept = manifest.files.accept; $("#empty-text").textContent = manifest.files.empty;
@@ -1700,7 +1724,7 @@ async function mountStudy(id) {
 }
 const viewers = {};
 // The study on show leaves: its panels, stylesheet, drawing, listeners and state go, and its Python's late
-// answers are dropped; the image stays on show, to open again in the study that comes in.
+// answers are dropped.
 function leaveStudy() {
   lifetime.abort(); lifetime = new AbortController();
   for (const n of mounted.splice(0)) n.remove();
