@@ -487,7 +487,12 @@ async function working(btn, action) {
     hold.disconnect(); btn.classList.remove("working"); btn.disabled = false; study.idle?.();
   }
 }
-const slow = (btn) => { const act = btn.onclick; btn.onclick = (e) => working(btn, () => act.call(btn, e)); };
+// once only: the shell's own buttons outlive a study, so a study slowing one again on its next mount would hold
+// it from inside its own hold, and the click would do nothing
+const slow = (btn) => {
+  if (btn.onclick?.slow) return;
+  const act = btn.onclick; btn.onclick = Object.assign((e) => working(btn, () => act.call(btn, e)), { slow: true });
+};
 
 // ---------- Python ----------
 async function start() {

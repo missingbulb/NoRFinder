@@ -20,7 +20,9 @@ same spot opens it again. Dragging the bar's edge to the left also collapses it,
 strip's edge out opens it. A folded drawer opens from a click anywhere on it, not just its title.
 (#709, #714)
 
-An image opening in NoR Finder now builds in grey while it downloads, and its colours wipe down over it once it is in; one opened from this computer fades in. No more stray colours that looked like a glitch before the image settled. (#715)
+An image opening in NoR Finder now builds in grey while it downloads, and its colours wipe down
+over it once it is in; one opened from this computer fades in, with no stray colours. The Tasks
+button works again after you Unload an image and load another. (#711, #715)
 
 ## 0.11103.79
 
