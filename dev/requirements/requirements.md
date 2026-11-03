@@ -220,6 +220,17 @@ spec does not have.
   `web-tests/test_previews_writer.py`.
   </details>
 
+- `req/shell/dialogs/open-from-button` A popup dialog a button opens grows out of that button.
+  <details>
+
+  Set by the owner on 2026-11-03. Every modal dialog on the page, the shell's and a study's, opened by
+  a click on a button or a link (or the keyboard pressing one), grows from that button's place and size
+  to its own in a fifth of a second, fading in, while its backdrop darkens. A dialog nothing pressed
+  opens, the Welcome on arrival say, appears at once, as does every dialog with animations off
+  (`req/shell/resources-dialog/animations`) or reduced motion asked for. Test:
+  `web-tests/test_dialog_motion_page.py`.
+  </details>
+
 - `req/shell/drive/dialog` Google Drive: paste a shared link, no sign-in; browse folders; open on Open, double click or Enter.
   <details>
 
