@@ -13,6 +13,9 @@ carried all its pull requests. The `writing-version-history` skill says how.
 This version history tells each release in a few short paragraphs, instead of a line for every
 change. (#701)
 
+A z-stack now opens in 3D only, with no 2D/3D switch. Edit Image on a stack leaves out Crop, the cut
+lines and Imperfections, which draw on a flat image. (#702)
+
 ## 0.11103.78
 
 Collapse the left bar with the ‹ tab beside the image to give the image the whole width: a narrow
