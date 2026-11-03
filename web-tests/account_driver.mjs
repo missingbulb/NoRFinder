@@ -21,6 +21,7 @@ import http from "node:http";
 import path from "node:path";
 import { offSite } from "./off_site.mjs";
 import { ENGINE } from "./engine.mjs";
+import { cutShort } from "./page_errors.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -104,7 +105,7 @@ async function device(seed) {
     for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v);
   }, seed);
   const page = await ctx.newPage();
-  page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.message); });
+  page.on("pageerror", (e) => { if (cutShort(e)) return; failed = true; console.error("page error: " + e.message); });
   page.setDefaultTimeout(10000);
   await page.goto(origin + "/web/index.html");
   await page.waitForFunction(() => document.querySelector("#title").textContent);

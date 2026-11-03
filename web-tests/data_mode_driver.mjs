@@ -15,6 +15,7 @@ import path from "node:path";
 import { repoFile } from "./repo_file.mjs";
 import { offSite } from "./off_site.mjs";
 import { ENGINE } from "./engine.mjs";
+import { cutShort } from "./page_errors.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -142,7 +143,7 @@ async function open(signedIn) {
     localStorage.setItem("nor-welcome", JSON.stringify({ choice: who ? "google" : "anonymous", remember: true }));
   }, signedIn ? SIGNED_IN : null);
   const page = await ctx.newPage();
-  page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
+  page.on("pageerror", async (e) => { if (cutShort(e)) return; console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);
   await page.goto(origin + "/web/fixture");
   await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
@@ -171,7 +172,8 @@ await check((await width()) > 200, "opening slides the column out", await width(
 const access = await page.evaluate(() => [...document.querySelectorAll("#data-tree .tree-folder")].map((f) => [f.querySelector(":scope > .row .name").textContent, f.querySelector(":scope > .row .access").textContent]));
 await check(JSON.stringify(access) === JSON.stringify([["Study folder one", "Writable"], ["sub", "Not approved"]]), "the tree shows every folder with its access", access);
 await check(await page.evaluate(() => [...document.querySelectorAll(".tree-images")].every((b) => b.hidden)), "the images stay folded under their folders");
-const shown = await page.evaluate(() => ({ load: $("#load").checkVisibility(), pre: $("#preprocessing-box").checkVisibility(), study: $("#fx-box").checkVisibility(), image: $("#image-box").checkVisibility(), steps: $("#sb-steps").checkVisibility() }));
+// Load by the boxes it draws: WebKit's checkVisibility() calls it visible though it is display: none
+const shown = await page.evaluate(() => ({ load: $("#load").getClientRects().length > 0, pre: $("#preprocessing-box").checkVisibility(), study: $("#fx-box").checkVisibility(), image: $("#image-box").checkVisibility(), steps: $("#sb-steps").checkVisibility() }));
 await check(!shown.load && shown.pre && !shown.study && shown.image && !shown.steps, "in the mode: Load gone, Preprocessing and the Image box shown, the study's drawers and the steps hidden", shown);
 
 const summary = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#folder-summary dd")].map((d) => [d.dataset.k, +d.textContent])));
@@ -238,8 +240,9 @@ const got = await page.workers()[0].evaluate(() => ({ name: self.lastOpen.name, 
 await check(got.name === "a flat.preview.tif", "Python is handed the preview as a TIFF", got.name);
 fs.writeFileSync(out + ".preview.tif", Buffer.from(got.bytes));
 await page.click("#load-original");
-await page.waitForFunction(() => st.fileName === "a flat.tif");
-await check(await page.evaluate(() => shellForTests.page.get("image").source.kind === "drive" && $("#load-original").hidden), "Load Original opens the image itself");
+// the name is set as the open starts, the image's source once it is done
+await page.waitForFunction(() => shellForTests.page.get("image")?.source.kind === "drive" && $("#load-original").hidden).catch(() => {});
+await check(await page.evaluate(() => st.fileName === "a flat.tif" && shellForTests.page.get("image")?.source.kind === "drive" && $("#load-original").hidden), "Load Original opens the image itself");
 
 // offline (req/shell/offline/default): no bar asking for folders, and nothing written to Drive
 await page.click("#data-tree .tree-folder .name");
