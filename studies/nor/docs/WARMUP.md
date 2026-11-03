@@ -109,7 +109,7 @@ which is intake work, not part of the pipeline.
   than working through the ranges the harness suggests.
 - Outbound HTTPS goes through a proxy. Publisher `403`s are a policy boundary: don't retry, don't
   try sibling URLs, don't route around it. Record the source as unreachable and ask the owner —
-  which is what [#6](https://github.com/missingbulb/NoRFinder/issues/6) did, successfully.
+  which is what [#6](https://github.com/missingbulb/RaunTruth/issues/6) did, successfully.
 - **A web-search summary is not a source.** Two author attributions and one metric definition taken
   from search snippets in the first literature pass were all wrong, and only the PDFs caught it.
   Never write a name, number or definition into the notes from a snippet.

@@ -118,7 +118,7 @@ def test_the_intake_adds_each_attached_submission_once(tmp_path):
 
 def test_the_newest_attachment_is_the_submission():
     issue = {'body': '[a](https://github.com/user-attachments/files/1/a.json)',
-             'comments': ['fixed: [b](https://github.com/missingbulb/NoRFinder/files/2/b.json)']}
+             'comments': ['fixed: [b](https://github.com/missingbulb/RaunTruth/files/2/b.json)']}
     assert ground_truth.attachment(issue).endswith('/2/b.json')
 
 
