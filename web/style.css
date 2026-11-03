@@ -337,18 +337,18 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #statusbar .sb-item svg { flex: none; color: var(--icon); }
 #statusbar .sb-item:has(> .v:empty), #sb-thumbs:empty { display: none; }
 #statusbar #sb-stage, #sb-steps { padding-right: 10px; border-right: 1px solid var(--line); }
-#sb-thumbs, #statusbar .grow ~ .sb-item, #sb-res-icon, #sb-res-items > .sb-item { padding-left: 10px; border-left: 1px solid var(--line); }
+#sb-thumbs, #statusbar .grow ~ .sb-item, #statusbar #sb-res-icon, #sb-res-items > .sb-item:first-child { padding-left: 10px; border-left: 1px solid var(--line); }
 /* the disk, memory, network and CPU, folded into one icon (req/shell/status-bar/resources): unfolded always open,
    or auto-hiding while hovered or raised by what needs watching; the icon goes only always open */
 #sb-res { display: flex; align-items: center; }
 #sb-res-items { display: flex; align-items: center; overflow: hidden; max-width: 0; opacity: 0; transition: max-width .35s ease, opacity .35s ease; }
-#sb-res-items > .sb-item { margin-right: 10px; }
-#sb-res-icon { overflow: visible; }
+#sb-res-items > .sb-item:not(:last-child) { margin-right: 14px; }
+/* the gauge goes away as the four come, and comes back as they fold */
+#statusbar #sb-res-icon { overflow: hidden; max-width: 40px; transition: max-width .35s ease, opacity .35s ease, padding .35s ease, border-width .35s ease; }
 #sb-res[data-mode=open] #sb-res-items, #sb-res[data-mode=auto]:is(.raised, :hover) #sb-res-items { max-width: 480px; opacity: 1; }
-#sb-res[data-mode=open] #sb-res-icon { display: none; }
-#sb-res[data-mode=open] #sb-res-items > .sb-item:last-child { margin-right: 0; }
-html[data-motion=off] #sb-res-items { transition: none; }
-@media (prefers-reduced-motion: reduce) { #sb-res-items { transition: none; } }
+#statusbar #sb-res:is([data-mode=open], [data-mode=auto]:is(.raised, :hover)) #sb-res-icon { max-width: 0; opacity: 0; padding-left: 0; border-left-width: 0; }
+html[data-motion=off] :is(#sb-res-items, #statusbar #sb-res-icon) { transition: none; }
+@media (prefers-reduced-motion: reduce) { #sb-res-items, #statusbar #sb-res-icon { transition: none; } }
 #usage-dlg .tab-head { display: flex; flex-wrap: wrap-reverse; align-items: center; gap: 0 12px; }
 #usage-dlg .tab-head .tab-row { flex: 1; }
 #usage-dlg .res-mode { font-size: 12px; color: var(--dim); white-space: nowrap; }
@@ -679,13 +679,9 @@ html.offline [data-needs-network] { opacity: .45; cursor: not-allowed; }
 #sb-report .warn, #sb-report.unsupported .bug { display: none; }
 #sb-report.unsupported .warn { display: inline; }
 /* no network: a red mark on the network's icon and the resources' icon, the one red in the status bar */
-#sb-net, #sb-res-icon { position: relative; }
-#statusbar .no-net { display: none; position: absolute; top: -1px; }
-#statusbar #sb-net .no-net { left: 8px; }
-#statusbar #sb-res-icon .no-net { left: 18px; }
-html.offline #statusbar .no-net { display: block; }
-#statusbar .no-net circle { fill: var(--no); stroke: var(--panel); stroke-width: 1; }
-#statusbar .no-net path { stroke: #fff; stroke-width: 1.4; stroke-linecap: round; }
+#sb-online .off, html.offline #sb-online .on { display: none; }
+html.offline #sb-online .off { display: block; }
+#statusbar #sb-online .off { color: var(--no); }
 #offline-dlg { width: min(560px, calc(100vw - 32px)); }
 #offline-dlg h2 { margin: 0 0 6px; }
 #offline-dlg p { margin: 4px 0; }

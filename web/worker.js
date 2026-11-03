@@ -51,7 +51,7 @@ async function loadStudy(id) {
   // in one of its folders ships with no list to update
   py.globals.set("bases", py.toPy(m.python.paths.map((b) => new URL(b, studyBase).href)));
   py.globals.set("entry", m.python.entry);
-  working(() => py.runPython(`
+  unreached(() => py.runPython(`
 import sys, os, gc, importlib, importlib.util
 from js import XMLHttpRequest
 
@@ -90,6 +90,9 @@ study = importlib.import_module(entry)
 const NOT_HERE = "This study's Python is not on this device, and the internet cannot be reached. Open the study once online, or use Make available offline in Manage storage.";
 // once one fails, the others still arriving say nothing over its error
 const offline = (p) => p.catch((e) => { stage = null; throw navigator.onLine && !(e instanceof TypeError) ? e : new Error(NOT_HERE); });
+// the study's own modules, fetched as they are imported: a request the network did not answer fails the import
+// with a NetworkError, from inside Python
+const unreached = (run) => { try { return working(run); } catch (e) { throw !navigator.onLine || /NetworkError/.test(String(e?.message || e)) ? new Error(NOT_HERE) : e; } };
 
 // the packages' download, counted for the status bar while Python starts
 let stage = "Downloading Python and packages", expected = Infinity, heads = 0, sized = true, got = 0, total = 0, shown = 0;
@@ -142,6 +145,6 @@ async function handle(m) {
 let queue = loadStudy(first);
 onmessage = (e) => {
   queue = queue.catch(() => {}).then(() => handle(e.data));
-  queue.catch((err) => post({ type: "error", text: String(err.message || err) }));
+  queue.catch((err) => post({ type: "error", text: String(err.message || err), offline: err.message === NOT_HERE }));
 };
-queue.catch((err) => post({ type: "error", text: String(err.message || err) }));
+queue.catch((err) => post({ type: "error", text: String(err.message || err), offline: err.message === NOT_HERE }));
