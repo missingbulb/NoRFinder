@@ -1,6 +1,6 @@
 // Drives the page (web/) in headless Chromium on the fixture study, with a stand-in worker answering from
-// ANSWERS (tests/test_study_runs.py), and checks the status bar: the study's stage first, a traffic light whose
-// popup lists the stages; breadcrumbs of the steps done and the one to do now, which shines with its button and
+// ANSWERS (tests/test_study_runs.py), and checks the status bar: no stage in it, the study's stage a bordered label
+// on its row in the switcher, whose popup lists the stages; breadcrumbs of the steps done and the one to do now, which shines with its button and
 // nothing else does; a popup on each crumb saying what was done; the shining crumb bringing its button into view
 // and pressing it; a new image starting over; a PreGT study with no Submit GT and its ground-truth button hidden;
 // the second view's switch reading Tasks with what is left while the study makes ground truth, Items otherwise;
@@ -61,6 +61,12 @@ const server = http.createServer((q, r) => {
   }
   if (u.startsWith("/some/")) { r.writeHead(200, { "content-type": "application/octet-stream", "cache-control": "no-store" }); return r.end(Buffer.alloc(Number(u.slice(6)) * 1024)); }
   if (u === "/big") { r.writeHead(200, { "content-type": "application/octet-stream", "cache-control": "no-store" }); return r.end(Buffer.alloc(BIG)); }
+  // the build lists no fixture; served here with it, so its row in the switcher carries its stage
+  if (u === "/web/studies.json") {
+    const fixture = JSON.parse(fs.readFileSync(path.join(repo, "studies/fixture/study.json")));
+    r.writeHead(200, { "content-type": "application/json" });
+    return r.end(JSON.stringify([...JSON.parse(fs.readFileSync(studies)), { id: fixture.id, title: fixture.title, stage: stage || fixture.stage }]));
+  }
   if (u === "/web/vendor/wheels.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end("[]"); }
   const f = u === "/web/answers.json" ? answers : u === "/web/studies.json" ? studies : repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
@@ -136,13 +142,23 @@ const tip = async (page, name) => {
   await page.evaluate(() => document.activeElement.blur());
   return t.text || "";
 };
-// the stage: a traffic light lit in its colour, with no words
-const stageIs = async (page, stage, light) => {
+// the stage: not in the status bar, but a bordered label on the open study's row in the switcher
+const stageIs = async (page, stage) => {
   const s = await page.evaluate(() => {
-    const e = document.querySelector("#sb-stage"), lit = e.querySelector(".lit");
-    return { stage: e.dataset.stage, text: e.textContent.trim(), lit: lit && lit.dataset.light, svg: !!e.querySelector("svg") };
+    const id = document.querySelector("#study-list a[aria-current=page]")?.dataset.id;
+    const t = document.querySelector(`#study-list a[data-id="${id}"] .stage-tag`);
+    return { bar: !!document.querySelector("#statusbar #sb-stage, #statusbar svg .housing"), label: t?.textContent, page: document.documentElement.dataset.stage };
   });
-  await check(s.stage === stage && s.svg && s.lit === light && !s.text, `the stage, ${stage}, is a traffic light lit ${light}`, s);
+  await check(!s.bar && s.label === stage && s.page === stage, `the stage, ${stage}, is the open study's label in the switcher, and not in the status bar`, s);
+};
+// hovering a study's stage label in the switcher lists the stages, that study's own highlighted
+const hoverStage = async (page, id) => {
+  if (!(await page.evaluate(() => document.querySelector("#study-menu").open))) await page.click("#study-menu summary");
+  await page.hover(`#study-list a[data-id="${id}"] .stage-tag`);
+  await page.waitForFunction(() => document.querySelector("#stage-pop").matches(":popover-open"));
+  return page.evaluate(() => [...document.querySelectorAll("#stage-pop li")].map((li) => ({
+    name: li.querySelector(".name").textContent, now: li.classList.contains("now"), crossed: getComputedStyle(li.querySelector(".name")).textDecorationLine,
+  })));
 };
 // the one dialog, open on a tab
 const tabIs = async (page, tab) => {
@@ -163,20 +179,23 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
 // ---- a GT study: Load image, its Count, Submit GT; the resources block always open, as it was before it could fold ----
 {
   const { ctx, page } = await open("fixture", "open");
-  await stageIs(page, "GT", "yellow");
+  await stageIs(page, "GT");
   // hovering the stage lists the stages, its own highlighted and the ones before it crossed out
-  await page.hover("#sb-stage");
-  await page.waitForFunction(() => document.querySelector("#stage-pop").matches(":popover-open"));
-  const stages = await page.evaluate(() => [...document.querySelectorAll("#stage-pop li")].map((li) => ({
-    name: li.querySelector(".name").textContent, now: li.classList.contains("now"), crossed: getComputedStyle(li.querySelector(".name")).textDecorationLine,
-  })));
+  const stages = await hoverStage(page, "fixture");
   await check(stages.map((x) => x.name).join() === "PreGT,GT,PostGT,Published" && stages[1].now && stages.filter((x) => x.now).length === 1,
     "the stage's popup lists PreGT, GT, PostGT and Published, GT highlighted", stages);
   await check(stages[0].crossed === "line-through" && stages.slice(1).every((x) => x.crossed === "none"), "the stage before it is crossed out", stages);
   await check(/next|move on/i.test(await page.textContent("#stage-pop")), "and says what moves the study on", await page.textContent("#stage-pop"));
+  const beside = await page.evaluate(() => document.querySelector("#stage-pop").getBoundingClientRect().left - document.querySelector("#study-menu .pop").getBoundingClientRect().right);
+  await check(beside >= 0, "and opens beside the switcher, not over it", beside);
   if (shots) await page.screenshot({ path: path.join(shots, "0-stages.png") });
-  await page.mouse.move(700, 300);
+  // another study's label speaks of that study
+  const other = await hoverStage(page, "viewer");
+  await check(other[0]?.now && other.filter((x) => x.now).length === 1, "hovering the Image Viewer's label highlights PreGT, its own", other);
+  await page.mouse.move(700, 600);
   await page.waitForFunction(() => !document.querySelector("#stage-pop").matches(":popover-open"));
+  await page.keyboard.press("Escape");
+  await page.evaluate(() => { document.querySelector("#study-menu").open = false; });
   await steps(page, ["Load image*"], ["#load-main", "#sb-load"]);
   await shot(page, "1-start");
   // req/shell/waiting/visible: the waiting overlay's big spinner shows while Python loads or works, and gives way
@@ -215,8 +234,8 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await check(/^\d+ MB$/.test(right[1].text), 'the memory reads "253 MB", with no word', right[1].text);
   await check(/^\d+(\.\d)? (KB|MB|GB)\/s$/.test(right[2].text), 'the network reads "1.2 MB/s"', right[2].text);
   await check(/^\d+%$/.test(right[3].text), 'the CPU reads "12%"', right[3].text);
-  const left = await page.evaluate(() => ["#sb-stage", "#sb-steps", "#status"].map((id) => document.querySelector(id).getBoundingClientRect().left));
-  await check(left[0] < 40 && left[0] < left[1] && left[1] < left[2], "the stage, then the crumbs, then what the page is doing, from the left", left);
+  const left = await page.evaluate(() => ["#sb-steps", "#status"].map((id) => document.querySelector(id).getBoundingClientRect().left));
+  await check(left[0] < 40 && left[0] < left[1], "the crumbs, then what the page is doing, from the left", left);
   // a mild bar between every two items on show, but the four resources
   const seps = await bars(page);
   await check(seps.length >= 5 && seps.every((x) => x[2] === x[3]), "a vertical bar between every two items on show, none between the four resources", seps);
@@ -524,7 +543,7 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
 {
   stage = "PreGT";
   const { ctx, page } = await open("fixture");
-  await stageIs(page, "PreGT", "red");
+  await stageIs(page, "PreGT");
   await check(await page.evaluate(() => document.querySelector("#fx-truth").offsetParent === null), "its ground-truth button is hidden");
   await loadImage(page); await count(page);
   await steps(page, ["Load image", "Count"], []);
@@ -539,11 +558,7 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
 {
   stage = "Published";
   const { ctx, page } = await open("fixture");
-  const lights = await page.evaluate(() => ({ stage: document.querySelector("#sb-stage").dataset.stage,
-    lit: [...document.querySelectorAll("#sb-stage circle")].map((c) => c.classList.contains("lit") && getComputedStyle(c).fill) }));
-  const green = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--yes").trim());
-  await check(lights.stage === "Published" && lights.lit.every((f) => f && f === lights.lit[0]) && lights.lit[0] !== await page.evaluate(() => getComputedStyle(document.querySelector("#sb-stage circle:not(.lit)") || document.body).fill),
-    "the stage, Published, lights all three alike", { lights, green });
+  await stageIs(page, "Published");
   const gone = await page.evaluate(() => ["#fx-counted", "#fx-truth"].map((id) => [id, document.querySelector(id).offsetParent === null]));
   await check(gone.every(([, hidden]) => hidden), "the study's postprocessing and its ground-truth button are not shown", gone);
   await loadImage(page); await count(page);
@@ -556,14 +571,14 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
 // ---- the Image Viewer: Load image alone ----
 {
   const { ctx, page } = await open(null);
-  await stageIs(page, "PreGT", "red");
+  await stageIs(page, "PreGT");
   await steps(page, ["Load image*"], ["#load-main", "#sb-load"]);
   await page.setInputFiles("#file", image);
   await steps(page, ["Load image"], []);
   // switching study in place: its stage and steps come with it, and it starts with no image open
   await page.click("#study-menu summary");
   await page.click("#study-list a >> text=NoR Finder");
-  await page.waitForFunction(() => document.querySelector("#sb-stage").dataset.stage === "GT");
+  await page.waitForFunction(() => document.documentElement.dataset.stage === "GT");
   await steps(page, ["Load image*"], ["#load-main", "#sb-load"]);
   await ctx.close();
 }

@@ -373,7 +373,9 @@ spec does not have.
   control; it opens, under the caret, a 320 px panel headed "Switch study", a search box (focused,
   filtering by title as the user types) and every study whose `study.json` says `"listed": true`,
   by title, each with its own icon (the tab's icon its `study.json` names; the generic study icon
-  when it names none, or the icon does not load), a rule under its name, and a tick on the one on show. Arrow
+  when it names none, or the icon does not load), a rule under its name, then its offline mark (`req/shell/offline/mark`) and
+  its stage (`req/shell/study/stage`), 8 px from the row's right edge. No tick marks the one on show: the
+  header already names it, and only assistive tech is told which it is. Arrow
   keys move through the list, Enter opens the one marked, Escape closes it. Each entry is a link to
   the study's address (`req/shell/study/folder-and-address`), so a middle click opens it in a new tab. The header's spacing follows
   GitHub's: 64 px tall, 16 px at the sides, a 32 px logo. Test: `web-tests/test_study_runs.py`.
@@ -571,11 +573,12 @@ spec does not have.
   <details>
 
   Set by the owner on 2026-11-02, so the user knows before doing anything what works with no network
-  (`req/shell/offline/default`). A small grey mark, the same everywhere, an arrow into a tray for saved on this device,
+  (`req/shell/offline/default`). A small green mark, the same everywhere, an arrow into a tray for saved on this device,
   follows a study whose Python is all on this device, in the header's switcher and its Storage
   section, and an image kept on this device, in the Google Drive dialog's rows; what is not available
-  offline carries nothing. Load's recent images carry none: with Auto-save on, they are all kept. Hovering on the mark says what
-  it means: the study runs, or the image opens, without the internet. Test:
+  offline carries nothing. Load's recent images carry none: with Auto-save on, they are all kept. The owner set on
+  2026-11-04 that the mark states a state rather than prompting an action, so it is green, with no tooltip and no
+  question-mark pointer; assistive tech is told what it means: the study runs, or the image opens, without the internet. Test:
   `web-tests/test_storage_page.py`.
   </details>
 
@@ -808,10 +811,10 @@ spec does not have.
   preview or a fork counts nothing. Test: `web-tests/test_published_site.py`.
   </details>
 
-- `req/shell/status-bar` The status bar: the study's stage and its steps at the left, the disk, memory, network, CPU and version at the right.
+- `req/shell/status-bar` The status bar: the study's steps at the left, the disk, memory, network, CPU and version at the right.
   <details>
 
-  From the left edge: the study's stage (`req/shell/study/stage`), then the breadcrumbs of its steps (`req/shell/status-bar/breadcrumbs`), then
+  From the left edge: the breadcrumbs of its steps (`req/shell/status-bar/breadcrumbs`), then
   the spinner and what the page is doing now (each stage of Python's loading, the study's progress,
   an error in red) and the thumbnails' progress (`req/shell/drive/dialog`). From the right edge inward: the site's
   version (stamped by each release; `req/shell/version-history`, `req/shell/site/out-of-date`), the CPU (`req/shell/status-bar/cpu`), the network (`req/shell/status-bar/network`), the
@@ -993,9 +996,10 @@ spec does not have.
 - `req/shell/study/stage` A study declares its stage: PreGT, GT, PostGT or Published.
   <details>
 
-  Every `study.json` names its `stage`, and the status bar shows it first as a traffic light, its
-  name in no words: red for PreGT, yellow for GT, green for PostGT, all three green for Published.
-  Hovering it opens a popup listing the four stages in order with what each means, the study's own highlighted and the
+  Every `study.json` names its `stage`, and the header's switcher (`req/shell/header`) shows each study's at the end of
+  its row as a small label, the stage's name bordered in its colour: red for PreGT, yellow for GT, green for PostGT,
+  green and filled for Published. Set by the owner on 2026-11-04.
+  Hovering a label opens a popup beside the switcher listing the four stages in order with what each means, that study's own highlighted and the
   ones before it crossed out, and what the study needs to move on to the next.
   PreGT: the study's tools work but cannot make ground truth yet, so it offers no export: its
   ground-truth button (`groundTruth.button`) is hidden and it has no Submit GT step. GT: the same,

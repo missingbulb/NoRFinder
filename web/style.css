@@ -2,18 +2,18 @@
 :root, :root[data-theme=dark] {
   --bg: #16181c; --panel: #1f2227; --line: #33373e; --text: #e6e6e6; --dim: #9aa0a8; --shade: #16181cb0; --tipbg: #000d;
   --pink: rgb(255, 105, 200); --blue: rgb(0, 140, 255); --accent: #4c8dff; --yes: #2fb344; --no: #e5484d; --warn: #ffc864; --err: #ff7b7b;
-  --icon: #929292; --housing: #3a3a3a; --unlit: #5a5a5a;
+  --icon: #929292;
   color-scheme: dark;
 }
 :root[data-theme=light] {
   --bg: #f4f5f7; --panel: #ffffff; --line: #d5d9e0; --text: #1c1f24; --dim: #5f6670; --shade: #f4f5f7c0; --tipbg: #fffffff0;
-  --accent: #2f6fe0; --warn: #a86a00; --err: #c62828; --icon: #6e6e6e; --housing: #4a4a4a; --unlit: #7a7a7a;
+  --accent: #2f6fe0; --warn: #a86a00; --err: #c62828; --icon: #6e6e6e;
   color-scheme: light;
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
     --bg: #f4f5f7; --panel: #ffffff; --line: #d5d9e0; --text: #1c1f24; --dim: #5f6670; --shade: #f4f5f7c0; --tipbg: #fffffff0;
-    --accent: #2f6fe0; --warn: #a86a00; --err: #c62828; --icon: #6e6e6e; --housing: #4a4a4a; --unlit: #7a7a7a;
+    --accent: #2f6fe0; --warn: #a86a00; --err: #c62828; --icon: #6e6e6e;
     color-scheme: light;
   }
 }
@@ -69,13 +69,19 @@ h1 { font-size: 16px; font-weight: 600; margin: 0; }
 #study-search { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; background: none; outline: none; }
 #study-search::-webkit-search-cancel-button { display: none; }
 #study-list { border-top: 1px solid var(--line); padding: 8px 0; border-bottom: 1px solid var(--line); }
-#study-list a { display: flex; align-items: center; gap: 8px; height: 32px; margin: 0 8px; padding: 0 0 0 8px; border-radius: var(--r-chip); color: var(--text); text-decoration: none; white-space: nowrap; }
+#study-list a { display: flex; align-items: center; gap: 8px; height: 32px; margin: 0 8px; padding: 0 8px; border-radius: var(--r-chip); color: var(--text); text-decoration: none; white-space: nowrap; }
 #study-list a[hidden] { display: none; }
 #study-list img.study-icon { width: 16px; height: 16px; flex: none; }
 #study-list .study-icon[hidden] { display: none; }
-#study-list .tick { visibility: hidden; color: var(--dim); }
-#study-list a[aria-current="page"] .tick { visibility: visible; }
-#study-list .name { flex: 1; align-self: stretch; display: flex; align-items: center; overflow: hidden; text-overflow: ellipsis; margin-right: 8px; border-bottom: 1px solid var(--line); }
+#study-list .name { flex: 1; align-self: stretch; display: flex; align-items: center; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid var(--line); }
+#study-list .offline-mark { margin-left: 0; }
+/* a study's stage (req/shell/study/stage): a small label bordered in its colour, last on its row */
+.stage-tag { --stage: var(--dim); order: 1; flex: none; padding: 0 6px; font-size: 11px; line-height: 16px; font-weight: 600; border: 1px solid var(--stage); border-radius: 2em;
+  color: color-mix(in srgb, var(--stage) 70%, var(--text)); cursor: default; }
+.stage-tag[data-light=red] { --stage: var(--no); }
+.stage-tag[data-light=yellow] { --stage: #f5c400; }
+.stage-tag[data-light=green] { --stage: var(--yes); }
+.stage-tag[data-light=all] { --stage: var(--yes); background: color-mix(in srgb, var(--yes) 18%, transparent); }
 #study-list a.active { background: color-mix(in srgb, var(--text) 8%, var(--panel)); }
 #study-list a.active .name { border-bottom-color: transparent; }
 #study-none { margin: 8px 16px 0; font-size: 13px; }
@@ -312,7 +318,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 /* a toolbar's hover popup, under its button (the popup's anchor), their right edges lined up, turned the other way at the window's edge */
 #grid-pop, #minimap-pop, .v3-pop { position-area: bottom span-left; margin: 6px 0 0; position-try-fallbacks: flip-inline; }
 @supports not (anchor-name: --a) { #grid-pop, #minimap-pop, .v3-pop { inset: 96px 16px auto auto; } }
-#grid-btn, #minimap-btn, #v3-tools .tool, #sb-stage { interest-delay: 0s 300ms; }
+#grid-btn, #minimap-btn, #v3-tools .tool { interest-delay: 0s 300ms; }
 #minimap-pop { position: fixed; inset: auto; padding: 10px 14px; flex-direction: column; gap: 4px; font-size: 13px;
   background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px #0004; }
 #minimap-pop label { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
@@ -384,7 +390,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #statusbar button.sb-item:hover, #statusbar button.sb-item:focus-visible { color: var(--text); }
 #statusbar .sb-item svg { flex: none; color: var(--icon); }
 #statusbar .sb-item:has(> .v:empty), #sb-thumbs:empty { display: none; }
-#statusbar #sb-stage, #sb-steps { padding-right: 10px; border-right: 1px solid var(--line); }
+#sb-steps { padding-right: 10px; border-right: 1px solid var(--line); }
 #sb-thumbs, #statusbar .grow ~ .sb-item, #statusbar #sb-res-icon, #sb-res-items > .sb-item:first-child { padding-left: 10px; border-left: 1px solid var(--line); }
 /* the disk, memory, network and CPU, folded into one icon (req/shell/status-bar/resources): unfolded always open,
    or auto-hiding while hovered or raised by what needs watching; the icon goes only always open */
@@ -411,18 +417,12 @@ html[data-motion=off] :is(#sb-res-items, #statusbar #sb-res-icon) { transition: 
 @keyframes roll { from { transform: translateY(100%); } }
 @media (prefers-reduced-motion: reduce) { #statusbar .roll > span { animation: none; } }
 #sb-version.stale { color: var(--warn); font-weight: 600; }
-/* the stage, a traffic light: red PreGT, yellow GT, green PostGT */
-#sb-stage { outline: none; cursor: default; }
-#sb-stage .housing { fill: var(--housing); }
-#sb-stage circle { fill: var(--unlit); }
-#sb-stage circle.lit[data-light=red], #stage-list .dot[data-light=red] { fill: var(--no); background: var(--no); }
-#sb-stage circle.lit[data-light=yellow], #stage-list .dot[data-light=yellow] { fill: #f5c400; background: #f5c400; }
-#sb-stage circle.lit[data-light=green], #stage-list .dot[data-light=green] { fill: var(--yes); background: var(--yes); }
-#sb-stage[data-stage=Published] circle.lit { fill: var(--yes); }
+#stage-list .dot[data-light=red] { background: var(--no); }
+#stage-list .dot[data-light=yellow] { background: #f5c400; }
+#stage-list .dot[data-light=green] { background: var(--yes); }
 #stage-list .dot[data-light=all] { background: var(--yes); box-shadow: 0 0 0 2px color-mix(in srgb, var(--yes) 40%, transparent); }
-#sb-stage:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
-/* the stages, over the status bar at the stage's left edge */
-#stage-pop { position: fixed; inset: auto auto calc(1cm + 6px) 8px; margin: 0; width: min(360px, calc(100vw - 16px)); padding: 12px 14px;
+/* the stages, beside the switcher at the hovered label's row */
+#stage-pop { position: fixed; inset: auto; margin: 0; width: min(360px, calc(100vw - 16px)); padding: 12px 14px;
   background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-panel); box-shadow: 0 6px 24px #0006; font-size: 13px; }
 #stage-pop h2 { font-size: 14px; margin: 0 0 6px; }
 #stage-list { list-style: none; margin: 0; padding: 0; }
@@ -746,9 +746,8 @@ html.offline #sb-online .off { display: block; }
 #usage-dlg .install-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 #usage-dlg .install-row .hint { margin: 0; }
 @media (max-width: 520px) { #offline-dlg .where { display: none; } }
-/* what is available offline (req/shell/offline/mark): a small, quiet mark, explained on hover */
-.offline-mark { display: inline-flex; align-items: center; margin-left: 5px; color: var(--dim); vertical-align: -1px; cursor: help; }
-.offline-mark:hover { color: var(--text); }
+/* what is available offline (req/shell/offline/mark): a small green mark, a state rather than a prompt */
+.offline-mark { display: inline-flex; align-items: center; margin-left: 5px; color: var(--yes); vertical-align: -1px; }
 #storage-list .group > summary .title { display: inline-flex; align-items: center; }
 #storage-list .entry .del-none { width: 22px; }
 
