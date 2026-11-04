@@ -1,5 +1,5 @@
 // The vascular page's test surface: a local server for the site, with a stand-in for the study's Python worker
-// that offers two algorithms, opens any file as a drawn stack as many slices deep as the given model, and answers
+// that offers two algorithms (their names, icons and steps as the study's Python gives them), opens any file as a drawn stack as many slices deep as the given model, and answers
 // Execute with that model, the arguments it was asked with in its "asked" field. The study is served in the
 // stage asked for.
 import { repoFile } from "../../../web-tests/repo_file.mjs";
@@ -8,8 +8,8 @@ import http from "node:http";
 import path from "node:path";
 
 export const ALGORITHMS = [
-  { key: "v5", name: "v5-no-short-islands", title: "v5, no short islands", about: "v5, no short islands: v4, then a lone short vessel is dropped.\n\nThe owner's rule." },
-  { key: "v1", name: "v1-flat-skeleton", title: "v1, flat skeleton", about: "v1, flat skeleton: the baseline." },
+  { key: "v5", name: "v5-no-short-islands", title: "island-free", icon: "🏝️", about: "- Start from the dead-end check's network\n- Drop every vessel shorter than 45 µm\n  - that touches no junction at either end" },
+  { key: "v4", name: "v4-line-evidence", title: "dead-end check", icon: "🔍", about: "- Start from the bridges network\n- Drop a short dead end that is no line" },
 ];
 
 // a stack as many slices deep as the model, its signal a grid of bright lines nowhere near most of the model's vessels
