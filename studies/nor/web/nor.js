@@ -476,35 +476,13 @@ export function mount(shell) {
     for (const p of document.querySelectorAll("#filters .param")) p.set(st.values[p.dataset.name]);
   }
 
-  // a Markdown outline drawn as HTML: paragraphs split by blank lines, "- " or "1. " items nested by their indent
-  function markdownNote(text) {
-    const out = document.createDocumentFragment();
-    for (const para of text.split(/\n\s*\n/)) {
-      const lists = []; // the open lists, outermost first: {indent, el}
-      for (const line of para.split("\n").filter((l) => l.trim())) {
-        const m = line.match(/^(\s*)(-|\d+\.)\s+(.*)$/);
-        if (!m) { const p = document.createElement("p"); p.textContent = line.trim(); out.append(p); lists.length = 0; continue; }
-        const indent = m[1].length, tag = m[2] === "-" ? "UL" : "OL";
-        while (lists.length && lists.at(-1).indent > indent) lists.pop();
-        if (lists.length && lists.at(-1).indent === indent && lists.at(-1).el.tagName !== tag) lists.pop();
-        if (!lists.length || lists.at(-1).indent < indent) {
-          const el = document.createElement(tag);
-          (lists.length ? lists.at(-1).el.lastElementChild : out).append(el);
-          lists.push({ indent, el });
-        }
-        const li = document.createElement("li"); li.textContent = m[3]; lists.at(-1).el.append(li);
-      }
-    }
-    return out;
-  }
-
   // the finder's settings: its main ones on show, every one under Advanced; both edit the same values
   function buildDetect() {
     const finder = $("#finder").value, about = st.about[finder];
     const defs = about.detection_params, vals = (st.detectValues[finder] ||= { ...defs });
     $("#about-box summary").textContent = `How the ${st.names[finder]} algorithm works`;
     const note = $("#finder-note");
-    note.replaceChildren(markdownNote(about.about + (about.exact_refilter ? "" : "\n\nIt picks between alternatives using the filters, so after a filter change, find again for its exact result.")));
+    note.replaceChildren(shell.outline(about.about + (about.exact_refilter ? "" : "\n\nIt picks between alternatives using the filters, so after a filter change, find again for its exact result.")));
     quality.then((q) => {
       const own = q && q.finders[finder];
       if (!own || $("#finder").value !== finder) return;

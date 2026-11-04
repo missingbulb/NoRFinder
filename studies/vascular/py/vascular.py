@@ -15,16 +15,15 @@ DAPI = {'name': 'DAPI', 'colour': '#0000ff'}
 
 
 def algorithms():
-    """The lab's versions the page offers, the lab's default first, then the newest first: each its key, its name in
-    the model it draws, its title and its whole docstring, which says how it works."""
+    """The lab's versions the page offers, the lab's default first, then the newest first, the retired left out: each
+    its key, its name in the model it draws, its title, its icon, and its steps as a Markdown outline."""
     import importlib
     import lab
-    keys = [lab.DEFAULT] + sorted((k for k in lab.VERSIONS if k != lab.DEFAULT), reverse=True)
+    keys = [lab.DEFAULT] + sorted((k for k in lab.VERSIONS if k != lab.DEFAULT and k not in lab.RETIRED), reverse=True)
     out = []
     for k in keys:
         mod = importlib.import_module(lab.VERSIONS[k])
-        doc = (mod.__doc__ or '').strip()
-        out.append({'key': k, 'name': mod.NAME, 'title': doc.split(':', 1)[0] if ':' in doc.split('\n', 1)[0] else k, 'about': doc})
+        out.append({'key': k, 'name': mod.NAME, 'title': mod.TITLE, 'icon': mod.ICON, 'about': mod.STEPS})
     return out
 
 
@@ -106,5 +105,5 @@ class Session:
         if not self.um:
             raise ValueError('The file records no pixel size in µm, which the extraction measures every vessel in.')
         import lab
-        m, _ = lab.run_volume(algorithm, self.cd31.astype(np.float32), self.um, source, z_step)
+        m, _ = lab.run_volume(algorithm, self.cd31, self.um, source, z_step)
         return json.dumps(m), None

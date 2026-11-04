@@ -1,7 +1,7 @@
 // The page's shell: it runs the study the address names (/<id>, the default at the bare address), and knows
 // none of them; the header's switcher offers the ones the build lists and swaps one in without a reload. What it gives a study, as shell in mount(shell): loading images (from the
 // computer or Google Drive), Python (the study's own, run in worker.js), the viewer the study asks for,
-// the page's state its controls are drawn from (page: get, set, watch(key, fn, {signal})), the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own), the switch to its item view (views) and the boxes' titles (boxDone(box, summary) once a box's task is done), notices, the user's saved settings, downloads and ground-truth
+// the page's state its controls are drawn from (page: get, set, watch(key, fn, {signal})), the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own), the switch to its item view (views) and the boxes' titles (boxDone(box, summary) once a box's task is done), a Markdown outline as HTML (outline(text)), notices, the user's saved settings, downloads and ground-truth
 // submission; and around them the theme, the left bar, foldable boxes, Data Management (data_mode.js) with its Preprocessing (Split into parts), the resources dialog (storage, memory,
 // network and CPU) and the version history.
 //
@@ -1459,6 +1459,27 @@ function retitle() {
     return m;
   }));
 }
+// a Markdown outline drawn as HTML: paragraphs split by blank lines, "- " or "1. " items nested by their indent
+function outline(text) {
+  const out = document.createDocumentFragment();
+  for (const para of text.split(/\n\s*\n/)) {
+    const lists = []; // the open lists, outermost first: {indent, el}
+    for (const line of para.split("\n").filter((l) => l.trim())) {
+      const m = line.match(/^(\s*)(-|\d+\.)\s+(.*)$/);
+      if (!m) { const p = document.createElement("p"); p.textContent = line.trim(); out.append(p); lists.length = 0; continue; }
+      const indent = m[1].length, tag = m[2] === "-" ? "UL" : "OL";
+      while (lists.length && lists.at(-1).indent > indent) lists.pop();
+      if (lists.length && lists.at(-1).indent === indent && lists.at(-1).el.tagName !== tag) lists.pop();
+      if (!lists.length || lists.at(-1).indent < indent) {
+        const el = document.createElement(tag);
+        (lists.length ? lists.at(-1).el.lastElementChild : out).append(el);
+        lists.push({ indent, el });
+      }
+      const li = document.createElement("li"); li.textContent = m[3]; lists.at(-1).el.append(li);
+    }
+  }
+  return out;
+}
 // a box's task done, summed up (text, or a node), or waiting again (null)
 function boxDone(box, summary) {
   if (summary == null) summaries.delete(box); else summaries.set(box, summary);
@@ -1794,7 +1815,7 @@ function leaveStudy() {
 }
 
 const shell = {
-  $, state: st, page, still, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, showImage, boxDone,
+  $, state: st, page, still, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, showImage, boxDone, outline,
   views: { show: (v) => views.show(v), on: (fn) => views.on(fn), count: (l, t) => views.count(l, t), get now() { return views.now; }, get tasks() { return views.tasks; } },
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; }, get makesTruth() { return makesTruth(); },
 };
