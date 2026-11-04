@@ -1,0 +1,27 @@
+<template data-slot="left">
+  <section class="box foldable" id="bs-box" data-opens="load">
+    <div class="sec-head"><h2>Books</h2></div>
+    <label class="bs-row">Reader
+      <select id="bs-reader"></select>
+    </label>
+    <div class="bs-row">
+      <button id="bs-find" class="primary" disabled>Find books</button>
+      <button id="bs-read" disabled>Read titles</button>
+    </div>
+    <p id="bs-found" class="dim">Nothing found yet.</p>
+  </section>
+  <section class="box" id="bs-tasks" hidden>
+    <div class="sec-head"><h2>Ground truth</h2></div>
+    <div id="bs-progress" class="bs-progress" aria-hidden="true"></div>
+    <ol id="bs-task-list" class="bs-tasks"></ol>
+    <button id="bs-truth" disabled>Submit ground truth</button>
+  </section>
+  <section class="box" id="bs-titles">
+    <div class="sec-head"><h2>Titles</h2></div>
+    <ol id="bs-list" class="bs-list"></ol>
+    <button id="bs-export" disabled>Download for the matcher</button>
+  </section>
+</template>
+<template data-slot="over-image">
+  <p id="bs-draw-hint" class="bs-hint" hidden>Click the book's four corners. Esc stops.</p>
+</template>

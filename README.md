@@ -45,7 +45,7 @@ it to save in their study's Drive folder. It counts
 visits with Cloudflare Web Analytics, which sets no cookies, stores nothing on your device and does
 not follow you across sites; it receives the page's address, the page that
 linked to it and your browser's details, never your images or results. Python and
-its packages, about 50 MB, download on the first visit and are cached for 30 days. Images opened
+its packages, about 50 MB, download on the first visit and are cached for 30 days. A study that reads printed text also downloads the engines and models that read it from jsDelivr, the first time it reads, and reads on your machine too. Images opened
 from Google Drive are kept in your browser too, so they open again without a download, unless you
 untick Auto-save images; your avatar's Manage storage lists, and deletes, everything kept.
 
