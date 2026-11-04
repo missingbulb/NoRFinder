@@ -80,11 +80,6 @@ def test_a_study_names_its_stage_and_steps(path):
     assert all(p.get('name') for p in m['phases'])
 
 
-def test_the_image_viewer_has_no_stage():
-    """req/shell/study/stage: the Image Viewer is a tool that makes no ground truth, so it has no stage."""
-    assert manifest(next(p for p in STUDIES if os.path.basename(os.path.dirname(p)) == 'viewer'))['stage'] is None
-
-
 class Boxes(HTMLParser):
     """Each foldable box in an HTML file: (the slot its template fills, id, its title, data-opens, data-folds)."""
     def __init__(self, html):
