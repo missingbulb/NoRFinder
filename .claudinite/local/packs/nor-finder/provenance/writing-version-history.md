@@ -11,3 +11,11 @@
 - **Retire when:** the public-website bump folds Next release under the version it cuts; step 1 then
   goes.
 - **Landed:** #701
+
+## 2026-11-04 · trigger-changed · from editing the history file to telling a page change in a commit line
+- **Reason:** no pull request edits web/version_history.md any more; the fold and the story-fitting
+  steps went with it.
+- **Mechanism:** a workflow skill named by the page-version-history rule and by the check's failure;
+  no force-load, since a path trigger on every `web/` edit would load it on most changes.
+- **Actor:** @missingbulb (owner).
+- **Model:** Claude Opus 5.5

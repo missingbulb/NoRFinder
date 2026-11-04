@@ -31,10 +31,10 @@ not belong here — propose it to the Claudinite canon instead, where every repo
 
 ## The page's version history
 
-- **Changing what a user of the NoR Finder page sees** — work it into the "Next release" story in
-  `web/version_history.md`, ending its paragraph with the pull request's number `(#123)`, in the
-  same pull request; editing the file loads the `writing-version-history` skill. A change nobody
-  using the page would notice adds nothing. (page-version-history)
+- **Changing what a user of the NoR Finder page sees** — tell it in a `Version-history:` line of
+  one of the pull request's commit messages, at most 20 words a user reads, or
+  `Version-history: none`; never in a file the pull requests share. The `writing-version-history`
+  skill says how. (page-version-history)
 
 ## Ground truth
 

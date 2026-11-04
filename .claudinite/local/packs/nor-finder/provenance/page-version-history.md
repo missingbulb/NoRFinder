@@ -18,3 +18,16 @@
 - **Actor:** @missingbulb (owner).
 - **Model:** Claude Opus 5.5
 - **Landed:** #701
+
+## 2026-11-04 · reworded · each pull request tells its change in its own commit line, no shared file
+- **Source:** the owner: "we cannot have all changes write to the same file. This is terrible." and
+  "Not blocking is much more important" than the three-paragraph limit.
+- **Reason:** every page change edited one file, so every open pull request conflicted with every
+  other.
+- **Mechanism:** a prose rule, now backed by the Tests workflow's version-history job, which fails a
+  pull request changing `web/` or a study's `web/` without the line.
+- **Rejected:** a fragment file per pull request (still a commit of files only to be folded away);
+  the line in the PR description (needs the squash default switched, and main's commit bodies would
+  lose the per-commit messages).
+- **Actor:** @missingbulb (owner).
+- **Model:** Claude Opus 5.5
