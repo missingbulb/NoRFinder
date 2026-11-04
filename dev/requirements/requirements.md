@@ -550,8 +550,9 @@ spec does not have.
   `req/shell/offline/per-study`) opens: offline, From Google Drive lists the images kept here instead of a Drive folder.
   The status bar's online icon (`req/shell/status-bar/online`) shows it, the network's tooltip and its
   Network tab saying the page is offline too. No
-  network is the browser saying so, or the site not answering, asked every 30 seconds all session long, so the
-  network going or coming back mid-session shows within that, the browser saying online or not, and a Wi-Fi's
+  network is the browser saying so, or the site not answering, asked every 30 seconds all session long and every
+  5 seconds while offline, so the network going mid-session shows within 30 seconds and coming back within
+  seconds, even with a release that landed meanwhile still being copied (set by the owner on 2026-11-04), the browser saying online or not, and a Wi-Fi's
   sign-in page answering in the site's place counts as no network. What the page is doing follows it, set by the
   owner on 2026-11-03: a study whose Python could not load loads it once the network is back, with no reload;
   an open From Google Drive lists the images kept here once it goes and the study's folder once it is back, and
@@ -908,10 +909,11 @@ spec does not have.
   the page opens with the four folded away and the icon alone showing; hovering the block unfolds the
   four as they look always open, the icon going away as they come (set by the owner on 2026-11-03), and leaving folds them again, the icon coming back, both ways
   animated (at once with animations off, `req/shell/resources-dialog/animations`, or reduced motion asked for). It unfolds by
-  itself, and stays unfolded, while the page is offline (`req/shell/offline/default`), the CPU has been over 50% of one core for more than
+  itself, and stays unfolded, while the CPU has been over 50% of one core for more than
   5 seconds, the network has been downloading over 250 KB/s for more than 5
   seconds, or the tab holds over 1 GB, and folds 8 seconds after the last of these ends. Hidden
-  always, only the icon shows, and neither hovering nor any of these unfolds it. Always open, the icon does not show. Clicking the icon opens the
+  always, only the icon shows, and neither hovering nor any of these unfolds it. Going offline does not unfold it
+  (set by the owner on 2026-11-04): the online icon (`req/shell/status-bar/online`) says so. Always open, the icon does not show. Clicking the icon opens the
   resources dialog (`req/shell/resources-dialog`) on the tab last shown, Storage at first. The choice is kept as the user's setting and,
   signed in, follows the user (`req/shell/account/sign-in`). Test: `web-tests/test_status_bar_page.py`.
   </details>

@@ -15,6 +15,9 @@ precision and recall, and How the algorithm works gives its steps one by one. Ex
 vessel model several times faster and with a fraction of the memory, and the weakest algorithm,
 skeleton, is no longer offered. (#744)
 
+Back online, the status bar says so within seconds, even while the site copies a release that landed
+meanwhile. Going offline no longer unfolds the disk, memory, network and CPU: the red Wi-Fi icon says it. (#741)
+
 In NoR Finder, clicking the image where there is no candidate now deselects the selected one, as
 clicking it again already did. (#743)
 
