@@ -1075,12 +1075,17 @@ spec does not have.
   as the microscope does. Dragging turns it about the screen's two axes, on past looking straight
   across, a sideways scroll spins it about the line of sight (owner, 2026-11-03), the wheel zooms,
   shift-drag pans, and Top, Tilted,
-  Side and Front put the view back. Brightest shows the brightest point along each ray, Surface a lit
-  surface where the signal crosses a level, and Colour by depth paints by the depth of that point
-  so crossings at different depths read apart. Slices *a*–*b* show part of the depth. The slice
+  Side and Front put the view back. The toolbar holds Look from (Top, Tilted, Side and Front, in a
+  popup with no tooltip over it) and the 2D view's Zoom, which zooms the 3D view (owner,
+  2026-11-04); the 2D view's other tools step aside. Brightest shows the brightest point along each
+  ray, Surface a lit surface where the signal crosses a level, and colour by depth paints by the
+  depth of that point so crossings at different depths read apart: the study's `view` sets which,
+  and a study may turn colour by depth on and off. The depth is a row of the image box under the
+  channels' rows, as a channel's row holds its points (owner, 2026-11-04): its first and last slice
+  shown on one slider, and in the colour picker's place the spacing between slices. The slice
   spacing comes from the file, else from the study (`view.spacing`, saying who stated it), else
   1 µm, called a guess. Every shown channel is drawn in its colour between the black and white
-  points of its row, which redraw the 3D view as they move. The study's `view` sets the render, Colour
+  points of its row, which redraw the 3D view as they move. The study's `view` sets the render, colour
   by depth and the spacing it opens with. A study draws over the 3D view, over the stack or beside it
   in the same camera, picks and drags there, and can keep only the stack inside or outside a mask of
   its own. Test: `web-tests/test_viewer3d_page.py`, and the vascular study's `req/vascular/model/correct`.
@@ -1096,10 +1101,11 @@ spec does not have.
   left). In a PreGT or Published study nothing is being made, the cards are small viewers of what
   was found, and it reads "Items" with how many there are. In the item view it reads "Image". The
   study counts its own (`views.count(left, total)`; NoR: the finalists and added NoRs with no
-  verdict, among all; Vascular: the low-confidence vessels with no verdict, among all junctions and
-  vessels) and hears which view is shown (`views.on(fn)`). Set by the owner on 2026-11-03: an item
+  verdict, among all; Vascular: its junctions and vessels) and hears which view is shown
+  (`views.on(fn)`). Set by the owner on 2026-11-03: an item
   view marked `data-viewing` only shows what was found, so while its study makes ground truth there
-  is no second view and no switch: the study lists its tasks itself (NoR: `req/nor/truth/tasks`).
+  is no second view and no switch: the study lists its tasks itself (NoR: `req/nor/truth/tasks`,
+  Vascular: `req/vascular/truth/tasks`).
   Test: `web-tests/test_status_bar_page.py`, `studies/nor/tests/test_truth_tasks_page.py`.
   </details>
 
@@ -1477,42 +1483,71 @@ owner's decisions on the stacks and the vessel model, are
   `files.drive` in the study's `study.json`, under `req/shell/drive/dialog`'s rule.
   </details>
 
-- `req/vascular/model/cards` Tasks shows each junction and vessel of the model as a card.
+- `req/vascular/model/cards` Items shows each junction and vessel of the model as a card, outside a ground-truth stage.
   <details>
 
   A card for each junction (three or more live branches) and each vessel (junction or tip to the
   next): the stack around it flattened over the slices shown, the rest of the model thin in magenta
   and the item in white, with its numbers (a vessel's length along its curve, its width and depth
   span; a junction's depth, width and how many junctions lie within 20 µm). Filters show the ones
-  worth a look and the declined vessels; sorting brings the open tasks (`req/shell/views/submit-task`, the default), the shortest, widest, most branched or most
+  worth a look and the declined vessels; sorting brings the shortest, widest, most branched or most
   crowded first. A card approves, declines or deletes a vessel, splits a junction, or shows its
-  item in 3D. Test: `studies/vascular/tests/test_model_page.py`.
+  item in 3D. The item view only shows what was found (`data-viewing`, `req/shell/views/second`):
+  while the study makes ground truth its tasks are in the left bar instead
+  (`req/vascular/truth/tasks`). Test: `studies/vascular/tests/test_model_page.py`.
   </details>
 
-- `req/vascular/model/correct` A stack's vessel model opens beside it or over it, to correct by hand.
+- `req/vascular/model/correct` A stack's vessel model, to correct by hand over the stack or beside it.
   <details>
 
   Moved from the 3D MicroViewer (`studies/vascular/docs/3D-STACKS.md`, the owner's decisions of
-  2026-10-03 to 10-29). A stack the study ships a draft for (`web/models/`, matched by name without
-  case, spaces or punctuation) opens with it; any `vessel-model/2` file loads too. Side by side
-  shows the model as white tubes in a view of its own that turns with the stack's; Overlay draws it
-  in magenta over the stack; Hide takes it away. On the model: drag a point to move it, right-click
-  a segment or a point to delete it, add or remove a bend or split a junction into vessels that
-  cross, right-drag from one piece to another to connect them, and click a faded low-confidence
-  vessel to approve or decline it. Review keeps only the signal within reach of the model's
-  vessels (Detected) or away from them (Missed), within a reach that is a share of each vessel's
-  own width; Draw a missed vessel adds one a click at a time; Mark a damaged area lassos an area to
-  leave out. Every edit can be undone, and the edits stay in the browser until the model is
-  submitted. Test: `studies/vascular/tests/test_model_page.py`.
+  2026-10-03 to 10-29). The model Execute draws (`req/vascular/model/run`), or any `vessel-model/2`
+  file loaded, shows as the toolbar says (`req/vascular/model/view`): white tubes in a view of its
+  own that turns with the stack's, or magenta over the stack. On the model: drag a point to move it,
+  right-click a segment or a point to delete it, add or remove a bend or split a junction into
+  vessels that cross, right-drag from one piece to another to connect them, and click a faded
+  low-confidence vessel to approve or decline it. Review keeps only the signal within reach of the
+  model's vessels (Detected) or away from them (Missed), within a reach that is a share of each
+  vessel's own width; Mark a damaged area lassos an area to leave out. Every edit can be undone,
+  and the edits stay in the browser, tied to the model as drawn, until it is submitted. Test:
+  `studies/vascular/tests/test_model_page.py`.
   </details>
 
 - `req/vascular/model/ground-truth` The corrected model is the study's ground truth.
   <details>
 
-  Submit Ground Truth (`req/shell/ground-truth/submit`), in the item view (Tasks, `req/shell/views/second`) and only there, exports the corrected `vessel-model/2` file, `status` corrected and
+  Submit Ground Truth (`req/shell/ground-truth/submit`), the last of the Ground Truth Tasks
+  (`req/vascular/truth/tasks`), exports the corrected `vessel-model/2` file, `status` corrected and
   its corrections counted, labelled `vascular-ground-truth`; it is off until the model carries a
-  correction, and its checklist says how many low-confidence vessels still wait for a verdict.
-  Test: `studies/vascular/tests/test_model_page.py`.
+  correction, and its checklist says what of each task is still open. Each verdict is in the file:
+  a vessel's `state` (`accepted` or `rejected`) beside `proposed`, the state the extractor gave it;
+  a junction found right in `checked_junctions`; each area checked for missed vessels in
+  `reviewed_regions`. Test: `studies/vascular/tests/test_vessel_tasks_page.py`.
+  </details>
+
+- `req/vascular/model/run` Processing picks an extraction algorithm, says how it works, and Execute draws the vessel model in the browser.
+  <details>
+
+  Set by the owner on 2026-11-04, as NoR's Processing box. The box lists the extraction lab's
+  versions (`studies/vascular/analysis/extraction/`), the lab's default first; How the algorithm
+  works shows the chosen version's own description; Execute, at the box's end, runs it in the
+  page's Python on the stack open, as the lab runs it (scored, with the spacing between slices the
+  page shows), and the model it draws opens over the stack. The study ships no drawn models: a
+  stack opens with none until Execute. A vessel model file (one saved earlier, say) can still be
+  loaded from a small link beside Execute. Show low-confidence vessels stays in the box, under
+  Execute, once a model is open. Test: `studies/vascular/tests/test_extract_bridge.py` (the real
+  Python in Pyodide) and `studies/vascular/tests/test_vessel_tasks_page.py` (the page).
+  </details>
+
+- `req/vascular/model/view` Above the stack: show the image, the model, the model over the image, or both side by side; colour by depth; vessel widths.
+  <details>
+
+  Set by the owner on 2026-11-04. The toolbar chooses what the main view shows: Image (the stack
+  alone), Model (the model alone), Overlay (the model over the stack, in magenta) and Side by side
+  (the stack and the model each in a half, turning together). Colour by depth paints the stack and
+  the model alike by depth; over the stack the model stays magenta, a colour the depth scale never
+  gives, so it never vanishes into the signal it marks. Vessel widths draws each vessel as wide as
+  the model says. Test: `studies/vascular/tests/test_model_page.py`.
   </details>
 
 - `req/vascular/stack-view` A z-stack opens in 3D in the owner's approved view; 2D shows it flattened.
@@ -1525,4 +1560,40 @@ owner's decisions on the stacks and the vessel model, are
   shown CD31 first. It opens in the view the owner approved on 2026-09-29: CD31 alone, coloured by
   depth, black point 0.63 of the window (161), slices 1 µm apart as the owner stated on 2026-10-29.
   Test: `studies/vascular/tests/test_stack_page.py`.
+  </details>
+
+- `req/vascular/truth/marks` What is decided is cut out of the stack, blacked out through every slice it reaches.
+  <details>
+
+  Set by the owner on 2026-11-04, as NoR's (`req/nor/truth/marks`): an approved or declined
+  vessel's tube, a junction found right and each area checked for missed vessels are blacked out of
+  the 3D stack, so what is left to review stands out and the work shows as it is done. The current
+  item is drawn white over a dark rim, which reads over any signal. Test:
+  `studies/vascular/tests/test_vessel_tasks_page.py`.
+  </details>
+
+- `req/vascular/truth/order` The items come area by area, so the review fills the stack one area after another.
+  <details>
+
+  As NoR's (`req/nor/truth/order`): the stack's field cut into 10 × 10 areas, never drawn, the rows
+  of areas top to bottom, each row the way back from the last; each task's items in that order (a
+  vessel by its middle, a junction by its place), top to bottom inside an area, and the Areas task
+  in the same order. Test: `studies/vascular/tests/test_vessel_tasks_page.py`.
+  </details>
+
+- `req/vascular/truth/tasks` Ground Truth Tasks, in the left bar under Processing: vessels, low-confidence vessels, junctions, areas, then Submit.
+  <details>
+
+  Set by the owner on 2026-11-04, as NoR's (`req/nor/truth/tasks`), in the left bar under the
+  Processing box once a model is open: Vessels (those the extractor drew with confidence),
+  Low-confidence (the faint ones it was unsure of), each approved or declined; Junctions, each a
+  real junction or vessels that only cross (split then); Areas, the stack's areas checked one by one
+  for vessels the extractor missed; and Submit Ground Truth last. One row per task, "3/41 Vessels",
+  a check once done, and a bar split into a part per task. The open task shows one item at a time:
+  its picture across the box, the verdict buttons big under it, a cogwheel for its options and a
+  Skip link on its row; a verdict moves on by itself to the task's next item with none, then to the
+  first task not done. The current item is marked on the main view, which turns to it only when it
+  is out of the middle of the view. The Areas task frames one area at a time on the stack, seen
+  from above; Draw a missed vessel adds one there, and "No missed vessels here" checks the area and
+  moves on. Test: `studies/vascular/tests/test_vessel_tasks_page.py`.
   </details>

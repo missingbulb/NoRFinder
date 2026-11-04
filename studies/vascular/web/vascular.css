@@ -1,4 +1,5 @@
-/* The vascular study's panels: the vessel model's boxes, its right-click menu and the item cards. */
+/* The vascular study's panels: Processing, the ground-truth tasks, the review, the toolbar's view controls, the
+   model's right-click menu and the item cards. */
 .col { display: flex; flex-direction: column; gap: 8px; }
 .note { font-size: 12px; color: var(--dim); margin: 0; }
 .note.err { color: var(--err); }
@@ -9,13 +10,69 @@
 .views { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .views button { padding: 4px 10px; font-size: 13px; }
 .views button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
-.check, #model-set .row { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+.check { display: flex; gap: 6px; align-items: center; font-size: 13px; }
 #review-box .row { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
 #mcv { cursor: grab; touch-action: none; }
 #mcv.over-point { cursor: move; }
 #mcv.connecting { cursor: crosshair; }
 #v3-stage.split #mcv { background: #000; }
 #v3-stage:not(.split) #mcv { background: transparent; }
+
+/* Processing: the algorithm, how it works, and Execute at the box's end */
+#vm-algo { width: 100%; }
+#vm-about-note p { margin: 6px 0 0; }
+#model-set .row { align-items: center; }
+#model-on { margin-top: 10px; }
+
+/* the toolbar's view controls: what the main view shows, colour by depth, vessel widths */
+.toolbar #model-mode { flex: none; }
+.toolbar #model-mode button { flex: none; padding: 5px 10px; }
+.toolbar #model-mode button:disabled { opacity: .45; }
+.toolbar .tool-check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; }
+#vm-depth[aria-pressed="false"] svg { opacity: .45; }
+#vm-depth[aria-pressed="true"] { border-color: var(--accent); }
+
+/* Ground Truth Tasks, under Processing: a bar of a part per task, then a row per task, the open one with its
+   tools on its row and its item under it (as NoR's) */
+#tasks-box[hidden], #review-box[hidden], #task-now[hidden], #task-menu[hidden], #task-tools[hidden] { display: none; }
+#gt-bar { display: flex; gap: 3px; height: 8px; margin-bottom: 10px; }
+#gt-bar > span { flex: 1 1 0; min-width: 6px; border-radius: 4px; --done: 0;
+  background: linear-gradient(to right, var(--yes) calc(var(--done) * 100%), var(--line) calc(var(--done) * 100%)); }
+#gt-tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+#gt-tasks > li + li { border-top: 1px solid var(--line); }
+#gt-tasks .task-head { display: flex; align-items: center; gap: 8px; min-height: 34px; font-size: 13px; }
+#gt-tasks .task-head .t { order: 0; flex: 1; min-width: 0; text-align: left; border: 0; background: none; padding: 4px 0; font-size: 13px; color: var(--text); white-space: nowrap; }
+#gt-tasks .task-head .t:hover { color: var(--accent); }
+#gt-tasks .task-head .n { font-weight: 600; font-variant-numeric: tabular-nums; }
+#gt-tasks li.now .t { font-weight: 600; }
+#gt-tasks .tick { order: 1; display: none; color: var(--yes); font-weight: 700; }
+#gt-tasks li.done .tick { display: inline; }
+#gt-tasks .tick::after { content: "✓"; }
+#gt-tasks li.done .t { color: var(--dim); }
+#gt-tasks .task-head #task-tools { order: 2; }
+#gt-tasks li[data-task="submit"] .task-head { padding: 6px 0 0; }
+#gt-tasks li[data-task="submit"] #vm-truth { flex: 1; }
+#gt-tasks li:not(.now) .task-body { display: none; }
+#gt-tasks .task-body { padding: 0 0 10px; display: flex; flex-direction: column; gap: 6px; }
+#gt-tasks .task-body .hint, #gt-tasks .task-body .note { margin: 0; }
+#gt-tasks .task-body .note:empty { display: none; }
+#m-draw[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+#area-ok { width: 100%; }
+#task-tools { display: inline-flex; align-items: center; gap: 6px; }
+#task-tools .link { font-size: 12px; padding: 2px 0; white-space: nowrap; }
+#task-tools .link:disabled { opacity: .4; }
+#task-menu summary { padding: 2px 4px; border: 0; background: none; color: var(--dim); display: inline-flex; }
+#task-menu summary::after { content: none; }
+#task-menu summary:hover, #task-menu[open] summary { color: var(--accent); }
+#task-menu .pop { left: auto; right: 0; }
+#task-stage { position: relative; overflow: hidden; }
+#task-stage .leaving { position: absolute; left: 0; top: 0; width: 100%; pointer-events: none; }
+.task-card { display: flex; flex-direction: column; gap: 8px; }
+.task-card canvas { display: block; max-width: 100%; background: #000; border-radius: var(--r-chip); image-rendering: pixelated; }
+.task-card .verdict { display: flex; gap: 6px; }
+.task-card .verdict button { flex: 1; height: 44px; font-size: 14px; }
+.task-card .verdict button.yes { border-color: var(--yes); color: var(--yes); }
+.task-card .verdict button.no { border-color: var(--no); color: var(--no); }
 
 #ctx { position: fixed; top: 0; left: 0; z-index: 30; display: flex; flex-direction: column; padding: 4px 8px; background: var(--panel);
   border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px #0006; }

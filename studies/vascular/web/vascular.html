@@ -1,31 +1,46 @@
 <template data-slot="left">
-    <section class="box foldable" id="model-set" data-opens="load">
-      <div class="sec-head"><h2>Vessel model</h2></div>
-      <div class="col">
-        <div class="views">
-          <button type="button" id="model-draft" hidden>Reload the draft model for this stack</button>
-          <button type="button" id="model-load">Load a model file</button>
-        </div>
-        <input id="model-file" type="file" accept=".json,application/json" hidden>
-        <div id="model-on" class="col" hidden>
-          <div class="seg" id="model-mode">
-            <button type="button" data-v="side" aria-pressed="true">Side by side</button>
-            <button type="button" data-v="overlay" aria-pressed="false">Overlay</button>
-            <button type="button" data-v="off" aria-pressed="false">Hide</button>
-          </div>
-          <label class="check" id="m-candidates-row"><input type="checkbox" id="m-candidates" checked> Show low-confidence vessels (faded)</label>
-          <label class="check"><input type="checkbox" id="m-widths" checked> Show vessel widths</label>
-          <p class="note" id="model-facts"></p>
-          <div class="views">
-            <button type="button" id="m-undo">Undo</button>
-            <button type="button" id="m-redo">Redo</button>
-            <button type="button" id="m-reset">Discard edits</button>
-          </div>
-        </div>
-        <p class="note" id="model-msg"></p>
+    <section class="box foldable" id="model-set" data-opens="load" data-folds="find">
+      <div class="sec-head"><h2>Processing</h2></div>
+      <select id="vm-algo" disabled aria-label="Extraction algorithm"></select>
+      <details id="vm-about" class="fold">
+        <summary>How the algorithm works</summary>
+        <div id="vm-about-note" class="hint"></div>
+      </details>
+      <div class="row">
+        <button type="button" id="model-load" class="link" title="Open a vessel model file, one saved earlier say, in place of running the algorithm">or load a model file</button>
+        <button type="button" id="vm-run" class="primary" disabled>Execute</button>
       </div>
+      <input id="model-file" type="file" accept=".json,application/json" hidden>
+      <div id="model-on" class="col" hidden>
+        <label class="check" id="m-candidates-row"><input type="checkbox" id="m-candidates" checked> Show low-confidence vessels (faded)</label>
+        <p class="note" id="model-facts"></p>
+        <div class="views">
+          <button type="button" id="m-undo">Undo</button>
+          <button type="button" id="m-redo">Redo</button>
+          <button type="button" id="m-reset">Discard edits</button>
+        </div>
+      </div>
+      <p class="note" id="model-msg"></p>
     </section>
-    <section class="box foldable" id="review-box" data-opens="load" hidden>
+
+    <section class="box foldable" id="tasks-box" data-opens="find" hidden>
+      <div class="sec-head"><h2>Ground Truth Tasks</h2></div>
+      <div id="gt-bar"><span data-task="vessels"></span><span data-task="candidates"></span><span data-task="junctions"></span><span data-task="missed"></span></div>
+      <ol id="gt-tasks">
+        <li data-task="vessels"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button" title="The vessels the algorithm drew with confidence"><span class="n"></span> Vessels</button></div><div class="task-body"></div></li>
+        <li data-task="candidates"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button" title="The faint vessels the algorithm was unsure of"><span class="n"></span> Low-confidence</button></div><div class="task-body"></div></li>
+        <li data-task="junctions"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button" title="Where three or more vessels meet: a real junction, or vessels that only cross"><span class="n"></span> Junctions</button></div><div class="task-body"></div></li>
+        <li data-task="missed"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button" title="The stack's areas, each checked for vessels the algorithm missed"><span class="n"></span> Areas</button></div>
+          <div class="task-body"><p class="hint">Draw any vessel the algorithm missed in the framed area.</p>
+            <button type="button" id="m-draw" aria-pressed="false">Draw a missed vessel</button><p class="note" id="draw-note"></p>
+            <button id="area-ok" class="primary" type="button">No missed vessels here</button></div></li>
+        <li data-task="submit"><div class="task-head"><span class="tick" aria-hidden="true"></span><button id="vm-truth" type="button" disabled>Submit Ground Truth</button></div></li>
+      </ol>
+      <span id="task-tools"><details class="menu" id="task-menu"><summary title="This item's options" aria-label="This item's options"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></g></svg></summary><div class="pop" id="task-opts"></div></details><button id="task-skip" class="link" type="button" title="The next one, leaving this one for later">Skip ›</button></span>
+      <div id="task-now"><div id="task-stage"><div id="task-card"></div></div></div>
+    </section>
+
+    <section class="box foldable" id="review-box" data-opens="find" hidden>
       <div class="sec-head"><h2>Review</h2></div>
       <div class="col">
         <div class="seg" id="review-mode">
@@ -35,15 +50,23 @@
         </div>
         <p class="note" id="review-note">The whole stack.</p>
         <label class="row" id="reach-row" hidden>Reach beyond the vessel wall <output id="reach-o"></output><input type="range" id="reach" min="0" max="200" step="5" value="50"></label>
-        <div class="views"><button type="button" id="m-draw" aria-pressed="false">Draw a missed vessel</button></div>
-        <p class="note" id="draw-note"></p>
         <div class="views"><button type="button" id="m-lasso" aria-pressed="false">Mark a damaged area</button></div>
         <p class="note" id="lasso-note"></p>
       </div>
     </section>
 </template>
+<template data-slot="toolbar">
+      <div class="seg" id="model-mode" role="group" aria-label="Show">
+        <button type="button" data-v="image" aria-pressed="true" title="The stack alone">Image</button>
+        <button type="button" data-v="model" aria-pressed="false" title="The vessel model alone" disabled>Model</button>
+        <button type="button" data-v="overlay" aria-pressed="false" title="The vessel model over the stack" disabled>Overlay</button>
+        <button type="button" data-v="side" aria-pressed="false" title="The stack and the vessel model side by side, turning together" disabled>Side by side</button>
+      </div>
+      <button id="vm-depth" class="tool" type="button" aria-pressed="true" title="Colour by depth: paint the stack and the model by depth, so crossings at different depths read apart" aria-label="Colour by depth"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3" y="4" width="18" height="4" fill="#2f6fe0"/><rect x="3" y="10" width="18" height="4" fill="#2fb344"/><rect x="3" y="16" width="18" height="4" fill="#e53935"/></svg></button>
+      <label class="check tool-check" title="Draw each vessel as wide as the model says"><input type="checkbox" id="m-widths" checked> Vessel widths</label>
+</template>
 <template data-slot="views">
-    <div id="items-view" hidden>
+    <div id="items-view" data-viewing hidden>
       <div class="items-bar">
         <div class="seg" id="item-kind">
           <button type="button" data-v="junctions" aria-pressed="true">Junctions <span class="count"></span></button>
@@ -55,7 +78,6 @@
           <option value="declined" data-for="vessels">Declined</option>
         </select>
         <select id="item-sort" aria-label="Order">
-          <option value="open" data-for="junctions vessels">Open tasks first</option>
           <option value="file" data-for="junctions vessels">In file order</option>
           <option value="short" data-for="vessels">Shortest first</option>
           <option value="wide" data-for="vessels">Widest first</option>
@@ -65,13 +87,10 @@
         <span class="dim" id="items-note"></span>
       </div>
       <div class="items-scroll">
-        <p class="hint" id="items-empty">Load a vessel model to review it item by item: a card for each junction and each vessel.</p>
+        <p class="hint" id="items-empty">Execute the algorithm, or load a vessel model, to see it item by item: a card for each junction and each vessel.</p>
         <div class="cards" id="item-list"></div>
       </div>
     </div>
-</template>
-<template data-slot="tasks-end">
-    <button id="vm-truth" type="button" disabled>Submit Ground Truth</button>
 </template>
 <template data-slot="body">
 <div id="ctx" class="pop" role="menu" hidden></div>

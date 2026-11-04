@@ -14,7 +14,7 @@ Every capability of [missingbulb/vascularColoring](https://github.com/missingbul
 | WORKING-GUIDE, STATUS, 3D-STACKS, results-first-pass | `docs/` | moved |
 | Literature: 10 digests, METHODS-SYNTHESIS, BIOLOGY-INVARIANTS, figure READMEs, `crop_panels.py`, `_tools/`, Rust's macros | `docs/literature/` | moved |
 | Literature binaries: PDFs (~36 MB), figures and panels (~88 MB) | linked at vascularColoring | open (D5) |
-| Vessel-model/2 format and edits (`model.js`), review tube (`coverage.js`), the four v5 draft models | `web/` | moved, tested |
+| Vessel-model/2 format and edits (`model.js`), review tube (`coverage.js`), the four v5 draft models | `web/`; the drafts no longer ship: Execute draws a model in the page (`req/vascular/model/run`) | moved, tested |
 | 3D viewer: WebGL2 ray-caster, Brightest/Surface, colour by depth, slab, slice spacing, look-from, Flattened and Depth-profile views (`viewer.js`, `stack.js`) | `web/viewer3d.js` (shell) | moved: every shown channel in its row's colour and points; Flattened is the 2D view; the single-slice picture and Depth profile not yet |
 | Stack reader in the browser (`tiff.js`: ImageJ/OME, LZW/Deflate/PackBits) | `py/vascular.py` (tifffile) | replaced: decoded in Python (D1) |
 | Model over or beside the stack, editing in 3D, Detected/Missed review, draw a missed vessel, lasso damaged areas (`modelview.js`) | `web/model_view.js`, on the shell's `viewer3d` `three` | moved (D2) |

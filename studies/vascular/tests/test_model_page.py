@@ -1,5 +1,5 @@
-"""req/vascular/model/correct, req/vascular/model/cards and req/vascular/model/ground-truth: the vessel model beside or over the stack, its item cards and its submission as ground truth
-(model_page_driver.mjs, in headless Chromium with a stand-in worker and a draft the study ships)."""
+"""req/vascular/model/view, req/vascular/model/correct and req/vascular/model/cards: what the main view shows, the model
+corrected over the stack and its item cards, in a PreGT study (model_page_driver.mjs, in headless Chromium with a stand-in worker)."""
 import os
 import shutil
 import subprocess

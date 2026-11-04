@@ -1,8 +1,10 @@
 // The 3D viewer: a stack shown in 3D only, a WebGL2 ray-caster through every slice, in the place of the 2D viewer of
 // its flattened planes (viewer2d.js), whose interface it keeps; that flat view shows only where WebGL2 is missing.
-// Each shown channel is drawn in its colour between its row's black and white points, so the rows drive it. The study's `view` in
+// Each shown channel is drawn in its colour between its row's black and white points, so the rows drive it, and a row
+// of the 3D view's own under them shows part of the depth and sets the spacing between slices. The study's `view` in
 // study.json sets what the 3D view opens with: render ("brightest" | "surface"), depthColour, and the spacing
-// between slices when the file does not say, with who stated it (spacingSource).
+// between slices when the file does not say, with who stated it (spacingSource); the study may turn depth colour
+// on and off (three.S.depth).
 //
 // The stack reaches it as the page's image: its flattened planes (C of W × H), then, for a stack (Z > 1), every
 // slice of every channel, channel by channel.
@@ -181,31 +183,25 @@ export function viewer3d(shell, flat) {
   const drawers = [], spacingHeard = [];
   let half = [1, 1, 0.1];
 
-  // ---------- the page's parts: the 3D tools in the toolbar, the stage in the 2D one's place ----------
-  // the 3D tools, as the 2D ones are: toolbar buttons, each opening its settings while the pointer is over it
+  // ---------- the page's parts: Look from in the toolbar beside Zoom, the slices' row under the channels' rows,
+  // the stage in the 2D one's place ----------
   const icon = (paths) => `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">${paths}</g></svg>`;
   const tools = html("div", { id: "v3-tools", className: "group", hidden: true });
+  // no tooltip on the button: its popup opens where a tooltip would show
   tools.innerHTML = `
-    <button id="v3-render-btn" class="tool" type="button" title="Render: hover to choose Brightest or Surface" aria-label="Render">${icon('<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>')}</button>
-    <div id="v3-render-pop" class="v3-pop" popover aria-label="Render">
-      <label><input type="radio" name="v3-mode" value="0"> Brightest: the brightest point along each ray</label>
-      <label><input type="radio" name="v3-mode" value="1"> Surface: a lit surface where the signal crosses a level</label>
-      <label class="v3-iso" hidden>Level <input id="v3-iso" type="range" min="0.02" max="1" step="0.01"></label>
-    </div>
-    <button id="v3-depth" class="tool" type="button" aria-pressed="false" title="Colour by depth: paint each point by its depth, so crossings at different depths read apart" aria-label="Colour by depth"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3" y="4" width="18" height="4" fill="#2f6fe0"/><rect x="3" y="10" width="18" height="4" fill="#2fb344"/><rect x="3" y="16" width="18" height="4" fill="#e53935"/></svg></button>
-    <button id="v3-look-btn" class="tool" type="button" title="Look from: hover to put the view back, from above, tilted, the side or the front" aria-label="Look from">${icon('<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/>')}</button>
+    <button id="v3-look-btn" class="tool" type="button" aria-label="Look from">${icon('<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/>')}</button>
     <div id="v3-look-pop" class="v3-pop" popover aria-label="Look from">
       <div id="v3-look" role="group" aria-label="Look from">${Object.keys(LOOKS).map((k) => `<button type="button" data-look="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join("")}</div>
-    </div>
-    <button id="v3-slices-btn" class="tool" type="button" title="Slices: hover to show part of the depth and set the spacing between slices" aria-label="Slices">${icon('<path d="M12 4l9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4M3 16l9 4 9-4"/>')}</button>
-    <div id="v3-slices-pop" class="v3-pop" popover aria-label="Slices">
-      <label>From <input id="v3-z0" type="range" min="0" step="1" aria-label="First slice shown"></label>
-      <label>To <input id="v3-z1" type="range" min="0" step="1" aria-label="Last slice shown"></label>
-      <span id="v3-slices" class="dim"></span>
-      <label>Spacing <input id="v3-zs" type="number" min="0.05" max="50" step="0.05" aria-label="Spacing between slices, µm"> µm</label>
     </div>`;
   const bar = $("#view .toolbar"), zoom = $("#zoom-out").parentElement;
   bar.insertBefore(tools, zoom.parentElement === bar ? zoom : bar.firstChild);
+  // the slices shown, from the first to the last, as a channel's row holds its points, and in the colour picker's
+  // place the spacing between slices
+  const slicesRow = html("div", { className: "channel v3-slices" });
+  slicesRow.innerHTML = `<span></span><span class="ch-name"><label>Slices</label><span class="help" tabindex="0" data-help="The part of the stack's depth shown, from its first slice to its last, and the spacing between slices in µm."
+    >?</span><span id="v3-slices" class="from-file"></span></span>
+    <div class="levels" title="The first and the last slice shown"><input type="range" class="black" id="v3-z0" min="0" step="1" aria-label="First slice shown"><input type="range" class="white" id="v3-z1" min="0" step="1" aria-label="Last slice shown"><span class="bubble" hidden></span></div>
+    <input id="v3-zs" type="number" min="0.05" max="50" step="0.05" title="Spacing between slices, µm" aria-label="Spacing between slices, µm">`;
   const stage = html("div", { id: "v3-stage", hidden: true });
   const cv = html("canvas", { id: "v3-gl" }), hudCv = html("canvas", { id: "v3-hud" }), note = html("p", { id: "v3-note" });
   stage.append(cv, hudCv, note);
@@ -291,6 +287,7 @@ export function viewer3d(shell, flat) {
     }
     gl.uniform1fv(U.uOn, on); gl.uniform3fv(U.uCol, col); gl.uniform1fv(U.uLo, lo); gl.uniform1fv(U.uHi, hi);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    zoomText();
     hud(vp);
     for (const fn of drawers) fn();
   }
@@ -385,29 +382,33 @@ export function viewer3d(shell, flat) {
   controls(cv);
 
   // ---------- the tools ----------
-  const ui = (id) => tools.querySelector("#" + id);
-  const pops = [["v3-render-btn", "v3-render-pop"], ["v3-look-btn", "v3-look-pop"], ["v3-slices-btn", "v3-slices-pop"]]
-    .map(([b, p]) => hoverPop(ui(b), ui(p), () => {}));
+  const ui = (id) => (tools.querySelector("#" + id) || slicesRow.querySelector("#" + id));
+  hoverPop(ui("v3-look-btn"), ui("v3-look-pop"), () => {});
+  // zoom as the 2D view's: a share of the whole stack in view
+  const zoomText = () => { if (mode3d) $("#zoom-label").textContent = Math.round((FIT_DIST / S.dist) * 100) + "%"; };
   function sync() {
-    for (const r of tools.querySelectorAll('[name="v3-mode"]')) r.checked = +r.value === S.mode;
-    ui("v3-depth").setAttribute("aria-pressed", String(!!S.depth)); ui("v3-iso").value = S.iso;
-    tools.querySelector(".v3-iso").hidden = S.mode !== 1;
     ui("v3-z0").value = S.z0; ui("v3-z1").value = S.z1; ui("v3-zs").value = S.zs;
     ui("v3-slices").textContent = `${S.z0 + 1}–${S.z1 + 1} of ${vol ? vol.Z : 0}`;
     if (vol) geometry();
     redraw();
   }
-  for (const r of tools.querySelectorAll('[name="v3-mode"]')) r.onchange = () => { S.mode = +r.value; sync(); pops[0].refill(); };
-  ui("v3-iso").oninput = (e) => { S.iso = +e.target.value; sync(); };
-  ui("v3-depth").onclick = () => { S.depth = S.depth ? 0 : 1; sync(); };
-  ui("v3-z0").oninput = (e) => { S.z0 = Math.min(+e.target.value, S.z1); sync(); };
-  ui("v3-z1").oninput = (e) => { S.z1 = Math.max(+e.target.value, S.z0); sync(); };
+  const bubble = slicesRow.querySelector(".bubble");
+  const tell = (i) => { bubble.textContent = +i.value + 1; bubble.style.setProperty("--v", vol && vol.Z > 1 ? i.value / (vol.Z - 1) : 0); bubble.hidden = false; };
+  for (const i of [ui("v3-z0"), ui("v3-z1")]) {
+    i.addEventListener("pointerdown", () => { tell(i); addEventListener("pointerup", () => { bubble.hidden = true; }, { once: true }); });
+    i.addEventListener("blur", () => { bubble.hidden = true; });
+  }
+  ui("v3-z0").oninput = (e) => { S.z0 = Math.min(+e.target.value, S.z1); tell(e.target); sync(); };
+  ui("v3-z1").oninput = (e) => { S.z1 = Math.max(+e.target.value, S.z0); tell(e.target); sync(); };
   ui("v3-zs").oninput = (e) => { if (+e.target.value > 0) { S.zs = +e.target.value; spacingNote("you"); sync(); spacingHeard.forEach((fn) => fn()); } };
+  slicesRow.querySelector(".levels").ondblclick = () => { if (vol) { S.z0 = 0; S.z1 = vol.Z - 1; sync(); } };
   ui("v3-look").onclick = (e) => {
     const b = e.target.closest("[data-look]"); if (!b) return;
     Object.assign(S, { rot: facing(...LOOKS[b.dataset.look]), pivot: [0, 0, 0], clip: null, dist: Math.max(S.dist, 2) }); redraw();
   };
+  // who stated the spacing between slices, S.zsFrom: "file", "you", the one the study names, or null for a guess
   function spacingNote(from) {
+    S.zsFrom = from;
     note.textContent = from === "file" ? `${S.zs} µm between slices, as the file records.`
       : from === "you" ? `${S.zs} µm between slices, as you set it.`
       : from ? `${S.zs} µm between slices, as ${from} stated; the file does not record it.`
@@ -416,6 +417,8 @@ export function viewer3d(shell, flat) {
   function show3d(on) {
     mode3d = on && !!vol;
     stage.hidden = !mode3d; tools.hidden = !mode3d; $("#scroller").hidden = mode3d;
+    flat.rowsAfter(mode3d ? [slicesRow] : []);
+    flat.zoomWith(mode3d ? (k) => { S.dist = Math.min(Math.max(S.dist / k, MIN_DIST), 12); redraw(); } : null);
     if (mode3d) $("#view").dataset.v3 = ""; else delete $("#view").dataset.v3;
     redraw();
   }
@@ -512,6 +515,8 @@ export function viewer3d(shell, flat) {
     // the first shown channel's volume, slices of Y rows of X, and its colour for a value at a depth (0..1 through the
     // slices shown), as the 3D view paints it: [r, g, b] of 0 to 255
     volume: () => vol && vol.vols[first()],
+    // the depth colour of a depth (0..1 through the slices shown), [r, g, b] of 0 to 1, as the 3D view paints it
+    depthColour: turbo,
     lut2d(v, z) {
       const c = flat.levels()[first()], w = Math.min(Math.max((v - c.black) / Math.max(1, c.white - c.black), 0), 1);
       const col = S.depth ? turbo(z) : rgb(c.colour);

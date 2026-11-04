@@ -143,9 +143,10 @@ file as a recorded no. Junctions are never stored: a point where two confirmed (
 `accepted`) segments meet is a bend, three or more a junction, so accepting a candidate is what
 makes its branch point a junction.
 
-Drafts for all four trimmed stacks ship with the MicroViewer (`microviewer/models/`), and opening
-one of those stacks loads its draft (the name is matched without case, spaces or punctuation, so a
-Drive copy finds it too); **Reload the draft model for this stack** starts over from it. **Side by side** shows
+Drafts for all four trimmed stacks shipped with the MicroViewer (`microviewer/models/`), and opening
+one of those stacks loaded its draft. Since 2026-11-04 (the owner) none ships: the study's page runs
+the extraction algorithm chosen in Processing on the stack open (`req/vascular/model/run`), and its
+ground-truth tasks (`req/vascular/truth/tasks`) take the review below one item at a time. **Side by side** shows
 the stack and the model in two views that turn and zoom together; **Overlay** draws the model in
 magenta over the stack. On the model: drag a point to move it (in the plane of the screen, so a
 tilted view moves it in depth too); right-click a segment to delete it or add a bend, a junction to

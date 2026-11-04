@@ -13,6 +13,9 @@
 // "accepted" or "rejected". A rejected edge stays in the file as a recorded "no", but is no part
 // of the network: junctions, tips and every edit see only the others. Junctions and tips are counted
 // over confirmed vessels only, so a candidate turns a point into a junction once it is accepted.
+// The owner's verdict goes on a confident vessel too; "proposed" keeps the state the extractor gave
+// each edge it drew ("vessel" or "candidate"), so the verdicts can be scored against it, and an edge
+// the owner drew has none.
 
 export const FORMAT = 'vessel-model/2';
 const FORMATS = ['vessel-model/1', FORMAT];
@@ -47,7 +50,9 @@ export function parse(j) {
     const state = s.state ?? 'vessel';
     if (!STATES.includes(state)) throw new ModelError(`${v2 ? 'an edge' : 'a segment'} has the unknown state "${state}" (${s.a}–${s.b})`);
     const ids = [s.a], flow = FLOWS.includes(s.flow) ? s.flow : null;
-    const { id: _i, a: _a, b: _b, via: _v, state: _st, confidence: _c, vessel: _ve, r_a: _ra, r_b: _rb, flow: _f, ...rest } = s;
+    // a verdict in a file written before "proposed": only a candidate could take one
+    const proposed = ['vessel', 'candidate'].includes(s.proposed) ? s.proposed : state === 'vessel' || state === 'candidate' ? state : 'candidate';
+    const { id: _i, a: _a, b: _b, via: _v, state: _st, confidence: _c, vessel: _ve, r_a: _ra, r_b: _rb, flow: _f, proposed: _p, drawn: _d, ...rest } = s;
     const extra = Object.keys(rest).length ? rest : null;
     for (const p of (v2 && s.via) || []) {
       if (![p.x, p.y, p.z].every(Number.isFinite)) throw new ModelError(`a curve point on edge ${s.a}–${s.b} has no position`);
@@ -59,7 +64,7 @@ export function parse(j) {
       const k = key(ids[i - 1], ids[i]);
       if (ids[i - 1] !== ids[i] && !seen.has(k)) {
         seen.add(k);
-        m.segments.push(seg(ids[i - 1], ids[i], { state, confidence: s.confidence, vessel: s.vessel, ...(r && { ra: r[i - 1], rb: r[i] }), flow, extra }));
+        m.segments.push(seg(ids[i - 1], ids[i], { state, proposed: s.drawn ? null : proposed, confidence: s.confidence, vessel: s.vessel, ...(r && { ra: r[i - 1], rb: r[i] }), flow, extra }));
       }
     }
   }
@@ -99,9 +104,9 @@ const pt = (id, p) => (Number.isFinite(p.r) ? { id, x: p.x, y: p.y, z: p.z, r: p
 // confidence is the extractor's score and vessel its guess at which branch continues a trunk; a
 // segment the owner drew has neither, and stays without them
 // extra holds the edge's fields this viewer has no use for, written back as they came
-const seg = (a, b, { state, confidence, vessel, ra, rb, flow, extra }) => ({ a, b, state, ...(confidence != null && { confidence }), ...(vessel != null && { vessel }),
-  ...(Number.isFinite(ra) && Number.isFinite(rb) && { ra, rb }), ...(flow != null && { flow }), ...(extra && { extra }) });
-const sameEdge = (p, q) => p.state === q.state && p.confidence === q.confidence && p.vessel === q.vessel && p.extra === q.extra;
+const seg = (a, b, { state, proposed, confidence, vessel, ra, rb, flow, extra }) => ({ a, b, state, ...(proposed && { proposed }), ...(confidence != null && { confidence }),
+  ...(vessel != null && { vessel }), ...(Number.isFinite(ra) && Number.isFinite(rb) && { ra, rb }), ...(flow != null && { flow }), ...(extra && { extra }) });
+const sameEdge = (p, q) => p.state === q.state && p.proposed === q.proposed && p.confidence === q.confidence && p.vessel === q.vessel && p.extra === q.extra;
 
 // The segments at each point, rejected ones included, since a recorded "no" keeps its own ends.
 function incidence(m) {
@@ -148,6 +153,7 @@ export function toJSON(m, extra = {}) {
       const start = from(m.segments[e.segments[0]], e.ids[0]), end = from(m.segments[e.segments.at(-1)], e.ids.at(-1));
       const out = start.out ?? (end.out == null ? null : !end.out);
       return { ...e.extra, id: k + 1, a: e.ids[0], b: e.ids.at(-1), ...(e.vessel != null && { vessel: e.vessel }), state: e.state,
+        ...(e.proposed ? { proposed: e.proposed } : { drawn: true }),
         ...(e.confidence != null && { confidence: e.confidence }),
         ...(Number.isFinite(start.r0) && Number.isFinite(end.r0) && { r_a: start.r0, r_b: end.r0 }), ...(out != null && { flow: out ? 'ab' : 'ba' }),
         via: e.ids.slice(1, -1).map(at) };
@@ -339,6 +345,26 @@ export function review(m, i, verdict) {
   const o = clone(m);
   for (const k of piece(m, i)) o.segments[k].state = verdict;
   return o;
+}
+
+// The owner's verdict on a vessel the extractor drew, confident or not: each of the segments `segs` accepted or
+// rejected, or, with verdict null, back to the state the extractor proposed.
+export function decide(m, segs, verdict) {
+  if (![null, 'accepted', 'rejected'].includes(verdict) || !segs.some((i) => m.segments[i]?.proposed)) return m;
+  const o = clone(m);
+  for (const i of segs) if (o.segments[i]?.proposed) o.segments[i].state = verdict || o.segments[i].proposed;
+  return o;
+}
+export const decided = (s) => !!s.proposed && (s.state === 'accepted' || s.state === 'rejected');
+
+// A junction the owner found right is kept by its id in checked_junctions; one found to be vessels that only cross
+// is split instead (splitJunction).
+export const checkedJunction = (m, id) => (m.checked_junctions || []).includes(id);
+export function checkJunction(m, id, on = true) {
+  const now = new Set(m.checked_junctions || []);
+  if (now.has(id) === on) return m;
+  on ? now.add(id) : now.delete(id);
+  return { ...clone(m), checked_junctions: [...now].sort((a, b) => a - b) };
 }
 
 // How many vessels (junction to junction, not segments between curve points) are in each state, and

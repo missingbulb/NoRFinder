@@ -4,15 +4,31 @@
   "listed": true,
   "stage": "GT",
   "icon": "web/icon.svg",
-  "phases": [],
+  "phases": [
+    {
+      "key": "find",
+      "name": "Run algorithm",
+      "button": "#vm-run"
+    },
+    {
+      "key": "review",
+      "name": "Review all items"
+    }
+  ],
   "viewer": "image3d",
   "python": {
     "paths": [
-      "py/"
+      "py/",
+      "analysis/",
+      "analysis/extraction/"
     ],
     "entry": "vascular",
     "packages": [
-      "numpy"
+      "numpy",
+      "scipy",
+      "scikit-image",
+      "lazy-loader",
+      "packaging"
     ],
     "wheels": [
       "tifffile==2026.3.3"
@@ -46,9 +62,10 @@
     }
   ],
   "progress": {
-    "install": "Installing numpy…",
-    "load": "Loading the stack reader…",
-    "open": "Reading the stack…"
+    "install": "Installing numpy, scipy, scikit-image…",
+    "load": "Loading the stack reader and the extraction versions…",
+    "open": "Reading the stack…",
+    "extract": "Drawing the vessel model (the slow part: a minute or more)…"
   },
   "view": {
     "render": "brightest",
