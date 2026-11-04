@@ -358,13 +358,13 @@ const STAGES = {
   Published: { light: "all", what: "Its algorithm is trusted: the page shows what it finds, with no ground truth to make.", next: "This is the last stage." },
 };
 function showStage() {
-  document.documentElement.dataset.stage = manifest.stage;
+  if (manifest.stage) document.documentElement.dataset.stage = manifest.stage; else delete document.documentElement.dataset.stage;
   const tag = $(`#study-list a[data-id="${manifest.id}"] .stage-tag`);
   if (tag) stageTag(tag, manifest.stage);
 }
-// a study's stage in the switcher: a small label bordered in the stage's colour
+// a study's stage in the switcher: a small label bordered in the stage's colour; a study with none leaves it empty
 function stageTag(tag, stage) {
-  tag.textContent = stage; tag.dataset.stage = stage; tag.dataset.light = STAGES[stage]?.light || "";
+  tag.textContent = stage || ""; tag.dataset.stage = stage || ""; tag.dataset.light = STAGES[stage]?.light || "";
 }
 // the stages, the given one highlighted and those before it crossed out, with what moves a study on from it
 function fillStages(stage) {
@@ -381,6 +381,7 @@ const stagePop = $("#stage-pop");
 let stageLeaving = null;
 function stageHover(tag) {
   tag.addEventListener("mouseenter", () => {
+    if (!tag.dataset.stage) return;
     clearTimeout(stageLeaving);
     fillStages(tag.dataset.stage);
     const menu = $("#study-menu .pop").getBoundingClientRect(), row = tag.closest("a").getBoundingClientRect();
@@ -1412,7 +1413,7 @@ function pageNow() {
   const im = page.get("image"), from = (s) => (s?.kind === "drive" ? "Google Drive" : "this computer");
   return [
     ["Site version", VERSION],
-    ["Study", manifest ? `${manifest.title} (${manifest.id}), stage ${manifest.stage}` : "none open"],
+    ["Study", manifest ? `${manifest.title} (${manifest.id}), stage ${manifest.stage ?? "none"}` : "none open"],
     ["Python", st.ready ? "ready" : "loading"],
     ["Steps", steps.map((p) => p.name + (p.done ? " (done)" : "")).join(" → ") || "none"],
     ["Image", im ? `from ${from(im.source)}, ${im.W} × ${im.H} px, ${im.channels?.length ?? "?"} channel(s), ${im.Z} slice(s)` : page.get("opening") ? "opening" : "none open"],
@@ -1694,9 +1695,9 @@ async function studyMenu() {
   $("#study-list").replaceChildren(...listed.map((s) => {
     const a = document.createElement("a");
     a.href = addressOf(s.id); a.dataset.id = s.id;
-    a.innerHTML = `<span class="name"></span><span class="stage-tag"></span>`;
+    a.innerHTML = `<span class="stage-tag"></span><span class="name"></span>`;
     a.querySelector(".name").textContent = s.title;
-    a.prepend(...studyIcon(s.id, s.icon));
+    a.querySelector(".name").before(...studyIcon(s.id, s.icon));
     const tag = a.querySelector(".stage-tag");
     stageTag(tag, s.stage); stageHover(tag);
     a.onclick = (e) => {

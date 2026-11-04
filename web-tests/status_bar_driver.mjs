@@ -147,9 +147,9 @@ const stageIs = async (page, stage) => {
   const s = await page.evaluate(() => {
     const id = document.querySelector("#study-list a[aria-current=page]")?.dataset.id;
     const t = document.querySelector(`#study-list a[data-id="${id}"] .stage-tag`);
-    return { bar: !!document.querySelector("#statusbar #sb-stage, #statusbar svg .housing"), label: t?.textContent, page: document.documentElement.dataset.stage };
+    return { bar: !!document.querySelector("#statusbar #sb-stage, #statusbar svg .housing"), label: t?.textContent || null, page: document.documentElement.dataset.stage ?? null };
   });
-  await check(!s.bar && s.label === stage && s.page === stage, `the stage, ${stage}, is the open study's label in the switcher, and not in the status bar`, s);
+  await check(!s.bar && s.label === stage && s.page === stage, stage ? `the stage, ${stage}, is the open study's label in the switcher, and not in the status bar` : "a study with no stage shows none, in the switcher or the status bar", s);
 };
 // hovering a study's stage label in the switcher lists the stages, that study's own highlighted
 const hoverStage = async (page, id) => {
@@ -189,9 +189,6 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   const beside = await page.evaluate(() => document.querySelector("#stage-pop").getBoundingClientRect().left - document.querySelector("#study-menu .pop").getBoundingClientRect().right);
   await check(beside >= 0, "and opens beside the switcher, not over it", beside);
   if (shots) await page.screenshot({ path: path.join(shots, "0-stages.png") });
-  // another study's label speaks of that study
-  const other = await hoverStage(page, "viewer");
-  await check(other[0]?.now && other.filter((x) => x.now).length === 1, "hovering the Image Viewer's label highlights PreGT, its own", other);
   await page.mouse.move(700, 600);
   await page.waitForFunction(() => !document.querySelector("#stage-pop").matches(":popover-open"));
   await page.keyboard.press("Escape");
@@ -544,6 +541,12 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   stage = "PreGT";
   const { ctx, page } = await open("fixture");
   await stageIs(page, "PreGT");
+  // another study's label speaks of that study
+  const other = await hoverStage(page, "nor");
+  await check(other[1]?.now && other.filter((x) => x.now).length === 1, "in a PreGT study, hovering NoR Finder's label highlights GT, its own", other);
+  await page.mouse.move(700, 600);
+  await page.waitForFunction(() => !document.querySelector("#stage-pop").matches(":popover-open"));
+  await page.evaluate(() => { document.querySelector("#study-menu").open = false; });
   await check(await page.evaluate(() => document.querySelector("#fx-truth").offsetParent === null), "its ground-truth button is hidden");
   await loadImage(page); await count(page);
   await steps(page, ["Load image", "Count"], []);
@@ -571,7 +574,7 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
 // ---- the Image Viewer: Load image alone ----
 {
   const { ctx, page } = await open(null);
-  await stageIs(page, "PreGT");
+  await stageIs(page, null);
   await steps(page, ["Load image*"], ["#load-main", "#sb-load"]);
   await page.setInputFiles("#file", image);
   await steps(page, ["Load image"], []);

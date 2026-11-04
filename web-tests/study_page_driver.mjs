@@ -94,22 +94,26 @@ try {
   console.log(JSON.stringify(fixtureMenu));
   if (fixtureMenu.items.join() !== titles.join()) problems.push("the switcher does not list the listed studies, or marks one not on show: " + fixtureMenu.items);
   if (fixtureMenu.right) problems.push("the page still has a right bar");
-  // req/shell/header: each row ends in its study's stage, a small bordered label in its colour, with room to the
-  // row's right edge, and no tick on the one on show
+  // req/shell/header: each row starts with its study's stage, a small bordered label in its colour, before the
+  // icon, the icons lined up whatever the label; a study with no stage shows none; room to the row's right edge,
+  // and no tick on the one on show
   const rowsLook = await page.evaluate(() => [...document.querySelectorAll("#study-list a")].map((a) => {
-    const t = a.querySelector(".stage-tag"), cs = t && getComputedStyle(t), last = [...a.children].filter((c) => c.offsetParent).pop();
-    return { id: a.dataset.id, stage: t?.textContent, border: cs && cs.borderTopStyle !== "none" && parseFloat(cs.borderTopWidth) > 0 && cs.borderTopColor,
-      small: cs && parseFloat(cs.fontSize) <= 11, room: last && a.getBoundingClientRect().right - last.getBoundingClientRect().right, tick: !!a.querySelector(".tick, .tick-icon") };
+    const t = a.querySelector(".stage-tag"), shown = t && t.textContent && getComputedStyle(t).visibility !== "hidden" ? t : null, cs = shown && getComputedStyle(shown);
+    const on = [...a.children].filter((c) => c.offsetParent), icon = a.querySelector(".study-icon:not([hidden])");
+    return { id: a.dataset.id, stage: shown ? shown.textContent : null, border: cs && cs.borderTopStyle !== "none" && parseFloat(cs.borderTopWidth) > 0 && cs.borderTopColor,
+      small: cs && parseFloat(cs.fontSize) <= 11, first: !shown || on[0] === shown, iconLeft: icon && Math.round(icon.getBoundingClientRect().left),
+      room: on.length && a.getBoundingClientRect().right - on[on.length - 1].getBoundingClientRect().right, tick: !!a.querySelector(".tick, .tick-icon") };
   }));
   console.log(JSON.stringify(rowsLook));
   const colours = new Set(rowsLook.map((r) => r.border));
   for (const s of JSON.parse(fs.readFileSync(studies, "utf8"))) {
     const r = rowsLook.find((x) => x.id === s.id) || {};
-    if (r.stage !== s.stage || !r.border || !r.small) problems.push(`the switcher does not label ${s.id} with its stage, ${s.stage}, small and bordered: ${JSON.stringify(r)}`);
+    if (s.stage === null ? r.stage !== null : r.stage !== s.stage || !r.border || !r.small || !r.first) problems.push(`the switcher does not label ${s.id} with its stage, ${s.stage}, first, small and bordered: ${JSON.stringify(r)}`);
     if (!(r.room >= 8)) problems.push(`the switcher's ${s.id} row leaves ${r.room} px at its right, not 8`);
     if (r.tick) problems.push(`the switcher's ${s.id} row carries a tick`);
   }
-  if (new Set(rowsLook.map((r) => r.stage)).size > 1 && colours.size < 2) problems.push("the stages' labels are all one colour: " + [...colours]);
+  if (new Set(rowsLook.map((r) => r.iconLeft)).size !== 1) problems.push("the switcher's icons do not line up: " + rowsLook.map((r) => r.iconLeft));
+  if (new Set(rowsLook.map((r) => r.stage).filter(Boolean)).size > 1 && colours.size < 2) problems.push("the stages' labels are all one colour: " + [...colours]);
   // each study's own icon beside its title, loaded; the generic one for a study naming none
   await page.waitForFunction(() => [...document.querySelectorAll("#study-list img")].every((i) => i.complete));
   const icons = await page.evaluate(() => [...document.querySelectorAll("#study-list a")].map((a) => {

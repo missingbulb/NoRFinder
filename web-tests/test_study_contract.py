@@ -71,13 +71,18 @@ def test_a_study_names_files_that_exist(path):
 def test_a_study_names_its_stage_and_steps(path):
     """req/shell/study/stage, req/shell/status-bar/breadcrumbs: the stage and the study's own steps are stated, never assumed."""
     m = manifest(path)
-    assert m.get('stage') in ('PreGT', 'GT', 'PostGT', 'Published'), 'stage: PreGT, GT, PostGT or Published'
+    assert 'stage' in m and m['stage'] in ('PreGT', 'GT', 'PostGT', 'Published', None), 'stage: PreGT, GT, PostGT, Published, or null for a tool making no ground truth'
     if m['stage'] in ('GT', 'PostGT'):
         assert m.get('groundTruth', {}).keys() >= {'label', 'button'}, 'a study that makes ground truth names its label and button'
     assert isinstance(m.get('phases'), list), 'phases: the study\'s own steps, [] for none'
     keys = [p['key'] for p in m['phases']]
     assert len(set(keys)) == len(keys) and not {'load', 'submit'} & set(keys), 'a step\'s key is its own, and not one of the shell\'s'
     assert all(p.get('name') for p in m['phases'])
+
+
+def test_the_image_viewer_has_no_stage():
+    """req/shell/study/stage: the Image Viewer is a tool that makes no ground truth, so it has no stage."""
+    assert manifest(next(p for p in STUDIES if os.path.basename(os.path.dirname(p)) == 'viewer'))['stage'] is None
 
 
 class Boxes(HTMLParser):
