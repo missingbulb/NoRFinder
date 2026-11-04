@@ -2,6 +2,7 @@
 // against the stand-in Google of stand_in_drive.mjs serving ROOT: what each visitor may choose, and what each role's
 // view shows. Optional SHOTS: a directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/roles_driver.mjs ANSWERS STUDIES ROOT IMAGE [SHOTS]
+import fs from "node:fs";
 import path from "node:path";
 import { standIn } from "./stand_in_drive.mjs";
 
@@ -59,6 +60,23 @@ await check(s.role === "Ground Truth Tagger" && s.truth, "and the page opens in 
 await choose(page, "Viewer", true);
 s = await seen(page);
 await check(!s.truth && !s.counted, "back as Viewer, the ground-truth tools go", s);
+await page.context().close();
+
+// the same study as PreGT: Ground Truth Tagger is offered; the postprocessing shows for the tagger alone, and nothing
+// exports ground truth for anyone
+const preGT = { ...JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "studies", "fixture", "study.json"), "utf8")), stage: "PreGT" };
+page = await open(true, { email: OTHER, prepare: (ctx) => ctx.route("**/studies/fixture/study.json", (r) => r.fulfill({ json: preGT })) });
+await page.waitForFunction(() => document.documentElement.dataset.stage === "PreGT");
+s = await seen(page);
+await check(s.role === "Viewer" && s.list.join() === "Viewer,Ground Truth Tagger", "in a PreGT study the signed-in are offered Ground Truth Tagger", s);
+await check(!s.truth && !s.counted, "a viewer there sees no ground-truth button and no postprocessing", s);
+await page.setInputFiles("#file", image);
+await page.waitForFunction(() => !document.querySelector("#fx-count").disabled);
+await choose(page, "Ground Truth Tagger", true);
+await page.waitForFunction(() => !document.querySelector("#fx-count").disabled);
+s = await seen(page);
+const crumbs = await page.evaluate(() => [...document.querySelectorAll("#sb-steps .crumb")].map((c) => c.textContent));
+await check(s.counted && !s.truth && !crumbs.includes("Submit GT"), "a tagger there sees the postprocessing, with no ground-truth button and no Submit GT step", { ...s, crumbs });
 await page.context().close();
 
 // a data manager kept in that role, opening where they hold it no more: Viewer, the choice kept for where they do

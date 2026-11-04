@@ -11,6 +11,10 @@ segment: a new requirement goes where its tag sorts, never at the end, and a rel
 branch. `web-tests/test_requirement_tags.py` holds the spec to this and fails a citation of a tag the
 spec does not have.
 
+A sentence opening **Tentative** is a call Claude made where the owner has not decided: it says what the page
+does there, and stays open until the owner approves or changes it. One opening **Undecided** names a case
+nobody has decided: what the page does there is not a requirement yet.
+
 ## `req/shell` The shell, whichever study it runs
 
 - `req/shell/account/role` Beside the avatar, a menu picks the role the user works in; the page shows that role's own view.
@@ -19,15 +23,18 @@ spec does not have.
   Set by the owner on 2026-11-03: one page adapting to every role at once is replaced by a view per role,
   chosen on purpose. Left of the avatar, a menu names the role the user works in and lists the roles they
   hold in the study on show: **Viewer**, everyone's, and the only one for a visitor not signed in
-  (`req/shell/account/sign-in`); **Ground Truth Tagger**, anyone's who is signed in, listed only in a study
-  that makes ground truth (GT or PostGT, `req/shell/study/stage`); and **Data Manager**, held by those the
+  (`req/shell/account/sign-in`); **Ground Truth Tagger**, anyone's who is signed in, listed in every stage but
+  Published (`req/shell/study/stage`; set by the owner on 2026-11-04: a PreGT study can have taggers too); and **Data Manager**, held by those the
   study's permissions name (`req/shell/data/roles`), listed where the study has Drive folders. Where it
   lists Viewer alone, a line says what signing in adds. Choosing a role changes the page to its view at
   once. Viewer sees the study as a Published one shows it: its tools and what they find, nothing that
   makes ground truth (no Submit GT step, the ground-truth button hidden, the item view its Items, the
-  study's postprocessing not shown). Ground Truth Tagger sees the page that makes ground truth. Data
+  study's postprocessing not shown). Ground Truth Tagger sees the page that makes ground truth, and in a PreGT
+  study the postprocessing with nothing to export yet. Tentative: Ground Truth Tagger is listed in a PreGT
+  study with no ground truth to make at all (the Image Viewer), where it shows what Viewer shows. Data
   Manager sees Data Management (`req/shell/data/mode`). Moving between Viewer and Ground Truth Tagger
-  opens the study afresh on the same image. The page opens as Viewer; the role chosen follows the user
+  opens the study afresh on the same image. Undecided: what a Ground Truth Tagger with an image open finds
+  after going to Data Manager and back. The page opens as Viewer; the role chosen follows the user
   (`req/shell/account/sign-in`) and Settings lists it (`req/shell/account/settings`). A role not held in
   the study on show, or no longer held, shows as Viewer, and the choice stays for where it is held. Test:
   `web-tests/test_roles_page.py`.
@@ -213,7 +220,10 @@ spec does not have.
   each with its access (`req/shell/data/drive-access`); a folder's images stay folded under it until
   its image count is clicked, each with a small preview. In the mode the left bar keeps the Image box
   and Preprocessing (`req/shell/preprocessing/split`) and hides the study's own drawers, its item view
-  and the steps; Load vanishes in a puff. Test: `web-tests/test_data_mode_page.py`.
+  and the steps; Load vanishes in a puff. Tentative: the steps hidden are the status bar's breadcrumbs, with
+  the item view's switch and its tasks' bar; the stage's traffic light stays. Set by the owner on
+  2026-11-04: offline, Data Management as a whole needs the internet (`req/shell/offline/default`): the
+  column, the folder's box and Preprocessing say so and do nothing until the network is back. Test: `web-tests/test_data_mode_page.py`.
   </details>
 
 - `req/shell/data/preview-images` An image chosen in Data Management opens from its preview; Load Original opens the image itself.
@@ -362,8 +372,9 @@ spec does not have.
   issue on the repo, labelled with the study's `groundTruth.label` and naming the image, whose body
   says to attach the file. The next step is the blue button: Export file, then Open new GitHub
   issue, then Close; for a local image Close follows the export. An image from the computer cannot
-  be submitted: right after it loads, the page says so in one line (at most 15 words), and in the
-  popup the issue button is off and says why (`studies/nor/tests/test_ground_truth_page.py`).
+  be submitted: right after it loads, the page tells a Ground Truth Tagger so in one line (at most 15 words),
+  and in the popup the issue button is off and says why. Tentative: the line is for whoever makes ground
+  truth alone; a Viewer loading an image from the computer is not told (`studies/nor/tests/test_ground_truth_page.py`).
   </details>
 
 - `req/shell/header` A header with the logo, the study switcher and a dark/light switch (remembered).
@@ -405,7 +416,8 @@ spec does not have.
   next visit. Dragging moves the image, wherever it starts, a label or the ruler's length included:
   no drag selects or drags the page's text (set by the owner on 2026-10-31). Scrolling up and down zooms around the pointer in small steps;
   scrolling sideways steps to the study's previous or next item (for NoR, the candidate). The main
-  area's toolbar holds the zoom at its right, and its tools wait for an image. Test:
+  area's toolbar holds the zoom at its right, and its tools wait for an image; a preview opened in Data
+  Management (`req/shell/data/preview-images`) is one (set by the owner on 2026-11-04). Test:
   `web-tests/test_image_box_page.py`.
   </details>
 
@@ -560,8 +572,8 @@ spec does not have.
   study's folder and counts again, and offers Download again after a run the network cut short, what it kept
   staying kept; a signed-in user's settings sync, the version is checked and the site's copy brought up to date.
   What needs the network says so in
-  its tooltip and does nothing: Sign in with Google, opening a new GitHub issue and Submit New Study
-  Request. A change to a setting that follows the user (`req/shell/account/sign-in`) waits and is saved once the network is
+  its tooltip and does nothing: Sign in with Google, opening a new GitHub issue, Submit New Study
+  Request and Data Management (`req/shell/data/mode`). A change to a setting that follows the user (`req/shell/account/sign-in`) waits and is saved once the network is
   back. A visit the browser cannot reach a copy for, never opened online, shows the browser's own
   offline page: no site opens there. Nothing here installs the site as an app or asks the browser
   for anything. Test: `web-tests/test_offline_page.py`.
@@ -830,7 +842,8 @@ spec does not have.
   <details>
 
   A study's steps are Load image, the study's own in order (its `study.json` `phases`; for NoR
-  Run algorithm and Review all items), then Submit GT in a GT or PostGT study. The status bar shows
+  Run algorithm and Review all items), then Submit GT while the study makes ground truth for the user: a
+  Ground Truth Tagger in a GT or PostGT study (`req/shell/account/role`). The status bar shows
   the steps done, then the first one not done, which shines blue, and with it the button that does
   that step (the `button` the step names; Load for Load image, the ground-truth button for Submit
   GT); later steps do not show yet, and once every step is done none shines. Load image is done
@@ -1097,10 +1110,10 @@ spec does not have.
   <details>
 
   Set by the owner on 2026-11-02. A study with an item view (`#items-view` in its `views` slot) gets
-  the shell's switch at the toolbar's left, off until the study turns it on. In a GT or PostGT study
-  the item view is a list of the tasks the user does to make the ground truth, so the switch reads
+  the shell's switch at the toolbar's left, off until the study turns it on. While the study makes ground truth for the user (a Ground Truth Tagger
+  in a GT or PostGT study, `req/shell/account/role`) the item view is a list of the tasks the user does to make the ground truth, so the switch reads
   "Tasks" and, once the study counts them, how many are left ("Tasks 3 left", "Tasks done" at none
-  left). In a PreGT or Published study nothing is being made, the cards are small viewers of what
+  left). Otherwise nothing is being made, the cards are small viewers of what
   was found, and it reads "Items" with how many there are. In the item view it reads "Image". The
   study counts its own (`views.count(left, total)`; NoR: the finalists and added NoRs with no
   verdict, among all; Vascular: its junctions and vessels) and hears which view is shown
@@ -1116,12 +1129,12 @@ spec does not have.
 - `req/shell/views/submit-task` Submit Ground Truth is the last task: it sits in the Tasks view's bar, and each card says whether its task is open.
   <details>
 
-  Set by the owner on 2026-11-02. In a GT or PostGT study whose item view is Tasks, a bar heads the Tasks view (`req/shell/views/second`): how
+  Set by the owner on 2026-11-02. While the study makes ground truth and its item view is Tasks, a bar heads the Tasks view (`req/shell/views/second`): how
   many tasks are done of all ("28 of 40 done", as words and a meter), and at its end the study's
   Submit Ground Truth (its `tasks-end` slot); the image view has no submit button. The Submit GT
   crumb (`req/shell/status-bar/breadcrumbs`) opens Tasks and presses it. A card whose task is still open is marked so, and the
   cards list open tasks first unless the user chose another order (Vascular's cards open Open tasks first, an open junction being one that waits on
-  a vessel's review). In a PreGT or Published study there is no bar and no card is marked. Test:
+  a vessel's review). Otherwise there is no bar and no card is marked. Test:
   `web-tests/test_status_bar_page.py`, `studies/nor/tests/test_page_layout.py`.
   </details>
 
