@@ -46,11 +46,11 @@ const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/cs
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
-  // the study as served: its stage, and a picture to reveal (the file need not exist: black shows under it)
+  // the study as served: its stage, and a link to a picture to reveal (turned away like every off-site request: black shows under it)
   if (u === "/studies/nor/study.json") {
     const m = JSON.parse(fs.readFileSync(path.join(repo, u)));
     r.writeHead(200, { "content-type": "application/json" });
-    return r.end(JSON.stringify({ ...m, stage: stage || m.stage, groundTruth: { ...m.groundTruth, reveal: "web/acme-dog.jpg" } }));
+    return r.end(JSON.stringify({ ...m, stage: stage || m.stage, groundTruth: { ...m.groundTruth, reveal: "https://acme.example/dog.jpg" } }));
   }
   const f = u.startsWith("/web/answers/") ? path.join(answers, u.slice("/web/answers/".length)) : repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
@@ -64,9 +64,13 @@ const done = async (code) => { await browser.close(); server.close(); process.ex
 const fail = async (what, seen) => { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); };
 const check = async (ok, what, seen) => { console.log((ok ? "ok    " : "FAIL  ") + what); if (!ok) await fail(what, seen); };
 
+// the picture the study links to, served when picture is true (a small PNG of the repo's), else turned away like
+// every off-site request
+let picture = true;
 async function open() {
   const ctx = await browser.newContext({ viewport: { width: 1200, height: 700 } });
   await ctx.route(offSite(origin), (r) => r.abort());
+  if (picture) await ctx.route("https://acme.example/dog.jpg", (r) => r.fulfill({ contentType: "image/png", body: fs.readFileSync(path.join(repo, "web", "poster.png")) }));
   await asTagger(ctx); // ground truth is made by a Ground Truth Tagger (req/shell/account/role)
   await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
   const page = await ctx.newPage();
@@ -142,8 +146,9 @@ await check(/\btodo\b/.test(m.cls) && m.opacity <= 0.4 && !m.cut && m.num === "n
 const ring = await page.$eval("#overlay .ring", (r) => ({ shown: r.style.display !== "none", stroke: getComputedStyle(r).stroke }));
 await check(ring.shown && ring.stroke === "rgb(255, 212, 0)", "the current candidate has a yellow ring", ring);
 // the picture the study names stands behind the whole image, shown only where it is cut out; black under it
+await page.waitForFunction(() => document.querySelector("#overlay image.reveal"));
 const pic = await page.evaluate(() => { const im = document.querySelector("#overlay image.reveal"), bg = document.querySelector("#overlay .reveal-bg"); return { href: im?.getAttribute("href"), clip: im?.getAttribute("clip-path"), w: +im?.getAttribute("width"), bg: bg && getComputedStyle(bg).fill, bgClip: bg?.getAttribute("clip-path") }; });
-await check(/acme-dog\.jpg$/.test(pic.href) && /gt-reveal/.test(pic.clip) && /gt-reveal/.test(pic.bgClip) && pic.bg === "rgb(0, 0, 0)" && pic.w === (await page.evaluate(() => st.W)), "the study's picture behind the whole image, black under it, shown only where it is cut out", pic);
+await check(pic.href === "https://acme.example/dog.jpg" && /gt-reveal/.test(pic.clip) && /gt-reveal/.test(pic.bgClip) && pic.bg === "rgb(0, 0, 0)" && pic.w === (await page.evaluate(() => st.W)), "the picture the study links to, behind the whole image, black under it, shown only where it is cut out", pic);
 
 // a verdict moves on to the next candidate, and cuts the reviewed one out
 await page.click("#task-card .verdict .up");
@@ -211,6 +216,16 @@ await check(await page.$eval('#gt-tasks > li[data-task="missed"]', (l) => l.clas
 await page.close();
 
 // ---- a PreGT study: the summary and the item views, no tasks ----
+// ---- the picture's link failing: black, never the browser's broken-picture icon ----
+picture = false;
+page = await open();
+await page.evaluate(() => nor.decide(st.order[0].i, "approve"));
+await page.waitForTimeout(500);
+const none = await page.evaluate(() => ({ image: !!document.querySelector("#overlay image.reveal"), bg: getComputedStyle(document.querySelector("#overlay .reveal-bg")).fill }));
+await check(!none.image && none.bg === "rgb(0, 0, 0)", "a picture that cannot load leaves the cut-outs black", none);
+await page.close();
+picture = true;
+
 stage = "PreGT";
 page = await open();
 await check(await shown(page, "#summary-box") && !(await shown(page, "#tasks-box")) && await shown(page, "#switch") && await shown(page, "#show-menu"),

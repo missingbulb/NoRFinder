@@ -13,6 +13,14 @@ carried all its pull requests. The `writing-version-history` skill says how.
 Back online, the status bar says so within seconds, even while the site copies a release that landed
 meanwhile. Going offline no longer unfolds the disk, memory, network and CPU: the red Wi-Fi icon says it. (#741)
 
+In NoR Finder, clicking the image where there is no candidate now deselects the selected one, as
+clicking it again already did. (#743)
+
+## 0.11104.85
+
+In NoR Finder, what you finish as a Ground Truth Tagger now uncovers a golden retriever behind the
+image, more of it with every verdict and every area checked. (#738)
+
 ## 0.11104.84
 
 Pick your role from the new menu beside your avatar. Viewer shows what a study finds. Ground Truth

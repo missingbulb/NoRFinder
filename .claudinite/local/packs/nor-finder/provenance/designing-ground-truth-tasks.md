@@ -12,3 +12,9 @@
 - **Retire when:** the shell owns the ground-truth tasks UI itself, so studies only declare their
   tasks.
 - **Landed:** #720
+
+## 2026-11-04 · reworded · the reveal picture is a link, fetched from its own host
+- **Source:** the owner: "Dog photo link should be set in the study.json file and fetched, not
+  served by us."
+- **Actor:** @missingbulb (owner).
+- **Model:** Claude Opus 5.5
