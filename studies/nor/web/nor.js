@@ -1095,8 +1095,8 @@ export function mount(shell) {
   }
   // What is done, cut out of the image: the rectangle around each decided candidate's pixels, two pixels wider
   // each way, and each checked area. A picture behind the image shows there, black when it cannot load.
-  // the picture is the study's own (study.json's groundTruth.reveal, a path in the study); none: black
-  const REVEAL = shell.study.groundTruth?.reveal ? new URL("../" + shell.study.groundTruth.reveal, import.meta.url).href : null;
+  // the picture the study links to (study.json's groundTruth.reveal), fetched from where it lives; none: black
+  const REVEAL = shell.study.groundTruth?.reveal || null;
   function drawReveal() {
     if (!TRUTH || !st.W) return;
     const svg = $("#overlay");
