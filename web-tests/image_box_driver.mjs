@@ -16,6 +16,7 @@ import { helpTip } from "./help_tip.mjs";
 import { offSite } from "./off_site.mjs";
 import { ENGINE } from "./engine.mjs";
 import { asTagger } from "./tagger.mjs";
+import { localStudy } from "./local_study.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -57,6 +58,8 @@ const done = async (code) => { await browser.close(); server.close(); process.ex
 const check = async (ok, what, seen) => { if (!ok) { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); } console.log("ok: " + what); };
 
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+
+await localStudy(ctx, "fixture");
 
 await asTagger(ctx);
 await ctx.route(offSite(origin), (r) => r.abort());

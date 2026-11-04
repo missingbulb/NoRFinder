@@ -15,6 +15,8 @@ import path from "node:path";
 import zlib from "node:zlib";
 import { offSite } from "./off_site.mjs";
 import { ENGINE } from "./engine.mjs";
+import { pressDrive, pickRecent } from "./drive_open.mjs";
+import { repoFile } from "./repo_file.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -45,15 +47,13 @@ const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(""); }
   if (u === "/web/config.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(CONFIG); }
-  if (u === "/studies/viewer/study.json") {
+  if (u === "/studies/fixture/study.json") {
     const m = JSON.parse(fs.readFileSync(path.join(repo, u), "utf8"));
     r.writeHead(200, { "content-type": "application/json" }); return r.end(JSON.stringify({ ...m, driveThumbs: "thumbs/" }));
   }
-  if (u === "/studies/viewer/thumbs/index.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end(JSON.stringify(IMAGES.map((f) => f.id))); }
-  // a folder serves its index.html, as the site does: the page rewrites its own address to the folder
-  let f = path.join(repo, u);
-  if (fs.existsSync(f) && fs.statSync(f).isDirectory()) f = path.join(f, "index.html");
-  if (!fs.existsSync(f)) { r.writeHead(404); return r.end(); }
+  if (u === "/studies/fixture/thumbs/index.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end(JSON.stringify(IMAGES.map((f) => f.id))); }
+  const f = repoFile(repo, u);
+  if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
@@ -75,7 +75,7 @@ await ctx.route("https://www.googleapis.com/**", async (route) => {
 // each thumbnail's request, in order; delay(k) says how long row k's answer takes
 const asked = [];
 let delay = () => 0;
-await ctx.route(`${origin}/studies/viewer/thumbs/*.jpg`, async (route) => {
+await ctx.route(`${origin}/studies/fixture/thumbs/*.jpg`, async (route) => {
   const id = path.basename(new URL(route.request().url()).pathname, ".jpg"), k = IMAGES.findIndex((f) => f.id === id);
   asked.push(k);
   await new Promise((ok) => setTimeout(ok, delay(k)));
@@ -106,12 +106,12 @@ const quiet = async (ms = 600) => { for (let n = -1; n !== asked.length; ) { n =
 const same = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
 const sorted = (a) => [...new Set(a)].sort((x, y) => x - y);
 const open = async () => {
-  await page.click("#load-menu summary"); await page.click('#load-menu .item[data-src="drive"]');
+  await pressDrive(page);
   await page.waitForFunction((n) => document.querySelectorAll("#drive-list .item:not(.folder)").length === n, N);
 };
 
 try {
-  await page.goto(origin + "/web/index.html");
+  await page.goto(origin + "/web/fixture");
   await page.waitForFunction(() => window.$ && $("#title").textContent);
 
   // answers arrive in reverse order of asking: the later rows' first

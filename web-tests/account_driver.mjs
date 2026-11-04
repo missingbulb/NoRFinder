@@ -107,7 +107,7 @@ async function device(seed) {
   const page = await ctx.newPage();
   page.on("pageerror", (e) => { if (cutShort(e)) return; failed = true; console.error("page error: " + e.message); });
   page.setDefaultTimeout(10000);
-  await page.goto(origin + "/web/index.html");
+  await page.goto(origin + "/web/fixture");
   await page.waitForFunction(() => document.querySelector("#title").textContent);
   return { ctx, page };
 }
@@ -161,11 +161,11 @@ try {
     const d = document.querySelector("#settings-dlg"), v = (sel) => d.querySelector(sel);
     return { title: document.getElementById(d.getAttribute("aria-labelledby"))?.textContent, where: v("#settings-where").textContent,
       theme: v('select[name="nor-theme"]').value, tip: v('input[name="nor-tips-closed"][value="recent-files"]')?.checked,
-      thumbs: v('input[name="nor-drive-thumbs"]')?.checked, memory: v('input[name="nor-memory-tip-off"]')?.checked, source: v('select[name="nor-load-source"]')?.value,
+      thumbs: v('input[name="nor-drive-thumbs"]')?.checked, memory: v('input[name="nor-memory-tip-off"]')?.checked,
       study: v('input[name="nor-drive-links"][data-study="nor"]')?.value, motion: v('input[name="nor-motion"]')?.checked, link: !!v('input[name="nor-drive-link"]'), seen: !!v('input[name="nor-seen-version"]') };
   });
   check(listed.title === "Settings" && /Google Drive/.test(listed.where), "Settings opens from the avatar's menu and says they are kept in the user's Google Drive", listed);
-  check(listed.theme === "light" && listed.tip === true && listed.thumbs === true && listed.memory === true && listed.source === "local"
+  check(listed.theme === "light" && listed.tip === true && listed.thumbs === true && listed.memory === true
     && listed.study === "https://drive.google.com/drive/folders/acmenor" && listed.motion === true && listed.link && listed.seen,
     "it lists every setting that follows the user, as this device holds it");
   if (shots) await a.page.locator("#settings-dlg").screenshot({ path: path.join(shots, "settings.png") });
@@ -236,8 +236,8 @@ try {
 
   drive.file.body = JSON.stringify({ ...file(), "nor-theme": "dark" }); // another device
   await expire();
-  await b.page.click("#load-menu summary");
-  check(await until(() => b.page.evaluate(() => document.documentElement.dataset.theme === "dark")), "opening Load's dropdown renews the token and brings the file's settings");
+  await b.page.click("#image-pick");
+  check(await until(() => b.page.evaluate(() => document.documentElement.dataset.theme === "dark")), "opening the image selector renews the token and brings the file's settings");
   check(await until(() => typeof file()?.["nor-seen-version"] === "string" && file()["nor-theme"] === "dark"),
     "the setting this device changed meanwhile is saved beside the other device's, not over it");
   await b.page.keyboard.press("Escape");

@@ -21,6 +21,7 @@ import path from "node:path";
 import { offSite } from "./off_site.mjs";
 import { ENGINE } from "./engine.mjs";
 import { cutShort } from "./page_errors.mjs";
+import { localStudy } from "./local_study.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -65,6 +66,7 @@ const browser = await pw[ENGINE].launch();
 const problems = [];
 const done = async () => { await browser.close(); server.close(); for (const p of problems) console.error(p); process.exitCode = problems.length ? 1 : 0; };
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+await localStudy(ctx, "fixture");
 await ctx.route(offSite(origin), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
 const page = await ctx.newPage();
@@ -235,6 +237,7 @@ try {
   // the real worker: the fixture's own Python in Pyodide, answering the page
   stub = false;
   const real = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  await localStudy(real, "fixture");
   await real.route("https://cdn.jsdelivr.net/pyodide/**", (r) => {
     const f = path.join(pyodide, new URL(r.request().url()).pathname.split("/").pop());
     if (!fs.existsSync(f)) return r.fulfill({ status: 404, body: "" });

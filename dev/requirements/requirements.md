@@ -45,7 +45,7 @@ nobody has decided: what the page does there is not a requirement yet.
 
   Set by the owner on 2026-10-31. Settings… in the avatar's menu opens a dialog listing each setting
   that follows the user (`req/shell/account/sign-in`), whether or not they are signed in, each with a control to change it:
-  the theme (follow the system, dark or light); the role the user works in (`req/shell/account/role`); where Load reads from; Show thumbnails in the Drive
+  the theme (follow the system, dark or light); the role the user works in (`req/shell/account/role`); Show thumbnails in the Drive
   dialog; whether the low-memory popup shows; the last Google Drive link, and the last one in each
   study; the tips closed, each with a tick to clear to see it again; the recent images from Google
   Drive, each with a tick to clear to drop it; Animations; and the version seen last. A line says where they are
@@ -68,12 +68,12 @@ nobody has decided: what the page does there is not a requirement yet.
   user's name, email and picture and for the app's own folder in their Drive, nothing else of it.
   Signed in, the avatar is the user's picture, the menu names them and offers Sign out. These
   settings follow the user: dark or light, the tips closed, the version last seen, the low-memory
-  popup turned off, the role the user works in (`req/shell/account/role`), where Load reads from, the last Drive link (in each study too), Show thumbnails,
+  popup turned off, the role the user works in (`req/shell/account/role`), the last Drive link (in each study too), Show thumbnails,
   the images opened from Drive lately, whether animations are on (`req/shell/resources-dialog/animations`) and how the status bar shows its resources (`req/shell/status-bar/resources`). These stay with the device: the left bar's width,
   Auto-save images, and everything kept for images. Google's token lasts about an hour and is kept on
   this device for that hour. A new one can be asked for only in the user's own click or key press, so
   once it has run out the page asks only in one that needs Google: a change to a setting that follows
-  the user, or opening Load or its dropdown. Google's window then opens and closes by itself while
+  the user, or opening Drive's button or the image selector. Google's window then opens and closes by itself while
   Google still remembers the consent; any other click opens nothing. Whenever
   the page has a token it syncs: the file's settings replace this device's, the theme at once, except
   each one this device changed since it last synced, which is kept and saved over the file's; with no
@@ -230,8 +230,8 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Set by the owner on 2026-11-02. Choosing an image in the tree or the folder view opens its preview
-  in the study's viewer, a stack in 3D, quick and the same for everyone; the Image box's Load becomes
-  Load Original, which opens the image itself from the copy kept on this device when it has one,
+  in the study's viewer, a stack in 3D, quick and the same for everyone; the Image box's Load, or its
+  top line (`req/shell/load/selector`), gives way to Load Original, which opens the image itself from the copy kept on this device when it has one,
   else from Drive. A preview that cannot be read (a damaged previews file) shows as no preview, and the image,
   chosen, opens itself instead. A data manager can mark an image as needing ground truth: the page creates an
   empty `<name>.ground_truth.MISSING` beside it, and unmarking trashes only a marker the page made.
@@ -279,7 +279,8 @@ nobody has decided: what the page does there is not a requirement yet.
 
   The user pastes the link of an image or a folder shared as "Anyone with the link", with no
   sign-in. An image loads at once; a folder lists its images and subfolders to pick from, each image
-  with its size, the date it was added to Drive and a small colour thumbnail; the dialog keeps one
+  with its size, the date it was added to Drive, a small colour thumbnail and, for one opened before in the
+  study, how long since, as the image selector says it (`req/shell/load/selector`); the dialog keeps one
   size while the user moves between folders. A click only selects a row; Open (or a double click,
   or Enter) opens it: an image loads, a folder lists its contents. Thumbnails are never read from
   Drive, which answers a burst of reads by refusing the browser for a while, the next image
@@ -298,7 +299,8 @@ nobody has decided: what the page does there is not a requirement yet.
   the study's own folder (`files.drive` in its `study.json`), else on the link last pasted in any
   study, and lists a folder link at once; opening on a link is not pasting it
   (`web-tests/test_drive_folder_page.py`). Nothing
-  else read from Drive is kept, apart from the image files Auto-save images keeps (`req/shell/storage/manage`, `req/shell/drive/kept-images`;
+  else read from Drive is kept, apart from the image files Auto-save images keeps and what each folder listed holds
+  (`req/shell/storage/manage`, `req/shell/drive/kept-images`, `req/shell/drive/offline-listing`;
   `studies/nor/tests/test_drive_dialog.py`).
   </details>
 
@@ -308,13 +310,28 @@ nobody has decided: what the page does there is not a requirement yet.
   The Google Drive dialog's bottom row holds two remembered checkboxes, **Show thumbnails** and
   **Auto-save images** (both on at first), and beside them a link that opens Manage storage, its
   text the bytes the thumbnails and saved images take on this device. While Auto-save images is on,
-  an image downloaded from Drive is kept on this device. An image chosen from the recents (`req/shell/load/recents`)
+  an image downloaded from Drive is kept on this device. An image chosen in the image selector (`req/shell/load/selector`)
   opens from the copy kept here, with no call to Drive. One chosen from Drive itself, in the dialog's
   list or by its link, opens from the kept copy, whatever the checkbox says, only once its SHA-256
   matches the one Drive gives for the file now (from the folder's listing, or from the file's
   details for a link); otherwise it is downloaded: when the two differ (the file changed on Drive),
   and when Drive gives no SHA-256 or cannot be asked. A download replaces the kept copy while
   Auto-save images is on. Test: `web-tests/test_storage_page.py`, `web-tests/test_drive_cache_page.py`.
+  </details>
+
+- `req/shell/drive/offline-listing` The Drive dialog keeps every folder it lists, so it opens offline too, on those folders, greying what cannot open.
+  <details>
+
+  Set by the owner on 2026-11-04. Each folder the dialog lists is kept on this device: its rows, what Drive says
+  of each (name, size, date, SHA-256), never a thumbnail's bytes or an image's. Offline, the dialog opens on the
+  link it opens on online and shows each folder as last listed: an image kept on this device
+  (`req/shell/drive/kept-images`) opens as it does online, and every other image, and a folder never listed, is
+  greyed and opens nothing. Online, opening the dialog or a folder shows its kept listing at once, when there is
+  one, reads it again from Drive and puts what Drive says now in its place, kept too. Online, an image kept on this
+  device carries the offline mark (`req/shell/offline/mark`), the others nothing. Offline with no listing kept for
+  the link, the dialog lists the images kept on this device instead (`req/shell/offline/default`). Settings lists
+  the listings among what is kept on this device only (`req/shell/account/settings`), and the privacy policy says
+  they are kept. Test: `web-tests/test_image_line_page.py`.
   </details>
 
 - `req/shell/drive/previews` A folder's `rauntruth-previews.tiff` gives every image it covers a preview at once, a stack turning on hover.
@@ -476,8 +493,8 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Set by the owner on 2026-10-30. Every box in the left bar folds under its title, and clicking the
-  title opens or closes it. The first is the shell's Image box (the image's details, its channels, Load
-  and Unload): open until an image opens, then folded. Each of a study's boxes
+  title opens or closes it. The first is the shell's Image box (the image selector or Load, the image's
+  details, its channels, Unload): open until an image opens, then folded. Each of a study's boxes
   names the step (`req/shell/status-bar/breadcrumbs`) after which it opens, or that only its title opens it, and may name the
   step after which it folds again. When a step is done by the user (an image opening, or the
   step's button pressed, never a dial set back to the last run's) its boxes open and the boxes it
@@ -506,41 +523,62 @@ nobody has decided: what the page does there is not a requirement yet.
   the toolbar's right end (its `toolbar-end` slot).
   </details>
 
-- `req/shell/load/button` Load opens an image from this computer or Google Drive, and shines until one is open; Unload beside it closes it.
+- `req/shell/load/button` In a study loading from this computer, Load opens an image from it and shines until one is open; Unload beside it closes it.
   <details>
 
   The left bar's Image box holds the image: its name and what the file says (`req/shell/image/file-info`), its channels
-  (`req/shell/channels/rows`), and at its foot Load, with a dropdown for where from (this computer or Google Drive),
+  (`req/shell/channels/rows`), and at its foot Load, which opens the computer's own file chooser,
   filled and glowing until an image is open and a plain button with a blue border after. Load sits at
   the foot, not in the box's title, so the title keeps its place whether the box is folded or open.
-  Each place in the dropdown has a small icon: a computer for this computer, Drive's logo for Google
-  Drive. Once an image is open, Unload stands beside Load and clears the page back to before any image:
+  Changed by the owner on 2026-11-04: Load has no dropdown, a study loading from one place only
+  (`req/shell/load/from`). Once an image is open, Unload stands beside Load and clears the page back to before any image:
   no image, no minimap, the steps starting over at Load image, the boxes folded as at first, and the
   study starting over too, its panels as they were before any image; Python lets the image go. Test:
-  `web-tests/test_storage_page.py`, `web-tests/test_image_box_page.py`.
+  `web-tests/test_image_box_page.py`, `web-tests/test_image_line_page.py`.
   </details>
 
-- `req/shell/load/recents` Load's dropdown lists the images opened from Google Drive lately, each one click away; the dropdown stays inside the left bar, a long name cut short.
+- `req/shell/load/from` Each study loads its images from one place: the Image Viewer from this computer, every other study from Google Drive.
   <details>
 
-  Below this computer and Google Drive, Load's dropdown lists the last 10 images opened from Drive
-  in the study on show, newest first (set by the owner on 2026-10-31: an image opened in another
-  study is irrelevant here), each by its name and where it is in Drive (the folders under the link it was opened
-  from) beside Drive's small logo, as From Google Drive has one, so two files of one name stay apart; an image is one entry however often it is opened.
-  Choosing one opens the copy kept on this device (`req/shell/drive/kept-images`), with no download, and downloads it again
-  only when none is kept. Images from this computer are not listed: a web page cannot open a file
-  on the computer again by itself. Test: `web-tests/test_storage_page.py`.
+  Set by the owner on 2026-11-04. A study's `files.from` names the place, `local` or `drive`, and every
+  study names one. The Image Viewer, which makes no ground truth, loads from this computer alone, with
+  no way to Google Drive; NoR Finder and Vascular Measurements, whose images and ground truth live in
+  Drive, load from Google Drive alone (`req/shell/load/selector`), with no way to a file on the computer. Where
+  Load reads from is no setting of the user's. Test: `web-tests/test_image_line_page.py`.
   </details>
 
-- `req/shell/load/recents-tip` A tip bubble points at Load's dropdown when an image opened from Drive is one of the recent ones.
+- `req/shell/load/recents-tip` A tip bubble points at the image selector when an image opened from Drive is one of the recent ones.
   <details>
 
   When an image chosen in the Google Drive dialog opens from this device (`req/shell/drive/kept-images`), a bubble beside
-  Load's dropdown arrow, its arrow pointing at it, says "To load recent files click here". Its ×
-  closes it for good, and so does opening the dropdown, which is what it asks for. Each tip has an
+  the image selector (`req/shell/load/selector`), its arrow pointing at it, says "To load recent files click here". Its ×
+  closes it for good, and so does opening the selector, which is what it asks for. Each tip has an
   id, and the ids of the tips closed are kept in the browser (listed in Manage storage's settings as
   "Tips you closed"), so a closed tip never shows again, after a reload too. Test:
   `web-tests/test_drive_cache_page.py`.
+  </details>
+
+- `req/shell/load/selector` In a study loading from Google Drive, the Image box's top line picks the image: a selector of the images opened lately, newest first, each saying how long ago; Unload once one is open; and Drive's button.
+  <details>
+
+  Set by the owner on 2026-11-04, in place of Load and its dropdown (`req/shell/load/from`). The Image box's first
+  line, above the image's details (`req/shell/image/file-info`, titled Details) and its channels, holds three
+  things. First a selector looking like the header's study switcher: its face names the image open, or, before
+  one, says "Choose an image"; it opens on the last 30 images opened from Drive in the study on show, newest
+  first, the first (the one opened last) selected, so Enter opens it (set by the owner on 2026-10-31: an image
+  opened in another study is irrelevant here). Each shows its name, where it is in Drive (the folders under the
+  link it was opened from) beside Drive's small logo, so two files of one name stay apart, and a small tag of
+  how long since it was last opened: "<1h" within the hour, then whole hours ("3h"), days ("6d"), months ("2mo")
+  and years ("1y"); one opened before the page kept that time carries none. An image is one entry however often
+  it is opened. Choosing one opens the copy kept on this device (`req/shell/drive/kept-images`), with no download,
+  and downloads it again only when none is kept; offline, one not kept is greyed and opens nothing. With none
+  opened yet the selector says so. Images from this computer are not listed: a web page cannot open a file on
+  the computer again by itself. Last, at the line's right, a button bearing Drive's logo opens the Google Drive
+  dialog (`req/shell/drive/dialog`), offline too (`req/shell/drive/offline-listing`). Until an image is open, the
+  selector, or Drive's button when the selector lists nothing, is filled and glowing, as Load is
+  (`req/shell/load/button`). Once an image is open a small Unload button stands between the two, and clears the
+  page as Unload does. The selector's list stays inside the left bar, a long name cut short. Test:
+  `web-tests/test_image_line_page.py`, `web-tests/test_storage_page.py`.
   </details>
 
 - `req/shell/memory/no-growth` Memory does not grow with use.
@@ -561,7 +599,8 @@ nobody has decided: what the page does there is not a requirement yet.
   copy. A study whose Python is already on this device runs; one whose Python is not says so: it
   needs the internet once, or Make available offline (`req/shell/offline/per-study`). It says so plainly, not as an error
   and with no traceback, the spinner stopping, the network dropping as the study's own modules load too (set by the owner on 2026-11-03). An image kept on this device (`req/shell/drive/kept-images`,
-  `req/shell/offline/per-study`) opens: offline, From Google Drive lists the images kept here instead of a Drive folder.
+  `req/shell/offline/per-study`) opens: offline, the Google Drive dialog shows its folders as last listed (`req/shell/drive/offline-listing`),
+  or, with none kept, the images kept here.
   The status bar's online icon (`req/shell/status-bar/online`) shows it, the network's tooltip and its
   Network tab saying the page is offline too. No
   network is the browser saying so, or the site not answering, asked every 30 seconds all session long and every
@@ -569,7 +608,7 @@ nobody has decided: what the page does there is not a requirement yet.
   seconds, even with a release that landed meanwhile still being copied (set by the owner on 2026-11-04), the browser saying online or not, and a Wi-Fi's
   sign-in page answering in the site's place counts as no network. What the page is doing follows it, set by the
   owner on 2026-11-03: a study whose Python could not load loads it once the network is back, with no reload;
-  an open From Google Drive lists the images kept here once it goes and the study's folder once it is back, and
+  an open Google Drive dialog greys what cannot open once it goes and reads its folder again once it is back, and
   an image it could not download says the internet cannot be reached; an open Make available offline reads the
   study's folder and counts again, and offers Download again after a run the network cut short, what it kept
   staying kept; a signed-in user's settings sync, the version is checked and the site's copy brought up to date.
@@ -588,7 +627,8 @@ nobody has decided: what the page does there is not a requirement yet.
   (`req/shell/offline/default`). A small green mark, the same everywhere, an arrow into a tray for saved on this device,
   follows a study whose Python is all on this device, in the header's switcher and its Storage
   section, and an image kept on this device, in the Google Drive dialog's rows; what is not available
-  offline carries nothing. Load's recent images carry none: with Auto-save on, they are all kept. The owner set on
+  offline carries nothing. The image selector's images carry none: with Auto-save on, they are all kept; offline,
+  one not kept is greyed (`req/shell/load/selector`). The owner set on
   2026-11-04 that the mark states a state rather than prompting an action, so it is green, with no tooltip and no
   question-mark pointer; assistive tech is told what it means: the study runs, or the image opens, without the internet. Test:
   `web-tests/test_storage_page.py`.

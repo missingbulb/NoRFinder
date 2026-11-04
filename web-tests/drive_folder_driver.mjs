@@ -1,6 +1,6 @@
 // Drives the Google Drive dialog (web/) in headless Chromium, in three studies: a stand-in fixture whose
-// study.json names a Drive folder, the NoR study with the folder its own study.json names, and the Image
-// Viewer, which names none. Checks req/shell/drive/dialog: the dialog opens on the link last pasted in this study, else on the
+// study.json names a Drive folder, the NoR study with the folder its own study.json names, and a stand-in
+// Vascular Measurements, which names none. Checks req/shell/drive/dialog: the dialog opens on the link last pasted in this study, else on the
 // study's own folder, else on the link last pasted anywhere.
 // Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/drive_folder_driver.mjs
@@ -13,6 +13,7 @@ import http from "node:http";
 import path from "node:path";
 import { offSite } from "./off_site.mjs";
 import { ENGINE } from "./engine.mjs";
+import { pressDrive, pickRecent } from "./drive_open.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -33,6 +34,12 @@ const server = http.createServer((q, r) => {
     const m = JSON.parse(fs.readFileSync(path.join(repo, u), "utf8"));
     r.writeHead(200, { "content-type": "application/json" });
     return r.end(JSON.stringify({ ...m, files: { ...m.files, folders: [FIXTURE_FOLDER] } }));
+  }
+  if (u === "/studies/vascular/study.json") {
+    const m = JSON.parse(fs.readFileSync(path.join(repo, u), "utf8"));
+    delete m.files.folders;
+    r.writeHead(200, { "content-type": "application/json" });
+    return r.end(JSON.stringify(m));
   }
   const f = repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
@@ -59,7 +66,7 @@ page.setDefaultTimeout(10000);
 const opensOn = async (address) => {
   await page.goto(origin + address);
   await page.waitForFunction(() => window.$ && $("#title").textContent);
-  await page.click("#load-menu summary"); await page.click('#load-menu .item[data-src="drive"]');
+  await pressDrive(page);
   await page.waitForFunction(() => $("#drive-dlg").open);
   const link = await page.inputValue("#drive-link");
   await page.click("#drive-dlg button[value=close]");
@@ -76,7 +83,7 @@ try {
   // a link pasted in the fixture
   await page.goto(origin + "/web/fixture");
   await page.waitForFunction(() => window.$ && $("#title").textContent);
-  await page.click("#load-menu summary"); await page.click('#load-menu .item[data-src="drive"]');
+  await pressDrive(page);
   await page.fill("#drive-link", PASTED); await page.click("#drive-go");
   await page.waitForFunction(() => !$("#drive-msg").textContent.includes("Reading"));
   await page.click("#drive-dlg button[value=close]");
@@ -85,7 +92,7 @@ try {
   check(at === PASTED, `the dialog opens on the link last pasted in this study: ${at}`);
   at = await opensOn("/web/nor");
   check(at === NOR_FOLDER, `a link pasted in another study leaves this one's folder: ${at}`);
-  at = await opensOn("/web/");
+  at = await opensOn("/web/vascular");
   check(at === PASTED, `a study that names no folder opens on the link last pasted anywhere: ${at}`);
 } catch (e) {
   failed = true; console.error(e);

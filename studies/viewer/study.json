@@ -23,6 +23,7 @@
     "module": "web/viewer.js"
   },
   "files": {
+    "from": "local",
     "accept": ".tif,.tiff,.png",
     "empty": "Load a TIFF or PNG to look at it, each channel in its own colour."
   },
