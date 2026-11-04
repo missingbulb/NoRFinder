@@ -5,7 +5,7 @@ photos share a file name in the folder, so each is kept by its Drive id.
 
     pip install gdown
     python3 studies/shelves/lab/photos.py          # fetch what is missing, verify everything
-    python3 studies/shelves/lab/photos.py --pin    # also list the folder again and record what is new
+    python3 studies/shelves/lab/photos.py --pin    # list the folder again: record what is new, drop what is gone
 """
 import argparse
 import hashlib
@@ -44,10 +44,10 @@ def main(argv=None):
     with open(MANIFEST) as f:
         doc = json.load(f)
     if a.pin:
-        known = {p['drive_id'] for p in doc['photos']}
-        for f in gdown.download_folder(id=doc['folder'], skip_download=True, quiet=True):
-            if f.id not in known:
-                doc['photos'].append(dict(name=f.path, drive_id=f.id, sha256=None))
+        # the folder is the corpus: a photo the owner took out of it leaves the manifest too
+        known = {p['drive_id']: p for p in doc['photos']}
+        listed = gdown.download_folder(id=doc['folder'], skip_download=True, quiet=True)
+        doc['photos'] = [known.get(f.id) or dict(name=f.path, drive_id=f.id, sha256=None) for f in listed]
     os.makedirs(RAW, exist_ok=True)
     for p in doc['photos']:
         out = path_of(p)
