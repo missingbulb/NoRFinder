@@ -133,12 +133,18 @@ await check(await visible("#minimap canvas"), "a second click on the same spot u
 // hiding folds the minimap into its toolbar button, and showing unfolds it back out of it
 const flight = () => page.waitForFunction(() => document.getAnimations().some((a) => a.effect?.pseudoElement === "::view-transition-group(minimap)"));
 const landed = () => page.waitForFunction(() => !document.getAnimations().some((a) => a.effect?.pseudoElement?.startsWith("::view-transition")));
+// the button itself never flies: a copy of it does, so the button stands where it is throughout
+const flier = () => page.evaluate(() => ({ button: getComputedStyle($("#minimap-btn")).viewTransitionName, copy: !!document.querySelector(".mm-flier") }));
 await page.click("#minimap-hide");
 await check(await flight().then(() => true, () => false), "hiding flies the minimap into its toolbar button");
+const folding = await flier();
+await check(folding.button === "none" && folding.copy, "folding, a copy of the button is what the minimap lands as, not the button", folding);
 await landed();
 await check(!(await visible("#minimap")) && (await page.getAttribute("#minimap-btn", "aria-pressed")) === "false", "hidden: the minimap goes, and its toolbar button is up");
 await page.click("#minimap-btn");
 await check(await flight().then(() => true, () => false), "and showing flies it back out of the button");
+const unfolding = await flier();
+await check(unfolding.button === "none" && unfolding.copy, "unfolding, a copy of the button is what flies out, and the button stays", unfolding);
 await landed();
 await check((await visible("#minimap canvas")) && (await page.getAttribute("#minimap-btn", "aria-pressed")) === "true", "the toolbar button opens it again");
 

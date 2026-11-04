@@ -27,7 +27,11 @@ reference build: `req/nor/truth/tasks`, `req/nor/truth/order` and `req/nor/truth
   it the current task's item.
 - **The display markings give way to the tasks' own.** Colour codes, numbers, reasons and
   measuring lines are noise here. An item waiting for review is a faint thin outline; the current
-  one has a ring in a colour the data does not carry.
+  one has a ring in a colour the data does not carry. The Show menu above the image stays, its rows
+  switching the tasks' markings under the tasks' names (Finalists, Rejected, Cut out what is
+  done, Frame the area), so viewing and tagging speak one vocabulary.
+- **What belongs to the statistics leaves with them.** A summary mask, or anything else drawn for
+  the summary, is neither drawn nor warned about while the summary is hidden.
 
 ## The tasks
 
@@ -40,7 +44,8 @@ reference build: `req/nor/truth/tasks`, `req/nor/truth/order` and `req/nor/truth
 - **A progress bar split into one part per task**, each as wide as its task is long and filled as
   far as it is done, so a finished batch reads at a glance. No total written beside it.
 - **The open task's tools go on its own row**: a cogwheel opening the item's options as a popup,
-  and a small Skip link. No Go back: the image and the task rows reach any earlier item.
+  a small Back link and a small Skip link. Back returns to the item the person was on before, as
+  far as they like, so a verdict, a skip or a measurement can be changed; it slides the other way.
 
 ## One item at a time
 
@@ -48,27 +53,35 @@ reference build: `req/nor/truth/tasks`, `req/nor/truth/order` and `req/nor/truth
   task stays a single row.
 - **The item's image gets the box's whole width**, the verdict buttons big and side by side under
   it. No number, state, separator or go-to control on it: its place is the ring on the image.
-- **A verdict moves on by itself**: to the task's next item with no verdict, and once none is
-  left to the first task not done. A verdict or a Skip slides the next item in over the last
+  Every task's item is shown and corrected alike, the ones the algorithm rejected too, since a
+  rejection the person overturns needs its measurements set before it is approved. A correction
+  shows only its undo ("Reset measurements"), never a label saying it was made.
+- **A verdict moves on by itself**: to the walk's next item not done, and once none is left to
+  Submit. A verdict or a Skip slides the next item in over the last
   (none under reduced motion). Pan the image to the item only when it is out of the middle of the
   view.
 
 ## Progress the person can see
 
-- **Order every task's items area by area**: cut the image into a grid (NoR: 10 × 10, a fraction
-  of the image, never a pixel size), take the rows of areas top to bottom, each row the way back
-  from the last so the next area borders the one just done, and top to bottom inside an area.
-  The grid is never drawn; the person only notices an area of the image finishing after ten or
-  twenty verdicts.
-- **Cut what is done out of the image.** A decided item's area (approved or rejected alike) is
-  removed, showing a picture behind the image instead: a reward that grows with the work, black
-  while the study names none. The study names it in `study.json`'s `groundTruth.reveal` as a link
-  the browser fetches from where the picture lives (NoR: a golden retriever), never a file the
-  site serves; its host is a service the page reaches, so the privacy page names it.
-- **The missed-items task goes area by area too**: frame one area on the image (zoomed in when it
-  is small there), let the person add what the algorithm missed there, and a "No missed … here"
-  button checks the area and cuts it out. The task is done when every area is checked and every
-  added item decided.
+- **The tasks are one walk, area by area**, never one pass per task: cut the image into a grid
+  (NoR: 10 × 10, a fraction of the image, never a pixel size), take the rows of areas top to
+  bottom, each row the way back from the last so the next area borders the one just done, and in
+  each area do every task's items there (NoR: its finalists, its rejected, what was added there,
+  each top to bottom), then its check for missed items, before the next area. Separate passes
+  leave every region unfinished until the last one reaches it. The task rows are counters; the
+  current item's row is the open one, and clicking a row goes to its next item along the walk.
+- **Frame the area the walk is in** on the image, zooming in when it is small there as the walk
+  enters it. The grid itself is never drawn.
+- **Cut what is done out of the image.** A decided item's own rectangle (approved or rejected
+  alike) is removed as it is decided, and once an area is done, every item decided and it checked,
+  the whole area goes, showing a picture behind the image instead: a reward that grows with the
+  work, black while the study names none. The study names it in `study.json`'s
+  `groundTruth.reveal` as a link the browser fetches from where the picture lives (NoR: a golden
+  retriever), never a file the site serves; its host is a service the page reaches, so the privacy
+  page names it.
+- **The area's check is its last step**: let the person add what the algorithm missed there,
+  each added item a step of its own, and a "No missed … here" button checks the area. The
+  missed-items task is done when every area is checked and every added item decided.
 
 ## Testing it
 

@@ -18,8 +18,10 @@ skeleton, is no longer offered. (#744)
 Back online, the status bar says so within seconds, even while the site copies a release that landed
 meanwhile. Going offline no longer unfolds the disk, memory, network and CPU: the red Wi-Fi icon says it. (#741)
 
-In NoR Finder, clicking the image where there is no candidate now deselects the selected one, as
-clicking it again already did. (#743)
+NoR Finder's Ground Truth Tagger now works one area of the image at a time: its finalists, its
+rejected, then No missed NoRs here, and the whole area is cut out. Back returns to the last item, to
+change your mind. Rejected candidates get the finalists' measurement bars, and Show above the image
+switches the tagging marks. (#739)
 
 ## 0.11104.85
 

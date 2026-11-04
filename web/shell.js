@@ -410,8 +410,8 @@ const roleChooser = roleMenu($("#role-menu"), (r) => {
 // cards are the tasks that make it, and the switch says how many are left; otherwise they show what was found.
 // count(left, total) from the study, null until it has any; on(fn) hears the view now shown, "image" or "items".
 // An item view marked data-viewing only shows what was found: while the study makes ground truth it is not shown,
-// and the study lists its tasks itself.
-const itemsView = () => { const v = $("#items-view"); return v && !(makesTruth() && v.hasAttribute("data-viewing")) ? v : null; };
+// and the study lists its tasks itself. One marked data-shelved is not shown in any role.
+const itemsView = () => { const v = $("#items-view"); return v && !v.hasAttribute("data-shelved") && !(makesTruth() && v.hasAttribute("data-viewing")) ? v : null; };
 const views = {
   now: "image", left: null, total: null, heard: [],
   show(v) {
