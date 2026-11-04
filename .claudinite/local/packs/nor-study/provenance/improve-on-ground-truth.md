@@ -48,3 +48,14 @@
 ## 2026-10-30 · reworded · the metrics file's path follows its move to web/ (#572)
 - **Reason:** finder_metrics.json moved into the study's published page part.
 - **Landed:** #572
+
+## 2026-11-04 · reworded · the generic order of work is now refitting-on-new-ground-truth's
+- **Reason:** this skill fills that order in with NoR's commands.
+- **Actor:** @missingbulb (owner).
+- **Model:** claude-opus-5-5
+
+## 2026-11-04 · reworded · each step is now the generic skill's step of the same number, with NoR's commands
+- **Reason:** a review of the skill against Anthropic's skill best practices, the house style and
+  the code found missing invocations, rules owned twice and hand-offs the family lacked; applied.
+- **Actor:** @missingbulb (owner), who asked for the review.
+- **Model:** claude-opus-5-5

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>rauntruth.com app</title>
-<meta name="version" id="site-version" title="version 0.11104.90">
+<meta name="version" id="site-version" title="version 0.11104.92">
 <meta name="description" content="Image studies that run in your browser: find, count and measure in microscopy images, then review every result. Online or offline.">
 <link rel="icon" id="favicon" href="icon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
@@ -76,20 +76,18 @@
     <div id="left-head"><button id="left-collapse" type="button" aria-expanded="true" aria-controls="left" title="Collapse the left bar, to give the image its room" aria-label="Collapse the left bar"><svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button><span class="strip-name">Steps</span></div>
     <section class="box foldable" id="image-box" data-folds="load">
       <div class="sec-head"><h2 data-done-name="Loaded Image">Load Image</h2></div>
+      <div id="load">
+        <details class="menu" id="image-menu"><summary id="image-pick" aria-label="Choose an image" data-log-as="the image selector"><span class="pick-name">Choose an image</span><span class="caret"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z"/></svg></span></summary>
+          <div class="pop" role="dialog" aria-label="Images opened lately"><div id="recent" role="listbox" data-log-as="a recent image"></div></div>
+        </details>
+        <button id="load-main" class="primary" type="button" title="Open from this computer"><svg class="computer-logo" aria-hidden="true"><use href="#computer-logo"/></svg><span class="word">Load</span></button>
+        <button id="unload" type="button" hidden title="Close the image and clear the page" aria-label="Unload"><span class="word">Unload</span><svg class="x-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+        <button id="load-drive" type="button" title="Open from Google Drive" aria-label="Open from Google Drive"><svg class="drive-logo" aria-hidden="true"><use href="#drive-logo"/></svg></button>
+      </div>
       <details id="file-box" class="empty"><summary id="file-name" class="dim" data-log-as="the image's name">No image loaded</summary><dl id="file-info"></dl></details>
       <div id="channels"></div>
       <div id="image-foot">
-        <div class="split" id="load">
-          <button id="load-main" class="primary">Load</button><details class="menu" id="load-menu"><summary class="primary" aria-label="Where to load from"></summary>
-            <div class="pop">
-              <button class="item" data-src="local"><svg class="computer-logo" aria-hidden="true"><use href="#computer-logo"/></svg>From this computer</button>
-              <button class="item" data-src="drive"><svg class="drive-logo" aria-hidden="true"><use href="#drive-logo"/></svg>From Google Drive</button>
-              <div id="recent" data-log-as="a recent image" hidden><div class="recent-head">Recent</div></div>
-            </div>
-          </details>
-        </div>
         <button id="load-original" class="primary" type="button" hidden title="Open the image itself, not its preview: from this device when it is kept here, else from Google Drive">Load Original</button>
-        <button id="unload" type="button" hidden title="Close the image and clear the page">Unload</button>
         <input id="file" type="file" hidden>
         <svg hidden><symbol id="drive-logo" viewBox="0 0 24 21"><path fill="#0f9d58" d="M8 0l4 7-8 14-4-7z"/><path fill="#ffba00" d="M8 0h8l8 14h-8z"/><path fill="#4285f4" d="M8 14h16l-4 7H4z"/></symbol><symbol id="computer-logo" viewBox="0 0 24 21"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2" y="1" width="20" height="14" rx="2"/><path d="M8 20h8M12 15v5"/></g></symbol></svg>
       </div>
@@ -198,8 +196,8 @@
 <dialog id="drive-dlg">
   <form method="dialog">
     <h2>Load from Google Drive</h2>
-    <p class="hint">Paste the link of an image or a folder shared as "Anyone with the link".</p>
-    <div class="drive-row"><input id="drive-link" type="text" placeholder="https://drive.google.com/…" autocomplete="off"><button id="drive-go" type="button" data-needs-network>Go</button></div>
+    <p class="hint" id="drive-hint">Paste the link of an image or a folder shared as "Anyone with the link".</p>
+    <div class="drive-row" id="drive-link-row"><input id="drive-link" type="text" placeholder="https://drive.google.com/…" autocomplete="off"><button id="drive-go" type="button" data-needs-network>Go</button></div>
     <div id="drive-path"></div>
     <div id="drive-list" data-log-as="an item in the Drive list"></div>
     <div id="drive-throttle" hidden><p>Google is throttling this site's downloads. Try again in 15 minutes.</p><div id="drive-clock">15:00</div></div>

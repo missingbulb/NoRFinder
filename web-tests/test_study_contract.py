@@ -51,6 +51,9 @@ def test_a_study_names_files_that_exist(path):
         assert 0 <= black < white <= 255, c
     # req/shell/data/roles: its Drive folders, each a folder link, and who holds each role, by email
     assert 'drive' not in m['files'], 'a study names its Drive folders in files.folders'
+    # req/shell/load/from: where it opens images from, which the shell has no default for
+    places = m['files'].get('from')
+    assert isinstance(places, list) and places and set(places) <= {'local', 'drive'}, 'files.from lists where the study opens images from: local, drive or both'
     for link in m['files'].get('folders', []):
         assert re.search(r'/folders/[\w-]{10,}', link), link
     for role, who in m.get('permissions', {}).items():

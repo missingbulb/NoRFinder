@@ -4,7 +4,7 @@
   python3 perf.py check SPEC        rerun: same signature? faster? lower peak? (exit 1 if the output changed)
   python3 perf.py profile SPEC      top hotspots (cumulative time), to pick what to optimise
 
-Procedure (see the nor-detection-iteration skill, 'Performance pass'):
+Procedure (the speeding-up-an-algorithm skill):
   1. snapshot  2. profile  3. change ONE hotspot  4. check  5. keep only if signature equal and
   faster by >= 5 % or its peak memory lower by >= 5 %, with neither one worse by more than that;
   otherwise revert  6. log the attempt (kept or not) in detection/lab/ledger.md.

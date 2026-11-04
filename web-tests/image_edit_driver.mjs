@@ -7,6 +7,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { standIn } from "./stand_in_drive.mjs";
+import { pressDrive, pickRecent } from "./drive_open.mjs";
 
 const [answers, studies, rootDir, image, out] = process.argv.slice(2);
 fs.mkdirSync(out, { recursive: true });
@@ -91,7 +92,7 @@ await check(await page.evaluate((s) => [...document.querySelectorAll("#data-tree
 await role(page, "Viewer");
 await page.waitForTimeout(500);
 if (await page.evaluate(() => $("#image-box").classList.contains("folded"))) await page.click("#image-box .sec-head h2");
-await page.click("#load-menu summary"); await page.click('#load-menu .item[data-src="drive"]');
+await pressDrive(page);
 await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length > 0);
 const items = await page.evaluate(() => [...document.querySelectorAll("#drive-list .item .name")].map((e) => e.textContent));
 await check(items.includes(stem) && !items.includes(name), "Load's Drive dialog lists the folder in the image's place", items);

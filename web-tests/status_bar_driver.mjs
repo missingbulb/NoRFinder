@@ -21,6 +21,8 @@ import { repoFile } from "./repo_file.mjs";
 import { offSite } from "./off_site.mjs";
 import { ENGINE } from "./engine.mjs";
 import { asTagger } from "./tagger.mjs";
+import { localStudy } from "./local_study.mjs";
+import { standInDrive } from "./drive_open.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -94,8 +96,10 @@ const bars = (page) => page.evaluate(() => {
 
 async function open(study, mode) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
+  await localStudy(ctx, "fixture");
   await asTagger(ctx);
   await ctx.route(offSite(origin), (r) => r.abort());
+  await standInDrive(ctx);
   await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
   if (mode) await ctx.addInitScript((m) => { if (localStorage.getItem("nor-resources") === null) localStorage.setItem("nor-resources", JSON.stringify(m)); }, mode);
   const page = await ctx.newPage();
@@ -582,7 +586,8 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await page.click("#study-menu summary");
   await page.click("#study-list a >> text=NoR Finder");
   await page.waitForFunction(() => document.documentElement.dataset.stage === "GT");
-  await steps(page, ["Load image*"], ["#load-main", "#sb-load"]);
+  // NoR Finder loads from Drive (req/shell/load/from): with no image opened there yet, Drive's button is the step's
+  await steps(page, ["Load image*"], ["#load-drive", "#sb-load"]);
   await ctx.close();
 }
 await done(0);

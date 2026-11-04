@@ -40,6 +40,7 @@
     "style": "web/vascular.css"
   },
   "files": {
+    "from": ["drive"],
     "accept": ".tif,.tiff",
     "empty": "Load a confocal z-stack (a multi-page TIFF of CD31, or CD31 and DAPI) to turn it in 3D.",
     "folders": [

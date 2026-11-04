@@ -18,8 +18,8 @@ The page does that first pass for you, and you keep the final say: you review ea
 accept or reject it, correct its length, and add any node it missed.
 
 It is built to turn a microscope image into numbers you can trust and check. You load a
-three-channel ImageJ TIFF (Caspr, Nav1.6, DAPI) or an RGB PNG, from your computer or a shared
-Google Drive folder. A finder proposes every candidate node, and a set of named, tunable filters
+three-channel ImageJ TIFF (Caspr, Nav1.6, DAPI) or an RGB PNG from a shared Google Drive folder,
+the images you opened lately one click away. A finder proposes every candidate node, and a set of named, tunable filters
 splits them into finalists and rejects, each reject showing the reason. The page then reports
 count, density and length histograms for the whole image or a lassoed region, and exports them
 as CSV. Your verdicts can go back to this repository as ground truth, which is what the finders
@@ -35,7 +35,7 @@ measurement editors, the summary statistics, the CSVs, the Drive browser and you
 The site is plain static files served by Cloudflare, with no server and no build framework. Signing in
 with Google is optional: Google signs you in, in its own window, and gives the page a token for about an
 hour, kept in your browser for that hour. The page uses it to keep your settings (the theme, the tips
-you closed, where Load reads from, your last Drive links and the images you opened from Drive lately) in
+you closed, your last Drive links and the images you opened from Drive lately) in
 one small file in your own Google Drive, in a hidden folder only this site can see, so they follow you
 to other devices. Signed in, you can also work as a Ground Truth Tagger, from the role menu beside your avatar. A study's data managers can also let it into that study's Drive folders, the ones
 they choose in Google's own picker, where it adds files (previews, ground-truth markers, edited images) and changes only
@@ -47,7 +47,9 @@ not follow you across sites; it receives the page's address, the page that
 linked to it and your browser's details, never your images or results. Python and
 its packages, about 50 MB, download on the first visit and are cached for 30 days. Images opened
 from Google Drive are kept in your browser too, so they open again without a download, unless you
-untick Auto-save images; your avatar's Manage storage lists, and deletes, everything kept.
+untick Auto-save images, and so is what each Drive folder you browsed holds, so the Drive dialog opens
+without the internet; in Chrome and Edge the Image Viewer also keeps the browser's reference to each file you
+opened from your computer, never a copy, so its recent list opens it again; your avatar's Manage storage lists, and deletes, everything kept.
 
 ![NoR Finder with a dense corpus callosum field: 428 candidates found, 193 finalists measured, one selected, and the summary's length histograms](docs/screenshot.png)
 

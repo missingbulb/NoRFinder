@@ -21,6 +21,7 @@ import { offSite } from "../../../web-tests/off_site.mjs";
 import { ENGINE } from "../../../web-tests/engine.mjs";
 import { asTagger } from "../../../web-tests/tagger.mjs";
 import { withItemView } from "./item_view_shown.mjs";
+import { localStudy } from "../../../web-tests/local_study.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -80,19 +81,22 @@ async function open(drive) {
     if (u.host !== "www.googleapis.com") return r.abort();
     const headers = { "access-control-allow-origin": "*" };
     if (u.searchParams.get("alt") === "media") return r.fulfill({ status: 200, headers: { ...headers, "content-length": String(bytes.length) }, body: bytes });
+    // the study's folder, holding the image
+    if (u.searchParams.get("q")) return r.fulfill({ status: 200, headers, contentType: "application/json",
+      body: JSON.stringify({ files: [{ id: DRIVE_ID, name: "corner.tif", mimeType: "image/tiff", size: String(bytes.length) }] }) });
     return r.fulfill({ status: 200, headers, contentType: "application/json", body: JSON.stringify({ name: "corner.tif", mimeType: "image/tiff" }) });
   });
   await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
+  // a local image: NoR Finder loads from Drive alone, the shell's handling of a local image kept tested on it
+  if (!drive) await localStudy(ctx, "nor");
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);
   await page.goto(origin + "/web/index.html?study=nor");
   await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false);
   if (drive) {
-    await page.click("#load-menu summary");
-    await page.click('#load-menu .item[data-src="drive"]');
-    await page.fill("#drive-link", `https://drive.google.com/file/d/${DRIVE_ID}/view`);
-    await page.click("#drive-go");
+    await page.click("#load-drive");
+    await page.dblclick(`#drive-list .item[data-id="${DRIVE_ID}"]`);
   } else {
     await page.setInputFiles("#file", image);
   }
