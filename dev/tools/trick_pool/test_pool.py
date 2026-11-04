@@ -19,6 +19,7 @@ REF = os.path.join(HERE, '..', '..', '..', 'studies', 'nor', 'data', 'raw', 'Lef
 
 def test_every_entry_is_complete_and_unique():
     ids = [e['id'] for e in POOL]
+    assert len(ids) >= 250
     assert len(ids) == len(set(ids)), [i for i in ids if ids.count(i) > 1]
     for e in POOL:
         assert KEYS <= set(e), (e['id'], KEYS - set(e))
@@ -29,6 +30,7 @@ def test_every_entry_is_complete_and_unique():
 
 def test_runnable_entries_and_functions_match_both_ways():
     runnable = {e['runnable'] for e in POOL if e.get('runnable')}
+    assert len(T.TRICKS) >= 30
     assert runnable == set(T.TRICKS), dict(no_function=runnable - set(T.TRICKS), no_entry=set(T.TRICKS) - runnable)
 
 
