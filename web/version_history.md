@@ -10,6 +10,9 @@ carried all its pull requests. The `writing-version-history` skill says how.
 
 ## Next release
 
+Back online, the status bar says so within seconds, even while the site copies a release that landed
+meanwhile. Going offline no longer unfolds the disk, memory, network and CPU: the red Wi-Fi icon says it. (#741)
+
 In NoR Finder, clicking the image where there is no candidate now deselects the selected one, as
 clicking it again already did. (#743)
 
