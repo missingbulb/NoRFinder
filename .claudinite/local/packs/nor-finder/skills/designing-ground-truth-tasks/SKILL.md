@@ -61,8 +61,10 @@ reference build: `req/nor/truth/tasks`, `req/nor/truth/order` and `req/nor/truth
   The grid is never drawn; the person only notices an area of the image finishing after ten or
   twenty verdicts.
 - **Cut what is done out of the image.** A decided item's area (approved or rejected alike) is
-  removed, showing a picture behind the image instead: a reward that grows with the work, the
-  study's `groundTruth.reveal` (NoR: a golden retriever), black while it names none.
+  removed, showing a picture behind the image instead: a reward that grows with the work, black
+  while the study names none. The study names it in `study.json`'s `groundTruth.reveal` as a link
+  the browser fetches from where the picture lives (NoR: a golden retriever), never a file the
+  site serves; its host is a service the page reaches, so the privacy page names it.
 - **The missed-items task goes area by area too**: frame one area on the image (zoomed in when it
   is small there), let the person add what the algorithm missed there, and a "No missed … here"
   button checks the area and cuts it out. The task is done when every area is checked and every
