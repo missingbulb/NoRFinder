@@ -94,21 +94,21 @@ try {
   console.log(JSON.stringify(fixtureMenu));
   if (fixtureMenu.items.join() !== titles.join()) problems.push("the switcher does not list the listed studies, or marks one not on show: " + fixtureMenu.items);
   if (fixtureMenu.right) problems.push("the page still has a right bar");
-  // req/shell/header: each row starts with its study's stage, a small bordered label in its colour, before the
-  // icon, the icons lined up whatever the label; a study with no stage shows none; room to the row's right edge,
-  // and no tick on the one on show
+  // req/shell/header: each row ends in its study's stage, a small bordered label in its colour no wider than its
+  // word; a study with no stage shows none; the icons lined up; room to the row's right edge, and no tick on the one on show
   const rowsLook = await page.evaluate(() => [...document.querySelectorAll("#study-list a")].map((a) => {
     const t = a.querySelector(".stage-tag"), shown = t && t.textContent && getComputedStyle(t).visibility !== "hidden" ? t : null, cs = shown && getComputedStyle(shown);
     const on = [...a.children].filter((c) => c.offsetParent), icon = a.querySelector(".study-icon:not([hidden])");
     return { id: a.dataset.id, stage: shown ? shown.textContent : null, border: cs && cs.borderTopStyle !== "none" && parseFloat(cs.borderTopWidth) > 0 && cs.borderTopColor,
-      small: cs && parseFloat(cs.fontSize) <= 11, first: !shown || on[0] === shown, iconLeft: icon && Math.round(icon.getBoundingClientRect().left),
+      small: cs && parseFloat(cs.fontSize) <= 10, last: !shown || on[on.length - 1] === shown,
+      snug: !shown || shown.getBoundingClientRect().width <= shown.textContent.length * 8 + 16, iconLeft: icon && Math.round(icon.getBoundingClientRect().left),
       room: on.length && a.getBoundingClientRect().right - on[on.length - 1].getBoundingClientRect().right, tick: !!a.querySelector(".tick, .tick-icon") };
   }));
   console.log(JSON.stringify(rowsLook));
   const colours = new Set(rowsLook.map((r) => r.border));
   for (const s of JSON.parse(fs.readFileSync(studies, "utf8"))) {
     const r = rowsLook.find((x) => x.id === s.id) || {};
-    if (s.stage === null ? r.stage !== null : r.stage !== s.stage || !r.border || !r.small || !r.first) problems.push(`the switcher does not label ${s.id} with its stage, ${s.stage}, first, small and bordered: ${JSON.stringify(r)}`);
+    if (s.stage === null ? r.stage !== null : r.stage !== s.stage || !r.border || !r.small || !r.last || !r.snug) problems.push(`the switcher does not label ${s.id} with its stage, ${s.stage}, last, small, snug and bordered: ${JSON.stringify(r)}`);
     if (!(r.room >= 8)) problems.push(`the switcher's ${s.id} row leaves ${r.room} px at its right, not 8`);
     if (r.tick) problems.push(`the switcher's ${s.id} row carries a tick`);
   }

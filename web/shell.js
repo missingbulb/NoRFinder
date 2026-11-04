@@ -1697,9 +1697,9 @@ async function studyMenu() {
   $("#study-list").replaceChildren(...listed.map((s) => {
     const a = document.createElement("a");
     a.href = addressOf(s.id); a.dataset.id = s.id;
-    a.innerHTML = `<span class="stage-tag"></span><span class="name"></span>`;
+    a.innerHTML = `<span class="name"></span><span class="stage-tag"></span>`;
     a.querySelector(".name").textContent = s.title;
-    a.querySelector(".name").before(...studyIcon(s.id, s.icon));
+    a.prepend(...studyIcon(s.id, s.icon));
     const tag = a.querySelector(".stage-tag");
     stageTag(tag, s.stage); stageHover(tag);
     a.onclick = (e) => {

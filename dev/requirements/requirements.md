@@ -384,8 +384,8 @@ nobody has decided: what the page does there is not a requirement yet.
   control; it opens, under the caret, a 320 px panel headed "Switch study", a search box (focused,
   filtering by title as the user types) and every study whose `study.json` says `"listed": true`,
   by title, each with its own icon (the tab's icon its `study.json` names; the generic study icon
-  when it names none, or the icon does not load), a rule under its name, and its offline mark (`req/shell/offline/mark`) 8 px
-  from the row's right edge; its stage (`req/shell/study/stage`) comes first, before the icon, in one width so the icons line up. No tick marks the one on show: the
+  when it names none, or the icon does not load), a rule under its name, then its offline mark (`req/shell/offline/mark`) and
+  its stage (`req/shell/study/stage`), 8 px from the row's right edge. No tick marks the one on show: the
   header already names it, and only assistive tech is told which it is. Arrow
   keys move through the list, Enter opens the one marked, Escape closes it. Each entry is a link to
   the study's address (`req/shell/study/folder-and-address`), so a middle click opens it in a new tab. The header's spacing follows
@@ -1010,7 +1010,7 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Every `study.json` names its `stage`, `null` for a tool that makes no ground truth and has no stage, and the header's
-  switcher (`req/shell/header`) shows each study's at the start of its row as a small label, the stage's name bordered in its colour: red for PreGT, yellow for GT, green for PostGT,
+  switcher (`req/shell/header`) shows each study's at the end of its row as a small label, in 10 px type, the stage's name bordered in its colour: red for PreGT, yellow for GT, green for PostGT,
   green and filled for Published. Set by the owner on 2026-11-04.
   Hovering a label opens a popup beside the switcher listing the four stages in order with what each means, that study's own highlighted and the
   ones before it crossed out, and what the study needs to move on to the next.

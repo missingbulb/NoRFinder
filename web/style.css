@@ -75,11 +75,10 @@ h1 { font-size: 16px; font-weight: 600; margin: 0; }
 #study-list .study-icon[hidden] { display: none; }
 #study-list .name { flex: 1; align-self: stretch; display: flex; align-items: center; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid var(--line); }
 #study-list .offline-mark { margin-left: 0; }
-/* a study's stage (req/shell/study/stage): a small label bordered in its colour, first on its row, one width for
-   every stage so the icons after it line up; a study with none keeps the room empty */
-.stage-tag { --stage: var(--dim); flex: none; box-sizing: border-box; width: 66px; text-align: center; font-size: 11px; line-height: 16px; font-weight: 600; border: 1px solid var(--stage); border-radius: 2em;
+/* a study's stage (req/shell/study/stage): a small label bordered in its colour, last on its row; a study with none shows none */
+.stage-tag { --stage: var(--dim); order: 1; flex: none; padding: 0 5px; font-size: 10px; line-height: 14px; font-weight: 600; border: 1px solid var(--stage); border-radius: 2em;
   color: color-mix(in srgb, var(--stage) 70%, var(--text)); cursor: default; }
-.stage-tag:empty { visibility: hidden; }
+.stage-tag:empty { display: none; }
 .stage-tag[data-light=red] { --stage: var(--no); }
 .stage-tag[data-light=yellow] { --stage: #f5c400; }
 .stage-tag[data-light=green] { --stage: var(--yes); }
