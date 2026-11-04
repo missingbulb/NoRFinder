@@ -3,8 +3,8 @@
 // shell runs the study the address names: its title, panels, channel and Python calls, its drawing on the
 // image, and none of another study's panels; that a study's path opens it and an old ?study= address is
 // rewritten to that path; that the bare address opens the Image Viewer, whose empty right bar gives its
-// room to the image; and that the header's switcher lists the studies in STUDIES (the build's list), ticks
-// the one on show, finds one by search, and swaps studies in place: no reload, the open image unloaded, the
+// room to the image; and that the header's switcher lists the studies in STUDIES (the build's list), each with
+// its stage as a bordered label and no tick, marks the one on show for assistive tech, finds one by search, and swaps studies in place: no reload, the open image unloaded, the
 // leaving study's panels and listeners gone, back and forward too; and that the tab's icon is the study's own, or
 // the app's for a study naming none (req/shell/site/icons).
 // Then the same with the real worker (web/worker.js), Pyodide served from the copy installed beside the
@@ -87,13 +87,33 @@ try {
   if (seen.path !== "/web/fixture") problems.push("the old ?study= address was not rewritten to the study's path: " + seen.path);
   await page.evaluate(() => { window.stayed = true; });
   const menu = () => page.evaluate(() => ({
-    items: [...document.querySelectorAll("#study-list a")].map((a) => a.textContent + (a.getAttribute("aria-current") ? "*" : "")),
+    items: [...document.querySelectorAll("#study-list a")].map((a) => a.querySelector(".name").textContent + (a.getAttribute("aria-current") ? "*" : "")),
     right: !!document.querySelector("#right, #gutter-right"),
   }));
   const fixtureMenu = await menu();
   console.log(JSON.stringify(fixtureMenu));
-  if (fixtureMenu.items.join() !== titles.join()) problems.push("the switcher does not list the listed studies, or ticks one not on show: " + fixtureMenu.items);
+  if (fixtureMenu.items.join() !== titles.join()) problems.push("the switcher does not list the listed studies, or marks one not on show: " + fixtureMenu.items);
   if (fixtureMenu.right) problems.push("the page still has a right bar");
+  // req/shell/header: each row ends in its study's stage, a small bordered label in its colour no wider than its
+  // word; a study with no stage shows none; the icons lined up; room to the row's right edge, and no tick on the one on show
+  const rowsLook = await page.evaluate(() => [...document.querySelectorAll("#study-list a")].map((a) => {
+    const t = a.querySelector(".stage-tag"), shown = t && t.textContent && getComputedStyle(t).visibility !== "hidden" ? t : null, cs = shown && getComputedStyle(shown);
+    const on = [...a.children].filter((c) => c.offsetParent), icon = a.querySelector(".study-icon:not([hidden])");
+    return { id: a.dataset.id, stage: shown ? shown.textContent : null, border: cs && cs.borderTopStyle !== "none" && parseFloat(cs.borderTopWidth) > 0 && cs.borderTopColor,
+      small: cs && parseFloat(cs.fontSize) <= 10, last: !shown || on[on.length - 1] === shown,
+      snug: !shown || shown.getBoundingClientRect().width <= shown.textContent.length * 8 + 16, iconLeft: icon && Math.round(icon.getBoundingClientRect().left),
+      room: on.length && a.getBoundingClientRect().right - on[on.length - 1].getBoundingClientRect().right, tick: !!a.querySelector(".tick, .tick-icon") };
+  }));
+  console.log(JSON.stringify(rowsLook));
+  const colours = new Set(rowsLook.map((r) => r.border));
+  for (const s of JSON.parse(fs.readFileSync(studies, "utf8"))) {
+    const r = rowsLook.find((x) => x.id === s.id) || {};
+    if (s.stage === null ? r.stage !== null : r.stage !== s.stage || !r.border || !r.small || !r.last || !r.snug) problems.push(`the switcher does not label ${s.id} with its stage, ${s.stage}, last, small, snug and bordered: ${JSON.stringify(r)}`);
+    if (!(r.room >= 8)) problems.push(`the switcher's ${s.id} row leaves ${r.room} px at its right, not 8`);
+    if (r.tick) problems.push(`the switcher's ${s.id} row carries a tick`);
+  }
+  if (new Set(rowsLook.map((r) => r.iconLeft)).size !== 1) problems.push("the switcher's icons do not line up: " + rowsLook.map((r) => r.iconLeft));
+  if (new Set(rowsLook.map((r) => r.stage).filter(Boolean)).size > 1 && colours.size < 2) problems.push("the stages' labels are all one colour: " + [...colours]);
   // each study's own icon beside its title, loaded; the generic one for a study naming none
   await page.waitForFunction(() => [...document.querySelectorAll("#study-list img")].every((i) => i.complete));
   const icons = await page.evaluate(() => [...document.querySelectorAll("#study-list a")].map((a) => {
@@ -156,7 +176,7 @@ try {
   const lined = await page.evaluate(() => $("#study-menu .pop").getBoundingClientRect().left - $("#study-menu .caret").getBoundingClientRect().left);
   if (Math.abs(lined) > 1) problems.push(`the switcher's popup does not open under its caret: ${lined} px off`);
   await page.keyboard.type("image");
-  const found = await page.evaluate(() => [...document.querySelectorAll("#study-list a")].filter((a) => !a.hidden).map((a) => a.textContent).join());
+  const found = await page.evaluate(() => [...document.querySelectorAll("#study-list a")].filter((a) => !a.hidden).map((a) => a.querySelector(".name").textContent).join());
   if (found !== "Image Viewer") problems.push("searching 'image' leaves " + found);
   await page.keyboard.press("Enter");
   await page.waitForFunction(() => document.title === "Image Viewer" && document.querySelector("#busy").hidden && document.querySelector("#status").textContent === "Ready. Load an image.");
@@ -179,7 +199,7 @@ try {
   if (!request || request.text !== "Submit New Study Request" || !request.last || request.target !== "_blank") problems.push("no Submit New Study Request at the end of the switcher: " + JSON.stringify(request));
   else if (!form || !fs.existsSync(path.join(repo, ".github", "ISSUE_TEMPLATE", form))) problems.push("Submit New Study Request opens a form the repo does not carry: " + request.href);
   const viewerMenu = await menu();
-  if (viewerMenu.items.join() !== titles.map((t) => (t === "Image Viewer" ? t + "*" : t)).join()) problems.push("the switcher does not tick the study on show: " + viewerMenu.items);
+  if (viewerMenu.items.join() !== titles.map((t) => (t === "Image Viewer" ? t + "*" : t)).join()) problems.push("the switcher does not mark the study on show: " + viewerMenu.items);
   await headIcon("/studies/viewer/web/icon.svg");
 
   // into NoR Finder by a click, then back: NoR's panels and listeners leave with it

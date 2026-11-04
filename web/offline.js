@@ -19,15 +19,15 @@ export const CONNECTION = "nor-connection";
 // the browser key that says the user asked for the app, so the page names its manifest from then on
 export const APP_ASKED = "nor-app-asked";
 
-// The quiet mark of what is available offline (req/shell/offline/mark): a study whose Python is all on this device, or an
-// image kept on it; hovering on it says what that means.
+// The mark of what is available offline (req/shell/offline/mark): a study whose Python is all on this device, or an
+// image kept on it. It states a state, so it carries no tooltip; what it means is said to assistive tech.
 const SAYS = {
   study: "Available offline: this study's Python is on this device, so the study runs without the internet.",
   image: "Available offline: this image is kept on this device, so it opens without the internet.",
 };
 export function offlineMark(what) {
   const m = document.createElement("span");
-  m.className = "offline-mark"; m.title = SAYS[what]; m.setAttribute("role", "img"); m.setAttribute("aria-label", SAYS[what]);
+  m.className = "offline-mark"; m.setAttribute("role", "img"); m.setAttribute("aria-label", SAYS[what]);
   // an arrow into a tray: saved to this device
   m.innerHTML = `<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v7M5 6.8 8 9.8l3-3"/><path d="M2.5 10.5v2.2c0 .5.4.8.8.8h9.4c.4 0 .8-.3.8-.8v-2.2"/></svg>`;
   return m;

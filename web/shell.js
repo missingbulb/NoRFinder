@@ -16,7 +16,7 @@
 // study's own large holdings for the Memory tab, [{name, what, size}]; and the viewer's hooks (viewer2d.js).
 // A listener a study adds outside its own panels takes shell.signal, which ends it when the study leaves.
 "use strict";
-import { viewer as viewer2d, hoverPop, GRID, MINIMAP } from "./viewer2d.js";
+import { viewer as viewer2d, GRID, MINIMAP } from "./viewer2d.js";
 import { viewer3d } from "./viewer3d.js";
 import { pageState } from "./page_state.js";
 import { shape, stackPicture, holds, drawVolume, TURN } from "./stack.js";
@@ -358,20 +358,45 @@ const STAGES = {
   Published: { light: "all", what: "Its algorithm is trusted: the page shows what it finds, with no ground truth to make.", next: "This is the last stage." },
 };
 function showStage() {
-  const now = Object.keys(STAGES).indexOf(manifest.stage), e = $("#sb-stage");
-  e.dataset.stage = manifest.stage; e.setAttribute("aria-label", "Stage: " + manifest.stage);
-  const light = STAGES[manifest.stage].light;
-  e.querySelectorAll("circle").forEach((c) => c.classList.toggle("lit", light === "all" || c.dataset.light === light));
-  document.documentElement.dataset.stage = manifest.stage;
+  if (manifest.stage) document.documentElement.dataset.stage = manifest.stage; else delete document.documentElement.dataset.stage;
+  const tag = $(`#study-list a[data-id="${manifest.id}"] .stage-tag`);
+  if (tag) stageTag(tag, manifest.stage);
+}
+// a study's stage in the switcher: a small label bordered in the stage's colour; a study with none leaves it empty
+function stageTag(tag, stage) {
+  tag.textContent = stage || ""; tag.dataset.stage = stage || ""; tag.dataset.light = STAGES[stage]?.light || "";
+}
+// the stages, the given one highlighted and those before it crossed out, with what moves a study on from it
+function fillStages(stage) {
+  const now = Object.keys(STAGES).indexOf(stage);
   $("#stage-list").replaceChildren(...Object.entries(STAGES).map(([name, s], k) => {
     const li = document.createElement("li"); li.className = k < now ? "past" : k === now ? "now" : "";
     li.innerHTML = `<span class="dot" data-light="${s.light}"></span><span class="name">${name}</span><span class="what">${esc(s.what)}</span>`;
     return li;
   }));
-  $("#stage-next").textContent = STAGES[manifest.stage].next;
+  $("#stage-next").textContent = STAGES[stage]?.next || "";
 }
-// the stages pop up while the stage is hovered or focused
-hoverPop($("#sb-stage"), $("#stage-pop"), () => {});
+// the stages pop up beside the switcher while a study's stage label is hovered, about that study
+const stagePop = $("#stage-pop");
+let stageLeaving = null;
+function stageHover(tag) {
+  tag.addEventListener("mouseenter", () => {
+    if (!tag.dataset.stage) return;
+    clearTimeout(stageLeaving);
+    fillStages(tag.dataset.stage);
+    const menu = $("#study-menu .pop").getBoundingClientRect(), row = tag.closest("a").getBoundingClientRect();
+    if (!stagePop.matches(":popover-open")) stagePop.showPopover();
+    stagePop.style.left = Math.max(8, Math.min(menu.right + 8, innerWidth - stagePop.offsetWidth - 8)) + "px";
+    stagePop.style.top = Math.max(8, Math.min(row.top - 12, innerHeight - stagePop.offsetHeight - 8)) + "px";
+  });
+  tag.addEventListener("mouseleave", leaveStage);
+}
+function leaveStage() {
+  clearTimeout(stageLeaving);
+  stageLeaving = setTimeout(() => { if (!stagePop.matches(":hover") && stagePop.matches(":popover-open")) stagePop.hidePopover(); }, 300);
+}
+stagePop.addEventListener("mouseenter", () => clearTimeout(stageLeaving));
+stagePop.addEventListener("mouseleave", leaveStage);
 const stageTruth = () => manifest.stage === "GT" || manifest.stage === "PostGT";
 // the study takes Ground Truth Taggers: every stage but Published, whose algorithm is trusted (req/shell/account/role)
 const takesTaggers = () => manifest.stage !== "Published";
@@ -1390,7 +1415,7 @@ function pageNow() {
   const im = page.get("image"), from = (s) => (s?.kind === "drive" ? "Google Drive" : "this computer");
   return [
     ["Site version", VERSION],
-    ["Study", manifest ? `${manifest.title} (${manifest.id}), stage ${manifest.stage}` : "none open"],
+    ["Study", manifest ? `${manifest.title} (${manifest.id}), stage ${manifest.stage ?? "none"}` : "none open"],
     ["Python", st.ready ? "ready" : "loading"],
     ["Steps", steps.map((p) => p.name + (p.done ? " (done)" : "")).join(" → ") || "none"],
     ["Image", im ? `from ${from(im.source)}, ${im.W} × ${im.H} px, ${im.channels?.length ?? "?"} channel(s), ${im.Z} slice(s)` : page.get("opening") ? "opening" : "none open"],
@@ -1672,9 +1697,11 @@ async function studyMenu() {
   $("#study-list").replaceChildren(...listed.map((s) => {
     const a = document.createElement("a");
     a.href = addressOf(s.id); a.dataset.id = s.id;
-    a.innerHTML = `<span class="tick">${glyph("tick")}</span><span class="name"></span>`;
+    a.innerHTML = `<span class="name"></span><span class="stage-tag"></span>`;
     a.querySelector(".name").textContent = s.title;
-    a.querySelector(".tick").after(...studyIcon(s.id, s.icon));
+    a.prepend(...studyIcon(s.id, s.icon));
+    const tag = a.querySelector(".stage-tag");
+    stageTag(tag, s.stage); stageHover(tag);
     a.onclick = (e) => {
       if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       e.preventDefault(); goTo(s.id);
@@ -1683,6 +1710,7 @@ async function studyMenu() {
     return a;
   }));
   markCurrent();
+  if (manifest) showStage();
 }
 const glyph = (n) => `<svg class="${n}-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">${$(`#icons .${n}`).innerHTML}</svg>`;
 // a study's own icon (its study.json's, relative to its folder), the generic one standing while it is missing or fails to load
@@ -1704,12 +1732,12 @@ function markCurrent() {
 }
 function filterStudies() {
   const q = $("#study-search").value.trim().toLowerCase();
-  for (const a of $("#study-list").children) a.hidden = !!q && !a.textContent.toLowerCase().includes(q);
+  for (const a of $("#study-list").children) a.hidden = !!q && !a.querySelector(".name").textContent.toLowerCase().includes(q);
   $("#study-none").hidden = rows().length > 0;
   mark(rows().find((a) => a.hasAttribute("aria-current")) || rows()[0]);
 }
 $("#study-menu").addEventListener("toggle", () => {
-  if (!$("#study-menu").open) return;
+  if (!$("#study-menu").open) { if (stagePop.matches(":popover-open")) stagePop.hidePopover(); return; }
   offlineCopy.available().then((ids) => { for (const a of $("#study-list").children) markOffline(a, "study", ids.has(a.dataset.id)); }, () => {});
   $("#study-search").value = ""; filterStudies(); $("#study-search").focus();
 });
