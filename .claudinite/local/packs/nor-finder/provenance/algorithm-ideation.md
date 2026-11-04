@@ -18,3 +18,17 @@
 - **Actor:** @missingbulb (owner).
 - **Model:** claude-opus-5-5
 - **Mechanism:** unchanged workflow skill reached by its description, now in the repo's own pack.
+
+## 2026-11-04 · reworded · the entry point of a family of routes to a new algorithm
+- **Source:** the owner, in this session: "When you reach a point where you're stuck and a given
+  algorithm gives you suboptimal results - you need to try something new", naming five routes
+  (mutate with a CV trick from a large pool, explain to a 5-year-old, a CV operation then a vision
+  model, fuse algorithms that tie) and asking that tuning, performance and refitting each get a
+  skill, predictably executed.
+- **Reason:** the lenses alone gave one agent's ideas; the routes give ideas from a trick pool,
+  constrained explainers and a vision agent, each in its own skill, and a near-tie now hands off to
+  fusion.
+- **Actor:** @missingbulb (owner).
+- **Model:** claude-opus-5-5
+- **Mechanism:** the same workflow skill, its description widened to name the routes
+  (trigger-changed).

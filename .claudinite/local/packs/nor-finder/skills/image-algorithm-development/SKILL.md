@@ -234,9 +234,8 @@ Each iteration:
    generator - tuning the filter that catches it only hides the fault.
 3. **Change one thing, naming the mechanism** ("the band line sits mid-object because it is
    fitted to edge density, not each object's own extent"), in a new version. For a generator
-   rebuild, first write how you would explain finding the object to a child, in steps concrete
-   enough to draw, and implement that; if it fails, write a completely different explanation
-   rather than patch the old one.
+   rebuild, run [explaining-to-a-child](../explaining-to-a-child/SKILL.md) and implement the best
+   explanation; if it fails, take a completely different explanation rather than patch the old one.
 4. **Build until working** on the sample render before scoring.
 5. **Keep or drop on the score**, reviewing the gained and lost objects, and write the iteration
    note (research-project §5). Record the attempt in the ledger whether kept or dropped.
@@ -295,7 +294,8 @@ published methods and the engine's docs say - and turn that into legitimate assu
 trying another parameter.
 
 **Stop iterating after two consecutive iterations without a gain beyond noise**, or when every
-remaining miss is a `notes` class that needs the owner or a new direction, and go to the owner.
+remaining miss is a `notes` class that needs the owner or a new direction. A miss class that needs a
+new direction goes to [algorithm-ideation](../algorithm-ideation/SKILL.md); the rest go to the owner.
 
 ## The ledger - every direction tried, and why it won or lost
 
@@ -316,33 +316,17 @@ Before starting a new direction, search the ledger for it and for its failure co
 owner-pitched idea gets an entry even when you did not try it, stating why. The dated scoring
 table, per sample per version, lives in the same place; every entry cites its rows.
 
-## Between stretches - make the cycle cheaper
+## Between stretches - the neighbouring skills
 
-Every iteration of both loops pays in time, tokens, CPU and RAM. Quality comes first; a
-performance pass is its own step, after a stretch of quality work and never while the owner waits
-on a result - unless a grader run has crept past what a feedback round can tolerate, in which
-case say so and spend one cycle on it. The per-stage timings in every summary line are the early
-warning.
+The loops above run inside a family of skills, each with its own moment:
 
-- Profile the current version, fix the top hotspot, and prove the output identical by hashing
-  both; a pass that changes a result is a quality change and is scored as one. Report the time
-  before and after, and log the attempt in the ledger, including one that was reverted. Hash the
-  outputs themselves (positions, verdicts, segment pixels), not a summary count. Time the
-  minimum of a few runs: run-to-run noise on a shared machine can reach ±15%, so a small gain is
-  re-checked before it is claimed. A lower-precision type is a classic trap: faster, but it
-  changes ties, so the hash catches it.
-- Measure peak memory beside time, in a separate run since tracing slows it: the most the
-  algorithm allocates at once (numpy's allocations count; Python's `tracemalloc` sees them), and
-  report it before and after like the time. A pass that lowers the peak with identical output and
-  no slower is a gain on its own, and one that buys speed with a higher peak is weighed, not
-  waved through. Where the algorithm also runs in a runtime that never returns memory (a browser's
-  WebAssembly), the peak is what that tab keeps after every run: free each whole-image array
-  after its last use, and read the few values needed later rather than keeping full-size copies.
-- Restore the token budget the same way: if you have been reading full renders, fix the run
-  command's summary until the score and the gained/lost sheets are enough.
-- **Deployment is not quality work**: memory limits, instance sizes, job APIs and device ports are
-  their own tasks with their own measurements, and a cost comparison of alternatives (per item,
-  dated list prices, what leaves the machine) is a table in the docs, not a round's report.
+| Moment | Skill |
+|---|---|
+| A version first runs, a threshold is in doubt, or presets are wanted | [tuning-parameters](../tuning-parameters/SKILL.md) |
+| New ground truth arrives | [refitting-on-new-ground-truth](../refitting-on-new-ground-truth/SKILL.md) |
+| The stop rule above fires, or the owner asks for a new approach | [algorithm-ideation](../algorithm-ideation/SKILL.md), which runs [mutating-an-algorithm](../mutating-an-algorithm/SKILL.md), [explaining-to-a-child](../explaining-to-a-child/SKILL.md) and [solving-a-transformed-view](../solving-a-transformed-view/SKILL.md) |
+| Two versions tie by different mechanisms | [fusing-algorithms](../fusing-algorithms/SKILL.md) |
+| A long stretch of quality work ends, or a grader run creeps past a feedback round | [speeding-up-an-algorithm](../speeding-up-an-algorithm/SKILL.md) |
 
 ## Going to the owner
 

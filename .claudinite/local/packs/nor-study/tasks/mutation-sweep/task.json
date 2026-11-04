@@ -1,0 +1,15 @@
+{
+  "id": "mutation-sweep",
+  "description": "Splices every runnable trick from the repo's trick pool into the default NoR finder, scores each mutant against the ground truth, and grows the mutants that found a NoR no finder finds, or dropped a false one every finder keeps, into switches or a new finder.",
+  "trigger": "schedule",
+  "preconditions": [
+    "schedule:at-most-weekly",
+    "last-run-not-parked",
+    "substantive-change"
+  ],
+  "expected_outcome": "fresh_pr",
+  "automerge": "nothing",
+  "agent_model": "opus",
+  "agent_instructions": "task.md",
+  "agent_execution_timeout": 10800
+}

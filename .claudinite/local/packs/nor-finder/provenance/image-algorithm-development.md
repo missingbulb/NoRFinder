@@ -52,3 +52,14 @@
 - **Actor:** @missingbulb (owner).
 - **Model:** Claude, per the commit trailer.
 - **Mechanism:** the same carrier, its paths repointed.
+
+## 2026-11-04 · split · the performance pass left for speeding-up-an-algorithm; the section now maps the neighbouring skills
+- **Source:** the owner, in this session: "When you reach a point where you're stuck and a given
+  algorithm gives you suboptimal results - you need to try something new", naming five routes
+  (mutate with a CV trick from a large pool, explain to a 5-year-old, a CV operation then a vision
+  model, fuse algorithms that tie) and asking that tuning, performance and refitting each get a
+  skill, predictably executed.
+- **Reason:** performance is its own process with its own trigger; this skill keeps the loops and
+  points at each neighbour at its moment.
+- **Actor:** @missingbulb (owner).
+- **Model:** claude-opus-5-5
