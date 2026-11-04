@@ -13,6 +13,10 @@ carried all its pull requests. The `writing-version-history` skill says how.
 In NoR Finder, what you finish as a Ground Truth Tagger now uncovers a golden retriever behind the
 image, more of it with every verdict and every area checked. (#738)
 
+Ground Truth Tagger is now offered in studies still in PreGT too, and a study's postprocessing shows
+only to its taggers. Offline, Data Management says it needs the internet and waits until you are
+back online. (#746)
+
 ## 0.11104.84
 
 Pick your role from the new menu beside your avatar. Viewer shows what a study finds. Ground Truth
