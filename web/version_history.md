@@ -10,13 +10,16 @@ carried all its pull requests. The `writing-version-history` skill says how.
 
 ## Next release
 
+## 0.11104.86
+
 In Vascular Measurements, Processing lists each algorithm with its own icon, a name and its
 precision and recall, and How the algorithm works gives its steps one by one. Execute draws the
 vessel model several times faster and with a fraction of the memory, and the weakest algorithm,
 skeleton, is no longer offered. (#744)
 
 Back online, the status bar says so within seconds, even while the site copies a release that landed
-meanwhile. Going offline no longer unfolds the disk, memory, network and CPU: the red Wi-Fi icon says it. (#741)
+meanwhile. Going offline no longer unfolds the disk, memory, network and CPU: the red Wi-Fi icon
+says it. (#741)
 
 NoR Finder's Ground Truth Tagger now works one area of the image at a time: its finalists, its
 rejected, then No missed NoRs here, and the whole area is cut out. Back returns to the last item, to
