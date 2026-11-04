@@ -10,8 +10,8 @@ import pytest
 from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'py'))
-import books  # noqa: E402
-import shelves  # noqa: E402
+import books
+import shelves
 
 
 def photo():

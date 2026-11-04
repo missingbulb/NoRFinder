@@ -1020,22 +1020,6 @@ nobody has decided: what the page does there is not a requirement yet.
   NoR Finder GT. Test: `web-tests/test_study_contract.py`, `web-tests/test_status_bar_page.py`.
   </details>
 
-- `req/shell/study/visibility` A study declares who sees it: everyone, no one but by its address, or the Google accounts it names.
-  <details>
-
-  Set by the owner on 2026-11-04. Every `study.json` names its `visibility`: `"listed"` (the
-  header's switcher offers it to everyone, and the landing page lists it), `"unlisted"` (offered
-  nowhere, opened only by its address; the fixture) or `{"accounts": [email, …]}` (the switcher
-  offers it only while one of those accounts is signed in, and the landing page never lists it).
-  Opened at its address by anyone else, signed out or signed in with another account, the page
-  says the study is shown only to the accounts it names and opens the Image Viewer instead; signing
-  in with one of them offers it in the switcher at once. This hides a study from the page, not
-  from the network: its files are published like any other study's, so it holds nothing secret.
-  The Bookshelf Reader is shown to its owner's account alone. Test:
-  `web-tests/test_study_contract.py`, `web-tests/test_published_site.py`,
-  `web-tests/test_study_visibility_page.py`.
-  </details>
-
 - `req/shell/study/switch-in-place` Switching study happens in place: no reload, and the new study starts with no image open.
   <details>
 
@@ -1055,6 +1039,22 @@ nobody has decided: what the page does there is not a requirement yet.
   behind one interface: show the opened image, draw the study's layers over it, report a pick and a
   lasso in image coordinates, zoom and pan. The 3D viewer (`req/shell/viewer-3d`) keeps that interface and shows
   a stack in 3D in the 2D view's place, with no change to the studies that keep the 2D viewer.
+  </details>
+
+- `req/shell/study/visibility` A study declares who sees it: everyone, no one but by its address, or the Google accounts it names.
+  <details>
+
+  Set by the owner on 2026-11-04. Every `study.json` names its `visibility`: `"listed"` (the
+  header's switcher offers it to everyone, and the landing page lists it), `"unlisted"` (offered
+  nowhere, opened only by its address; the fixture) or `{"accounts": [email, …]}` (the switcher
+  offers it only while one of those accounts is signed in, and the landing page never lists it).
+  Opened at its address by anyone else, signed out or signed in with another account, the page
+  says the study is shown only to the accounts it names and opens the Image Viewer instead; signing
+  in with one of them offers it in the switcher at once. This hides a study from the page, not
+  from the network: its files are published like any other study's, so it holds nothing secret.
+  The Bookshelf Reader is shown to its owner's account alone. Test:
+  `web-tests/test_study_contract.py`, `web-tests/test_published_site.py`,
+  `web-tests/test_study_visibility_page.py`.
   </details>
 
 - `req/shell/tools/grid` A Grid button beside the Ruler draws a grid over the image, its colour and spacing the user's.
