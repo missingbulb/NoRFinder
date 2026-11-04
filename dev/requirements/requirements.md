@@ -168,7 +168,7 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Set by the owner on 2026-11-03. In Data Management, Preprocessing's Edit Image (off until an image is
-  open) opens the image itself, from the copy on this device or Drive, when a preview is on show, and
+  open, and while its box is open: set by the owner on 2026-11-04) opens the image itself, from the copy on this device or Drive, when a preview is on show, and
   opens the Edit Image box below Preprocessing. Every choice there redraws the image as it will be saved,
   the view staying as the user left it (a stack turned as it was): Split cuts it 2 × 2 or 3 × 3, the parts drawn apart with a gap between them, so a
   stack in 3D looks cut; on a flat image the cut lines over the image drag, never closer than a twentieth of the crop
@@ -228,7 +228,9 @@ nobody has decided: what the page does there is not a requirement yet.
   replaces the one open (set by the owner on 2026-11-04). The steps hidden are the status bar's breadcrumbs, with the item
   view's switch and its tasks' bar (set by the owner on 2026-11-04). Set by the owner on
   2026-11-04: offline, Data Management as a whole needs the internet (`req/shell/offline/default`): the
-  column, the folder's box and Preprocessing say so and do nothing until the network is back. Test: `web-tests/test_data_mode_page.py`.
+  column, the folder's box and Preprocessing say so and do nothing until the network is back. Undecided: how
+  Data Management and working offline meet at all, whether Data Manager is offered offline, what becomes of work
+  in progress (an Edit Image under way) when the network goes, and whether the Image box is held with the rest. Test: `web-tests/test_data_mode_page.py`.
   </details>
 
 - `req/shell/data/preview-images` An image chosen in Data Management opens from its preview; Load Original opens the image itself.

@@ -59,6 +59,7 @@
           "name": "Image box", "select": "#image-box", "box": true, "req": "req/shell/left-bar/folding",
           "rule": [
             { "when": { "selected": ["folder"] }, "is": "hidden", "req": "req/shell/data/folder" },
+            { "when": { "role": ["data"], "online": [false] }, "is": "folded", "req": "req/shell/data/mode", "approval": "undecided" },
             { "when": { "image": ["local", "original"] }, "is": "folded" }
           ],
           "children": [
@@ -120,7 +121,7 @@
           "children": [
             {
               "name": "Edit Image", "select": "#edit-open", "control": true, "req": "req/shell/data/edit",
-              "rule": [{ "when": { "editing": [true] }, "is": "disabled", "approval": "tentative" }]
+              "rule": [{ "when": { "editing": [true] }, "is": "disabled" }]
             }
           ]
         },

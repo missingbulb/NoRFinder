@@ -502,7 +502,7 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Approve folders | ● | ● | ● | ● | ⊖ |
 | &nbsp;&nbsp;Folder tree | ● | ● | ● | ● | ● |
 | Left bar | ● | ● | ● | ● | ● |
-| &nbsp;&nbsp;Image box | ● | ○ | ● | ▸ | ▸ |
+| &nbsp;&nbsp;Image box | ● | ○ | ● | ▸ | ? |
 | &nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⊘ | ● | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Channels | ○ | ⊘ | ● | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Channel row | ⊘ | ⊘ | ● | ⋯ | ⋯ |
@@ -580,7 +580,7 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;&nbsp;&nbsp;Folder's sums | ⊘ | ● | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Update previews | ⊘ | ● | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Preprocessing | ▸ | ▸ | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Edit Image | ⋯ | ⋯ | ● | ◐* | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;Edit Image | ⋯ | ⋯ | ● | ◐ | ● |
 | &nbsp;&nbsp;Edit Image box | ○ | ○ | ○ | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Split | ⊘ | ⊘ | ⊘ | ● | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Crop | ⊘ | ⊘ | ⊘ | ● | ⊘ |
@@ -677,4 +677,4 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 
 ## Undecided
 
-None.
+- GT, Data Manager: Folder · Preview · Load Original · Offline, Offline: Image box
