@@ -10,6 +10,9 @@ carried all its pull requests. The `writing-version-history` skill says how.
 
 ## Next release
 
+In NoR Finder, the filters and their presets are now part of Processing: open its Settings to find
+them under Filters, after the finder's own. The Postprocessing box is gone. (#748)
+
 ## 0.11104.86
 
 In Vascular Measurements, Processing lists each algorithm with its own icon, a name and its
