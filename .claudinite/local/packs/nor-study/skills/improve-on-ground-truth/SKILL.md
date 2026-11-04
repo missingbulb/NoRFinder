@@ -11,10 +11,11 @@ metadata:
 
 # Improving the finders on new ground truth
 
-The method is the [image-algorithm-development](../../../nor-finder/skills/image-algorithm-development/SKILL.md) skill's
-inner loop (score, keep or drop by data, log every attempt); the rules are research-project's and
-`studies/nor/docs/requirements.md` R7, R9 and R10. This skill is the order of work when people have just
-submitted ground truth. Read `studies/nor/detection/STATE.md` and `studies/nor/detection/lab/ledger.md` first.
+The order of work is the repo's
+[refitting-on-new-ground-truth](../../../nor-finder/skills/refitting-on-new-ground-truth/SKILL.md)
+skill. Each step below is its step of the same number, filled in with NoR's commands. The rules are
+research-project's and `studies/nor/docs/requirements.md` R7, R9 and R10. Read
+`studies/nor/detection/STATE.md` and `studies/nor/detection/lab/ledger.md` first.
 
 The submitted files are the best reference there is: a person marked each label, where the lab's own
 labels are Claude's eye. Where the two disagree the submission wins, which `ground_truth.corpus()`
@@ -24,44 +25,50 @@ already applies, so never re-weigh them by hand.
 
 ```
 python3 studies/nor/detection/ground_truth.py fetch
-python3 studies/nor/detection/ground_truth.py score
 ```
 
-`score` runs every finder the page offers on every ground-truth image and compares each with the
-committed baseline (`studies/nor/detection/lab/quality_baseline.json`). On a branch where new ground truth was
-just added, the baseline was re-recorded against it, so compare with the base branch's copy too
-(`git show origin/main:studies/nor/detection/lab/quality_baseline.json`): that difference is how each finder's
-standing changed under the better reference, and it opens your report. Each finder's precision and
-recall overall, at each filter preset, are in `studies/nor/web/finder_metrics.json` (diff it the same way).
+```
+python3 studies/nor/detection/ground_truth.py score tl rf fill walk blobs tl_post
+```
+
+`score` compares each finder with the committed baseline
+(`studies/nor/detection/lab/quality_baseline.json`). The baseline carries only the finders the page
+offers, so `tl_post` is scored without one. On a branch where new ground truth was just added, the
+baseline was re-recorded against it, so compare with the base branch's copy too:
+
+```
+git show origin/main:studies/nor/detection/lab/quality_baseline.json
+```
+
+Each finder's precision and recall, at each filter preset, are in
+`studies/nor/web/finder_metrics.json`; diff it the same way. A finder retired from the registry
+leaves `nor_lab.finders()`, and if the page offers it, `interactive.FINDERS` too, with the lock
+re-accepted by the owner.
 
 ## 2. Missing candidates first
 
-A missing mark (`"kind": "missing"` in a submission) is a NoR the finder never proposed. It is the
-cheapest quality to win and the clearest signal, so start there:
+A missing mark (`"kind": "missing"` in a submission) is a NoR no finder proposed.
+`nor_lab.missing_found` lists the marks some candidate already lies on. For each of the others,
+render the region with the standard render (`render_std.py`), find the detection step that lost it
+(no red seed, no green pair, a size or shape gate before the checks), and ablate the change on
+every image:
 
-1. For every mark no candidate lies on (`nor_lab.missing_found` lists the ones some candidate does),
-   render the region with the standard render and look at it before theorising.
-2. Diagnose which detection step lost it: no red seed, no green pair found, a size or shape gate
-   before the checks. Measure the fact a fix would rest on; do not guess.
-3. Change the candidate stage (detection settings or code, never a filter) so it proposes a
-   candidate there, as a switch, and ablate it alone (`nor_lab.py ablate`) on every image. A change
-   that proposes the missed NoR but floods the other images with candidates the filters then pass is
-   a loss, whatever it recovers.
+```
+cd studies/nor/detection && python3 nor_lab.py ablate tl 'tl:<setting>=<value>'
+```
 
-## 3. Then overall quality
+## 3. Then re-tune
 
-Work the remaining misses and false passes the usual way (lost list, diff sheets, one switch per
-idea, ablate), on every ground-truth image rather than the reference slide alone: a rule that helps
-one image only is overfitting.
+Ledger §5 found the filter values are not finder-specific, and that fitting them per finder did not
+survive held-out labels. Re-tune one shared set, and only once the ground truth can carry a fit.
 
 ## 4. Land it
 
-- `python3 -m pytest web-tests studies` must pass. The quality lock fails on any loss; a loss is the owner's to
-  accept, never yours, so do not run `--accept` to clear one. Say in the PR which spots it would
-  lose and why the change is still worth it, and leave the decision to them.
-- A gain is recorded by the local test run; commit the baseline it rewrote and the finder metrics
-  (`studies/nor/web/finder_metrics.json`, R11) rewritten with it.
-- Log every attempt, kept or dropped, in `studies/nor/detection/lab/ledger.md`, and update `studies/nor/detection/STATE.md`.
-- The PR body leads with the score table (per finder, per image: before and after), then the
-  missing marks recovered and still missed, then what was tried and dropped.
-- Never change the review render's style, and keep a speed-up's output bit-identical (STATE.md).
+```
+python3 -m pytest web-tests studies dev/tools/trick_pool
+```
+
+The quality lock is `studies/nor/tests/test_quality.py`. Never run its `--accept` to clear a loss:
+that is the owner's. A gain is recorded by the local test run. Commit the baseline it rewrote and
+`studies/nor/web/finder_metrics.json` (R11) with it, and update `STATE.md`. Never change the review
+render's style, and keep a speed-up's output bit-identical.
