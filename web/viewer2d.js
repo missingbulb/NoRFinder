@@ -189,16 +189,21 @@ export function viewer(shell) {
     primed = true;
     fold.onclick = () => page.set({ minimap: page.get("minimap") === "open" ? "collapsed" : "open" });
     // hiding folds the minimap into the toolbar's button, and showing unfolds it from there; the motion is the
-    // stylesheet's, under the flight's name, between the two places only a snapshot of the page can know
+    // stylesheet's, under the flight's name, between the two places only a snapshot of the page can know. A copy
+    // of the button over it is the flight's end there, so the button itself stands still throughout.
     const fly = (minimap) => {
       const still = !document.startViewTransition || fits() || shell.still();
       if (still) return page.set({ minimap });
-      const root = document.documentElement;
-      root.dataset.mmFly = minimap === "hidden" ? "fold" : "unfold";
-      const t = document.startViewTransition(() => page.set({ minimap }));
+      const root = document.documentElement, fold = minimap === "hidden";
+      const r = btn.getBoundingClientRect(), copy = btn.cloneNode(true);
+      copy.removeAttribute("id"); copy.className += " mm-flier"; copy.setAttribute("aria-hidden", "true"); copy.inert = true;
+      Object.assign(copy.style, { position: "fixed", left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px", margin: 0, zIndex: 50 });
+      copy.hidden = fold; document.body.append(copy);
+      root.dataset.mmFly = fold ? "fold" : "unfold";
+      const t = document.startViewTransition(() => { page.set({ minimap }); copy.hidden = !fold; });
       // a flight cut short, by the next click or a busy page, has still moved the minimap: only the motion is lost
       t.ready.catch(() => {});
-      t.finished.finally(() => delete root.dataset.mmFly);
+      t.finished.finally(() => { delete root.dataset.mmFly; copy.remove(); });
     };
     $("#minimap-hide").onclick = () => fly("hidden");
     btn.onclick = () => fly(page.get("minimap") === "hidden" ? "open" : "hidden");
