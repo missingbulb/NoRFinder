@@ -17,12 +17,25 @@ export function mount(shell) {
   if (truth) tasks.init(V, steps);
   else $("#review-box .col").append($("#m-draw"), $("#draw-note"));
 
-  // ---------- Processing: the algorithm, how it works, Execute ----------
+  // ---------- Processing: the algorithm, how it works and how well, Execute ----------
+  // each algorithm's precision and recall against the provisional labels, as the lab's grader measured them
+  const quality = fetch(new URL("algorithm_metrics.json", import.meta.url)).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+    .then((q) => (shell.signal.aborted ? new Promise(() => {}) : q));
+  const two = (x) => x.toFixed(2).replace(/^0/, "");
+  const pr = (r) => `P\u00a0${two(r.precision)}\u00a0·\u00a0R\u00a0${two(r.recall)}`; // one unbroken pair
   const chosen = () => algorithms.find((a) => a.key === $("#vm-algo").value);
   function about() {
     const a = chosen(); if (!a) return;
     $("#vm-about summary").textContent = `How the ${a.title} algorithm works`;
-    $("#vm-about-note").replaceChildren(...a.about.split(/\n\s*\n/).map((t) => Object.assign(document.createElement("p"), { textContent: t.replace(/\s*\n\s*/g, " ") })));
+    const note = $("#vm-about-note");
+    note.replaceChildren(shell.outline(a.about));
+    quality.then((q) => {
+      const own = q && q.versions[a.key];
+      if (!own || chosen() !== a) return;
+      const p = document.createElement("p"), b = document.createElement("strong");
+      b.textContent = `${a.title[0].toUpperCase() + a.title.slice(1)} algorithm shows precision of ${own.precision.toFixed(2)} and recall of ${own.recall.toFixed(2)} on ${q.curves} curves a model judged`;
+      p.append(b, ` (${q.judge})`); note.append(p);
+    });
   }
   const canRun = () => { $("#vm-run").disabled = !algorithms.length || !shell.page.get("image") || !!running; };
   $("#vm-algo").onchange = () => { about(); steps(); };
@@ -57,8 +70,13 @@ export function mount(shell) {
   return {
     ready(info) {
       algorithms = info.algorithms || [];
-      $("#vm-algo").replaceChildren(...algorithms.map((a) => new Option(a.title, a.key)));
-      $("#vm-algo").disabled = !algorithms.length;
+      const sel = $("#vm-algo");
+      sel.replaceChildren(...algorithms.map((a) => new Option(`${a.icon} ${a.title}`.trim(), a.key)));
+      sel.disabled = !algorithms.length;
+      quality.then((q) => {
+        if (q) sel.title = "Precision (P) and recall (R) of each algorithm against a model's verdicts, not the owner's";
+        for (const o of sel.options) if (q && q.versions[o.value]) o.textContent += ` (${pr(q.versions[o.value])})`;
+      });
       about(); canRun();
     },
     opening() { ran = null; MV.stackOpened(); canRun(); },

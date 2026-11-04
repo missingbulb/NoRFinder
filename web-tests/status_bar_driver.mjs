@@ -6,7 +6,7 @@
 // the second view's switch reading Tasks with what is left while the study makes ground truth, Items otherwise;
 // a Published study dropping its postprocessing and Submit GT; switching study in place bringing its own stage and steps; the disk, memory, network and CPU as grey icons and
 // numbers, each opening its own tab of one dialog, each rolling its changed characters to a new value, the CPU and
-// the network flashing on a sharp rise and rolling nothing when reduced motion is asked for; a separator between every two items; no question-mark pointer; the four folded into one icon at first, unfolded by hovering it, by going offline,
+// the network flashing on a sharp rise and rolling nothing when reduced motion is asked for; a separator between every two items; no question-mark pointer; the four folded into one icon at first, unfolded by hovering it but not by going offline,
 // a CPU over 50% or a network over 250 KB/s for 5 s or a tab over 1 GB, at once with animations off, folding back 5 to 10 s after, or set always open or hidden.
 // Optional SHOTS: a directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/status_bar_driver.mjs ANSWERS IMAGE.png STUDIES [SHOTS]
@@ -463,11 +463,9 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await isOpen(true, "over 250 KB/s for more than 5 s opens it", 2500);
   await foldsLater("the network quiet again");
   await ctx.setOffline(true);
-  await isOpen(true, "going offline opens it", 2500);
-  await page.waitForTimeout(11000);
-  await isOpen(true, "and it stays open while offline", 100);
+  await page.waitForTimeout(3000);
+  await isOpen(false, "going offline does not open it: the online icon says so", 100);
   await ctx.setOffline(false);
-  await foldsLater("back online");
 
   // with the page's animations off, it folds and unfolds at once
   await page.evaluate(() => { document.documentElement.dataset.motion = "off"; });

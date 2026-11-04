@@ -20,7 +20,10 @@
 
 /* Processing: the algorithm, how it works, and Execute at the box's end */
 #vm-algo { width: 100%; }
+#vm-about-note { margin: 8px 0 0; }
 #vm-about-note p { margin: 6px 0 0; }
+#vm-about-note ul, #vm-about-note ol { margin: 4px 0 0; padding-left: 16px; }
+#vm-about-note li > ul, #vm-about-note li > ol { margin-top: 2px; }
 #model-set .row { align-items: center; }
 #model-on { margin-top: 10px; }
 

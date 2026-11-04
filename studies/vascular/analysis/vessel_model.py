@@ -26,7 +26,7 @@ to be sure of. Those are kept as low-confidence "candidate" segments that the ow
 declines in the viewer, instead of being dropped unseen. Junctions are never stored: they are the
 points where three or more confirmed segments meet.
 """
-import argparse, json, os
+import argparse, contextlib, heapq, json, os
 import numpy as np
 import tifffile
 from scipy import ndimage as ndi
@@ -108,22 +108,76 @@ def read_cd31(path, channel):
     return a.astype(np.float32), um, ij.get('spacing') or stack_sources.z_step_um(path)
 
 
-def noise_units(vol, um):
-    """Each slice with its background removed, in its own robust noise units; slices with no signal
-    above noise are zeroed (the signal fades with depth, so one stack-wide scale would not do)."""
-    r = vol - ndi.gaussian_filter(vol, (0, BACKGROUND_UM / um, BACKGROUND_UM / um))
-    r = ndi.gaussian_filter(r, (0, SMOOTH_UM / um, SMOOTH_UM / um))
-    dev = np.abs(r - np.median(r, axis=(1, 2), keepdims=True))
-    z = r / (1.4826 * np.median(dev, axis=(1, 2), keepdims=True) + 1e-9)
-    keep = np.percentile(z, 99.9, axis=(1, 2)) >= SIGNAL_OVER_NOISE * 3.09
-    return np.where(keep[:, None, None], z, 0), keep
+_shared = None
 
 
-def segment(z, keep, um, fill_lumens=False):
+@contextlib.contextmanager
+def shared(vol):
+    """Within it, what is drawn from vol (its flattened signal and depth, its masks, its ridge map) is computed once
+    and reused by every step that asks, so a version built on another does not prepare the stack again."""
+    global _shared
+    outer, _shared = _shared, {'vol': vol}
+    try:
+        yield
+    finally:
+        _shared = outer
+
+
+def once(vol, key, make):
+    """make(), or what it gave for vol and key earlier in the same shared() block."""
+    if _shared is None or _shared['vol'] is not vol:
+        return make()
+    if key not in _shared:
+        _shared[key] = make()
+    return _shared[key]
+
+
+def noise_slice(s, um):
+    """One slice with its background removed, in its own robust noise units, and whether it holds signal above
+    noise (the signal fades with depth, so one stack-wide scale would not do)."""
+    s = s.astype(np.float32)
+    r = s - ndi.gaussian_filter(s, BACKGROUND_UM / um)
+    r = ndi.gaussian_filter(r, SMOOTH_UM / um)
+    dev = np.abs(r - np.median(r))
+    z = r / (1.4826 * np.median(dev) + 1e-9)
+    return z, np.percentile(z, 99.9) >= SIGNAL_OVER_NOISE * 3.09
+
+
+def flatten(vol, um):
+    """(flat, depth, keep): the flattened signal in noise units (each pixel the brightest of the slices with signal),
+    the depth (slices) where each pixel's signal sits, and which slices hold signal; flat and depth are None when
+    none does. Slice by slice, so no copy of the stack is held."""
+    def make():
+        flat = acc = moment = best = arg = None
+        keep = np.zeros(len(vol), bool)
+        for k in range(len(vol)):
+            z, keep[k] = noise_slice(vol[k], um)
+            if not keep[k]:
+                continue
+            zk = ndi.gaussian_filter(z, 2 * SMOOTH_UM / um)
+            w = np.clip(zk - GROW_SIGMA, 0, None)
+            if flat is None:
+                flat, acc, moment, best, arg = z, w, w * np.int64(k), zk, np.full(z.shape, k)
+                continue
+            np.maximum(flat, z, out=flat)
+            acc += w
+            moment += w * np.int64(k)
+            up = zk > best
+            best[up] = zk[up]; arg[up] = k
+        if flat is None:
+            return None, None, keep
+        # where the blurred signal clears the growth level nowhere, the brightest slice stands in
+        return flat, np.where(acc > 0, moment / (acc + 1e-9), arg), keep
+    return once(vol, ('flatten', um), make)
+
+
+def segment(vol, um, fill_lumens=False):
     """The confident and the faint-seeded masks, the depth (slices) of each pixel, and the flattened
     signal in noise units. fill_lumens fills every hole narrower than the mask's own median vessel
     width: a gap that thin is a lumen or a stain dropout inside one vessel, not tissue between two."""
-    flat = z[keep].max(axis=0)
+    flat, depth, keep = flatten(vol, um)
+    if flat is None:
+        raise ValueError('no slice of the stack holds signal above noise')
 
     def mask_at(grow, seed):
         m = ndi.binary_closing(apply_hysteresis_threshold(flat, grow, seed), np.ones((3, 3)))
@@ -136,12 +190,7 @@ def segment(z, keep, um, fill_lumens=False):
                 narrow = ndi.maximum(ndi.distance_transform_edt(holes), lab, range(1, n + 1)) < width
                 m = m | np.concatenate([[False], narrow])[lab]
         return m
-    confident, mask = mask_at(GROW_SIGMA, SEED_SIGMA), mask_at(CANDIDATE_GROW_SIGMA, CANDIDATE_SEED_SIGMA)
-    zk = ndi.gaussian_filter(z[keep], (0, 2 * SMOOTH_UM / um, 2 * SMOOTH_UM / um))
-    w = np.clip(zk - GROW_SIGMA, 0, None)
-    slices = np.flatnonzero(keep)
-    # where the blurred signal clears the growth level nowhere, the brightest slice stands in
-    depth = np.where(w.sum(0) > 0, (w * slices[:, None, None]).sum(0) / (w.sum(0) + 1e-9), slices[zk.argmax(0)])
+    confident, mask = once(vol, ('masks', um, fill_lumens), lambda: (mask_at(GROW_SIGMA, SEED_SIGMA), mask_at(CANDIDATE_GROW_SIGMA, CANDIDATE_SEED_SIGMA)))
     return confident, mask, depth, flat
 
 
@@ -199,33 +248,55 @@ def clean(pos, edges, dist):
         return d
 
     def join_pass_through():
-        while True:
-            for n in [n for n, d in degrees().items() if d == 2]:
-                es = [k for k, (a, b, _) in E.items() if n in (a, b)]
-                if len(es) != 2 or es[0] == es[1]:
-                    continue
-                (a1, b1, p1), (a2, b2, p2) = E[es[0]], E[es[1]]
-                if b1 != n: a1, b1, p1 = b1, a1, p1[::-1]
-                if a2 != n: a2, b2, p2 = b2, a2, p2[::-1]
-                E[es[0]] = [a1, b2, np.concatenate([p1, p2[1:]])]; del E[es[1]]
-                break
-            else:
-                return
+        """Merge, one point at a time, the earliest point (in the order the edges first name it) where exactly two
+        distinct edges meet, into the earlier of the two; the order fixes each merged edge's direction and key."""
+        rank = {k: i for i, k in enumerate(E)}
+        deg, inc = {}, {}
+        for k, (a, b, _) in E.items():
+            for n in (a, b):
+                deg[n] = deg.get(n, 0) + 1; inc.setdefault(n, set()).add(k)
+        first = lambda n: min((rank[k], E[k][0] != n) for k in inc[n])
+        heap = [(first(n), n) for n in deg if deg[n] == 2 and len(inc[n]) == 2]
+        heapq.heapify(heap)
+        while heap:
+            at, n = heapq.heappop(heap)
+            if n not in inc or len(inc[n]) != 2 or first(n) != at:
+                continue
+            k1, k2 = sorted(inc[n], key=rank.get)
+            (a1, b1, p1), (a2, b2, p2) = E[k1], E[k2]
+            if b1 != n: a1, b1, p1 = b1, a1, p1[::-1]
+            if a2 != n: a2, b2, p2 = b2, a2, p2[::-1]
+            E[k1] = [a1, b2, np.concatenate([p1, p2[1:]])]; del E[k2]
+            del inc[n], deg[n]
+            inc[b2].discard(k2); inc[b2].add(k1)
+            for m in {a1, b2}:
+                if deg[m] == 2 and len(inc[m]) == 2:
+                    heapq.heappush(heap, (first(m), m))
 
     width = lambda p: 2 * float(dist[p[:, 0], p[:, 1]].mean())
     reach = lambda n: float(dist[tuple(np.round(pos[n]).astype(int))])
 
-    def merge(j):
+    def incidence():
+        inc = {}
+        for k, (a, b, _) in E.items():
+            inc.setdefault(a, set()).add(k); inc.setdefault(b, set()).add(k)
+        return inc
+
+    def merge(j, inc):
         """Edge j's two ends become one point, midway, and the edge goes."""
         a, b, _ = E.pop(j)
         pos[a] = (pos[a] + pos[b]) / 2
-        for k, e in E.items():
-            E[k] = [a if e[0] == b else e[0], a if e[1] == b else e[1], e[2]]
+        inc[a].discard(j)
+        for k in inc.pop(b):
+            if k != j:
+                e = E[k]
+                E[k] = [a if e[0] == b else e[0], a if e[1] == b else e[1], e[2]]
+                inc[a].add(k)
     changed = True
     while changed:
         changed = False
         join_pass_through()
-        deg = degrees()
+        deg, inc = degrees(), incidence()
         spurs = {}   # only the shortest spur per junction goes per pass, so a vessel's last stretch survives its bump
         for j, (a, b, p) in list(E.items()):
             L = plen(p)
@@ -236,7 +307,7 @@ def clean(pos, edges, dist):
                 del E[j]; changed = True; continue
             if ends == 1 and a != b:
                 junc = a if deg[b] == 1 else b
-                parent = [width(q) for k, (c, d, q) in E.items() if k != j and junc in (c, d)]
+                parent = [width(E[k][2]) for k in inc[junc] if k != j and k in E]
                 # the part of a spur inside its junction's own width is the junction, not the branch
                 if parent and L - reach(junc) < SPUR_WIDTHS * max(float(np.median(parent)), 1):
                     if junc not in spurs or L < spurs[junc][1]:
@@ -245,9 +316,10 @@ def clean(pos, edges, dist):
             del E[j]; changed = True
         # a vessel has the width it was traced with: two points whose discs overlap sit inside one
         # vessel, so the edge between them is the skeleton's stair inside a wide vessel, not a vessel
+        inc = incidence()
         for j, (a, b, p) in sorted(E.items(), key=lambda kv: plen(kv[1][2])):
             if a != b and j in E and E[j][:2] == [a, b] and plen(p) < reach(a) + reach(b):
-                merge(j); changed = True
+                merge(j, inc); changed = True
         # two short paths between the same two junctions are one vessel the skeleton split around a hole
         pairs = {}
         for j, (a, b, p) in E.items():
@@ -317,8 +389,7 @@ def trace(mask):
 
 
 def model(vol, um, source, z_step, fill_lumens=False):
-    z, keep = noise_units(vol, um)
-    confident, faint, depth, flat = segment(z, keep, um, fill_lumens)
+    confident, faint, depth, flat = segment(vol, um, fill_lumens)
     where, E = {}, []   # node key -> (y px, x px, z slices); edges as pixel paths between node keys
 
     def add(tag, pos, edges, dist, state):
