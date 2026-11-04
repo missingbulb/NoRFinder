@@ -40,7 +40,10 @@
   },
   "files": {
     "accept": ".jpg,.jpeg,.png,.webp,.tif,.tiff,.bmp",
-    "empty": "Load a photo of bookshelves (JPEG, PNG, WebP or TIFF), then press Find books."
+    "empty": "Load a photo of bookshelves (JPEG, PNG, WebP or TIFF), then press Find books.",
+    "folders": [
+      "https://drive.google.com/drive/folders/1Wt3__aNzVQConuhF8tUx4zmnMtmx-O3w"
+    ]
   },
   "channels": [
     {
@@ -68,6 +71,11 @@
     "open": "Reading the photo…",
     "find": "Finding the books…",
     "straighten": "Straightening each book…"
+  },
+  "permissions": {
+    "data_management": [
+      "arielra@gmail.com"
+    ]
   },
   "groundTruth": {
     "label": "shelves-ground-truth",
