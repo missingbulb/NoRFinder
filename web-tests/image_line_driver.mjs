@@ -1,9 +1,12 @@
 // Drives the page (web/) in headless Chromium against a stand-in Drive API and a stand-in worker answering from
-// ANSWERS (tests/test_study_runs.py). Checks req/shell/load/from: the Image Viewer loads from this computer alone,
-// with no way to Drive, and the fixture, NoR Finder and Vascular Measurements from Google Drive alone, with no way
-// to the computer. Then req/shell/load/selector on the fixture: the Image box's top line, a selector of the images
-// opened lately, newest first, each with how long ago, the first selected; Drive's button at the line's right, and
-// Unload between them once an image is open. Then req/shell/drive/offline-listing: the Drive dialog keeps each folder
+// ANSWERS (tests/test_study_runs.py). Checks req/shell/load/from: the Image Viewer opens from this computer and from
+// Drive, its recent files from the computer reopened through the browser's reference to them (a stand-in file picker
+// handing over a file of the browser's own private storage), and its Drive dialog takes a pasted link; the fixture,
+// NoR Finder and Vascular Measurements open from Google Drive alone, with no way to the computer, their dialog
+// browsing the study's own folders with no link to paste (req/shell/drive/dialog). Then req/shell/load/selector on the
+// fixture: the Image box's top line, a selector of the images opened lately, newest first, each with how long ago,
+// the first selected; Drive's button at the line's right, and Unload between them once an image is open. Then
+// req/shell/drive/offline-listing: the Drive dialog keeps each folder
 // it lists, opens offline on it greying what cannot open, marks the images kept here online, and reads the folder
 // again when opened online. Optional SHOTS: a directory for screenshots. Exits 1 on a failed check, 2 when it
 // cannot run.
@@ -29,7 +32,7 @@ try { pw = require("playwright"); } catch {
 const [answers, studies, shots] = process.argv.slice(2);
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-const ROOT = "linefolder0000000001", SUB = "linesubfolder0000001";
+const ROOT = "linefolder0000000001", SUB = "linesubfolder0000001", OTHER = "lineotherfolder00001";
 const FOLDER = `https://drive.google.com/drive/folders/${ROOT}`;
 const PNG = noisePng();
 const sha = (b) => createHash("sha256").update(b).digest("hex");
@@ -64,10 +67,16 @@ const server = http.createServer((q, r) => {
   if (u === "/web/worker.js") return send("text/javascript", STAND_IN);
   if (u === "/web/config.js") return send("text/javascript", CONFIG);
   if (u === "/web/vendor/wheels.json") return send("application/json", "[]");
+  // the fixture's Drive folders, as the test sets them
+  if (u === "/studies/fixture/study.json") {
+    const m = JSON.parse(fs.readFileSync(path.join(repo, u), "utf8"));
+    return send("application/json", JSON.stringify({ ...m, files: { ...m.files, folders: folders.map((id) => `https://drive.google.com/drive/folders/${id}`) } }));
+  }
   const f = u === "/web/answers.json" ? answers : u === "/web/studies.json" ? studies : repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
+let folders = [ROOT];
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
@@ -82,14 +91,27 @@ await ctx.route("https://www.googleapis.com/**", async (route) => {
   const json = (body) => route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify(body) });
   if (!id) {
     calls.push("list");
+    if (/'lineotherfolder00001' in parents/.test(u.searchParams.get("q"))) return json({ files: [] });
     return json({ files: [{ id: SUB, name: "Sub", mimeType: "application/vnd.google-apps.folder" }, ...FILES.map(meta)] });
   }
+  if (id === ROOT || id === OTHER) return json({ id, name: id === ROOT ? "Slides" : "Other slides", mimeType: "application/vnd.google-apps.folder" });
   const f = FILES.find((x) => x.id === id);
   if (!f) return route.fulfill({ status: 404, headers: cors, body: "" });
   if (u.searchParams.get("alt") === "media") { calls.push("download"); return route.fulfill({ status: 200, headers: cors, contentType: "image/png", body: f.bytes }); }
   return json(meta(f));
 });
 await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
+// the browser's own file picker stands in as one handing over picked.png, a file of the page's private storage, so the
+// reference the page keeps to it is a real one; picks counts the times it was shown
+await ctx.addInitScript((png) => {
+  window.picks = 0;
+  window.showOpenFilePicker = async () => {
+    window.picks++;
+    const dir = await navigator.storage.getDirectory(), h = await dir.getFileHandle("picked.png", { create: true }), w = await h.createWritable();
+    await w.write(Uint8Array.from(atob(png), (c) => c.charCodeAt(0))); await w.close();
+    return [h];
+  };
+}, PNG.toString("base64"));
 await ctx.addInitScript(([link, recent]) => {
   delete Navigator.prototype.serviceWorker;
   if (sessionStorage.getItem("primed")) return;
@@ -112,26 +134,63 @@ const listed = () => page.$$eval("#drive-list .item", (bs) => bs.map((b) => ({ n
   grey: b.disabled, kept: !!b.querySelector(".offline-mark"), fresh: b.querySelector(".new")?.title ?? null, meta: b.querySelector(".meta")?.textContent || "" })));
 
 try {
-  // ---- req/shell/load/from: the Image Viewer loads from this computer alone ----
+  // ---- req/shell/load/from: the Image Viewer opens from this computer and from Drive ----
   await page.goto(origin + "/web/index.html");
   await mounted("Image Viewer");
-  check(await shown("#load-main") && !(await shown("#load-menu")) && !(await shown("#load-drive")) && !(await shown("#image-menu")),
-    "the Image Viewer offers Load alone, with no dropdown, no Drive button and no image selector");
-  const chooser = page.waitForEvent("filechooser", { timeout: 3000 }).then(() => true, () => false);
+  await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
+  check(await shown("#image-menu") && (await shown("#load-main")) && (await shown("#load-drive")) && !(await shown("#load-menu")),
+    "the Image Viewer offers the image selector, the computer's button and Drive's button");
+  check(await page.$("#load-main svg.computer-logo"), "the computer's button bears a computer");
+  const [vPick, vLocal, vDrive] = [await box("#image-menu"), await box("#load-main"), await box("#load-drive")];
+  check(vLocal.x > vPick.x + vPick.w - 1 && vDrive.x > vLocal.x + vLocal.w - 1, "the computer's button, then Drive's, at the selector's right", { vPick, vLocal, vDrive });
   await page.click("#load-main");
-  check(await chooser, "and its Load opens the computer's file chooser");
+  await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded.");
+  check(await page.evaluate(() => window.picks === 1 && st.fileName === "picked.png"), "the computer's button opens the image the browser's own picker hands over");
+  await page.click("#unload");
+  await page.waitForFunction(() => !window.st.img);
+  await page.click("#image-pick");
+  let v = await rows();
+  check(v.length === 1 && v[0].name === "picked.png" && v[0].where === "This computer" && v[0].age === "<1h", "its recent files list the file from this computer, saying so", v);
+  check(await page.$("#image-menu .recent svg.computer-logo"), "beside a computer");
+  await page.click("#image-menu .recent");
+  await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded." && st.fileName === "picked.png");
+  check(await page.evaluate(() => window.picks === 1), "chosen there, the file opens again with no picker shown");
+  await page.click("#load-drive");
+  await page.waitForFunction(() => $("#drive-dlg").open);
+  check(await shown("#drive-link") && (await shown("#drive-go")), "the Image Viewer's Drive dialog takes a pasted link");
+  await page.click("#drive-dlg button[value=close]");
   await page.click("#user-menu summary"); await page.click("#open-settings");
   await page.waitForFunction(() => $("#settings-dlg").open && $("#settings-dlg [name=nor-theme]"));
   check(!(await page.$("#settings-dlg [name=nor-load-source]")), "where Load reads from is no setting");
   await page.keyboard.press("Escape");
 
-  // ---- the fixture, and the real studies, load from Google Drive alone ----
+  // ---- the fixture, and the real studies, open from Google Drive alone ----
   for (const [id, title] of [["nor", "NoR Finder"], ["vascular", "Vascular Measurements"], ["fixture", "Fixture"]]) {
     await page.goto(origin + "/web/" + id);
     await mounted(title);
     check(!(await shown("#load-main")) && !(await shown("#load-menu")) && (await shown("#image-menu")) && (await shown("#load-drive")),
       `${title} offers the image selector and Drive's button, and no Load from the computer`);
   }
+  check(!(await page.$$eval("#image-menu .recent .where", (ws) => ws.some((w) => w.textContent === "This computer"))), "a file from the computer is listed in the Image Viewer alone");
+
+  // ---- req/shell/drive/dialog: a study's dialog browses its own folders, with no link to paste ----
+  await page.click("#load-drive");
+  await page.waitForFunction(() => $("#drive-dlg").open && document.querySelectorAll("#drive-list .item").length === 4);
+  check(!(await shown("#drive-link")) && !(await shown("#drive-go")), "a study's Drive dialog has no link to paste");
+  check(/Slides/.test(await page.textContent("#drive-path")), "and opens straight into the one folder the study names", await page.textContent("#drive-path"));
+  await page.click("#drive-dlg button[value=close]");
+  folders = [ROOT, OTHER];
+  await page.reload(); await mounted("Fixture");
+  await page.click("#load-drive");
+  await page.waitForFunction(() => $("#drive-dlg").open && document.querySelectorAll("#drive-list .item.folder").length === 2);
+  let roots = await listed();
+  check(roots.map((x) => x.name).join() === "Slides,Other slides", "naming two, it lists them by name to choose from", roots.map((x) => x.name));
+  await page.dblclick("#drive-list .item:nth-child(1)");
+  await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 4);
+  check(true, "and opens the one chosen");
+  await page.click("#drive-dlg button[value=close]");
+  folders = [ROOT];
+  await page.reload(); await mounted("Fixture");
 
   // ---- req/shell/load/selector ----
   await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
