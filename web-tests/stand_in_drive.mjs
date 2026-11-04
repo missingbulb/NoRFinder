@@ -52,6 +52,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
   postMessage({ type: "ready", info: A.ready.fixture });
   onmessage = ({ data: m }) => {
     if (m.type === "open") { self.lastOpen = { name: m.name, bytes: new Uint8Array(m.bytes) }; const images = bytes(A.images); postMessage({ type: "opened", meta: A.opened, images }, [images.buffer]); }
+    else if (m.type === "call") { const b = bytes(A.mask); postMessage({ type: "result", action: m.action, meta: A.count, bytes: b, echo: m.echo }, [b.buffer]); }
   };`;
   const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in", clientId: "123456-stand.apps.googleusercontent.com" } };`;
   const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
@@ -141,12 +142,13 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
   const SIGNED_IN = { user: { name: "Tester", email: EMAIL, picture: null }, token: "stand-in-token", until: Date.now() + 3600e3,
     scopes: "openid email profile https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file" };
   // scopes: what the signed-in user's token may do, in place of SIGNED_IN's; email: who is signed in, in place of the
-  // study's data manager; seed: browser keys kept before the page opens; prepare(ctx): routes of a driver's own,
-  // taking precedence over these
-  async function open(signedIn, { scopes, email, seed = {}, prepare } = {}) {
+  // study's data manager; seed: browser keys kept before the page opens; study: what the fixture's study.json says
+  // otherwise for this page (its stage, say); prepare(ctx): routes of a driver's own, taking precedence over these
+  async function open(signedIn, { scopes, email, seed = {}, study, prepare } = {}) {
     const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
     await ctx.route("https://www.googleapis.com/**", google);
     await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
+    if (study) await ctx.route("**/studies/fixture/study.json", (r) => r.fulfill({ json: { ...fixture, ...study } }));
     if (prepare) await prepare(ctx);
     // the welcome popup answered before, and remembered (req/shell/account/welcome)
     await ctx.addInitScript(([who, seed]) => {
