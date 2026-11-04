@@ -109,7 +109,7 @@ const unfold = async (page, box) => { await page.evaluate((b) => { const e = $(b
   await check(await page.evaluate(() => st.meta && !st.inflight), "it lets go once the candidates are drawn");
   const preset = "#presets button[data-preset=precise]";
   await page.evaluate(() => { for (const d of $("#filters").children) d.kept = true; });
-  await unfold(page, "#filters-box");
+  await unfold(page, "#finder-box"); await page.evaluate(() => { $("#filters-fold").open = true; });
   await page.click(preset);
   await check(await held(page, preset), "a filter preset is held while the filters run again");
   await free(page, preset);

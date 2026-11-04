@@ -1,6 +1,7 @@
 // Drives the page (web/) in headless Chromium with a stand-in worker that answers only the study's ready() (READY,
 // written by tests/test_processing_box.py), and checks the Processing box before any image: its settings and its
-// algorithm note start folded; each finder in the list carries its icon; the note's title names the chosen
+// algorithm note start folded; the filters and their presets have a fold of their own after the settings, which starts
+// folded and is kept from a Viewer, and no box of their own follows it; each finder in the list carries its icon; the note's title names the chosen
 // algorithm, its explanation is drawn as a nested list of steps, and it gives in bold its precision and recall with its
 // default filters, as the list shows them, with those before any filter after them, not bold. Prints what it saw; exits 1 on a failure, 2
 // when it cannot run.
@@ -54,6 +55,26 @@ try {
   console.log("folds", JSON.stringify(folds));
   if (folds.settings) problems.push("Settings starts open");
   if (folds.about) problems.push("the algorithm's note starts open");
+  // the box is folded until an image opens, so it is unfolded here to see what a Viewer would see in it
+  const filters = await page.evaluate(() => {
+    const box = document.querySelector("#finder-box"), folded = box.classList.contains("folded"); box.classList.remove("folded"); set = document.querySelector("#settings-box"), fold = document.querySelector("#filters-fold");
+    const f = document.querySelector("#filters"), p = document.querySelector("#presets");
+    const got = { fold: !!fold && fold.matches("details.fold") && box.contains(fold) && fold.contains(f) && fold.contains(p),
+      title: fold && fold.querySelector(":scope > summary").textContent.trim(), open: !!fold && fold.open, count: f ? f.children.length : 0,
+      afterSettings: !!fold && !set.contains(fold) && !!(set.compareDocumentPosition(fold) & Node.DOCUMENT_POSITION_FOLLOWING),
+      kept: !!fold && getComputedStyle(fold).display === "none" && getComputedStyle(set).display !== "none",
+      boxes: [...document.querySelectorAll("#left > .box .sec-head h2")].map((h) => h.textContent.trim()) };
+    box.classList.toggle("folded", folded);
+    return got;
+  });
+  console.log("filters", JSON.stringify(filters));
+  if (!filters.fold) problems.push("the filters and their presets are not a fold of their own in the Processing box");
+  if (filters.title !== "Filters") problems.push(`the filters' fold is titled "${filters.title}", not "Filters"`);
+  if (filters.open) problems.push("Filters starts open");
+  if (!filters.afterSettings) problems.push("the filters' fold does not follow Settings");
+  if (!filters.count) problems.push("no filter is listed");
+  if (!filters.kept) problems.push("a Viewer sees the filters, or does not see Settings");
+  if (filters.boxes.some((b) => b.endsWith("Postprocessing"))) problems.push("the left bar still has a Postprocessing box");
 
   const options = await page.evaluate(() => [...document.querySelector("#finder").options].map((o) => [o.value, o.textContent]));
   console.log("options", JSON.stringify(options));
