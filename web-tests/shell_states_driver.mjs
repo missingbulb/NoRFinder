@@ -10,7 +10,7 @@ import path from "node:path";
 import { standIn } from "./stand_in_drive.mjs";
 
 const [answers, studies, rootDir, image, expectFile, renders] = process.argv.slice(2);
-const { open, role, check, done } = await standIn({ answers, studies, rootDir });
+const { FILES, open, role, check, done } = await standIn({ answers, studies, rootDir });
 const { elements, paths } = JSON.parse(fs.readFileSync(expectFile, "utf8"));
 const OTHER = "someone@example.com";
 const ROLE = { viewer: "viewer", tagger: "tagger", data: "data" };
@@ -49,12 +49,31 @@ const ACTIONS = {
     await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell").length > 0);
   },
   async preview(page) {
-    await page.click("#update-previews");
-    await page.waitForFunction(() => /previews? made/.test(document.querySelector("#folder-msg").textContent), null, { timeout: 30000 });
+    // the stand-in Drive is shared by every path: an earlier one may have made the previews already
+    if (!(await page.isDisabled("#update-previews"))) {
+      await page.click("#update-previews");
+      await page.waitForFunction(() => /previews? made/.test(document.querySelector("#folder-msg").textContent), null, { timeout: 30000 });
+    }
     await page.click("#data-tree .tree-folder .count");
     await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-image .pic img").length > 0);
     await page.click("#data-tree .tree-image");
     await page.waitForFunction(() => shellForTests.page.get("image")?.source.kind === "preview" && !document.querySelector("#load-original").hidden);
+  },
+  async edit(page) {
+    await page.click("#edit-open");
+    await page.waitForFunction(() => !document.querySelector("#edit-box").hidden && document.querySelector("#edit-open").disabled);
+  },
+  async done(page) {
+    await page.click("#edit-done");
+    await page.waitForFunction(() => document.querySelector("#edit-box").hidden);
+  },
+  async offline(page) {
+    await page.context().setOffline(true);
+    await page.waitForFunction(() => document.documentElement.classList.contains("offline"));
+  },
+  async online(page) {
+    await page.context().setOffline(false);
+    await page.waitForFunction(() => !document.documentElement.classList.contains("offline"));
   },
   async original(page) {
     await page.click("#load-original");
@@ -67,8 +86,10 @@ const read = (page) => page.evaluate((els) => Object.fromEntries(els.map((e) => 
   const el = document.querySelector(e.select);
   if (!el) return [e.name, { seen: "gone", box: null }];
   const shown = el.getClientRects().length > 0 && el.checkVisibility({ visibilityProperty: true });
-  const off = el.matches(":disabled") || el.getAttribute("aria-disabled") === "true";
-  const seen = !shown ? "gone" : e.box && el.classList.contains("folded") ? "folded" : e.control && off ? "off" : "on";
+  // held: what the page marks as needing the internet while offline (req/shell/offline/default)
+  const held = el.getAttribute("aria-disabled") === "true" && el.dataset.onlineTitle !== undefined;
+  const off = el.matches(":disabled") || (!held && el.getAttribute("aria-disabled") === "true");
+  const seen = !shown ? "gone" : e.box && el.classList.contains("folded") ? "folded" : held ? "held" : e.control && off ? "off" : "on";
   const r = el.getBoundingClientRect();
   return [e.name, { seen, box: shown ? { x: r.x, y: r.y, w: r.width, h: r.height } : null }];
 })), elements);
@@ -99,6 +120,9 @@ const differences = [];
 const index = [];
 if (renders) fs.mkdirSync(renders, { recursive: true });
 for (const [k, p] of paths.entries()) {
+  // each path finds the folder as it started: no previews made by an earlier one
+  const made = FILES.findIndex((f) => f.name === "rauntruth-previews.tiff");
+  if (made >= 0) FILES.splice(made, 1);
   const page = await open(p.signedIn, {
     study: p.study, ...(p.role === "data" ? {} : { email: OTHER }), seed: { "nor-role": ROLE[p.role] },
   });
