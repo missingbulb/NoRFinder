@@ -273,7 +273,7 @@ button.tool[aria-pressed=true] { border-color: var(--accent); box-shadow: inset 
 /* a published study shows what it finds: the steps that serve making ground truth go */
 [data-stage=Published] .unpublished { display: none !important; }
 /* nothing that makes ground truth but for a Ground Truth Tagger (req/shell/account/role) */
-:root:is([data-stage=GT], [data-stage=PostGT]):not([data-role=tagger]) .unpublished { display: none !important; }
+:root:not([data-role=tagger]) .unpublished { display: none !important; }
 #switch .count { opacity: .7; font-weight: 400; }
 #switch .count:empty { display: none; }
 #tasks-bar { display: flex; gap: 10px; align-items: center; min-height: 44px; padding: 0 var(--pad); border-bottom: 1px solid var(--line); font-size: 13px; }
