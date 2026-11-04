@@ -116,7 +116,7 @@ const inView = () => page.evaluate(() => {
 const thumbOf = (k) => page.evaluate((id) => localStorage.getItem("nor-drive-thumb:" + id), FILES[k].id);
 
 try {
-  await page.goto(origin + "/web/fixture");
+  await page.goto(origin + "/web/");
   await page.waitForFunction(() => window.$ && $("#title").textContent);
   await open();
   const seen = await inView(), window = []; for (let k = seen[0]; k <= seen[seen.length - 1] + AHEAD; k++) window.push(k);

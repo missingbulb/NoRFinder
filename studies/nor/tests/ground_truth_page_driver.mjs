@@ -81,6 +81,9 @@ async function open(drive) {
     if (u.host !== "www.googleapis.com") return r.abort();
     const headers = { "access-control-allow-origin": "*" };
     if (u.searchParams.get("alt") === "media") return r.fulfill({ status: 200, headers: { ...headers, "content-length": String(bytes.length) }, body: bytes });
+    // the study's folder, holding the image
+    if (u.searchParams.get("q")) return r.fulfill({ status: 200, headers, contentType: "application/json",
+      body: JSON.stringify({ files: [{ id: DRIVE_ID, name: "corner.tif", mimeType: "image/tiff", size: String(bytes.length) }] }) });
     return r.fulfill({ status: 200, headers, contentType: "application/json", body: JSON.stringify({ name: "corner.tif", mimeType: "image/tiff" }) });
   });
   await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
@@ -93,8 +96,7 @@ async function open(drive) {
   await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false);
   if (drive) {
     await page.click("#load-drive");
-    await page.fill("#drive-link", `https://drive.google.com/file/d/${DRIVE_ID}/view`);
-    await page.click("#drive-go");
+    await page.dblclick(`#drive-list .item[data-id="${DRIVE_ID}"]`);
   } else {
     await page.setInputFiles("#file", image);
   }

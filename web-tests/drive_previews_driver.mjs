@@ -84,7 +84,7 @@ const row = (all, name) => all.find((r) => r.name === name) || {};
 const readsOf = (name) => reads.filter((r) => r.name === name).map((r) => r.how).join();
 
 try {
-  await page.goto(origin + "/web/fixture");
+  await page.goto(origin + "/web/");
   await page.waitForFunction(() => window.$ && $("#title").textContent);
   await open();
   let all = await rows();

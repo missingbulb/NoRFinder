@@ -26,8 +26,11 @@
     "style": "web/fixture.css"
   },
   "files": {
-    "from": "drive",
+    "from": ["drive"],
     "accept": ".png",
+    "folders": [
+      "https://drive.google.com/drive/folders/fixturefolder00000001"
+    ],
     "empty": "Load a greyscale PNG, then press Count."
   },
   "channels": [

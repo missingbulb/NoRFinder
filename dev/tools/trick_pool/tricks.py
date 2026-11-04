@@ -82,7 +82,7 @@ def tv(img, unit, weight=0.08):
     return denoise_tv_chambolle(img / s, weight=weight) * s
 
 
-@trick('non-local-means', 'pre', ['skimage'])
+@trick('non-local-means', 'pre', ['skimage', 'pywt'])
 def nlm(img, unit, h_sigma=0.8):
     from skimage.restoration import denoise_nl_means, estimate_sigma
     s = img.max() or 1; x = img / s; sig = float(estimate_sigma(x))

@@ -104,13 +104,19 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 #image-foot { position: relative; }
 #image-foot:not(:has(> :not([hidden], input, svg))) { display: none; }
 #load { display: flex; gap: 8px; align-items: stretch; }
-#load[data-from="local"] > #image-menu, #load[data-from="local"] > #load-drive, #load[data-from="drive"] > #load-main { display: none; }
+#load:not([data-drive]) > #image-menu, #load:not([data-drive]) > #load-drive, #load[data-drive]:not([data-local]) > #load-main { display: none; }
+/* on the top line: the selector, Unload, the computer's button, Drive's */
+#load[data-drive] > #unload { order: 1; } #load[data-drive] > #load-main { order: 2; } #load[data-drive] > #load-drive { order: 3; }
+#load-main .computer-logo { display: none; }
+#load[data-drive] > #load-main .word { display: none; }
+#load[data-drive] > #load-main .computer-logo { display: block; width: 18px; height: 16px; }
 #load-main { font-weight: 600; padding: 4px 14px; }
 #load.done .primary { background: var(--panel); border-color: var(--accent); color: var(--accent); }
-#load[data-from="drive"] { margin: 0 0 10px; position: relative; }
-#load[data-from="drive"] > #unload, #load-drive { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; flex: none; }
-#load[data-from="drive"] > #unload[hidden] { display: none; }
-#load[data-from="drive"] > #unload .word, #load[data-from="local"] > #unload .x-icon { display: none; }
+#load[data-drive] { margin: 0 0 10px; position: relative; }
+#load[data-drive] > #unload, #load[data-drive] > #load-main, #load-drive { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; flex: none; }
+#load[data-drive] > #unload[hidden] { display: none; }
+#load[data-drive] > #unload .word, #load:not([data-drive]) > #unload .x-icon { display: none; }
+#load[data-drive] > #load-main.primary { background: color-mix(in srgb, var(--accent) 22%, var(--panel)); color: var(--text); }
 #load-drive .drive-logo { width: 18px; height: 16px; }
 #load-drive.primary { background: color-mix(in srgb, var(--accent) 22%, var(--panel)); }
 /* the selector looks like the header's study switcher: a face holding the name, a darker caret beside it */
@@ -538,6 +544,9 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 #drive-list .item .name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 #drive-list .item .shape { color: var(--dim); font-size: 11px; white-space: nowrap; padding: 1px 6px; border: 1px solid var(--line); border-radius: var(--r-chip); }
 #drive-list .item .shape:empty { display: none; }
+/* an image the folder did not hold when last listed here (req/shell/drive/dialog) */
+#drive-list .item .new { flex: none; font-size: 10px; font-weight: 600; color: var(--accent);
+  padding: 0 5px; border: 1px solid var(--accent); border-radius: var(--r-chip); cursor: default; }
 #drive-list .item .kept { display: contents; }
 #drive-list .item .kept .offline-mark { margin-left: 0; }
 #drive-list .item .meta { flex: none; color: var(--dim); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -550,6 +559,7 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 #drive-msg { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #drive-list .item + .item { border-top: 1px solid var(--line); }
 #drive-list .item:hover { background: var(--bg); }
+#drive-dlg.folders #drive-hint, #drive-dlg.folders #drive-link-row { display: none; }
 #drive-list .item:disabled { opacity: .45; }
 #drive-list .item:disabled:hover { background: none; }
 #drive-list .item[aria-selected="true"] { background: color-mix(in srgb, var(--accent) 18%, transparent); box-shadow: inset 3px 0 0 var(--accent); }

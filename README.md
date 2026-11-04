@@ -48,7 +48,8 @@ linked to it and your browser's details, never your images or results. Python an
 its packages, about 50 MB, download on the first visit and are cached for 30 days. Images opened
 from Google Drive are kept in your browser too, so they open again without a download, unless you
 untick Auto-save images, and so is what each Drive folder you browsed holds, so the Drive dialog opens
-without the internet; your avatar's Manage storage lists, and deletes, everything kept.
+without the internet; in Chrome and Edge the Image Viewer also keeps the browser's reference to each file you
+opened from your computer, never a copy, so its recent list opens it again; your avatar's Manage storage lists, and deletes, everything kept.
 
 ![NoR Finder with a dense corpus callosum field: 428 candidates found, 193 finalists measured, one selected, and the summary's length histograms](docs/screenshot.png)
 
