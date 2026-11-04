@@ -1,14 +1,11 @@
 # Version history
 
-What changed on the NoR Finder page, newest first, in the words its users read: clicking the
-version in the status bar shows this history.
+The releases up to 0.11104.87, in the words the page's users read: clicking the version in the
+status bar shows them, after the releases since. Those are told by each pull request on its own, in
+a `Version-history:` line of one of its commit messages, which the site build reads from main's
+history; this file only keeps what was told before, and no pull request edits it.
 
-Each release is told in at most three paragraphs of at most 60 words, each ending with the pull
-requests it tells of, `(#12, #34)`. A pull request that changes what a user sees works itself into
-the story under **Next release**, and the site build files each paragraph under the release that
-carried all its pull requests. The `writing-version-history` skill says how.
-
-## Next release
+## 0.11104.87
 
 Back online, the status bar says so within seconds, even while the site copies a release that landed
 meanwhile. Going offline no longer unfolds the disk, memory, network and CPU: the red Wi-Fi icon
@@ -18,9 +15,6 @@ NoR Finder's Ground Truth Tagger now works one area of the image at a time: its 
 rejected, then No missed NoRs here, and the whole area is cut out. Back returns to the last item, to
 change your mind. Rejected candidates get the finalists' measurement bars, and Show above the image
 switches the tagging marks. (#739)
-
-In NoR Finder, the filters and their presets are now part of Processing, in a Filters fold after
-Settings that opens the same way. The Postprocessing box is gone. (#748)
 
 ## 0.11104.86
 
