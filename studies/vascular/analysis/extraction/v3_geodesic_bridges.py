@@ -21,6 +21,16 @@ import v2_scored_repair as v2
 import vessel_model as vm
 
 NAME = 'v3-geodesic-bridges'
+TITLE, ICON = 'bridges', '🌉'
+STEPS = """\
+- Run the repair algorithm
+- From each open end away from the frame, follow the cheapest path along the ridges of the signal
+  - up to twelve widths ahead, within 60° of the way the vessel ran
+  - to land on another vessel or another open end
+- Keep the path as a vessel
+  - when its dimmest stretch keeps 40% of the two vessels' contrast
+  - it arrives at about the same depth
+  - and it closes no short loop"""
 
 REACH_WIDTHS = 12.0        # an open end looks this many vessel widths ahead (median capillary segment ~45 µm is ~11 widths)
 AHEAD_DEG = 60.0           # ... for a landing point within this angle of the way it was running

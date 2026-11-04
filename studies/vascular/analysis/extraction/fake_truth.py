@@ -166,7 +166,9 @@ def grade(model, labels):
     return g
 
 
-def grade_versions(versions):
+def grade_versions(versions, out=None):
+    """Print each version's grade against every label set; with out, write the latest set's to that file, each
+    version with the source it was graded on (lab.source_hash), for the page to show."""
     files = sorted(glob.glob(os.path.join(LABELS, '*.json')))
     if not files:
         raise SystemExit('no labels yet: run fake_truth.py tiles, have the judges answer, then collect')
@@ -174,8 +176,9 @@ def grade_versions(versions):
         L = json.load(open(f))
         names = sorted({t['stack'] for t in L['tiles']})
         print(f"labels {L['set']} ({os.path.basename(f)}), judged by a model, not the owner: every number is a proxy")
-        print('| version | vessels found | non-vessels kept | missed ones found | F1 (vessels vs kept non-vessels) |')
-        print('|---|---|---|---|---|')
+        print('| version | vessels found | non-vessels kept | missed ones found | precision | recall | F1 (vessels vs kept non-vessels) |')
+        print('|---|---|---|---|---|---|---|')
+        rows = {}
         for v in versions:
             tot = {'vessel': [0, 0], 'not': [0, 0], 'missed': [0, 0]}
             for name in names:
@@ -185,7 +188,14 @@ def grade_versions(versions):
             tp, P = tot['vessel']; fp, N = tot['not']; mf, M = tot['missed']
             prec = tp / max(tp + fp, 1); rec = tp / max(P, 1)
             f1 = 2 * prec * rec / max(prec + rec, 1e-9)
-            print(f'| {v} | {tp}/{P} | {fp}/{N} | {mf}/{M} | {f1:.3f} |')
+            print(f'| {v} | {tp}/{P} | {fp}/{N} | {mf}/{M} | {prec:.3f} | {rec:.3f} | {f1:.3f} |')
+            rows[v] = {'precision': round(prec, 3), 'recall': round(rec, 3), 'f1': round(f1, 3), 'vessels_found': [tp, P],
+                       'non_vessels_kept': [fp, N], 'missed_found': [mf, M], 'source': lab.source_hash(v)}
+        if out and L['set'] == SET:
+            json.dump({'labels': SET, 'curves': P + N, 'tiles': len(L['tiles']), 'stacks': len(names),
+                       'judge': f"provisional: a model judged them, not the owner, in {len(L['tiles'])} tiles of {len(names)} stacks",
+                       'versions': rows}, open(out, 'w'), indent=1, ensure_ascii=False)
+            print('wrote', out)
 
 
 def main():

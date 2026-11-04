@@ -19,6 +19,12 @@ import v3_geodesic_bridges as v3
 import vessel_model as vm
 
 NAME = 'v4-line-evidence'
+TITLE, ICON = 'dead-end check', '🔍'
+STEPS = """\
+- Run the bridges algorithm
+- For each vessel with an open end, shorter than ten widths
+  - drop it when its ridge is under half the field's typical vessel's
+  - and it beats its own quarter-turned copy by under 35% of the typical vessel's lead"""
 
 RIDGE_SHARE = 0.5      # a dead end whose ridge is under half the field's median vessel ridge ...
 TURNED_SHARE = 0.35    # ... and whose lead over its quarter-turned copy is under this share of the field's median lead, goes

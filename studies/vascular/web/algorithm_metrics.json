@@ -1,0 +1,99 @@
+{
+ "labels": "fable-v1",
+ "curves": 185,
+ "tiles": 5,
+ "stacks": 4,
+ "judge": "provisional: a model judged them, not the owner, in 5 tiles of 4 stacks",
+ "versions": {
+  "v1": {
+   "precision": 0.815,
+   "recall": 0.955,
+   "f1": 0.88,
+   "vessels_found": [
+    106,
+    111
+   ],
+   "non_vessels_kept": [
+    24,
+    74
+   ],
+   "missed_found": [
+    2,
+    9
+   ],
+   "source": "3eb3bdcc51"
+  },
+  "v2": {
+   "precision": 0.858,
+   "recall": 0.928,
+   "f1": 0.892,
+   "vessels_found": [
+    103,
+    111
+   ],
+   "non_vessels_kept": [
+    17,
+    74
+   ],
+   "missed_found": [
+    2,
+    9
+   ],
+   "source": "4d7bd76cd6"
+  },
+  "v3": {
+   "precision": 0.858,
+   "recall": 0.928,
+   "f1": 0.892,
+   "vessels_found": [
+    103,
+    111
+   ],
+   "non_vessels_kept": [
+    17,
+    74
+   ],
+   "missed_found": [
+    2,
+    9
+   ],
+   "source": "aa2d2fa6c6"
+  },
+  "v4": {
+   "precision": 0.879,
+   "recall": 0.919,
+   "f1": 0.899,
+   "vessels_found": [
+    102,
+    111
+   ],
+   "non_vessels_kept": [
+    14,
+    74
+   ],
+   "missed_found": [
+    2,
+    9
+   ],
+   "source": "3c42122350"
+  },
+  "v5": {
+   "precision": 0.887,
+   "recall": 0.919,
+   "f1": 0.903,
+   "vessels_found": [
+    102,
+    111
+   ],
+   "non_vessels_kept": [
+    13,
+    74
+   ],
+   "missed_found": [
+    2,
+    9
+   ],
+   "source": "c5822ab544"
+  }
+ }
+}
