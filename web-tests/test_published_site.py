@@ -52,14 +52,15 @@ def test_nothing_else_of_a_study_ships():
 
 
 def test_every_file_a_study_page_fetches_is_published():
-    """req/nor/metrics: a file the page reads beside its own module (new URL(..., import.meta.url)) must ship with it."""
+    """req/nor/metrics: a file the page reads beside its own module (new URL(..., import.meta.url)) must ship with it; a
+    folder it reads under (a base address handed to an engine) must ship with files in it."""
     got, fetched = published(), []
     for module in glob.glob(os.path.join(ROOT, 'studies', '*', 'web', '*.js')):
         rel = os.path.relpath(module, ROOT)
         for target in re.findall(r'new URL\("([^"]+)", import\.meta\.url\)', open(module).read()):
             fetched.append((rel, os.path.normpath(os.path.join(os.path.dirname(rel), target))))
     assert len(fetched) >= 1, 'found no module-relative fetch: the sweep is not looking at the study pages'
-    missing = [f'{m} fetches {t}' for m, t in fetched if t not in got]
+    missing = [f'{m} fetches {t}' for m, t in fetched if t not in got and not any(g.startswith(t + '/') for g in got)]
     assert not missing, missing
 
 
