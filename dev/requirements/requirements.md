@@ -1068,11 +1068,13 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Clicking the version in the status bar (it has no tooltip) opens a Version history popup: each
-  release, newest first, with its date and at most three short paragraphs, of at most 60 words
-  each, on what changed for the user. They live in
-  [`web/version_history.md`](../../web/version_history.md): a pull request that changes what users
-  see works itself into the "Next release" paragraphs, leaving out what pales beside the rest, and
-  the site build files each paragraph under the release that carried every pull request it names. The browser remembers the version last seen; when the page has been
+  release, newest first, with its date and what changed for the user. Each pull request that
+  changes what users see tells it in a `Version-history:` line of one of its commit messages, at
+  most 20 words, or says `Version-history: none`; a pull request changing `web/` or a study's
+  `web/` without one fails the Tests workflow, and no pull request edits a shared file for it. The
+  site build files each line under the release that first carried its pull request, read from
+  main's history, beside the releases told before in
+  [`web/version_history.md`](../../web/version_history.md). The browser remembers the version last seen; when the page has been
   updated since and the history names a change in between, a bubble points at the version saying
   "Click here to see what was updated since v…", until the user opens the history or closes the
   bubble with its ×. The history then marks the releases that are new

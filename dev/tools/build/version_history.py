@@ -1,22 +1,28 @@
-"""The page's version history: web/version_history.md, read into the list the page shows.
+"""The page's version history, read into the list the page shows.
 
-Each release is a few paragraphs, each ending with the pull requests it tells of, `(#12, #34)`. A
-paragraph under "Next release" goes under the release that carried all of them, read from main's
-release commits. Run from the repo root:
+Each pull request tells its change for the page's users in a line of one of its commit messages,
+`Version-history: <at most 20 words>`, or `Version-history: none`; the squash merge carries it onto
+main, and the line goes under the release that first carried the pull request, read from main's
+release commits. The releases from before are kept in web/version_history.md. Run from the repo root:
 
-  python3 dev/tools/build/version_history.py json     writes web/version_history.json, which the page reads
-  python3 dev/tools/build/version_history.py fold     writes the found versions into version_history.md
+  python3 dev/tools/build/version_history.py json          writes web/version_history.json, which the page reads
+  python3 dev/tools/build/version_history.py check BASE    checks the commits since BASE (a pull request's)
 """
-import json, os, re, subprocess, sys
+import fnmatch, json, os, re, subprocess, sys
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..'))
 SOURCE = os.path.join(ROOT, 'web', 'version_history.md')
 OUT = os.path.join(ROOT, 'web', 'version_history.json')
-NEXT = 'Next release'
 RELEASE = re.compile(r'^Release site version (\S+)$')
 PR_IN_SUBJECT = re.compile(r'\(#(\d+)\)$|^Merge pull request #(\d+) ')
 PRS_AT_END = re.compile(r'\s*\((#\d+(?:,\s*#\d+)*)\)\s*$')
-MAX_PARAGRAPHS, MAX_WORDS = 3, 60
+# a squash merge lists each commit's subject as "* <subject>"
+LINE = re.compile(r'^(?:\* )?Version-history:\s*(.*?)\s*$', re.M)
+NONE = 'none'
+MAX_WORDS = 20
+# what a user of the page sees: the shell's page and each study's
+SEEN = ('web/*', 'studies/*/web/*')
+UNIT, RECORD = '\x1f', '\x1e'
 
 
 def parse(text):
@@ -44,30 +50,40 @@ def pull_requests(paragraph):
     return [int(n) for n in re.findall(r'\d+', m.group(1))] if m else []
 
 
-def words(paragraph):
-    return len(PRS_AT_END.sub('', paragraph).split())
+def pull_request(subject):
+    m = PR_IN_SUBJECT.search(subject)
+    return int(m.group(1) or m.group(2)) if m else None
 
 
-def carried_by(paragraph, found):
-    """The release that carried every pull request the paragraph names, or None while one is unreleased."""
-    versions = [found.get(pr) for pr in pull_requests(paragraph)]
-    return max(versions, key=build_number) if versions and all(versions) else None
+def line(message):
+    """The last Version-history line of a commit message: its words, '' for none, or None when it has none."""
+    found = LINE.findall(message)
+    if not found:
+        return None
+    return '' if found[-1].lower() == NONE else found[-1]
 
 
 def releases(log):
-    """{pull request: the version that first carried it}, from `git log --first-parent --format=%s`
-    lines, newest first."""
+    """{pull request: the version that first carried it}, from main's first-parent (subject, body), newest first."""
     found, pending = {}, []
-    for subject in reversed(log):
+    for subject, _ in reversed(log):
         m = RELEASE.match(subject)
         if m:
             found.update((pr, m.group(1)) for pr in pending)
             pending = []
-            continue
-        m = PR_IN_SUBJECT.search(subject)
-        if m:
-            pending.append(int(m.group(1) or m.group(2)))
+        elif pull_request(subject):
+            pending.append(pull_request(subject))
     return found
+
+
+def told(log):
+    """{pull request: the change it told}, leaving out those that told none."""
+    out = {}
+    for subject, body in log:
+        pr, text = pull_request(subject), line(body)
+        if pr and text:
+            out[pr] = text
+    return out
 
 
 def build_number(version):
@@ -75,28 +91,43 @@ def build_number(version):
     return int(version.split('.')[-1])
 
 
-def resolve(sections, found, current):
-    """[{version, changes}] newest first: every Next release paragraph moved to the version that carried its
-    pull requests, or to `current` (the version being built) while one is unreleased."""
+def resolve(sections, log, current):
+    """[{version, changes}] newest first: the file's releases, and each told change under the release that
+    carried its pull request, or under `current` (the version being built) while it is unreleased."""
     by_version = {}
-    for heading, lines in sections:
-        for line in lines:
-            if heading == NEXT:
-                version = carried_by(line, found) or current
-            else:
-                version = heading
-            by_version.setdefault(version, []).append(line)
-    return [{'version': v, 'changes': [PRS_AT_END.sub('', c) for c in by_version[v]]}
-            for v in sorted(by_version, key=build_number, reverse=True)]
+    for heading, paragraphs in sections:
+        by_version.setdefault(heading, []).extend(PRS_AT_END.sub('', p) for p in paragraphs)
+    found = releases(log)
+    for pr, text in reversed(list(told(log).items())):
+        by_version.setdefault(found.get(pr, current), []).append(text)
+    return [{'version': v, 'changes': by_version[v]} for v in sorted(by_version, key=build_number, reverse=True)]
+
+
+def check(messages, files):
+    """What a pull request's commit messages lack, given the files it changes: [] when nothing."""
+    text = None
+    for message in messages:
+        text = line(message) if line(message) is not None else text
+    if text is None:
+        seen = [f for f in files if any(fnmatch.fnmatch(f, p) for p in SEEN)]
+        return [f'{seen[0]} changes what a user sees: a commit message needs a line "Version-history: <at most '
+                f'{MAX_WORDS} words a user reads>", or "Version-history: none"'] if seen else []
+    n = len(text.split())
+    return [f'the Version-history line is {n} words; at most {MAX_WORDS}'] if n > MAX_WORDS else []
+
+
+def git(root, *args):
+    return subprocess.run(['git', '-C', root, *args], capture_output=True, text=True)
 
 
 def git_log(root):
-    """main's first-parent subjects, newest first; fetches the history a shallow checkout lacks."""
-    git = lambda *a: subprocess.run(['git', '-C', root, *a], capture_output=True, text=True)
-    if git('rev-parse', '--is-shallow-repository').stdout.strip() == 'true':
-        git('fetch', '--quiet', '--unshallow', 'origin')
-    out = git('log', '--first-parent', '--format=%s', 'HEAD')
-    return out.stdout.splitlines() if out.returncode == 0 else []
+    """main's first-parent (subject, body), newest first; fetches the history a shallow checkout lacks."""
+    if git(root, 'rev-parse', '--is-shallow-repository').stdout.strip() == 'true':
+        git(root, 'fetch', '--quiet', '--unshallow', 'origin')
+    out = git(root, 'log', '--first-parent', f'--format=%s{UNIT}%b{RECORD}', 'HEAD')
+    if out.returncode:
+        return []
+    return [tuple(r.lstrip('\n').split(UNIT, 1)) for r in out.stdout.split(RECORD) if UNIT in r]
 
 
 def current_version(root):
@@ -105,44 +136,24 @@ def current_version(root):
 
 def history(root):
     log = git_log(root)
-    found = releases(log)
-    print(f'version history: {len(found)} pull requests placed by {sum(map(bool, map(RELEASE.match, log)))} releases', file=sys.stderr)
-    return resolve(parse(open(SOURCE).read()), found, current_version(root))
+    print(f'version history: {len(told(log))} pull requests told, placed by '
+          f'{sum(bool(RELEASE.match(s)) for s, _ in log)} releases', file=sys.stderr)
+    return resolve(parse(open(SOURCE).read()), log, current_version(root))
 
 
-def fold(text, found):
-    """version_history.md with each Next release paragraph that a release carried moved under that release."""
-    sections = parse(text)
-    keep, moved = [], {}
-    for line in dict(sections).get(NEXT, []):
-        version = carried_by(line, found)
-        (moved.setdefault(version, []) if version else keep).append(line)
-    if not moved:
-        return text
-    head, _, _ = text.partition('## ')
-    out = dict((h, list(ls)) for h, ls in sections if h != NEXT)
-    for version, lines in moved.items():
-        out[version] = lines + out.get(version, [])
-    order = sorted(out, key=build_number, reverse=True)
-    section = lambda h, ps: '\n\n'.join([f'## {h}', *map(wrap, ps)]) + '\n'
-    return head + '\n'.join([section(NEXT, keep), *(section(v, out[v]) for v in order)])
-
-
-def wrap(paragraph, width=100):
-    lines = ['']
-    for word in paragraph.split():
-        if lines[-1] and len(lines[-1]) + 1 + len(word) > width:
-            lines.append('')
-        lines[-1] = f'{lines[-1]} {word}'.lstrip()
-    return '\n'.join(lines)
+def check_since(root, base):
+    span = f'{base}..HEAD'
+    messages = git(root, 'log', '--reverse', '--no-merges', f'--format=%B{RECORD}', span).stdout.split(RECORD)
+    files = git(root, 'diff', '--name-only', f'{base}...HEAD').stdout.split()
+    return check(messages, files)
 
 
 if __name__ == '__main__':
-    root = ROOT
     if sys.argv[1:] == ['json']:
-        json.dump(history(root), open(OUT, 'w'), indent=1)
-    elif sys.argv[1:] == ['fold']:
-        text = open(SOURCE).read()
-        open(SOURCE, 'w').write(fold(text, releases(git_log(root))))
+        json.dump(history(ROOT), open(OUT, 'w'), indent=1)
+    elif sys.argv[1:2] == ['check'] and len(sys.argv) == 3:
+        problems = check_since(ROOT, sys.argv[2])
+        print('\n'.join(problems) or 'version history: the pull request tells its change, or needs to tell none')
+        sys.exit(1 if problems else 0)
     else:
         sys.exit(__doc__)

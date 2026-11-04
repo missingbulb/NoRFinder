@@ -6,7 +6,7 @@ __pycache__/
 /web-tests/package*.json
 # the page's vendored wheels (python3 dev/tools/build/build.py)
 /web/vendor/
-# the version history the page reads, built from web/version_history.md (python3 dev/tools/build/version_history.py json)
+# the version history the page reads, built from main's history and web/version_history.md (python3 dev/tools/build/version_history.py json)
 /web/version_history.json
 # the studies the header's switcher offers (python3 dev/tools/build/build.py)
 /web/studies.json

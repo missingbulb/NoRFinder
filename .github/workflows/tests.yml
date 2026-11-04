@@ -31,3 +31,14 @@ jobs:
         run: python3 studies/nor/detection/ground_truth.py fetch
       - name: Run the fast tests
         run: python3 -m pytest web-tests studies -q -m "not full" --durations=5
+  version-history:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Each pull request tells its change for the page's users, or that it tells none
+        run: python3 dev/tools/build/version_history.py check origin/${{ github.base_ref }}
