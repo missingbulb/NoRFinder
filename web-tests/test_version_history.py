@@ -32,7 +32,7 @@ The first page. (#225)
 
 
 def test_each_pull_request_goes_under_the_release_that_first_carried_it():
-    assert vh.releases(LOG) == {365: '0.11008.22', 369: '0.11008.22', 371: '0.11008.23'}
+    assert vh.releases(LOG) == {365: '0.11008.22', 369: '0.11008.22', 371: '0.11008.23', 390: '0.11007.21'}
 
 
 def test_a_pull_request_tells_its_change_in_the_last_version_history_line_of_its_commits():

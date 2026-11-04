@@ -1,14 +1,11 @@
 # Version history
 
-What changed on the NoR Finder page, newest first, in the words its users read: clicking the
-version in the status bar shows this history.
+The releases up to 0.11104.86, in the words the page's users read: clicking the version in the
+status bar shows them, after the releases since. Those are told by each pull request on its own, in
+a `Version-history:` line of one of its commit messages, which the site build reads from main's
+history; this file only keeps what was told before, and no pull request edits it.
 
-Each release is told in at most three paragraphs of at most 60 words, each ending with the pull
-requests it tells of, `(#12, #34)`. A pull request that changes what a user sees works itself into
-the story under **Next release**, and the site build files each paragraph under the release that
-carried all its pull requests. The `writing-version-history` skill says how.
-
-## Next release
+## 0.11104.86
 
 In Vascular Measurements, Processing lists each algorithm with its own icon, a name and its
 precision and recall, and How the algorithm works gives its steps one by one. Execute draws the
@@ -16,7 +13,8 @@ vessel model several times faster and with a fraction of the memory, and the wea
 skeleton, is no longer offered. (#744)
 
 Back online, the status bar says so within seconds, even while the site copies a release that landed
-meanwhile. Going offline no longer unfolds the disk, memory, network and CPU: the red Wi-Fi icon says it. (#741)
+meanwhile. Going offline no longer unfolds the disk, memory, network and CPU: the red Wi-Fi icon
+says it. (#741)
 
 In NoR Finder, clicking the image where there is no candidate now deselects the selected one, as
 clicking it again already did. (#743)
