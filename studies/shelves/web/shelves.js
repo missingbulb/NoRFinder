@@ -127,7 +127,14 @@ export function mount(shell) {
   // what the database matcher is sent: each book's text, where it is, and how sure the reading is
   const matcherDoc = () => ({ image: st.fileName, W: st.W, H: st.H,
     books: books.filter((b) => b.verdict !== "wrong").map((b, i) => ({ id: i + 1, view: b.view, text: b.text ?? "", confidence: b.confidence ?? null, reader: b.reader ?? null, corners: b.corners })) });
-  const focus = (b) => shell.viewer.focus(b.corners.reduce((a, p) => a + p[0], 0) / 4, b.corners.reduce((a, p) => a + p[1], 0) / 4);
+  // the book framed in the view: zoomed to fill most of it, unless already close to that, and in its middle
+  function focus(b) {
+    const xs = b.corners.map((p) => p[0]), ys = b.corners.map((p) => p[1]), sc = $("#scroller");
+    const w = Math.max(...xs) - Math.min(...xs) || 1, h = Math.max(...ys) - Math.min(...ys) || 1;
+    const fit = Math.min(8, 0.7 * Math.min(sc.clientWidth / w, sc.clientHeight / h));
+    if (st.zoom > fit * 1.5 || st.zoom < fit / 1.5) shell.viewer.setZoom(fit);
+    shell.viewer.focus((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2);
+  }
 
   // ---------- the ground truth: one book at a time, then the missed ones, then Submit ----------
   const found = () => books.filter((b) => b.source === "found");
