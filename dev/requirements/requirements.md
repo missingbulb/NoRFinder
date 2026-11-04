@@ -1193,7 +1193,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 - `req/nor/candidates/decide` One selected candidate, decided on its card with a thumbs up or down.
   <details>
 
-  Clicking a candidate selects it (a thin white ring) and clicking it again deselects it. Changed by
+  Clicking a candidate selects it (a thin white ring) and clicking it again deselects it, as does
+  clicking the image where there is no candidate (set by the owner on 2026-11-04). Changed by
   the owner on 2026-10-31: its card alone, with no title, hovers over the image's top right corner
   while a candidate is selected, and only then; buttons to the previous and next candidate by number
   hover over the bottom of its crop. Decisions are
@@ -1432,9 +1433,10 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   one has a yellow ring. Once the user decides a candidate, up or down, its area (the rectangle
   around its pixels, two pixels wider each way) is removed from the image, and so is each area
   checked for missed NoRs (`req/nor/truth/tasks`), which is framed in yellow while it is checked.
-  Where the image is removed, a picture shows instead, one picture behind the whole image (the
-  study's `groundTruth.reveal`, a golden retriever; black while the study names none or it cannot
-  load), so the review uncovers more and more of it. Test: `studies/nor/tests/test_truth_tasks_page.py`.
+  Where the image is removed, a picture shows instead, one picture behind the whole image, so the
+  review uncovers more and more of it: the study's `groundTruth.reveal`, a link to a picture on
+  the web that the browser fetches from there (NoR: a golden retriever; changed by the owner on
+  2026-11-04, not a file the site serves), and black while the study names none or it cannot load. Test: `studies/nor/tests/test_truth_tasks_page.py`.
   </details>
 
 - `req/nor/truth/order` The candidates come area by area, so the review fills the image one area after another.

@@ -15,6 +15,14 @@ precision and recall, and How the algorithm works gives its steps one by one. Ex
 vessel model several times faster and with a fraction of the memory, and the weakest algorithm,
 skeleton, is no longer offered. (#744)
 
+In NoR Finder, clicking the image where there is no candidate now deselects the selected one, as
+clicking it again already did. (#743)
+
+## 0.11104.85
+
+In NoR Finder, what you finish as a Ground Truth Tagger now uncovers a golden retriever behind the
+image, more of it with every verdict and every area checked. (#738)
+
 ## 0.11104.84
 
 Pick your role from the new menu beside your avatar. Viewer shows what a study finds. Ground Truth

@@ -1073,8 +1073,14 @@ export function mount(shell) {
   }
   // What is done, cut out of the image: the rectangle around each decided candidate's pixels, two pixels wider
   // each way, and each checked area. A picture behind the image shows there, black when it cannot load.
-  // the picture is the study's own (study.json's groundTruth.reveal, a path in the study); none: black
-  const REVEAL = shell.study.groundTruth?.reveal ? new URL("../" + shell.study.groundTruth.reveal, import.meta.url).href : null;
+  // the picture the study links to (study.json's groundTruth.reveal), fetched from where it lives; none: black
+  const REVEAL = shell.study.groundTruth?.reveal || null;
+  // the picture is placed only once it has loaded: a link that fails leaves black, not the browser's broken-picture icon
+  let revealLoaded = null;
+  const revealReady = () => (revealLoaded ||= new Promise((ok) => {
+    if (!REVEAL) return ok(false);
+    const im = new Image(); im.onload = () => ok(true); im.onerror = () => ok(false); im.src = REVEAL;
+  }));
   function drawReveal() {
     if (!TRUTH || !st.W) return;
     const svg = $("#overlay");
@@ -1082,9 +1088,12 @@ export function mount(shell) {
     if (!g) {
       g = el("g", { class: "reveal-marks" });
       const defs = el("defs"), clip = el("clipPath", { id: "gt-reveal" }); defs.append(clip);
-      g.append(defs, el("rect", { class: "reveal-bg", x: 0, y: 0, width: st.W, height: st.H, "clip-path": "url(#gt-reveal)" }),
-        ...(REVEAL ? [el("image", { class: "reveal", href: REVEAL, x: 0, y: 0, width: st.W, height: st.H, preserveAspectRatio: "xMidYMid slice", "clip-path": "url(#gt-reveal)" })] : []));
+      g.append(defs, el("rect", { class: "reveal-bg", x: 0, y: 0, width: st.W, height: st.H, "clip-path": "url(#gt-reveal)" }));
       svg.prepend(g);
+      const W = st.W, H = st.H;
+      revealReady().then((ok) => {
+        if (ok && g.isConnected) g.append(el("image", { class: "reveal", href: REVEAL, x: 0, y: 0, width: W, height: H, preserveAspectRatio: "xMidYMid slice", "clip-path": "url(#gt-reveal)" }));
+      });
     }
     const holes = [];
     for (const c of st.order) if (st.forced.get(c.i)) holes.push([c.bb[0] - 2, c.bb[1] - 2, c.bb[2] - c.bb[0] + 4, c.bb[3] - c.bb[1] + 4]);
@@ -1386,7 +1395,7 @@ export function mount(shell) {
     idle: updateFind,
     showImage: () => showView("image"),
     pickAt: candAt,
-    pick: (c) => (TRUTH ? takeUp(c) : select(st.sel === c.i ? null : c.i)),
+    pick: (c) => (TRUTH ? c && takeUp(c) : select(c && st.sel !== c.i ? c.i : null)),
     open: (c) => (TRUTH ? takeUp(c) : (select(c.i), showView("items"))),
     step,
     capturesPointer: () => !!st.lasso,

@@ -148,6 +148,29 @@ const shown = await page.evaluate(() => String(st.sel));
 console.log("double click on a card:", shown, "of", other);
 if (shown !== other) await fail("a double click on a card did not select it on the image", { shown, other });
 
+// ---- req/nor/candidates/decide: a click on a candidate selects it, on it again or on no candidate deselects it ----
+const spots = await page.evaluate(() => {
+  const v = $("#scroller").getBoundingClientRect(), on = (x, y) => document.elementFromPoint(x, y);
+  let cand = null, empty = null;
+  for (const g of document.querySelectorAll("#overlay g[data-i]")) {
+    const r = (g.querySelector(".hit") || g).getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+    if (r.width && x > v.left && x < v.right && y > v.top && y < v.bottom && on(x, y)?.closest("g[data-i]") === g && g.dataset.i !== String(st.sel)) { cand = { x, y, i: nor.candOf(g.dataset.i[0] === "u" ? g.dataset.i : +g.dataset.i).i }; break; }
+  }
+  for (let y = v.top + 20; y < v.bottom - 20 && !empty; y += 10)
+    for (let x = v.left + 20; x < v.right - 20 && !empty; x += 10) {
+      const e = on(x, y);
+      if (e && $("#scroller").contains(e) && !e.closest("g[data-i]") && !e.closest("#selected-box, .minimap, button")) empty = { x, y };
+    }
+  return { cand, empty };
+});
+if (!spots.cand || !spots.empty) await fail("no candidate and empty spot in view to click", spots);
+const selAfter = async (x, y) => { await page.mouse.click(x, y); await frames(); return page.evaluate(() => st.sel); };
+const clicks = { on: await selAfter(spots.cand.x, spots.cand.y), again: await selAfter(spots.cand.x, spots.cand.y) };
+await selAfter(spots.cand.x, spots.cand.y);
+clicks.empty = await selAfter(spots.empty.x, spots.empty.y);
+console.log("clicks on the image:", JSON.stringify({ ...clicks, want: spots.cand.i }));
+if (clicks.on !== spots.cand.i || clicks.again !== null || clicks.empty !== null) await fail("a click did not select or deselect as it should", { ...clicks, want: spots.cand.i });
+
 // ---- req/nor/cards/lazy: only the cards in view and two rows past it are drawn ----
 // a narrow, short window puts the corner's few cards in many rows
 await page.setViewportSize({ width: 760, height: 420 });
