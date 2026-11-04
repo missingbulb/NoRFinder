@@ -1,6 +1,6 @@
 """The shell's states (req/checks/shell-states): from the element tree and its rules
 (dev/requirements/shell-states.json), every state its paths reach and what each element shows there, written as the
-matrix people review (dev/requirements/shell-states.GENERATED.md) and as the browser test's expectations
+matrix (dev/requirements/shell-states.GENERATED.md) and as the browser test's expectations
 (web-tests/shell-states.GENERATED.json).
 
     python3 dev/tools/build/shell_states.py          # write both

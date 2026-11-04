@@ -324,10 +324,10 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Study: postprocessing | ○ | ○ | ○ | ○ |
 | Main view | ● | ● | ● | ● |
 | &nbsp;&nbsp;Tasks/Items switch | ○* | ○* | ○* | ○* |
-| &nbsp;&nbsp;Ruler | ◐ | ? | ● | ● |
-| &nbsp;&nbsp;Grid | ◐ | ? | ● | ● |
-| &nbsp;&nbsp;Minimap button | ◐ | ? | ● | ● |
-| &nbsp;&nbsp;Zoom in | ◐ | ? | ● | ● |
+| &nbsp;&nbsp;Ruler | ◐ | ◐ | ● | ● |
+| &nbsp;&nbsp;Grid | ◐ | ◐ | ● | ● |
+| &nbsp;&nbsp;Minimap button | ◐ | ◐ | ● | ● |
+| &nbsp;&nbsp;Zoom in | ◐ | ◐ | ● | ● |
 | &nbsp;&nbsp;Tasks bar | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Submit ground truth | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Image view | ● | ○ | ● | ● |
@@ -342,7 +342,4 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 
 ## Undecided
 
-- GT, Data Manager, Folder: Ruler
-- GT, Data Manager, Folder: Grid
-- GT, Data Manager, Folder: Minimap button
-- GT, Data Manager, Folder: Zoom in
+None.

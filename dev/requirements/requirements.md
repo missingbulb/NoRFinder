@@ -207,7 +207,10 @@ nobody has decided: what the page does there is not a requirement yet.
   box replaces the Image box and counts its images, how many have a preview, how many previews are
   out of date (the image's SHA-256 differs from the preview's), how many have ground truth beside
   them (`<name>.ground_truth.*`, `<name>` the image's name without its extension) and how many are
-  marked as needing it (`req/shell/data/preview-images`). Test: `web-tests/test_data_mode_page.py`.
+  marked as needing it (`req/shell/data/preview-images`). The toolbar's tools stay over the folder's
+  images, waiting for an image (set by the owner on 2026-11-04: Data Management has its own tools to cut
+  and crop, and the viewer's basic ones may sit beside them). Test: `web-tests/test_data_mode_page.py`,
+  `web-tests/test_shell_states_page.py`.
   </details>
 
 - `req/shell/data/mode` Data Management: the Data Manager role's view, a column of the study's folders left of the left bar, open until folded.
@@ -1193,14 +1196,16 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/checks/shell-states` A tree of the shell's elements says what each shows in every state its paths reach; the matrix is generated from it, and a browser walks the paths to check it.
   <details>
 
-  Set by the owner on 2026-11-04. `dev/requirements/shell-states.json` lists the shell's elements as a tree, each
+  Set by the owner on 2026-11-04: a harness for developing the page and its requirements and for keeping what works
+  working, which the owner does not review; its tentative and undecided cases are questions for the owner.
+  `dev/requirements/shell-states.json` lists the shell's elements as a tree, each
   under the one holding it, and gives each element only what differs from its parent: cases over the state (the
   study's stage, who is signed in, the role, the image open, the study's step done, the view, what Data Management
   has selected), each citing the requirement that decides it and marked tentative or undecided where the owner has
   not decided (an undecided case is shown and not checked). Its paths start from a few roots (a study's stage and a
   role) and take actions one after another, each state one more action on the one before.
-  `dev/tools/build/shell_states.py` writes from it the matrix people review, `dev/requirements/shell-states.GENERATED.md`,
-  one table per path, and the browser test's expectations; a case no state reaches fails it. In the fast set the
+  `dev/tools/build/shell_states.py` writes from it the matrix, `dev/requirements/shell-states.GENERATED.md`, one table
+  per path, and the browser test's expectations; a case no state reaches fails it. In the fast set the
   generated files must be up to date and every element must be on the page; the shell's elements not in the tree
   yet are counted, so the count only falls. In the full set one page per path takes the actions on the fixture
   study, the study's stage set for it, against a stand-in Google, and at every state reads each element as shown,
@@ -1215,8 +1220,7 @@ nobody has decided: what the page does there is not a requirement yet.
   and an `index.html` of them, path by path. Arrows point at the elements that changed since the state before,
   only the outermost of those that changed together, and on a path's first state at what shows folded or disabled;
   a dashed arrow points where an element was before it went, and a red one at an element that is not what the
-  rules say. The arrows say where to look, not what to expect. The full run on main keeps the pictures as the run's
-  `shell-states` artifact. Test: `web-tests/test_shell_states_page.py`.
+  rules say. The arrows say where to look, not what to expect. The pictures are made on demand and kept nowhere. Test: `web-tests/test_shell_states_page.py`.
   </details>
 
 ## `req/nor` The NoR Finder page: detect once, filter live, in the browser

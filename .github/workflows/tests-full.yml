@@ -54,17 +54,7 @@ jobs:
       - name: Fetch the ground-truth images not restored
         run: python3 studies/nor/detection/ground_truth.py fetch
       - name: Run every test
-        env:
-          SHELL_STATES_RENDERS: ${{ runner.temp }}/shell-states
         run: python3 -m pytest web-tests studies -q --durations=10
-      # the pictures of the shell's states, for review (req/checks/shell-states/renders), red arrows and all on a failure
-      - name: Keep the pictures of the shell's states
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: shell-states
-          path: ${{ runner.temp }}/shell-states
-          if-no-files-found: ignore
 
   # Main is released only once the full set is green on it; the release task owns the deploy.
       # Claudinite's checks; the engine update keeps these steps current.
