@@ -6,9 +6,7 @@
 #advanced[open] #detect-params { margin-top: 6px; }
 #advanced summary { cursor: pointer; }
 #main-params:empty { display: none; }
-/* the filters: the algorithm's second part, after the finder's settings */
-#filter-set { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
-#filter-set h3 { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--dim); }
+#filters-fold[open] > summary { margin-bottom: 8px; }
 /* a filter: switch, letter, title and its own count on one line, what it means below, then its dials */
 .filter { background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 10px 12px; margin-bottom: 8px; }
 .filter.off .desc, .filter.off .param, .filter.off .title { opacity: .45; }

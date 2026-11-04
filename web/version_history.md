@@ -19,6 +19,9 @@ rejected, then No missed NoRs here, and the whole area is cut out. Back returns 
 change your mind. Rejected candidates get the finalists' measurement bars, and Show above the image
 switches the tagging marks. (#739)
 
+In NoR Finder, the filters and their presets are now part of Processing, in a Filters fold after
+Settings that opens the same way. The Postprocessing box is gone. (#748)
+
 ## 0.11104.86
 
 In Vascular Measurements, Processing lists each algorithm with its own icon, a name and its

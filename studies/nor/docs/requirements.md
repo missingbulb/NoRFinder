@@ -285,6 +285,6 @@ behind them (R9).
 On the page (R8), the finder list shows each finder's precision and recall with its default filters (Balanced),
 its "How the <finder> algorithm works" note gives those numbers in bold on how many images, with its own
 candidates' numbers before any filter after them, and the
-filters, in the Processing box's settings after the finder's own, open with the three presets, each with its precision and recall after the filters; choosing one sets every filter to its values, and
+filters, in the Processing box's Filters fold after its Settings, open with the three presets, each with its precision and recall after the filters; choosing one sets every filter to its values, and
 it stays lit while the filters hold them. The filters have no "restore defaults": there are no
 absolute defaults, and Balanced is the finder's own values.

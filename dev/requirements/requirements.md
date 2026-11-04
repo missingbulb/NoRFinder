@@ -1016,7 +1016,7 @@ nobody has decided: what the page does there is not a requirement yet.
   yet). Set by the owner on 2026-11-02, Published: the study's algorithm is trusted and the page only
   shows what it finds, so it makes no ground truth (no Submit GT, its button hidden, as in PreGT) and
   drops the steps that serve making it: the study's
-  postprocessing (NoR's filters in its Processing settings, `req/nor/filters/live`) is not shown. A GT or PostGT study names its ground truth's label and button. The Image Viewer is PreGT,
+  postprocessing (NoR's Filters fold in its Processing box, `req/nor/filters/live`) is not shown. A GT or PostGT study names its ground truth's label and button. The Image Viewer is PreGT,
   NoR Finder GT. Test: `web-tests/test_study_contract.py`, `web-tests/test_status_bar_page.py`.
   </details>
 
@@ -1368,7 +1368,7 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   settings now chosen, titled "<finder> executed"; and Summary, which opens once the candidates are
   found, keeping its name whatever is done. Changed by the owner on 2026-11-04: finding the candidates
   and filtering them are the algorithm's two parts, so the filters and their presets sit in
-  Processing's settings, after the finder's own, with no box of their own. Test:
+  Processing, with no box of their own: a Filters fold after Settings, which, like it, starts folded. Test:
   `studies/nor/tests/test_processing_box.py`. The main area has a toolbar over two views: the image and the
   items, a card for each candidate, with the shell's switch between them at its left (`req/shell/views/second`).
   Changed by the owner on 2026-11-03: while the study makes ground truth, Ground Truth Tasks
