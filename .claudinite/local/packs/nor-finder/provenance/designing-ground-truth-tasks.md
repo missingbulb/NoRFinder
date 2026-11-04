@@ -18,3 +18,13 @@
   served by us."
 - **Actor:** @missingbulb (owner).
 - **Model:** Claude Opus 5.5
+
+## 2026-11-04 · reworded · the tasks are one walk area by area, with Back; the Show menu stays, task-named (#739)
+- **Source:** the owner on the NoR page: separate passes left the image scattered and never finished
+  region by region; "we need a way to go back"; the display options belong on the image, aligned to
+  the tagging actions; the mask stays where the summary is; rejected candidates need the finalists'
+  adjusters.
+- **Reason:** "No Go back" and per-task ordering were wrong guidance for every study that follows.
+- **Actor:** @missingbulb (owner).
+- **Model:** Claude Opus 5.5
+- **Landed:** #739

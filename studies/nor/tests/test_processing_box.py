@@ -1,4 +1,5 @@
-"""req/nor/find/settings: the Processing box before any image, its settings and algorithm note folded, each finder
+"""req/nor/find/settings, req/nor/layout: the Processing box before any image, its settings and algorithm note folded,
+the filters folded on their own after the settings, each finder
 listed with its icon, the note titled for the chosen algorithm, its steps drawn as a nested list, and its precision
 and recall before any filter told apart from the list's after the filters. Drives web/ in headless Chromium with a
 stand-in worker answering the study's real ready() (processing_box_driver.mjs)."""

@@ -15,15 +15,14 @@
           <div id="detect-params"></div>
         </details>
       </details>
+      <details id="filters-fold" class="fold unpublished">
+        <summary>Filters</summary>
+        <div id="presets" class="tabs presets" role="group" aria-label="Filter preset" hidden></div>
+        <div id="filters"></div>
+      </details>
       <div class="row">
         <button id="find" class="primary" disabled>Find Candidates</button>
       </div>
-    </section>
-
-    <section class="box foldable unpublished" id="filters-box" data-opens="user">
-      <div class="sec-head"><h2>Postprocessing</h2></div>
-      <div id="presets" class="tabs presets" role="group" aria-label="Filter preset" hidden></div>
-      <div id="filters"></div>
     </section>
 
     <section class="box foldable" id="summary-box" data-opens="find">
@@ -40,10 +39,10 @@
         <li data-task="pass"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button"><span class="n"></span> Finalists</button></div><div class="task-body"></div></li>
         <li data-task="fail"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button"><span class="n"></span> Rejected</button></div><div class="task-body"></div></li>
         <li data-task="missed"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button" title="The image's areas, each checked for NoRs the finder missed"><span class="n"></span> Areas</button></div>
-          <div class="task-body"><p class="hint">Right-click where the finder missed a NoR in the framed area.</p><div class="missed-slot"></div><button id="area-ok" class="primary" type="button">No missed NoRs here</button></div></li>
+          <div class="task-body"><div class="missed-slot"></div><div id="area-check"><p class="hint">Right-click where the finder missed a NoR in the framed area.</p><button id="area-ok" class="primary" type="button">No missed NoRs here</button></div></div></li>
         <li data-task="submit"><div class="task-head"><span class="tick" aria-hidden="true"></span><button id="dl-truth" disabled><span class="gt-ico" aria-hidden="true"></span>Submit Ground Truth</button></div></li>
       </ol>
-      <span id="task-tools"><button id="task-skip" class="link" type="button" title="The next one, leaving this one for later">Skip ›</button></span>
+      <span id="task-tools"><button id="task-back" class="link" type="button" title="The one you were on before, to change your mind" disabled>‹ Back</button><button id="task-skip" class="link" type="button" title="The next one, leaving this one for later">Skip ›</button></span>
       <div id="task-now"><div id="task-stage"><div id="task-card"></div></div></div>
     </section>
 </template>
@@ -51,13 +50,18 @@
       <details class="menu for-image" id="show-menu">
         <summary>Show</summary>
         <div class="pop">
-          <div class="opt"><label><input type="checkbox" id="show-pass" checked> accepted</label>
+          <div class="opt for-view"><label><input type="checkbox" id="show-pass" checked> Finalists</label>
             <input type="range" id="pass-w" min="0.5" max="4" step="0.5" title="Line width"><input type="color" id="pass-c" title="Colour"></div>
-          <div class="opt"><label><input type="checkbox" id="show-fails" checked> rejected</label>
+          <div class="opt for-view"><label><input type="checkbox" id="show-fails" checked> Rejected</label>
             <input type="range" id="fail-w" min="0.5" max="4" step="0.5" title="Line width"><input type="color" id="fail-c" title="Colour"></div>
-          <label><input type="checkbox" id="show-nums" checked> candidate numbers</label>
-          <label><input type="checkbox" id="show-letters" checked> rejection reasons</label>
-          <label><input type="checkbox" id="show-lines" checked> measuring lines</label>
+          <label class="for-view"><input type="checkbox" id="show-nums" checked> candidate numbers</label>
+          <label class="for-view"><input type="checkbox" id="show-letters" checked> rejection reasons</label>
+          <label class="for-view"><input type="checkbox" id="show-lines" checked> measuring lines</label>
+          <label class="for-gt" title="The finalists waiting for your verdict, each a faint outline"><input type="checkbox" id="show-gt-pass" checked> Finalists</label>
+          <label class="for-gt" title="The rejected waiting for your verdict, each a faint outline"><input type="checkbox" id="show-gt-fails" checked> Rejected</label>
+          <label class="for-gt" title="The NoRs you added where the finder missed one"><input type="checkbox" id="show-gt-added" checked> Added NoRs</label>
+          <label class="for-gt" title="What you decided, and each area done, cut out of the image"><input type="checkbox" id="show-gt-cut" checked> Cut out what is done</label>
+          <label class="for-gt" title="The area you are working on, framed"><input type="checkbox" id="show-gt-frame" checked> Frame the area</label>
         </div>
       </details>
       <div class="for-items tabs" role="tablist">
@@ -81,7 +85,7 @@
     <div id="lasso-hint" hidden>Drag around the area to count · Esc cancels</div>
 </template>
 <template data-slot="views">
-    <div id="items-view" data-viewing hidden>
+    <div id="items-view" data-viewing data-shelved hidden>
       <div id="list"></div>
     </div>
 </template>

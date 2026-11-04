@@ -1,9 +1,10 @@
 // Drives the page (web/) in headless Chromium with the stand-in worker of the layout test, answering from
 // real results (ANSWERS, written by tests/test_memory.py), and checks the ground-truth tasks: in a GT study
 // Ground Truth Tasks takes Summary's place and the image is the only view (req/nor/truth/tasks,
-// req/shell/views/second); the candidates come area by area (req/nor/truth/order); the image marks what is
-// reviewed (req/nor/truth/marks); in a PreGT study the summary and the item views are back. Prints what it
-// saw; exits 1 on a failure, 2 when it cannot run.
+// req/shell/views/second); the tasks are one walk through the image's areas, with Back and Skip
+// (req/nor/truth/order); the image marks what is reviewed, under a task-named Show menu (req/nor/truth/marks,
+// req/nor/show-menu); the summary's mask waits for the summary (req/nor/summary/mask); in a PreGT study the
+// summary is back. Prints what it saw; exits 1 on a failure, 2 when it cannot run.
 //   node tests/truth_tasks_page_driver.mjs ANSWERS IMAGE
 import { repoFile } from "../../../web-tests/repo_file.mjs";
 import { createRequire } from "node:module";
@@ -64,6 +65,8 @@ const done = async (code) => { await browser.close(); server.close(); process.ex
 const fail = async (what, seen) => { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); };
 const check = async (ok, what, seen) => { console.log((ok ? "ok    " : "FAIL  ") + what); if (!ok) await fail(what, seen); };
 
+// a summary mask the user lassoed on this image before, in the Viewer
+const MASKED = [[[0, 0], [60, 0], [60, 60], [0, 60]]];
 // the picture the study links to, served when picture is true (a small PNG of the repo's), else turned away like
 // every off-site request
 let picture = true;
@@ -73,6 +76,7 @@ async function open() {
   if (picture) await ctx.route("https://acme.example/dog.jpg", (r) => r.fulfill({ contentType: "image/png", body: fs.readFileSync(path.join(repo, "web", "poster.png")) }));
   await asTagger(ctx); // ground truth is made by a Ground Truth Tagger (req/shell/account/role)
   await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
+  await ctx.addInitScript(([k, m]) => localStorage.setItem(k, JSON.stringify(m)), ["nor-mask-v1:" + path.basename(image), MASKED]);
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);
@@ -90,95 +94,159 @@ const shown = (page, sel) => page.evaluate((s) => { const e = document.querySele
 // ---- a GT study: the tasks in the left bar, the image alone in the main area ----
 let page = await open();
 await check(await shown(page, "#tasks-box") && !(await shown(page, "#summary-box")), "Ground Truth Tasks is in the left bar, in Summary's place");
-await check(!(await shown(page, "#switch")) && !(await shown(page, "#tasks-bar")) && !(await shown(page, "#show-menu")), "no view switch, no tasks bar over the image, no Show menu");
+await check(!(await shown(page, "#switch")) && !(await shown(page, "#tasks-bar")), "no view switch, no tasks bar over the image");
 const tasks = await page.$$eval("#gt-tasks > li", (li) => li.map((l) => l.dataset.task));
 await check(JSON.stringify(tasks) === JSON.stringify(["pass", "fail", "missed", "submit"]), "the tasks in order: the finalists, the rejected, the missed NoRs, Submit", tasks);
 await check(await page.$eval("#dl-truth", (b) => !!b.closest('#gt-tasks > li[data-task="submit"]')), "Submit Ground Truth is the last task");
 
-// req/nor/truth/order: area by area, the rows of areas back and forth, top to bottom inside an area
-const order = await page.evaluate(() => {
-  const area = (c) => { const r = Math.min(9, Math.floor((c.cy / st.H) * 10)), k = Math.min(9, Math.floor((c.cx / st.W) * 10)); return [r, k, r * 10 + (r % 2 ? 9 - k : k)]; };
-  return ["pass", "fail"].map((t) => nor.taskItems(t).map((c) => ({ i: c.i, a: area(c), cy: c.cy, pass: st.fails[c.i] === null })));
-});
-for (const [t, xs] of [["finalists", order[0]], ["rejected", order[1]]]) {
-  const sorted = xs.every((x, k) => !k || xs[k - 1].a[2] < x.a[2] || (xs[k - 1].a[2] === x.a[2] && xs[k - 1].cy <= x.cy));
-  const areas = new Set(xs.map((x) => x.a[2])).size;
-  await check(xs.length > 2 && areas > 1 && sorted && xs.every((x) => x.pass === (t === "finalists")), `the ${t} (${xs.length}) come area by area, in ${areas} areas`, xs.map((x) => x.a));
+// req/nor/truth/order: one walk through the areas, the rows of areas back and forth; in each its finalists, its
+// rejected, the NoRs added there, each top to bottom, and last the area's check
+const area = (c, W, H) => { const r = Math.min(9, Math.floor((c.cy / H) * 10)), k = Math.min(9, Math.floor((c.cx / W) * 10)); return r * 10 + (r % 2 ? 9 - k : k); };
+const walk = () => page.evaluate(() => nor.walk().map((x) => ({ key: x.key, a: x.a, t: x.t, cy: x.c?.cy, cx: x.c?.cx, pass: x.c ? st.fails[x.c.i] === null : null })));
+let W = await walk();
+const [IW, IH] = await page.evaluate(() => [st.W, st.H]);
+{
+  const rank = { pass: 0, fail: 1, missed: 2 };
+  const bad = W.findIndex((x, k) => {
+    if (x.cy != null && area(x, IW, IH) !== x.a) return true;
+    if (x.t !== "missed" && x.pass !== (x.t === "pass")) return true;
+    const p = W[k - 1]; if (!p) return false;
+    if (p.a !== x.a) return p.key !== "a:" + p.a || p.a > x.a; // an area ends with its check, and the next follows
+    return p.key.startsWith("a:") || rank[p.t] > rank[x.t] || (p.t === x.t && p.cy > x.cy);
+  });
+  const areas = W.filter((x) => x.key.startsWith("a:")).length, cands = new Set(W.filter((x) => x.cy != null).map((x) => x.a)).size;
+  await check(bad < 0 && areas === 100 && cands > 1 && W.filter((x) => x.t === "pass").length > 2 && W.filter((x) => x.t === "fail").length > 2,
+    `one walk through the 100 areas, ${cands} of them holding candidates: finalists, rejected, added, then the area's check`, bad < 0 ? undefined : W.slice(Math.max(0, bad - 2), bad + 2));
 }
-const [P, F] = [order[0].length, order[1].length];
+const P = W.filter((x) => x.t === "pass").length, F = W.filter((x) => x.t === "fail").length;
+const isDone = (x) => page.evaluate((key) => nor.walk().find((y) => y.key === key)?.done, x.key);
+// the walk's next item not done after key
+const nextOpen = async (key) => {
+  const xs = await page.evaluate(() => nor.walk().map((x) => ({ key: x.key, done: x.done }))), k = xs.findIndex((x) => x.key === key);
+  return [...xs.slice(k + 1), ...xs.slice(0, Math.max(k, 0))].find((x) => !x.done)?.key ?? null;
+};
 
-const now = () => page.evaluate(() => ({ task: st.task, sel: st.sel, card: document.querySelector("#task-card .card")?.dataset.i,
+const now = () => page.evaluate(() => ({ cur: st.cur, task: st.task, sel: st.sel, card: document.querySelector("#task-card .card")?.dataset.i,
   rows: [...document.querySelectorAll("#gt-tasks > li")].map((l) => l.querySelector(".task-head").textContent.replace(/\s+/g, " ").trim()),
+  open: document.querySelector("#gt-tasks > li.now")?.dataset.task, back: !$("#task-back").disabled,
   bar: [...document.querySelectorAll("#gt-bar > span")].map((b) => ({ grow: +getComputedStyle(b).flexGrow, fill: +b.style.getPropertyValue("--done") })) }));
 let s = await now();
-await check(s.task === "pass" && s.card === String(order[0][0].i) && s.sel === order[0][0].i, "the finalists' task opens on its first candidate", s);
+await check(s.cur === W[0].key && !s.back, "the tasks open on the walk's first item, with nothing to go back to", s);
 // one row per task, each counting once, never saying "review"
-await check(s.rows[0].startsWith(`0/${P} Finalists`) && s.rows[1] === `0/${F} Rejected` && s.rows[2] === "0/100 Areas" && /Submit Ground Truth/.test(s.rows[3])
+await check(s.rows[0].startsWith(`0/${P} Finalists`) && s.rows[1].startsWith(`0/${F} Rejected`) && s.rows[2].startsWith("0/100 Areas") && /Submit Ground Truth/.test(s.rows[3])
   && !s.rows.some((r) => /review/i.test(r)) && await page.$$eval("#tasks-box", (b) => !/\d+ of \d+/.test(b[0].textContent)), "one row per task: 0/N Finalists, 0/N Rejected, 0/100 Areas, Submit", s.rows);
 // the bar, a part per task as long as the task, filled as far as done
 await check(s.bar.length === 3 && s.bar[0].grow === P && s.bar[1].grow === F && s.bar[2].grow === 100 && s.bar.every((b) => b.fill === 0), "the bar has a part per task, as long as the task", s.bar);
+
+// clicking a task goes to its next item along the walk
+await page.click('#gt-tasks > li[data-task="pass"] .task-head .t');
+const first = W.find((x) => x.t === "pass");
+s = await now();
+await check(s.cur === first.key && s.card === first.key.slice(2) && s.open === "pass", "clicking Finalists goes to the walk's first finalist, its row open", s);
 await check(await page.$$eval("#tasks-box .card", (c) => c.length) === 1, "one card at a time");
-await check(!(await page.$("#task-back")), "no Go back");
-// the open row carries the cogwheel and Skip; the card is the crop and big thumbs beside it
+// the open row carries the cogwheel, Back and Skip; the card is the crop and big thumbs under it
 const look = await page.evaluate(() => {
-  const r = (e) => e.getBoundingClientRect(), d = $("#task-card .card"), crop = r(d.querySelector(".crop canvas")), up = r(d.querySelector(".verdict .up")), card = r(d);
+  const r = (e) => e.getBoundingClientRect(), d = $("#task-card .card"), crop = r(d.querySelector(".crop canvas")), up = r(d.querySelector(".verdict .up"));
   const head = document.querySelector("#gt-tasks > li.now .task-head");
   const box = r($("#gt-tasks")), down = r(d.querySelector(".verdict .down"));
   return { share: crop.width / box.width, under: up.top >= crop.bottom - 1 && Math.abs(up.top - down.top) < 1 && down.left > up.left, big: up.width >= 60 && up.height >= 36,
     head: !!d.querySelector(".head, .num, .state, .goto"), ticks: [...document.querySelectorAll("#gt-tasks > li:not(.done) .tick")].filter((t) => t.offsetParent).length,
-    cog: !!head.querySelector("#card-menu summary svg") && !$("#card-menu summary").textContent.trim() && !$("#card-menu").open, skip: head.contains($("#task-skip")) && /skip/i.test($("#task-skip").textContent) };
+    cog: !!head.querySelector("#card-menu summary svg") && !$("#card-menu summary").textContent.trim() && !$("#card-menu").open,
+    skip: head.contains($("#task-skip")) && /skip/i.test($("#task-skip").textContent), back: head.contains($("#task-back")) && /back/i.test($("#task-back").textContent) };
 });
-await check(look.share >= 0.97 && look.under && look.big && !look.head && !look.ticks && look.cog && look.skip,
-  "the open row has the cogwheel and Skip; the crop takes the box's width, big thumbs side by side under it, no number or go-to, no marks on tasks not done", look);
+await check(look.share >= 0.97 && look.under && look.big && !look.head && !look.ticks && look.cog && look.skip && look.back,
+  "the open row has the cogwheel, Back and Skip; the crop takes the box's width, big thumbs side by side under it, no number or go-to, no marks on tasks not done", look);
 await page.click("#card-menu summary");
-await check(await page.evaluate(() => { const p = $("#card-menu .pop"), r = p.getBoundingClientRect(); return getComputedStyle(p).position === "absolute" && r.height > 40 && !!$("#opt-borders").offsetParent; }), "the cogwheel opens the options as a popup");
+await check(await page.evaluate(() => { const p = $("#card-menu .pop"), r = p.getBoundingClientRect(); return getComputedStyle(p).position === "absolute" && r.height > 40 && !!$("#opt-borders").offsetParent && !$("#sort").offsetParent; }),
+  "the cogwheel opens the options as a popup, with no sort");
 await page.click("#card-menu summary");
 
 // req/nor/truth/marks: waiting, a faint outline and nothing else; decided, cut out of the image
+const holes = () => page.evaluate(() => [...document.querySelectorAll("#gt-reveal rect")].map((r) => ["x", "y", "width", "height"].map((k) => +r.getAttribute(k))));
 const mark = (i) => page.evaluate((i) => {
   const g = document.querySelector(`#overlay g[data-i="${i}"]`), out = g.querySelector("path:not(.red)"), cs = getComputedStyle(out);
   const c = nor.candOf(i), holes = [...document.querySelectorAll("#gt-reveal rect")].map((r) => ["x", "y", "width", "height"].map((k) => +r.getAttribute(k)));
   const cut = holes.some(([x, y, w, h]) => x <= c.bb[0] - 2 + 1e-6 && y <= c.bb[1] - 2 + 1e-6 && x + w >= c.bb[2] + 2 - 1e-6 && y + h >= c.bb[3] + 2 - 1e-6);
   return { cls: g.getAttribute("class"), stroke: cs.stroke, opacity: +cs.strokeOpacity, outline: cs.display, num: getComputedStyle(g.querySelector(".num")).display, cut };
 }, i);
-let m = await mark(order[0][1].i);
+const second = W.filter((x) => x.t === "pass")[1];
+let m = await mark(+second.key.slice(2));
 await check(/\btodo\b/.test(m.cls) && m.opacity <= 0.4 && !m.cut && m.num === "none" && m.stroke === "rgb(255, 255, 255)", "a candidate waiting is a faint white outline, no number", m);
 const ring = await page.$eval("#overlay .ring", (r) => ({ shown: r.style.display !== "none", stroke: getComputedStyle(r).stroke }));
 await check(ring.shown && ring.stroke === "rgb(255, 212, 0)", "the current candidate has a yellow ring", ring);
+const frame = () => page.evaluate(() => { const f = document.querySelector("#overlay .area-frame"); return f && f.style.display !== "none" && getComputedStyle(f).display !== "none" ? ["x", "y", "width", "height"].map((k) => +f.getAttribute(k)) : null; });
+const rectOf = (a) => { const r = Math.floor(a / 10), k = r % 2 ? 9 - (a % 10) : a % 10; return [k * IW / 10, r * IH / 10, IW / 10, IH / 10]; };
+const same = (p, q) => !!p && !!q && p.every((v, k) => Math.abs(v - q[k]) < 1e-6);
+await check(same(await frame(), rectOf(first.a)), "the area the walk is in is framed", [await frame(), rectOf(first.a)]);
 // the picture the study names stands behind the whole image, shown only where it is cut out; black under it
 await page.waitForFunction(() => document.querySelector("#overlay image.reveal"));
 const pic = await page.evaluate(() => { const im = document.querySelector("#overlay image.reveal"), bg = document.querySelector("#overlay .reveal-bg"); return { href: im?.getAttribute("href"), clip: im?.getAttribute("clip-path"), w: +im?.getAttribute("width"), bg: bg && getComputedStyle(bg).fill, bgClip: bg?.getAttribute("clip-path") }; });
-await check(pic.href === "https://acme.example/dog.jpg" && /gt-reveal/.test(pic.clip) && /gt-reveal/.test(pic.bgClip) && pic.bg === "rgb(0, 0, 0)" && pic.w === (await page.evaluate(() => st.W)), "the picture the study links to, behind the whole image, black under it, shown only where it is cut out", pic);
+await check(pic.href === "https://acme.example/dog.jpg" && /gt-reveal/.test(pic.clip) && /gt-reveal/.test(pic.bgClip) && pic.bg === "rgb(0, 0, 0)" && pic.w === IW, "the picture the study links to, behind the whole image, black under it, shown only where it is cut out", pic);
 
-// a verdict moves on to the next candidate, and cuts the reviewed one out
+// req/nor/summary/mask: the mask shows only with the summary
+await check(await page.evaluate(() => st.mask.length === 1 && !document.querySelector("#overlay .mask-marks")), "the summary's mask is kept but not drawn while the study makes ground truth");
+
+// req/nor/show-menu: the Show menu above the image, its rows named for the tasks' markings
+await check(await shown(page, "#show-menu"), "the Show menu is above the image");
+await page.click("#show-menu summary");
+const rows = await page.$$eval("#show-menu .pop label", (l) => l.filter((x) => x.offsetParent).map((x) => x.textContent.trim()));
+await check(JSON.stringify(rows) === JSON.stringify(["Finalists", "Rejected", "Added NoRs", "Cut out what is done", "Frame the area"]), "its rows: Finalists, Rejected, Added NoRs, Cut out what is done, Frame the area", rows);
+const toggle = (label) => page.locator("#show-menu .pop label:visible", { hasText: label }).locator("input").click();
+const hidden = (sel) => page.evaluate((s) => [...document.querySelectorAll(s)].every((e) => getComputedStyle(e).display === "none"), sel);
+await toggle("Frame the area");
+await check(!(await frame()), "Frame the area off: no frame");
+await toggle("Frame the area");
+await toggle("Cut out what is done");
+await check(await hidden("#overlay .reveal-marks"), "Cut out what is done off: the image whole");
+await toggle("Cut out what is done");
+await toggle("Finalists");
+await check(await hidden(`#overlay g.pass.todo[data-i="${second.key.slice(2)}"]`), "Finalists off: no outline on a waiting finalist");
+await toggle("Finalists");
+await check(!(await hidden(`#overlay g.pass.todo[data-i="${second.key.slice(2)}"]`)) && await page.evaluate(() => JSON.parse(localStorage.getItem("nor-show-v1")).gtCut === true), "and back on, remembered");
+await page.click("#show-menu summary");
+
+// a verdict moves on along the walk, and cuts the reviewed one out
+const i0 = +first.key.slice(2);
 await page.click("#task-card .verdict .up");
 s = await now();
-await check(s.sel === order[0][1].i && s.card === String(order[0][1].i) && s.rows[0].startsWith(`1/${P} Finalists`) && s.bar[0].fill > 0, "a thumbs up moves on to the next candidate and fills the bar", s);
-m = await mark(order[0][0].i);
+let want = await nextOpen(first.key);
+await check(s.cur === want && s.rows[0].startsWith(`1/${P} Finalists`) && s.bar[0].fill > 0 && s.back, "a thumbs up moves on to the walk's next item and fills the bar", { s, want });
+m = await mark(i0);
 await check(/\byes\b/.test(m.cls) && m.cut && m.outline === "none", "voted up, its area is cut out of the image", m);
+// Back: the item before, to change a verdict
+await page.click("#task-back");
+s = await now();
+await check(s.cur === first.key && s.card === String(i0) && await page.$eval("#task-card .verdict .up", (b) => b.classList.contains("on")), "Back returns to the item before, showing its verdict", s);
 await page.click("#task-card .verdict .down");
-m = await mark(order[0][1].i);
-await check(/\bno\b/.test(m.cls) && m.cut && m.outline === "none", "voted down, its area is cut out too", m);
+m = await mark(i0);
 s = await now();
-await check(s.sel === order[0][2].i, "and on again", s);
-// Skip slides the next card in over the last, with no verdict
-const slide = await page.evaluate(() => { $("#task-skip").click(); return { sel: st.sel, anims: $("#task-card").getAnimations({ subtree: true }).length, leaving: document.querySelectorAll("#task-stage .leaving").length, cards: document.querySelectorAll("#task-card .card").length }; });
-await check(slide.sel === order[0][3].i && slide.anims > 0 && slide.leaving === 1 && slide.cards === 1, "Skip slides the next card in over the last", slide);
-await check((await now()).rows[0].startsWith(`2/${P} Finalists`), "and leaves the skipped one without a verdict");
+await check(/\bno\b/.test(m.cls) && m.cut && s.cur === want, "its verdict changed, voted down it is cut out too, and the walk goes on", { m, s });
+// Skip: the walk's next item not done, with no verdict
+const skipFrom = s.cur, slide = await page.evaluate(() => { $("#task-skip").click(); return { cur: st.cur, anims: $("#task-card").getAnimations({ subtree: true }).length, leaving: document.querySelectorAll("#task-stage .leaving").length, cards: document.querySelectorAll("#task-card .card").length }; });
+want = await nextOpen(skipFrom);
+await check(slide.cur === want && (!skipFrom.startsWith("c:") || !want.startsWith("c:") || (slide.anims > 0 && slide.leaving === 1 && slide.cards === 1)), "Skip slides the next item in over the last", { slide, want });
+await check(!(await isDone({ key: skipFrom })), "and leaves the skipped one without a verdict");
+await page.click("#task-back");
+await check((await now()).cur === skipFrom, "Back returns to the skipped one");
 
-// the last finalist decided moves on to the rejected
-await page.evaluate((xs) => { for (const x of xs.slice(0, -1)) if (!st.forced.get(x.i)) nor.decide(x.i, "approve"); }, order[0]);
-await page.click('#gt-tasks > li[data-task="pass"] .task-head .t');
+// a rejected candidate's card is a finalist's: turned level, with the bars and the adjusters; changed, it can be reset
+await page.click('#gt-tasks > li[data-task="fail"] .task-head .t');
 s = await now();
-await check(s.sel === order[0].at(-1).i, "clicking a task opens it at its first candidate with no verdict", s);
-await page.click("#task-card .verdict .up");
-s = await now();
-await check(s.task === "fail" && s.sel === order[1][0].i && s.rows[0].startsWith(`${P}/${P} Finalists`) && s.bar[0].fill === 1, "the finalists done, the rejected's task opens on its first", s);
-await check(await page.$eval('#gt-tasks > li[data-task="pass"]', (l) => l.classList.contains("done")), "a done task is checked");
-await check(await page.evaluate(() => st.tab === "fail" && /Rejected/.test($("#card-menu summary").getAttribute("aria-label")) && !!document.querySelector('#gt-tasks > li[data-task="fail"] #card-menu')), "the rejected's row has the rejected's options");
+await check(s.task === "fail" && s.open === "fail" && s.cur === W.find((x) => x.t === "fail").key, "clicking Rejected goes to the walk's next rejected candidate", s);
+const rcard = await page.evaluate(() => ({ bars: document.querySelectorAll("#task-card .marks .bar").length, handles: document.querySelectorAll("#task-card .handle").length, tag: !!document.querySelector("#task-card .tag"), reset: !!document.querySelector("#task-card .reset-lines") }));
+await check(rcard.bars === 3 && rcard.handles === 6 && !rcard.tag && !rcard.reset, "a rejected candidate's card has the measurement bars and the six adjusters", rcard);
+{
+  const h = page.locator('#task-card .handle[data-k="length"][data-j="1"]'); await h.scrollIntoViewIfNeeded();
+  const b = await h.boundingBox(); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await page.mouse.down();
+  await page.mouse.move(b.x + b.width / 2 + 15, b.y + b.height / 2 - 10, { steps: 5 }); await page.mouse.up();
+}
+const changed = await page.evaluate(() => ({ edits: st.edits.has(st.sel), text: $("#task-card .card").textContent, reset: $("#task-card .reset-lines")?.textContent.trim() }));
+await check(changed.edits && changed.reset === "Reset measurements" && !/Lengths adjusted/.test(changed.text), "its lengths changed, a Reset measurements button shows, and nothing else says so", changed);
+await page.click("#task-card .reset-lines");
+await check(await page.evaluate(() => !st.edits.has(st.sel) && !document.querySelector("#task-card .reset-lines")), "Reset measurements puts the finder's lengths back");
 
 // a candidate clicked on the image becomes the current one
-const target = order[0][2].i;
+const target = +W.filter((x) => x.t === "pass")[2].key.slice(2);
 await page.evaluate((i) => nor.focusOn(nor.candOf(i)), target);
 await page.waitForTimeout(600);
 const at = await page.evaluate((i) => { const r = document.querySelector(`#overlay g[data-i="${i}"] .hit`).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, target);
@@ -187,35 +255,44 @@ s = await now();
 await check(s.task === "pass" && s.sel === target && s.card === String(target), "a candidate clicked on the image is the current task's", s);
 await check(!(await shown(page, "#selected-box")), "no card hovers over the image");
 
-// the areas: each framed in turn; a right click adds a NoR there; No missed NoRs here checks the area and cuts it out
-await page.click('#gt-tasks > li[data-task="missed"] .task-head .t');
-await page.waitForTimeout(700); // the view pans smoothly to the area
-const area = () => page.evaluate(() => { const f = document.querySelector("#overlay .area-frame"); return { a: st.area, frame: f && f.style.display !== "none" && ["x", "y", "width", "height"].map((k) => +f.getAttribute(k)), W: st.W, H: st.H }; });
-let a = await area();
-await check(a.a === 0 && a.frame && a.frame[0] === 0 && a.frame[1] === 0 && Math.abs(a.frame[2] - a.W / 10) < 1e-6, "the areas' task frames the first area on the image", a);
-// Skip moves to the next area without checking it; five on, the area is clear of the minimap over the view's top left
-for (let k = 0; k < 5; k++) await page.click("#task-skip");
-await page.waitForTimeout(700);
-a = await area();
-await check(a.a === 5 && (await now()).rows[2].startsWith("0/100 Areas"), "Skip frames the next area, checking none", a);
+// an area done: every candidate in it decided, then its check; the whole area is cut out, and the walk enters the next
+const A = W.find((x) => x.t === "pass").a, inA = W.filter((x) => x.a === A && x.key.startsWith("c:"));
+await page.evaluate((ks) => { for (const k of ks.slice(1)) if (!st.forced.get(+k.slice(2))) nor.decide(+k.slice(2), "reject"); }, inA.map((x) => x.key));
+await page.evaluate((k) => nor.goTo(k), inA[0].key);
+await page.click("#task-card .verdict .up");
+s = await now();
+await check(s.cur === "a:" + A && s.task === "missed" && s.open === "missed" && same(await frame(), rectOf(A)) && !(await page.isDisabled("#area-ok")), "every candidate in the area decided, the walk comes to its check, the area framed", s);
+await check(!(await holes()).some((h) => same(h, rectOf(A))), "the area is not cut out before it is checked");
+// a NoR the finder missed, added in the area, waits for its verdict there
 const fr = await page.$eval("#overlay .area-frame", (f) => { const r = f.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
 await page.mouse.click(fr.x, fr.y, { button: "right" });
 await page.click("#ctx button");
 s = await now();
-await check(s.task === "missed" && s.sel === "u1" && s.card === "u1" && await page.isDisabled("#area-ok"), "an added NoR shows its card in the areas' task, and the area waits for its verdict", s);
+await check(s.cur === "c:u1" && s.card === "u1" && s.open === "missed" && await page.isDisabled("#area-ok"), "an added NoR is the current item, in the Areas task, and the area waits for it", s);
 await page.click("#task-card .verdict .up");
+s = await now();
+await check(s.cur === "a:" + A, "its verdict given, the walk is back at the area's check", s);
+// removed again, Back passes over it
+await page.mouse.click(fr.x, fr.y, { button: "right" });
+await check(/Remove/.test(await page.textContent("#ctx button")), "a right click on the added NoR offers to remove it");
+await page.click("#ctx button");
+await page.click("#task-back");
+s = await now();
+await check(s.cur !== null && s.cur !== "c:u1" && s.task !== "submit", "Back passes over an added NoR since removed", s);
+await page.evaluate((k) => nor.goTo(k), "a:" + A);
 await page.click("#area-ok");
-a = await area();
-const cutArea = await page.evaluate(() => [...document.querySelectorAll("#gt-reveal rect")].some((r) => Math.abs(+r.getAttribute("x") - st.W / 2) < 1e-6 && +r.getAttribute("y") === 0 && Math.abs(+r.getAttribute("width") - st.W / 10) < 1e-6));
-await check(a.a === 6 && cutArea && (await now()).rows[2].startsWith("1/100 Areas"), "No missed NoRs here checks the area, cuts it out and frames the next", { a, cutArea });
-await page.evaluate((xs) => { for (const x of xs) if (!st.forced.get(x.i)) nor.decide(x.i, "reject"); }, order[1]);
+s = await now();
+await check((await holes()).some((h) => same(h, rectOf(A))) && s.rows[2].startsWith("1/100 Areas") && s.cur === await nextOpen("a:" + A),
+  "No missed NoRs here cuts the whole area out and goes on to the walk's next item", s);
+
+// everything decided and every area checked: Submit
+await page.evaluate(() => { for (const x of nor.walk()) if (x.c && !x.done) nor.decide(x.c.i, "reject"); });
 for (let k = 0; k < 120 && await page.evaluate(() => st.task === "missed"); k++) await page.click("#area-ok");
 s = await now();
-await check(s.task === "submit" && s.rows[2] === "100/100 Areas" && (await page.$eval("#dl-truth", (b) => b.dataset.state)) === "done", "every area checked and every task done: Submit, its icon a check", s);
-await check(await page.$eval('#gt-tasks > li[data-task="missed"]', (l) => l.classList.contains("done")), "the areas' task is done");
+await check(s.task === "submit" && s.rows[2] === "100/100 Areas" && (await page.$eval("#dl-truth", (b) => b.dataset.state)) === "done", "every task done: Submit, its icon a check", s);
+await check(await page.$$eval('#gt-tasks > li[data-task="missed"], #gt-tasks > li[data-task="pass"], #gt-tasks > li[data-task="fail"]', (l) => l.every((x) => x.classList.contains("done"))), "every task is checked done");
 await page.close();
 
-// ---- a PreGT study: the summary and the item views, no tasks ----
 // ---- the picture's link failing: black, never the browser's broken-picture icon ----
 picture = false;
 page = await open();
@@ -226,8 +303,13 @@ await check(!none.image && none.bg === "rgb(0, 0, 0)", "a picture that cannot lo
 await page.close();
 picture = true;
 
+// ---- a PreGT study: the summary and its mask, the Show menu's viewing rows, no tasks and no item view ----
 stage = "PreGT";
 page = await open();
-await check(await shown(page, "#summary-box") && !(await shown(page, "#tasks-box")) && await shown(page, "#switch") && await shown(page, "#show-menu"),
-  "a PreGT study has its summary, its item views and its Show menu, and no tasks");
+await check(await shown(page, "#summary-box") && !(await shown(page, "#tasks-box")) && !(await shown(page, "#switch")) && await shown(page, "#show-menu"),
+  "a PreGT study has its summary and its Show menu, no tasks and no switch to an item view");
+await check(await page.evaluate(() => !!document.querySelector("#overlay .mask-marks .edge")), "the summary's mask is drawn with the summary");
+await page.click("#show-menu summary");
+const vrows = await page.$$eval("#show-menu .pop label", (l) => l.filter((x) => x.offsetParent).map((x) => x.textContent.trim()));
+await check(JSON.stringify(vrows) === JSON.stringify(["Finalists", "Rejected", "candidate numbers", "rejection reasons", "measuring lines"]), "its rows: Finalists and Rejected as the tasks name them, then the numbers, reasons and lines", vrows);
 await done(0);

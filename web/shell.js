@@ -398,12 +398,14 @@ function leaveStage() {
 stagePop.addEventListener("mouseenter", () => clearTimeout(stageLeaving));
 stagePop.addEventListener("mouseleave", leaveStage);
 const stageTruth = () => manifest.stage === "GT" || manifest.stage === "PostGT";
+// the study takes Ground Truth Taggers: every stage but Published, whose algorithm is trusted (req/shell/account/role)
+const takesTaggers = () => manifest.stage !== "Published";
 // the study makes ground truth for this user: a Ground Truth Tagger in a study that makes it (req/shell/account/role)
 const makesTruth = () => stageTruth() && role === "tagger";
 
 // ---------- the role the user works in (req/shell/account/role) ----------
 let role = "viewer";
-const rolesHeld = () => held({ signedIn: signIn.signedIn(), truth: stageTruth(), manager: data.manager });
+const rolesHeld = () => held({ signedIn: signIn.signedIn(), tagging: takesTaggers(), manager: data.manager });
 const keptRole = () => { try { return localStorage.getItem(ROLE); } catch { return null; } };
 // the role shown, as the study comes in: before its steps are drawn from it
 function takeRole() {
@@ -411,16 +413,16 @@ function takeRole() {
   role = shown(roles, keptRole());
   document.documentElement.dataset.role = role;
   const hint = roles.length > 1 ? "" : !signIn.signedIn() && signIn.offered
-    ? (stageTruth() ? "Sign in with Google to tag ground truth." : "Sign in with Google for the roles your studies give you.") : "";
+    ? (takesTaggers() ? "Sign in with Google to tag ground truth." : "Sign in with Google for the roles your studies give you.") : "";
   roleChooser.draw(roles, role, hint);
 }
 // the role shown again, once what it rests on may have changed (a choice, a sign-in, the settings synced): a change
-// between viewing and making ground truth opens the study afresh on the same image
+// to or from Ground Truth Tagger opens the study afresh on the same image
 function showRole() {
   if (!manifest) return;
-  const truth = makesTruth();
+  const tagger = role === "tagger";
   takeRole();
-  if (makesTruth() !== truth) return restudy();
+  if ((role === "tagger") !== tagger) return restudy();
   data.role(role === "data");
 }
 const roleChooser = roleMenu($("#role-menu"), (r) => {
@@ -435,8 +437,8 @@ const roleChooser = roleMenu($("#role-menu"), (r) => {
 // cards are the tasks that make it, and the switch says how many are left; otherwise they show what was found.
 // count(left, total) from the study, null until it has any; on(fn) hears the view now shown, "image" or "items".
 // An item view marked data-viewing only shows what was found: while the study makes ground truth it is not shown,
-// and the study lists its tasks itself.
-const itemsView = () => { const v = $("#items-view"); return v && !(makesTruth() && v.hasAttribute("data-viewing")) ? v : null; };
+// and the study lists its tasks itself. One marked data-shelved is not shown in any role.
+const itemsView = () => { const v = $("#items-view"); return v && !v.hasAttribute("data-shelved") && !(makesTruth() && v.hasAttribute("data-viewing")) ? v : null; };
 const views = {
   now: "image", left: null, total: null, heard: [],
   show(v) {

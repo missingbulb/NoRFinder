@@ -1,40 +1,32 @@
 ---
 name: writing-version-history
-description: Telling a change in the page's version history, web/version_history.md - folding what shipped, then working the change into the Next release story of at most three short paragraphs. Loaded for any edit of that file.
+description: Telling a change in the page's version history - the one Version-history line a pull request's commit message carries, at most 20 words a user reads. Use when a change alters what a user of the page sees, or when the version-history check fails a pull request.
 metadata:
   body: workflow
   usage:
     expect: triggered
-  force-load-on-file-edits-paths:
-    - "web/version_history.md"
 ---
 
 # Telling a change in the version history
 
-The history is what a user reads when they click the version: each release as a short story of
-what they can now do, not a ledger of pull requests. Next release is that story for the release
-being built, and every change rewrites it rather than appending to it.
+The history is what a user reads when they click the version. Each pull request tells its own
+change, so no two pull requests ever write to the same place.
 
-1. **Fold what already shipped**, so Next release holds only what has not:
+1. **Put one line in a commit message of the pull request**, on a line of its own:
 
    ```
-   python3 dev/tools/build/version_history.py fold
+   Version-history: In NoR Finder, clicking an empty spot on the image deselects the candidate.
    ```
 
-2. **Read Next release whole** and find where the change belongs in its story: a paragraph about
-   the same feature or the same part of the page. Rewrite that paragraph so the change is part of
-   it, and add the pull request to the numbers it ends with, `(#690, #697)`.
+   The last such line across the pull request's commits is the one that counts, so a later commit
+   rewords it. A change nobody using the page would notice says `Version-history: none`.
 
-3. **Start a paragraph only for a change no paragraph is about.** At most three paragraphs, each at
-   most 60 words not counting the numbers; the history test fails past either.
+2. **At most 20 words, in the user's words**: what they see and can do, naming buttons as the page
+   labels them, never the code, a file or the pull request's title.
 
-4. **Make room by weight, not by order.** When the story is full, condense the paragraphs, or leave
-   out what pales beside the rest: a fix or a polish next to a new study or a new tool. A change
-   left out is not listed at all, its number included. Leave out the change you are telling too
-   when it is the slightest.
+3. **Edit no file for it.** The squash merge carries the line onto main, and the site build places
+   it under the release that carried the pull request. `web/version_history.md` keeps the releases
+   told before, and is left alone.
 
-5. **Write in the user's words**: what they see and can do, naming buttons as the page labels them,
-   never the code, a file or a pull request's title.
-
-6. **Leave the released sections alone.** A release's paragraphs are what it said when it shipped;
-   the fold is the only thing that moves text there.
+The `version-history` job in the Tests workflow fails a pull request that changes `web/` or a
+study's `web/` without the line, or whose line runs past 20 words.

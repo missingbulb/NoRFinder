@@ -15,6 +15,7 @@ import path from "node:path";
 import { offSite } from "../../../web-tests/off_site.mjs";
 import { ENGINE } from "../../../web-tests/engine.mjs";
 import { asTagger } from "../../../web-tests/tagger.mjs";
+import { withItemView } from "./item_view_shown.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -69,6 +70,7 @@ const shot = async (page, name, sel) => { if (shots) await (sel ? page.locator(s
 async function open(gb) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   await asTagger(ctx);
+  await withItemView(ctx); // the switch to the shelved item view
   await ctx.route(offSite(origin), (r) => r.abort());
   await ctx.addInitScript((gb) => {
     delete Navigator.prototype.serviceWorker;
@@ -107,7 +109,7 @@ const unfold = async (page, box) => { await page.evaluate((b) => { const e = $(b
   await check(await page.evaluate(() => st.meta && !st.inflight), "it lets go once the candidates are drawn");
   const preset = "#presets button[data-preset=precise]";
   await page.evaluate(() => { for (const d of $("#filters").children) d.kept = true; });
-  await unfold(page, "#filters-box");
+  await unfold(page, "#finder-box"); await page.evaluate(() => { $("#filters-fold").open = true; });
   await page.click(preset);
   await check(await held(page, preset), "a filter preset is held while the filters run again");
   await free(page, preset);
