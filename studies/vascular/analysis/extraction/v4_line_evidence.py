@@ -10,7 +10,6 @@ ridge map, measured against the field's own typical vessel so the cut-off travel
 import os, sys
 
 import numpy as np
-from skimage.filters import sato
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE); sys.path.insert(0, os.path.join(HERE, '..'))
@@ -28,9 +27,8 @@ SHORT_WIDTHS = 10.0    # only dead ends shorter than this many widths are judged
 
 def extract(vol, um, source, z_step):
     m = v3.extract(vol, um, source, z_step)
-    z, keep = vm.noise_units(vol, um)
-    _, _, _, flat = vm.segment(z, keep, um)
-    ridge = sato(np.clip(flat, 0, None), sigmas=[s / um for s in v3.RIDGE_UM], black_ridges=False)
+    flat, _, _ = vm.flatten(vol, um)
+    ridge = v3.ridge_map(vol, um)
     m['repairs']['dead_ends_dropped'] = drop_unproven_dead_ends(m, flat, ridge)
     v2.renumber(m)
     m['algorithm'] = NAME

@@ -31,13 +31,18 @@ RIDGE_UM = (1.0, 1.5, 2.0, 3.0)   # ridge filter scales: capillary radii ~1-3 µ
 
 def extract(vol, um, source, z_step):
     m = v2.extract(vol, um, source, z_step)
-    z, keep = vm.noise_units(vol, um)
-    _, _, depth, flat = vm.segment(z, keep, um)
-    ridge = sato(np.clip(flat, 0, None), sigmas=[s / um for s in RIDGE_UM], black_ridges=False)
+    flat, depth, _ = vm.flatten(vol, um)
+    ridge = ridge_map(vol, um)
     m['repairs']['geodesic_bridges'] = geodesic_bridges(m, flat, ridge, depth)
     v2.renumber(m)
     m['algorithm'] = NAME
     return m
+
+
+def ridge_map(vol, um):
+    """The flattened signal's ridge strength at capillary widths."""
+    flat, _, _ = vm.flatten(vol, um)
+    return vm.once(vol, ('ridge', um), lambda: sato(np.clip(flat, 0, None), sigmas=[s / um for s in RIDGE_UM], black_ridges=False))
 
 
 def geodesic_bridges(m, flat, ridge, depth):

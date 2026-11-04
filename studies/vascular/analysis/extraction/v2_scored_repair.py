@@ -43,8 +43,7 @@ CROSS_SLICES = vm.AXIAL_HALF_SLICES   # ... and the two lines arrive this far ap
 
 def extract(vol, um, source, z_step):
     m = vm.model(vol, um, source, z_step, fill_lumens=True)
-    z, keep = vm.noise_units(vol, um)
-    _, _, depth, flat = vm.segment(z, keep, um)
+    flat, depth, _ = vm.flatten(vol, um)
     repair(m, flat, depth)
     m['algorithm'] = NAME
     return m

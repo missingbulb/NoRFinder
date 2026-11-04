@@ -48,14 +48,15 @@ def run(version, path, z_cache={}):
 
 
 def run_volume(version, vol, um, source, z_step):
-    """A version run on a CD31 volume [Z, Y, X] (float, µm per pixel um, z_step µm between slices or None), its
-    model scored: the model with its score card in it, and the card with the scorer's own fields."""
+    """A version run on a CD31 volume [Z, Y, X] (any number type, read slice by slice; µm per pixel um, z_step µm
+    between slices or None), its model scored: the model with its score card in it, and the card with the scorer's
+    own fields. What the version and the scorer both draw from the volume is computed once (vessel_model.shared)."""
     mod = importlib.import_module(VERSIONS[version])
-    t = time.time()
-    m = mod.extract(vol, um, source, z_step)
-    t_extract = time.time() - t
-    flat = sc.flat_signal(vol, um)
-    card = sc.score(m, flat)
+    with vm.shared(vol):
+        t = time.time()
+        m = mod.extract(vol, um, source, z_step)
+        t_extract = time.time() - t
+        card = sc.score(m, sc.flat_signal(vol, um))
     m['score'] = {k: v for k, v in card.items() if not k.startswith('_')}
     m['score']['seconds'] = round(t_extract, 1)
     return m, card
