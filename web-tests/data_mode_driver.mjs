@@ -126,8 +126,18 @@ await page.waitForFunction(() => document.documentElement.classList.contains("of
 await page.click(cell("e plain.tif") + " .mark-gt", { force: true });
 await page.waitForTimeout(300);
 await check(writes.length === before, "offline, marking an image does nothing", writes.slice(before));
+// Data Management as a whole needs the network: the column, the folder's box and Preprocessing say so and do nothing
+const held = () => page.evaluate(() => ["#data-col", "#folder-box", "#preprocessing-box"].map((s) => {
+  const el = $(s); return [s, el.getAttribute("aria-disabled") === "true" && /needs the internet/i.test(el.title) && +getComputedStyle(el).opacity < 1];
+}));
+await check((await held()).every(([, h]) => h), "offline, Data Management says it needs the internet", await held());
+const folded = () => page.evaluate(() => $("#data-open").getAttribute("aria-expanded"));
+await page.click("#data-open", { force: true });
+await page.waitForTimeout(300);
+await check(await folded() === "true", "and its chevron does nothing", await folded());
 await page.context().setOffline(false);
 await page.waitForFunction(() => !document.documentElement.classList.contains("offline"));
+await check((await held()).every(([, h]) => !h), "back online, Data Management works again", await held());
 
 await role(page, "Viewer");
 await page.waitForTimeout(600);
