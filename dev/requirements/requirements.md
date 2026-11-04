@@ -382,7 +382,7 @@ nobody has decided: what the page does there is not a requirement yet.
 
   GitHub's repository switcher, for studies: the study's icon (as in its list, below), its title and a solid caret form one 32 px
   control; it opens, under the caret, a 320 px panel headed "Switch study", a search box (focused,
-  filtering by title as the user types) and every study whose `study.json` says `"listed": true`,
+  filtering by title as the user types) and every study it shows to the user (`req/shell/study/visibility`),
   by title, each with its own icon (the tab's icon its `study.json` names; the generic study icon
   when it names none, or the icon does not load), a rule under its name, and a tick on the one on show. Arrow
   keys move through the list, Enter opens the one marked, Escape closes it. Each entry is a link to
@@ -977,8 +977,8 @@ nobody has decided: what the page does there is not a requirement yet.
   A study is `studies/<id>/` with a `study.json` that names everything the shell needs, and every
   file it names exists. The app runs the study its path names (`rauntruth.com/app/nor`), the Image
   Viewer (`req/shell/image-viewer`) at its bare address (`rauntruth.com/app/`); `?study=<id>` there opens the same
-  study and is rewritten to its path. The build publishes the page once more under each listed
-  study's id, so the path opens it fresh too, and refuses an id the app already serves at its
+  study and is rewritten to its path. The build publishes the page once more under the id of each study
+  the switcher can offer (`req/shell/study/visibility`), so the path opens it fresh too, and refuses an id the app already serves at its
   top. Adding a study changes nothing in `web/`, in the deploy's settings or in CI. Test:
   `web-tests/test_study_contract.py`, `web-tests/test_published_site.py`, `web-tests/test_study_runs.py`.
   </details>
@@ -1018,6 +1018,22 @@ nobody has decided: what the page does there is not a requirement yet.
   drops the steps that serve making it: the study's
   postprocessing (NoR's Filters fold in its Processing box, `req/nor/filters/live`) is not shown. A GT or PostGT study names its ground truth's label and button. The Image Viewer is PreGT,
   NoR Finder GT. Test: `web-tests/test_study_contract.py`, `web-tests/test_status_bar_page.py`.
+  </details>
+
+- `req/shell/study/visibility` A study declares who sees it: everyone, no one but by its address, or the Google accounts it names.
+  <details>
+
+  Set by the owner on 2026-11-04. Every `study.json` names its `visibility`: `"listed"` (the
+  header's switcher offers it to everyone, and the landing page lists it), `"unlisted"` (offered
+  nowhere, opened only by its address; the fixture) or `{"accounts": [email, …]}` (the switcher
+  offers it only while one of those accounts is signed in, and the landing page never lists it).
+  Opened at its address by anyone else, signed out or signed in with another account, the page
+  says the study is shown only to the accounts it names and opens the Image Viewer instead; signing
+  in with one of them offers it in the switcher at once. This hides a study from the page, not
+  from the network: its files are published like any other study's, so it holds nothing secret.
+  The Bookshelf Reader is shown to its owner's account alone. Test:
+  `web-tests/test_study_contract.py`, `web-tests/test_published_site.py`,
+  `web-tests/test_study_visibility_page.py`.
   </details>
 
 - `req/shell/study/switch-in-place` Switching study happens in place: no reload, and the new study starts with no image open.

@@ -86,7 +86,7 @@ const LOCK = { packages: Object.fromEntries(["numpy", "scipy", "scikit-image", "
 const SHARED = ["numpy", "pillow"].map((n) => PYODIDE + LOCK.packages[n].file_name), OWN = PYODIDE + LOCK.packages[OWN_PACKAGE].file_name;
 // the studies the build lists, as it lists them
 const LISTED = JSON.stringify(fs.readdirSync(path.join(repo, "studies")).filter((d) => fs.existsSync(path.join(repo, "studies", d, "study.json")))
-  .map((d) => JSON.parse(fs.readFileSync(path.join(repo, "studies", d, "study.json")))).filter((m) => m.listed)
+  .map((d) => JSON.parse(fs.readFileSync(path.join(repo, "studies", d, "study.json")))).filter((m) => m.visibility === "listed")
   .map((m) => ({ id: m.id, title: m.title })).sort((a, b) => a.title.localeCompare(b.title)));
 
 const ctx = await keptContext(pw, { viewport: { width: 1400, height: 900 } });

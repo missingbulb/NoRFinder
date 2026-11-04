@@ -129,20 +129,20 @@ def test_the_wrangler_config_builds_and_publishes_the_site_tree():
 
 
 def listed_studies(tmp_path, *studies):
-    for sid, listed in studies:
+    for sid, visibility in studies:
         os.makedirs(tmp_path / 'studies' / sid)
-        (tmp_path / 'studies' / sid / 'study.json').write_text(json.dumps(dict(id=sid, title=sid.title(), listed=listed)))
+        (tmp_path / 'studies' / sid / 'study.json').write_text(json.dumps(dict(id=sid, title=sid.title(), visibility=visibility)))
     return str(tmp_path)
 
 
 def test_each_listed_study_is_published_under_its_own_path(tmp_path):
     """req/shell/study/folder-and-address: rauntruth.com/app/<id> is the page, published again as app/<id>.html, which Cloudflare serves at /app/<id>."""
-    root = listed_studies(tmp_path, ('alpha', True), ('hidden', False))
-    assert build.study_pages(root, {'index.html', 'shell.js'}) == ['alpha.html']
+    root = listed_studies(tmp_path, ('alpha', 'listed'), ('hidden', 'unlisted'), ('mine', {'accounts': ['me@example.com']}))
+    assert build.study_pages(root, {'index.html', 'shell.js'}) == ['alpha.html', 'mine.html']
 
 
 def test_a_study_whose_path_the_site_already_serves_is_refused(tmp_path):
-    root = listed_studies(tmp_path, ('vendor', True))
+    root = listed_studies(tmp_path, ('vendor', 'listed'))
     for taken in ({'vendor'}, {'vendor.html'}):
         try:
             build.study_pages(root, taken)
@@ -188,9 +188,12 @@ def test_the_landing_page_opens_the_app_and_lists_every_listed_study(tmp_path):
     landing = (tmp_path / 'index.html').read_text()
     assert re.search(r'<a [^>]*href="app/"', landing), 'the landing page does not open the app'
     assert len(build.studies(ROOT)) >= 3
-    for s in build.studies(ROOT):
+    for s in (s for s in build.studies(ROOT) if 'accounts' not in s):
         assert re.search(rf'<a [^>]*href="app/{s["id"]}"[^>]*>[^<]*{re.escape(s["title"])}', landing), s
     assert not re.search(r'href="app/fixture"', landing), 'an unlisted study is offered on the landing page'
+    for s in build.studies(ROOT):
+        if 'accounts' in s:
+            assert not re.search(rf'href="app/{s["id"]}"', landing), f'{s["id"]}, shown to named accounts alone, is offered on the landing page'
     assert 'src="analytics.js"' in landing
 
 

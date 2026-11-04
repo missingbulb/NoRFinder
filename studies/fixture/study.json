@@ -1,7 +1,7 @@
 {
   "id": "fixture",
   "title": "Fixture",
-  "listed": false,
+  "visibility": "unlisted",
   "stage": "GT",
   "icon": "web/icon.svg",
   "phases": [

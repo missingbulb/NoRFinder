@@ -1,7 +1,7 @@
 {
   "id": "vascular",
   "title": "Vascular Measurements",
-  "listed": true,
+  "visibility": "listed",
   "stage": "GT",
   "icon": "web/icon.svg",
   "phases": [

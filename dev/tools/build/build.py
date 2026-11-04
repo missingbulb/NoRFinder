@@ -46,10 +46,13 @@ def wheels():
 
 
 def studies(root):
-    """The studies the header's switcher offers, [{id, title, icon?}] by title: those whose study.json lists them,
-    with the icon it names, if any, relative to the study's folder."""
+    """The studies the header's switcher may offer (req/shell/study/visibility), [{id, title, icon?, accounts?}] by title:
+    the listed ones, and those shown to named accounts alone with those accounts, for the page to offer only while one
+    is signed in; the icon each names, if any, relative to the study's folder."""
     found = [json.load(open(p)) for p in glob.glob(os.path.join(root, 'studies', '*', 'study.json'))]
-    return sorted(({k: m[k] for k in ('id', 'title', 'icon') if k in m} for m in found if m['listed']), key=lambda m: m['title'])
+    entry = lambda m: {**{k: m[k] for k in ('id', 'title', 'icon') if k in m},
+                       **({'accounts': m['visibility']['accounts']} if isinstance(m['visibility'], dict) else {})}
+    return sorted((entry(m) for m in found if m['visibility'] != 'unlisted'), key=lambda m: m['title'])
 
 
 def study_pages(root, top):
@@ -145,7 +148,7 @@ def assemble(root, out, env):
         with open(os.path.join(app, page), 'w') as f:
             f.write(study_head(index, json.load(open(os.path.join(root, 'studies', sid, 'study.json')))))
     landing = os.path.join(out, 'index.html')
-    text = list_browsers(list_studies(open(landing).read(), studies(root)), json.load(open(os.path.join(root, 'web', 'browsers.json')))['supported'])
+    text = list_browsers(list_studies(open(landing).read(), [s for s in studies(root) if 'accounts' not in s]), json.load(open(os.path.join(root, 'web', 'browsers.json')))['supported'])
     with open(landing, 'w') as f:
         f.write(text)
     for d, _, fs in os.walk(out):
