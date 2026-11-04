@@ -20,8 +20,10 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ⊘ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ⊘ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load | ● | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image selector | ● | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Google Drive button | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load Original | ○ | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;Selected Folder | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;Preprocessing | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Edit Image | ⊘ | ⊘ | ⊘ | ⊘ |
@@ -61,8 +63,10 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ⊘ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ⊘ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load | ● | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image selector | ● | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Google Drive button | ● | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load Original | ○ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ |
 | &nbsp;&nbsp;Selected Folder | ○ | ○ | ○ |
 | &nbsp;&nbsp;Preprocessing | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Edit Image | ⊘ | ⊘ | ⊘ |
@@ -102,8 +106,10 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ⊘ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ⊘ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load | ● | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image selector | ● | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Google Drive button | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load Original | ○ | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;Selected Folder | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;Preprocessing | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Edit Image | ⊘ | ⊘ | ⊘ | ⊘ |
@@ -143,8 +149,10 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ⊘ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ⊘ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load | ● | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image selector | ● | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Google Drive button | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load Original | ○ | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;Selected Folder | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;Preprocessing | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Edit Image | ⊘ | ⊘ | ⊘ | ⊘ |
@@ -184,8 +192,10 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ⊘ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ⊘ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load | ● | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image selector | ● | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Google Drive button | ● | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load Original | ○ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ |
 | &nbsp;&nbsp;Selected Folder | ○ | ○ | ○ |
 | &nbsp;&nbsp;Preprocessing | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Edit Image | ⊘ | ⊘ | ⊘ |
@@ -225,8 +235,10 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ⊘ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ⊘ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load | ● | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image selector | ● | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Google Drive button | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load Original | ○ | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;Selected Folder | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;Preprocessing | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Edit Image | ⊘ | ⊘ | ⊘ | ⊘ |
@@ -266,8 +278,10 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ⊘ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ⊘ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load | ● | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image selector | ● | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Google Drive button | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load Original | ○ | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;Selected Folder | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;Preprocessing | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Edit Image | ⊘ | ⊘ | ⊘ | ⊘ |
@@ -307,8 +321,10 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ⊘ | ⊘ | ● | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ⊘ | ⊘ | ● | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load | ○ | ⊘ | ○ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image selector | ⊘ | ⊘ | ⊘ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Unload | ⊘ | ⊘ | ⊘ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Google Drive button | ⊘ | ⊘ | ⊘ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load Original | ○ | ⊘ | ● | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⊘ | ● | ⋯ |
 | &nbsp;&nbsp;Selected Folder | ○ | ● | ○ | ○ |
 | &nbsp;&nbsp;Preprocessing | ▸ | ▸ | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Edit Image | ⋯ | ⋯ | ● | ● |

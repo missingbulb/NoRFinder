@@ -62,16 +62,20 @@
               ]
             },
             {
-              "name": "Load", "select": "#load", "req": "req/shell/load/button",
-              "rule": [{ "when": { "role": ["data"] }, "is": "hidden", "req": "req/shell/data/mode" }]
+              "name": "Load", "select": "#load", "req": "req/shell/load/selector",
+              "rule": [{ "when": { "role": ["data"] }, "is": "hidden", "req": "req/shell/data/mode" }],
+              "children": [
+                { "name": "Image selector", "select": "#image-pick", "req": "req/shell/load/selector" },
+                {
+                  "name": "Unload", "select": "#unload", "control": true, "req": "req/shell/load/selector",
+                  "rule": [{ "when": { "image": ["none"] }, "is": "hidden" }]
+                },
+                { "name": "Google Drive button", "select": "#load-drive", "control": true, "req": "req/shell/load/selector" }
+              ]
             },
             {
               "name": "Load Original", "select": "#load-original", "control": true, "req": "req/shell/data/preview-images",
               "rule": [{ "when": { "image": ["none", "local", "original"] }, "is": "hidden" }]
-            },
-            {
-              "name": "Unload", "select": "#unload", "control": true, "req": "req/shell/load/button",
-              "rule": [{ "when": { "image": ["none"] }, "is": "hidden" }]
             }
           ]
         },
