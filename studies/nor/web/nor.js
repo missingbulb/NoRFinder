@@ -542,7 +542,7 @@ export function mount(shell) {
   // says the ground truth is complete, so the crumb never moves on while the button says it cannot
   function steps() {
     const ran = !!st.meta && runKey() === st.lastRun, finalists = (st.passes || []).filter((c) => !c.added);
-    const name = st.names[$("#finder").value];
+    const name = st.names?.[$("#finder").value];
     shell.step("find", ran, ran ? `${name}: ${st.order.length} candidates, ${finalists.length} finalists` : st.lastRun ? "The finder or its settings changed since the last run." : "");
     shell.boxDone($("#finder-box"), ran ? `${name} executed` : null);
     const gt = gtState(), left = gt.items.filter((t) => t.grade && !t.ok).map((t) => t.text + ".");
