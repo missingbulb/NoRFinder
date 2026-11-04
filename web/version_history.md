@@ -10,14 +10,21 @@ carried all its pull requests. The `writing-version-history` skill says how.
 
 ## Next release
 
+In Vascular Measurements, Processing lists each algorithm with its own icon, a name and its
+precision and recall, and How the algorithm works gives its steps one by one. Execute draws the
+vessel model several times faster and with a fraction of the memory, and the weakest algorithm,
+skeleton, is no longer offered. (#744)
+
+## 0.11104.84
+
 Pick your role from the new menu beside your avatar. Viewer shows what a study finds. Ground Truth
 Tagger turns the left bar into a to-do list, one item at a time, each finished one cut out of the
 image: NoR Finder's finalists, rejected and areas; in Vascular Measurements, once Execute draws the
 vessel model, its vessels, junctions and areas. (#705, #720, #731)
 
-A z-stack opens in 3D only and a flat image in 2D, in every study, a plain multi-page TIFF as
-a stack too. The Image box holds each channel on one line and, for a stack, the slices shown and
-their spacing; the 3D view keeps Zoom and Look from. Edit Image on stacks leaves out Crop and
+A z-stack opens in 3D only and a flat image in 2D, in every study, a plain multi-page TIFF as a
+stack too. The Image box holds each channel on one line and, for a stack, the slices shown and their
+spacing; the 3D view keeps Zoom and Look from. Edit Image on stacks leaves out Crop and
 Imperfections. (#702, #707, #708, #713, #731)
 
 The left bar collapses and opens from the chevron at its top, or by dragging its edge, and a folded
