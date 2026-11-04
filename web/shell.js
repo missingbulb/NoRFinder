@@ -198,8 +198,8 @@ $("#usage-dlg .tab-row").onclick = (e) => { const t = e.target.closest("[role=ta
 
 // ---------- the resources block: the disk, memory, network and CPU folded into one icon ----------
 // (req/shell/status-bar/resources) Auto-hiding, it unfolds while hovered, and while something needs watching: the
-// page offline, the CPU over RAISE_CPU or the network over RAISE_RATE for RAISE_AFTER_MS, the tab over RAISE_RAM;
-// it folds RAISE_LINGER_MS after the last of them ends.
+// CPU over RAISE_CPU or the network over RAISE_RATE for RAISE_AFTER_MS, the tab over RAISE_RAM; it folds
+// RAISE_LINGER_MS after the last of them ends.
 const RES_MODES = ["hidden", "auto", "open"];
 const RAISE_CPU = 0.5, RAISE_RATE = 250 * 1024, RAISE_RAM = 2 ** 30, RAISE_AFTER_MS = 5000, RAISE_LINGER_MS = 8000;
 const raise = { cpuSince: null, netSince: null, until: 0 };
@@ -215,7 +215,7 @@ function raiseResources(cpuShare, rate) {
   const t = Date.now(), long = (since) => since != null && t - since > RAISE_AFTER_MS;
   raise.cpuSince = cpuShare > RAISE_CPU ? raise.cpuSince ?? t : null;
   raise.netSince = rate > RAISE_RATE ? raise.netSince ?? t : null;
-  const watch = document.documentElement.classList.contains("offline") || long(raise.cpuSince) || long(raise.netSince) || memoryNow().total > RAISE_RAM;
+  const watch = long(raise.cpuSince) || long(raise.netSince) || memoryNow().total > RAISE_RAM;
   if (watch) raise.until = t + RAISE_LINGER_MS;
   $("#sb-res").classList.toggle("raised", t < raise.until);
 }
