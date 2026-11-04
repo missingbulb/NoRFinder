@@ -136,12 +136,22 @@ try {
     await im.put(url("ID9"), new Response(new Uint8Array(2048), { headers: { "x-nor-name": "old.tif" } }));
   }, { core: CORE, shared: SHARED, own: OWN });
 
-  // req/shell/offline/mark: a study whose Python is all here is marked in the switcher, with what that means on hover
+  // req/shell/offline/mark: a study whose Python is all here is marked in the switcher, green, a state rather than a
+  // prompt: no tooltip and no question-mark pointer, what it means said to assistive tech only
   await page.click("#study-menu summary");
   await page.waitForFunction(() => document.querySelector('#study-list a[data-id="viewer"] .offline-mark'), null, { timeout: 5000 }).catch(() => {});
-  const marks = await page.$$eval("#study-list a", (as) => as.map((a) => ({ id: a.dataset.id, mark: a.querySelector(".offline-mark")?.title || "" })));
-  check(/without the internet/.test(marks.find((m) => m.id === "viewer")?.mark) && !marks.find((m) => m.id === "nor")?.mark,
+  const marks = await page.$$eval("#study-list a", (as) => as.map((a) => {
+    const m = a.querySelector(".offline-mark"), cs = m && getComputedStyle(m);
+    const end = Math.max(...[...a.children].filter((c) => c.offsetParent).map((c) => c.getBoundingClientRect().right));
+    return { id: a.dataset.id, mark: m?.getAttribute("aria-label") || "", title: m?.title || "", cursor: cs?.cursor, colour: cs?.color, room: a.getBoundingClientRect().right - end };
+  }));
+  const green = await page.evaluate(() => { const s = document.createElement("span"); s.style.color = "var(--yes)"; document.body.append(s); const c = getComputedStyle(s).color; s.remove(); return c; });
+  const viewerMark = marks.find((m) => m.id === "viewer") || {};
+  check(/without the internet/.test(viewerMark.mark) && !marks.find((m) => m.id === "nor")?.mark,
     `the switcher marks the study whose Python is all here, and only it: ${JSON.stringify(marks)}`);
+  check(viewerMark.colour === green && !viewerMark.title && viewerMark.cursor !== "help",
+    `the mark is green, with no tooltip and no question-mark pointer: ${JSON.stringify({ ...viewerMark, green })}`);
+  check(marks.every((m) => m.room >= 8), `each row keeps 8 px at its right, past its mark and stage: ${JSON.stringify(marks.map((m) => m.room))}`);
   await page.click("#study-menu summary");
 
   const avatar = await page.$("header #user-menu summary img, header #user-menu summary svg");
@@ -256,7 +266,7 @@ try {
   check(names("study:nor", "image").join() === DRIVE[0].name && /\d/.test(g["study:nor"].find((e) => e.kind === "image").size), `the link opens Manage storage, which lists the saved image in its study: ${JSON.stringify(g["study:nor"])}`);
   await page.click("#usage-dlg button[value=close]");
   // req/shell/offline/mark: in the Drive dialog, still open beneath, the kept image is marked, the other not
-  const rowMarks = await page.$$eval("#drive-list .item:not(.folder)", (rs) => rs.map((r) => r.querySelector(".offline-mark")?.title || ""));
+  const rowMarks = await page.$$eval("#drive-list .item:not(.folder)", (rs) => rs.map((r) => r.querySelector(".offline-mark")?.getAttribute("aria-label") || ""));
   check(/without the internet/.test(rowMarks[0]) && !rowMarks[1], `the Drive dialog marks the image kept on this device, and only it: ${JSON.stringify(rowMarks)}`);
 
   await page.uncheck("#drive-autosave");

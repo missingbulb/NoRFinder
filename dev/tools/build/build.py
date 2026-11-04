@@ -46,10 +46,10 @@ def wheels():
 
 
 def studies(root):
-    """The studies the header's switcher offers, [{id, title, icon?}] by title: those whose study.json lists them,
-    with the icon it names, if any, relative to the study's folder."""
+    """The studies the header's switcher offers, [{id, title, stage, icon?}] by title: those whose study.json lists them,
+    with their stage and the icon it names, if any, relative to the study's folder."""
     found = [json.load(open(p)) for p in glob.glob(os.path.join(root, 'studies', '*', 'study.json'))]
-    return sorted(({k: m[k] for k in ('id', 'title', 'icon') if k in m} for m in found if m['listed']), key=lambda m: m['title'])
+    return sorted(({k: m[k] for k in ('id', 'title', 'stage', 'icon') if k in m} for m in found if m['listed']), key=lambda m: m['title'])
 
 
 def study_pages(root, top):

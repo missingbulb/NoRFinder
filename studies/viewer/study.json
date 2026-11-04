@@ -3,7 +3,7 @@
   "title": "Image Viewer",
   "listed": true,
   "icon": "web/icon.svg",
-  "stage": "PreGT",
+  "stage": null,
   "phases": [],
   "viewer": "image3d",
   "python": {
