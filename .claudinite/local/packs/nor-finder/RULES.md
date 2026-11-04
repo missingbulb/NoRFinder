@@ -49,6 +49,12 @@ not belong here — propose it to the Claudinite canon instead, where every repo
   stage) — load the `designing-ground-truth-tasks` skill first: the tasks in the left bar, one
   item at a time, area by area, what is done cut out of the image. (designing-ground-truth-tasks)
 
+## The shell's states
+
+- **Working with `dev/requirements/shell-states.json` or what it generates** — treat it as a development harness
+  the owner does not review: never present a case there as approved, and bring each tentative or undecided case,
+  and each change to what a state shows, to the owner as a question. (shell-states-unreviewed)
+
 ## Merging
 
 - **A small pull request fixing a bug** — merge it yourself, unasked, once its first commit added
