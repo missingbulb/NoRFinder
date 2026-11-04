@@ -10,6 +10,9 @@ carried all its pull requests. The `writing-version-history` skill says how.
 
 ## Next release
 
+Back online, the status bar says so within seconds, even while the site copies a release that landed
+meanwhile. Going offline no longer unfolds the disk, memory, network and CPU: the red Wi-Fi icon says it. (#741)
+
 ## 0.11104.84
 
 Pick your role from the new menu beside your avatar. Viewer shows what a study finds. Ground Truth
