@@ -1,9 +1,20 @@
 # Version history
 
-The releases up to 0.11104.86, in the words the page's users read: clicking the version in the
+The releases up to 0.11104.87, in the words the page's users read: clicking the version in the
 status bar shows them, after the releases since. Those are told by each pull request on its own, in
 a `Version-history:` line of one of its commit messages, which the site build reads from main's
 history; this file only keeps what was told before, and no pull request edits it.
+
+## 0.11104.87
+
+Back online, the status bar says so within seconds, even while the site copies a release that landed
+meanwhile. Going offline no longer unfolds the disk, memory, network and CPU: the red Wi-Fi icon
+says it, and Data Management says it needs the internet and waits. (#741, #746)
+
+NoR Finder's Ground Truth Tagger now works one area of the image at a time: its finalists, its
+rejected, then No missed NoRs here, and the whole area is cut out. Back returns to the last item, to
+change your mind. Rejected candidates get the finalists' measurement bars, and Show above the image
+switches the tagging marks. (#739)
 
 ## 0.11104.86
 
@@ -12,17 +23,14 @@ precision and recall, and How the algorithm works gives its steps one by one. Ex
 vessel model several times faster and with a fraction of the memory, and the weakest algorithm,
 skeleton, is no longer offered. (#744)
 
-Back online, the status bar says so within seconds, even while the site copies a release that landed
-meanwhile. Going offline no longer unfolds the disk, memory, network and CPU: the red Wi-Fi icon
-says it. (#741)
-
-In NoR Finder, clicking the image where there is no candidate now deselects the selected one, as
-clicking it again already did. (#743)
-
 ## 0.11104.85
 
 In NoR Finder, what you finish as a Ground Truth Tagger now uncovers a golden retriever behind the
 image, more of it with every verdict and every area checked. (#738)
+
+Ground Truth Tagger is now offered in studies still in PreGT too, and a study's postprocessing shows
+only to its taggers. Offline, Data Management says it needs the internet and waits until you are
+back online. (#746)
 
 ## 0.11104.84
 

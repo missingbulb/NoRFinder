@@ -14,6 +14,7 @@ import path from "node:path";
 import { offSite } from "../../../web-tests/off_site.mjs";
 import { ENGINE } from "../../../web-tests/engine.mjs";
 import { asTagger } from "../../../web-tests/tagger.mjs";
+import { withItemView } from "./item_view_shown.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -70,6 +71,7 @@ let stage = "PreGT";
 for (const width of [1000, 1600]) {
   const ctx = await browser.newContext({ viewport: { width, height: 900 } });
   await asTagger(ctx);
+  await withItemView(ctx); // the switch to the shelved item view
   await ctx.route(offSite(origin), (r) => r.abort());
   await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; localStorage.setItem("nor-bars-v1", JSON.stringify({ left: 200, right: 200 })); });
   const page = await ctx.newPage();
@@ -146,7 +148,10 @@ for (const width of [1000, 1600]) {
   await page.setInputFiles("#file", image);
   await page.waitForFunction(() => !document.querySelector("#find").disabled);
   await page.click("#find");
-  await page.waitForFunction(() => st.alone && $("#busy").hidden && document.querySelector("#task-card canvas"));
+  await page.waitForFunction(() => st.alone && $("#busy").hidden);
+  // the walk may open on an area's check; the finalists' row goes to a candidate
+  await page.click('#gt-tasks > li[data-task="pass"] .task-head .t');
+  await page.waitForFunction(() => document.querySelector("#task-card canvas"));
   const got = await measure(page), task = got.filter((g) => g.where === "task-card").length;
   console.log(`${width}px GT: ${got.length} images, ${task} task card`);
   if (task !== 1) { console.error("no task card drawn in the left bar"); await done(1); }

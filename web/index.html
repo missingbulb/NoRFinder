@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>rauntruth.com app</title>
-<meta name="version" id="site-version" title="version 0.11104.86">
+<meta name="version" id="site-version" title="version 0.11104.87">
 <meta name="description" content="Image studies that run in your browser: find, count and measure in microscopy images, then review every result. Online or offline.">
 <link rel="icon" id="favicon" href="icon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
@@ -63,7 +63,7 @@
 </header>
 
 <div id="layout">
-  <aside id="data-col" aria-label="Data Management" hidden>
+  <aside id="data-col" aria-label="Data Management" data-needs-network hidden>
     <button id="data-open" type="button" aria-expanded="true" title="Fold or open the study's folders"><svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg><span class="strip-name">Data Management</span></button>
     <div id="data-body">
       <div class="data-head"><h2>Folders</h2><button id="data-approve" type="button" class="link" data-needs-network hidden></button></div>
@@ -95,7 +95,7 @@
       </div>
     </section>
 
-    <section class="box foldable" id="folder-box">
+    <section class="box foldable" id="folder-box" data-needs-network>
       <div class="sec-head"><h2>Selected Folder</h2></div>
       <div id="folder-name"></div>
       <dl id="folder-summary"></dl>
@@ -103,7 +103,7 @@
       <p id="folder-msg" class="hint" role="status"></p>
     </section>
 
-    <section class="box foldable" id="preprocessing-box" data-opens="load">
+    <section class="box foldable" id="preprocessing-box" data-opens="load" data-needs-network>
       <div class="sec-head"><h2>Preprocessing</h2></div>
       <div class="steps">
         <button id="edit-open" type="button" disabled title="Split, crop, keep slices and channels, and leave out imperfections, seeing the result before you save it">Edit Image</button>

@@ -273,7 +273,7 @@ button.tool[aria-pressed=true] { border-color: var(--accent); box-shadow: inset 
 /* a published study shows what it finds: the steps that serve making ground truth go */
 [data-stage=Published] .unpublished { display: none !important; }
 /* nothing that makes ground truth but for a Ground Truth Tagger (req/shell/account/role) */
-:root:is([data-stage=GT], [data-stage=PostGT]):not([data-role=tagger]) .unpublished { display: none !important; }
+:root:not([data-role=tagger]) .unpublished { display: none !important; }
 #switch .count { opacity: .7; font-weight: 400; }
 #switch .count:empty { display: none; }
 #tasks-bar { display: flex; gap: 10px; align-items: center; min-height: 44px; padding: 0 var(--pad); border-bottom: 1px solid var(--line); font-size: 13px; }
@@ -340,7 +340,9 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 /* the minimap folding into its toolbar button and unfolding out of it: one shape morphing between the two
    places along an arc, the minimap folding over its header like paper as it shrinks, the button lighting
    up as it lands; the rest of the page holds still */
-:root[data-mm-fly] #minimap, :root[data-mm-fly] #minimap-btn[aria-pressed="false"] { view-transition-name: minimap; }
+:root[data-mm-fly] #minimap, :root[data-mm-fly] .mm-flier { view-transition-name: minimap; }
+.mm-flier { pointer-events: none; }
+.mm-flier[hidden] { display: none; }
 :root[data-mm-fly]::view-transition-old(root), :root[data-mm-fly]::view-transition-new(root) { animation: none; }
 ::view-transition-group(minimap) { animation-duration: .55s; animation-timing-function: cubic-bezier(.55, 0, .25, 1); }
 ::view-transition-image-pair(minimap) { animation: mm-arc .55s cubic-bezier(.45, 0, .3, 1); perspective: 500px; }
