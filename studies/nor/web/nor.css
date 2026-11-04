@@ -190,7 +190,7 @@
 
 /* Ground Truth Tasks, in Summary's place while the study makes ground truth: a bar of a part per task, then a
    row per task, the open one with its tools on its row and its item's card under it */
-#summary-box[hidden], #tasks-box[hidden], #task-now[hidden], #card-menu[hidden], #task-tools[hidden] { display: none; }
+#summary-box[hidden], #tasks-box[hidden], #task-now[hidden], #card-menu[hidden], #task-tools[hidden], #area-check[hidden], #show-menu [hidden] { display: none; }
 #gt-bar { display: flex; gap: 3px; height: 8px; margin-bottom: 10px; }
 #gt-bar > span { flex: 1 1 0; min-width: 6px; border-radius: 4px; --done: 0;
   background: linear-gradient(to right, var(--yes) calc(var(--done) * 100%), var(--line) calc(var(--done) * 100%)); }
@@ -233,6 +233,7 @@
 .card.task .side .verdict svg { width: 24px; height: 24px; }
 .card.task .side .verdict .remove { height: 32px; font-size: 16px; }
 .card.task .tag, .card.task .why { margin-top: 6px; }
+.card.task .reset-lines { display: block; margin: 6px auto 0; font-size: 12px; }
 
 /* the image while the study makes ground truth: a candidate waiting is a faint outline and nothing more, the
    current one has a yellow ring; what is done is cut out, the picture behind showing there; the area being
@@ -242,5 +243,8 @@
 #overlay.gt g.yes path, #overlay.gt g.no path, #overlay.gt .added.yes, #overlay.gt .added.no { display: none; }
 #overlay .reveal-marks { pointer-events: none; }
 #overlay .reveal-bg { fill: #000; }
+/* the Show menu's rows for the tasks' markings */
+#overlay.gt.no-gt-pass g.pass.todo, #overlay.gt.no-gt-fails g.fail.todo, #overlay.gt.no-gt-added .added-marks,
+#overlay.gt.no-gt-cut .reveal-marks, #overlay.gt.no-gt-frame .area-frame { display: none; }
 #overlay .area-frame { fill: none; stroke: #ffd400; stroke-width: 2; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke; pointer-events: none; }
 #overlay.gt .ring { stroke: #ffd400; stroke-opacity: 1; stroke-width: 2; }

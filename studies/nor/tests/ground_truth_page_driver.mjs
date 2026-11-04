@@ -20,6 +20,7 @@ import path from "node:path";
 import { offSite } from "../../../web-tests/off_site.mjs";
 import { ENGINE } from "../../../web-tests/engine.mjs";
 import { asTagger } from "../../../web-tests/tagger.mjs";
+import { withItemView } from "./item_view_shown.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -71,6 +72,7 @@ const bytes = fs.readFileSync(image);
 async function open(drive) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
   await asTagger(ctx, { apiKey: "test-key" });
+  await withItemView(ctx); // the item views' sort, on the shelved view
   const asked = []; // what was asked of github.com
   await ctx.route(offSite(origin), (r) => {
     const u = new URL(r.request().url());
@@ -243,12 +245,12 @@ async function popup(page) {
   await check(await page.isVisible("#gt-dlg"), "the Ground truth button opens its popup");
   // a checklist of every issue, the resolved ones crossed out: what is still open
   const items = await page.$$eval("#gt-problems li", (li) => li.map((l) => ({ ok: l.classList.contains("ok"), struck: getComputedStyle(l.querySelector("span")).textDecorationLine, text: l.textContent })));
-  const has = await page.evaluate(() => ({ added: st.added.length > 0, mask: st.mask.length > 0 }));
-  await check(items.length === 5 + has.added + has.mask && items.every((t) => (t.struck === "line-through") === t.ok),
+  const has = await page.evaluate(() => ({ added: st.added.length > 0 }));
+  await check(items.length === 5 + has.added && items.every((t) => (t.struck === "line-through") === t.ok),
     `the popup lists every issue that applies, crossing out the resolved ones (${items.filter((t) => t.ok).length} of ${items.length})`);
   const line = (re) => items.find((t) => re.test(t.text));
-  await check(!!line(/you added/) === has.added && !!line(/mask/) === has.mask && (!has.mask || !line(/mask/).ok),
-    `the added NoRs and the mask are listed only when there are some, and the mask never as done (${items.map((t) => t.text).join(" | ")})`);
+  await check(!!line(/you added/) === has.added && !line(/mask/),
+    `the added NoRs are listed only when there are some, and the summary's mask never (${items.map((t) => t.text).join(" | ")})`);
   return items.filter((t) => !t.ok).map((t) => t.text).join(" | ");
 }
 // which of the popup's buttons is blue: the next step

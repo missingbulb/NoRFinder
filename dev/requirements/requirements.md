@@ -1105,7 +1105,9 @@ spec does not have.
   (`views.on(fn)`). Set by the owner on 2026-11-03: an item
   view marked `data-viewing` only shows what was found, so while its study makes ground truth there
   is no second view and no switch: the study lists its tasks itself (NoR: `req/nor/truth/tasks`,
-  Vascular: `req/vascular/truth/tasks`).
+  Vascular: `req/vascular/truth/tasks`). Set by the owner on 2026-11-04: an item view marked
+  `data-shelved` gets no switch in any role, its code kept for a later use; NoR's is shelved, and
+  missingbulb/NoRFinder#740 decides whether it goes.
   Test: `web-tests/test_status_bar_page.py`, `studies/nor/tests/test_truth_tasks_page.py`.
   </details>
 
@@ -1256,7 +1258,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   (`data-viewing`, `req/shell/views/second`); while the study makes ground truth they are not
   shown, and each card is shown one at a time as its task (`req/nor/truth/tasks`). Each candidate cropped on a card: its number, state and decision buttons on top, the crop below
   (with a faint go-to button in its corner that shows it on the image), then "Lengths adjusted"
-  with a reset, and the rest. A rejected card names every filter that rejects it by itself, or says
+  with a reset (on a task's card, only a Reset measurements button: the task says the rest; set by
+  the owner on 2026-11-04), and the rest. A rejected card names every filter that rejects it by itself, or says
   the user rejected it. Each view has its own Options menu (remembered per view) that sets the order
   of its cards (by number, the default; verified first; verified last; and on the rejected, the most
   rejecting filters first; ties by number; set by the owner on 2026-10-07), the crop's context
@@ -1264,8 +1267,10 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   and shows or hides the NoR borders, the measurement bars, the lengths on the crop, the lengths on
   the card and the measurement adjusters. The finalists open with a 4 px padding and everything on
   but the lengths on the card; the rejected open with a 10 px padding and only the NoR borders on.
-  The selected card over the image uses the options of the view that lists it, and a task's card
-  those of its task: the finalists' or the rejected's, under the card's Card options.
+  The selected card over the image uses the options of the view that lists it. Changed by the owner
+  on 2026-11-04: a task's card, finalist and rejected alike, uses one set of options, the finalists'
+  (the crop turned level, the measurement bars and the adjusters), so a rejected candidate can have
+  its lengths corrected before it is approved; its cogwheel holds them, with no sort.
   </details>
 
 - `req/nor/downloads` Download Candidates and Download Summary give CSVs; Submit Ground Truth gives the ground truth.
@@ -1350,8 +1355,11 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   items, a card for each candidate, with the shell's switch between them at its left (`req/shell/views/second`).
   Changed by the owner on 2026-11-03: while the study makes ground truth, Ground Truth Tasks
   (`req/nor/truth/tasks`) takes Summary's place, and the main area is the image alone, with no
-  switch, no item view and no Show menu: the image's markings are the tasks' (`req/nor/truth/marks`).
+  switch and no item view: the image's markings are the tasks' (`req/nor/truth/marks`), switched by
+  the Show menu's task-named rows (`req/nor/show-menu`).
   Changed by the owner on 2026-10-31: there is no right bar (`req/shell/left-bar/width`).
+  Changed by the owner on 2026-11-04: the item view is shelved (`req/shell/views/second`), so in
+  every role the main area is the image alone, with the Show menu above it (`req/nor/show-menu`).
   </details>
 
 - `req/nor/metrics` On the released site each finder and each filter preset shows its precision and recall.
@@ -1367,9 +1375,12 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 - `req/nor/show-menu` The Show menu switches each kind of marking on and off (remembered).
   <details>
 
-  Accepted and rejected markings, each with its own line width and colour, and the candidate
-  numbers, the rejection letters and the measuring lines. Not shown while the study makes ground
-  truth (`req/nor/truth/marks`).
+  Changed by the owner on 2026-11-04: a menu above the image in every role, its rows named as the
+  ground-truth tasks name them. Outside ground truth: Finalists and Rejected, each with its own line
+  width and colour, the candidate numbers, the rejection reasons and the measuring lines. While the
+  study makes ground truth, the tasks' own markings (`req/nor/truth/marks`): Finalists and Rejected
+  (each waiting one's faint outline), Added NoRs, Cut out what is done, and Frame the area, all on
+  at first. Test: `studies/nor/tests/test_truth_tasks_page.py`.
   </details>
 
 - `req/nor/submit/progress` The submit button's icon says how finished the work is; its popup lists what is left.
@@ -1385,8 +1396,7 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   short instructions (approve or reject the NoRs you added, vote on at least one candidate, vote on
   every finalist, vote on every rejected candidate, check every area for missed NoRs, only
   images from Google Drive can be exported), each done one crossed out with a
-  green check; the added-NoRs line shows only when the user added some, and while a summary mask is
-  on a warning that the mask is not exported, never crossed out. The issue names the image (name,
+  green check; the added-NoRs line shows only when the user added some. The issue names the image (name,
   SHA-256, Drive link, finder, what was marked). With nothing marked the popup says how to mark and
   exports nothing (`studies/nor/tests/test_ground_truth_page.py`). What happens to a submission is
   the study's R10.
@@ -1420,7 +1430,9 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   adds an area by exclusive or, so a lasso inside another cuts a hole. The mask's borders show as a
   pulsing dashed line, and its inside is tinted a very transparent white only when areas overlap or
   nest. Clear mask, shown while a mask is on, removes it. The mask is remembered in the browser per
-  file name (`studies/nor/tests/test_ground_truth_page.py`).
+  file name (`studies/nor/tests/test_ground_truth_page.py`). Set by the owner on 2026-11-04: the mask
+  shows only while the summary does, so while the study makes ground truth it is neither drawn nor
+  listed in the submit popup, and comes back with the summary (`studies/nor/tests/test_truth_tasks_page.py`).
   </details>
 
 - `req/nor/truth/marks` While the study makes ground truth, what is reviewed is cut out of the image, revealing a picture behind it.
@@ -1430,8 +1442,10 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   rejection letters, measuring lines) give way to the tasks' own. A candidate waiting for the
   user's verdict is only a faint thin white outline, finalist and rejected alike, and the current
   one has a yellow ring. Once the user decides a candidate, up or down, its area (the rectangle
-  around its pixels, two pixels wider each way) is removed from the image, and so is each area
-  checked for missed NoRs (`req/nor/truth/tasks`), which is framed in yellow while it is checked.
+  around its pixels, two pixels wider each way) is removed from the image. The area being worked on
+  (`req/nor/truth/order`) is framed in yellow. Changed by the owner on 2026-11-04: once an area is
+  done, every candidate in it decided and it checked for missed NoRs, the whole area is removed.
+  The Show menu switches each of these markings (`req/nor/show-menu`).
   Where the image is removed, a picture shows instead, one picture behind the whole image (the
   study's `groundTruth.reveal`, a golden retriever; black while the study names none or it cannot
   load), so the review uncovers more and more of it. Test: `studies/nor/tests/test_truth_tasks_page.py`.
@@ -1440,11 +1454,13 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 - `req/nor/truth/order` The candidates come area by area, so the review fills the image one area after another.
   <details>
 
-  Set by the owner on 2026-11-03. Each task's candidates are ordered by the area they lie in, the
-  image cut into 10 by 10 areas taken row by row, each row the way back from the last (so the next
-  area always borders the one just done), and inside an area top to bottom. The areas are not
-  drawn: the user only sees an area of the image fill up after ten or twenty verdicts. Test:
-  `studies/nor/tests/test_truth_tasks_page.py`.
+  Set by the owner on 2026-11-03. The image is cut into 10 by 10 areas taken row by row, each row
+  the way back from the last (so the next area always borders the one just done). Changed by the
+  owner on 2026-11-04: the tasks are one walk through the areas, so after a number of verdicts a
+  whole region of the image is done rather than candidates scattered over it. In each area its
+  finalists, then its rejected, then the NoRs the user added there, each top to bottom, and last
+  the area's check for missed NoRs; then the next area. The grid is not drawn; the area being worked
+  on is framed (`req/nor/truth/marks`). Test: `studies/nor/tests/test_truth_tasks_page.py`.
   </details>
 
 - `req/nor/truth/tasks` Ground Truth Tasks lists the tasks, one row each; the open one shows one item at a time.
@@ -1455,17 +1471,21 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   long and filled as far as it is done, heads one row per task, each counting only once and never
   repeating that it is a review: "13/47 Finalists", "0/68 Rejected", "0/100 Areas" (the areas
   checked for NoRs the finder missed), and Submit Ground Truth (`req/nor/downloads`); a done task
-  is marked done with a check (no marks on the others). Clicking a task opens it at its first item not done. The open task's row carries a
-  cogwheel that opens its card's options as a popup (`req/nor/cards/views`, finalists and
-  rejected) and a small Skip link; under it, its candidate's card (`req/nor/candidates/decide`),
+  is marked done with a check (no marks on the others). The rows count; the work is one walk
+  (`req/nor/truth/order`), and the row of the current item's task is the open one. Clicking a task
+  goes to its next item not done along the walk. The open task's row carries a
+  cogwheel that opens the cards' options as a popup (`req/nor/cards/views`), a small Back link and
+  a small Skip link; under it, its candidate's card (`req/nor/candidates/decide`),
   no number, state, separator or go-to button: the crop across the box's whole width, with big
   thumbs up and down side by side under it. A verdict or a skip slides the next card in over the last one (no motion when the user asks
-  for reduced motion): the task's next candidate with no verdict, and once none is left the first
-  task not done; the image pans to it when it is out of the middle of the view. The areas task
-  takes the image's areas in the order of `req/nor/truth/order`, framing each on the image (zoomed
-  in to fill much of the view when it is small there) and saying to right-click where the finder
-  missed a NoR; an added NoR's card waits for its verdict, and "No missed NoRs here" marks the
-  area checked. It is done once every area is checked and every added NoR decided. The added NoRs
+  for reduced motion): the walk's next item not done, and once none is left Submit. Back, set by the
+  owner on 2026-11-04, returns to the item the user was on before, as often as they like, to change
+  a verdict, a skip or the measurements; it slides the other way. Entering an area frames it on the
+  image, zoomed in to fill much of the view when it is small there; inside an area the image pans to
+  the candidate when it is out of the middle of the view. An area's check says to right-click where
+  the finder missed a NoR there; an added NoR's card waits for its verdict, and "No missed NoRs
+  here" marks the area checked. The Areas task is done once every area is checked and every added
+  NoR decided. The added NoRs
   and the checked areas are kept per file name. Test: `studies/nor/tests/test_truth_tasks_page.py`.
   </details>
 
