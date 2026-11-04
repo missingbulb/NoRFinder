@@ -152,6 +152,7 @@ try {
   let v = await rows();
   check(v.length === 1 && v[0].name === "picked.png" && v[0].where === "This computer" && v[0].age === "<1h", "its recent files list the file from this computer, saying so", v);
   check(await page.$("#image-menu .recent svg.computer-logo"), "beside a computer");
+  await shot("viewer_line", "#left");
   await page.click("#image-menu .recent");
   await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded." && st.fileName === "picked.png");
   check(await page.evaluate(() => window.picks === 1), "chosen there, the file opens again with no picker shown");
@@ -182,7 +183,9 @@ try {
   folders = [ROOT, OTHER];
   await page.reload(); await mounted("Fixture");
   await page.click("#load-drive");
-  await page.waitForFunction(() => $("#drive-dlg").open && document.querySelectorAll("#drive-list .item.folder").length === 2);
+  // each folder's name, as Drive gives it
+  await page.waitForFunction(() => $("#drive-dlg").open && [...document.querySelectorAll("#drive-list .item.folder .name")].map((n) => n.textContent).join() === "Slides,Other slides")
+    .catch(() => {});
   let roots = await listed();
   check(roots.map((x) => x.name).join() === "Slides,Other slides", "naming two, it lists them by name to choose from", roots.map((x) => x.name));
   await page.dblclick("#drive-list .item:nth-child(1)");

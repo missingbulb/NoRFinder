@@ -111,7 +111,7 @@ const settle = async () => { await page.waitForTimeout(400); };
 const tip = () => page.evaluate(() => { const t = document.querySelector(".tip-bubble[data-tip]"); return t && !t.hidden ? t.dataset.tip : null; });
 
 try {
-  await page.goto(origin + "/web/fixture");
+  await page.goto(origin + "/web/");
   await page.waitForFunction(() => window.$ && $("#title").textContent);
 
   await fromDialog();

@@ -86,7 +86,7 @@ const wait = () => page.evaluate(() => ({
 }));
 
 try {
-  await page.goto(origin + "/web/fixture");
+  await page.goto(origin + "/web/");
   await page.waitForFunction(() => window.$ && $("#title").textContent);
   // b.png opened while Drive answers, so it is kept on this device
   await pressDrive(page); await listed();

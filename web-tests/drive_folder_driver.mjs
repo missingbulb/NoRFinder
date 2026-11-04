@@ -1,7 +1,7 @@
 // Drives the Google Drive dialog (web/) in headless Chromium, in three studies: a stand-in fixture whose
-// study.json names a Drive folder, the NoR study with the folder its own study.json names, and a stand-in
-// Vascular Measurements, which names none. Checks req/shell/drive/dialog: the dialog opens on the link last pasted in this study, else on the
-// study's own folder, else on the link last pasted anywhere.
+// study.json names a Drive folder, the NoR study with the folder its own study.json names, and the Image Viewer,
+// which names none. Checks req/shell/drive/dialog: a study's dialog lists its own folder, whatever link was pasted
+// elsewhere; the Image Viewer's opens on the link last pasted in it.
 // Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/drive_folder_driver.mjs
 import { repoFile } from "./repo_file.mjs";
@@ -35,12 +35,6 @@ const server = http.createServer((q, r) => {
     r.writeHead(200, { "content-type": "application/json" });
     return r.end(JSON.stringify({ ...m, files: { ...m.files, folders: [FIXTURE_FOLDER] } }));
   }
-  if (u === "/studies/vascular/study.json") {
-    const m = JSON.parse(fs.readFileSync(path.join(repo, u), "utf8"));
-    delete m.files.folders;
-    r.writeHead(200, { "content-type": "application/json" });
-    return r.end(JSON.stringify(m));
-  }
   const f = repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
@@ -53,47 +47,55 @@ let failed = false;
 const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: " + what); } else console.log("ok: " + what); };
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
 const cors = { "access-control-allow-origin": "*" };
-// every folder is empty: what the dialog opens on is what is checked, not what it lists
-await ctx.route("https://www.googleapis.com/**", (route) =>
-  route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ files: [] }) }));
+// every folder is empty: what the dialog opens on is what is checked, not what it lists; listed, the folders listed
+const listed = [];
+await ctx.route("https://www.googleapis.com/**", (route) => {
+  const q = new URL(route.request().url()).searchParams.get("q");
+  if (q) listed.push(q.match(/'([^']+)' in parents/)[1]);
+  return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ files: [], name: "A folder" }) });
+});
 await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
 const page = await ctx.newPage();
 page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.message); });
 page.setDefaultTimeout(10000);
 
-// the link the Drive dialog opens on, in the study at this address
+// what the Drive dialog opens on, in the study at this address: the link in its field where it takes one, else the
+// link of the folder it lists
 const opensOn = async (address) => {
   await page.goto(origin + address);
   await page.waitForFunction(() => window.$ && $("#title").textContent);
+  listed.length = 0;
   await pressDrive(page);
   await page.waitForFunction(() => $("#drive-dlg").open);
-  const link = await page.inputValue("#drive-link");
+  await page.waitForTimeout(300);
+  const link = (await page.isVisible("#drive-link")) ? await page.inputValue("#drive-link") : listed.length ? folder(listed[listed.length - 1]) : "";
   await page.click("#drive-dlg button[value=close]");
   return link;
+};
+const paste = async (address, link) => {
+  await page.goto(origin + address);
+  await page.waitForFunction(() => window.$ && $("#title").textContent);
+  await pressDrive(page);
+  await page.fill("#drive-link", link); await page.click("#drive-go");
+  await page.waitForFunction(() => !$("#drive-msg").textContent.includes("Reading"));
+  await page.click("#drive-dlg button[value=close]");
 };
 
 try {
   check(/^https:\/\/drive\.google\.com\/drive\/folders\/[\w-]{10,}$/.test(NOR_FOLDER || ""), `the NoR study names its Drive folder: ${NOR_FOLDER}`);
   let at = await opensOn("/web/fixture");
-  check(at === FIXTURE_FOLDER, `a study's dialog opens on the folder its study.json names: ${at}`);
+  check(at === FIXTURE_FOLDER, `a study's dialog lists the folder its study.json names: ${at}`);
   at = await opensOn("/web/nor");
-  check(at === NOR_FOLDER, `each study on its own: ${at}`);
+  check(at === NOR_FOLDER, `each study its own: ${at}`);
 
-  // a link pasted in the fixture
-  await page.goto(origin + "/web/fixture");
-  await page.waitForFunction(() => window.$ && $("#title").textContent);
-  await pressDrive(page);
-  await page.fill("#drive-link", PASTED); await page.click("#drive-go");
-  await page.waitForFunction(() => !$("#drive-msg").textContent.includes("Reading"));
-  await page.click("#drive-dlg button[value=close]");
-
+  // a link pasted in the Image Viewer
+  await paste("/web/", PASTED);
+  at = await opensOn("/web/");
+  check(at === PASTED, `the Image Viewer's dialog opens on the link last pasted there: ${at}`);
   at = await opensOn("/web/fixture");
-  check(at === PASTED, `the dialog opens on the link last pasted in this study: ${at}`);
-  at = await opensOn("/web/nor");
-  check(at === NOR_FOLDER, `a link pasted in another study leaves this one's folder: ${at}`);
-  at = await opensOn("/web/vascular");
-  check(at === PASTED, `a study that names no folder opens on the link last pasted anywhere: ${at}`);
+  check(at === FIXTURE_FOLDER, `a link pasted elsewhere leaves a study's folder: ${at}`);
+  check(!(await page.evaluate(() => { $("#load-drive").click(); return $("#drive-link").checkVisibility(); })), "and a study's dialog has no link to paste");
 } catch (e) {
   failed = true; console.error(e);
 }

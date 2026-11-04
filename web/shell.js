@@ -55,6 +55,8 @@ const HOLDS = "nor-drive-holds"; // {Drive id: what the file holds, "3D · 8 sli
 const TIPS = "nor-tips-closed"; // [tip id]: the tips the user closed, never shown again
 const THROTTLE = "nor-drive-throttled-until"; // when the wait after Google throttled the site's downloads ends, in ms
 const RECENT = "nor-drive-recent"; // [{id, name, path, study, at}], newest first: images opened from Drive, path their folders under the link, study the one it was opened in, at when it was last opened (ms; absent for one kept before that was)
+const LOCAL_RECENT = "nor-local-recent"; // [{id, name, study, at}], newest first: files opened from this computer, each the browser's reference to it kept in FILE_HANDLES under id; on this device only
+const FILE_HANDLES = "nor-file-handles-v1"; // the IndexedDB database of those references
 const LISTINGS = "nor-drive-listings"; // {folder id: {at, items: [{id, name, folder, size, created, sha}]}}: each folder as the Drive dialog last listed it, created in ms
 // Cache Storage, + Drive id: an image downloaded from Drive, its file name (URI-encoded) and when it was saved
 // in the headers
@@ -654,16 +656,25 @@ function fileInfo(rows) {
   $("#file-box").classList.toggle("empty", !rows);
   if (!rows) $("#file-box").open = false;
 }
-// where the study loads from (req/shell/load/from): Load at the box's foot for this computer, the image selector
-// and Drive's button on its top line for Google Drive
-const fromDrive = () => manifest?.files.from === "drive";
-// the images opened lately in the study on show (req/shell/load/selector)
+// where the study opens images from (req/shell/load/from): Load at the box's foot for this computer alone; else the
+// image selector on its top line, with the computer's button where it opens local files and Drive's button
+const fromDrive = () => !!manifest?.files.from.includes("drive");
+const fromLocal = () => !!manifest?.files.from.includes("local");
+// the browser keeps a reference to a file a page chose only where the page chooses it itself (Chrome and Edge)
+const remembersFiles = () => typeof window.showOpenFilePicker === "function";
+const RECENT_KEEP = 30;
+// the images opened lately in the study on show (req/shell/load/selector): from Drive, and where it opens local
+// files and the browser can keep a reference to them, from this computer; newest first
 const recentHere = (list) => list.filter((r) => r.study === manifest?.id);
+function recentAll() {
+  const local = fromLocal() && remembersFiles() ? recentHere(readJSON(LOCAL_RECENT, [])).map((r) => ({ ...r, local: true })) : [];
+  return [...recentHere(readJSON(RECENT, [])), ...local].sort((a, b) => (b.at ?? -Infinity) - (a.at ?? -Infinity)).slice(0, RECENT_KEEP);
+}
 // the control the Load image step points at, and the one held while an image opens
-const loadButton = () => (!fromDrive() ? "#load-main" : recentHere(readJSON(RECENT, [])).length ? "#image-pick" : "#load-drive");
+const loadButton = () => (!fromDrive() ? "#load-main" : recentAll().length ? "#image-pick" : fromLocal() ? "#load-main" : "#load-drive");
 const loadHolder = () => $(fromDrive() ? "#image-pick" : "#load-main");
 function placeLoad() {
-  $("#load").dataset.from = manifest.files.from;
+  $("#load").toggleAttribute("data-drive", fromDrive()); $("#load").toggleAttribute("data-local", fromLocal());
   if (fromDrive()) $("#file-box").before($("#load")); else $("#image-foot").prepend($("#load"));
 }
 // the Image box draws from the page's state: the image's name and what its file says, the control to load with
@@ -673,10 +684,11 @@ function imageBox() {
   $("#file-name").textContent = drive && name ? "Details" : name || "No image loaded"; $("#file-name").classList.toggle("dim", !name);
   fileInfo(opening ? null : im?.info || null);
   $("#load").classList.toggle("done", !!im); $("#unload").hidden = !im;
-  const listed = recentHere(readJSON(RECENT, [])).length > 0;
+  const listed = drive && recentAll().length > 0;
   $("#image-pick .pick-name").textContent = name || (listed ? "Choose an image" : "No image opened here yet");
   $("#image-pick").classList.toggle("dim", !name);
-  $("#image-pick").classList.toggle("primary", !im && listed); $("#load-drive").classList.toggle("primary", !im && !listed);
+  $("#image-pick").classList.toggle("primary", !im && listed); $("#load-drive").classList.toggle("primary", !im && !listed && !fromLocal());
+  $("#load-main").classList.toggle("primary", !drive || (!im && !listed));
   $("#load-original").hidden = im?.source?.kind !== "preview";
 }
 page.watch("image", imageBox); page.watch("opening", imageBox);
@@ -715,15 +727,31 @@ $("#file").onchange = async (e) => {
   const bytes = await f.arrayBuffer(); peek()(bytes, bytes.byteLength);
   openBytes(f.name, bytes, { kind: "local" }); e.target.value = "";
 };
+// the study's own Drive folders, which its dialog browses alone; a study naming none (the Image Viewer) takes a pasted
+// link instead (req/shell/drive/dialog)
+const studyFolders = () => (manifest?.files.folders || []).map((l) => NorDrive.parse(l)).filter((r) => r?.kind === "folder").map((r) => r.id);
 // the link the Drive dialog opened on: listing it is not pasting it
 let driveFrom = "", driveOpened = () => {};
 function openDrive() {
   $("#image-menu").open = false;
-  driveFrom = $("#drive-link").value = readJSON(DRIVE_LINKS)[manifest.id] || manifest.files.folders?.[0] || readJSON(DRIVE_LINK, ""); $("#drive-dlg").showModal(); $("#drive-link").select(); showSaved();
+  const pastes = !studyFolders().length;
+  $("#drive-dlg").classList.toggle("folders", !pastes);
+  driveFrom = $("#drive-link").value = pastes ? readJSON(DRIVE_LINKS)[manifest.id] || readJSON(DRIVE_LINK, "") : "";
+  $("#drive-dlg").showModal(); if (pastes) $("#drive-link").select(); showSaved();
   holdDrive();
   driveOpened();
 }
-$("#load-main").onclick = () => $("#file").click();
+// a file from this computer: through the browser's own picker where it keeps a reference to the file, so the file
+// opens again from the recents (req/shell/load/selector); else through the file chooser
+$("#load-main").onclick = async () => {
+  if (!remembersFiles() || !fromDrive()) return $("#file").click();
+  let handle;
+  try { [handle] = await showOpenFilePicker({ types: [{ description: "Images", accept: { "image/*": manifest.files.accept.split(",") } }] }); } catch (e) {
+    if (e.name !== "AbortError") status("Error: " + (e.message || e), true);
+    return;
+  }
+  openLocal(handle);
+};
 $("#load-drive").onclick = () => { signIn.drive(); openDrive(); };
 $("#image-pick").addEventListener("click", () => signIn.drive());
 // a setting from before each study loaded from one place (req/shell/load/from)
@@ -790,7 +818,6 @@ $("#image-menu").addEventListener("keydown", (e) => {
 
 // the images opened from Drive lately in the study on show, in the image selector; a Drive id names one file wherever
 // it is, so two of one name stay apart; one kept from before recents had a study belongs to none. openRecent is the Drive dialog's, which opens the copy kept on this device when there is one.
-const RECENT_KEEP = 30;
 let openRecent = () => {}, showKept = () => {};
 const UNREACHED = "The internet cannot be reached, and this image is not kept on this device.";
 function remember(id, name, path) {
@@ -798,6 +825,52 @@ function remember(id, name, path) {
   const mine = [{ id, name, path, study, at: Date.now() }, ...rest.filter((r) => r.study === study)].slice(0, RECENT_KEEP);
   writeJSON(RECENT, [...mine, ...rest.filter((r) => r.study !== study)]);
   showRecent();
+}
+// the browser's references to files from this computer, by id, in IndexedDB: what a page cannot keep anywhere else
+function handles(mode, act) {
+  return new Promise((ok, bad) => {
+    const q = indexedDB.open(FILE_HANDLES, 1);
+    q.onupgradeneeded = () => q.result.createObjectStore("files");
+    q.onerror = () => bad(q.error);
+    q.onsuccess = () => {
+      const t = q.result.transaction("files", mode), r = act(t.objectStore("files"));
+      t.oncomplete = () => { q.result.close(); ok(r?.result); }; t.onerror = () => { q.result.close(); bad(t.error); };
+    };
+  });
+}
+// a file opened from this computer, by the browser's reference to it: one entry however often it is opened, the
+// references the recents no longer list let go
+async function openLocal(handle, known) {
+  let file;
+  try {
+    if ((await handle.queryPermission({ mode: "read" })) !== "granted" && (await handle.requestPermission({ mode: "read" })) !== "granted")
+      return notice(`${handle.name} was not opened: the browser was not allowed to read it again.`);
+    file = await handle.getFile();
+  } catch (e) {
+    return notice(`${handle.name} could not be opened: it may have been moved or deleted. (${e.message || e})`);
+  }
+  const bytes = await file.arrayBuffer();
+  let id = known;
+  try {
+    if (!id) for (const r of recentHere(readJSON(LOCAL_RECENT, []))) {
+      const h = await handles("readonly", (s) => s.get(r.id));
+      if (h && (await h.isSameEntry(handle))) { id = r.id; break; }
+    }
+    id ||= crypto.randomUUID();
+    const study = manifest.id, rest = readJSON(LOCAL_RECENT, []).filter((r) => !(r.id === id && r.study === study));
+    const list = [{ id, name: file.name, study, at: Date.now() }, ...rest].filter((r, k, all) => all.filter((x) => x.study === r.study).indexOf(r) < RECENT_KEEP);
+    writeJSON(LOCAL_RECENT, list);
+    const keep = new Set(list.map((r) => r.id));
+    await handles("readwrite", (s) => { s.put(handle, id); s.getAllKeys().onsuccess = (e) => e.target.result.forEach((k) => keep.has(k) || s.delete(k)); });
+  } catch (e) { console.warn("this file is not kept among the recent ones:", e); }
+  showRecent();
+  peek()(bytes, bytes.byteLength);
+  openBytes(file.name, bytes, { kind: "local" });
+}
+async function openLocalRecent(r) {
+  const h = await handles("readonly", (s) => s.get(r.id)).catch(() => null);
+  if (!h) return notice(`${r.name} is no longer known to this browser: open it again with the computer's button.`);
+  openLocal(h, r.id);
 }
 // how long since an image was last opened, "<1h", "3h", "6d", "2mo" or "1y"; "" when that is not known
 function ago(at) {
@@ -807,17 +880,19 @@ function ago(at) {
 }
 const agoTag = (at) => (at == null ? "" : `<span class="age" title="Opened ${esc(new Date(at).toLocaleString())}">${ago(at)}</span>`);
 function showRecent() {
-  const list = recentHere(readJSON(RECENT, [])), box = $("#recent"), open = page.get("image")?.source;
+  const list = recentAll(), box = $("#recent"), open = page.get("image")?.source;
   const on = open?.kind === "drive" && list.some((r) => r.id === open.id) ? open.id : list[0]?.id;
   box.replaceChildren(...list.map((r) => {
-    const b = document.createElement("button"), where = ["Google Drive", ...(r.path || [])].join(" / ");
-    b.type = "button"; b.className = "item recent"; b.title = `${where} / ${r.name}`; b.dataset.id = r.id;
+    const b = document.createElement("button"), where = r.local ? "This computer" : ["Google Drive", ...(r.path || [])].join(" / ");
+    b.type = "button"; b.className = "item recent"; b.title = `${where} / ${r.name}`; b.dataset.id = r.id; if (r.local) b.dataset.local = "";
     b.setAttribute("role", "option"); b.setAttribute("aria-selected", String(r.id === on));
-    b.innerHTML = `<svg class="drive-logo" aria-hidden="true"><use href="#drive-logo"/></svg><span class="what"><span class="name">${esc(r.name)}</span><span class="where">${esc(where)}</span></span>${agoTag(r.at)}`;
-    b.onclick = () => { $("#image-menu").open = false; openRecent(r); };
+    const logo = r.local ? "computer-logo" : "drive-logo";
+    b.innerHTML = `<svg class="${logo}" aria-hidden="true"><use href="#${logo}"/></svg><span class="what"><span class="name">${esc(r.name)}</span><span class="where">${esc(where)}</span></span>${agoTag(r.at)}`;
+    b.onclick = () => { $("#image-menu").open = false; r.local ? openLocalRecent(r) : openRecent(r); };
     return b;
   }));
-  if (!list.length) box.append(Object.assign(document.createElement("p"), { className: "hint", textContent: "No image opened here yet: Drive's button, at the right, opens one." }));
+  const how = fromLocal() ? "the buttons at the right open one" : "Drive's button, at the right, opens one";
+  if (!list.length) box.append(Object.assign(document.createElement("p"), { className: "hint", textContent: `No image opened here yet: ${how}.` }));
   imageBox();
   const s = steps.find((p) => p.key === "load");
   if (s && s.button !== loadButton()) { s.button = loadButton(); drawSteps(); }
@@ -825,7 +900,7 @@ function showRecent() {
 // offline, an image not kept on this device opens nothing, and is greyed
 async function greyRecents() {
   const off = offlineCopy.offline(), kept = off ? await keptIds() : null;
-  for (const b of $("#recent").querySelectorAll(".recent")) b.disabled = off && !kept.has(b.dataset.id);
+  for (const b of $("#recent").querySelectorAll(".recent")) b.disabled = off && !b.hasAttribute("data-local") && !kept.has(b.dataset.id);
 }
 page.watch("image", () => showRecent());
 addEventListener(CONNECTION, () => greyRecents());
@@ -898,7 +973,9 @@ function driveDialog() {
     chosen = f; $("#drive-open").disabled = !f;
     $("#drive-list").querySelectorAll(".item").forEach((e) => e.setAttribute("aria-selected", e === b));
   };
-  const enter = (f) => (f.folder ? (trail.push(f), show()) : f.kept ? take(f.id, f.name, f.path, undefined, true) : take(f.id, f.name, trail.slice(1).map((t) => t.name), f.sha));
+  // where an image is: the folders under the one it was opened from, the study's own list of folders no folder
+  const enter = (f) => (f.folder ? (trail.push(f), show()) : f.kept ? take(f.id, f.name, f.path, undefined, true)
+    : take(f.id, f.name, trail.filter((t) => !t.roots).slice(1).map((t) => t.name), f.sha));
   // offline, in place of a Drive folder: the images kept on this device, the study's own first (req/shell/offline/default)
   showKept = async () => {
     keptOn = true; thumbs.stop(); trail = []; choose(null);
@@ -932,9 +1009,9 @@ function driveDialog() {
   // the latest KEEP_LISTINGS of them; created in ms, size and sha null where Drive gave none
   const KEEP_LISTINGS = 50;
   const keptListing = (id) => readJSON(LISTINGS)[id]?.items.map((f) => ({ ...f, created: f.created == null ? null : new Date(f.created) })) || null;
-  const keepListing = (id, all) => {
+  const keepListing = (id, all, name) => {
     const items = all.map((f) => ({ id: f.id, name: f.name, folder: f.folder, size: f.size, created: f.created ? f.created.getTime() : null, sha: f.sha }));
-    const latest = Object.entries({ ...readJSON(LISTINGS), [id]: { at: Date.now(), items } }).sort((x, y) => y[1].at - x[1].at).slice(0, KEEP_LISTINGS);
+    const latest = Object.entries({ ...readJSON(LISTINGS), [id]: { at: Date.now(), name, items } }).sort((x, y) => y[1].at - x[1].at).slice(0, KEEP_LISTINGS);
     writeJSON(LISTINGS, Object.fromEntries(latest));
   };
   // a folder's rows; offline, an image not kept here and a folder never listed are greyed and open nothing; seen: the
@@ -967,7 +1044,19 @@ function driveDialog() {
       if (!f.folder) thumbs.watch(b.querySelector(".pic"), f, k);
     }
   };
+  // the study's own folders to choose from, by name (req/shell/drive/dialog)
+  const showRoots = async () => {
+    keptOn = false;
+    const off = offlineCopy.offline(), listings = readJSON(LISTINGS), asked = ++listing;
+    $("#drive-path").textContent = trail[0].name;
+    const roots = studyFolders().map((id) => ({ id, name: listings[id]?.name || "Folder", folder: true }));
+    await draw(trail[0], roots, off, asked);
+    if (off) return;
+    const named = await Promise.all(roots.map((f) => (listings[f.id]?.name ? f : NorDrive.name(f.id).then((name) => ({ ...f, name }), () => f))));
+    if (named.some((f, k) => f.name !== roots[k].name)) await draw(trail[0], named, false, asked);
+  };
   const show = async () => {
+    if (trail[trail.length - 1].roots) return showRoots();
     keptOn = false;
     const at = trail[trail.length - 1], off = offlineCopy.offline(), before = keptListing(at.id);
     $("#drive-path").innerHTML = trail.map((t, k) => `<button type="button" class="link" data-k="${k}">${esc(t.name)}</button>`).join(" / ");
@@ -982,7 +1071,7 @@ function driveDialog() {
     try {
       const all = await NorDrive.list(at.id);
       if (asked !== listing) return;
-      keepListing(at.id, all);
+      keepListing(at.id, all, at.unnamed ? readJSON(LISTINGS)[at.id]?.name : at.name);
       // what Drive says now takes the kept listing's place, redrawn only where it differs
       if (!before || JSON.stringify(keptListing(at.id)) !== JSON.stringify(before)) await draw(at, all, false, asked, before && new Set(before.map((f) => f.id)));
     } catch (err) {
@@ -1090,7 +1179,16 @@ function driveDialog() {
     d.disabled = true; d.title = "Needs this site's Google API key (issue #234)";
   }
   // offline, a folder link opens on the folder as last listed, and anything else on the images kept here
-  const open = () => {
+  const open = async () => {
+    // a study's own folders: straight into the one, else a list of them
+    const roots = studyFolders();
+    if (roots.length) {
+      if (offlineCopy.offline() && !roots.some((id) => keptListing(id))) return showKept();
+      keptOn = false; $("#drive-list").replaceChildren(); choose(null); msg("");
+      const name = readJSON(LISTINGS)[roots[0]]?.name || (offlineCopy.offline() ? null : await NorDrive.name(roots[0]).catch(() => null));
+      trail = roots.length === 1 ? [{ id: roots[0], name: name || "Folder" }] : [{ roots: true, name: "The study's folders" }];
+      return show();
+    }
     const link = $("#drive-link").value, ref = NorDrive.parse(link);
     if (offlineCopy.offline() && !(ref?.kind === "folder" && keptListing(ref.id))) return showKept();
     keptOn = false;
@@ -1098,14 +1196,15 @@ function driveDialog() {
     if (!ref) return msg("That does not look like a Google Drive link.", true);
     if (link !== driveFrom) { writeJSON(DRIVE_LINK, link); writeJSON(DRIVE_LINKS, { ...readJSON(DRIVE_LINKS), [manifest.id]: link }); driveFrom = link; }
     if (ref.kind === "file") return take(ref.id, undefined, []);
-    trail = [{ id: ref.id, name: "Folder" }]; show();
+    // a pasted folder's name is not asked of Drive: "Folder" stands in, and is not kept as its name
+    trail = [{ id: ref.id, name: "Folder", unnamed: true }]; show();
   };
   $("#drive-go").onclick = open;
   waitEnded = () => { if ($("#drive-dlg").open) open(); };
   // the dialog opened: offline on what is kept here, online on its folder link read afresh
   driveOpened = () => {
     if (offlineCopy.offline()) return open();
-    if (!throttled() && NorDrive.parse($("#drive-link").value)?.kind === "folder") open();
+    if (!throttled() && (studyFolders().length || NorDrive.parse($("#drive-link").value)?.kind === "folder")) open();
   };
   // the open dialog follows the network: once it goes, the folder on show greyed where it cannot open (or the
   // images kept here); once it is back, the folder read afresh
@@ -1235,7 +1334,7 @@ async function showSaved() {
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
   [THEME]: "Theme", [ROLE]: "The role you work in", [BARS]: "Left bar width, and whether it is collapsed", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
-  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [LISTINGS]: "Google Drive folders as last listed, for working offline", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [RESOURCES]: "The status bar's disk, memory, network and CPU: hidden, auto-hiding or always open", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
+  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [LOCAL_RECENT]: "Recent files from this computer", [LISTINGS]: "Google Drive folders as last listed, for working offline", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [RESOURCES]: "The status bar's disk, memory, network and CPU: hidden, auto-hiding or always open", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
 };
 // What the site keeps, by what it takes to work offline (req/shell/storage/manage): a section per study, then what they share; settings
 // apart, which Settings keeps (req/shell/account/settings), and with them what nobody names. An entry: {kind, name, what, size, del, held, ask}, del

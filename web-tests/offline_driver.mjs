@@ -254,10 +254,11 @@ try {
 
   // the network goes mid-session while the browser still says it is online (a dead Wi-Fi), the Drive dialog open on
   // the study's folder: the page notices by itself, and the dialog follows
+  // the vascular study's own folder, its images kept here, its subfolder never listed in the dialog
+  await page.goto(origin + "/app/vascular");
+  await page.waitForFunction(() => window.$ && $("#title").textContent);
   await pressDrive(page);
   await page.waitForSelector("#drive-dlg[open]");
-  // on the vascular study's folder, its images kept here, its subfolder never listed in the dialog
-  await page.fill("#drive-link", vascular.files.folders[0]); await page.click("#drive-go");
   await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 2);
   const drivePath = () => page.textContent("#drive-path");
   down = true;
