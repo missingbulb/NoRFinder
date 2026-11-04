@@ -10,6 +10,11 @@ carried all its pull requests. The `writing-version-history` skill says how.
 
 ## Next release
 
+In NoR Finder, clicking the image where there is no candidate now deselects the selected one, as
+clicking it again already did. (#743)
+
+## 0.11104.85
+
 In NoR Finder, what you finish as a Ground Truth Tagger now uncovers a golden retriever behind the
 image, more of it with every verdict and every area checked. (#738)
 

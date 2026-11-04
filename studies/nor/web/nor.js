@@ -1417,7 +1417,7 @@ export function mount(shell) {
     idle: updateFind,
     showImage: () => showView("image"),
     pickAt: candAt,
-    pick: (c) => (TRUTH ? takeUp(c) : select(st.sel === c.i ? null : c.i)),
+    pick: (c) => (TRUTH ? c && takeUp(c) : select(c && st.sel !== c.i ? c.i : null)),
     open: (c) => (TRUTH ? takeUp(c) : (select(c.i), showView("items"))),
     step,
     capturesPointer: () => !!st.lasso,
