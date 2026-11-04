@@ -49,10 +49,10 @@
             { "name": "File name and info", "select": "#file-box", "req": "req/shell/image/file-info" },
             {
               "name": "Channels", "select": "#channels", "req": "req/shell/channels/rows",
+              "rule": [{ "when": { "image": ["none"] }, "is": "hidden" }],
               "children": [
                 {
                   "name": "Channel row", "select": "#channels .channel", "req": "req/shell/channels/rows",
-                  "rule": [{ "when": { "image": ["none"] }, "is": "hidden" }],
                   "children": [
                     { "name": "Show/hide checkbox", "select": "#channels .channel input[type=checkbox]", "control": true, "req": "req/shell/channels/rows" },
                     { "name": "Black and white points", "select": "#channels .channel .levels", "req": "req/shell/channels/rows" },
