@@ -1190,6 +1190,35 @@ nobody has decided: what the page does there is not a requirement yet.
   `web-tests/test_other_engines.py`.
   </details>
 
+- `req/checks/shell-states` A tree of the shell's elements says what each shows in every state its paths reach; the matrix is generated from it, and a browser walks the paths to check it.
+  <details>
+
+  Set by the owner on 2026-11-04. `dev/requirements/shell-states.json` lists the shell's elements as a tree, each
+  under the one holding it, and gives each element only what differs from its parent: cases over the state (the
+  study's stage, who is signed in, the role, the image open, the study's step done, the view, what Data Management
+  has selected), each citing the requirement that decides it and marked tentative or undecided where the owner has
+  not decided (an undecided case is shown and not checked). Its paths start from a few roots (a study's stage and a
+  role) and take actions one after another, each state one more action on the one before.
+  `dev/tools/build/shell_states.py` writes from it the matrix people review, `dev/requirements/shell-states.GENERATED.md`,
+  one table per path, and the browser test's expectations; a case no state reaches fails it. In the fast set the
+  generated files must be up to date and every element must be on the page; the shell's elements not in the tree
+  yet are counted, so the count only falls. In the full set one page per path takes the actions on the fixture
+  study, the study's stage set for it, against a stand-in Google, and at every state reads each element as shown,
+  disabled, folded or gone; every difference is listed before it fails. Test: `web-tests/test_shell_states.py`,
+  `web-tests/test_shell_states_page.py`.
+  </details>
+
+- `req/checks/shell-states/renders` Every state the browser walks is pictured, arrows pointing at what changed there.
+  <details>
+
+  Set by the owner on 2026-11-04. With `SHELL_STATES_RENDERS` set, the browser test keeps a picture of each state
+  and an `index.html` of them, path by path. Arrows point at the elements that changed since the state before,
+  only the outermost of those that changed together, and on a path's first state at what shows folded or disabled;
+  a dashed arrow points where an element was before it went, and a red one at an element that is not what the
+  rules say. The arrows say where to look, not what to expect. The full run on main keeps the pictures as the run's
+  `shell-states` artifact. Test: `web-tests/test_shell_states_page.py`.
+  </details>
+
 ## `req/nor` The NoR Finder page: detect once, filter live, in the browser
 
 Set by the owner on 2026-09-28: the shell running the NoR study with no backend. Its engine is
