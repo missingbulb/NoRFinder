@@ -63,3 +63,9 @@
   points at each neighbour at its moment.
 - **Actor:** @missingbulb (owner).
 - **Model:** claude-opus-5-5
+
+## 2026-11-04 · reworded · review findings applied
+- **Reason:** a review of the skill against Anthropic's skill best practices, the house style and
+  the code found missing invocations, rules owned twice and hand-offs the family lacked; applied.
+- **Actor:** @missingbulb (owner), who asked for the review.
+- **Model:** claude-opus-5-5

@@ -1,6 +1,6 @@
 ---
 name: mutating-an-algorithm
-description: Splicing computer-vision tricks from the repo's trick pool into a study's best algorithm, scoring each mutant for any sign of good against ground truth, and growing a signal into a new version. Use when algorithm-ideation picks the mutation route, when a scheduled mutation sweep reports, or when adding a trick to the pool.
+description: Splicing computer-vision tricks from the repo's trick pool into a study's best algorithm, scoring each mutant for any sign of good against ground truth above a chance bar, and growing a signal into a new version. Use when running a study's mutation sweep (by hand or from its scheduled task), when algorithm-ideation picks the mutation route, or when adding a trick to the pool.
 metadata:
   body: workflow
   usage:
@@ -10,34 +10,33 @@ metadata:
 # Mutating an algorithm with the trick pool
 
 A mutant is the best version with one trick spliced in. It is not expected to win. It is looking
-for **signal**: evidence that the trick did some good that nothing registered does. Signal is the
-seed, and the work after it is growing the seed into a version that wins.
+for **signal**: evidence that the trick did some good that nothing registered does, by more than
+chance. Signal is the seed, and the work after it is growing the seed into a version that wins.
 
 ## The pool
 
-`dev/tools/trick_pool/` holds two halves, and a test keeps them in step:
+`dev/tools/trick_pool/` holds two halves, and its test keeps them in step:
 
-- `pool.yaml` is the catalog, a few hundred methods. Each entry says what the method does to the
-  picture (`visual`), how it works (`how`), where it is canonically used, which hook it fits
-  (`pre`, `map`, `candidates`, `verify`, `post`, `stats`), what its sizes are relative to, how to
-  install and invoke it, its docs, its cost, and `try_when`: the symptom that should make you reach
-  for it.
+- `pool.yaml` is the catalog. Each entry says what the method does to the picture (`visual`) and
+  how it works. It also gives where the method is used, its catalog `hook` (`pre`, `map`,
+  `candidates`, `verify`, `post`, `stats`), what its sizes are relative to, and how to install and
+  invoke it, with its docs and its cost. Last comes `try_when`: the symptom that should make you
+  reach for it.
 - `tricks.py` is the runnable half. Each runnable entry is one function,
-  `TRICKS[id](img, unit, **params)`, where every size is a multiple of `unit`, the object scale the
-  study measures for itself. `available()` names the module each missing trick needs.
+  `TRICKS[id](img, unit, **params)`. Every size is a multiple of `unit`, the object scale the study
+  measures for itself. The parameter names are the function's keyword arguments.
 
-Read the catalog by `try_when` and `hook`, not front to back:
+Search the catalog by symptom or hook, from the repo root:
 
 ```
-python3 -c "import yaml; [print(e['id'], '|', e['hook'], '|', e['try_when']) for e in yaml.safe_load(open('dev/tools/trick_pool/pool.yaml'))]"
+python3 -c "import sys, yaml; [print(e['id'], '|', e['hook'], '|', e['try_when'].strip()) for e in yaml.safe_load(open('dev/tools/trick_pool/pool.yaml')) if sys.argv[1] in (e['try_when'] + e['hook'])]" background
 ```
 
-## 1. Know what "never" and "always" mean here
+## 1. Check the registry
 
-The signal is measured against the **registry**: every version the study's lab keeps runnable.
-Before a sweep, check that every non-terrible version is in the registry
-([algorithm-ideation](../algorithm-ideation/SKILL.md) step 4 says which ones stay). A version left
-out makes its finds look new.
+The signal is measured against the **registry**, which
+[fusing-algorithms](../fusing-algorithms/SKILL.md) §4 owns. The sweep's first line names the
+versions it read. A non-terrible version missing from it makes its finds look new.
 
 ## 2. Run the sweep
 
@@ -48,59 +47,92 @@ A study supplies an adapter that runs its base with a mutation and hands per-ite
 cd studies/nor/detection && python3 mutate.py sweep --base tl
 ```
 
-`python3 mutate.py one 'pre:white-tophat@red'` runs a single mutant. `list` shows what can run in
-this container. A study without an adapter gets one before its first sweep. The adapter runs the
-null mutants (step 3) and takes the three hooks NoR's does: `pre` (transform a channel), `verify:...:reject` (fail the passes lowest on
-the trick's map), and `verify:...:rescue` (un-fail the filtered candidates highest on it). Each
-threshold is a quantile of the passes' own values, so no constant is tuned to the image.
+It writes `.cache/mutate/sweep.json` (gitignored). For each flagged mutant it also writes a sheet,
+`.cache/mutate/<spec with : and @ as _>.png`. `python3 mutate.py list` shows which tricks run in
+this container. A study without an adapter gets one before its first sweep.
+
+The adapter places each trick in three **slots**:
+
+- `pre:<trick>@<chan>` transforms a channel before the base runs.
+- `verify:<trick>@<chan>:reject` fails the passes lowest on the trick's output.
+- `verify:<trick>@<chan>:rescue` un-fails the filtered candidates highest on it.
+
+A `verify` slot takes any runnable trick's output as its map, whatever the trick's catalog hook.
+Its threshold is a quantile of the passes' own values, so no constant is tuned to the image.
 
 ## 3. Read the signal
 
-`mutation_signal.signal` reports, per mutant:
+Per mutant, `mutation_signal.signal` reports:
 
-- `rescued_never`: real items no registered version finds and this mutant does.
-- `rejected_always`: false items every registered version keeps and this mutant drops.
-- `stats`: how a measured quantity's distribution moved towards the ground truth's (Wasserstein-1
-  and the std ratio). It is `None` until the ground truth carries the measurement, and you say so
-  rather than read the absence as zero.
-- The cost: `lost_real` and `added_false` against the base, and `P(better)` on F1.
+- `rescued_never`: real items no registered version finds, and this mutant does.
+- `rejected_always`: false items every registered version keeps, and this mutant drops.
+- the cost: `lost_real` and `added_false` against the base, and `P(better)` on F1.
 
-**Signal has to beat chance.** When many real items are never found, a mutant that changes
-anything flips one or two of them by luck. So a sweep first runs null mutants in every slot: a
-random map for a verifier, and for a pre-transform a random blur under a smooth random illumination field, as strong as a real trick but with no idea behind it. It then counts a mutant as signal only
-when it rescues or rejects more items than the best null in its slot. Null mutants also show how
-wide `P(better)` swings by chance (on NoR's labels a noise mutant reached 0.82), so a mutant's
-`P(better)` is read beside its slot's nulls, never alone.
+**Signal has to beat chance.** When many real items are never found, a mutant that changes anything
+flips one or two of them by luck. So the sweep first runs null mutants in every slot:
 
-A mutant with signal and a heavy cost is still signal. Look at its sheet (the tiles of the items
-behind the signal) before believing it. One rescued item can be a label that is wrong, or a
-coincidence of a noisy map. Count it as signal only when the tile shows the trick plausibly saw
-something there.
+- for a verifier, a random map
+- for a pre-transform, a random blur under a smooth random illumination field, as strong as a real
+  trick but with no idea behind it
+
+A mutant is flagged only when it rescues or rejects more items than the best null in its slot. The
+nulls also show how far `P(better)` swings by chance (on NoR's labels a noise mutant reached 0.82).
+So read a mutant's `P(better)` beside its slot's nulls, never alone.
+
+`stats` gives the Wasserstein-1 distance and the std ratio of a measured quantity against the
+ground truth's. It is reported but never flags a mutant: scan `sweep.json` for `w1_mutant` below
+`w1_base`, and promote such a mutant by hand. It is `None` until the ground truth carries the
+measurement. Say so, rather than reading the absence as zero.
+
+Look at a flagged mutant's sheet before believing it. One rescued item can be a wrong label, or a
+noisy map's coincidence. Count it only when the tile shows the trick plausibly saw something there.
+Several unrelated mutants rejecting the *same* item are one piece of evidence, not several.
 
 ## 4. Grow a signal into a version
 
-Take the mutants with signal, strongest first, and for each one:
+Take the flagged mutants, strongest first, and for each one:
 
-1. **Tweak it**: vary the trick's own parameters (in `unit` multiples), the channel, the hook, and
-   the quantile, in one small sweep. Keep the variant that keeps the signal at the lowest cost.
-2. **Combine signals**: two mutants that rescue *different* items get spliced in together.
-3. **Explain it**: write in pseudocode why the trick helped on exactly those items (what it saw that
-   the base's own evidence did not). Then write the rule that would act on that alone, without the
-   rest of the trick. That rule is the candidate for a new version or a switch in the base, and it
-   goes through the inner loop like any other change.
-4. **Record every mutant with signal in the ledger**, and record the sweep itself as one line: the
-   date, the base, how many ran, and which had signal. Mutants with no signal are recorded only as
-   that count. The sweep's `sweep.json` (in its `--out`, by default the gitignored `.cache/mutate/`) is the full record, regenerated rather than
-   committed.
+1. **Tweak it** in one small run of `one`. Vary the trick's parameters (in `unit` multiples), the
+   channel, the slot and the quantile:
+
+   ```
+   cd studies/nor/detection && python3 mutate.py one 'verify:unsharp-mask(r_u=1.5)@red:reject=0.2'
+   ```
+
+   `one` reads the chance bar from the last sweep in its `--out`, and says so when there is none.
+   Keep the variant that keeps the signal at the lowest cost. A signal that does not move with the
+   trick's parameters may not come from the trick: try a near-identity version in the same slot.
+2. **Combine signals**: splice in together two mutants that rescue *different* items.
+3. **Explain it**: write in pseudocode why the trick helped on exactly those items, meaning what it
+   saw that the base's own evidence did not. Then write the rule that would act on that alone. That
+   rule is the candidate for a switch in the base or for a new version.
+4. **Hand it on**:
+   - The rule goes through
+     [image-algorithm-development](../image-algorithm-development/SKILL.md)'s inner loop.
+   - A new version that ties the best by a different mechanism goes to
+     [fusing-algorithms](../fusing-algorithms/SKILL.md).
+   - A map that plainly helps but resists every rule goes to
+     [solving-a-transformed-view](../solving-a-transformed-view/SKILL.md), with that trick as a view.
+
+Record the sweep in the ledger as one line: the date, the base, how many mutants ran, the chance
+bar, how many were flagged, and the wall-clock. Record every grown mutant with its numbers, and list
+the flagged ones not grown with a one-line reading each.
 
 ## Growing the pool
 
-- **Adding a trick**: add the catalog entry (every field, with `docs` checked against the real
-  page), then, when it is cheap to run, the function in `tricks.py` with the `runnable` id in the
-  entry. The pool's test fails when a `runnable` id has no function, or a function has no entry.
-- **A trick needing a package that is not in `requirements.txt`**: install it ad hoc in the
+- **Adding a trick**: add its catalog entry with the fields `test_pool.py` asserts, with `docs`
+  checked against the real page. Where it is cheap to run, add the function in `tricks.py` and put
+  its id in the entry's `runnable`. The test fails when a `runnable` id has no function, or a
+  function has no entry:
+
+  ```
+  python3 -m pytest dev/tools/trick_pool -q
+  ```
+
+- **A trick needing a package not in `requirements.txt`**: install the package ad hoc in the
   session. Each function imports its own packages, so a missing one only marks that trick
-  unavailable. A trick that earns a place in a finder brings its package into `requirements.txt` in
-  that finder's change, and not before.
+  unavailable. The scheduled sweep runs on `requirements.txt` alone, so it skips the trick. A trick
+  that earns a place in a finder brings its package into `requirements.txt` with that finder's
+  change.
 - **A `heavy` trick** (torch, model weights, a GPU) stays catalog-only. Run it by hand as a gated
-  route (research-project §10), never in the scheduled sweep.
+  route (research-project §10).

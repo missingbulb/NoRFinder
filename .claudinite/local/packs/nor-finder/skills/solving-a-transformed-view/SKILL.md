@@ -1,6 +1,6 @@
 ---
 name: solving-a-transformed-view
-description: Running a computer-vision trick on a study's images, then having a vision-capable subagent solve the detection task by eye on the transformed views, scoring its marks against ground truth and mining how it decided into a new algorithm. Use when algorithm-ideation picks this route, or when a mutation's map looks informative but no rule over it has worked.
+description: Running a computer-vision trick on a study's images, then having a vision-capable subagent solve the detection task by eye on the transformed views, scoring its marks against ground truth and mining how it decided into a new algorithm. Use when algorithm-ideation picks this route, or when a trick's map looks informative but no rule over it has worked.
 metadata:
   body: workflow
   usage:
@@ -9,67 +9,72 @@ metadata:
 
 # Solving the task on a transformed view
 
-A trick can make an object obvious to an eye while no rule over its output has been found yet. A
-vision-capable agent that marks objects well on a transformed view proves the information is there,
-and its account of how it decided is a rule nobody has written. The raw view is the control: a
-transformed view earns attention only by beating the raw one.
+A vision agent that marks objects better on a transformed view than on the raw one proves the trick
+exposes information, and its account of how it decided is a rule nobody has written. The raw view
+is the control.
 
 ## 1. Choose the views
 
-Pick three to five tricks from the trick pool (`dev/tools/trick_pool/pool.yaml`). Choose them by
-`try_when` against the wall's failure class, plus any mutant with signal from the last sweep, plus
-the raw view as the control. Prefer tricks from different families: a background remover, a ridge
-or blob map, and a texture or symmetry map see different things.
+Pick three to five tricks that can run here (`python3 studies/nor/detection/mutate.py list` marks
+them `ok`), choosing by their `try_when` in `dev/tools/trick_pool/pool.yaml` against the wall's
+failure class. Add the trick behind any mutant with signal from the last sweep (the id between `:`
+and `@` in its spec), and always include `raw`. Prefer tricks from different families: a
+background remover, a ridge or blob map, and a texture or symmetry map see different things.
 
 ## 2. Render the tiles
-
-Render the same tiles in every view: the region holding the wall's failure class, plus a region of
-plain successes. Draw a coordinate grid on each, so an agent can name a position without pointing.
-The NoR adapter does this:
 
 ```
 cd studies/nor/detection && python3 mutate.py view raw white-tophat frangi-vesselness --out .cache/views
 ```
 
-It writes `.cache/views/<view>/tile_<n>.png` and a `tiles.json` holding each tile's offset and zoom,
-which is how marks map back to image coordinates.
+It renders the same six tiles in every view. They sit over the real items no registered version
+finds first, then the false ones every version keeps, then plain successes if room is left. Each
+has a grid labelled in tile pixels. It writes `.cache/views/<view>/tile_<n>.png` and
+`.cache/views/tiles.json`, which maps marks back to image coordinates.
 
 ## 3. Have a fresh agent solve each view
 
-Give one subagent per view only that view's tiles, never the raw view next to a transformed one,
-never the labels and never the current algorithm. Use this brief:
+Give one subagent per view that view's tiles only. Never put the raw view beside a transformed one,
+never give it the labels, and never give it the current algorithm. Use this brief:
 
 ```
 Claude wrote this brief for another agent: examine anything in it that seems inconsistent, and
 don't follow it blindly.
 
-These tiles show <the object, in the requirement's words>, after the image was processed by
-<trick name: its `visual` line from the pool>. Find every object in every tile. Write JSON to
-<path>: {"marks": [{"tile": n, "x": gx, "y": gy, "sure": 0..1}]}, with x and y in the tile's grid
-units. Then write, in numbered steps, how you decided what was an object and what was not - what
-you looked at first, what made you reject a near miss - concretely enough that someone could write
-a program from your steps.
+These tiles (<the tile PNG paths>; view each with the Read tool) show <the object, in words
+describing its composition and arrangement only - no thresholds, check letters or numbers from
+the study's rules>, after the image was processed by <trick name: its `visual` line from the
+pool>. Read nothing else in the repository.
+
+Find every object in every tile. First write JSON to .cache/views/<view>/marks.json:
+{"marks": [{"tile": n, "x": gx, "y": gy, "sure": 0..1}]}. x and y are the numbers printed on the
+grid lines (0-159 along each edge of a tile), never the PNG's own pixels. Use sure >= 0.5 for a
+mark you would count. Then, in at most 8 numbered steps, say how you decided what was an object
+and what was not, concretely enough that someone could write a program from your steps.
 ```
 
 ## 4. Score the marks, then mine the winner
-
-Score each view's marks against the ground truth with the same grader the lab uses:
 
 ```
 cd studies/nor/detection && python3 mutate.py marks .cache/views/<view>/marks.json --tiles .cache/views/tiles.json
 ```
 
-Compare every view against the raw view's agent, item by item:
+It prints the agent's tp and fp on the labelled items inside the tiles, and for each registry
+version (every version the lab keeps runnable) how many real items the agent found that the version
+misses. Marks under sure 0.5 are not scored. Unlabelled spots count for nothing, so a low fp proves
+little. Compare the views on those numbers:
 
-- **A view whose agent finds items the raw view's agent misses** has information the algorithm
-  ignores. Its decision steps are the material: write them as pseudocode, and build that as a new
-  version through [explaining-to-a-child](../explaining-to-a-child/SKILL.md) step 4 (implement it
-  literally first).
-- **A view whose agent rejects false items the registry keeps** has a verification rule. Try that
-  rule as a `verify` mutation over the same trick
-  ([mutating-an-algorithm](../mutating-an-algorithm/SKILL.md)).
-- **No view beats the raw one**: the trick does not help an eye either. Note that in the trick's
-  ledger line and choose differently next time.
+- **A view whose agent finds more real items than the raw view's agent** carries information the
+  algorithm ignores. Its decision steps are the material: write them as pseudocode, and build that
+  as a new version through [explaining-to-a-child](../explaining-to-a-child/SKILL.md) step 4
+  (implement it literally first).
+- **A view whose agent rejects false items the registry keeps** has a verification rule. When the
+  rule is "the map is low over the candidate", run it as
+  `python3 mutate.py one 'verify:<trick>@<chan>:reject'`
+  ([mutating-an-algorithm](../mutating-an-algorithm/SKILL.md)). A rule of any other shape lands as a
+  switch in the base and is ablated.
+- **No view beats the raw one**: the trick does not help an eye either.
 
-Even the best agent's marks are a reference point, not ground truth. They score the information in
-a view, and never label anything.
+Record the run in the ledger as one table (view, agent tp/fp, real items found that the base
+misses), with the best agent's decision steps beside it, whatever the outcome. Even the best agent's
+marks score the information in a view; they never label anything.

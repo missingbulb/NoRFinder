@@ -234,8 +234,9 @@ Each iteration:
    generator - tuning the filter that catches it only hides the fault.
 3. **Change one thing, naming the mechanism** ("the band line sits mid-object because it is
    fitted to edge density, not each object's own extent"), in a new version. For a generator
-   rebuild, run [explaining-to-a-child](../explaining-to-a-child/SKILL.md) and implement the best
-   explanation; if it fails, take a completely different explanation rather than patch the old one.
+   rebuild, run [explaining-to-a-child](../explaining-to-a-child/SKILL.md) with the error class from
+   step 2 as its wall, and build its step 4 (the literal version first). If it fails, take a
+   completely different explanation rather than patch the old one.
 4. **Build until working** on the sample render before scoring.
 5. **Keep or drop on the score**, reviewing the gained and lost objects, and write the iteration
    note (research-project §5). Record the attempt in the ledger whether kept or dropped.
@@ -291,11 +292,14 @@ on real images (research-project §3).
 **Stuck** - no error class you can name, or every fix trades one error for another: research the
 *object*, not the code - how it is made, printed or stained, its dimensions and arrangement, what
 published methods and the engine's docs say - and turn that into legitimate assumptions before
-trying another parameter.
+trying another parameter. That research is
+[algorithm-ideation](../algorithm-ideation/SKILL.md)'s step 1 and its lenses: name the wall there.
 
 **Stop iterating after two consecutive iterations without a gain beyond noise**, or when every
-remaining miss is a `notes` class that needs the owner or a new direction. A miss class that needs a
-new direction goes to [algorithm-ideation](../algorithm-ideation/SKILL.md); the rest go to the owner.
+remaining miss is a `notes` class that needs the owner or a new direction. Write the exit report
+("How to report at each exit", below), then start
+[algorithm-ideation](../algorithm-ideation/SKILL.md) without waiting. Go to the owner only for a
+class that needs a fact of theirs.
 
 ## The ledger - every direction tried, and why it won or lost
 
@@ -314,9 +318,14 @@ each entry is specific enough to act on without the code:
 
 Before starting a new direction, search the ledger for it and for its failure conditions. An
 owner-pitched idea gets an entry even when you did not try it, stating why. The dated scoring
-table, per sample per version, lives in the same place; every entry cites its rows.
+table, per sample per version, lives in the same place; every entry cites its rows. Two more tables
+live there, and are created the first time a sibling skill needs them:
 
-## Between stretches - the neighbouring skills
+- **Untried ideas**: the direction, its route or lens, the class it targets, the items it could
+  recover, its cost, and its kill test.
+- **Versions**: the version, its verdict against the registry, and "Revisit if".
+
+## Leaving the loop - the neighbouring skills
 
 The loops above run inside a family of skills, each with its own moment:
 
@@ -324,8 +333,9 @@ The loops above run inside a family of skills, each with its own moment:
 |---|---|
 | A version first runs, a threshold is in doubt, or presets are wanted | [tuning-parameters](../tuning-parameters/SKILL.md) |
 | New ground truth arrives | [refitting-on-new-ground-truth](../refitting-on-new-ground-truth/SKILL.md) |
-| The stop rule above fires, or the owner asks for a new approach | [algorithm-ideation](../algorithm-ideation/SKILL.md), which runs [mutating-an-algorithm](../mutating-an-algorithm/SKILL.md), [explaining-to-a-child](../explaining-to-a-child/SKILL.md) and [solving-a-transformed-view](../solving-a-transformed-view/SKILL.md) |
-| Two versions tie by different mechanisms | [fusing-algorithms](../fusing-algorithms/SKILL.md) |
+| The stop rule above fires, or the owner asks for a new version | [algorithm-ideation](../algorithm-ideation/SKILL.md), which picks among [mutating-an-algorithm](../mutating-an-algorithm/SKILL.md), [explaining-to-a-child](../explaining-to-a-child/SKILL.md), [solving-a-transformed-view](../solving-a-transformed-view/SKILL.md) and its own lenses |
+| The study's mutation sweep runs, by hand or on its schedule | [mutating-an-algorithm](../mutating-an-algorithm/SKILL.md) |
+| Two versions tie by different mechanisms, or disagree on many items | [fusing-algorithms](../fusing-algorithms/SKILL.md) |
 | A long stretch of quality work ends, or a grader run creeps past a feedback round | [speeding-up-an-algorithm](../speeding-up-an-algorithm/SKILL.md) |
 
 ## Going to the owner
@@ -334,7 +344,7 @@ Go when one of these holds; otherwise keep running the inner loop alone:
 
 - the render (State 2) or the answer key (State 3) needs approval, or a stage's overlay is ready
   - stop after each stage's overlay, not after the whole pipeline
-- two iterations without a gain beyond noise
+- the stop rule fired: the exit report goes to the owner while ideation starts
 - a fix would add a criterion for what the object *is* - only the owner adds domain rules
 - a filter's threshold is in doubt - show the objects only that filter rejects
 - the objects look separable: approve sample sub-images and say whether neighbours interact

@@ -1,6 +1,6 @@
 {
   "id": "mutation-sweep",
-  "description": "Splices every runnable trick from the repo's trick pool into the default NoR finder, scores each mutant against the ground truth, and grows the mutants that found a NoR no finder finds, or dropped a false one every finder keeps, into switches or a new finder.",
+  "description": "Splices every runnable trick from the repo's trick pool into the default NoR finder, scores each mutant against the lab's labels above a chance bar, and grows the mutants that found a NoR no finder finds, or dropped a false one every finder keeps, into switches or a new finder.",
   "trigger": "schedule",
   "preconditions": [
     "schedule:at-most-weekly",

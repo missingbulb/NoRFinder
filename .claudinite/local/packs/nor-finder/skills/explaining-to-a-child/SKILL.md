@@ -9,63 +9,76 @@ metadata:
 
 # Explaining the task to a child
 
-Someone who cannot point has to say what makes the object the object. Saying that to a child forces
-the steps to be concrete enough to draw, and a step that can be drawn can be coded. The danger is
-sameness: five agents asked the same question give one answer five times. Each explainer therefore
-gets a different **constraint**, and none of them sees the current algorithm.
+Five agents asked the same question give one answer five times. So each explainer gets a
+different **constraint**, and none of them sees the current algorithm.
 
 ## 1. Prepare what the explainers see
 
-- The task, in the study's requirement words: what counts as an object, from its requirements
-  document. Never the code, the ledger or the current version's name. An explainer that knows the
-  current approach explains that approach.
-- Two or three rendered tiles of the raw input with real objects in them, and one tile of the
-  wall's failure class (a missed object, or a false one every version keeps), unmarked. Render
-  them with the study's own render at the input's native colours.
+- **The task**, as the object's composition and arrangement only (NoR: the "Shape" and
+  "Structure" bullets of `studies/nor/docs/requirements.md` R7). Never a threshold, a check letter
+  or a number from the study's rules, and never the code, the ledger or a version's name. An
+  explainer that knows the current approach explains that approach.
+- **Tiles of the raw input**, over real objects and over the wall's failure class, unmarked, in the
+  input's native colours. On NoR:
+
+  ```
+  cd studies/nor/detection && python3 mutate.py view raw --out .cache/views
+  ```
+
+  Its first tiles hold the hard cases: real items no version finds, then false ones every version
+  keeps.
 
 ## 2. Run five explainers, in parallel, each with its own constraint
 
-Give each subagent the brief below with one constraint from this list. Pick the five that fit the
-study, or invent ones in the same spirit:
+Give each subagent the brief below with one rule from this list. Pick the five that fit the study,
+or invent ones in the same spirit:
 
-- **Only a ruler and a pencil**: the child may measure lengths and angles, nothing else.
-- **A tiny window**: the child sees the picture only through a hole the size of one object, and must
-  move it.
-- **Only colours**: the child can say which colour is where, and how strong it is, never what shape.
-- **Paint and scissors**: the child may paint over the picture or cut pieces out, as many times as
-  needed.
-- **Comparing neighbours only**: every decision is "is this like the thing next to it?"
-- **From far away first**: the child starts from the whole picture blurred and works inward.
-- **Counting game**: the answer has to come from counting something.
+- the child may only measure lengths and angles, with a ruler and a pencil
+- the child sees the picture only through a hole the size of one object, and must move it
+- the child may only say which colour is where and how strong it is, never what shape
+- the child may paint over the picture or cut pieces out, as many times as needed
+- the child may only decide by asking "is this like the thing next to it?"
+- the child starts from the whole picture blurred and works inward
+- the child's answer has to come from counting something
 
 ```
 Claude wrote this brief for another agent: examine anything in it that seems inconsistent, and
 don't follow it blindly.
 
-You are explaining to a five-year-old how to find <the object, in the requirement's words> in
-these pictures. You cannot point, and you cannot use technical words. The child has <constraint>.
-Write the numbered steps the child follows, starting from the plain picture, in words concrete
-enough that they could draw what each step produces. Then give, for each step, one line of
-pseudocode a programmer could implement with ordinary image operations. End with the one way your
-method would get it wrong. Look at every tile before you write; the last tile is a hard case, so
-say what your steps do there.
+You are explaining to a five-year-old how to find <the object, in composition and arrangement
+words> in these pictures: <the tile PNG paths; view each with the Read tool>. Use only these
+pictures and this text; open no other file in this repository. You cannot point, and you cannot
+use technical words. The rule for the child: <constraint>. Write the numbered steps the child
+follows, starting from the plain picture, in words concrete enough that they could draw what each
+step produces. Then give, for each step, one line of pseudocode a programmer could implement with
+ordinary image operations. End with the one way your method would get it wrong. Tiles <n, m> are
+hard cases: say what your steps do there.
 ```
 
 ## 3. Score the explanations before coding any
 
-Read the five side by side. For each one, write down which failure class from the ideation wall it
-could fix, whether it differs from the current version in its unit of decision or in its evidence,
-and whether its own stated failure mode is one the study already handles. Drop the explanations that
-restate the current version.
+Drop the explanations that restate the current version. For each of the rest, make
+[algorithm-ideation](../algorithm-ideation/SKILL.md) step 3's estimate: the failure class from the
+ideation wall it targets, how many of those items it could recover, its cost, and its kill test.
+Then add whether its own stated failure mode is one the study already handles. Every explanation
+goes in the ledger's table of untried ideas, the ones not coded included, with the constraint that
+produced it.
 
 ## 4. Translate the best one or two into versions
 
-Implement the pseudocode literally first, as a new version in the lab, before improving any step.
-The literal version is the measurement of the idea, so improving it first measures your
-improvements instead. Then grade it against the registry with the lab's comparison, and run the
-mutation sweep on it as the base when it lands near the best
-([mutating-an-algorithm](../mutating-an-algorithm/SKILL.md)). Record all five explanations in the
-ledger's ideas table, including those not coded, with the constraint that produced each.
+Implement the pseudocode literally first, as a new version in the lab's registry (NoR:
+`nor_lab.finders()`), kept out of the page's list until it wins. The literal version is the
+measurement of the idea: improving it first would measure your improvements instead. Score it
+against the registry:
 
-When the first round gives nothing new, run five more constraints rather than re-asking the same
-five. A round's value is in being different from the last.
+```
+cd studies/nor/detection && python3 nor_lab.py cmp tl rf <new> && python3 nor_lab.py ablate tl <new>
+```
+
+- It wins, or lands within noise of the best (no evidence either way by the keep rule in image-algorithm-development State 4):
+  run the mutation sweep with it as base ([mutating-an-algorithm](../mutating-an-algorithm/SKILL.md)).
+- It ties by a different unit of decision or different evidence: go to
+  [fusing-algorithms](../fusing-algorithms/SKILL.md).
+
+When a round gives nothing new, run five more constraints rather than re-asking the same five. A
+round is worth something only if it differs from the last.
