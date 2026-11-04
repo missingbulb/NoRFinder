@@ -40,7 +40,8 @@ A study is a folder with a `study.json`:
   `over-image` (floating over the image) and `body`; there is no right bar. A `box foldable` section folds
   with the steps: its `data-opens` names the step (`load`, one of its `phases`, `submit`) after which it
   opens, or `user` for one only its title opens, and `data-folds` the step after which it folds again.
-- `files` — what Load accepts, the text the empty view shows, and optionally `folders`, the study's Google
+- `files` — `from`, the one place it loads images from (`local`, this computer, or `drive`, Google Drive:
+  `req/shell/load/from`), what Load accepts, the text the empty view shows, and optionally `folders`, the study's Google
   Drive folders: the Drive dialog opens on the first, and Data Management works on them all.
 - `permissions` — optional, the Google accounts (by email) holding each role: `data_management` sees Data
   Management, `ground_truth_writer` will write ground truth to Drive. A study's panels step aside while Data

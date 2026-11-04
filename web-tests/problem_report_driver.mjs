@@ -89,13 +89,13 @@ async function open(ua) {
     if (sessionStorage.getItem("primed")) return;
     sessionStorage.setItem("primed", "1");
     localStorage.setItem("nor-welcome", JSON.stringify("anonymous"));
-    localStorage.setItem("nor-drive-recent", JSON.stringify([{ id: "d1", name: secret, path: ["Lab"], study: "viewer" }]));
+    localStorage.setItem("nor-drive-recent", JSON.stringify([{ id: "d1", name: secret, path: ["Lab"], study: "fixture" }]));
   }, SECRET);
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { if (!/thrown-for-the-test/.test(e.message)) { console.error("page error: " + e.message); await done(1); } });
   page.setDefaultTimeout(10000);
-  await page.goto(origin + "/web/index.html");
-  await page.waitForFunction(() => $("#sb-version").textContent && !$("#recent").hidden);
+  await page.goto(origin + "/web/fixture");
+  await page.waitForFunction(() => $("#sb-version").textContent && $("#recent .recent"));
   await page.waitForTimeout(300); // browsers.json arrives
   return { ctx, page };
 }
@@ -126,7 +126,7 @@ const reportIcon = (page) => page.evaluate(() => { const b = $("#sb-report"); re
     `in Opera the same icon is a warning sign, saying why: "${icon.title}"`);
 
   // six actions, the last five quoted, oldest first; the recent image is logged by what it is, never its name
-  await page.click("#load-menu summary");
+  await page.click("#image-pick");
   await page.click("#recent .recent");
   // the image is not on this device and Drive cannot be reached: the Drive dialog opens on its folder
   await page.waitForFunction(() => $("#drive-dlg").open);
@@ -142,14 +142,14 @@ const reportIcon = (page) => page.evaluate(() => { const b = $("#sb-report"); re
   const q = await issue(page);
   await check(q.template === "bug-report.yml" && q.title === "Unsupported browser: ", `the icon opens a new issue on the bug-report form: ${q.template}, "${q.title}"`);
   await check(/^Opera 120 on Windows, not supported \(Mozilla/.test(q.browser), `it names the browser: ${q.browser}`);
-  await check(/^- Site version: \d/.test(q.state) && /- Study: Image Viewer \(viewer\)/.test(q.state) && /- Image: none open/.test(q.state) && /- Online: yes/.test(q.state),
+  await check(/^- Site version: \d/.test(q.state) && /- Study: Fixture \(fixture\)/.test(q.state) && /- Image: none open/.test(q.state) && /- Online: yes/.test(q.state),
     `and the page's state:\n${q.state}`);
   const lines = q.actions.split("\n");
   await check(lines.length === 5 && /^1\. .*Clicked “a recent image”$/.test(lines[0]) && /Clicked “Settings…”/.test(lines[2]) && /Clicked “Unsupported browser”$/.test(lines[4]),
     `and the last five actions, oldest first:\n${q.actions}`);
   await check(/thrown-for-the-test/.test(q.errors) && !/thrown-for-the-test/.test(q.actions), `the error the page met is listed apart: ${q.errors}`);
   const log = await kept(page);
-  await check(log.length >= 7 && log.some((e) => /Opened the study “Image Viewer”/.test(e.text)), `the page keeps the log on this device (${log.length} entries)`);
+  await check(log.length >= 7 && log.some((e) => /Opened the study “Fixture”/.test(e.text)), `the page keeps the log on this device (${log.length} entries)`);
   await check(!JSON.stringify(log).includes(SECRET) && !JSON.stringify(q).includes(SECRET), "no image's name is in the log or the report");
 
   // across a reload, from the avatar's menu

@@ -165,6 +165,9 @@ try {
   await page.dblclick('#drive-list .item[data-id="linekept000000000001"]');
   await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded.");
   await until(page, async () => (await (await caches.open("nor-images-v1")).keys()).length === 1);
+  // the box folds once the image is open, a step coming after Load: a click opens it again
+  await page.click("#image-box.folded");
+  await page.waitForFunction(() => !$("#image-box").classList.contains("folded") && $("#unload").getClientRects().length);
   check(/kept\.png/.test(await page.textContent("#image-pick")), "once open, the selector names the image");
   check(await shown("#unload"), "and Unload shows");
   const [p2, u2, d2] = [await box("#image-menu"), await box("#unload"), await box("#load-drive")];
@@ -183,12 +186,20 @@ try {
   check(d.find((x) => x.name === "kept.png").kept && !d.find((x) => x.name === "far.png").kept, "online, the image kept here carries the mark, the others nothing", d);
   const colour = await page.evaluate(() => getComputedStyle(document.querySelector("#drive-list .offline-mark")).color.match(/\d+/g).map(Number));
   check(colour[1] > colour[0] + 40 && colour[1] > colour[2] + 40, "the mark is green", colour);
+  // the nor-finder pack's row-indicators-edges: what every row shows at its edges, what only some do inward
+  const order = await page.$eval('#drive-list .item[data-id="linekept000000000001"]', (b) => {
+    const at = (sel) => [...b.querySelectorAll("*")].indexOf(b.querySelector(sel)), r = (sel) => b.querySelector(sel).getBoundingClientRect();
+    return { meta: b.lastElementChild.classList.contains("meta"), inward: [".age", ".offline-mark"].every((sel) => r(sel).right <= r(".meta").left + 1 && r(sel).left >= r(".name").left),
+      before: at(".age") < at(".offline-mark") };
+  });
+  check(order.meta && order.inward && order.before, "a row's size and date, which every image shows, sit at its edge; its age and mark inward", order);
   check(await page.evaluate((id) => !!JSON.parse(localStorage.getItem("nor-drive-listings") || "{}")[id], ROOT), "the folder's listing is kept on this device");
   await page.click("#drive-dlg button[value=close]");
 
   await ctx.setOffline(true);
   await page.waitForFunction(() => document.documentElement.classList.contains("offline"));
   await page.click("#image-pick");
+  await until(page, () => document.querySelectorAll("#image-menu .recent:disabled").length > 0, null, { timeout: 3000 }).catch(() => {});
   r = await rows();
   check(r.find((x) => x.name === "kept.png").grey === false && r.filter((x) => x.name !== "kept.png").every((x) => x.grey), "offline, the selector greys the images not kept here", r);
   await page.keyboard.press("Escape");
@@ -209,6 +220,7 @@ try {
   await page.waitForFunction(() => !document.documentElement.classList.contains("offline"));
   FILES.push({ id: "linenew000000000001", name: "new.png", bytes: Buffer.concat([PNG, Buffer.from([3])]) });
   calls.length = 0;
+  await page.click("#image-box.folded");
   await page.click("#load-drive");
   await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 5);
   check(calls.includes("list"), "online, opening the dialog reads the folder again", calls);

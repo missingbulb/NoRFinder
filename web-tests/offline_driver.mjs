@@ -9,10 +9,10 @@
 // A first visit whose network drops as the study's modules load says so plainly.
 // Then req/shell/offline/default, with the network gone (the browser offline and the server refusing): the page opens at its address
 // and the Python already on this device runs; the status bar's online icon shows offline; what needs the network is held; a
-// prepared study runs, and From Google Drive lists the images kept here and opens one; a study whose Python is not
+// prepared study runs, and the Drive dialog lists the images kept here and opens one; a study whose Python is not
 // here says so, and once the network is back loads its Python and reads its folder in an open Make available
 // offline, with no reload; and the network going and coming back mid-session, the browser saying online all
-// along, shows, an open Drive dialog following, and coming back shows within seconds though a release landed
+// along, shows, an open Drive dialog greying what is not kept, and coming back shows within seconds though a release landed
 // meanwhile is still being copied.
 // TIFF: a small z-stack the vascular study can open. Optional SHOTS: a directory for screenshots.
 // Exits 1 on a failed check, 2 when it cannot run.
@@ -24,6 +24,7 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { ENGINE } from "./engine.mjs";
+import { pressDrive, pickRecent } from "./drive_open.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -209,11 +210,10 @@ try {
   await page.goto(origin + "/app/vascular");
   await ready(60000);
   check(true, "offline, the prepared study runs");
-  await page.click("#load-menu summary");
-  await page.click('#load-menu .item[data-src="drive"]');
+  await pressDrive(page);
   await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length >= 2, null, { timeout: 10000 }).catch(() => {});
   const kept = await page.$$eval("#drive-list .item .name", (ns) => ns.map((n) => n.textContent));
-  check(kept.includes("stack one.tif") && kept.includes("stack two.tif"), "offline, From Google Drive lists the images kept here: " + kept.join(", "));
+  check(kept.includes("stack one.tif") && kept.includes("stack two.tif"), "offline, the Drive dialog lists the images kept here: " + kept.join(", "));
   await shot(page, "offline-drive");
   await page.dblclick('#drive-list .item:has-text("stack two.tif")');
   await page.waitForFunction(() => window.shellForTests.page.get("image")?.name === "stack two.tif", null, { timeout: 60000 }).catch(() => {});
@@ -250,20 +250,26 @@ try {
 
   // the network goes mid-session while the browser still says it is online (a dead Wi-Fi), the Drive dialog open on
   // the study's folder: the page notices by itself, and the dialog follows
-  await page.click("#load-menu summary");
-  await page.click('#load-menu .item[data-src="drive"]');
+  await pressDrive(page);
   await page.waitForSelector("#drive-dlg[open]");
+  // on the vascular study's folder, its images kept here, its subfolder never listed in the dialog
+  await page.fill("#drive-link", vascular.files.folders[0]); await page.click("#drive-go");
+  await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 2);
   const drivePath = () => page.textContent("#drive-path");
   down = true;
   await page.waitForSelector("#sb-online .off", { state: "visible", timeout: 40000 }).catch(() => {});
   check(await page.isVisible("#sb-online .off"), "mid-session, with the browser still saying online, the page notices the site not answering");
-  await page.waitForFunction(() => /offline/.test(document.querySelector("#drive-path").textContent), null, { timeout: 5000 }).catch(() => {});
-  check(/offline/.test(await drivePath()), "the open Drive dialog then lists the images kept here: " + (await drivePath()));
+  // req/shell/drive/offline-listing: the folder stays as last listed, what is not kept here greyed
+  const greyed = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#drive-list .item")].map((b) => [b.querySelector(".name").textContent, b.disabled])));
+  await page.waitForFunction(() => document.querySelector("#drive-list .item:disabled"), null, { timeout: 5000 }).catch(() => {});
+  let g = await greyed();
+  check(g.sub === true && g["stack one.tif"] === false && !/offline/.test(await drivePath()), "the open Drive dialog then greys the subfolder never listed, the kept image left to open: " + JSON.stringify(g) + " " + (await drivePath()));
   down = false;
   await page.waitForSelector("#sb-online .off", { state: "hidden", timeout: 40000 }).catch(() => {});
   check(!(await page.isVisible("#sb-online .off")), "and notices it answering again");
-  await page.waitForFunction(() => !/offline/.test(document.querySelector("#drive-path").textContent), null, { timeout: 5000 }).catch(() => {});
-  check(!/offline/.test(await drivePath()), "and the Drive dialog goes back to the study's folder: " + (await drivePath()));
+  await page.waitForFunction(() => document.querySelector("#drive-list .item") && !document.querySelector("#drive-list .item:disabled"), null, { timeout: 5000 }).catch(() => {});
+  g = await greyed();
+  check(Object.keys(g).length === 2 && !Object.values(g).some(Boolean), "and the Drive dialog's folder can be opened from again: " + JSON.stringify(g));
   await page.keyboard.press("Escape");
 
   // a release lands while the page is offline: back online, the icon says so at once, not once the new copy is in

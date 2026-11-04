@@ -20,6 +20,7 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import assert from "node:assert/strict";
+import { standInDrive, openFromDrive } from "../../../../web-tests/drive_open.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -72,6 +73,7 @@ if (process.env.HTTPS_PROXY) {
     } catch (e) { console.error("could not fetch", u, e.message); return r.fulfill({ status: 404, body: "" }); }
   });
 }
+await standInDrive(ctx);
 const page = await ctx.newPage();
 page.on("pageerror", (e) => { console.error("page error:", e.message); process.exitCode = 1; });
 
@@ -106,7 +108,7 @@ let opened = 0;
 const slide = fs.readFileSync(TIF);
 async function open() {
   const done = next("opened");
-  await page.setInputFiles("#file", { name: `slide ${++opened}.tif`, mimeType: "image/tiff", buffer: slide }); await done; await settled();
+  await openFromDrive(page, { name: `slide ${++opened}.tif`, mimeType: "image/tiff", buffer: slide }); await done; await settled();
 }
 async function findWith(f) {
   const done = next("refilter");   // finding ends with the first filter pass on the new candidates

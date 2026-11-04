@@ -15,6 +15,8 @@ import http from "node:http";
 import path from "node:path";
 import { offSite } from "./off_site.mjs";
 import { keptContext } from "./kept_context.mjs";
+import { pressDrive, pickRecent } from "./drive_open.mjs";
+import { repoFile } from "./repo_file.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -34,10 +36,8 @@ const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(""); }
   if (u === "/web/config.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(CONFIG); }
-  // a folder serves its index.html, as the site does: the page rewrites its own address to the folder
-  let f = path.join(repo, u);
-  if (fs.existsSync(f) && fs.statSync(f).isDirectory()) f = path.join(f, "index.html");
-  if (!fs.existsSync(f)) { r.writeHead(404); return r.end(); }
+  const f = repoFile(repo, u);
+  if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
@@ -73,7 +73,7 @@ page.setDefaultTimeout(10000);
 
 const quiet = async (ms = 600) => { for (let n = -1; n !== reads.length; ) { n = reads.length; await page.waitForTimeout(ms); } };
 const open = async () => {
-  await page.click("#load-menu summary"); await page.click('#load-menu .item[data-src="drive"]');
+  await pressDrive(page);
   await page.waitForFunction((n) => document.querySelectorAll("#drive-list .item").length === n, FILES.length - 1);
   await quiet();
 };
@@ -84,7 +84,7 @@ const row = (all, name) => all.find((r) => r.name === name) || {};
 const readsOf = (name) => reads.filter((r) => r.name === name).map((r) => r.how).join();
 
 try {
-  await page.goto(origin + "/web/index.html");
+  await page.goto(origin + "/web/fixture");
   await page.waitForFunction(() => window.$ && $("#title").textContent);
   await open();
   let all = await rows();

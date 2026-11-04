@@ -14,6 +14,7 @@ import path from "node:path";
 import { repoFile } from "./repo_file.mjs";
 import { offSite } from "./off_site.mjs";
 import { ENGINE } from "./engine.mjs";
+import { localStudy } from "./local_study.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -57,6 +58,7 @@ const shot = async (page, name) => { if (shots) await page.locator("#view").scre
 async function open(um) {
   scale = um || [null, null];
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  await localStudy(ctx, "fixture");
   await ctx.route(offSite(origin), (r) => r.abort());
   // the minimap hidden, as a user would put it away: it hovers over the image's top left corner, where these
   // checks point and click

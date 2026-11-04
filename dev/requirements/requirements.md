@@ -299,7 +299,8 @@ nobody has decided: what the page does there is not a requirement yet.
   the study's own folder (`files.drive` in its `study.json`), else on the link last pasted in any
   study, and lists a folder link at once; opening on a link is not pasting it
   (`web-tests/test_drive_folder_page.py`). Nothing
-  else read from Drive is kept, apart from the image files Auto-save images keeps (`req/shell/storage/manage`, `req/shell/drive/kept-images`;
+  else read from Drive is kept, apart from the image files Auto-save images keeps and what each folder listed holds
+  (`req/shell/storage/manage`, `req/shell/drive/kept-images`, `req/shell/drive/offline-listing`;
   `studies/nor/tests/test_drive_dialog.py`).
   </details>
 
@@ -329,8 +330,8 @@ nobody has decided: what the page does there is not a requirement yet.
   one, reads it again from Drive and puts what Drive says now in its place, kept too. Online, an image kept on this
   device carries the offline mark (`req/shell/offline/mark`), the others nothing. Offline with no listing kept for
   the link, the dialog lists the images kept on this device instead (`req/shell/offline/default`). Settings lists
-  the listings among what is kept on this device only (`req/shell/account/settings`). Test:
-  `web-tests/test_image_line_page.py`.
+  the listings among what is kept on this device only (`req/shell/account/settings`), and the privacy policy says
+  they are kept. Test: `web-tests/test_image_line_page.py`.
   </details>
 
 - `req/shell/drive/previews` A folder's `rauntruth-previews.tiff` gives every image it covers a preview at once, a stack turning on hover.
