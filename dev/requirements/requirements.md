@@ -1529,7 +1529,7 @@ owner's decisions on the stacks and the vessel model, are
   `reviewed_regions`. Test: `studies/vascular/tests/test_vessel_tasks_page.py`.
   </details>
 
-- `req/vascular/model/run` Processing picks an extraction algorithm, says how it works, and Execute draws the vessel model in the browser.
+- `req/vascular/model/run` Processing picks an extraction algorithm, says how it works and how well, and Execute draws the vessel model in the browser.
   <details>
 
   Set by the owner on 2026-11-04, as NoR's Processing box. The box lists the extraction lab's
@@ -1539,8 +1539,17 @@ owner's decisions on the stacks and the vessel model, are
   page shows), and the model it draws opens over the stack. The study ships no drawn models: a
   stack opens with none until Execute. A vessel model file (one saved earlier, say) can still be
   loaded from a small link beside Execute. Show low-confidence vessels stays in the box, under
-  Execute, once a model is open. Test: `studies/vascular/tests/test_extract_bridge.py` (the real
-  Python in Pyodide) and `studies/vascular/tests/test_vessel_tasks_page.py` (the page).
+  Execute, once a model is open. Changed by the owner on 2026-11-04: the box behaves as NoR's
+  (`req/nor/find/settings`). Each algorithm in the list carries its own icon and its name, and its
+  precision and recall against the provisional labels (`analysis/extraction/labels/`, a model's
+  verdicts, not the owner's); How the <name> algorithm works gives its steps as a nested list
+  (written as a Markdown outline), then "<Name> algorithm shows precision of X and recall of Y on
+  N curves a model judged", in bold, the numbers the list shows, and that the judge is not the
+  owner. The numbers ship with the page part (`studies/vascular/web/algorithm_metrics.json`, made
+  by `lab.py grade --json`). The list leaves out a version another one beats beyond noise on those
+  labels (`lab.RETIRED`, each with its reason); the lab still runs it. Test:
+  `studies/vascular/tests/test_extract_bridge.py` (the real Python in Pyodide) and
+  `studies/vascular/tests/test_vessel_tasks_page.py` (the page).
   </details>
 
 - `req/vascular/model/view` Above the stack: show the image, the model, the model over the image, or both side by side; colour by depth; vessel widths.

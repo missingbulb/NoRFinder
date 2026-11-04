@@ -38,7 +38,7 @@ py.runPython(`import sys, json, importlib; sys.path.insert(0, '/py'); study = im
 const problems = [];
 const info = JSON.parse(py.runPython("study.ready()"));
 const keys = (info.algorithms || []).map((a) => a.key);
-if (keys.length < 2 || new Set(keys).size !== keys.length || !info.algorithms.every((a) => a.title && a.about && a.name)) problems.push(`ready: ${JSON.stringify(keys)}`);
+if (keys.length < 2 || new Set(keys).size !== keys.length || !info.algorithms.every((a) => a.title && a.icon && a.about && a.name)) problems.push(`ready: ${JSON.stringify(keys)}`);
 let out = [];
 const answer = bridge(py, (m) => out.push(m), study.progress);
 const ask = (m) => { out = []; answer(m); return out; };

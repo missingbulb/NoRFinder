@@ -59,3 +59,37 @@ brightness), 6-26 flagged short-loop edges per stack that are strong on both sid
   bed is a mesh with loops of ~9-11 segments; "narrowing is the flow direction" holds in arterioles
   but flips in venules, and capillaries barely taper.
 - **UI** (the viewer threads): tubes, white 80% opaque vessels, faded low confidence.
+
+## Performance pass (2026-11-04)
+
+A change was kept only when every version's model on every stack hashed the same before and after
+(`perf.py check`: the whole model file, score card included). Times are the best of runs on one
+core of the session's machine; the peak is the run's own Python and numpy allocations
+(tracemalloc), the page's the WebAssembly heap after Execute (`perf_pyodide.mjs`).
+
+| id | what was slow | change | effect |
+|---|---|---|---|
+| P1 | Each version re-ran the one before it, so a v5 run prepared the stack five times (`noise_units` 5×, `segment` 4×, `sato` 2×) | `vessel_model.shared`, opened by `lab.run_volume`: the flattened signal and depth, the masks and the ridge map are made once for the chain and the scorer | most of the time below |
+| P2 | `noise_units` and `segment` held about six float copies of the whole stack at once; the page made one more before Execute | `flatten` works slice by slice (every filter there has σ = 0 in depth), and reads a stack of any number type as it is | the peak below; the page no longer copies the stack |
+| P3 | `clean`'s pass-through join and spur test rescanned every edge for each node, and `merge` rewrote every edge | incidence maps, the merges in the same order (a lazy heap on where the edges first name a node), so each edge keeps its key and direction | `clean` 4-12× faster; identical on all 16 real graphs and 3,000 random ones |
+| P4 | `score.profile_radius`: one interpolation and two 10-sample medians per curve sample | one interpolation call per edge, the walk to half height as array operations | identical on 4,000 random curves |
+
+Before → after, v5 (every version moved alike: 59-78% less time, 74-88% lower peak, the same model):
+
+| stack | Python seconds | Python peak MB | page seconds | page heap MB after Execute (after opening) |
+|---|---|---|---|---|
+| frontal r1 | 35.4 → 10.4 | 351 → 91 | 52.5 → 20.6 | 803 → 322 (224) |
+| frontal r2 | 62.3 → 15.4 | 681 → 92 | 94.0 → 30.3 | 1517 → 353 (353) |
+| CA1 r1 | 48.9 → 12.6 | 516 → 91 | 67.3 → 24.0 | 1198 → 306 (306) |
+| CA1 r2 | 71.8 → 15.9 | 681 → 92 | 90.1 → 31.2 | 1517 → 353 (353) |
+
+Considered and left alone:
+
+- **Tiling `sato` by row bands** (its Hessian sets the remaining peak, about 70 MB over a 1200² field):
+  bit-identical only with a halo taken from skimage's own truncation rule, so our code would restate
+  the library's internals; revisit if the 2D peak starts to matter.
+- **A cheaper background** (the 11 µm Gaussian, a 161-tap kernel per slice, is now the largest single
+  cost): an FFT or a downsampled background changes the last bits of every number, so it is an
+  algorithm change, to be graded as a version, not a performance pass.
+- `skeleton_graph`'s pixel walk and `theilslopes` (about 1 s each): small, and the walk's tie-breaking
+  order would have to be reproduced exactly.

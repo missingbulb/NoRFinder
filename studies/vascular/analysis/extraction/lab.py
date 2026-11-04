@@ -8,7 +8,7 @@ the graph with score.py; the card goes into the model file as "score".
     python3 analysis/extraction/lab.py run VERSION STACK.tif OUT.json
     python3 analysis/extraction/lab.py cmp [VERSION ...] [--stacks NAME ...]   # table over the owner's stacks
     python3 analysis/extraction/lab.py render VERSION [VERSION ...] --stack NAME --out OUT.png [--box X0 Y0 X1 Y1]
-    python3 analysis/extraction/lab.py grade [VERSION ...]                     # against the provisional labels
+    python3 analysis/extraction/lab.py grade [VERSION ...] [--json OUT]        # against the provisional labels
 
 Stacks are the CD31 trimmed files in data/raw/ (python3 analysis/stack_sources.py), named by their stem.
 Runs are cached in analysis/extraction/runs/ (not committed) by version, stack and the version's source.
@@ -22,6 +22,12 @@ import vessel_model as vm
 
 VERSIONS = {'v1': 'v1_flat_skeleton', 'v2': 'v2_scored_repair', 'v3': 'v3_geodesic_bridges', 'v4': 'v4_line_evidence', 'v5': 'v5_no_short_islands'}
 DEFAULT = 'v5'
+# Versions the page no longer offers, each with why; the lab still runs them, and later versions still build on them.
+RETIRED = {
+    'v1': 'Against the provisional labels (2026-11-04) it keeps 24 of 74 judged non-vessels where every later version '
+          'keeps 13 to 17, beyond noise on counts this small, and its graphs break the biology most (plausibility 0.06 '
+          'to 0.74 against 0.49 to 0.86); its four more vessels found of 111 are what its low-confidence candidates offer anyway.',
+}
 DATA = os.path.join(HERE, '..', '..', 'data', 'raw')
 RUNS = os.path.join(HERE, 'runs')
 
@@ -48,14 +54,15 @@ def run(version, path, z_cache={}):
 
 
 def run_volume(version, vol, um, source, z_step):
-    """A version run on a CD31 volume [Z, Y, X] (float, µm per pixel um, z_step µm between slices or None), its
-    model scored: the model with its score card in it, and the card with the scorer's own fields."""
+    """A version run on a CD31 volume [Z, Y, X] (any number type, read slice by slice; µm per pixel um, z_step µm
+    between slices or None), its model scored: the model with its score card in it, and the card with the scorer's
+    own fields. What the version and the scorer both draw from the volume is computed once (vessel_model.shared)."""
     mod = importlib.import_module(VERSIONS[version])
-    t = time.time()
-    m = mod.extract(vol, um, source, z_step)
-    t_extract = time.time() - t
-    flat = sc.flat_signal(vol, um)
-    card = sc.score(m, flat)
+    with vm.shared(vol):
+        t = time.time()
+        m = mod.extract(vol, um, source, z_step)
+        t_extract = time.time() - t
+        card = sc.score(m, sc.flat_signal(vol, um))
     m['score'] = {k: v for k, v in card.items() if not k.startswith('_')}
     m['score']['seconds'] = round(t_extract, 1)
     return m, card
@@ -97,7 +104,7 @@ def main():
     c = sub.add_parser('cmp'); c.add_argument('versions', nargs='*'); c.add_argument('--stacks', nargs='*')
     d = sub.add_parser('render'); d.add_argument('versions', nargs='+'); d.add_argument('--stack', required=True); d.add_argument('--out', required=True)
     d.add_argument('--box', type=float, nargs=4); d.add_argument('--scale', type=int, default=2); d.add_argument('--ids', action='store_true')
-    g = sub.add_parser('grade'); g.add_argument('versions', nargs='*')
+    g = sub.add_parser('grade'); g.add_argument('versions', nargs='*'); g.add_argument('--json', help='also write the latest label set\'s grade here, for the page')
     a = ap.parse_args()
     if a.cmd == 'run':
         m, card = run(a.version, a.stack)
@@ -117,7 +124,7 @@ def main():
         render.render(flat, models, cards, a.box, a.scale, a.ids, titles).save(out)
     elif a.cmd == 'grade':
         import fake_truth
-        fake_truth.grade_versions(a.versions or list(VERSIONS))
+        fake_truth.grade_versions(a.versions or list(VERSIONS), a.json)
 
 
 if __name__ == '__main__':

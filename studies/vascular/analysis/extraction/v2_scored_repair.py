@@ -27,6 +27,17 @@ import score as sc
 import vessel_model as vm
 
 NAME = 'v2-scored-repair'
+TITLE, ICON = 'repair', '🩹'
+STEPS = """\
+- Run the skeleton algorithm, first filling every hole in the mark narrower than a vessel (a dim lumen)
+- Move each curve point onto the brightest line across its vessel
+- Drop a low-confidence vessel that is a speck, not a line
+  - its signal must beat the same curve turned a quarter turn
+  - and it may wander no more than a capillary does
+- Break each short loop at its weakest vessel, unless that one is as strong as a typical vessel
+- Bridge each gap: an open end facing another end or a vessel's side a few widths ahead, at the same depth
+  - only when the gap between them carries signal
+- Split a four-way junction whose arms pair into two straight lines at different depths: two vessels crossing"""
 
 LINE_OVER_TURNED = 1.0     # noise units: a candidate's signal must beat its own quarter-turned copy by this much
 WANDER = 1.6               # curve length over chord; cortical capillaries average 1.27 (Ji 2021), so a short trace far above it is a scribble
@@ -43,8 +54,7 @@ CROSS_SLICES = vm.AXIAL_HALF_SLICES   # ... and the two lines arrive this far ap
 
 def extract(vol, um, source, z_step):
     m = vm.model(vol, um, source, z_step, fill_lumens=True)
-    z, keep = vm.noise_units(vol, um)
-    _, _, depth, flat = vm.segment(z, keep, um)
+    flat, depth, _ = vm.flatten(vol, um)
     repair(m, flat, depth)
     m['algorithm'] = NAME
     return m

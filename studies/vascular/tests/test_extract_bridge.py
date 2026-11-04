@@ -32,7 +32,7 @@ def stack(path):
 def test_the_page_runs_the_extraction(tmp_path):
     path = str(tmp_path / 'stack.tif')
     stack(path)
-    r = subprocess.run([NODE, os.path.join(HERE, 'extract_bridge_driver.mjs'), path, os.path.dirname(tifffile.__file__), 'v1', 'v5'],
+    r = subprocess.run([NODE, os.path.join(HERE, 'extract_bridge_driver.mjs'), path, os.path.dirname(tifffile.__file__), 'v4', 'v5'],
                        capture_output=True, text=True, timeout=300)
     print(r.stdout, r.stderr)
     if r.returncode == 2:
