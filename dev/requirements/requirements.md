@@ -1193,7 +1193,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 - `req/nor/candidates/decide` One selected candidate, decided on its card with a thumbs up or down.
   <details>
 
-  Clicking a candidate selects it (a thin white ring) and clicking it again deselects it. Changed by
+  Clicking a candidate selects it (a thin white ring) and clicking it again deselects it, as does
+  clicking the image where there is no candidate (set by the owner on 2026-11-04). Changed by
   the owner on 2026-10-31: its card alone, with no title, hovers over the image's top right corner
   while a candidate is selected, and only then; buttons to the previous and next candidate by number
   hover over the bottom of its crop. Decisions are
