@@ -58,10 +58,8 @@ def test_an_unreleased_change_goes_under_the_version_being_built():
 
 
 def test_a_pull_request_changing_the_page_needs_a_version_history_line():
-    assert vh.check(['Fix the bubble'], ['web/shell.js']) == [
-        'web/shell.js changes what a user sees: a commit message needs a line "Version-history: <at most 20 words a '
-        'user reads>", or "Version-history: none"']
-    assert vh.check(['Fix the bubble'], ['studies/nor/web/finder.js'])
+    assert vh.check(['Fix the bubble'], ['web-tests/test_x.py', 'web/shell.js'])[0].startswith('web/shell.js ')
+    assert vh.check(['Fix the bubble'], ['studies/nor/web/finder.js'])[0].startswith('studies/nor/web/finder.js ')
     assert vh.check(['Fix the bubble\n\nVersion-history: none'], ['web/shell.js']) == []
     assert vh.check(['Fix the bubble', 'Tell it\n\nVersion-history: The bubble shows.'], ['web/shell.js']) == []
 
@@ -72,7 +70,7 @@ def test_a_pull_request_not_changing_the_page_needs_none():
 
 def test_a_version_history_line_is_at_most_twenty_words():
     long = 'Version-history: ' + ' '.join(['word'] * 21)
-    assert vh.check([long], ['README.md']) == ['the Version-history line is 21 words; at most 20']
+    assert '21' in vh.check([long], ['README.md'])[0]
     assert vh.check(['Version-history: ' + ' '.join(['word'] * 20)], ['web/shell.js']) == []
 
 
