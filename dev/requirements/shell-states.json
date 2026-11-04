@@ -52,7 +52,7 @@
               "children": [
                 {
                   "name": "Channel row", "select": "#channels .channel", "req": "req/shell/channels/rows",
-                  "rule": [{ "when": { "image": ["none"] }, "is": "shown", "approval": "tentative" }],
+                  "rule": [{ "when": { "image": ["none"] }, "is": "hidden" }],
                   "children": [
                     { "name": "Show/hide checkbox", "select": "#channels .channel input[type=checkbox]", "control": true, "req": "req/shell/channels/rows" },
                     { "name": "Black and white points", "select": "#channels .channel .levels", "req": "req/shell/channels/rows" },
@@ -113,7 +113,7 @@
         {
           "name": "Tasks/Items switch", "select": "#switch", "control": true, "req": "req/shell/views/second",
           "rule": [
-            { "when": { "role": ["data"] }, "is": "hidden", "req": "req/shell/data/mode", "approval": "tentative" },
+            { "when": { "role": ["data"] }, "is": "hidden", "req": "req/shell/data/mode" },
             { "when": { "counted": [false] }, "is": "disabled" }
           ]
         },
@@ -188,10 +188,9 @@
     {
       "name": "Status bar", "select": "#statusbar", "req": "req/shell/status-bar",
       "children": [
-        { "name": "Stage light", "select": "#sb-stage", "req": "req/shell/study/stage" },
         {
           "name": "Breadcrumbs", "select": "#sb-steps", "req": "req/shell/status-bar/breadcrumbs",
-          "rule": [{ "when": { "role": ["data"] }, "is": "hidden", "req": "req/shell/data/mode", "approval": "tentative" }],
+          "rule": [{ "when": { "role": ["data"] }, "is": "hidden", "req": "req/shell/data/mode" }],
           "children": [
             {
               "name": "Submit GT crumb", "select": "#sb-submit", "made": "one crumb per step, by the shell", "req": "req/shell/status-bar/breadcrumbs",

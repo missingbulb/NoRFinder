@@ -239,13 +239,6 @@
    "parent": null
   },
   {
-   "name": "Stage light",
-   "select": "#sb-stage",
-   "control": false,
-   "box": false,
-   "parent": "Status bar"
-  },
-  {
    "name": "Breadcrumbs",
    "select": "#sb-steps",
    "control": false,
@@ -284,10 +277,10 @@
       "Image box": "on",
       "File name and info": "on",
       "Channels": "on",
-      "Channel row": "on",
-      "Show/hide checkbox": "on",
-      "Black and white points": "on",
-      "Colour picker": "on",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
       "Load": "on",
       "Load Original": "gone",
       "Unload": "gone",
@@ -311,7 +304,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -353,7 +345,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -395,7 +386,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -437,7 +427,6 @@
       "Item view": "on",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -466,10 +455,10 @@
       "Image box": "on",
       "File name and info": "on",
       "Channels": "on",
-      "Channel row": "on",
-      "Show/hide checkbox": "on",
-      "Black and white points": "on",
-      "Colour picker": "on",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
       "Load": "on",
       "Load Original": "gone",
       "Unload": "gone",
@@ -493,7 +482,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -535,7 +523,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -577,7 +564,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -607,10 +593,10 @@
       "Image box": "on",
       "File name and info": "on",
       "Channels": "on",
-      "Channel row": "on",
-      "Show/hide checkbox": "on",
-      "Black and white points": "on",
-      "Colour picker": "on",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
       "Load": "on",
       "Load Original": "gone",
       "Unload": "gone",
@@ -634,7 +620,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -676,7 +661,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -718,7 +702,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "on"
      }
@@ -760,7 +743,6 @@
       "Item view": "on",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "on"
      }
@@ -790,10 +772,10 @@
       "Image box": "on",
       "File name and info": "on",
       "Channels": "on",
-      "Channel row": "on",
-      "Show/hide checkbox": "on",
-      "Black and white points": "on",
-      "Colour picker": "on",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
       "Load": "on",
       "Load Original": "gone",
       "Unload": "gone",
@@ -817,7 +799,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -859,7 +840,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -901,7 +881,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "on"
      }
@@ -943,7 +922,6 @@
       "Item view": "on",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "on"
      }
@@ -972,10 +950,10 @@
       "Image box": "on",
       "File name and info": "on",
       "Channels": "on",
-      "Channel row": "on",
-      "Show/hide checkbox": "on",
-      "Black and white points": "on",
-      "Colour picker": "on",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
       "Load": "on",
       "Load Original": "gone",
       "Unload": "gone",
@@ -999,7 +977,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -1041,7 +1018,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -1083,7 +1059,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -1113,10 +1088,10 @@
       "Image box": "on",
       "File name and info": "on",
       "Channels": "on",
-      "Channel row": "on",
-      "Show/hide checkbox": "on",
-      "Black and white points": "on",
-      "Colour picker": "on",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
       "Load": "on",
       "Load Original": "gone",
       "Unload": "gone",
@@ -1140,7 +1115,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -1182,7 +1156,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -1224,7 +1197,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -1266,7 +1238,6 @@
       "Item view": "on",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -1296,10 +1267,10 @@
       "Image box": "on",
       "File name and info": "on",
       "Channels": "on",
-      "Channel row": "on",
-      "Show/hide checkbox": "on",
-      "Black and white points": "on",
-      "Colour picker": "on",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
       "Load": "on",
       "Load Original": "gone",
       "Unload": "gone",
@@ -1323,7 +1294,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -1365,7 +1335,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -1407,7 +1376,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -1449,7 +1417,6 @@
       "Item view": "on",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "on",
       "Submit GT crumb": "gone"
      }
@@ -1479,10 +1446,10 @@
       "Image box": "on",
       "File name and info": "on",
       "Channels": "on",
-      "Channel row": "on",
-      "Show/hide checkbox": "on",
-      "Black and white points": "on",
-      "Colour picker": "on",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
       "Load": "gone",
       "Load Original": "gone",
       "Unload": "gone",
@@ -1506,7 +1473,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "gone",
       "Submit GT crumb": "gone"
      }
@@ -1548,7 +1514,6 @@
       "Item view": "gone",
       "Folder view": "on",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "gone",
       "Submit GT crumb": "gone"
      }
@@ -1590,7 +1555,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "gone",
       "Submit GT crumb": "gone"
      }
@@ -1632,7 +1596,6 @@
       "Item view": "gone",
       "Folder view": "gone",
       "Status bar": "on",
-      "Stage light": "on",
       "Breadcrumbs": "gone",
       "Submit GT crumb": "gone"
      }

@@ -146,7 +146,8 @@ nobody has decided: what the page does there is not a requirement yet.
   description, whether it shows at first and its first points come from the study's `channels` for the
   channel at that place, else from what the file says (the study's Python), else from its place: red,
   green and blue, then more colours, a lone channel grey; a channel the file colours but does not name
-  is named for its colour. The rows start over with every image. Test:
+  is named for its colour. The rows start over with every image, and before any image there are none (set by
+  the owner on 2026-11-04). Test:
   `web-tests/test_image_box_page.py`, `studies/viewer/tests/test_viewer.py`.
   </details>
 
@@ -223,8 +224,8 @@ nobody has decided: what the page does there is not a requirement yet.
   each with its access (`req/shell/data/drive-access`); a folder's images stay folded under it until
   its image count is clicked, each with a small preview. In the mode the left bar keeps the Image box
   and Preprocessing (`req/shell/preprocessing/split`) and hides the study's own drawers, its item view
-  and the steps; Load vanishes in a puff. Tentative: the steps hidden are the status bar's breadcrumbs, with
-  the item view's switch and its tasks' bar; the stage's traffic light stays. Set by the owner on
+  and the steps; Load vanishes in a puff. The steps hidden are the status bar's breadcrumbs, with the item
+  view's switch and its tasks' bar (set by the owner on 2026-11-04). Set by the owner on
   2026-11-04: offline, Data Management as a whole needs the internet (`req/shell/offline/default`): the
   column, the folder's box and Preprocessing say so and do nothing until the network is back. Test: `web-tests/test_data_mode_page.py`.
   </details>

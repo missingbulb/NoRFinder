@@ -15,10 +15,10 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Image box | ● | ▸ | ▸ | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Channels | ● | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Channel row | ●* | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Show/hide checkbox | ● | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ● | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ● | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Channel row | ○ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Show/hide checkbox | ⊘ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ⊘ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ⊘ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load Original | ○ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ | ⋯ |
@@ -42,7 +42,6 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Item view | ○ | ○ | ○ | ● |
 | &nbsp;&nbsp;Folder view | ○ | ○ | ○ | ○ |
 | Status bar | ● | ● | ● | ● |
-| &nbsp;&nbsp;Stage light | ● | ● | ● | ● |
 | &nbsp;&nbsp;Breadcrumbs | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Submit GT crumb | ○ | ○ | ○ | ○ |
 
@@ -57,10 +56,10 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Image box | ● | ▸ | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Channels | ● | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Channel row | ●* | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Show/hide checkbox | ● | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ● | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ● | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Channel row | ○ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Show/hide checkbox | ⊘ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ⊘ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ⊘ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load | ● | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load Original | ○ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ |
@@ -84,7 +83,6 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Item view | ○ | ○ | ○ |
 | &nbsp;&nbsp;Folder view | ○ | ○ | ○ |
 | Status bar | ● | ● | ● |
-| &nbsp;&nbsp;Stage light | ● | ● | ● |
 | &nbsp;&nbsp;Breadcrumbs | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Submit GT crumb | ○ | ○ | ○ |
 
@@ -99,10 +97,10 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Image box | ● | ▸ | ▸ | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Channels | ● | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Channel row | ●* | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Show/hide checkbox | ● | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ● | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ● | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Channel row | ○ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Show/hide checkbox | ⊘ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ⊘ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ⊘ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load Original | ○ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ | ⋯ |
@@ -126,7 +124,6 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Item view | ○ | ○ | ○ | ● |
 | &nbsp;&nbsp;Folder view | ○ | ○ | ○ | ○ |
 | Status bar | ● | ● | ● | ● |
-| &nbsp;&nbsp;Stage light | ● | ● | ● | ● |
 | &nbsp;&nbsp;Breadcrumbs | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Submit GT crumb | ○ | ○ | ● | ● |
 
@@ -141,10 +138,10 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Image box | ● | ▸ | ▸ | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Channels | ● | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Channel row | ●* | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Show/hide checkbox | ● | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ● | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ● | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Channel row | ○ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Show/hide checkbox | ⊘ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ⊘ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ⊘ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load Original | ○ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ | ⋯ |
@@ -168,7 +165,6 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Item view | ○ | ○ | ○ | ● |
 | &nbsp;&nbsp;Folder view | ○ | ○ | ○ | ○ |
 | Status bar | ● | ● | ● | ● |
-| &nbsp;&nbsp;Stage light | ● | ● | ● | ● |
 | &nbsp;&nbsp;Breadcrumbs | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Submit GT crumb | ○ | ○ | ● | ● |
 
@@ -183,10 +179,10 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Image box | ● | ▸ | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Channels | ● | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Channel row | ●* | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Show/hide checkbox | ● | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ● | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ● | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Channel row | ○ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Show/hide checkbox | ⊘ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ⊘ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ⊘ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load | ● | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load Original | ○ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ |
@@ -210,7 +206,6 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Item view | ○ | ○ | ○ |
 | &nbsp;&nbsp;Folder view | ○ | ○ | ○ |
 | Status bar | ● | ● | ● |
-| &nbsp;&nbsp;Stage light | ● | ● | ● |
 | &nbsp;&nbsp;Breadcrumbs | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Submit GT crumb | ○ | ○ | ○ |
 
@@ -225,10 +220,10 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Image box | ● | ▸ | ▸ | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Channels | ● | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Channel row | ●* | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Show/hide checkbox | ● | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ● | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ● | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Channel row | ○ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Show/hide checkbox | ⊘ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ⊘ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ⊘ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load Original | ○ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ | ⋯ |
@@ -252,7 +247,6 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Item view | ○ | ○ | ○ | ● |
 | &nbsp;&nbsp;Folder view | ○ | ○ | ○ | ○ |
 | Status bar | ● | ● | ● | ● |
-| &nbsp;&nbsp;Stage light | ● | ● | ● | ● |
 | &nbsp;&nbsp;Breadcrumbs | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Submit GT crumb | ○ | ○ | ○ | ○ |
 
@@ -267,10 +261,10 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Image box | ● | ▸ | ▸ | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Channels | ● | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Channel row | ●* | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Show/hide checkbox | ● | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ● | ⋯ | ⋯ | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ● | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Channel row | ○ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Show/hide checkbox | ⊘ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ⊘ | ⋯ | ⋯ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ⊘ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load Original | ○ | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⋯ | ⋯ | ⋯ |
@@ -294,7 +288,6 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Item view | ○ | ○ | ○ | ● |
 | &nbsp;&nbsp;Folder view | ○ | ○ | ○ | ○ |
 | Status bar | ● | ● | ● | ● |
-| &nbsp;&nbsp;Stage light | ● | ● | ● | ● |
 | &nbsp;&nbsp;Breadcrumbs | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Submit GT crumb | ○ | ○ | ○ | ○ |
 
@@ -309,10 +302,10 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Image box | ● | ○ | ● | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⊘ | ● | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Channels | ● | ⊘ | ● | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Channel row | ●* | ⊘ | ● | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Show/hide checkbox | ● | ⊘ | ● | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ● | ⊘ | ● | ⋯ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ● | ⊘ | ● | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Channel row | ○ | ⊘ | ● | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Show/hide checkbox | ⊘ | ⊘ | ● | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Black and white points | ⊘ | ⊘ | ● | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Colour picker | ⊘ | ⊘ | ● | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load | ○ | ⊘ | ○ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Load Original | ○ | ⊘ | ● | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Unload | ○ | ⊘ | ● | ⋯ |
@@ -323,7 +316,7 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;&nbsp;&nbsp;Count | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Study: postprocessing | ○ | ○ | ○ | ○ |
 | Main view | ● | ● | ● | ● |
-| &nbsp;&nbsp;Tasks/Items switch | ○* | ○* | ○* | ○* |
+| &nbsp;&nbsp;Tasks/Items switch | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;Ruler | ◐ | ◐ | ● | ● |
 | &nbsp;&nbsp;Grid | ◐ | ◐ | ● | ● |
 | &nbsp;&nbsp;Minimap button | ◐ | ◐ | ● | ● |
@@ -336,8 +329,7 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Item view | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;Folder view | ○ | ● | ○ | ○ |
 | Status bar | ● | ● | ● | ● |
-| &nbsp;&nbsp;Stage light | ● | ● | ● | ● |
-| &nbsp;&nbsp;Breadcrumbs | ○* | ○* | ○* | ○* |
+| &nbsp;&nbsp;Breadcrumbs | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Submit GT crumb | ⊘ | ⊘ | ⊘ | ⊘ |
 
 ## Undecided
