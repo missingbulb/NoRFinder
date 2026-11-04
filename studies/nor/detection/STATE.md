@@ -16,8 +16,9 @@ _Last updated 2026-10-06._
    mask, never committed); after that a run takes about 5-10 s.
 
 ## Where things stand
-- **Default finder: traffic light** (`nor_tl.py`, spec `tl`). 229 passes from 463 candidates.
-  On the labels: 47 real found, 7 false (P 0.87, R 0.65).
+- **Default finder: traffic light** (`nor_tl.py`, spec `tl`). 206 passes from 463 candidates.
+  On the labels: 47 real found, 4 false (P 0.92, R 0.65); on the page path 46 / 5. Since
+  2026-11-04 it fails its image's faintest tenth of passes (R7, ledger §6 M1a; `red_floor_q=0` turns it off).
 - **Red-first finder** (`nor_rf.py`, spec `rf`), built on 2026-09-27 from Ariel's idea, with
   the verdicts in ledger §2 applied. 48 real found, 9 false. That ties tl (P(better) 0.48), so
   tl stays the default.
@@ -69,8 +70,8 @@ _Last updated 2026-10-06._
 ## Next
 0. **Mutation sweeps** (ledger §6): `python3 mutate.py sweep` splices the repo's trick pool into tl and
    reports what no finder does, above a chance bar of null mutants; the nor-study `mutation-sweep`
-   task runs it weekly. Grow M1a (a red floor relative to the image's own passes) and M2 (band-passed
-   Caspr at the candidate stage) once submitted ground truth arrives.
+   task runs it weekly. M1a (a red floor relative to the image's own passes) is tl's default; grow
+   M2 (band-passed Caspr at the candidate stage) once submitted ground truth arrives.
 1. The 20 labelled real NoRs that both finders miss (ledger §2 and v10 REPORT): mostly faint
    one-sided paranodes and "not found" spots.
 2. Retry C10 (node = red outshining green) once there are more labels.

@@ -27,8 +27,12 @@ def test_tl_fails_the_faintest_tenth_of_its_passes():
     assert set(passes(on)) | {(round(c['cx'], 2), round(c['cy'], 2)) for c in faint} == set(passes(off))
 
 
-def test_the_page_refilter_reproduces_it_and_can_switch_it_off():
+def test_the_page_refilter_applies_it_last_and_can_switch_it_off():
     s = interactive.Session(nor_lab.TIF); s.detect('tl')
-    own = [c['fail'] for c in s.cands]
-    assert s.refilter({'values': {}}) == own and FAINT in own
-    assert FAINT not in s.refilter({'values': {}, 'off': [FAINT]})
+    off = s.refilter({'values': {}, 'off': [FAINT]})
+    assert FAINT not in off
+    reds = [c['red_mean'] for c, f in zip(s.cands, off) if f is None]
+    t = np.quantile(reds, 0.1)
+    on = s.refilter({'values': {}})
+    assert [i for i, f in enumerate(on) if f == FAINT] == [i for i, (c, f) in enumerate(zip(s.cands, off)) if f is None and c['red_mean'] < t]
+    assert [f for f in on if f != FAINT] == [f for f, g in zip(off, on) if g != FAINT]

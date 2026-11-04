@@ -182,3 +182,11 @@ tiles (the other marks fall on unlabelled spots and count for nothing, so the 0 
 The DoG view agrees with M2: band-passing makes the triplet visible to an eye too. The DoG agent's
 rule, to build from: red blob, a green blob 3-12 px on each side, the two vectors within 30-40° of
 opposite, gaps of a few px, and a green-red-green-red-green chain as two nodes sharing the middle green.
+
+**M1a landed (2026-11-04, Ariel: "Build it, on by default", then "Keep it on at 0.1").** tl now runs
+`red_floor_q=0.1` (R7 "Not the faintest of its image"; the page's filter F, the lab's reason Q), last,
+after one-pixel-per-NoR. Lab (`nor_lab.py cmp`): tl 47 / 7 → 47 / 4, P 0.87 → 0.92. Page path
+(`finder_metrics.py`, nucleus filter after finding): balanced 47 / 7 → 46 / 5, P 0.87 → 0.90, R 0.65 → 0.64;
+it also drops 22 unlabelled passes, several of them plausible faint NoRs. The page and the lab differ
+because the nucleus rule removes different passes before the floor takes its quantile. Revisit if:
+submitted ground truth on more images shows the floor's losses, or an image with no false passes.

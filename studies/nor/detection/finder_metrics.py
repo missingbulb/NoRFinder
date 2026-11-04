@@ -32,11 +32,11 @@ OUT = os.path.join(HERE, '..', 'web', 'finder_metrics.json')
 PRESETS = {'precise': 0.4, 'balanced': 0.0, 'recalling': -0.4}
 # the strict and loose ends of every filter value the page offers
 STRICT = dict(min_green_balance=0.5, min_snr=5.0, purity=0.1, min_opposite=140, max_off_u=0.5, max_axis_dev=10,
-              min_aspect=4.5, min_solid=0.95, nucleus_frac=0.5, max_shared=0.1)
+              min_aspect=4.5, min_solid=0.95, nucleus_frac=0.5, max_shared=0.1, red_floor_q=0.25)
 LOOSE = dict(min_green_balance=0.1, min_snr=2.0, purity=0.4, min_opposite=80, max_off_u=2.0, max_axis_dev=45,
-             min_aspect=2.0, min_solid=0.5, nucleus_frac=1.0, max_shared=0.6)
+             min_aspect=2.0, min_solid=0.5, nucleus_frac=1.0, max_shared=0.6, red_floor_q=0.0)
 # a value at which a filter is off for that finder; a preset leaves it off
-OFF = dict(max_off_u=99, max_axis_dev=180, min_solid=0)
+OFF = dict(max_off_u=99, max_axis_dev=180, min_solid=0, red_floor_q=0.0)
 
 
 def own_values(finder):

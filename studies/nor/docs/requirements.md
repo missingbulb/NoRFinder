@@ -217,9 +217,11 @@ removed it.
 - **One pixel belongs to at most one NoR.** Overlaps are resolved strongest first (J).
 - **Not the faintest of its image.** A NoR whose red is among the dimmest tenth of the NoRs its
   image passes is not one (Q, the page's F). The owner chose it on 2026-11-04, on by default in tl,
-  from the first mutation sweep (ledger §6, M1a): on the reference slide it drops 3 of tl's 7 false
-  passes and no real one. That evidence is Claude's labels only. On an image whose passes are all
-  real it costs about one real NoR in ten.
+  from the first mutation sweep (ledger §6, M1a). On the reference slide, in the lab (blue mask
+  before finding) it drops 3 of tl's 7 false passes and no real one; on the page (nucleus filter
+  after finding) it drops 2 false passes and 1 real one, plus 22 unlabelled passes, several of
+  which look like faint real NoRs. The owner kept it on, seeing both. That evidence is Claude's
+  labels only. On an image whose passes are all real it costs about one real NoR in ten.
 - **Nuclei are not NoRs.** Blue (DAPI) mask: blur σ=2, above 0.45× Otsu (to catch the dim rim),
   drop blobs under 30 px, fill holes, dilate 2 px. The owner approved it on Slide5 (it covers about
   14% of the image). Since 2026-09-27 it is applied after finding: a candidate fails when at
