@@ -16,7 +16,8 @@ vessel model several times faster and with a fraction of the memory, and the wea
 skeleton, is no longer offered. (#744)
 
 Back online, the status bar says so within seconds, even while the site copies a release that landed
-meanwhile. Going offline no longer unfolds the disk, memory, network and CPU: the red Wi-Fi icon says it. (#741)
+meanwhile. Going offline no longer unfolds the disk, memory, network and CPU: the red Wi-Fi icon says it,
+and Data Management says it needs the internet and waits. (#741, #746)
 
 NoR Finder's Ground Truth Tagger now works one area of the image at a time: its finalists, its
 rejected, then No missed NoRs here, and the whole area is cut out. Back returns to the last item, to
@@ -27,6 +28,10 @@ switches the tagging marks. (#739)
 
 In NoR Finder, what you finish as a Ground Truth Tagger now uncovers a golden retriever behind the
 image, more of it with every verdict and every area checked. (#738)
+
+Ground Truth Tagger is now offered in studies still in PreGT too, and a study's postprocessing shows
+only to its taggers. Offline, Data Management says it needs the internet and waits until you are
+back online. (#746)
 
 ## 0.11104.84
 
