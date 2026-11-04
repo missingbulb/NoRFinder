@@ -26,13 +26,20 @@ ACTIONS = {
     'folder': ('Folder', {'selected': 'folder'}),
     'preview': ('Preview', {'selected': 'image', 'image': 'preview', 'counted': False}),
     'original': ('Load Original', {'image': 'original'}),
+    # from a preview, Edit Image opens the image itself (req/shell/data/edit)
+    'edit': ('Edit Image', {'editing': True, 'image': 'original'}),
+    'done': ('Done', {'editing': False}),
+    'offline': ('Offline', {'online': False}),
+    'online': ('Online', {'online': True}),
 }
-START = {'image': 'none', 'counted': False, 'view': 'image', 'selected': 'nothing'}
-STATES = ('shown', 'disabled', 'folded', 'hidden')
+START = {'image': 'none', 'counted': False, 'view': 'image', 'selected': 'nothing', 'online': True, 'editing': False, 'stack': False}
+STATES = ('shown', 'disabled', 'held', 'folded', 'hidden')
 # what the page shows of an element, as the browser reads it: on (shown, usable, a box open), off (shown, disabled),
-# folded (a box shown folded), gone (not shown); unchecked where the case is undecided
-SEEN = {'shown': 'on', 'disabled': 'off', 'folded': 'folded', 'hidden': 'gone', 'under-hidden': 'gone', 'in-folded': 'gone'}
-MARK = {'shown': '●', 'disabled': '◐', 'folded': '▸', 'hidden': '○', 'under-hidden': '⊘', 'in-folded': '⋯'}
+# held (shown, saying it needs the internet, req/shell/offline/default), folded (a box shown folded), gone (not
+# shown); unchecked where the case is undecided. What a held element holds keeps its own state.
+SEEN = {'shown': 'on', 'disabled': 'off', 'held': 'held', 'folded': 'folded', 'hidden': 'gone', 'under-hidden': 'gone',
+        'in-folded': 'gone'}
+MARK = {'shown': '●', 'disabled': '◐', 'held': '⊖', 'folded': '▸', 'hidden': '○', 'under-hidden': '⊘', 'in-folded': '⋯'}
 
 
 def derived(s):
@@ -75,7 +82,7 @@ def walk(rules):
             label, change = ACTIONS[a]
             s = {**s, **change}
             states.append((label, dict(s)))
-        out.append((p['root'], states))
+        out.append((p, states))
     return out
 
 
@@ -109,17 +116,18 @@ def build(rules):
     used, paths, tables = set(), [], []
     elements = [{'name': n['name'], 'select': n['select'], 'control': bool(n.get('control')), 'box': bool(n.get('box')),
                  'parent': parent['name'] if parent else None} for n, parent, _ in nodes(rules['tree'])]
-    for root, states in walk(rules):
+    for p, states in walk(rules):
+        root = p['root']
         rows = []
         for label, s in states:
             c = cells(rules, s, used)
             rows.append((label, c))
         paths.append({'root': root, 'study': {'stage': rules['roots'][root]['stage']},
                       'signedIn': rules['roots'][root]['signedIn'], 'role': rules['roots'][root]['role'],
-                      'actions': [a for a in next(p for p in rules['paths'] if p['root'] == root)['actions']],
+                      'actions': p['actions'],
                       'states': [{'label': label, 'expect': {k: (None if a == 'undecided' else SEEN[v]) for k, (v, a) in c.items()}}
                                  for label, c in rows]})
-        tables.append((root, rows))
+        tables.append((f"{root}: {' · '.join(label for label, _ in rows[1:])}", rows))
     unused = [f"{n['name']}, case {i + 1}" for n, _, _ in nodes(rules['tree']) for i in range(len(n.get('rule', [])))
               if (n['name'], i) not in used]
     return {'elements': elements, 'paths': paths}, markdown(rules, tables), unused
@@ -132,7 +140,8 @@ def markdown(rules, tables):
              '(`req/checks/shell-states`): do not edit; change the rules and run it again.',
              '',
              'Each table is one path: a root (the study\'s stage, who is signed in, the role) and the actions taken '
-             'from it, one column per state. ● shown · ◐ disabled · ▸ folded · ○ hidden · ⊘ its parent hidden · '
+             'from it, one column per state. ● shown · ◐ disabled · ⊖ held offline · ▸ folded · ○ hidden · '
+             '⊘ its parent hidden · '
              '⋯ inside a folded box. `*` marks a tentative case, Claude\'s call not yet approved; `?` an undecided '
              'one, which nothing checks.',
              '']

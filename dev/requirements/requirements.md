@@ -224,7 +224,8 @@ nobody has decided: what the page does there is not a requirement yet.
   each with its access (`req/shell/data/drive-access`); a folder's images stay folded under it until
   its image count is clicked, each with a small preview. In the mode the left bar keeps the Image box
   and Preprocessing (`req/shell/preprocessing/split`) and hides the study's own drawers, its item view
-  and the steps; Load vanishes in a puff. The steps hidden are the status bar's breadcrumbs, with the item
+  and the steps; Load vanishes in a puff, Unload in its line with it: choosing another image or folder
+  replaces the one open (set by the owner on 2026-11-04). The steps hidden are the status bar's breadcrumbs, with the item
   view's switch and its tasks' bar (set by the owner on 2026-11-04). Set by the owner on
   2026-11-04: offline, Data Management as a whole needs the internet (`req/shell/offline/default`): the
   column, the folder's box and Preprocessing say so and do nothing until the network is back. Test: `web-tests/test_data_mode_page.py`.
@@ -1257,7 +1258,7 @@ nobody has decided: what the page does there is not a requirement yet.
   `dev/requirements/shell-states.json` lists the shell's elements as a tree, each
   under the one holding it, and gives each element only what differs from its parent: cases over the state (the
   study's stage, who is signed in, the role, the image open, the study's step done, the view, what Data Management
-  has selected), each citing the requirement that decides it and marked tentative or undecided where the owner has
+  has selected, whether the page is online, whether Edit Image is open), each citing the requirement that decides it and marked tentative or undecided where the owner has
   not decided (an undecided case is shown and not checked). Its paths start from a few roots (a study's stage and a
   role) and take actions one after another, each state one more action on the one before.
   `dev/tools/build/shell_states.py` writes from it the matrix, `dev/requirements/shell-states.GENERATED.md`, one table
@@ -1265,7 +1266,7 @@ nobody has decided: what the page does there is not a requirement yet.
   generated files must be up to date and every element must be on the page; the shell's elements not in the tree
   yet are counted, so the count only falls. In the full set one page per path takes the actions on the fixture
   study, the study's stage set for it, against a stand-in Google, and at every state reads each element as shown,
-  disabled, folded or gone; every difference is listed before it fails. Test: `web-tests/test_shell_states.py`,
+  disabled, held offline, folded or gone; every difference is listed before it fails. Test: `web-tests/test_shell_states.py`,
   `web-tests/test_shell_states_page.py`.
   </details>
 

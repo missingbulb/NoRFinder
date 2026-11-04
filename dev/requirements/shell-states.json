@@ -7,7 +7,10 @@
     "image": ["none", "local", "preview", "original"],
     "counted": [false, true],
     "view": ["image", "items"],
-    "selected": ["nothing", "folder", "image"]
+    "selected": ["nothing", "folder", "image"],
+    "online": [true, false],
+    "editing": [false, true],
+    "stack": [false, true]
   },
   "roots": {
     "GT, signed out": { "stage": "GT", "signedIn": false, "role": "viewer" },
@@ -27,14 +30,27 @@
     { "root": "PreGT, signed out", "actions": ["load", "count"] },
     { "root": "PreGT, Tagger", "actions": ["load", "count", "items"] },
     { "root": "Published, Viewer", "actions": ["load", "count", "items"] },
-    { "root": "GT, Data Manager", "actions": ["folder", "preview", "original"] }
+    { "root": "GT, Tagger", "actions": ["load", "offline", "online"] },
+    { "root": "GT, Data Manager", "actions": ["folder", "preview", "original", "offline"] },
+    { "root": "GT, Data Manager", "actions": ["folder", "preview", "edit", "done"] },
+    { "root": "GT, Data Manager", "actions": ["folder", "offline", "online"] }
   ],
   "tree": [
     { "name": "Role menu", "select": "#role-menu", "req": "req/shell/account/role" },
     {
       "name": "Data Management column", "select": "#data-col", "req": "req/shell/data/mode",
-      "rule": [{ "when": { "role": ["viewer", "tagger"] }, "is": "hidden" }],
-      "children": [{ "name": "Folder tree", "select": "#data-tree", "req": "req/shell/data/mode" }]
+      "rule": [
+        { "when": { "role": ["viewer", "tagger"] }, "is": "hidden" },
+        { "when": { "online": [false] }, "is": "held" }
+      ],
+      "children": [
+        { "name": "Fold the folders", "select": "#data-open", "control": true, "req": "req/shell/data/mode" },
+        {
+          "name": "Approve folders", "select": "#data-approve", "control": true, "req": "req/shell/data/drive-access",
+          "rule": [{ "when": { "online": [false] }, "is": "held", "req": "req/shell/offline/default" }]
+        },
+        { "name": "Folder tree", "select": "#data-tree", "req": "req/shell/data/mode" }
+      ]
     },
     {
       "name": "Left bar", "select": "#left", "req": "req/shell/left-bar/folding",
@@ -81,16 +97,47 @@
         },
         {
           "name": "Selected Folder", "select": "#folder-box", "box": true, "req": "req/shell/data/folder",
-          "rule": [{ "when": { "selected": ["nothing", "image"] }, "is": "hidden" }]
+          "rule": [
+            { "when": { "selected": ["nothing", "image"] }, "is": "hidden" },
+            { "when": { "online": [false] }, "is": "held", "req": "req/shell/data/mode" }
+          ],
+          "children": [
+            { "name": "Folder's name", "select": "#folder-name", "req": "req/shell/data/folder" },
+            { "name": "Folder's sums", "select": "#folder-summary", "req": "req/shell/data/folder" },
+            {
+              "name": "Update previews", "select": "#update-previews", "control": true, "req": "req/shell/data/update-previews",
+              "rule": [{ "when": { "online": [false] }, "is": "held", "req": "req/shell/offline/default" }]
+            }
+          ]
         },
         {
           "name": "Preprocessing", "select": "#preprocessing-box", "box": true, "req": "req/shell/preprocessing/split",
           "rule": [
             { "when": { "role": ["viewer", "tagger"] }, "is": "hidden", "req": "req/shell/data/mode" },
-            { "when": { "image": ["none"] }, "is": "folded", "req": "req/shell/left-bar/folding" }
+            { "when": { "image": ["none"] }, "is": "folded", "req": "req/shell/left-bar/folding" },
+            { "when": { "online": [false] }, "is": "held", "req": "req/shell/data/mode" }
           ],
           "children": [
-            { "name": "Edit Image", "select": "#edit-open", "control": true, "req": "req/shell/data/edit" }
+            {
+              "name": "Edit Image", "select": "#edit-open", "control": true, "req": "req/shell/data/edit",
+              "rule": [{ "when": { "editing": [true] }, "is": "disabled", "approval": "tentative" }]
+            }
+          ]
+        },
+        {
+          "name": "Edit Image box", "select": "#edit-box", "box": true, "req": "req/shell/data/edit",
+          "rule": [{ "when": { "editing": [false] }, "is": "hidden" }],
+          "children": [
+            { "name": "Split", "select": "#edit-split", "req": "req/shell/data/edit" },
+            { "name": "Crop", "select": "#edit-crop-row", "req": "req/shell/data/edit" },
+            {
+              "name": "Slices", "select": "#edit-slices-sec", "req": "req/shell/data/edit",
+              "rule": [{ "when": { "stack": [false] }, "is": "hidden" }]
+            },
+            { "name": "Channels kept", "select": "#edit-channels", "req": "req/shell/data/edit" },
+            { "name": "Imperfections", "select": "#edit-flaws-row", "req": "req/shell/data/edit" },
+            { "name": "Save…", "select": "#edit-save", "control": true, "req": "req/shell/data/edit-save" },
+            { "name": "Done", "select": "#edit-done", "control": true, "req": "req/shell/data/edit" }
           ]
         },
         {
@@ -185,7 +232,12 @@
         },
         {
           "name": "Folder view", "select": "#folder-view", "req": "req/shell/data/folder",
-          "rule": [{ "when": { "selected": ["nothing", "image"] }, "is": "hidden" }]
+          "rule": [{ "when": { "selected": ["nothing", "image"] }, "is": "hidden" }],
+          "children": [
+            { "name": "Folder's title", "select": "#folder-title", "req": "req/shell/data/folder" },
+            { "name": "Grid or list", "select": "#folder-layout", "req": "req/shell/data/folder" },
+            { "name": "Folder's images", "select": "#folder-items", "req": "req/shell/data/folder" }
+          ]
         }
       ]
     },
@@ -204,6 +256,11 @@
               ]
             }
           ]
+        },
+        { "name": "Online icon", "select": "#sb-online", "control": true, "req": "req/shell/status-bar/online" },
+        {
+          "name": "Report a problem", "select": "#sb-report", "control": true, "req": "req/shell/report/bug",
+          "rule": [{ "when": { "online": [false] }, "is": "held", "req": "req/shell/offline/default" }]
         }
       ]
     }
