@@ -125,13 +125,20 @@ async function siteCopy() {
 // Returns {files}, how many files the copy holds (0 with no list: a preview built before it), and unreached when
 // the site did not answer.
 let keeping = null;
+// the list not answering within REACH_MS is no network: a connection the network's going left hanging
+const REACH_MS = 10000;
+// every page told whether the site answers as soon as it is known, before a copy that may take minutes
+const reach = async (unreached) => {
+  for (const c of await self.clients.matchAll({ type: "window" })) c.postMessage({ type: "reach", unreached });
+};
 const keepSite = () => (keeping ||= keepSiteNow().finally(() => { keeping = null; }));
 async function keepSiteNow() {
-  const res = await fetch(LIST, { cache: "no-cache" }).catch(() => null);
-  if (!res) return { files: 0, unreached: true };
+  const res = await fetch(LIST, { cache: "no-cache", signal: AbortSignal.timeout(REACH_MS) }).catch(() => null);
+  // a Wi-Fi's sign-in page answering in the site's place is no network too
+  const unreached = !res || (res.ok && !/json/.test(res.headers.get("content-type") || ""));
+  await reach(unreached);
+  if (unreached) return { files: 0, unreached: true };
   if (!res.ok) return { files: 0 };
-  // a Wi-Fi's sign-in page answering in the site's place
-  if (!/json/.test(res.headers.get("content-type") || "")) return { files: 0, unreached: true };
   const text = await res.text(), files = JSON.parse(text).files;
   const name = SITE + (await sha256(new TextEncoder().encode(text))).slice(0, 16);
   const others = (await caches.keys()).filter((n) => n.startsWith(SITE) && n !== name);
