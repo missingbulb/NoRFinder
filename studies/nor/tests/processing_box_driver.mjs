@@ -1,6 +1,7 @@
 // Drives the page (web/) in headless Chromium with a stand-in worker that answers only the study's ready() (READY,
 // written by tests/test_processing_box.py), and checks the Processing box before any image: its settings and its
-// algorithm note start folded; each finder in the list carries its icon; the note's title names the chosen
+// algorithm note start folded; the filters and their presets sit in its settings, after the finder's, kept from a
+// Viewer, and no box of their own follows it; each finder in the list carries its icon; the note's title names the chosen
 // algorithm, its explanation is drawn as a nested list of steps, and it gives in bold its precision and recall with its
 // default filters, as the list shows them, with those before any filter after them, not bold. Prints what it saw; exits 1 on a failure, 2
 // when it cannot run.
@@ -54,6 +55,18 @@ try {
   console.log("folds", JSON.stringify(folds));
   if (folds.settings) problems.push("Settings starts open");
   if (folds.about) problems.push("the algorithm's note starts open");
+  const filters = await page.evaluate(() => {
+    const set = document.querySelector("#finder-box #settings-box"), f = document.querySelector("#filters"), p = document.querySelector("#presets");
+    return { inSettings: !!set && set.contains(f) && set.contains(p), count: f ? f.children.length : 0,
+      afterFinder: !!set && !!f && !!(set.querySelector("#detect-params").compareDocumentPosition(f) & Node.DOCUMENT_POSITION_FOLLOWING),
+      kept: !!f && !!f.closest(".unpublished"), boxes: [...document.querySelectorAll("#left > .box .sec-head h2")].map((h) => h.textContent.trim()) };
+  });
+  console.log("filters", JSON.stringify(filters));
+  if (!filters.inSettings) problems.push("the filters and their presets are not in the Processing box's settings");
+  if (!filters.count) problems.push("no filter is listed");
+  if (!filters.afterFinder) problems.push("the filters do not follow the finder's settings");
+  if (!filters.kept) problems.push("the filters are not kept from a Viewer");
+  if (filters.boxes.some((b) => b.endsWith("Postprocessing"))) problems.push("the left bar still has a Postprocessing box");
 
   const options = await page.evaluate(() => [...document.querySelector("#finder").options].map((o) => [o.value, o.textContent]));
   console.log("options", JSON.stringify(options));
