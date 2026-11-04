@@ -1265,8 +1265,8 @@ nobody has decided: what the page does there is not a requirement yet.
   role) and take actions one after another, each state one more action on the one before.
   `dev/tools/build/shell_states.py` writes from it the matrix, `dev/requirements/shell-states.GENERATED.md`, one table
   per path, and the browser test's expectations; a case no state reaches fails it. In the fast set the
-  generated files must be up to date and every element must be on the page; the shell's elements not in the tree
-  yet are counted, so the count only falls. In the full set one page per path takes the actions on the fixture
+  generated files must be up to date, every element in the tree must be on the page, and every element of the
+  shell's page, but what a dialog, popup or menu holds, must be in the tree. In the full set one page per path takes the actions on the fixture
   study, the study's stage set for it, against a stand-in Google, and at every state reads each element as shown,
   disabled, held offline, folded or gone; every difference is listed before it fails. Test: `web-tests/test_shell_states.py`,
   `web-tests/test_shell_states_page.py`.

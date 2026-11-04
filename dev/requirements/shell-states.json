@@ -10,259 +10,461 @@
     "selected": ["nothing", "folder", "image"],
     "online": [true, false],
     "editing": [false, true],
-    "stack": [false, true]
+    "stack": [false, true],
+    "fromComputer": [false, true],
+    "notice": [false, true],
+    "imageFits": [true, false]
   },
   "roots": {
-    "GT, signed out": { "stage": "GT", "signedIn": false, "role": "viewer" },
-    "GT, Viewer": { "stage": "GT", "signedIn": true, "role": "viewer" },
-    "GT, Tagger": { "stage": "GT", "signedIn": true, "role": "tagger" },
-    "PostGT, Tagger": { "stage": "PostGT", "signedIn": true, "role": "tagger" },
-    "PreGT, signed out": { "stage": "PreGT", "signedIn": false, "role": "viewer" },
-    "PreGT, Tagger": { "stage": "PreGT", "signedIn": true, "role": "tagger" },
-    "Published, Viewer": { "stage": "Published", "signedIn": true, "role": "viewer" },
-    "GT, Data Manager": { "stage": "GT", "signedIn": true, "role": "data" }
+    "GT, signed out": {"stage": "GT", "signedIn": false, "role": "viewer"},
+    "GT, Viewer": {"stage": "GT", "signedIn": true, "role": "viewer"},
+    "GT, Tagger": {"stage": "GT", "signedIn": true, "role": "tagger"},
+    "PostGT, Tagger": {"stage": "PostGT", "signedIn": true, "role": "tagger"},
+    "PreGT, signed out": {"stage": "PreGT", "signedIn": false, "role": "viewer"},
+    "PreGT, Tagger": {"stage": "PreGT", "signedIn": true, "role": "tagger"},
+    "Published, Viewer": {"stage": "Published", "signedIn": true, "role": "viewer"},
+    "GT, Data Manager": {"stage": "GT", "signedIn": true, "role": "data"}
   },
   "paths": [
-    { "root": "GT, signed out", "actions": ["load", "count", "items"] },
-    { "root": "GT, Viewer", "actions": ["load", "tagger"] },
-    { "root": "GT, Tagger", "actions": ["load", "count", "items"] },
-    { "root": "PostGT, Tagger", "actions": ["load", "count", "items"] },
-    { "root": "PreGT, signed out", "actions": ["load", "count"] },
-    { "root": "PreGT, Tagger", "actions": ["load", "count", "items"] },
-    { "root": "Published, Viewer", "actions": ["load", "count", "items"] },
-    { "root": "GT, Tagger", "actions": ["load", "offline", "online"] },
-    { "root": "GT, Data Manager", "actions": ["folder", "preview", "original", "offline"] },
-    { "root": "GT, Data Manager", "actions": ["folder", "preview", "edit", "done"] },
-    { "root": "GT, Data Manager", "actions": ["folder", "offline", "online"] }
+    {"root": "GT, signed out", "actions": ["load", "count", "items"]},
+    {"root": "GT, Viewer", "actions": ["load", "tagger"]},
+    {"root": "GT, Tagger", "actions": ["load", "count", "items"]},
+    {"root": "PostGT, Tagger", "actions": ["load", "count", "items"]},
+    {"root": "PreGT, signed out", "actions": ["load", "count"]},
+    {"root": "PreGT, Tagger", "actions": ["load", "count", "items"]},
+    {"root": "Published, Viewer", "actions": ["load", "count", "items"]},
+    {"root": "GT, Tagger", "actions": ["load", "offline", "online"]},
+    {"root": "GT, Data Manager", "actions": ["folder", "preview", "original", "offline"]},
+    {"root": "GT, Data Manager", "actions": ["folder", "preview", "edit", "done"]},
+    {"root": "GT, Data Manager", "actions": ["folder", "offline", "online"]}
   ],
   "tree": [
-    { "name": "Role menu", "select": "#role-menu", "req": "req/shell/account/role" },
-    {
-      "name": "Data Management column", "select": "#data-col", "req": "req/shell/data/mode",
-      "rule": [
-        { "when": { "role": ["viewer", "tagger"] }, "is": "hidden" },
-        { "when": { "online": [false] }, "is": "held" }
-      ],
+    {"name": "Header", "select": "header", "req": "req/shell/header",
       "children": [
-        { "name": "Fold the folders", "select": "#data-open", "control": true, "req": "req/shell/data/mode" },
-        {
-          "name": "Approve folders", "select": "#data-approve", "control": true, "req": "req/shell/data/drive-access",
-          "rule": [{ "when": { "online": [false] }, "is": "held", "req": "req/shell/offline/default" }]
+        {"name": "Logo", "select": "#logo", "req": "req/shell/header"},
+        {"name": "Study switcher", "select": "#study-menu", "req": "req/shell/header",
+          "children": [
+            {"name": "Study's icon", "select": "#title-icon", "req": "req/shell/header"},
+            {"name": "Study's name", "select": "#title", "req": "req/shell/header"}
+          ]
         },
-        { "name": "Folder tree", "select": "#data-tree", "req": "req/shell/data/mode" }
+        {"name": "Dark/light switch", "select": "#theme", "control": true, "req": "req/shell/header"},
+        {"name": "Role menu", "select": "#role-menu", "req": "req/shell/account/role",
+          "children": [
+            {"name": "Role's name", "select": "#role-name", "req": "req/shell/account/role"}
+          ]
+        },
+        {"name": "You (the user menu)", "select": "#user-menu", "req": "req/shell/account/sign-in"}
       ]
     },
-    {
-      "name": "Left bar", "select": "#left", "req": "req/shell/left-bar/folding",
+    {"name": "Layout", "select": "#layout", "req": "req/shell/left-bar/width",
       "children": [
-        {
-          "name": "Image box", "select": "#image-box", "box": true, "req": "req/shell/left-bar/folding",
+        {"name": "Data Management column", "select": "#data-col", "req": "req/shell/data/mode",
           "rule": [
-            { "when": { "selected": ["folder"] }, "is": "hidden", "req": "req/shell/data/folder" },
-            { "when": { "role": ["data"], "online": [false] }, "is": "folded", "req": "req/shell/data/mode", "approval": "undecided" },
-            { "when": { "image": ["local", "original"] }, "is": "folded" }
+            {"when": {"role": ["viewer", "tagger"]}, "is": "hidden"},
+            {"when": {"online": [false]}, "is": "held"}
           ],
           "children": [
-            { "name": "File name and info", "select": "#file-box", "req": "req/shell/image/file-info" },
-            {
-              "name": "Channels", "select": "#channels", "req": "req/shell/channels/rows",
-              "rule": [{ "when": { "image": ["none"] }, "is": "hidden" }],
+            {"name": "Fold the folders", "select": "#data-open", "control": true, "req": "req/shell/data/mode"},
+            {"name": "Folders", "select": "#data-body", "req": "req/shell/data/mode",
               "children": [
-                {
-                  "name": "Channel row", "select": "#channels .channel", "req": "req/shell/channels/rows",
+                {"name": "Approve folders", "select": "#data-approve", "control": true, "req": "req/shell/data/drive-access",
+                  "rule": [
+                    {"when": {"online": [false]}, "is": "held", "req": "req/shell/offline/default"}
+                  ]
+                },
+                {"name": "Folder tree", "select": "#data-tree", "req": "req/shell/data/mode"},
+                {"name": "Tree's message", "select": "#data-msg", "req": "req/shell/data/mode"}
+              ]
+            }
+          ]
+        },
+        {"name": "Left bar", "select": "#left", "req": "req/shell/left-bar/folding",
+          "children": [
+            {"name": "Collapsed strip", "select": "#left-strip", "req": "req/shell/left-bar/collapse",
+              "rule": [
+                {"is": "hidden"}
+              ],
+              "children": [
+                {"name": "Expand", "select": "#left-expand", "control": true, "req": "req/shell/left-bar/collapse"},
+                {"name": "Strip's marks", "select": "#left-marks", "req": "req/shell/left-bar/collapse"}
+              ]
+            },
+            {"name": "Left bar's head", "select": "#left-head", "req": "req/shell/left-bar/collapse",
+              "children": [
+                {"name": "Collapse", "select": "#left-collapse", "control": true, "req": "req/shell/left-bar/collapse"}
+              ]
+            },
+            {"name": "Image box", "select": "#image-box", "box": true, "req": "req/shell/left-bar/folding",
+              "rule": [
+                {"when": {"selected": ["folder"]}, "is": "hidden", "req": "req/shell/data/folder"},
+                {"when": {"role": ["data"], "online": [false]}, "is": "folded", "req": "req/shell/data/mode", "approval": "undecided"},
+                {"when": {"image": ["local", "original"]}, "is": "folded"}
+              ],
+              "children": [
+                {"name": "File name and info", "select": "#file-box", "req": "req/shell/image/file-info",
                   "children": [
-                    { "name": "Show/hide checkbox", "select": "#channels .channel input[type=checkbox]", "control": true, "req": "req/shell/channels/rows" },
-                    { "name": "Black and white points", "select": "#channels .channel .levels", "req": "req/shell/channels/rows" },
-                    { "name": "Colour picker", "select": "#channels .channel input[type=color]", "control": true, "req": "req/shell/channels/rows" }
+                    {"name": "Image's name", "select": "#file-name", "req": "req/shell/image/file-info"},
+                    {"name": "Image's details", "select": "#file-info", "req": "req/shell/image/file-info",
+                      "rule": [
+                        {"is": "hidden"}
+                      ]
+                    }
+                  ]
+                },
+                {"name": "Channels", "select": "#channels", "req": "req/shell/channels/rows",
+                  "rule": [
+                    {"when": {"image": ["none"]}, "is": "hidden"}
+                  ],
+                  "children": [
+                    {"name": "Channel row", "select": "#channels .channel", "req": "req/shell/channels/rows",
+                      "children": [
+                        {"name": "Show/hide checkbox", "select": "#channels .channel input[type=checkbox]", "control": true, "req": "req/shell/channels/rows"},
+                        {"name": "Black and white points", "select": "#channels .channel .levels", "req": "req/shell/channels/rows"},
+                        {"name": "Colour picker", "select": "#channels .channel input[type=color]", "control": true, "req": "req/shell/channels/rows"}
+                      ]
+                    }
+                  ]
+                },
+                {"name": "Load", "select": "#load", "req": "req/shell/load/selector",
+                  "rule": [
+                    {"when": {"role": ["data"]}, "is": "hidden", "req": "req/shell/data/mode"}
+                  ],
+                  "children": [
+                    {"name": "Image selector", "select": "#image-menu", "req": "req/shell/load/selector",
+                      "children": [
+                        {"name": "Selector's face", "select": "#image-pick", "req": "req/shell/load/selector"}
+                      ]
+                    },
+                    {"name": "This computer", "select": "#load-main", "control": true, "req": "req/shell/load/from",
+                      "rule": [
+                        {"when": {"fromComputer": [false]}, "is": "hidden"}
+                      ]
+                    },
+                    {"name": "Unload", "select": "#unload", "control": true, "req": "req/shell/load/selector",
+                      "rule": [
+                        {"when": {"image": ["none"]}, "is": "hidden"}
+                      ]
+                    },
+                    {"name": "Google Drive button", "select": "#load-drive", "control": true, "req": "req/shell/load/selector"}
+                  ]
+                },
+                {"name": "Image box's foot", "select": "#image-foot", "req": "req/shell/data/preview-images",
+                  "rule": [
+                    {"when": {"image": ["none", "local", "original"]}, "is": "hidden"}
+                  ],
+                  "children": [
+                    {"name": "Load Original", "select": "#load-original", "control": true, "req": "req/shell/data/preview-images"},
+                    {"name": "File chooser", "select": "#file", "req": "req/shell/load/from",
+                      "rule": [
+                        {"is": "hidden"}
+                      ]
+                    }
                   ]
                 }
               ]
             },
-            {
-              "name": "Load", "select": "#load", "req": "req/shell/load/selector",
-              "rule": [{ "when": { "role": ["data"] }, "is": "hidden", "req": "req/shell/data/mode" }],
-              "children": [
-                { "name": "Image selector", "select": "#image-pick", "req": "req/shell/load/selector" },
-                {
-                  "name": "Unload", "select": "#unload", "control": true, "req": "req/shell/load/selector",
-                  "rule": [{ "when": { "image": ["none"] }, "is": "hidden" }]
-                },
-                { "name": "Google Drive button", "select": "#load-drive", "control": true, "req": "req/shell/load/selector" }
-              ]
-            },
-            {
-              "name": "Load Original", "select": "#load-original", "control": true, "req": "req/shell/data/preview-images",
-              "rule": [{ "when": { "image": ["none", "local", "original"] }, "is": "hidden" }]
-            }
-          ]
-        },
-        {
-          "name": "Selected Folder", "select": "#folder-box", "box": true, "req": "req/shell/data/folder",
-          "rule": [
-            { "when": { "selected": ["nothing", "image"] }, "is": "hidden" },
-            { "when": { "online": [false] }, "is": "held", "req": "req/shell/data/mode" }
-          ],
-          "children": [
-            { "name": "Folder's name", "select": "#folder-name", "req": "req/shell/data/folder" },
-            { "name": "Folder's sums", "select": "#folder-summary", "req": "req/shell/data/folder" },
-            {
-              "name": "Update previews", "select": "#update-previews", "control": true, "req": "req/shell/data/update-previews",
-              "rule": [{ "when": { "online": [false] }, "is": "held", "req": "req/shell/offline/default" }]
-            }
-          ]
-        },
-        {
-          "name": "Preprocessing", "select": "#preprocessing-box", "box": true, "req": "req/shell/preprocessing/split",
-          "rule": [
-            { "when": { "role": ["viewer", "tagger"] }, "is": "hidden", "req": "req/shell/data/mode" },
-            { "when": { "image": ["none"] }, "is": "folded", "req": "req/shell/left-bar/folding" },
-            { "when": { "online": [false] }, "is": "held", "req": "req/shell/data/mode" }
-          ],
-          "children": [
-            {
-              "name": "Edit Image", "select": "#edit-open", "control": true, "req": "req/shell/data/edit",
-              "rule": [{ "when": { "editing": [true] }, "is": "disabled" }]
-            }
-          ]
-        },
-        {
-          "name": "Edit Image box", "select": "#edit-box", "box": true, "req": "req/shell/data/edit",
-          "rule": [{ "when": { "editing": [false] }, "is": "hidden" }],
-          "children": [
-            { "name": "Split", "select": "#edit-split", "req": "req/shell/data/edit" },
-            { "name": "Crop", "select": "#edit-crop-row", "req": "req/shell/data/edit" },
-            {
-              "name": "Slices", "select": "#edit-slices-sec", "req": "req/shell/data/edit",
-              "rule": [{ "when": { "stack": [false] }, "is": "hidden" }]
-            },
-            { "name": "Channels kept", "select": "#edit-channels", "req": "req/shell/data/edit" },
-            { "name": "Imperfections", "select": "#edit-flaws-row", "req": "req/shell/data/edit" },
-            { "name": "Save…", "select": "#edit-save", "control": true, "req": "req/shell/data/edit-save" },
-            { "name": "Done", "select": "#edit-done", "control": true, "req": "req/shell/data/edit" }
-          ]
-        },
-        {
-          "name": "Study: Threshold", "select": "#fx-box", "box": true, "req": "req/shell/left-bar/folding",
-          "rule": [
-            { "when": { "role": ["data"] }, "is": "hidden", "req": "req/shell/data/mode" },
-            { "when": { "image": ["none"] }, "is": "folded" },
-            { "when": { "counted": [true] }, "is": "folded" }
-          ],
-          "children": [{ "name": "Count", "select": "#fx-count", "control": true, "req": "req/shell/study/knows-none" }]
-        },
-        {
-          "name": "Study: postprocessing", "select": "#fx-counted", "box": true, "req": "req/shell/account/role",
-          "rule": [
-            { "when": { "role": ["viewer", "data"] }, "is": "hidden" },
-            { "when": { "counted": [false] }, "is": "folded", "req": "req/shell/left-bar/folding" }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Main view", "select": "#view", "req": "req/shell/image/minimap",
-      "children": [
-        {
-          "name": "Tasks/Items switch", "select": "#switch", "control": true, "req": "req/shell/views/second",
-          "rule": [
-            { "when": { "role": ["data"] }, "is": "hidden", "req": "req/shell/data/mode" },
-            { "when": { "counted": [false] }, "is": "disabled" }
-          ]
-        },
-        {
-          "name": "Ruler", "select": "#ruler-btn", "control": true, "req": "req/shell/tools/ruler",
-          "rule": [
-            { "when": { "view": ["items"] }, "is": "hidden", "req": "req/shell/views/second" },
-            { "when": { "image": ["none"] }, "is": "disabled", "req": "req/shell/image/minimap" }
-          ]
-        },
-        {
-          "name": "Grid", "select": "#grid-btn", "control": true, "req": "req/shell/tools/grid",
-          "rule": [
-            { "when": { "view": ["items"] }, "is": "hidden", "req": "req/shell/views/second" },
-            { "when": { "image": ["none"] }, "is": "disabled", "req": "req/shell/image/minimap" }
-          ]
-        },
-        {
-          "name": "Minimap button", "select": "#minimap-btn", "control": true, "req": "req/shell/image/minimap",
-          "rule": [
-            { "when": { "view": ["items"] }, "is": "hidden", "req": "req/shell/views/second" },
-            { "when": { "image": ["none"] }, "is": "disabled" }
-          ]
-        },
-        {
-          "name": "Zoom in", "select": "#zoom-in", "control": true, "req": "req/shell/image/minimap",
-          "rule": [
-            { "when": { "view": ["items"] }, "is": "hidden", "req": "req/shell/views/second" },
-            { "when": { "image": ["none"] }, "is": "disabled" }
-          ]
-        },
-        {
-          "name": "Tasks bar", "select": "#tasks-bar", "req": "req/shell/views/submit-task",
-          "rule": [
-            { "when": { "makesTruth": [false] }, "is": "hidden" },
-            { "when": { "view": ["image"] }, "is": "hidden" }
-          ],
-          "children": [
-            {
-              "name": "Submit ground truth", "select": "#fx-truth", "control": true, "req": "req/shell/views/submit-task",
-              "rule": [{ "when": { "counted": [false] }, "is": "disabled", "req": "req/shell/study/knows-none" }]
-            }
-          ]
-        },
-        {
-          "name": "Image view", "select": "#image-view", "req": "req/shell/views/second",
-          "rule": [
-            { "when": { "view": ["items"] }, "is": "hidden" },
-            { "when": { "selected": ["folder"] }, "is": "hidden", "req": "req/shell/data/folder" }
-          ],
-          "children": [
-            {
-              "name": "Empty view's text", "select": "#empty", "req": "req/shell/image/minimap",
-              "rule": [{ "when": { "image": ["local", "preview", "original"] }, "is": "hidden" }]
-            },
-            {
-              "name": "Image", "select": "#stage", "req": "req/shell/image/minimap",
-              "rule": [{ "when": { "image": ["none"] }, "is": "hidden" }]
-            }
-          ]
-        },
-        {
-          "name": "Item view", "select": "#items-view", "req": "req/shell/views/second",
-          "rule": [{ "when": { "view": ["image"] }, "is": "hidden" }]
-        },
-        {
-          "name": "Folder view", "select": "#folder-view", "req": "req/shell/data/folder",
-          "rule": [{ "when": { "selected": ["nothing", "image"] }, "is": "hidden" }],
-          "children": [
-            { "name": "Folder's title", "select": "#folder-title", "req": "req/shell/data/folder" },
-            { "name": "Grid or list", "select": "#folder-layout", "req": "req/shell/data/folder" },
-            { "name": "Folder's images", "select": "#folder-items", "req": "req/shell/data/folder" }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Status bar", "select": "#statusbar", "req": "req/shell/status-bar",
-      "children": [
-        {
-          "name": "Breadcrumbs", "select": "#sb-steps", "req": "req/shell/status-bar/breadcrumbs",
-          "rule": [{ "when": { "role": ["data"] }, "is": "hidden", "req": "req/shell/data/mode" }],
-          "children": [
-            {
-              "name": "Submit GT crumb", "select": "#sb-submit", "made": "one crumb per step, by the shell", "req": "req/shell/status-bar/breadcrumbs",
+            {"name": "Selected Folder", "select": "#folder-box", "box": true, "req": "req/shell/data/folder",
               "rule": [
-                { "when": { "makesTruth": [false] }, "is": "hidden" },
-                { "when": { "counted": [false] }, "is": "hidden" }
+                {"when": {"selected": ["nothing", "image"]}, "is": "hidden"},
+                {"when": {"online": [false]}, "is": "held", "req": "req/shell/data/mode"}
+              ],
+              "children": [
+                {"name": "Folder's name", "select": "#folder-name", "req": "req/shell/data/folder"},
+                {"name": "Folder's sums", "select": "#folder-summary", "req": "req/shell/data/folder"},
+                {"name": "Update previews", "select": "#update-previews", "control": true, "req": "req/shell/data/update-previews",
+                  "rule": [
+                    {"when": {"online": [false]}, "is": "held", "req": "req/shell/offline/default"}
+                  ]
+                },
+                {"name": "Folder's message", "select": "#folder-msg", "req": "req/shell/data/folder"}
+              ]
+            },
+            {"name": "Preprocessing", "select": "#preprocessing-box", "box": true, "req": "req/shell/preprocessing/split",
+              "rule": [
+                {"when": {"role": ["viewer", "tagger"]}, "is": "hidden", "req": "req/shell/data/mode"},
+                {"when": {"image": ["none"]}, "is": "folded", "req": "req/shell/left-bar/folding"},
+                {"when": {"online": [false]}, "is": "held", "req": "req/shell/data/mode"}
+              ],
+              "children": [
+                {"name": "Edit Image", "select": "#edit-open", "control": true, "req": "req/shell/data/edit",
+                  "rule": [
+                    {"when": {"editing": [true]}, "is": "disabled"}
+                  ]
+                }
+              ]
+            },
+            {"name": "Edit Image box", "select": "#edit-box", "box": true, "req": "req/shell/data/edit",
+              "rule": [
+                {"when": {"editing": [false]}, "is": "hidden"}
+              ],
+              "children": [
+                {"name": "Split", "select": "#edit-split", "req": "req/shell/data/edit"},
+                {"name": "Split hint", "select": "#edit-split-hint", "req": "req/shell/data/edit",
+                  "rule": [
+                    {"is": "hidden"}
+                  ]
+                },
+                {"name": "Crop", "select": "#edit-crop-row", "req": "req/shell/data/edit",
+                  "children": [
+                    {"name": "Draw", "select": "#edit-crop", "control": true, "req": "req/shell/data/edit"},
+                    {"name": "Crop's size", "select": "#edit-crop-size", "req": "req/shell/data/edit"},
+                    {"name": "Reset crop", "select": "#edit-crop-reset", "control": true, "req": "req/shell/data/edit",
+                      "rule": [
+                        {"is": "hidden"}
+                      ]
+                    }
+                  ]
+                },
+                {"name": "Slices", "select": "#edit-slices-sec", "req": "req/shell/data/edit",
+                  "rule": [
+                    {"when": {"stack": [false]}, "is": "hidden"}
+                  ],
+                  "children": [
+                    {"name": "Slices' text", "select": "#edit-z-text", "req": "req/shell/data/edit"},
+                    {"name": "Use suggested", "select": "#edit-suggest", "control": true, "req": "req/shell/data/edit"},
+                    {"name": "Slices slider", "select": "#edit-slices", "req": "req/shell/data/edit",
+                      "children": [
+                        {"name": "Suggested band", "select": "#edit-band", "req": "req/shell/data/edit"},
+                        {"name": "First slice", "select": "#edit-z0", "control": true, "req": "req/shell/data/edit"},
+                        {"name": "Last slice", "select": "#edit-z1", "control": true, "req": "req/shell/data/edit"}
+                      ]
+                    }
+                  ]
+                },
+                {"name": "Channels kept", "select": "#edit-channels", "req": "req/shell/data/edit"},
+                {"name": "Imperfections", "select": "#edit-flaws-row", "req": "req/shell/data/edit",
+                  "children": [
+                    {"name": "Mark", "select": "#edit-lasso", "control": true, "req": "req/shell/data/edit"},
+                    {"name": "Imperfections' list", "select": "#edit-flaws", "req": "req/shell/data/edit"}
+                  ]
+                },
+                {"name": "Save…", "select": "#edit-save", "control": true, "req": "req/shell/data/edit-save"},
+                {"name": "Done", "select": "#edit-done", "control": true, "req": "req/shell/data/edit"}
+              ]
+            },
+            {"name": "Study: Threshold", "select": "#fx-box", "box": true, "req": "req/shell/left-bar/folding",
+              "rule": [
+                {"when": {"role": ["data"]}, "is": "hidden", "req": "req/shell/data/mode"},
+                {"when": {"image": ["none"]}, "is": "folded"},
+                {"when": {"counted": [true]}, "is": "folded"}
+              ],
+              "children": [
+                {"name": "Count", "select": "#fx-count", "control": true, "req": "req/shell/study/knows-none"}
+              ]
+            },
+            {"name": "Study: postprocessing", "select": "#fx-counted", "box": true, "req": "req/shell/account/role",
+              "rule": [
+                {"when": {"role": ["viewer", "data"]}, "is": "hidden"},
+                {"when": {"counted": [false]}, "is": "folded", "req": "req/shell/left-bar/folding"}
               ]
             }
           ]
         },
-        { "name": "Online icon", "select": "#sb-online", "control": true, "req": "req/shell/status-bar/online" },
-        {
-          "name": "Report a problem", "select": "#sb-report", "control": true, "req": "req/shell/report/bug",
-          "rule": [{ "when": { "online": [false] }, "is": "held", "req": "req/shell/offline/default" }]
+        {"name": "Left bar gutter", "select": "#gutter-left", "req": "req/shell/left-bar/width"},
+        {"name": "Main view", "select": "#view", "req": "req/shell/image/minimap",
+          "children": [
+            {"name": "Tasks/Items switch", "select": "#switch", "control": true, "req": "req/shell/views/second",
+              "rule": [
+                {"when": {"role": ["data"]}, "is": "hidden", "req": "req/shell/data/mode"},
+                {"when": {"counted": [false]}, "is": "disabled"}
+              ]
+            },
+            {"name": "Ruler", "select": "#ruler-btn", "control": true, "req": "req/shell/tools/ruler",
+              "rule": [
+                {"when": {"view": ["items"]}, "is": "hidden", "req": "req/shell/views/second"},
+                {"when": {"image": ["none"]}, "is": "disabled", "req": "req/shell/image/minimap"}
+              ]
+            },
+            {"name": "Grid", "select": "#grid-btn", "control": true, "req": "req/shell/tools/grid",
+              "rule": [
+                {"when": {"view": ["items"]}, "is": "hidden", "req": "req/shell/views/second"},
+                {"when": {"image": ["none"]}, "is": "disabled", "req": "req/shell/image/minimap"}
+              ]
+            },
+            {"name": "Minimap button", "select": "#minimap-btn", "control": true, "req": "req/shell/image/minimap",
+              "rule": [
+                {"when": {"view": ["items"]}, "is": "hidden", "req": "req/shell/views/second"},
+                {"when": {"image": ["none"]}, "is": "disabled"}
+              ]
+            },
+            {"name": "Zoom out", "select": "#zoom-out", "control": true, "req": "req/shell/image/minimap",
+              "rule": [
+                {"when": {"view": ["items"]}, "is": "hidden", "req": "req/shell/views/second"},
+                {"when": {"image": ["none"]}, "is": "disabled"}
+              ]
+            },
+            {"name": "Zoom in", "select": "#zoom-in", "control": true, "req": "req/shell/image/minimap",
+              "rule": [
+                {"when": {"view": ["items"]}, "is": "hidden", "req": "req/shell/views/second"},
+                {"when": {"image": ["none"]}, "is": "disabled"}
+              ]
+            },
+            {"name": "Zoom", "select": "#zoom-label", "req": "req/shell/image/minimap",
+              "rule": [
+                {"when": {"view": ["items"]}, "is": "hidden", "req": "req/shell/views/second"}
+              ]
+            },
+            {"name": "Tasks bar", "select": "#tasks-bar", "req": "req/shell/views/submit-task",
+              "rule": [
+                {"when": {"makesTruth": [false]}, "is": "hidden"},
+                {"when": {"view": ["image"]}, "is": "hidden"}
+              ],
+              "children": [
+                {"name": "Submit ground truth", "select": "#fx-truth", "control": true, "req": "req/shell/views/submit-task",
+                  "rule": [
+                    {"when": {"counted": [false]}, "is": "disabled", "req": "req/shell/study/knows-none"}
+                  ]
+                }
+              ]
+            },
+            {"name": "Busy", "select": "#busy", "req": "req/shell/waiting/visible",
+              "rule": [
+                {"is": "hidden"}
+              ],
+              "children": [
+                {"name": "Scan light", "select": "#scan-light", "req": "req/shell/waiting/visible"},
+                {"name": "Busy's text", "select": "#busy-text", "req": "req/shell/waiting/visible"},
+                {"name": "Busy's time", "select": "#busy-time", "req": "req/shell/waiting/visible"}
+              ]
+            },
+            {"name": "Image view", "select": "#image-view", "req": "req/shell/views/second",
+              "rule": [
+                {"when": {"view": ["items"]}, "is": "hidden"},
+                {"when": {"selected": ["folder"]}, "is": "hidden", "req": "req/shell/data/folder"}
+              ],
+              "children": [
+                {"name": "Scroller", "select": "#scroller", "req": "req/shell/image/minimap",
+                  "children": [
+                    {"name": "Empty view's text", "select": "#empty", "req": "req/shell/image/minimap",
+                      "rule": [
+                        {"when": {"image": ["local", "preview", "original"]}, "is": "hidden"}
+                      ],
+                      "children": [
+                        {"name": "Empty view's words", "select": "#empty-text", "req": "req/shell/image/minimap"}
+                      ]
+                    },
+                    {"name": "Image", "select": "#stage", "req": "req/shell/image/minimap",
+                      "rule": [
+                        {"when": {"image": ["none"]}, "is": "hidden"}
+                      ],
+                      "children": [
+                        {"name": "Image's canvas", "select": "#base", "req": "req/shell/image/minimap"}
+                      ]
+                    }
+                  ]
+                },
+                {"name": "Minimap", "select": "#minimap", "req": "req/shell/image/minimap",
+                  "rule": [
+                    {"when": {"image": ["none"]}, "is": "hidden"},
+                    {"when": {"imageFits": [true]}, "is": "hidden"}
+                  ],
+                  "children": [
+                    {"name": "Hide the minimap", "select": "#minimap-hide", "control": true, "req": "req/shell/image/minimap"},
+                    {"name": "Fold the minimap", "select": "#minimap-fold", "control": true, "req": "req/shell/image/minimap"},
+                    {"name": "Minimap's picture", "select": "#minimap-canvas", "req": "req/shell/image/minimap"},
+                    {"name": "Minimap's view", "select": "#minimap-view", "req": "req/shell/image/minimap"}
+                  ]
+                }
+              ]
+            },
+            {"name": "Item view", "select": "#items-view", "req": "req/shell/views/second",
+              "rule": [
+                {"when": {"view": ["image"]}, "is": "hidden"}
+              ]
+            },
+            {"name": "Folder view", "select": "#folder-view", "req": "req/shell/data/folder",
+              "rule": [
+                {"when": {"selected": ["nothing", "image"]}, "is": "hidden"}
+              ],
+              "children": [
+                {"name": "Folder's title", "select": "#folder-title", "req": "req/shell/data/folder"},
+                {"name": "Grid or list", "select": "#folder-layout", "req": "req/shell/data/folder"},
+                {"name": "Folder's images", "select": "#folder-items", "req": "req/shell/data/folder"}
+              ]
+            }
+          ]
         }
+      ]
+    },
+    {"name": "Status bar", "select": "#statusbar", "req": "req/shell/status-bar",
+      "children": [
+        {"name": "Breadcrumbs", "select": "#sb-steps", "req": "req/shell/status-bar/breadcrumbs",
+          "rule": [
+            {"when": {"role": ["data"]}, "is": "hidden", "req": "req/shell/data/mode"}
+          ],
+          "children": [
+            {"name": "Submit GT crumb", "select": "#sb-submit", "made": "one crumb per step, by the shell", "req": "req/shell/status-bar/breadcrumbs",
+              "rule": [
+                {"when": {"makesTruth": [false]}, "is": "hidden"},
+                {"when": {"counted": [false]}, "is": "hidden"}
+              ]
+            }
+          ]
+        },
+        {"name": "Now", "select": "#sb-now", "req": "req/shell/status-bar",
+          "children": [
+            {"name": "Spinner", "select": "#spin", "req": "req/shell/waiting/visible",
+              "rule": [
+                {"is": "hidden"}
+              ]
+            },
+            {"name": "Status", "select": "#status", "req": "req/shell/status-bar"}
+          ]
+        },
+        {"name": "Thumbnails", "select": "#sb-thumbs", "req": "req/shell/status-bar",
+          "rule": [
+            {"is": "hidden", "approval": "tentative"}
+          ]
+        },
+        {"name": "Resources", "select": "#sb-res", "req": "req/shell/status-bar/resources",
+          "children": [
+            {"name": "Resources, unfolded", "select": "#sb-res-items", "req": "req/shell/status-bar/resources",
+              "children": [
+                {"name": "Storage", "select": "#sb-disk", "control": true, "req": "req/shell/status-bar/disk"},
+                {"name": "Memory", "select": "#sb-memory", "control": true, "req": "req/shell/status-bar/memory"},
+                {"name": "Network", "select": "#sb-net", "control": true, "req": "req/shell/status-bar/network"},
+                {"name": "CPU", "select": "#sb-cpu", "control": true, "req": "req/shell/status-bar/cpu"}
+              ]
+            },
+            {"name": "Resources icon", "select": "#sb-res-icon", "control": true, "req": "req/shell/status-bar/resources"}
+          ]
+        },
+        {"name": "Online icon", "select": "#sb-online", "control": true, "req": "req/shell/status-bar/online"},
+        {"name": "Report a problem", "select": "#sb-report", "control": true, "req": "req/shell/report/bug",
+          "rule": [
+            {"when": {"online": [false]}, "is": "held", "req": "req/shell/offline/default"}
+          ]
+        },
+        {"name": "Version", "select": "#sb-version", "control": true, "req": "req/shell/version-history"},
+        {"name": "What's new", "select": "#whats-new", "req": "req/shell/version-history",
+          "rule": [
+            {"is": "hidden"}
+          ],
+          "children": [
+            {"name": "What's new, open", "select": "#whats-new-open", "control": true, "req": "req/shell/version-history"},
+            {"name": "What's new, close", "select": "#whats-new-x", "control": true, "req": "req/shell/version-history"}
+          ]
+        }
+      ]
+    },
+    {"name": "Tooltip", "select": "#tip", "req": "req/shell/channels/rows",
+      "rule": [
+        {"is": "hidden"}
+      ]
+    },
+    {"name": "Icons", "select": "#icons", "req": "req/shell/header",
+      "rule": [
+        {"is": "hidden"}
+      ]
+    },
+    {"name": "Notice", "select": "#notice", "req": "req/shell/ground-truth/submit",
+      "rule": [
+        {"when": {"notice": [false]}, "is": "hidden", "approval": "tentative"}
+      ],
+      "children": [
+        {"name": "Notice's text", "select": "#notice-text", "req": "req/shell/ground-truth/submit"},
+        {"name": "OK", "select": "#notice-ok", "control": true, "req": "req/shell/ground-truth/submit"}
       ]
     }
   ]

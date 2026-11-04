@@ -32,7 +32,8 @@ ACTIONS = {
     'offline': ('Offline', {'online': False}),
     'online': ('Online', {'online': True}),
 }
-START = {'image': 'none', 'counted': False, 'view': 'image', 'selected': 'nothing', 'online': True, 'editing': False, 'stack': False}
+START = {'image': 'none', 'counted': False, 'view': 'image', 'selected': 'nothing', 'online': True, 'editing': False, 'stack': False,
+         'fromComputer': False, 'notice': False, 'imageFits': True}
 STATES = ('shown', 'disabled', 'held', 'folded', 'hidden')
 # what the page shows of an element, as the browser reads it: on (shown, usable, a box open), off (shown, disabled),
 # held (shown, saying it needs the internet, req/shell/offline/default), folded (a box shown folded), gone (not
@@ -81,6 +82,10 @@ def walk(rules):
         for a in p['actions']:
             label, change = ACTIONS[a]
             s = {**s, **change}
+            # an image from the computer, open for whoever makes ground truth, is told it cannot be submitted
+            # (req/shell/ground-truth/submit); the study opening afresh for a new tagger tells it again
+            if a in ('load', 'tagger'):
+                s['notice'] = derived(s)['makesTruth'] and s['image'] == 'local'
             states.append((label, dict(s)))
         out.append((p, states))
     return out

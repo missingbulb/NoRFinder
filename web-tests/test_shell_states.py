@@ -1,6 +1,6 @@
 """req/checks/shell-states: the shell's element tree and its rules (dev/requirements/shell-states.json) turn into the matrix
 and the browser test's expectations as the requirement says; the generated files are up to date, every element the tree
-names is on the page, and the shell's elements not in the tree yet are counted."""
+names is on the page, and every element of the shell's page is in the tree."""
 import copy
 import importlib.util
 import json
@@ -14,9 +14,6 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 spec = importlib.util.spec_from_file_location('shell_states', os.path.join(ROOT, 'dev', 'tools', 'build', 'shell_states.py'))
 shell_states = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(shell_states)
-
-# the shell's elements, by id, that the tree does not hold yet: lower it as the tree grows
-NOT_IN_TREE = 69
 
 # an invented page: a box holding a button, beside a panel
 PAGE = {
@@ -91,10 +88,11 @@ class Ids(HTMLParser):
 
     def __init__(self):
         super().__init__()
-        self.stack, self.state, self.opened = [], [], []
+        self.stack, self.state, self.opened, self.tags = [], [], [], set()
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
+        self.tags.add(tag)
         inside = tag in ('head', 'dialog', 'template', 'svg') or 'popover' in a or 'pop' in (a.get('class') or '').split()
         if 'id' in a:
             (self.opened if inside or any(self.stack) else self.state).append(a['id'])
@@ -120,13 +118,14 @@ def tree():
 
 
 def lead(select):
-    return re.match(r'#([\w-]+)', select).group(1)
+    """The id a selector starts from, or the tag of one naming an element by its tag."""
+    return re.match(r'#?([\w-]+)', select).group(1)
 
 
 def test_every_element_the_tree_names_is_on_the_page():
     """By the id its selector starts from; one the page makes as it runs, from its parent's."""
     p = page_ids('web/index.html', 'studies/fixture/web/fixture.html')
-    ids = set(p.state) | set(p.opened)
+    ids = set(p.state) | set(p.opened) | p.tags
     checked = 0
     for n, parent, _ in tree():
         owner = parent if n.get('made') else n
@@ -135,9 +134,10 @@ def test_every_element_the_tree_names_is_on_the_page():
     assert checked >= 35
 
 
-def test_the_shell_elements_not_in_the_tree_yet_are_counted():
+def test_every_shell_element_is_in_the_tree():
+    """An element the shell's page gains is given its place in the tree, and its rules, in the same change."""
     p = page_ids('web/index.html')
     held = {lead(n['select']) for n, _, _ in tree()}
     left = [i for i in p.state if i not in held]
     assert len(p.state) > 100
-    assert len(left) == NOT_IN_TREE, f'{len(left)} of the shell\'s elements are not in the tree (was {NOT_IN_TREE}): set NOT_IN_TREE'
+    assert not left, f'not in dev/requirements/shell-states.json: {left}'
