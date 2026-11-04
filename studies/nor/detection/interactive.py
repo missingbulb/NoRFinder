@@ -29,8 +29,8 @@ EXACT_REFILTER = {'tl', 'tl_post', 'fill', 'walk', 'blobs'}
 # sees no mask, so nuclei are left to the 'in nucleus' filter
 OWN_BLUE = {'rf', 'tl_post'}
 # failures that come after the checks and have their own parameter (their defaults when a finder has none)
-NUCLEUS, SHARED = 'in nucleus', 'shares a segment'
-POST = {NUCLEUS: ('nucleus_frac', 0.8), SHARED: ('max_shared', 0.3)}
+NUCLEUS, SHARED, FAINT = 'in nucleus', 'shares a segment', nor3.FAINT
+POST = {NUCLEUS: ('nucleus_frac', 0.8), SHARED: ('max_shared', 0.3), FAINT: ('red_floor_q', 0.0)}
 REASON_TEXT.setdefault(NUCLEUS, 'red mostly on a nucleus (blue mask, applied after finding)')
 REASONS.setdefault(NUCLEUS, ('N', (90, 140, 255)))
 
@@ -204,6 +204,8 @@ class Session:
                 c['fail'] = NUCLEUS
         if SHARED not in off:
             resolve_overlaps(self.cands, self.caspr.shape, p.get('max_shared', POST[SHARED][1]))
+        if FAINT not in off:
+            nor3.red_floor(self.cands, p.get('red_floor_q', POST[FAINT][1]))
         return [c['fail'] for c in self.cands]
 
     def alone(self, spec):
@@ -224,6 +226,10 @@ class Session:
         for i, c in open_:
             if c['fail'] == SHARED:
                 fails[i].append(SHARED)
+        nor3.red_floor([c for _, c in open_], p.get('red_floor_q', POST[FAINT][1]))
+        for i, c in open_:
+            if c['fail'] == FAINT:
+                fails[i].append(FAINT)
         off = set(spec.get('off', []))
         only = {k: sum(k in f and all(o == k or o in off for o in f) for f in fails) for k in keys}
         return dict(counts={k: sum(k in f for f in fails) for k in keys}, only=only, fails=fails)

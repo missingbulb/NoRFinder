@@ -16,7 +16,7 @@ import nor3
 from nor3 import classify, finish, resolve_overlaps, EIGHT
 
 PT = dict(nor3.P3, min_green_balance=0.25, rim=2, win_u=0.5, d_u=(1.25, 1.75, 2.25, 2.75, 3.25), n_ang=16, s_min=1.0, nms_u=1.5,
-          dip=0.0, g_reach_u=2.0, g_weak=1.0)
+          dip=0.0, g_reach_u=2.0, g_weak=1.0, red_floor_q=0.1)
 
 
 def segment_tl(caspr, nav, bm, p=PT):
@@ -133,6 +133,7 @@ def segment_tl(caspr, nav, bm, p=PT):
         finish(c, F, p)
         cands.append(c)
     resolve_overlaps(cands, cn.shape)
+    nor3.red_floor(cands, p.get('red_floor_q', 0.0))
     return cands, dict(unit=unit, n_red=len(sy))
 
 

@@ -112,6 +112,7 @@ HELP = {
     'min_aspect': "Length over mean width must be at least this: a NoR is a stick, not a round blob.",
     'min_solid': "Share of the line along the NoR that must be covered by the NoR itself (1 = no gaps).",
     'nucleus_frac': "A NoR is rejected when at least this share of its red lies on a nucleus (the blue mask).",
+    'red_floor_q': "A NoR is rejected when its red is dimmer than this share of the image's NoRs (0.1 = the dimmest tenth; 0 = off).",
     'max_shared': "A NoR is rejected as a duplicate when a stronger NoR already owns its red, or more than this share of either green.",
 }
 
@@ -128,6 +129,7 @@ REASONS = {
     'not stick-like':            ('S', 'Stubby', "Too short for its width, or with gaps along its length."),
     'in nucleus':                ('N', 'In nucleus', "The red lies mostly on a cell nucleus (DAPI)."),
     'shares a segment':          ('O', 'Overlap', "Shares its red, or much of a green, with a stronger NoR."),
+    'faint for its image':       ('F', 'Faint', "Its red is among the dimmest of this image's NoRs."),
     'one green':                 ('U', 'Unpaired', "Only one green touches the red."),
     'greens joined':             ('J', 'Joined greens', "The two greens touch and form one blob."),
     'red not rectangular':       ('C', 'Crooked red', "The red is not a compact bar."),
