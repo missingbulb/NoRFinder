@@ -103,10 +103,14 @@ try {
     const fresh = await pw[ENGINE].launch(), first = await fresh.newPage();
     pyDown = true;
     await first.goto(origin + "/app/fixture");
-    await first.waitForFunction(() => /not on this device|Error/.test(document.querySelector("#status").textContent), null, { timeout: 180000 }).catch(() => {});
-    const said = await first.textContent("#status"), red = await first.$eval("#status", (e) => e.classList.contains("err"));
-    check(/not on this device/i.test(said) && !/Traceback|Error/.test(said) && !red, "the network dropping while the study's modules load says so plainly, not as an error: " + said.slice(0, 200));
-    check(!(await first.$eval("#spin", (e) => e.classList.contains("on"))), "and the spinner stops: nothing is loading any more");
+    // the status and the spinner read at the one moment the failure is told: the site still answering, the page
+    // soon takes the network as back and tries the Python again, which is its own, later state
+    const seen = await first.waitForFunction(() => {
+      const s = document.querySelector("#status");
+      return /not on this device|Error/.test(s.textContent) && { said: s.textContent, red: s.classList.contains("err"), spin: document.querySelector("#spin").classList.contains("on") };
+    }, null, { timeout: 180000 }).then((h) => h.jsonValue(), () => ({ said: "", red: false, spin: true }));
+    check(/not on this device/i.test(seen.said) && !/Traceback|Error/.test(seen.said) && !seen.red, "the network dropping while the study's modules load says so plainly, not as an error: " + seen.said.slice(0, 200));
+    check(!seen.spin, "and the spinner stops: nothing is loading any more");
     await fresh.close(); pyDown = false;
   }
 
