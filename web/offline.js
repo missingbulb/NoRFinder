@@ -1,8 +1,8 @@
 // Working without the internet. Offline by default (req/shell/offline/default): the service worker keeps the site's copy,
 // which keepSite() brings up to the release now published; with no network the page says Offline in the status
 // bar's network, a red mark on its icon, and each control marked data-needs-network says so and does nothing. No
-// network is the browser saying so, or the site not answering, asked every AGAIN_MS all session long: a plane's
-// Wi-Fi with no internet beyond it leaves the browser saying it is online.
+// network is the browser saying so, or the site not answering, asked all session long: a plane's Wi-Fi with no
+// internet beyond it leaves the browser saying it is online.
 // Making a study available offline (req/shell/offline/per-study), from the Storage tab: a popup of what the study's Python and the images
 // in its Google Drive folder take, beside the room left and the time at this session's speeds, then the download;
 // and Install as an app, at the top of the tab.
@@ -43,7 +43,7 @@ const MAX_FOLDERS = 200, MAX_FILES = 2000;
 
 export function offline({ $, esc, sizeText, drive, kept, keep, throttled, throttle, stored }) {
   // ---------- offline by default ----------
-  const NEEDS = "[data-needs-network]", WHY = "Needs the internet: you are offline.", AGAIN_MS = 30000;
+  const NEEDS = "[data-needs-network]", WHY = "Needs the internet: you are offline.", AGAIN_MS = 30000, AGAIN_OFF_MS = 5000;
   const NET_OFF = "Offline: no internet. The page runs what is on this device. Click for more.";
   let unreached = false;
   const isOffline = () => !navigator.onLine || unreached;
@@ -65,7 +65,12 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
   addEventListener("online", () => { mark(); keepSite(); });
   addEventListener("offline", mark);
   mark();
-  setInterval(keepSite, AGAIN_MS);
+  navigator.serviceWorker?.addEventListener("message", (e) => {
+    if (e.data?.type === "reach" && e.data.unreached !== unreached) { unreached = e.data.unreached; mark(); }
+  });
+  // asked every AGAIN_MS, and every AGAIN_OFF_MS while offline, so coming back shows soon
+  let asked = 0;
+  setInterval(() => { if (isOffline() || Date.now() - asked >= AGAIN_MS) keepSite(); }, AGAIN_OFF_MS);
   document.addEventListener("click", (e) => {
     if (isOffline() && e.target.closest?.(NEEDS)) { e.preventDefault(); e.stopImmediatePropagation(); }
   }, true);
@@ -73,6 +78,7 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
   // the site's copy, brought up to date by the service worker: {files, unreached, cache} once it answers
   let siteCache = null;
   async function keepSite() {
+    asked = Date.now();
     const sw = navigator.serviceWorker && (await navigator.serviceWorker.ready.catch(() => null))?.active;
     if (!sw) return { error: "no service worker" };
     const answer = new Promise((ok) => {

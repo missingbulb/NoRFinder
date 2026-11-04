@@ -10,7 +10,6 @@ ridge map, measured against the field's own typical vessel so the cut-off travel
 import os, sys
 
 import numpy as np
-from skimage.filters import sato
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE); sys.path.insert(0, os.path.join(HERE, '..'))
@@ -20,6 +19,12 @@ import v3_geodesic_bridges as v3
 import vessel_model as vm
 
 NAME = 'v4-line-evidence'
+TITLE, ICON = 'dead-end check', '🔍'
+STEPS = """\
+- Run the bridges algorithm
+- For each vessel with an open end, shorter than ten widths
+  - drop it when its ridge is under half the field's typical vessel's
+  - and it beats its own quarter-turned copy by under 35% of the typical vessel's lead"""
 
 RIDGE_SHARE = 0.5      # a dead end whose ridge is under half the field's median vessel ridge ...
 TURNED_SHARE = 0.35    # ... and whose lead over its quarter-turned copy is under this share of the field's median lead, goes
@@ -28,9 +33,8 @@ SHORT_WIDTHS = 10.0    # only dead ends shorter than this many widths are judged
 
 def extract(vol, um, source, z_step):
     m = v3.extract(vol, um, source, z_step)
-    z, keep = vm.noise_units(vol, um)
-    _, _, _, flat = vm.segment(z, keep, um)
-    ridge = sato(np.clip(flat, 0, None), sigmas=[s / um for s in v3.RIDGE_UM], black_ridges=False)
+    flat, _, _ = vm.flatten(vol, um)
+    ridge = v3.ridge_map(vol, um)
     m['repairs']['dead_ends_dropped'] = drop_unproven_dead_ends(m, flat, ridge)
     v2.renumber(m)
     m['algorithm'] = NAME

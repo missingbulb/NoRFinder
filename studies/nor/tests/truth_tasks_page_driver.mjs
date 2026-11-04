@@ -47,11 +47,11 @@ const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/cs
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
-  // the study as served: its stage, and a picture to reveal (the file need not exist: black shows under it)
+  // the study as served: its stage, and a link to a picture to reveal (turned away like every off-site request: black shows under it)
   if (u === "/studies/nor/study.json") {
     const m = JSON.parse(fs.readFileSync(path.join(repo, u)));
     r.writeHead(200, { "content-type": "application/json" });
-    return r.end(JSON.stringify({ ...m, stage: stage || m.stage, groundTruth: { ...m.groundTruth, reveal: "web/acme-dog.jpg" } }));
+    return r.end(JSON.stringify({ ...m, stage: stage || m.stage, groundTruth: { ...m.groundTruth, reveal: "https://acme.example/dog.jpg" } }));
   }
   const f = u.startsWith("/web/answers/") ? path.join(answers, u.slice("/web/answers/".length)) : repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
@@ -67,9 +67,13 @@ const check = async (ok, what, seen) => { console.log((ok ? "ok    " : "FAIL  ")
 
 // a summary mask the user lassoed on this image before, in the Viewer
 const MASKED = [[[0, 0], [60, 0], [60, 60], [0, 60]]];
+// the picture the study links to, served when picture is true (a small PNG of the repo's), else turned away like
+// every off-site request
+let picture = true;
 async function open() {
   const ctx = await browser.newContext({ viewport: { width: 1200, height: 700 } });
   await ctx.route(offSite(origin), (r) => r.abort());
+  if (picture) await ctx.route("https://acme.example/dog.jpg", (r) => r.fulfill({ contentType: "image/png", body: fs.readFileSync(path.join(repo, "web", "poster.png")) }));
   await asTagger(ctx); // ground truth is made by a Ground Truth Tagger (req/shell/account/role)
   await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
   await ctx.addInitScript(([k, m]) => localStorage.setItem(k, JSON.stringify(m)), ["nor-mask-v1:" + path.basename(image), MASKED]);
@@ -175,8 +179,9 @@ const rectOf = (a) => { const r = Math.floor(a / 10), k = r % 2 ? 9 - (a % 10) :
 const same = (p, q) => !!p && !!q && p.every((v, k) => Math.abs(v - q[k]) < 1e-6);
 await check(same(await frame(), rectOf(first.a)), "the area the walk is in is framed", [await frame(), rectOf(first.a)]);
 // the picture the study names stands behind the whole image, shown only where it is cut out; black under it
+await page.waitForFunction(() => document.querySelector("#overlay image.reveal"));
 const pic = await page.evaluate(() => { const im = document.querySelector("#overlay image.reveal"), bg = document.querySelector("#overlay .reveal-bg"); return { href: im?.getAttribute("href"), clip: im?.getAttribute("clip-path"), w: +im?.getAttribute("width"), bg: bg && getComputedStyle(bg).fill, bgClip: bg?.getAttribute("clip-path") }; });
-await check(/acme-dog\.jpg$/.test(pic.href) && /gt-reveal/.test(pic.clip) && /gt-reveal/.test(pic.bgClip) && pic.bg === "rgb(0, 0, 0)" && pic.w === IW, "the study's picture behind the whole image, black under it, shown only where it is cut out", pic);
+await check(pic.href === "https://acme.example/dog.jpg" && /gt-reveal/.test(pic.clip) && /gt-reveal/.test(pic.bgClip) && pic.bg === "rgb(0, 0, 0)" && pic.w === IW, "the picture the study links to, behind the whole image, black under it, shown only where it is cut out", pic);
 
 // req/nor/summary/mask: the mask shows only with the summary
 await check(await page.evaluate(() => st.mask.length === 1 && !document.querySelector("#overlay .mask-marks")), "the summary's mask is kept but not drawn while the study makes ground truth");
@@ -287,6 +292,16 @@ s = await now();
 await check(s.task === "submit" && s.rows[2] === "100/100 Areas" && (await page.$eval("#dl-truth", (b) => b.dataset.state)) === "done", "every task done: Submit, its icon a check", s);
 await check(await page.$$eval('#gt-tasks > li[data-task="missed"], #gt-tasks > li[data-task="pass"], #gt-tasks > li[data-task="fail"]', (l) => l.every((x) => x.classList.contains("done"))), "every task is checked done");
 await page.close();
+
+// ---- the picture's link failing: black, never the browser's broken-picture icon ----
+picture = false;
+page = await open();
+await page.evaluate(() => nor.decide(st.order[0].i, "approve"));
+await page.waitForTimeout(500);
+const none = await page.evaluate(() => ({ image: !!document.querySelector("#overlay image.reveal"), bg: getComputedStyle(document.querySelector("#overlay .reveal-bg")).fill }));
+await check(!none.image && none.bg === "rgb(0, 0, 0)", "a picture that cannot load leaves the cut-outs black", none);
+await page.close();
+picture = true;
 
 // ---- a PreGT study: the summary and its mask, the Show menu's viewing rows, no tasks and no item view ----
 stage = "PreGT";

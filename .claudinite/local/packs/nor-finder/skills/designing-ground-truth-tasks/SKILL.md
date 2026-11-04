@@ -75,7 +75,10 @@ reference build: `req/nor/truth/tasks`, `req/nor/truth/order` and `req/nor/truth
 - **Cut what is done out of the image.** A decided item's own rectangle (approved or rejected
   alike) is removed as it is decided, and once an area is done, every item decided and it checked,
   the whole area goes, showing a picture behind the image instead: a reward that grows with the
-  work, the study's `groundTruth.reveal` (NoR: a golden retriever), black while it names none.
+  work, black while the study names none. The study names it in `study.json`'s
+  `groundTruth.reveal` as a link the browser fetches from where the picture lives (NoR: a golden
+  retriever), never a file the site serves; its host is a service the page reaches, so the privacy
+  page names it.
 - **The area's check is its last step**: let the person add what the algorithm missed there,
   each added item a step of its own, and a "No missed … here" button checks the area. The
   missed-items task is done when every area is checked and every added item decided.

@@ -550,8 +550,9 @@ spec does not have.
   `req/shell/offline/per-study`) opens: offline, From Google Drive lists the images kept here instead of a Drive folder.
   The status bar's online icon (`req/shell/status-bar/online`) shows it, the network's tooltip and its
   Network tab saying the page is offline too. No
-  network is the browser saying so, or the site not answering, asked every 30 seconds all session long, so the
-  network going or coming back mid-session shows within that, the browser saying online or not, and a Wi-Fi's
+  network is the browser saying so, or the site not answering, asked every 30 seconds all session long and every
+  5 seconds while offline, so the network going mid-session shows within 30 seconds and coming back within
+  seconds, even with a release that landed meanwhile still being copied (set by the owner on 2026-11-04), the browser saying online or not, and a Wi-Fi's
   sign-in page answering in the site's place counts as no network. What the page is doing follows it, set by the
   owner on 2026-11-03: a study whose Python could not load loads it once the network is back, with no reload;
   an open From Google Drive lists the images kept here once it goes and the study's folder once it is back, and
@@ -908,10 +909,11 @@ spec does not have.
   the page opens with the four folded away and the icon alone showing; hovering the block unfolds the
   four as they look always open, the icon going away as they come (set by the owner on 2026-11-03), and leaving folds them again, the icon coming back, both ways
   animated (at once with animations off, `req/shell/resources-dialog/animations`, or reduced motion asked for). It unfolds by
-  itself, and stays unfolded, while the page is offline (`req/shell/offline/default`), the CPU has been over 50% of one core for more than
+  itself, and stays unfolded, while the CPU has been over 50% of one core for more than
   5 seconds, the network has been downloading over 250 KB/s for more than 5
   seconds, or the tab holds over 1 GB, and folds 8 seconds after the last of these ends. Hidden
-  always, only the icon shows, and neither hovering nor any of these unfolds it. Always open, the icon does not show. Clicking the icon opens the
+  always, only the icon shows, and neither hovering nor any of these unfolds it. Going offline does not unfold it
+  (set by the owner on 2026-11-04): the online icon (`req/shell/status-bar/online`) says so. Always open, the icon does not show. Clicking the icon opens the
   resources dialog (`req/shell/resources-dialog`) on the tab last shown, Storage at first. The choice is kept as the user's setting and,
   signed in, follows the user (`req/shell/account/sign-in`). Test: `web-tests/test_status_bar_page.py`.
   </details>
@@ -1195,7 +1197,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 - `req/nor/candidates/decide` One selected candidate, decided on its card with a thumbs up or down.
   <details>
 
-  Clicking a candidate selects it (a thin white ring) and clicking it again deselects it. Changed by
+  Clicking a candidate selects it (a thin white ring) and clicking it again deselects it, as does
+  clicking the image where there is no candidate (set by the owner on 2026-11-04). Changed by
   the owner on 2026-10-31: its card alone, with no title, hovers over the image's top right corner
   while a candidate is selected, and only then; buttons to the previous and next candidate by number
   hover over the bottom of its crop. Decisions are
@@ -1446,9 +1449,10 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   (`req/nor/truth/order`) is framed in yellow. Changed by the owner on 2026-11-04: once an area is
   done, every candidate in it decided and it checked for missed NoRs, the whole area is removed.
   The Show menu switches each of these markings (`req/nor/show-menu`).
-  Where the image is removed, a picture shows instead, one picture behind the whole image (the
-  study's `groundTruth.reveal`, a golden retriever; black while the study names none or it cannot
-  load), so the review uncovers more and more of it. Test: `studies/nor/tests/test_truth_tasks_page.py`.
+  Where the image is removed, a picture shows instead, one picture behind the whole image, so the
+  review uncovers more and more of it: the study's `groundTruth.reveal`, a link to a picture on
+  the web that the browser fetches from there (NoR: a golden retriever; changed by the owner on
+  2026-11-04, not a file the site serves), and black while the study names none or it cannot load. Test: `studies/nor/tests/test_truth_tasks_page.py`.
   </details>
 
 - `req/nor/truth/order` The candidates come area by area, so the review fills the image one area after another.
@@ -1545,7 +1549,7 @@ owner's decisions on the stacks and the vessel model, are
   `reviewed_regions`. Test: `studies/vascular/tests/test_vessel_tasks_page.py`.
   </details>
 
-- `req/vascular/model/run` Processing picks an extraction algorithm, says how it works, and Execute draws the vessel model in the browser.
+- `req/vascular/model/run` Processing picks an extraction algorithm, says how it works and how well, and Execute draws the vessel model in the browser.
   <details>
 
   Set by the owner on 2026-11-04, as NoR's Processing box. The box lists the extraction lab's
@@ -1555,8 +1559,17 @@ owner's decisions on the stacks and the vessel model, are
   page shows), and the model it draws opens over the stack. The study ships no drawn models: a
   stack opens with none until Execute. A vessel model file (one saved earlier, say) can still be
   loaded from a small link beside Execute. Show low-confidence vessels stays in the box, under
-  Execute, once a model is open. Test: `studies/vascular/tests/test_extract_bridge.py` (the real
-  Python in Pyodide) and `studies/vascular/tests/test_vessel_tasks_page.py` (the page).
+  Execute, once a model is open. Changed by the owner on 2026-11-04: the box behaves as NoR's
+  (`req/nor/find/settings`). Each algorithm in the list carries its own icon and its name, and its
+  precision and recall against the provisional labels (`analysis/extraction/labels/`, a model's
+  verdicts, not the owner's); How the <name> algorithm works gives its steps as a nested list
+  (written as a Markdown outline), then "<Name> algorithm shows precision of X and recall of Y on
+  N curves a model judged", in bold, the numbers the list shows, and that the judge is not the
+  owner. The numbers ship with the page part (`studies/vascular/web/algorithm_metrics.json`, made
+  by `lab.py grade --json`). The list leaves out a version another one beats beyond noise on those
+  labels (`lab.RETIRED`, each with its reason); the lab still runs it. Test:
+  `studies/vascular/tests/test_extract_bridge.py` (the real Python in Pyodide) and
+  `studies/vascular/tests/test_vessel_tasks_page.py` (the page).
   </details>
 
 - `req/vascular/model/view` Above the stack: show the image, the model, the model over the image, or both side by side; colour by depth; vessel widths.

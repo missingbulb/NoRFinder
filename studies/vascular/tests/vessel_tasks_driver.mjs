@@ -1,6 +1,6 @@
 // Drives the vascular study's page in a GT stage (web/) in headless Chromium against a stand-in worker
 // (stand_in.mjs) whose Execute answers with a model fixture. Checks req/vascular/model/run: Processing lists the
-// algorithms, the default first, says how the chosen one works, and Execute runs it with the spacing shown, opening
+// algorithms with their icons, precision and recall, the default first, says how the chosen one works and how well, and Execute runs it with the spacing shown, opening
 // its model; req/vascular/truth/tasks and req/vascular/truth/order: the tasks under Processing, one row each, the
 // items area by area, a verdict moving on, Skip, a junction found right or split, the areas checked one by one;
 // req/vascular/truth/marks: a checked area blacked out of the stack; req/vascular/model/ground-truth: Submit
@@ -61,10 +61,20 @@ const areaOf = (p) => { const r = cell(p.y, H), k = cell(p.x, W); return r * 10 
 try {
   await page.goto(site.origin + "/web/vascular");
   await page.waitForFunction(() => window.$ && $("#status").textContent.startsWith("Ready"));
+  // the numbers the page shows are the shipped metrics file's, which the lab's grader writes
+  const quality = JSON.parse(fs.readFileSync(path.join(repo, "studies", "vascular", "web", "algorithm_metrics.json"), "utf8"));
+  const two = (x) => x.toFixed(2).replace(/^0/, "");
+  await page.waitForFunction(() => /\bR\u00a0/.test($("#vm-algo").options[0]?.textContent || ""));
   const algos = await page.evaluate(() => ({ titles: [...$("#vm-algo").options].map((o) => o.textContent), value: $("#vm-algo").value,
-    about: $("#vm-about summary").textContent, note: $("#vm-about-note").textContent, run: $("#vm-run").disabled, last: $("#model-set .row").lastElementChild.id }));
-  check(algos.titles.join() === ALGORITHMS.map((a) => a.title).join() && algos.value === ALGORITHMS[0].key, `Processing lists the algorithms, the default first: ${algos.titles}`);
-  check(algos.about === `How the ${ALGORITHMS[0].title} algorithm works` && algos.note.includes("The owner's rule"), `How the algorithm works gives the chosen one's own words: ${algos.about}`);
+    about: $("#vm-about summary").textContent, note: $("#vm-about-note").textContent, run: $("#vm-run").disabled, last: $("#model-set .row").lastElementChild.id,
+    nested: !!$("#vm-about-note").querySelector("ul > li > ul > li"), bold: $("#vm-about-note").lastElementChild?.querySelector("strong")?.textContent || "" }));
+  const listed = ALGORITHMS.map((a) => { const q = quality.versions[a.key]; return `${a.icon} ${a.title} (P\u00a0${two(q.precision)}\u00a0·\u00a0R\u00a0${two(q.recall)})`; });
+  check(algos.titles.join() === listed.join() && algos.value === ALGORITHMS[0].key, `Processing lists each algorithm with its icon, name, precision and recall, the default first: ${algos.titles}`);
+  check(algos.about === `How the ${ALGORITHMS[0].title} algorithm works` && algos.note.includes("touches no junction") && algos.nested,
+    `How the algorithm works gives the chosen one's steps as a nested list: ${algos.about}`);
+  const q0 = quality.versions[ALGORITHMS[0].key], said = `precision of ${q0.precision.toFixed(2)} and recall of ${q0.recall.toFixed(2)}`;
+  check(algos.bold.startsWith(`Island-free algorithm shows ${said} on ${quality.curves} curves`) && /not the owner/.test(algos.note),
+    `... and ends with its precision and recall in bold, judged by a model, not the owner: ${algos.bold}`);
   check(algos.run && algos.last === "vm-run", "Execute ends the box, off until a stack is open");
 
   await page.setInputFiles("#file", { name: model.source, mimeType: "image/tiff", buffer: Buffer.from([0x49, 0x49, 42, 0]) });
@@ -76,11 +86,11 @@ try {
   check(!before.model && !before.tasks && before.modes.join() === "image", `a stack opens with no model until Execute: ${JSON.stringify(before)}`);
   check(!before.switch && !before.items, "while the study makes ground truth there is no item view and no switch to one");
 
-  await page.selectOption("#vm-algo", "v1");
+  await page.selectOption("#vm-algo", "v4");
   await page.click("#vm-run");
   await page.waitForFunction(() => !$("#model-on").hidden);
   const ran = await doc();
-  check(ran.algorithm === "v1-flat-skeleton" && ran.asked?.algorithm === "v1" && ran.asked.z_step === 1 && ran.asked.source === model.source,
+  check(ran.algorithm === "v4-line-evidence" && ran.asked?.algorithm === "v4" && ran.asked.z_step === 1 && ran.asked.source === model.source,
     `Execute runs the chosen algorithm on the stack, with the spacing shown: ${JSON.stringify(ran.asked)}`);
   check(await page.evaluate(() => $('#model-mode [data-v="overlay"]').getAttribute("aria-pressed") === "true"), "the model opens over the stack");
   check(await page.evaluate(() => !!($("#model-set").compareDocumentPosition($("#tasks-box")) & Node.DOCUMENT_POSITION_FOLLOWING) && !$("#tasks-box").hidden),

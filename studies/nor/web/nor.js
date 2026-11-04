@@ -477,35 +477,13 @@ export function mount(shell) {
     for (const p of document.querySelectorAll("#filters .param")) p.set(st.values[p.dataset.name]);
   }
 
-  // a Markdown outline drawn as HTML: paragraphs split by blank lines, "- " or "1. " items nested by their indent
-  function markdownNote(text) {
-    const out = document.createDocumentFragment();
-    for (const para of text.split(/\n\s*\n/)) {
-      const lists = []; // the open lists, outermost first: {indent, el}
-      for (const line of para.split("\n").filter((l) => l.trim())) {
-        const m = line.match(/^(\s*)(-|\d+\.)\s+(.*)$/);
-        if (!m) { const p = document.createElement("p"); p.textContent = line.trim(); out.append(p); lists.length = 0; continue; }
-        const indent = m[1].length, tag = m[2] === "-" ? "UL" : "OL";
-        while (lists.length && lists.at(-1).indent > indent) lists.pop();
-        if (lists.length && lists.at(-1).indent === indent && lists.at(-1).el.tagName !== tag) lists.pop();
-        if (!lists.length || lists.at(-1).indent < indent) {
-          const el = document.createElement(tag);
-          (lists.length ? lists.at(-1).el.lastElementChild : out).append(el);
-          lists.push({ indent, el });
-        }
-        const li = document.createElement("li"); li.textContent = m[3]; lists.at(-1).el.append(li);
-      }
-    }
-    return out;
-  }
-
   // the finder's settings: its main ones on show, every one under Advanced; both edit the same values
   function buildDetect() {
     const finder = $("#finder").value, about = st.about[finder];
     const defs = about.detection_params, vals = (st.detectValues[finder] ||= { ...defs });
     $("#about-box summary").textContent = `How the ${st.names[finder]} algorithm works`;
     const note = $("#finder-note");
-    note.replaceChildren(markdownNote(about.about + (about.exact_refilter ? "" : "\n\nIt picks between alternatives using the filters, so after a filter change, find again for its exact result.")));
+    note.replaceChildren(shell.outline(about.about + (about.exact_refilter ? "" : "\n\nIt picks between alternatives using the filters, so after a filter change, find again for its exact result.")));
     quality.then((q) => {
       const own = q && q.finders[finder];
       if (!own || $("#finder").value !== finder) return;
@@ -1105,8 +1083,14 @@ export function mount(shell) {
   }
   // What is done, cut out of the image: the rectangle around each decided candidate's pixels, two pixels wider
   // each way, and each area done. A picture behind the image shows there, black when it cannot load.
-  // the picture is the study's own (study.json's groundTruth.reveal, a path in the study); none: black
-  const REVEAL = shell.study.groundTruth?.reveal ? new URL("../" + shell.study.groundTruth.reveal, import.meta.url).href : null;
+  // the picture the study links to (study.json's groundTruth.reveal), fetched from where it lives; none: black
+  const REVEAL = shell.study.groundTruth?.reveal || null;
+  // the picture is placed only once it has loaded: a link that fails leaves black, not the browser's broken-picture icon
+  let revealLoaded = null;
+  const revealReady = () => (revealLoaded ||= new Promise((ok) => {
+    if (!REVEAL) return ok(false);
+    const im = new Image(); im.onload = () => ok(true); im.onerror = () => ok(false); im.src = REVEAL;
+  }));
   function drawReveal() {
     if (!TRUTH || !st.W) return;
     const svg = $("#overlay");
@@ -1114,9 +1098,12 @@ export function mount(shell) {
     if (!g) {
       g = el("g", { class: "reveal-marks" });
       const defs = el("defs"), clip = el("clipPath", { id: "gt-reveal" }); defs.append(clip);
-      g.append(defs, el("rect", { class: "reveal-bg", x: 0, y: 0, width: st.W, height: st.H, "clip-path": "url(#gt-reveal)" }),
-        ...(REVEAL ? [el("image", { class: "reveal", href: REVEAL, x: 0, y: 0, width: st.W, height: st.H, preserveAspectRatio: "xMidYMid slice", "clip-path": "url(#gt-reveal)" })] : []));
+      g.append(defs, el("rect", { class: "reveal-bg", x: 0, y: 0, width: st.W, height: st.H, "clip-path": "url(#gt-reveal)" }));
       svg.prepend(g);
+      const W = st.W, H = st.H;
+      revealReady().then((ok) => {
+        if (ok && g.isConnected) g.append(el("image", { class: "reveal", href: REVEAL, x: 0, y: 0, width: W, height: H, preserveAspectRatio: "xMidYMid slice", "clip-path": "url(#gt-reveal)" }));
+      });
     }
     const holes = [], w = walk();
     for (const c of st.order) if (st.forced.get(c.i)) holes.push([c.bb[0] - 2, c.bb[1] - 2, c.bb[2] - c.bb[0] + 4, c.bb[3] - c.bb[1] + 4]);
@@ -1428,7 +1415,7 @@ export function mount(shell) {
     idle: updateFind,
     showImage: () => showView("image"),
     pickAt: candAt,
-    pick: (c) => (TRUTH ? takeUp(c) : select(st.sel === c.i ? null : c.i)),
+    pick: (c) => (TRUTH ? c && takeUp(c) : select(c && st.sel !== c.i ? c.i : null)),
     open: (c) => (TRUTH ? takeUp(c) : (select(c.i), showView("items"))),
     step,
     capturesPointer: () => !!st.lasso,

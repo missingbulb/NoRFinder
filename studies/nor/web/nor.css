@@ -246,5 +246,7 @@
 /* the Show menu's rows for the tasks' markings */
 #overlay.gt.no-gt-pass g.pass.todo, #overlay.gt.no-gt-fails g.fail.todo, #overlay.gt.no-gt-added .added-marks,
 #overlay.gt.no-gt-cut .reveal-marks, #overlay.gt.no-gt-frame .area-frame { display: none; }
+/* the cut-outs' edges unsmoothed, so neighbouring areas join with no seam */
+#overlay #gt-reveal rect { shape-rendering: crispEdges; }
 #overlay .area-frame { fill: none; stroke: #ffd400; stroke-width: 2; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke; pointer-events: none; }
 #overlay.gt .ring { stroke: #ffd400; stroke-opacity: 1; stroke-width: 2; }

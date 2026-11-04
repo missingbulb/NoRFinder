@@ -45,8 +45,8 @@ PROFILE_WIDTHS = 3.0            # the cross profile reaches this many widths eit
 
 def flat_signal(vol, um):
     """The flattened stack in noise units: what the extractors trace on, and what edges are judged against."""
-    z, keep = vm.noise_units(vol, um)
-    return z[keep].max(axis=0) if keep.any() else np.zeros(vol.shape[1:], np.float32)
+    flat, _, _ = vm.flatten(vol, um)
+    return flat if flat is not None else np.zeros(vol.shape[1:], np.float32)
 
 
 def edge_radius(e, nodes):
@@ -102,28 +102,25 @@ def profile_radius(flat, xy, rad):
     """Half-maximum half-width (px) of the cross profile at each sample; NaN where there is no clear ridge."""
     n = normals(xy)
     reach = np.maximum(PROFILE_WIDTHS * 2 * rad, 4.0)
+    off = np.linspace(-1, 1, 61)[None, :] * reach[:, None]
+    prof = at(flat, xy[:, None, :] + n[:, None, :] * off[:, :, None])
+    rows = np.arange(len(xy))
+    mid = np.abs(off) <= np.maximum(rad, 1.0)[:, None]
+    k = np.argmax(np.where(mid, prof, -np.inf), axis=1)
+    peak = prof[rows, k]
+    bg = np.minimum(np.median(prof[:, :10], axis=1), np.median(prof[:, -10:], axis=1))
+    half = (peak + bg) / 2
+    idx = np.arange(prof.shape[1])[None, :]
+    low = prof <= half[:, None]
+    # the walk out from the peak stops at the first sample at or under half the peak, or at the profile's end
+    L = np.where(low & (idx < k[:, None]), idx, 0).max(axis=1)
+    R = np.where(low & (idx > k[:, None]), idx, prof.shape[1] - 1).min(axis=1)
+    ok = (peak >= ON_SIGNAL) & (peak - bg >= ON_SIGNAL) & (L > 0) & (R < prof.shape[1] - 1)
     out = np.full(len(xy), np.nan)
-    s = np.linspace(-1, 1, 61)
-    for i in range(len(xy)):
-        off = s * reach[i]
-        prof = at(flat, xy[i] + n[i] * off[:, None])
-        mid = np.abs(off) <= max(rad[i], 1.0)
-        k = np.flatnonzero(mid)[np.argmax(prof[mid])]
-        bg = min(np.median(prof[:10]), np.median(prof[-10:]))
-        half = (prof[k] + bg) / 2
-        if prof[k] < ON_SIGNAL or prof[k] - bg < ON_SIGNAL:
-            continue
-        L = k
-        while L > 0 and prof[L] > half:
-            L -= 1
-        R = k
-        while R < len(prof) - 1 and prof[R] > half:
-            R += 1
-        if L == 0 or R == len(prof) - 1:
-            continue
-        xl = off[L] + (half - prof[L]) / (prof[L + 1] - prof[L] + 1e-9) * (off[L + 1] - off[L])
-        xr = off[R - 1] + (prof[R - 1] - half) / (prof[R - 1] - prof[R] + 1e-9) * (off[R] - off[R - 1])
-        out[i] = (xr - xl) / 2
+    r, L, R, h = rows[ok], L[ok], R[ok], half[ok]
+    xl = off[r, L] + (h - prof[r, L]) / (prof[r, L + 1] - prof[r, L] + 1e-9) * (off[r, L + 1] - off[r, L])
+    xr = off[r, R - 1] + (prof[r, R - 1] - h) / (prof[r, R - 1] - prof[r, R] + 1e-9) * (off[r, R] - off[r, R - 1])
+    out[ok] = (xr - xl) / 2
     return out
 
 

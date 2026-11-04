@@ -12,7 +12,8 @@
 // prepared study runs, and From Google Drive lists the images kept here and opens one; a study whose Python is not
 // here says so, and once the network is back loads its Python and reads its folder in an open Make available
 // offline, with no reload; and the network going and coming back mid-session, the browser saying online all
-// along, shows, an open Drive dialog following.
+// along, shows, an open Drive dialog following, and coming back shows within seconds though a release landed
+// meanwhile is still being copied.
 // TIFF: a small z-stack the vascular study can open. Optional SHOTS: a directory for screenshots.
 // Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/offline_driver.mjs SITE TIFF [SHOTS]
@@ -41,11 +42,20 @@ const FILES = { [ROOT]: [{ id: "acmestack00000000001", name: "stack one.tif" }, 
 
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".webmanifest": "application/manifest+json", ".whl": "application/zip" };
 let down = false, pyDown = false; // pyDown: the network gone for the study's Python modules alone
+// release: a release landed while the page was offline, one of its files slow to arrive
+let release = false;
 // as Cloudflare serves the site: /<name> is <name>.html, a folder its index.html; and an unlisted study's address in
 // the app the app's page too, as the tests' repo server serves it, so the fixture study runs
 const server = http.createServer((q, r) => {
   let u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (down || (pyDown && u.endsWith(".py"))) return q.socket.destroy();
+  if (release && u === "/app/offline.json") {
+    const list = JSON.parse(fs.readFileSync(path.join(site, "app", "offline.json")));
+    list.files.push({ path: "slow.js", sha256: "0".repeat(64) });
+    r.writeHead(200, { "content-type": "application/json" });
+    return r.end(JSON.stringify(list));
+  }
+  if (release && u === "/app/slow.js") return setTimeout(() => { r.writeHead(200, { "content-type": "text/javascript" }); r.end(""); }, 60000);
   let f = path.join(site, u);
   if (u.endsWith("/")) f = path.join(f, "index.html");
   else if (!fs.existsSync(f) && fs.existsSync(f + ".html")) f += ".html";
@@ -183,6 +193,8 @@ try {
   check(true, "offline, the Python already on this device runs");
   check(await page.isVisible("#sb-online .off"), "the status bar's online icon shows offline");
   check(/offline/i.test(await page.getAttribute("#sb-net", "title")), "its tooltip says the page is offline: " + (await page.getAttribute("#sb-net", "title")));
+  // going offline leaves the resources block folded (req/shell/status-bar/resources): the network is a hover away
+  await page.hover("#sb-res-icon");
   await page.click("#sb-net");
   check(await page.evaluate(() => document.querySelector("#usage-dlg").open && document.querySelector("#usage-dlg").dataset.tab === "network"), "clicking it still opens the Network tab");
   check(/offline/i.test(await page.textContent("#net-total")), "whose total says the page is offline: " + (await page.textContent("#net-total")));
@@ -252,6 +264,15 @@ try {
   check(!(await page.isVisible("#sb-online .off")), "and notices it answering again");
   await page.waitForFunction(() => !/offline/.test(document.querySelector("#drive-path").textContent), null, { timeout: 5000 }).catch(() => {});
   check(!/offline/.test(await drivePath()), "and the Drive dialog goes back to the study's folder: " + (await drivePath()));
+  await page.keyboard.press("Escape");
+
+  // a release lands while the page is offline: back online, the icon says so at once, not once the new copy is in
+  down = true;
+  await page.waitForSelector("#sb-online .off", { state: "visible", timeout: 40000 }).catch(() => {});
+  release = true; down = false;
+  const back = Date.now();
+  await page.waitForSelector("#sb-online .off", { state: "hidden", timeout: 15000 }).catch(() => {});
+  check(!(await page.isVisible("#sb-online .off")), `back online with a release to copy, the online icon shows online within seconds (${Date.now() - back} ms)`);
 } catch (e) {
   failed = true; console.error("FAILED: " + (e.stack || e));
   console.error("status: " + (await statusText().catch(() => "(no page)")));

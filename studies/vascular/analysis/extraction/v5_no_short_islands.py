@@ -17,6 +17,11 @@ import v2_scored_repair as v2
 import v4_line_evidence as v4
 
 NAME = 'v5-no-short-islands'
+TITLE, ICON = 'island-free', '🏝️'
+STEPS = """\
+- Run the dead-end check algorithm
+- Drop every vessel shorter than 45 µm, one typical capillary segment
+  - that touches no junction at either end"""
 
 ISLAND_UM = 45.0   # BIOLOGY: median cortical capillary segment length (Ji 2021: 46 µm; Smith 2019: 44.8 µm); fails where segments are much shorter, e.g. dense CA1 beds
 

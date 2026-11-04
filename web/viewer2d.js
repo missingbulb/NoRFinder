@@ -5,7 +5,7 @@
 // viewer (3D, say) is a module with the same interface.
 //
 // The study's hooks it calls: pickAt(event) -> what was clicked, or null; pick(it) when a click, not a
-// drag, landed on it; open(it) when a double click did; step(dir) on a sideways swipe; capturesPointer() while the study's own tool (a
+// drag, landed on it, pick(null) when it landed on nothing; open(it) when a double click did; step(dir) on a sideways swipe; capturesPointer() while the study's own tool (a
 // lasso, say) takes the pointer; zoomed() after every zoom.
 import { resolve, ramp } from "./channels.js";
 
@@ -272,7 +272,7 @@ export function viewer(shell) {
       if (drag.moved) { sc.scrollLeft = drag.l - (e.clientX - drag.x); sc.scrollTop = drag.t - (e.clientY - drag.y); }
     });
     const end = () => {
-      if (drag && !drag.moved && drag.c) hooks.pick?.(drag.c);
+      if (drag && !drag.moved) hooks.pick?.(drag.c);
       drag = null; sc.classList.remove("dragging");
     };
     sc.addEventListener("pointerup", end); sc.addEventListener("pointercancel", () => { drag = null; sc.classList.remove("dragging"); });

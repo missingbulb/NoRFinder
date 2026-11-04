@@ -21,6 +21,16 @@ import v2_scored_repair as v2
 import vessel_model as vm
 
 NAME = 'v3-geodesic-bridges'
+TITLE, ICON = 'bridges', '🌉'
+STEPS = """\
+- Run the repair algorithm
+- From each open end away from the frame, follow the cheapest path along the ridges of the signal
+  - up to twelve widths ahead, within 60° of the way the vessel ran
+  - to land on another vessel or another open end
+- Keep the path as a vessel
+  - when its dimmest stretch keeps 40% of the two vessels' contrast
+  - it arrives at about the same depth
+  - and it closes no short loop"""
 
 REACH_WIDTHS = 12.0        # an open end looks this many vessel widths ahead (median capillary segment ~45 µm is ~11 widths)
 AHEAD_DEG = 60.0           # ... for a landing point within this angle of the way it was running
@@ -31,13 +41,18 @@ RIDGE_UM = (1.0, 1.5, 2.0, 3.0)   # ridge filter scales: capillary radii ~1-3 µ
 
 def extract(vol, um, source, z_step):
     m = v2.extract(vol, um, source, z_step)
-    z, keep = vm.noise_units(vol, um)
-    _, _, depth, flat = vm.segment(z, keep, um)
-    ridge = sato(np.clip(flat, 0, None), sigmas=[s / um for s in RIDGE_UM], black_ridges=False)
+    flat, depth, _ = vm.flatten(vol, um)
+    ridge = ridge_map(vol, um)
     m['repairs']['geodesic_bridges'] = geodesic_bridges(m, flat, ridge, depth)
     v2.renumber(m)
     m['algorithm'] = NAME
     return m
+
+
+def ridge_map(vol, um):
+    """The flattened signal's ridge strength at capillary widths."""
+    flat, _, _ = vm.flatten(vol, um)
+    return vm.once(vol, ('ridge', um), lambda: sato(np.clip(flat, 0, None), sigmas=[s / um for s in RIDGE_UM], black_ridges=False))
 
 
 def geodesic_bridges(m, flat, ridge, depth):
