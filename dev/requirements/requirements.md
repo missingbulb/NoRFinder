@@ -1677,7 +1677,9 @@ read for a title matcher; matching the titles is not part of it.
   joined, two strokes (dark under light) that show over any colour a book carries, a cover's dashed.
   A book is a spine (its narrow face, standing upright or lying flat in a pile) or a cover (facing
   the camera); one shelf can hold all three. Its corners go clockwise from the one nearest the
-  photo's top left. Test: `studies/shelves/tests/test_books.py`, `studies/shelves/tests/test_shelves_page.py`.
+  photo's top left. Set by the owner on 2026-11-04, a book leaning on its neighbours is boxed
+  leaning with it: its box's long sides follow the spine's own edges, at the angle they run.
+  Test: `studies/shelves/tests/test_books.py`, `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
 - `req/shelves/books/open` Load takes any single 2D photo: JPEG, PNG, WebP, BMP or a one-page TIFF.

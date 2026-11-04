@@ -1,39 +1,50 @@
 """Finding the books on a shelf photo, and straightening each one for reading.
 
 A book is four corners in image pixels, clockwise from the one at the top left of the image, and a view: "spine"
-(the narrow face, standing or lying) or "cover" (the book facing the camera). v0 of the finder works on the photo's
-own edges: the shelves are the long horizontal edges that cross the photo, and within each shelf a book ends where
-a vertical edge runs the shelf's height. Where a shelf's stretch has no such edges but horizontal ones, the books
-lie flat in a pile; a stretch about as wide as it is tall, with few edges inside, is a cover."""
+(the narrow face) or "cover" (the book facing the camera). The finder (R1) works on the photo's own edges: the shelves
+are the long horizontal edges that cross the photo; within each shelf, the edges between spines are straight lines,
+found at whatever angle they lean, and each book is the strip between two neighbouring lines, from the shelf's top to
+its bottom. It boxes spines alone: a cover, or a pile of books lying flat, is not told apart yet."""
 import numpy as np
 from scipy import ndimage as ndi
 
 # scale-dependent: the long side the finder works at, in pixels; boxes are scaled back to the photo's own
 WORK = 900
+# [spine-lean] how far from upright a spine's edges may lean, in degrees, and the step the lean is searched in
+LEAN, LEAN_STEP = 30, 0.5
+# [spine-sides] how far apart, in degrees, a book's two sides may lean
+SIDES = 6
 
 
 def grey(rgb):
     return rgb[..., :3].astype(np.float32) @ np.array([0.299, 0.587, 0.114], np.float32)
 
 
-def peaks(profile, min_gap, rise):
-    """The indices where profile has a local maximum standing rise above its own median, at least min_gap apart,
-    strongest first kept."""
-    p = ndi.uniform_filter1d(profile.astype(np.float64), 3)
-    floor = np.median(p)
-    cand = [i for i in range(1, len(p) - 1) if p[i] >= p[i - 1] and p[i] >= p[i + 1] and p[i] - floor > rise]
-    kept = []
-    for i in sorted(cand, key=lambda i: -p[i]):
-        if all(abs(i - k) >= min_gap for k in kept):
-            kept.append(i)
-    return sorted(kept)
+def shelves(g):
+    """[(top, bottom)]: the shelves, between rows a horizontal edge crosses at least half the photo on."""
+    h = g.shape[0]
+    gx, gy = np.abs(ndi.sobel(g, 1)), np.abs(ndi.sobel(g, 0))
+    vy = np.where(gy > 2 * gx, gy, 0)
+    across = ndi.uniform_filter1d(ndi.maximum_filter1d(vy > np.quantile(vy, 0.9), 5, axis=0).mean(axis=1), 3)
+    reach = max(1, h // 15)
+    rows = [r for r in range(h // 20, h - h // 20) if across[r] >= 0.5 and across[r] == across[max(0, r - reach):r + reach].max()]
+    cuts = [0, *rows, h]
+    return [(a, b) for a, b in zip(cuts, cuts[1:]) if b - a > h // 6]
 
 
-def cuts(profile, length, min_gap):
-    """Where a stretch of length pixels is cut, ends included, by the profile's peaks; rise from its own spread."""
-    rise = 1.5 * np.std(profile) if len(profile) else 0
-    inner = [i for i in peaks(profile, min_gap, rise) if min_gap <= i <= length - min_gap]
-    return [0, *inner, length]
+def edge_lines(band):
+    """[(x at the band's middle, lean as tan)] of the straight edges running up a band, left to right."""
+    from skimage.feature import canny
+    from skimage.transform import hough_line, hough_line_peaks
+    h, w = band.shape
+    gx, gy = ndi.sobel(band, 1), ndi.sobel(band, 0)
+    # edges that run up the band: the brightness changes across it, not along it
+    on = canny(band, sigma=1.5) & (np.abs(gx) > 1.5 * np.abs(gy))
+    H, angles, dists = hough_line(on, theta=np.deg2rad(np.arange(-LEAN, LEAN + LEAN_STEP / 2, LEAN_STEP)))
+    # a line has a quarter of the band's height on it, and stands 4 px and 3 degrees clear of a stronger one
+    _, ang, dist = hough_line_peaks(H, angles, dists, min_distance=4, min_angle=3, threshold=0.25 * h, num_peaks=200)
+    # skimage's line is x cos(a) + y sin(a) = d: at row y, x = (d - y sin a) / cos a
+    return sorted(((d - (h / 2) * np.sin(a)) / np.cos(a), float(np.tan(a))) for d, a in zip(dist, ang))
 
 
 def find(rgb):
@@ -41,44 +52,24 @@ def find(rgb):
     H, W = rgb.shape[:2]
     s = min(1.0, WORK / max(H, W))
     g = ndi.zoom(grey(rgb), s, order=1) if s < 1 else grey(rgb)
-    h, w = g.shape
     g = ndi.gaussian_filter(g, 1.0)
-    gx, gy = np.abs(ndi.sobel(g, axis=1)), np.abs(ndi.sobel(g, axis=0))
-    # an edge counts toward a line only where it beats the other direction: texture inside a book has both
-    vx, vy = np.where(gx > 2 * gy, gx, 0), np.where(gy > 2 * gx, gy, 0)
-    # the shelves: rows a horizontal edge crosses most of the photo on, not the tops of books that happen to line up
-    strong = vy > np.quantile(vy, 0.9)
-    across = ndi.maximum_filter1d(strong, 5, axis=0).mean(axis=1)
-    rows = [0, *[r for r in peaks(across, max(8, h // 12), 0) if across[r] >= 0.6 and h // 20 <= r <= h - h // 20], h]
-    books = []
-    for top, bottom in zip(rows, rows[1:]):
-        band = bottom - top
-        if band < h // 15:
-            continue
-        cols = cuts(vx[top:bottom].mean(axis=0), w, max(4, band // 12))
-        for left, right in zip(cols, cols[1:]):
-            span = right - left
-            if span < 3:
-                continue
-            inside_x = vx[top:bottom, left + 1:right - 1].mean() if span > 2 else 0
-            inside_y = vy[top:bottom, left:right].mean()
-            if span > 0.6 * band and inside_y > 1.5 * inside_x:
-                # a pile: books lying flat, cut where horizontal edges cross the stretch
-                sub = cuts(vy[top:bottom, left:right].mean(axis=1), band, max(3, band // 15))
-                books += [dict(box=(left, top + a, right, top + b), view='spine') for a, b in zip(sub, sub[1:]) if b - a >= 3]
-            else:
-                # a standing book ends at its own top: the strongest horizontal edge across its stretch, above its middle
-                upper = vy[top:top + band // 2, left:right].mean(axis=1)
-                head = top + int(np.argmax(upper)) if upper.size and upper.max() > 2 * np.median(upper) else top
-                if bottom - head < band // 6:
-                    continue
-                view = 'cover' if 0.5 * (bottom - head) <= span <= 1.6 * (bottom - head) else 'spine'
-                books.append(dict(box=(left, head, right, bottom), view=view))
+    w = g.shape[1]
     out = []
-    for b in books:
-        x0, y0, x1, y1 = (v / s for v in b['box'])
-        out.append(dict(corners=[[round(x0, 1), round(y0, 1)], [round(x1, 1), round(y0, 1)], [round(x1, 1), round(y1, 1)], [round(x0, 1), round(y1, 1)]],
-                        view=b['view']))
+    for top, bottom in shelves(g):
+        h = bottom - top
+        lines = edge_lines(g[top:bottom])
+        for (xa, ta), (xb, tb) in zip(lines, lines[1:]):
+            # a strip narrower than this is two edges of one spine's lettering or rim, not a book
+            if xb - xa < 0.008 * w:
+                continue
+            # [spine-sides] a book's two sides run near parallel; a wedge between a leaning book and an upright one is the
+            # gap beside them
+            if abs(np.degrees(np.arctan(ta) - np.arctan(tb))) > SIDES:
+                continue
+            x_at = lambda xm, t, y: xm - t * (y - h / 2)
+            clip = lambda x: min(max(x, 0), w)
+            corners = [[clip(x_at(xa, ta, 0)), top], [clip(x_at(xb, tb, 0)), top], [clip(x_at(xb, tb, h)), bottom], [clip(x_at(xa, ta, h)), bottom]]
+            out.append(dict(corners=[[round(x / s, 1), round(y / s, 1)] for x, y in corners], view='spine'))
     return out
 
 

@@ -29,6 +29,9 @@
     "packages": [
       "numpy",
       "scipy",
+      "scikit-image",
+      "lazy-loader",
+      "packaging",
       "pillow"
     ],
     "wheels": []
@@ -66,7 +69,7 @@
     }
   ],
   "progress": {
-    "install": "Installing numpy, scipy, Pillow…",
+    "install": "Installing numpy, scipy, scikit-image, Pillow…",
     "load": "Loading the book finder…",
     "open": "Reading the photo…",
     "find": "Finding the books…",

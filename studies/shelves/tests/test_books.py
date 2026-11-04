@@ -85,3 +85,31 @@ def test_straightening_a_tilted_box_sets_it_upright():
     crop = books.straighten(a, corners)
     assert abs(crop.shape[0] - 200) <= 1 and abs(crop.shape[1] - 40) <= 1
     assert crop[2:-2, 2:-2, 0].min() > 200, 'the bar fills the straightened crop'
+
+
+def leaning_shelf(lean_deg):
+    """Spines leaning lean_deg degrees from upright, packed side by side on a board: (photo, their edges' lean)."""
+    a = np.full((300, 420, 3), 225, np.uint8)
+    a[270:285] = 70
+    yy, xx = np.mgrid[0:300, 0:420]
+    t = np.tan(np.deg2rad(lean_deg))
+    rng = np.random.default_rng(5)
+    x = 60
+    while x < 360:
+        w = int(rng.integers(18, 30))
+        # a spine's edges at x0 + t * (270 - y), its foot on the board
+        u = xx - t * (270 - yy)
+        a[(u >= x) & (u < x + w - 2) & (yy >= 50) & (yy < 270)] = rng.integers(20, 170, 3)
+        x += w
+    return a
+
+
+@pytest.mark.parametrize('lean', [12, -18])
+def test_a_leaning_book_is_boxed_leaning_with_it(lean):
+    found = books.find(leaning_shelf(lean))
+    tall = [np.array(b['corners']) for b in found if np.ptp(np.array(b['corners'])[:, 1]) > 100]
+    assert len(tall) >= 6, found
+    for c in tall:
+        # the long sides, top corner to bottom corner, lean as the spines do
+        for top, foot in ((c[0], c[3]), (c[1], c[2])):
+            assert abs(np.degrees(np.arctan2(top[0] - foot[0], foot[1] - top[1])) - lean) < 3, c
