@@ -5,6 +5,7 @@
   python3 mutate.py one 'pre:white-tophat@red' [--base tl] [--out DIR]
   python3 mutate.py view raw white-tophat ... [--out DIR]  # gridded tiles of each view, for a vision agent
   python3 mutate.py marks DIR/VIEW/marks.json --tiles DIR/tiles.json
+  python3 mutate.py table [SPEC ...]                       # which versions keep each graded item: oracle bounds, disagreements
 
 A mutation is one of:
   pre:<trick>@<chan>              the trick transforms a channel (green, red or both) before the finder runs
@@ -145,6 +146,8 @@ def main():
     for name in nor_lab.finders():
         registry[name] = H(nor_lab.run(name, data)[0])
     base_c, info = nor_lab.run(a.base, data); hb = H(base_c); unit = info['unit']
+    if a.cmd == 'table':
+        return table({k: registry[k] if k in registry else H(nor_lab.run(k, data)[0]) for k in (a.specs or registry)}, items, y)
     if a.cmd in ('view', 'marks'):
         os.makedirs(a.out, exist_ok=True)
         return view(a.specs, data, unit, items, registry, a.out) if a.cmd == 'view' else marks(a.specs[0], a.tiles, items, registry)
@@ -155,6 +158,12 @@ def main():
           f"kept by all: {((y == 0) & np.array(list(registry.values())).all(0)).sum()} false | not runnable here: {', '.join(sk) or 'none'}")
     os.makedirs(a.out, exist_ok=True); rows = []
     null, bar = {}, {}
+    last = os.path.join(a.out, 'sweep.json')
+    if a.cmd == 'one' and os.path.exists(last):
+        bar = {tuple(k.split('|')): tuple(v) for k, v in json.load(open(last)).get('chance', {}).items()}
+        null = bool(bar); print(f'chance bar from the last sweep in {a.out}' if bar else 'no chance bar: run a sweep first')
+    elif a.cmd == 'one':
+        print('no chance bar: run a sweep first, so its nulls are in --out')
     if a.cmd == 'sweep':
         for m in null_mutations(a.kinds.split(',')):
             s = S.signal(y, registry, hb, H(run_mutant(m, a.base, data, unit))); kind, _, chan, mode = parse(m)[:4]
@@ -179,7 +188,8 @@ def main():
               f"{len(s['rescued_never']):3d}    {len(s['rejected_always']):3d}   {s['secs']:4.0f}{flag}", flush=True)
         if s['signal']:
             sheet(m, cm, items, s, data, a.out)
-    json.dump(dict(base=a.base, unit=unit, rows=rows), open(os.path.join(a.out, 'sweep.json'), 'w'), indent=1, default=str)
+    chance = {'|'.join(str(x) for x in k): v for k, v in bar.items()} if a.cmd == 'sweep' else {}
+    json.dump(dict(base=a.base, unit=unit, chance=chance, rows=rows), open(os.path.join(a.out, 'sweep.json'), 'w'), indent=1, default=str)
 
 
 TILE, ZOOM, GRID = 160, 3, 20
@@ -231,6 +241,21 @@ def marks(path, tiles, items, registry):
         hr = hr[inside]
         print(f"  vs {name:8s} tp {int((hr & (y == 1)).sum())} fp {int((hr & (y == 0)).sum())} | agent finds {int((h & ~hr & (y == 1)).sum())} real it misses, "
               f"rejects {int((~h & hr & (y == 0)).sum())} false it keeps")
+
+
+def table(hv, items, y):
+    """the fusing-algorithms step 2 read: each version's P/R, the union's recall and the intersection's
+    precision (the bounds no vote can pass), and the graded items exactly one version keeps"""
+    pr = lambda h: (int((h & (y == 1)).sum()), int((h & (y == 0)).sum()))
+    for name, h in hv.items():
+        tp, fp = pr(h); print(f"{name:12s} tp {tp:3d} fp {fp:3d}  P {tp / max(1, tp + fp):.2f} R {tp / max(1, (y == 1).sum()):.2f}")
+    H = np.array(list(hv.values())); U, I = H.any(0), H.all(0)
+    (tu, fu), (ti, fi) = pr(U), pr(I)
+    print(f"{'union':12s} tp {tu:3d} fp {fu:3d}  R {tu / max(1, (y == 1).sum()):.2f}  (no OR vote recalls more)")
+    print(f"{'intersection':12s} tp {ti:3d} fp {fi:3d}  P {ti / max(1, ti + fi):.2f}  (no AND vote is more precise)")
+    for j, name in enumerate(hv):
+        only = H[j] & (H.sum(0) == 1)
+        print(f"only {name:8s} real {[items[i].get('id', i) for i in np.nonzero(only & (y == 1))[0]]} false {[items[i].get('id', i) for i in np.nonzero(only & (y == 0))[0]]}")
 
 
 def sheet(m, cands, items, s, data, out):

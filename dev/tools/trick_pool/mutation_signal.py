@@ -1,10 +1,12 @@
 """Whether a mutation did *any* good: the signal the algorithm-mutation skill reads, for any study.
 
-A mutation is not expected to win. It earns a second look when it does at least one of:
+A mutation is not expected to win. It is flagged as signal when it does more than chance of:
 
-- finds a real ground-truth item that no registered version has ever found (`rescued_never`)
-- rejects a false item that every registered version keeps (`rejected_always`)
-- moves a measured quantity's distribution towards the ground truth's (`stats`)
+- finding a real ground-truth item that no registered version has ever found (`rescued_never`)
+- rejecting a false item that every registered version keeps (`rejected_always`)
+
+`stat_shift` reports how a measured quantity's distribution moved towards the ground truth's; it is
+read beside the flag and never sets it.
 
 Everything here works on per-item boolean vectors over the ground truth's graded items, so a study
 supplies only "which items did this version keep".
