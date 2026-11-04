@@ -937,8 +937,9 @@ function driveDialog() {
     const latest = Object.entries({ ...readJSON(LISTINGS), [id]: { at: Date.now(), items } }).sort((x, y) => y[1].at - x[1].at).slice(0, KEEP_LISTINGS);
     writeJSON(LISTINGS, Object.fromEntries(latest));
   };
-  // a folder's rows; offline, an image not kept here and a folder never listed are greyed and open nothing
-  const draw = async (at, all, off, asked) => {
+  // a folder's rows; offline, an image not kept here and a folder never listed are greyed and open nothing; seen: the
+  // ids the folder held when last listed here, an image not among them new, or null when it was never listed
+  const draw = async (at, all, off, asked, seen = null) => {
     const kept = await keptIds();
     if (asked !== listing) return;
     // an image an edit replaced is not listed: the folder of its edits stands in its place
@@ -950,10 +951,11 @@ function driveDialog() {
     for (const [k, f] of items.entries()) {
       const b = document.createElement("button"); b.type = "button"; b.className = "item" + (f.folder ? " folder" : "");
       b.setAttribute("aria-selected", "false");
-      const meta = [f.size == null ? "" : sizeText(f.size),
-        f.created ? f.created.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : ""].filter(Boolean).join(" · ");
+      const meta = f.size == null ? "" : sizeText(f.size);
+      const added = f.created ? `Added to Google Drive on ${f.created.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}` : "When it was added to Google Drive is not known";
+      const fresh = !f.folder && seen && !seen.has(f.id) ? `<span class="new" title="${esc(added)}">new</span>` : "";
       // what only some rows show sits inward, what every image shows at the row's edge
-      b.innerHTML = `<span class="pic"></span><span class="name">${esc(f.name)}</span>${f.folder ? "" : agoTag(opened[f.id])}<span class="shape">${esc(readJSON(HOLDS)[f.id] || "")}</span><span class="kept"></span><span class="meta">${esc(meta)}</span>`;
+      b.innerHTML = `<span class="pic"></span><span class="name">${esc(f.name)}</span>${fresh}${f.folder ? "" : agoTag(opened[f.id])}<span class="shape">${esc(readJSON(HOLDS)[f.id] || "")}</span><span class="kept"></span><span class="meta">${esc(meta)}</span>`;
       if (!f.folder) { b.dataset.id = f.id; markOffline(b.querySelector(".kept"), "image", kept.has(f.id)); }
       if (off && (f.folder ? !listings[f.id] : !kept.has(f.id))) {
         b.disabled = true; b.title = f.folder ? "Not listed on this device yet: it needs the internet." : "Not kept on this device: it needs the internet.";
@@ -982,7 +984,7 @@ function driveDialog() {
       if (asked !== listing) return;
       keepListing(at.id, all);
       // what Drive says now takes the kept listing's place, redrawn only where it differs
-      if (!before || JSON.stringify(keptListing(at.id)) !== JSON.stringify(before)) await draw(at, all, false, asked);
+      if (!before || JSON.stringify(keptListing(at.id)) !== JSON.stringify(before)) await draw(at, all, false, asked, before && new Set(before.map((f) => f.id)));
     } catch (err) {
       if (asked !== listing) return;
       if (err.throttled) throttle(); else if (!before) msg(err.message || String(err), true);

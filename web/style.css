@@ -538,6 +538,9 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 #drive-list .item .name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 #drive-list .item .shape { color: var(--dim); font-size: 11px; white-space: nowrap; padding: 1px 6px; border: 1px solid var(--line); border-radius: var(--r-chip); }
 #drive-list .item .shape:empty { display: none; }
+/* an image the folder did not hold when last listed here (req/shell/drive/dialog) */
+#drive-list .item .new { flex: none; font-size: 10px; font-weight: 600; color: var(--accent);
+  padding: 0 5px; border: 1px solid var(--accent); border-radius: var(--r-chip); cursor: default; }
 #drive-list .item .kept { display: contents; }
 #drive-list .item .kept .offline-mark { margin-left: 0; }
 #drive-list .item .meta { flex: none; color: var(--dim); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
