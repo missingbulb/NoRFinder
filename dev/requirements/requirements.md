@@ -279,8 +279,11 @@ nobody has decided: what the page does there is not a requirement yet.
 
   The user pastes the link of an image or a folder shared as "Anyone with the link", with no
   sign-in. An image loads at once; a folder lists its images and subfolders to pick from, each image
-  with its size, the date it was added to Drive, a small colour thumbnail and, for one opened before in the
-  study, how long since, as the image selector says it (`req/shell/load/selector`); the dialog keeps one
+  with its size, a small colour thumbnail and, for one opened before in the study, how long since, as the image
+  selector says it (`req/shell/load/selector`); set by the owner on 2026-11-04, in place of the date it was added to
+  Drive, an image the folder did not hold when this device last listed it carries a small boxed "new", and hovering
+  on that says when it was added to Drive (a folder listed here for the first time marks none, having nothing to
+  compare with: `req/shell/drive/offline-listing`); the dialog keeps one
   size while the user moves between folders. A click only selects a row; Open (or a double click,
   or Enter) opens it: an image loads, a folder lists its contents. Thumbnails are never read from
   Drive, which answers a burst of reads by refusing the browser for a while, the next image

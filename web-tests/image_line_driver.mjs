@@ -109,7 +109,7 @@ const rows = () => page.$$eval("#image-menu .recent", (bs) => bs.map((b) => ({ n
   age: b.querySelector(".age")?.textContent || "", grey: b.disabled, selected: b.getAttribute("aria-selected") === "true" })));
 // the dialog's rows: name, age, whether greyed and marked kept
 const listed = () => page.$$eval("#drive-list .item", (bs) => bs.map((b) => ({ name: b.querySelector(".name").textContent, age: b.querySelector(".age")?.textContent || "",
-  grey: b.disabled, kept: !!b.querySelector(".offline-mark") })));
+  grey: b.disabled, kept: !!b.querySelector(".offline-mark"), fresh: b.querySelector(".new")?.title ?? null, meta: b.querySelector(".meta")?.textContent || "" })));
 
 try {
   // ---- req/shell/load/from: the Image Viewer loads from this computer alone ----
@@ -162,6 +162,8 @@ try {
   check(d.find((x) => x.name === "kept.png").age === "<1h" && d.find((x) => x.name === "far.png").age === "6d" && !d.find((x) => x.name === "never.png").age,
     "the Drive dialog says how long since each image was opened, nothing for one never opened", d);
   check(d.every((x) => !x.kept), "online, nothing kept yet carries the mark", d);
+  // req/shell/drive/dialog: no date added to Drive on a row; a folder listed for the first time marks nothing new
+  check(d.every((x) => x.fresh === null && !/2026/.test(x.meta)), "a row shows no date, and a folder listed here for the first time marks none of its images new", d);
   await page.dblclick('#drive-list .item[data-id="linekept000000000001"]');
   await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded.");
   await until(page, async () => (await (await caches.open("nor-images-v1")).keys()).length === 1);
@@ -226,6 +228,19 @@ try {
   check(calls.includes("list"), "online, opening the dialog reads the folder again", calls);
   await until(page, (id) => JSON.parse(localStorage.getItem("nor-drive-listings") || "{}")[id]?.items?.some((f) => f.name === "new.png"), ROOT);
   check(true, "and keeps what Drive says now in place of the old listing");
+  await until(page, () => document.querySelector('#drive-list .item[data-id="linenew000000000001"] .new'));
+  d = await listed();
+  const added = d.find((x) => x.name === "new.png");
+  check(/2026/.test(added.fresh || "") && d.filter((x) => x.fresh !== null).length === 1, "the image the folder did not hold last time is marked new, its hover saying when it was added to Drive", d);
+  const where = await page.$eval('#drive-list .item[data-id="linenew000000000001"]', (b) => { const r = (s) => b.querySelector(s).getBoundingClientRect(); return r(".new").left >= r(".name").left && r(".new").right <= r(".meta").left + 1; });
+  check(where, "the new mark sits inward, the size at the row's edge (the nor-finder pack's row-indicators-edges)");
+  await shot("new_in_dialog", "#drive-dlg");
+  await page.click("#drive-dlg button[value=close]");
+  await page.click("#load-drive");
+  await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 5);
+  await page.waitForTimeout(300);
+  d = await listed();
+  check(d.every((x) => x.fresh === null), "listed again, the folder holding the same images, none is new any more", d);
   await page.click("#drive-dlg button[value=close]");
 } catch (e) {
   failed = true; console.error("FAILED: " + e.message);
