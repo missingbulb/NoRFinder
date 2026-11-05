@@ -99,6 +99,12 @@ await ctx.addInitScript((link) => {
   delete Navigator.prototype.serviceWorker;
   localStorage.setItem("nor-drive-link", JSON.stringify(link));
 }, `https://drive.google.com/drive/folders/${ROOT}`);
+// the thumbnails the page has asked for, counted as it asks, before any request reaches the stand-in
+await ctx.addInitScript(() => {
+  window.thumbsAsked = 0;
+  const fetchNow = window.fetch;
+  window.fetch = function (u, ...rest) { if (/\/thumbs\/[^/]+\.jpg$/.test(String(u?.url ?? u))) window.thumbsAsked++; return fetchNow.call(this, u, ...rest); };
+});
 const page = await ctx.newPage();
 page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.message); });
 page.setDefaultTimeout(10000);
@@ -186,14 +192,17 @@ try {
   asked.length = 0; delay = () => 300;
   await page.evaluate(() => { $("#drive-list").scrollTop = $("#drive-list").scrollHeight / 2; });
   // the first rows there asked for, their answers still on the way
-  if (!asked.length) await Promise.race([next, atMost(5000)]);
-  const middle = span(await inView()), cut = asked.length;
+  const from = await page.evaluate(() => window.thumbsAsked);
+  await page.waitForFunction((n) => window.thumbsAsked > n, from).catch(() => {});
+  const middle = span(await inView());
   check(had.length >= first.length && middle.length > AHEAD, `${had.length} thumbnails held before closing, ${middle.length} rows wanted midway`);
-  await page.click("#drive-dlg button[value=close]");
+  // what the page had asked for, read in the same task as the close, so none is asked between the two
+  const cut = await page.evaluate(() => { const n = window.thumbsAsked; document.querySelector("#drive-dlg button[value=close]").click(); return n; }) - from;
   // every request made before closing answered or cut off, and the page done with them
   for (const end = Date.now() + 5000; inflight && Date.now() < end; ) await Promise.race([next, atMost(end - Date.now())]);
   await frames();
-  check(cut > 0 && asked.length === cut, `closing the dialog stops the fetches: ${cut} asked before, ${asked.length - cut} after`);
+  const after = (await page.evaluate(() => window.thumbsAsked)) - from - cut;
+  check(cut > 0 && after === 0, `closing the dialog stops the fetches: ${cut} asked before, ${after} after`);
   asked.length = 0;
   await open();
   pics = await shown();
