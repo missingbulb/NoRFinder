@@ -39,7 +39,7 @@
     {"root": "Published, Viewer", "actions": ["load", "count", "items"]},
     {"root": "GT, Tagger", "actions": ["load", "offline", "online"]},
     {"root": "GT, Data Manager", "actions": ["folder", "preview", "original", "offline"]},
-    {"root": "GT, Data Manager", "actions": ["folder", "preview", "edit", "done"]},
+    {"root": "GT, Data Manager", "actions": ["folder", "preview", "edit", "offline", "done"]},
     {"root": "GT, Data Manager", "actions": ["folder", "offline", "online"]}
   ],
   "tree": [
@@ -102,7 +102,6 @@
             {"name": "Image box", "select": "#image-box", "box": true, "req": "req/shell/left-bar/folding",
               "rule": [
                 {"when": {"selected": ["folder"]}, "is": "hidden", "req": "req/shell/data/folder"},
-                {"when": {"role": ["data"], "online": [false]}, "is": "folded", "req": "req/shell/data/mode", "approval": "undecided"},
                 {"when": {"hasSteps": [false]}, "is": "shown"},
                 {"when": {"image": ["local", "original"]}, "is": "folded"}
               ],
@@ -188,8 +187,7 @@
             {"name": "Preprocessing", "select": "#preprocessing-box", "box": true, "req": "req/shell/preprocessing/split",
               "rule": [
                 {"when": {"role": ["viewer", "tagger"]}, "is": "hidden", "req": "req/shell/data/mode"},
-                {"when": {"image": ["none"]}, "is": "folded", "req": "req/shell/left-bar/folding"},
-                {"when": {"online": [false]}, "is": "held", "req": "req/shell/data/mode"}
+                {"when": {"image": ["none"]}, "is": "folded", "req": "req/shell/left-bar/folding"}
               ],
               "children": [
                 {"name": "Edit Image", "select": "#edit-open", "control": true, "req": "req/shell/data/edit",

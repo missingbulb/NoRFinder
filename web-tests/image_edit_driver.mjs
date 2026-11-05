@@ -37,12 +37,17 @@ const [W, H] = await size();
 await page.click("#edit-open");
 await page.waitForFunction(() => !$("#edit-box").hidden);
 await check(await page.evaluate(() => $("#edit-slices-sec").hidden), "a flat image has no slices to keep");
+// the network gone with an edit under way (req/shell/data/mode): its marks are local, so it goes on
+await page.context().setOffline(true);
+await page.waitForFunction(() => document.documentElement.classList.contains("offline"));
 await page.click('#edit-split button[data-n="2"]');
 await page.waitForFunction((w) => shellForTests.page.get("image").W > w, W);
 const gap = Math.max(4, Math.round(0.06 * Math.max(W, H)));
 await check(JSON.stringify(await size()) === JSON.stringify([W + gap, H + gap]), "2 × 2 draws the parts apart, a gap between them", await size());
 const mid = W / 2 + gap / 2;
-await check((await cuts()) === `x1=${mid},y1=${H / 2 + gap / 2}`, "its cut lines are drawn in the gaps", await cuts());
+await check((await cuts()) === `x1=${mid},y1=${H / 2 + gap / 2}`, "its cut lines are drawn in the gaps, offline as online", await cuts());
+await page.context().setOffline(false);
+await page.waitForFunction(() => !document.documentElement.classList.contains("offline"));
 await page.click("#edit-done");
 await page.waitForFunction(() => $("#edit-box").hidden);
 await check(JSON.stringify(await size()) === JSON.stringify([W, H]), "Done shows the image as it was");
