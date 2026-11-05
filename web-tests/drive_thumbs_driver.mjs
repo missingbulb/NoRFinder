@@ -116,8 +116,16 @@ try {
 
   // answers arrive in reverse order of asking: the later rows' first
   delay = (k) => 400 - 5 * k;
+  // the status bar's message, each time it changes
+  await page.evaluate(() => {
+    window.said = []; window.saidBefore = $("#status").textContent;
+    new MutationObserver(() => said.push($("#status").textContent)).observe($("#status"), { childList: true, characterData: true, subtree: true });
+  });
   await open();
   await quiet();
+  const told = await page.evaluate(() => ({ said, before: saidBefore, now: $("#status").textContent, own: !!document.querySelector("#sb-thumbs") }));
+  check(told.said.some((t) => /^Thumbnails \d+ of \d+ · /.test(t)) && !told.own, `while thumbnails load, the status message says how many: ${JSON.stringify(told.said)}`);
+  check(told.now === told.before, `and once they are in it says again what it said before: ${told.now} (was ${told.before})`);
   const first = span(await inView());
   check(same(sorted(asked), first), `fetched only the rows in view and the next ${AHEAD}: ${sorted(asked)} (want ${first})`);
   check(asked.length === first.length, `each once: ${asked.length} fetches for ${first.length} rows`);

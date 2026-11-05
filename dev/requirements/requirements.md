@@ -304,8 +304,9 @@ nobody has decided: what the page does there is not a requirement yet.
   in view still lack. Test: `web-tests/test_drive_thumbs_page.py`. An image opened from Drive saves its own in the browser (the latest 100), shown from then
   on without a download; a PNG shows Drive's own. All are in the colours the page gives the
   channels. A checkbox at the bottom, "Show thumbnails" (on at first, remembered in the browser),
-  turns the downloads off; beside it, and in the status bar while they load, how many have arrived
-  and their size. It needs the site's Google API key, kept in the repository variable
+  turns the downloads off; beside it, and in the status bar's message while they load ("Thumbnails 3 of 10 ·
+  1.2 MB"), how many have arrived and their size; once they are in, the message says again what it said
+  before (set by the owner on 2026-11-05: the message, not a text of its own beside it). It needs the site's Google API key, kept in the repository variable
   `GOOGLE_API_KEY` and written into `web/config.js` at deploy; without one the option is off
   (`web-tests/test_site_config.py`). Where it takes a link, the dialog opens on the link last pasted in this
   study, else on the link last pasted in any study, and lists a folder link at once; opening on a link is not
