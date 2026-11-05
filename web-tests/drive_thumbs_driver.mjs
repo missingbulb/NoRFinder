@@ -67,19 +67,28 @@ const cors = { "access-control-allow-origin": "*" };
 await ctx.route("https://www.googleapis.com/**", async (route) => {
   const q = new URL(route.request().url()).searchParams.get("q") || "";
   const slow = q.includes(SLOW.id);
-  if (slow) await new Promise((ok) => setTimeout(ok, 800));
+  if (slow) await new Promise((ok) => setTimeout(ok, 800)); // waits on purpose: a listing slower than the user, who moves on
   const files = slow ? [{ ...IMAGES[0], id: "slowimage00000000001", name: "stale.tif" }]
     : [{ ...SLOW, mimeType: "application/vnd.google-apps.folder" }, ...IMAGES.map((f) => ({ ...f, mimeType: "image/tiff", size: "1000", createdTime: "2026-10-01T10:00:00Z" }))];
-  return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ files }) });
+  await route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ files }) });
+  if (slow) slowAnswered();
 });
-// each thumbnail's request, in order; delay(k) says how long row k's answer takes
+// each thumbnail's request, in order, and how many are still unanswered (answered or aborted by the page leaves
+// them); delay(k) says how long row k's answer takes
 const asked = [];
-let delay = () => 0;
+let inflight = 0, delay = () => 0;
+// resolves at the next request or answer
+let moved, next = new Promise((ok) => { moved = ok; });
+const note = () => { moved(); next = new Promise((ok) => { moved = ok; }); };
+let slowAnswered, slowListed = new Promise((ok) => { slowAnswered = ok; });
+// a bound on waiting for the stand-in, so a page that never asks fails its check rather than hanging
+const atMost = (ms) => new Promise((ok) => setTimeout(ok, ms));
 await ctx.route(`${origin}/studies/fixture/thumbs/*.jpg`, async (route) => {
   const id = path.basename(new URL(route.request().url()).pathname, ".jpg"), k = IMAGES.findIndex((f) => f.id === id);
-  asked.push(k);
-  await new Promise((ok) => setTimeout(ok, delay(k)));
+  asked.push(k); inflight++; note();
+  await new Promise((ok) => setTimeout(ok, delay(k))); // waits on purpose: the stand-in answers each row as slowly as the case asks
   try { await route.fulfill({ status: 200, contentType: "image/png", body: png(k + 1) }); } catch { /* aborted by the page */ }
+  inflight--; note();
 });
 await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
 await ctx.addInitScript((link) => {
@@ -101,8 +110,24 @@ const inView = () => page.evaluate(() => {
 const span = (rows) => { const out = []; for (let k = rows[0]; k <= Math.min(N - 1, rows[rows.length - 1] + AHEAD); k++) out.push(k); return out; };
 // the width of the picture each image row shows, null where it shows none
 const shown = () => page.evaluate(() => [...document.querySelectorAll("#drive-list .item:not(.folder) .pic")].map((p) => p.querySelector("img")?.naturalWidth || null));
-// waits until no thumbnail has been asked for in a while
-const quiet = async (ms = 600) => { for (let n = -1; n !== asked.length; ) { n = asked.length; await page.waitForTimeout(ms); } };
+// waits until every row in view and the next AHEAD has its picture or has been asked for, every request is answered, and the page says
+// its thumbnails are in (the status bar's "Thumbnails n of m" gone); 10 s at most, the checks after it saying what is missing
+const quiet = async () => {
+  const end = Date.now() + 10000, t0 = Date.now();
+  for (;;) {
+    const want = span(await inView()), pics = await shown();
+    if (want.every((k) => asked.includes(k) || pics[k]) && !inflight) {
+      await page.waitForFunction(() => !/^Thumbnails /.test($("#status").textContent), null, { timeout: Math.max(1, end - Date.now()) }).catch(() => {});
+      await frames();
+      const now = await shown();
+      if (!inflight && span(await inView()).every((k) => asked.includes(k) || now[k])) return;
+    }
+    if (Date.now() >= end) return console.log(`quiet: gave up after ${Date.now() - t0} ms`, JSON.stringify({ want, pics: want.map((k) => pics[k]), asked: sorted(asked), inflight, status: await page.textContent("#status") }));
+    await Promise.race([next, page.waitForEvent("requestfinished", { timeout: end - Date.now() }).catch(() => {})]);
+  }
+};
+// the page's handlers for what was just done have all run
+const frames = () => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
 const same = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
 const sorted = (a) => [...new Set(a)].sort((x, y) => x - y);
 const open = async () => {
@@ -138,7 +163,8 @@ try {
   // a fast scroll to the bottom, answers slower than the scroll: the rows passed over are never fetched
   asked.length = 0; delay = () => 400;
   const height = await page.evaluate(() => $("#drive-list").scrollHeight);
-  for (let y = 0; y <= height; y += 250) { await page.evaluate((t) => { $("#drive-list").scrollTop = t; }, y); await page.waitForTimeout(20); }
+  // a step a frame, as a flung wheel scrolls
+  for (let y = 0; y <= height; y += 250) await page.evaluate((t) => new Promise((ok) => { $("#drive-list").scrollTop = t; requestAnimationFrame(ok); }), y);
   await quiet();
   const last = span(await inView());
   // the fetches started as the scroll began, before it outran them, are the only rows passed over that are fetched
@@ -154,11 +180,14 @@ try {
   const had = (await shown()).flatMap((w, k) => (w ? [k] : []));
   asked.length = 0; delay = () => 300;
   await page.evaluate(() => { $("#drive-list").scrollTop = $("#drive-list").scrollHeight / 2; });
-  await page.waitForTimeout(100);
+  // the first rows there asked for, their answers still on the way
+  if (!asked.length) await Promise.race([next, atMost(5000)]);
   const middle = span(await inView()), cut = asked.length;
   check(had.length >= first.length && middle.length > AHEAD, `${had.length} thumbnails held before closing, ${middle.length} rows wanted midway`);
   await page.click("#drive-dlg button[value=close]");
-  await page.waitForTimeout(500);
+  // every request made before closing answered or cut off, and the page done with them
+  for (const end = Date.now() + 5000; inflight && Date.now() < end; ) await Promise.race([next, atMost(end - Date.now())]);
+  await frames();
   check(cut > 0 && asked.length === cut, `closing the dialog stops the fetches: ${cut} asked before, ${asked.length - cut} after`);
   asked.length = 0;
   await open();
@@ -174,7 +203,9 @@ try {
   await page.evaluate(() => { $("#drive-list").scrollTop = 0; });
   await page.dblclick("#drive-list .item.folder");
   await page.click("#drive-path button[data-k='0']");
-  await page.waitForTimeout(1200);
+  // the slow listing in, after the user moved on, and the page done with it
+  await Promise.race([slowListed, atMost(5000)]);
+  await frames();
   const rows = await page.evaluate(() => [...document.querySelectorAll("#drive-list .item .name")].map((e) => e.textContent));
   check(rows.length === N + 1 && !rows.includes("stale.tif"), `a listing that arrives after the user moved on is dropped: ${rows.length} rows${rows.includes("stale.tif") ? ", stale.tif among them" : ""}`);
 } catch (e) {

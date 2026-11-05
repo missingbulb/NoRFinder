@@ -19,13 +19,18 @@ await page.context().close();
 
 page = await open(true);
 const width = () => page.evaluate(() => Math.round($("#data-col").getBoundingClientRect().width));
+// the column at a width and its slide over; the check after it says what it found when it never gets there
+const slid = (wide) => page.waitForFunction((wide) => (wide ? $("#data-col").getBoundingClientRect().width > 200 : $("#data-col").getBoundingClientRect().width < 60)
+  && !document.getAnimations().some((a) => a.playState === "running"), wide, { timeout: 5000 }).catch(() => {});
+// the page's handlers for what was just done have all run: a click it ignores has had every chance to act
+const turned = () => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
 await check(await page.evaluate(() => $("#data-col").hidden && !document.documentElement.dataset.mode), "a data manager in another role sees no Data Management");
 await role(page, "Data Manager");
 await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder").length === 2);
-await page.waitForTimeout(600);
+await slid(true);
 await check((await width()) > 200, "choosing Data Manager slides the column out, open", await width());
 await page.click("#data-open");
-await page.waitForTimeout(600);
+await slid(false);
 await check((await width()) < 60, "its chevron folds it to a narrow strip", await width());
 await shot("1-strip");
 // req/shell/left-bar/collapse: the left bar's strip beside it, the same width, a small gap between them
@@ -36,7 +41,7 @@ await check(pair.dm === pair.steps && pair.gap > 0 && pair.gap <= 4, "collapsed,
 await page.click("#left-strip .strip-name");
 await page.waitForFunction(() => document.querySelector("#left").getBoundingClientRect().width > 200 && !document.getAnimations().some((a) => a.transitionProperty === "grid-template-columns"));
 await page.click("#data-open");
-await page.waitForTimeout(600);
+await slid(true);
 await check((await width()) > 200, "the chevron opens the column again", await width());
 await check(await page.textContent("#data-approve") === "Approve 1 folder…" && await page.isVisible("#data-approve"), "the tree's head offers the one folder not approved yet", await page.textContent("#data-approve"));
 const access = await page.evaluate(() => [...document.querySelectorAll("#data-tree .tree-folder")].map((f) => [f.querySelector(":scope > .row .name").textContent, f.querySelector(":scope > .row .access").textContent]));
@@ -66,8 +71,10 @@ await page.waitForFunction(() => document.querySelector('#folder-summary dd[data
 await check(JSON.stringify(await summary()) === JSON.stringify({ images: 3, previews: 3, stale: 0, truth: 0, pending: 0, missing: 1 }), "then every image has a preview", await summary());
 await page.waitForFunction(() => document.querySelectorAll("#folder-items .pic img").length === 3);
 await shot("3-list");
-await page.click('#folder-layout button[data-layout="grid"]'); await page.waitForTimeout(500);
-await page.click("#data-tree .tree-folder .count"); await page.waitForTimeout(300);
+await page.click('#folder-layout button[data-layout="grid"]');
+await page.waitForFunction(() => $("#folder-items").dataset.layout === "grid" && !document.getAnimations().some((a) => a.playState === "running"));
+await page.click("#data-tree .tree-folder .count");
+await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder .tree-image .pic img").length === 3);
 await shot("2-grid");
 await page.click("#data-tree .tree-folder .count");
 // one image changes; the page replaces its own file, making that one preview alone
@@ -116,19 +123,20 @@ const before = writes.length;
 await page.context().setOffline(true);
 await page.waitForFunction(() => document.documentElement.classList.contains("offline"));
 await page.click(cell("e plain.tif") + " .mark-gt", { force: true });
-await page.waitForTimeout(300);
+await turned();
 await check(writes.length === before, "offline, marking an image does nothing", writes.slice(before));
 // Data Management as a whole needs the network: its column's chevron does nothing
 const folded = () => page.evaluate(() => $("#data-open").getAttribute("aria-expanded"));
 await page.click("#data-open", { force: true });
-await page.waitForTimeout(300);
+await turned();
 await check(await folded() === "true", "and its chevron does nothing", await folded());
 await page.context().setOffline(false);
 await page.waitForFunction(() => !document.documentElement.classList.contains("offline"));
 
 await role(page, "Viewer");
-await page.waitForTimeout(600);
-await check(await page.evaluate(() => $("#data-col").hidden && !$("#load").classList.contains("gone") && !$("#preprocessing-box").checkVisibility() && !document.documentElement.dataset.mode),
+const leftMode = () => $("#data-col").hidden && !$("#load").classList.contains("gone") && !$("#preprocessing-box").checkVisibility() && !document.documentElement.dataset.mode;
+await page.waitForFunction(leftMode, null, { timeout: 5000 }).catch(() => {});
+await check(await page.evaluate(leftMode),
   "another role leaves the mode: the column gone, Load back, Preprocessing gone");
 
 // a previews file whose pictures cannot be read, its index intact: each image shows no preview, and one chosen
