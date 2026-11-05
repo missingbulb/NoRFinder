@@ -75,6 +75,11 @@ const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: "
 // a profile of its own: a browser's private window can install nothing
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), "offline-"));
 const ctx = await pw[ENGINE].launchPersistentContext(profile, { viewport: { width: 1400, height: 900 } });
+// the page's clock, which runs as the real one does, so the test can move it past a wait on the page's own timers
+await ctx.clock.install();
+// the page asks whether the site answers every 30 s while the browser says it is online, every 5 s while offline
+// (web/offline.js)
+const pastHeartbeat = () => ctx.clock.fastForward(30000), pastOfflineRetry = () => ctx.clock.fastForward(5000);
 let driveDownloads = 0;
 await ctx.route("https://www.googleapis.com/**", (route) => {
   const u = new URL(route.request().url()), id = u.pathname.match(/\/drive\/v3\/files\/?(.*)$/)[1];
@@ -262,6 +267,7 @@ try {
   await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 2);
   const drivePath = () => page.textContent("#drive-path");
   down = true;
+  await pastHeartbeat();
   await page.waitForSelector("#sb-online .off", { state: "visible", timeout: 40000 }).catch(() => {});
   check(await page.isVisible("#sb-online .off"), "mid-session, with the browser still saying online, the page notices the site not answering");
   // req/shell/drive/offline-listing: the folder stays as last listed, what is not kept here greyed
@@ -270,6 +276,7 @@ try {
   let g = await greyed();
   check(g.sub === true && g["stack one.tif"] === false && !/offline/.test(await drivePath()), "the open Drive dialog then greys the subfolder never listed, the kept image left to open: " + JSON.stringify(g) + " " + (await drivePath()));
   down = false;
+  await pastOfflineRetry();
   await page.waitForSelector("#sb-online .off", { state: "hidden", timeout: 40000 }).catch(() => {});
   check(!(await page.isVisible("#sb-online .off")), "and notices it answering again");
   await page.waitForFunction(() => document.querySelector("#drive-list .item") && !document.querySelector("#drive-list .item:disabled"), null, { timeout: 5000 }).catch(() => {});
@@ -279,9 +286,11 @@ try {
 
   // a release lands while the page is offline: back online, the icon says so at once, not once the new copy is in
   down = true;
+  await pastHeartbeat();
   await page.waitForSelector("#sb-online .off", { state: "visible", timeout: 40000 }).catch(() => {});
   release = true; down = false;
   const back = Date.now();
+  await pastOfflineRetry();
   await page.waitForSelector("#sb-online .off", { state: "hidden", timeout: 15000 }).catch(() => {});
   check(!(await page.isVisible("#sb-online .off")), `back online with a release to copy, the online icon shows online within seconds (${Date.now() - back} ms)`);
 } catch (e) {
