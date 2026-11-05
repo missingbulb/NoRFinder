@@ -51,7 +51,7 @@ not belong here — propose it to the Claudinite canon instead, where every repo
 
 ## The shell's states
 
-- **Working with `dev/requirements/shell-states.json` or what it generates** — treat it as a development harness
+- **Working with `dev/requirements/shell-states.json`, a study's `states.json` grafted into it, or what they generate** — treat it as a development harness
   the owner does not review: never present a case there as approved, and bring each tentative or undecided case,
   and each change to what a state shows, to the owner as a question. (shell-states-unreviewed)
 

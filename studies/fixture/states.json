@@ -1,0 +1,37 @@
+{
+  "about": "The fixture study's own elements in the shell's states (req/checks/shell-states, req/checks/spec-layout): each graft puts its tree under the shell's element `under`, after its child `after` or first, in the tree of dev/requirements/shell-states.json, whose rules they follow.",
+  "grafts": [
+    {"under": "Left bar", "after": "Edit Image box", "tree": [
+      {"name": "Study: Threshold", "select": "#fx-box", "box": true, "req": "req/shell/left-bar/folding",
+        "rule": [
+          {"when": {"role": ["data"]}, "is": "hidden", "req": "req/shell/data/mode"},
+          {"when": {"image": ["none"]}, "is": "folded"},
+          {"when": {"counted": [true]}, "is": "folded"}
+        ],
+        "children": [
+          {"name": "Count", "select": "#fx-count", "control": true, "req": "req/shell/study/knows-none"}
+        ]
+      },
+      {"name": "Study: postprocessing", "select": "#fx-counted", "box": true, "req": "req/shell/account/role",
+        "rule": [
+          {"when": {"role": ["viewer", "data"]}, "is": "hidden"},
+          {"when": {"counted": [false]}, "is": "folded", "req": "req/shell/left-bar/folding"}
+        ]
+      }
+    ]},
+    {"under": "Tasks bar", "tree": [
+      {"name": "Submit ground truth", "select": "#fx-truth", "control": true, "req": "req/shell/views/submit-task",
+        "rule": [
+          {"when": {"counted": [false]}, "is": "disabled", "req": "req/shell/study/knows-none"}
+        ]
+      }
+    ]},
+    {"under": "Main view", "after": "Image view", "tree": [
+      {"name": "Item view", "select": "#items-view", "req": "req/shell/views/second",
+        "rule": [
+          {"when": {"view": ["image"]}, "is": "hidden"}
+        ]
+      }
+    ]}
+  ]
+}
