@@ -15,6 +15,7 @@ import http from "node:http";
 import path from "node:path";
 import { offSite } from "./off_site.mjs";
 import { ENGINE } from "./engine.mjs";
+import { watchReads, readsDone } from "./page_reads.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -91,12 +92,14 @@ async function open(ua) {
     localStorage.setItem("nor-welcome", JSON.stringify("anonymous"));
     localStorage.setItem("nor-drive-recent", JSON.stringify([{ id: "d1", name: secret, path: ["Lab"], study: "fixture" }]));
   }, SECRET);
+  // whether the page supports this browser waits on browsers.json, which a supported one shows nothing of
+  await watchReads(ctx, ["browsers.json"]);
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { if (!/thrown-for-the-test/.test(e.message)) { console.error("page error: " + e.message); await done(1); } });
   page.setDefaultTimeout(10000);
   await page.goto(origin + "/web/fixture");
   await page.waitForFunction(() => $("#sb-version").textContent && $("#recent .recent"));
-  await page.waitForTimeout(300); // browsers.json arrives
+  await readsDone(page);
   return { ctx, page };
 }
 const kept = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("nor-actions")) || []);
@@ -130,14 +133,13 @@ const reportIcon = (page) => page.evaluate(() => { const b = $("#sb-report"); re
   await page.click("#recent .recent");
   // the image is not on this device and Drive cannot be reached: the Drive dialog opens on its folder
   await page.waitForFunction(() => $("#drive-dlg").open);
-  await page.waitForTimeout(300);
   await page.keyboard.press("Escape");
   await page.waitForFunction(() => !$("#drive-dlg").open);
   await page.click("#user-menu summary");
   await page.click("#open-settings");
   await page.click("#settings-cancel");
   await page.evaluate(() => setTimeout(() => { throw new Error("thrown-for-the-test"); }));
-  await page.waitForTimeout(100);
+  await page.waitForFunction(() => (JSON.parse(localStorage.getItem("nor-actions")) || []).some((e) => /thrown-for-the-test/.test(e.text)));
   await page.click("#sb-report");
   const q = await issue(page);
   await check(q.template === "bug-report.yml" && q.title === "Unsupported browser: ", `the icon opens a new issue on the bug-report form: ${q.template}, "${q.title}"`);
@@ -153,7 +155,7 @@ const reportIcon = (page) => page.evaluate(() => { const b = $("#sb-report"); re
   await check(!JSON.stringify(log).includes(SECRET) && !JSON.stringify(q).includes(SECRET), "no image's name is in the log or the report");
 
   // across a reload, from the avatar's menu
-  await page.reload(); await page.waitForTimeout(300);
+  await page.reload(); await page.waitForFunction(() => $("#sb-version").textContent); await readsDone(page);
   await page.click("#user-menu summary");
   await page.click("#report-problem");
   const again = await issue(page);

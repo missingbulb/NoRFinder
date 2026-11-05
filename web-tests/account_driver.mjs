@@ -62,6 +62,7 @@ async function google(route) {
   const q = route.request(), u = new URL(q.url());
   if (q.method() === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
   seen.push(`${q.method()} ${u.origin}${u.pathname}${u.search}`);
+  queueMicrotask(heard);
   const json = (status, body) => route.fulfill({ status, headers: cors, contentType: "application/json", body: JSON.stringify(body) });
   const issued = +((q.headers()["authorization"] || "").match(/^Bearer tok-(\d+)$/) || [])[1];
   if (!issued || issued < drive.validFrom) return json(401, { error: "no live token" });
@@ -87,8 +88,23 @@ async function google(route) {
 const browser = await pw[ENGINE].launch();
 let failed = false;
 const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: " + what); } else console.log("ok: " + what); };
-const until = async (fn, ms = 5000) => { for (const end = Date.now() + ms; Date.now() < end; await new Promise((ok) => setTimeout(ok, 50))) if (await fn()) return true; return false; };
-const pause = (ms) => new Promise((ok) => setTimeout(ok, ms));
+// what the stand-in Google holds changes only as a request reaches it: a wait on it looks again at each one
+const waiting = new Set();
+const heard = () => { for (const w of [...waiting]) w(); };
+const until = async (fn, ms = 5000) => {
+  for (const end = Date.now() + ms; ; ) {
+    if (await fn()) return true;
+    if (Date.now() >= end) return false;
+    await new Promise((ok) => { const wake = () => { clearTimeout(t); waiting.delete(wake); ok(); }, t = setTimeout(wake, end - Date.now()); waiting.add(wake); });
+  }
+};
+// a page showing something, within ms
+const shows = (page, fn, arg, ms = 5000) => page.waitForFunction(fn, arg, { timeout: ms }).then(() => true, () => false);
+// whether the page asked for Google's script, which it does by appending the script's element in the handler that
+// wants it: there once that action returns, before any request reaches the route
+const askedGoogle = (page) => page.evaluate((src) => !!document.querySelector(`script[src="${src}"]`), GSI);
+// the calls the page has made to Google's APIs, counted as it makes them
+const googleCalls = (page) => page.evaluate(() => window.googleCalls);
 
 let scriptLoads = 0;
 const outside = []; // every address outside the page's own the browser was asked for
@@ -104,6 +120,11 @@ async function device(seed) {
     sessionStorage.setItem("primed", "1");
     for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v);
   }, seed);
+  await ctx.addInitScript(() => {
+    window.googleCalls = 0;
+    const fetchNow = window.fetch;
+    window.fetch = function (u, ...rest) { if (/googleapis\.com\//.test(String(u?.url ?? u))) window.googleCalls++; return fetchNow.call(this, u, ...rest); };
+  });
   const page = await ctx.newPage();
   page.on("pageerror", (e) => { if (cutShort(e)) return; failed = true; console.error("page error: " + e.message); });
   page.setDefaultTimeout(10000);
@@ -123,8 +144,7 @@ try {
   // device A: used before, never signed in; it answered the sign-in popup (req/shell/account/welcome) and closed its tip
   const answered = { "nor-welcome": JSON.stringify({ choice: "anonymous", remember: true }) };
   const a = await device({ ...answered, "nor-theme": "dark", "nor-tips-closed": JSON.stringify(["recent-files", "sign-in"]), "nor-bars-v1": JSON.stringify({ left: 300 }) });
-  await pause(300);
-  check(scriptLoads === 0 && outside.length === 0, "a visitor who never signs in loads nothing from Google");
+  check(scriptLoads === 0 && !(await askedGoogle(a.page)) && outside.length === 0, "a visitor who never signs in loads nothing from Google");
   check(await a.page.textContent("#who-where") === "On this device, not signed in" && await a.page.isHidden("#sign-out"), "not signed in, the menu says so");
   await a.page.click("#user-menu summary");
   await a.page.waitForFunction(() => window.tokenClient);
@@ -179,8 +199,8 @@ try {
   check(await a.page.evaluate(() => document.documentElement.dataset.theme === "dark" && !document.querySelector("#settings-dlg").open), "the theme changes at once, and the dialog closes");
   await openSettings(a.page);
   await a.page.selectOption('#settings-dlg select[name="nor-theme"]', "light");
+  // Cancel writes nothing, here or in a save waiting to run: the theme a save would carry is this device's own
   await a.page.click("#settings-cancel");
-  await pause(600);
   check(await local(a.page, "nor-theme") === "dark" && file()["nor-theme"] === "dark", "Cancel changes nothing");
   await a.page.click("#theme"); // back to light, as the rest of this test expects
   await until(() => file()?.["nor-theme"] === "light");
@@ -193,7 +213,7 @@ try {
   const b = await device({ ...answered, "nor-tips-closed": JSON.stringify(["sign-in"]), "nor-theme": "dark", "nor-bars-v1": JSON.stringify({ left: 400 }) });
   check(await b.page.evaluate(() => document.documentElement.dataset.theme) === "dark", "a second device starts in its own theme");
   await signInVia(b.page);
-  check(await until(() => b.page.evaluate(() => document.documentElement.dataset.theme === "light")), "signing in there brings the user's theme at once");
+  check(await shows(b.page, () => document.documentElement.dataset.theme === "light"), "signing in there brings the user's theme at once");
   check(await local(b.page, "nor-tips-closed") === JSON.stringify(["recent-files"]), "and the tips they closed elsewhere");
   check(await b.page.evaluate(() => document.documentElement.dataset.motion === "off" && !document.querySelector("#motion").checked),
     "and their animations turned off elsewhere, at once");
@@ -205,7 +225,7 @@ try {
   const asks = await b.page.evaluate(() => window.tokenClient.asked.length);
   await b.page.reload();
   await b.page.waitForFunction(() => !document.querySelector("#sign-out").hidden);
-  check(await until(() => b.page.evaluate(() => document.documentElement.dataset.theme === "dark")), "a reload within the hour stays signed in and syncs with no click");
+  check(await shows(b.page, () => document.documentElement.dataset.theme === "dark"), "a reload within the hour stays signed in and syncs with no click");
   check(await b.page.evaluate(() => !window.tokenClient || window.tokenClient.asked.length === 0) && asks === 1, "and asks Google for no new token");
 
   // the hour is up: Google asks again only in a click that needs it, silently, for the same user
@@ -223,11 +243,11 @@ try {
   const before = seen.length;
   // to light, by a script, once the user activation a test's evaluate itself carries (5 s) is over
   await b.page.evaluate(() => setTimeout(() => document.querySelector("#theme").click(), 5500));
-  await pause(6200);
+  await shows(b.page, () => document.documentElement.dataset.theme === "light", undefined, 10000);
   check(await local(b.page, "nor-theme") === "light" && await askedNow() === 0 && file()["nor-theme"] === "dark", "a change no user made asks Google for nothing");
+  const calls = await googleCalls(b.page);
   await b.page.mouse.click(700, 500);
-  await pause(500);
-  check(await askedNow() === 0 && seen.length === before, "with the token run out, neither the page's own writes nor a click that needs nothing from Google open anything or reach Drive");
+  check(await askedNow() === 0 && await googleCalls(b.page) === calls && seen.length === before, "with the token run out, neither the page's own writes nor a click that needs nothing from Google open anything or reach Drive");
   await b.page.click("#theme"); // back to dark
   await b.page.click("#theme"); // to light
   check(await until(() => file()?.["nor-theme"] === "light"), "changing a setting renews the token in that click and saves it");
@@ -237,7 +257,7 @@ try {
   drive.file.body = JSON.stringify({ ...file(), "nor-theme": "dark" }); // another device
   await expire();
   await b.page.click("#image-pick");
-  check(await until(() => b.page.evaluate(() => document.documentElement.dataset.theme === "dark")), "opening the image selector renews the token and brings the file's settings");
+  check(await shows(b.page, () => document.documentElement.dataset.theme === "dark"), "opening the image selector renews the token and brings the file's settings");
   check(await until(() => typeof file()?.["nor-seen-version"] === "string" && file()["nor-theme"] === "dark"),
     "the setting this device changed meanwhile is saved beside the other device's, not over it");
   await b.page.keyboard.press("Escape");
@@ -250,9 +270,9 @@ try {
     "signing out shows the device's own avatar again");
   check(await local(b.page, "nor-theme") === "dark" && await local(b.page, "nor-google-sign-in") === null, "and keeps this device's settings, forgetting the user and the token");
   await b.page.click("body", { position: { x: 700, y: 500 } });
+  // signed out, a change starts no save, now or later: the sign-in record it would be kept in stays gone
   await b.page.click("#theme");
-  await pause(800);
-  check(file()["nor-theme"] === "dark", "a change after signing out is not saved to the user's file");
+  check(file()["nor-theme"] === "dark" && await local(b.page, "nor-google-sign-in") === null, "a change after signing out is not saved to the user's file");
   await b.page.reload();
   await b.page.waitForFunction(() => document.querySelector("#title").textContent);
   check(await b.page.isHidden("#sign-out"), "a reload after signing out stays signed out");
@@ -262,14 +282,13 @@ try {
   const loads = scriptLoads;
   const c = await device({});
   await c.page.click("#user-menu summary");
-  await pause(500);
-  check(scriptLoads === loads && await c.page.isHidden("#sign-in") && await c.page.isVisible("#manage-storage"), "with no Google client, the menu offers no sign-in");
+  check(scriptLoads === loads && !(await askedGoogle(c.page)) && await c.page.isHidden("#sign-in") && await c.page.isVisible("#manage-storage"), "with no Google client, the menu offers no sign-in");
   await c.page.click("#open-settings");
   await c.page.waitForFunction(() => document.querySelector("#settings-dlg").open);
   check(/this device/.test(await c.page.textContent("#settings-where")), "not signed in, Settings says they are kept on this device only");
   await c.page.uncheck('#settings-dlg input[name="nor-drive-thumbs"]');
   await c.page.click("#settings-save");
-  check(await until(async () => await local(c.page, "nor-drive-thumbs") === JSON.stringify("off")), "and Save keeps them there");
+  check(await shows(c.page, () => localStorage.getItem("nor-drive-thumbs") === JSON.stringify("off")), "and Save keeps them there");
 
   const services = new Set(outside);
   const known = (u) => u === GSI || u === "https://openidconnect.googleapis.com/v1/userinfo"

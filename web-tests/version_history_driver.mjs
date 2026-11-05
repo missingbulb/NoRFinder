@@ -14,6 +14,7 @@ import http from "node:http";
 import path from "node:path";
 import { offSite } from "./off_site.mjs";
 import { ENGINE } from "./engine.mjs";
+import { watchReads, readsDone } from "./page_reads.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -63,14 +64,19 @@ async function open(seen, theme = "dark") {
     localStorage.setItem("nor-theme", theme);
     if (seen) localStorage.setItem("nor-seen-version", JSON.stringify(seen));
   }, [seen, theme]);
+  await watchReads(ctx, ["version_history.json"]);
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);
   await page.goto(origin + "/web/index.html");
-  await page.waitForFunction(() => $("#sb-version").textContent);
-  await page.waitForTimeout(300); // the history arrives
+  await historyRead(page);
   return { ctx, page };
 }
+// the page loaded, and done with the version history: it reads the history, when it does, as it shows its version
+const historyRead = async (page) => {
+  await page.waitForFunction(() => $("#sb-version").textContent);
+  await readsDone(page);
+};
 const bubble = (page) => page.evaluate(() => !$("#whats-new").hidden && $("#whats-new-open").textContent);
 const stored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("nor-seen-version")));
 // the releases listed once the history has arrived: [version, marked new]
@@ -121,7 +127,7 @@ const tags = async (page) => (await page.waitForFunction(() => !/Loading/.test($
   await check(await stored(page) === seen, "until it is closed, the version seen stays the old one");
   await page.click("#whats-new-x");
   await check(!(await bubble(page)) && await stored(page) === VERSION, "the x closes it and remembers this version");
-  await page.reload(); await page.waitForTimeout(300);
+  await page.reload(); await historyRead(page);
   await check(!(await bubble(page)), "so it does not come back");
   await ctx.close();
 }
