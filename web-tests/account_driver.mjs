@@ -135,7 +135,13 @@ async function device(seed) {
 const signInVia = async (page) => {
   await page.click("#user-menu summary");
   await page.click("#sign-in");
-  await page.waitForFunction(() => !document.querySelector("#sign-out").hidden);
+  // a sign-in that never finishes says how far it got
+  await page.waitForFunction(() => !document.querySelector("#sign-out").hidden).catch(async (e) => {
+    const state = await page.evaluate(() => ({ asked: window.tokenClient?.asked?.length ?? "no token client", calls: window.googleCalls, status: document.querySelector("#status")?.textContent }))
+      .then((x) => JSON.stringify(x), (x) => "the page does not answer: " + x.message);
+    console.error(`FAILED: signing in never finished: ${state}; Google saw ${JSON.stringify(seen.slice(-6))}`);
+    throw e;
+  });
 };
 const local = (page, k) => page.evaluate((k) => localStorage.getItem(k), k);
 const shot = async (page, name) => { if (shots) await page.screenshot({ path: path.join(shots, name + ".png"), clip: { x: 1000, y: 0, width: 400, height: 260 } }); };

@@ -145,7 +145,12 @@ const landed = () => page.waitForFunction(() => !document.getAnimations().some((
 const flier = () => page.evaluate(() => ({ button: getComputedStyle($("#minimap-btn")).viewTransitionName, copy: !!document.querySelector(".mm-flier") }));
 // no flight still under way from the minimap showing, which WebKit holds a click behind
 await landed();
-await page.click("#minimap-hide");
+// a click that never completes says what the page was doing, or that it no longer answers
+const stuck = () => page.evaluate(() => {
+  const b = document.querySelector("#minimap-hide").getBoundingClientRect(), at = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
+  return { transition: !!document.activeViewTransition, animations: document.getAnimations().map((a) => `${a.effect?.target?.id || a.effect?.target?.className || "?"}${a.effect?.pseudoElement || ""} ${a.playState}`), at: at && (at.id || at.className || at.tagName) };
+}).then((x) => JSON.stringify(x), (e) => "the page does not answer: " + e.message);
+await page.click("#minimap-hide", { timeout: 8000 }).catch(async (e) => { console.error("FAILED: hiding the minimap: the click never completed: " + (await stuck())); throw e; });
 await check(await flight().then(() => true, () => false), "hiding flies the minimap into its toolbar button");
 const folding = await flier();
 await check(folding.button === "none" && folding.copy, "folding, a copy of the button is what the minimap lands as, not the button", folding);
