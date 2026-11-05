@@ -45,6 +45,16 @@ async function open({ motion = true, reducedMotion = "no-preference", clock = fa
   await ctx.addInitScript((motion) => {
     delete Navigator.prototype.serviceWorker;
     localStorage.setItem("nor-motion", JSON.stringify(motion));
+    // a dialog's motion held at its start as it is made, and the box of the button last pressed then, so a loaded
+    // machine reading them late finds them as the motion began, the button's own transition past
+    let pressed = null;
+    document.addEventListener("click", (e) => { pressed = e.target.closest?.("button, a, summary, [role=button]"); }, true);
+    const animate = Element.prototype.animate;
+    Element.prototype.animate = function (...a) {
+      const x = animate.apply(this, a);
+      if (this.localName === "dialog") { x.pause(); if (pressed) window.pressedBox = pressed.getBoundingClientRect(); }
+      return x;
+    };
   }, motion);
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
@@ -63,7 +73,7 @@ const firstFrame = (page, dlg, btn) => page.evaluate(async ([dlg, btn]) => {
   all.forEach((a) => { a.pause(); a.currentTime = 0; });
   const start = box(d.getBoundingClientRect());
   return { open: d.open, count: all.length, running: all.filter((a) => !a.pseudoElement).length, opacity: +getComputedStyle(d).opacity,
-    start, button: box(document.querySelector(btn).getBoundingClientRect()) };
+    start, button: box(window.pressedBox || document.querySelector(btn).getBoundingClientRect()) };
 }, [dlg, btn]);
 const near = (a, b, by = 2) => Math.abs(a - b) <= by;
 const resume = (page, dlg) => page.evaluate((dlg) => document.querySelector(dlg).getAnimations({ subtree: true }).forEach((a) => a.finish()), dlg);
