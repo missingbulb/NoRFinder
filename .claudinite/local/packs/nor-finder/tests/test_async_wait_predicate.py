@@ -10,7 +10,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..',
 CN = os.path.join(ROOT, '.claudinite', 'bin', 'cn')
 
 
-def findings(tmp_path, files):
+def findings(tmp_path, files, check='async-wait-predicate'):
     """The check's findings, as path:line, on a repo holding this one's .claudinite and the given files."""
     shutil.copytree(os.path.join(ROOT, '.claudinite'), tmp_path / '.claudinite', ignore=shutil.ignore_patterns('__pycache__'))
     for name, text in files.items():
@@ -21,7 +21,7 @@ def findings(tmp_path, files):
     subprocess.run(git + ['add', '-A'], cwd=tmp_path, check=True)
     subprocess.run(git + ['commit', '-qm', 'fixture'], cwd=tmp_path, check=True)
     out = subprocess.run([CN, 'check', '--pack', 'nor-finder', '--repo', str(tmp_path)], capture_output=True, text=True).stdout
-    return sorted(line.split()[2].rstrip(':') for line in out.splitlines() if line.startswith('finding nor-finder/async-wait-predicate'))
+    return sorted(line.split()[2].rstrip(':') for line in out.splitlines() if line.startswith(f'finding nor-finder/{check} '))
 
 
 def test_an_async_predicate_is_found_in_a_driver_and_a_study_test(tmp_path):

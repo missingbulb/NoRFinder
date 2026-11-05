@@ -12,5 +12,19 @@
         "unlessLineMatches": "/^\\s*(\\/\\/|\\*|\\/\\*)/"
       }
     ]
+  },
+  {
+    "id": "fixed-wait-in-test",
+    "on_fail": "block",
+    "failureMessage": "a test that sleeps a fixed time guesses how long the page takes: too short on a slow runner, so it flakes, and wasted on every fast one",
+    "fix": "wait for the condition the next check reads (waitForFunction, waitForSelector, until() from web-tests/page_until.mjs), move the page's clock with ctx.clock where a page timer sets the wait, or, where only real time will do, say why on the line with `// waits on purpose: <reason>`",
+    "scanFiles": "/^(web-tests|studies\\/[^/]+\\/tests)\\/.*\\.(m?js|py)$/",
+    "matchLines": [
+      {
+        "match": "/\\.waitForTimeout\\(|\\bawait\\s+pause\\(|\\bawait\\s+new\\s+Promise\\(\\(?\\s*\\w+\\s*\\)?\\s*=>\\s*setTimeout\\(|\\btime\\.sleep\\(/",
+        "what": "sleeps a fixed time instead of waiting for what it needs: {match}",
+        "unlessLineMatches": "/^\\s*(\\/\\/|\\*|\\/\\*|#)|(\\/\\/|#)\\s*waits on purpose:/"
+      }
+    ]
   }
 ]
