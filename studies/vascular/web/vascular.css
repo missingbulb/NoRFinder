@@ -37,7 +37,7 @@
 
 /* Ground Truth Tasks, under Processing: a bar of a part per task, then a row per task, the open one with its
    tools on its row and its item under it (as NoR's) */
-#tasks-box[hidden], #review-box[hidden], #task-now[hidden], #task-menu[hidden], #task-tools[hidden] { display: none; }
+#model-on[hidden], #tasks-box[hidden], #review-box[hidden], #task-now[hidden], #task-menu[hidden], #task-tools[hidden] { display: none; }
 #gt-bar { display: flex; gap: 3px; height: 8px; margin-bottom: 10px; }
 #gt-bar > span { flex: 1 1 0; min-width: 6px; border-radius: 4px; --done: 0;
   background: linear-gradient(to right, var(--yes) calc(var(--done) * 100%), var(--line) calc(var(--done) * 100%)); }

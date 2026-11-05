@@ -1,5 +1,5 @@
-// Walks the shell's states (req/checks/shell-states) in a browser on the fixture study, against the stand-in Google of
-// stand_in_drive.mjs serving ROOT: each path of EXPECT (shell-states.GENERATED.json) opens its root, takes its
+// Walks the shell's states (req/checks/shell-states) in a browser, against the stand-in Google of stand_in_drive.mjs
+// serving ROOT: each path of EXPECT (shell-states.GENERATED.json) opens its study as its root says, takes its
 // actions one after another, and at every state reads each element as shown, disabled, folded or gone, against what
 // the rules expect. Every difference is reported, then the run fails. Optional RENDERS: a directory for a picture of
 // every state, arrows pointing at the elements that changed there, and an index.html of them all (req/checks/shell-states/renders).
@@ -11,7 +11,7 @@ import { standIn } from "./stand_in_drive.mjs";
 
 const [answers, studies, rootDir, image, expectFile, renders] = process.argv.slice(2);
 const { FILES, open, role, check, done } = await standIn({ answers, studies, rootDir });
-const { elements, paths } = JSON.parse(fs.readFileSync(expectFile, "utf8"));
+const { elements: trees, paths } = JSON.parse(fs.readFileSync(expectFile, "utf8"));
 const OTHER = "someone@example.com";
 const ROLE = { viewer: "viewer", tagger: "tagger", data: "data" };
 
@@ -22,10 +22,13 @@ const settled = async (page) => {
     && document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getTiming().iterations === Infinity));
   await page.waitForTimeout(150);
 };
+// an image open, nothing working on it, and the fixture's Count ready for it
+const opened = () => !!shellForTests.page.get("image") && document.querySelector("#busy").hidden
+  && document.querySelector("#fx-count")?.disabled !== true;
 const ACTIONS = {
   async load(page) {
     await page.setInputFiles("#file", image);
-    await page.waitForFunction(() => document.querySelector("#fx-count")?.disabled === false);
+    await page.waitForFunction(opened);
   },
   async count(page) {
     await page.click("#fx-count");
@@ -39,10 +42,12 @@ const ACTIONS = {
     await page.click("#switch");
     await page.waitForFunction(() => document.querySelector("#view").dataset.view === "image");
   },
+  // the study opens afresh, its panels replaced
   async tagger(page) {
-    await page.evaluate(() => { window.panelsBefore = document.querySelector("#fx-box"); });
+    await page.evaluate(() => { window.panelsBefore = document.querySelector("[data-study-panel]"); });
     await role(page, "Ground Truth Tagger");
-    await page.waitForFunction(() => document.querySelector("#fx-box") !== window.panelsBefore && document.querySelector("#fx-count")?.disabled === false);
+    await page.waitForFunction(() => document.querySelector("[data-study-panel]") !== window.panelsBefore);
+    await page.waitForFunction(opened);
   },
   async folder(page) {
     await page.click("#data-tree .tree-folder .name");
@@ -82,7 +87,7 @@ const ACTIONS = {
 };
 
 // each element as the page shows it, and where it is
-const read = (page) => page.evaluate((els) => Object.fromEntries(els.map((e) => {
+const read = (page, elements) => page.evaluate((els) => Object.fromEntries(els.map((e) => {
   const el = document.querySelector(e.select);
   if (!el) return [e.name, { seen: "gone", box: null }];
   const shown = el.getClientRects().length > 0 && el.checkVisibility({ visibilityProperty: true });
@@ -120,28 +125,31 @@ const differences = [];
 const index = [];
 if (renders) fs.mkdirSync(renders, { recursive: true });
 for (const [k, p] of paths.entries()) {
+  const elements = trees[p.study];
   // each path finds the folder as it started: no previews made by an earlier one
   const made = FILES.findIndex((f) => f.name === "rauntruth-previews.tiff");
   if (made >= 0) FILES.splice(made, 1);
+  // a study shown only to the accounts it names is opened by the first of them
+  const { visibility } = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "studies", p.study, "study.json"), "utf8"));
   const page = await open(p.signedIn, {
-    study: p.study, ...(p.role === "data" ? {} : { email: OTHER }), seed: { "nor-role": ROLE[p.role] },
+    id: p.study, study: { stage: p.stage }, ...(p.role === "data" ? {} : { email: visibility.accounts?.[0] ?? OTHER }), seed: { "nor-role": ROLE[p.role] },
   });
-  await page.waitForFunction((s) => document.documentElement.dataset.stage === s, p.study.stage);
+  await page.waitForFunction((s) => (document.documentElement.dataset.stage ?? null) === s, p.stage);
   await ready(page);
   let before = null;
   const shots = [];
   for (const [i, s] of p.states.entries()) {
     if (i > 0) await ACTIONS[p.actions[i - 1]](page).catch(async (e) => {
       for (const d of differences) console.error("DIFFERENT: " + d);
-      console.error(`${p.root}: ${p.actions[i - 1]} did not finish: ${e.message.split("\n")[0]}; status: ${await page.textContent("#status")}`);
+      console.error(`${p.study} · ${p.root}: ${p.actions[i - 1]} did not finish: ${e.message.split("\n")[0]}; status: ${await page.textContent("#status")}`);
       await done(1);
     });
     await settled(page);
-    const now = await read(page);
+    const now = await read(page, elements);
     const wrong = new Set();
     for (const e of elements) {
       const want = s.expect[e.name];
-      if (want !== null && now[e.name].seen !== want) { wrong.add(e.name); differences.push(`${p.root} → ${s.label}: ${e.name} is ${now[e.name].seen}, the rules say ${want}`); }
+      if (want !== null && now[e.name].seen !== want) { wrong.add(e.name); differences.push(`${p.study} · ${p.root} → ${s.label}: ${e.name} is ${now[e.name].seen}, the rules say ${want}`); }
     }
     if (renders) {
       // what changed here; on the first state, with nothing before it, what shows folded or disabled
@@ -163,7 +171,7 @@ for (const [k, p] of paths.entries()) {
     }
     before = now;
   }
-  index.push({ root: p.root, shots });
+  index.push({ root: `${p.study} · ${p.root}`, shots });
   await page.context().close();
 }
 

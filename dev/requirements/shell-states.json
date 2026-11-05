@@ -1,7 +1,8 @@
 {
-  "about": "The shell's elements, as a tree, and what each shows in every state the paths below reach (req/checks/shell-states). An element says only how it differs from its parent: its rule is a list of cases, the first whose `when` matches the state deciding, and an element with no rule shows as its parent does. A case is `owner` (the spec says so) unless it says `tentative` (Claude's call, not approved) or `undecided` (nobody has decided: not checked). dev/tools/build/shell_states.py turns this file into the matrix and the browser test's expectations.",
+  "about": "The shell's elements, as a tree, and what each shows in every state the paths below reach (req/checks/shell-states). An element says only how it differs from its parent: its rule is a list of cases, the first whose `when` matches the state deciding, and an element with no rule shows as its parent does. A case is `owner` (the spec says so) unless it says `tentative` (Claude's call, not approved) or `undecided` (nobody has decided: not checked). The paths below open the study `study` names, the shell's test study, with its states.json grafted in; each other study's states.json may add paths of its own, opening it. dev/tools/build/shell_states.py turns this file, and every study's states.json, into the matrix and the browser test's expectations.",
+  "study": "fixture",
   "vars": {
-    "stage": ["PreGT", "GT", "PostGT", "Published"],
+    "stage": [null, "PreGT", "GT", "PostGT", "Published"],
     "signedIn": [false, true],
     "role": ["viewer", "tagger", "data"],
     "image": ["none", "local", "preview", "original"],
@@ -12,6 +13,9 @@
     "editing": [false, true],
     "stack": [false, true],
     "fromComputer": [false, true],
+    "hasSteps": [false, true],
+    "itemView": [false, true],
+    "itemViewing": [false, true],
     "notice": [false, true],
     "imageFits": [true, false]
   },
@@ -99,6 +103,7 @@
               "rule": [
                 {"when": {"selected": ["folder"]}, "is": "hidden", "req": "req/shell/data/folder"},
                 {"when": {"role": ["data"], "online": [false]}, "is": "folded", "req": "req/shell/data/mode", "approval": "undecided"},
+                {"when": {"hasSteps": [false]}, "is": "shown"},
                 {"when": {"image": ["local", "original"]}, "is": "folded"}
               ],
               "children": [
@@ -250,6 +255,8 @@
           "children": [
             {"name": "Tasks/Items switch", "select": "#switch", "control": true, "req": "req/shell/views/second",
               "rule": [
+                {"when": {"itemView": [false]}, "is": "hidden"},
+                {"when": {"itemViewing": [true], "makesTruth": [true]}, "is": "hidden"},
                 {"when": {"role": ["data"]}, "is": "hidden", "req": "req/shell/data/mode"},
                 {"when": {"counted": [false]}, "is": "disabled"}
               ]

@@ -505,7 +505,8 @@ nobody has decided: what the page does there is not a requirement yet.
 
   Set by the owner on 2026-10-30. Every box in the left bar folds under its title, and clicking the
   title opens or closes it. The first is the shell's Image box (the image selector or Load, the image's
-  details, its channels, Unload): open until an image opens, then folded. Each of a study's boxes
+  details, its channels, Unload): open until an image opens, then folded; in a study with no steps after Load
+  (the Image Viewer) it stays open, nothing else having opened (the owner, 2026-11-05). Each of a study's boxes
   names the step (`req/shell/status-bar/breadcrumbs`) after which it opens, or that only its title opens it, and may name the
   step after which it folds again. When a step is done by the user (an image opening, or the
   step's button pressed, never a dial set back to the last run's) its boxes open and the boxes it
@@ -1274,17 +1275,23 @@ nobody has decided: what the page does there is not a requirement yet.
   Set by the owner on 2026-11-04: a harness for developing the page and its requirements and for keeping what works
   working, which the owner does not review; its tentative and undecided cases are questions for the owner.
   `dev/requirements/shell-states.json` lists the shell's elements as a tree, each
-  under the one holding it, the fixture study's own elements grafted in from `studies/fixture/states.json`
-  (`req/checks/spec-layout`). Each element gives only what differs from its parent: cases over the state (the
+  under the one holding it; each study with a `studies/<id>/states.json` grafts its own elements in there, under the
+  shell's elements holding them, and may add roots and paths of its own (`req/checks/spec-layout`). The shell's paths
+  open the study the file names, the fixture; a study's own paths open it, on the shell's tree with its own elements
+  alone grafted in. Each element gives only what differs from its parent: cases over the state (the
   study's stage, who is signed in, the role, the image open, the study's step done, the view, what Data Management
-  has selected, whether the page is online, whether Edit Image is open), each citing the requirement that decides it and marked tentative or undecided where the owner has
+  has selected, whether the page is online, whether Edit Image is open, and what the study says of itself in its
+  `study.json` and panels: whether it opens images from the computer, has steps after Load, and has an item view,
+  shelved or viewing, `req/shell/views/second`), each citing the requirement that decides it and marked tentative or undecided where the owner has
   not decided (an undecided case is shown and not checked). Its paths start from a few roots (a study's stage and a
   role) and take actions one after another, each state one more action on the one before.
   `dev/tools/build/shell_states.py` writes from it the matrix, `dev/requirements/shell-states.GENERATED.md`, one table
   per path, and the browser test's expectations; a case no state reaches fails it. In the fast set the
-  generated files must be up to date, every element in the tree must be on the page, and every element of the
-  shell's page, but what a dialog, popup or menu holds, must be in the tree. In the full set one page per path takes the actions on the fixture
-  study, the study's stage set for it, against a stand-in Google, and at every state reads each element as shown,
+  generated files must be up to date, every element in each study's tree must be on the shell's page or that
+  study's panels, and every element of the shell's page, but what a dialog, popup or menu holds, must be in the
+  shell's tree. In the full set one page per path takes the actions on its study, the study's stage set for it,
+  against a stand-in Google and a stand-in Python answering what the study's own Python answers on loading and on
+  opening the image, signed in as an account the study is shown to, and at every state reads each element as shown,
   disabled, held offline, folded or gone; every difference is listed before it fails. Test: `web-tests/test_shell_states.py`,
   `web-tests/test_shell_states_page.py`.
   </details>
