@@ -107,16 +107,17 @@ window.NorDrive = (() => {
       .filter((f) => f.folder || /\.(tiff?|png)$/i.test(f.name));
   }
 
-  // [{id, name, folder, size, sha}] every file and folder in a public folder, whatever its kind, every page of them
+  // [{id, name, folder, size, sha, modified, properties}] every file and folder in a public folder, whatever its kind,
+  // every page of them; modified Drive's time of its last change, properties its public ones
   async function all(id) {
     need();
     const q = encodeURIComponent(`'${id}' in parents and trashed = false`), out = [];
     for (let page = ""; ; ) {
-      const r = await get(`${API}?q=${q}&fields=nextPageToken,files(id,name,mimeType,size,sha256Checksum)&pageSize=1000&orderBy=folder,name&key=${key}${page && "&pageToken=" + page}`);
+      const r = await get(`${API}?q=${q}&fields=nextPageToken,files(id,name,mimeType,size,sha256Checksum,modifiedTime,properties)&pageSize=1000&orderBy=folder,name&key=${key}${page && "&pageToken=" + page}`);
       if (!r.ok) throw refused(r, "folder");
       const got = await r.json();
       out.push(...got.files.map((f) => ({ id: f.id, name: f.name, folder: f.mimeType === "application/vnd.google-apps.folder",
-        size: f.size == null ? null : +f.size, sha: f.sha256Checksum || null })));
+        size: f.size == null ? null : +f.size, sha: f.sha256Checksum || null, modified: f.modifiedTime || null, properties: f.properties || {} })));
       if (!(page = got.nextPageToken)) return out;
     }
   }

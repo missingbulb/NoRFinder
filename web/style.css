@@ -910,3 +910,10 @@ html:not(.offline) #welcome-offline { display: none; }
 #overlay .edit-lasso { fill: none; stroke: #ff4d4d; stroke-width: 2px; vector-effect: non-scaling-stroke; }
 :root[data-editing] #scroller { cursor: default; }
 :root[data-edit-tool] #scroller { cursor: crosshair; }
+/* the tagger's line in a study's ground-truth box: may they write to the submissions folder (req/shell/ground-truth/tagger-access) */
+.gt-access { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 0 0 8px; padding: 6px 8px; border-left: 3px solid var(--line); font-size: 12px; color: var(--dim); }
+.gt-access[hidden] { display: none; }
+.gt-access[data-access="write"] { border-left-color: var(--yes); }
+.gt-access[data-access="none"], .gt-access[data-access="view"], .gt-access[data-access="unset"], .gt-access[data-access="unknown"] { border-left-color: var(--warn); color: var(--text); }
+.gt-access .gt-say { flex: 1 1 100%; }
+.gt-access .gt-clear { margin-left: auto; }

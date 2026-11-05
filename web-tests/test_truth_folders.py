@@ -9,6 +9,7 @@ import subprocess
 
 import pytest
 
+pytestmark = pytest.mark.full
 HERE = os.path.dirname(os.path.abspath(__file__))
 NODE = shutil.which('node')
 

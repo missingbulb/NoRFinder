@@ -11,9 +11,11 @@ export function mount(shell) {
   $("#fx-done").onchange = () => task(!$("#fx-done").checked);
   $("#fx-truth").onclick = () => {
     const name = shell.state.fileName.replace(/\.[^.]*$/, "");
-    shell.submitTruth({ doc: { labels: counted ? [counted] : [] }, count: counted ? 1 : 0, file: name + "_gt.json", items: [], issue: { title: "Ground truth: " + name, body: "" },
+    shell.submitTruth({ doc: { labels: counted ? [counted] : [] }, count: counted ? 1 : 0, file: name + "_gt.json", items: [],
       empty: "Count first." });
   };
+  // its progress on the image, the count, is kept nowhere but the page
+  shell.clearable("count", () => {});
   // the shell's own switch, slow as a study's slow action is, again each time the study mounts
   shell.slow($("#switch"));
   return {

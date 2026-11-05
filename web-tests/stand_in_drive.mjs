@@ -26,22 +26,27 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
   const ROOT = "dmrootfolder00000001", EMAIL = "tester@example.com";
   const sha = (b) => createHash("sha256").update(b).digest("hex");
 
-  // the stand-in Drive: {id, name, parent, folder, bytes, mine}
-  let next = 0;
+  // the stand-in Drive: {id, name, parent, folder, bytes, mine, props, modified}; Drive's clock moves a second each write
+  let next = 0, clock = Date.parse("2026-11-05T08:00:00Z");
+  const tick = () => new Date(clock += 1000).toISOString();
   const FILES = [];
   const add = (dir, parent) => {
     for (const name of fs.readdirSync(dir).sort()) {
       const p = path.join(dir, name), folder = fs.statSync(p).isDirectory(), id = folder ? "dmsubfolder" + String(next++).padStart(9, "0") : "dmfile" + String(next++).padStart(14, "0");
-      FILES.push({ id, name, parent, folder, bytes: folder ? null : fs.readFileSync(p), mine: false });
+      FILES.push({ id, name, parent, folder, bytes: folder ? null : fs.readFileSync(p), mine: false, props: {}, modified: tick() });
       if (folder) add(p, id);
     }
   };
   add(rootDir, ROOT);
   const SUB = FILES.find((f) => f.folder).id;
   const approved = new Set([ROOT]);
+  // the approved folders Drive lets the user only view
+  const viewOnly = new Set();
   // what the token may write in: the folders approved, and the ones the page made
   const may = (id) => approved.has(id) || !!FILES.find((f) => f.id === id && f.folder && f.mine);
   const writes = [];
+  // the names of files replaced asking Drive to keep the version they replace forever
+  const keptForever = [];
 
   const fixture = JSON.parse(fs.readFileSync(path.join(repo, "studies", "fixture", "study.json"), "utf8"));
   fixture.files.folders = [`https://drive.google.com/drive/folders/${ROOT}`];
@@ -76,7 +81,8 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
   // a page or a check gone wrong ends the run
 
   const json = (route, body, status = 200) => route.fulfill({ status, headers: { "access-control-allow-origin": "*" }, contentType: "application/json", body: JSON.stringify(body) });
-  const meta = (f) => ({ id: f.id, name: f.name, mimeType: f.folder ? "application/vnd.google-apps.folder" : "image/tiff", ...(f.folder ? {} : { size: String(f.bytes.length), sha256Checksum: sha(f.bytes) }) });
+  const meta = (f) => ({ id: f.id, name: f.name, mimeType: f.folder ? "application/vnd.google-apps.folder" : /\.json$/.test(f.name) ? "application/json" : "image/tiff",
+    modifiedTime: f.modified, properties: { ...f.props }, ...(f.folder ? {} : { size: String(f.bytes.length), sha256Checksum: sha(f.bytes) }) });
   // a multipart body's metadata and file bytes
   function parts(req) {
     const body = req.postDataBuffer(), boundary = "--" + req.headers()["content-type"].match(/boundary=(.+)$/)[1];
@@ -98,20 +104,21 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
         const { metadata, bytes } = parts(req);
         if (metadata.parents?.[0] === "appDataFolder") return json(route, { id: "settingsfile" });
         if (!may(metadata.parents[0])) return json(route, { error: { message: "The user has not granted the app write access to the folder" } }, 403);
-        const f = { id: "dmmade" + String(next++).padStart(14, "0"), name: metadata.name, parent: metadata.parents[0], folder: false, bytes, mine: metadata.appProperties?.rauntruth === "made" };
+        const f = { id: "dmmade" + String(next++).padStart(14, "0"), name: metadata.name, parent: metadata.parents[0], folder: false, bytes, mine: metadata.appProperties?.rauntruth === "made", props: {}, modified: tick() };
         FILES.push(f); writes.push(["create", f.name]); uploaded(f);
         return json(route, { id: f.id, sha256Checksum: sha(bytes) });
       }
       const f = FILES.find((g) => g.id === id);
       if (!f?.mine) return json(route, { error: { message: "File not found" } }, 404);
-      f.bytes = req.postDataBuffer(); writes.push(["replace", f.name]); uploaded(f);
+      f.bytes = req.postDataBuffer(); f.modified = tick(); writes.push(["replace", f.name]); uploaded(f);
+      if (u.searchParams.get("keepRevisionForever") === "true") keptForever.push(f.name);
       return json(route, { id: f.id });
     }
     if (auth && method === "POST") {
       // a folder the page makes
       const m = JSON.parse(req.postData());
       if (!may(m.parents[0])) return json(route, { error: { message: "The user has not granted the app write access to the folder" } }, 403);
-      const f = { id: "dmmadefolder" + String(next++).padStart(8, "0"), name: m.name, parent: m.parents[0], folder: true, bytes: null, mine: m.appProperties?.rauntruth === "made" };
+      const f = { id: "dmmadefolder" + String(next++).padStart(8, "0"), name: m.name, parent: m.parents[0], folder: true, bytes: null, mine: m.appProperties?.rauntruth === "made", props: {}, modified: tick() };
       FILES.push(f); writes.push(["folder", f.name]);
       return json(route, { id: f.id });
     }
@@ -123,12 +130,13 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
     if (auth) {
       // the signed-in user's token: the page's own files and the folders approved for it
       if (method === "PATCH") {
-        const f = FILES.find((g) => g.id === id);
+        const f = FILES.find((g) => g.id === id), body = JSON.parse(req.postData() || "{}");
         if (!f?.mine) return json(route, { error: { message: "File not found" } }, 404);
+        if (body.properties) { Object.assign(f.props, body.properties); writes.push(["mark", f.name]); return json(route, { id }); }
         FILES.splice(FILES.indexOf(f), 1); writes.push(["trash", f.name]);
         return json(route, { id });
       }
-      if (fields.includes("capabilities")) return may(id) ? json(route, { id, capabilities: { canAddChildren: true } }) : json(route, { error: { message: "File not found" } }, 404);
+      if (fields.includes("capabilities")) return may(id) ? json(route, { id, capabilities: { canAddChildren: !viewOnly.has(id) } }) : json(route, { error: { message: "File not found" } }, 404);
       const f = FILES.find((g) => g.id === id);
       return f?.mine ? json(route, { appProperties: { rauntruth: "made" } }) : json(route, { error: { message: "File not found" } }, 404);
     }
@@ -173,5 +181,5 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
     await page.waitForFunction((n) => document.querySelector("#role-name").textContent.trim() === n, name);
   }
 
-  return { ROOT, FILES, SUB, writes, approved, open, role, check, done, origin };
+  return { ROOT, FILES, SUB, writes, keptForever, approved, viewOnly, open, role, check, done, origin };
 }

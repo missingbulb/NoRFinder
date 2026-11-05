@@ -81,6 +81,17 @@ export function mount(shell) {
       : { group: "images", image: rest, what };
   }
 
+  // the tagger's progress on the image open, every per-file key of it, forgotten (req/shell/ground-truth/clear)
+  shell.clearable("votes, measurements, added NoRs, mask and checked areas", () => {
+    const name = st.fileName, keys = [];
+    try { for (let k = 0; k < localStorage.length; k++) keys.push(localStorage.key(k)); } catch { return; }
+    for (const key of keys) {
+      const [prefix] = PER_FILE.find(([p]) => key.startsWith(p)) || [];
+      const rest = prefix && key.slice(prefix.length);
+      if (prefix && (rest === name || rest.startsWith(name + "|"))) try { localStorage.removeItem(key); } catch { /* no storage */ }
+    }
+  });
+
   // ---------- saved filter settings ----------
   const loadSaved = () => readJSON(STORE, { values: {}, off: [] });
   function save() {
@@ -930,14 +941,6 @@ export function mount(shell) {
       image: { name: st.fileName, sha256: st.sha, width: st.W, height: st.H, um_per_px: st.um || null, location },
       finder: st.meta ? st.meta.finder : null, finder_settings: st.runOverrides || {}, filters: { values: st.values, off: [...st.off] }, labels };
   }
-  // the issue the submission goes in, naming the image; the shell labels it for the daily intake
-  function issue(gt) {
-    const n = (p) => gt.labels.filter(p).length;
-    return { title: `Ground truth: ${gt.image.name}`, body: [`Ground truth marked on the NoR Finder page.`, ``,
-      `- Image: ${gt.image.name}`, `- SHA-256: ${gt.image.sha256}`, `- Google Drive: ${gt.image.location.url}`,
-      `- Finder: ${gt.finder || "none run"}`,
-      `- Marked: ${n((L) => !L.kind && L.label === 1)} NoRs, ${n((L) => L.label === 0)} not NoRs, ${n((L) => L.kind === "missing")} added by hand`].join("\n") };
-  }
   // How finished the user's ground truth is, as a checklist of every issue it can have, each resolved or not
   // (the graded ones set the button's state):
   // "done" when every finalist has a verdict, "part" when some candidates have one but a finalist does not,
@@ -955,7 +958,7 @@ export function mount(shell) {
       { level: "warn", grade: true, ok: voted > 0 && !open, text: open ? `Vote on every finalist: ${open} of ${finalists.length} have no vote and won't be exported` : "Vote on every finalist" },
       TRUTH && { level: "warn", grade: true, ok: voted > 0 && !left, text: left ? `Vote on every rejected candidate: ${left} of ${rejected.length} have no vote and won't be exported` : "Vote on every rejected candidate" },
       TRUTH && { level: "warn", grade: true, ok: st.areas.size === AREAS, text: st.areas.size === AREAS ? "Check every area for missed NoRs" : `Check every area for missed NoRs: ${AREAS - st.areas.size} of ${AREAS} left` },
-      { level: "warn", ok: !local, text: "Only images from Google Drive can be exported" },
+      { level: "warn", ok: !local, text: "Only images from Google Drive can be submitted" },
     ].filter(Boolean);
     return { state: !voted || waiting ? "todo" : open || left || (TRUTH && st.areas.size < AREAS) ? "part" : "done", items };
   }
@@ -972,7 +975,7 @@ export function mount(shell) {
   $("#dl-truth .gt-ico").innerHTML = ["done", "part", "todo"].map((n) => shell.icon(n).replace("<svg ", `<svg class="${n}" `)).join("");
   $("#dl-truth").onclick = () => {
     const doc = truth();
-    shell.submitTruth({ doc, count: doc.labels.length, file: base() + "_ground_truth.json", items: gtState().items, issue: issue(doc),
+    shell.submitTruth({ doc, count: doc.labels.length, file: base() + "_ground_truth.json", items: gtState().items,
       empty: "Vote on candidates with the thumbs, or right-click the image to add a NoR the finder missed." });
   };
 

@@ -716,6 +716,8 @@ export function stackOpened() {
 export { msg };
 
 // The model as it stands and where each of its points was last drawn, for scripts driving the page.
+// the edits kept on this device for the model on show, forgotten
+export function forget() { if (savedKey) store.del(savedKey); }
 export const inspect = () => ({ model: model && Mo.toJSON(model), points: view && Object.fromEntries(view.pts), edits });
 
 // view: the shell's 3D view; signal ends the listeners outside the study's own panels when the study leaves;
