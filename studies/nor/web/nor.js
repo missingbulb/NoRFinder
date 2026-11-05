@@ -1391,6 +1391,22 @@ export function mount(shell) {
       $("#list").replaceChildren(); $("#summary").textContent = "No candidates yet.";
       $("#switch").disabled = true; downloads(false); renderSelected(); renderTasks();
     },
+    // a curated ground truth's final results (req/shell/ground-truth/view): each NoR it marks, ringed, numbered as in its
+    // file, and none of the tasks' marks (no areas, no rejected candidates, nothing blacked out)
+    showTruth(doc) {
+      const svg = $("#overlay"), labels = doc.labels || [];
+      svg.querySelector(".truth-marks")?.remove();
+      svg.setAttribute("viewBox", `0 0 ${st.W} ${st.H}`);
+      const g = el("g", { class: "truth-marks" });
+      for (const L of labels.filter((x) => x.label === 1)) {
+        const r = L.radius_px || MISSING_RADIUS, t = el("text", { x: L.x + r + 1, y: L.y - r });
+        t.textContent = L.id ?? "";
+        g.append(el("circle", { cx: L.x, cy: L.y, r }), t);
+      }
+      svg.append(g);
+      const nors = labels.filter((x) => x.label === 1), added = nors.filter((x) => x.kind === "missing").length, not = labels.filter((x) => x.label === 0).length;
+      return `${nors.length} NoR${nors.length === 1 ? "" : "s"} (${added} added by hand), ${not} candidate${not === 1 ? "" : "s"} judged not NoRs`;
+    },
     opened() {
       updateFind(); drawAdded(); drawMask();
       status("Image loaded. Press Find Candidates.");

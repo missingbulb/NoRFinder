@@ -653,7 +653,7 @@ function handle(m) {
     log.add(`Opened an image from ${from}, ${m.meta.W} × ${m.meta.H} px, ${m.meta.Z || 1} slice(s)`);
     status("Image loaded."); // the study's opened hook says what comes next, if anything
     study.opened?.(m.meta);
-    truth.paint();
+    truth.paint(); offerTruth();
     if (st.source && st.source.kind === "local" && makesTruth()) notice(LOCAL_GT);
     if (st.source && st.source.kind === "drive" && st.pictured !== st.source.id) saveThumb(st.source.id, st.fileName);
   } else if (m.type === "result") {
@@ -777,6 +777,7 @@ function dropImage() {
   Object.assign(st, { kept: null, queued: null, fileName: "", source: null, sha: "", um: null, umY: null });
   if (st.ready) st.worker.postMessage({ type: "close" });
   page.set({ image: null, opening: null }); boxDone($("#image-box"), null);
+  offered++; $("#truth-box").hidden = true;
 }
 // Unload: no image open, the study starting over as one that has just come in
 $("#unload").onclick = () => {
@@ -1569,6 +1570,26 @@ function saveFile(name, text, type) {
 }
 // the shell's icons, by name, as SVG markup: done, part, todo
 const icon = (name) => `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">${$(`#icons .${name}`).innerHTML}</svg>`;
+// Load GT tagging (req/shell/ground-truth/view): for anyone but a tagger, an image from Drive with curated ground truth
+// shows it through the study's showTruth(doc), which draws only its final results and returns a line of its counts
+let offered = 0;
+async function offerTruth() {
+  const box = $("#truth-box"), b = $("#load-gt"), say = $("#gt-summary"), mine = ++offered;
+  box.hidden = true; b.hidden = false; say.hidden = true; $("#gt-offer").hidden = false;
+  if (role === "tagger" || !study.showTruth || st.source?.kind !== "drive" || !st.sha) return;
+  let got;
+  try { got = await truth.curated({ name: st.fileName, sha256: st.sha }); } catch (e) { console.warn("curated ground truth not read:", e); return; }
+  if (mine !== offered || !got) return;
+  box.hidden = false;
+  b.onclick = () => {
+    const d = got.doc, when = d.created ? new Date(d.created).toLocaleString() : "an unknown time";
+    const counts = study.showTruth(d);
+    b.hidden = true; $("#gt-offer").hidden = true; say.hidden = false;
+    say.textContent = `Ground truth by ${d.tagger || "a tagger"}, made ${when}${d.accepted?.by ? `, accepted by ${d.accepted.by}` : ""}${counts ? ": " + counts : "."}`;
+    log.add("Loaded the image's curated ground truth");
+  };
+}
+
 // The ground-truth dialog (req/shell/ground-truth/submit): a checklist of what is still open, the file to export,
 // and Submit, which writes it to the study's submissions folder. gt: {doc, count, file, items: [{level, ok, text}],
 // empty}, count how many of its marks the document holds, nothing to send at 0.

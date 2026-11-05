@@ -90,6 +90,14 @@ export function mount(shell) {
       canRun(); steps();
       shell.status(`The vessel model is drawn: ${meta.edges.length} vessels, in ${meta.score?.seconds ?? "?"} s.`);
     },
+    // a curated ground truth's final results (req/shell/ground-truth/view): the corrected model drawn as a model is,
+    // with none of the tasks' marks
+    showTruth(doc) {
+      MV.drawn(JSON.stringify(doc), "curated ground truth");
+      const m = MV.current();
+      steps();
+      return m ? `${m.segments.length} vessel segments` : "a vessel model that could not be read";
+    },
     error() { if (running) { running = null; shell.busy(false); canRun(); } },
     async settled() { if (running) await shell.until("result:extract"); },
   };

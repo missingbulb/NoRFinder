@@ -117,4 +117,19 @@ await page.waitForFunction(() => +document.querySelector('#folder-summary dd[dat
 s = await sums();
 await check(s.truth === 1 && s.pending === 0 && !(await page.$(cell + " .review-gt")), "accepted, the image has ground truth and nothing pending", s);
 await check(await page.isDisabled(cell + " .mark-gt"), "an image with ground truth needs no marker");
+await page.context().close();
+
+// req/shell/ground-truth/view: a viewer, not signed in, loads the image and its curated ground truth, with no algorithm run
+page = await open(false, { study });
+await page.click("#load-drive");
+await page.waitForFunction(() => document.querySelector("#drive-dlg").open);
+await page.dblclick(`#drive-list .item[data-id="${png.id}"]`);
+await page.waitForFunction((n) => st.fileName === n && !$("#fx-count").disabled, png.name);
+await page.waitForSelector("#load-gt:not([hidden])", { timeout: 5000 }).catch(() => {});
+await check(await page.isVisible("#load-gt"), "a viewer is offered Load GT tagging for an image with curated ground truth");
+await page.click("#load-gt");
+const summed = await page.textContent("#gt-summary"), shown = await page.textContent("#fx-result");
+await check(/tester@example\.com/.test(summed) && /accepted by/.test(summed) && /pixels counted/.test(summed), "its summary names who made it, who accepted it, and the study's counts", summed);
+await check(/^Ground truth: \d+ pixels/.test(shown) && await page.evaluate(() => !document.querySelector("#busy") || $("#busy").hidden), "the study shows the final result, with nothing run", shown);
+await page.context().close();
 await done(0);

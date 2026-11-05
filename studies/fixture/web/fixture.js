@@ -19,6 +19,12 @@ export function mount(shell) {
   // the shell's own switch, slow as a study's slow action is, again each time the study mounts
   shell.slow($("#switch"));
   return {
+    // the curated ground truth's final result: the count, and no task
+    showTruth(doc) {
+      const c = doc.labels?.[0];
+      $("#fx-result").textContent = c ? `Ground truth: ${c.count} pixels above ${c.threshold}` : "Ground truth: nothing counted";
+      return c ? `${c.count} pixels counted` : "nothing counted";
+    },
     ready(info) { $("#fx-threshold").value = info.threshold; ready = true; },
     opened() {
       counted = null; $("#fx-count").disabled = !ready; $("#fx-truth").disabled = true;

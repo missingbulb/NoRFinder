@@ -262,6 +262,14 @@ export function mount(shell) {
         draw();
       }
     },
+    // a curated ground truth's final results (req/shell/ground-truth/view): the books marked right, each boxed, and
+    // none of the task's marks
+    showTruth(doc) {
+      books = (doc.books || []).filter((b) => b.verdict === "right" && Array.isArray(b.corners)).map((b) => ({ ...b }));
+      cur = null; draw();
+      const titled = books.filter((b) => b.text).length;
+      return `${books.length} book${books.length === 1 ? "" : "s"}, ${titled} with a title`;
+    },
     error() { shell.busy(false); },
     capturesPointer: () => !!drawing || dragging !== null,
     pickAt(e) { const p = at(e); return books.find((b) => b.verdict !== "wrong" && inside(p, b.corners)) || null; },
