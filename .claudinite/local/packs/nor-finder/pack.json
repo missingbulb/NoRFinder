@@ -5,8 +5,7 @@
   },
   "githubActions": [
     "openPr",
-    "createComment",
-    "dispatchWorkflow"
+    "createComment"
   ],
   "env": {
     "label": "Python imaging stack (numpy, scipy, pillow, matplotlib) and the page tests' Pyodide",
