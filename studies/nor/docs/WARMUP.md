@@ -129,7 +129,7 @@ tests/       every requirement that can be executed; test_quality.py locks the f
 docs/
   WARMUP.md                          this file
   requirements.md                    standing constraints on HOW it is built, which no user sees;
-                                     what the page does is ../../../dev/requirements/requirements.md
+                                     what the page does is ../requirements.md
   results/                           iteration notes; R1 is the first
   project-brief.md                   the specification, ingested from the owner's PDF
   project-overview-extracted-text.txt  verbatim PDF text, for wording questions

@@ -3,7 +3,7 @@
 An image-processing study, an outlier on a biology site: a photo of bookshelves in, each book boxed and its text
 read, and one JSON per photo out for a title matcher. Matching the titles is not part of this study. Shown in the
 page to the owner's Google account alone (`visibility`, `req/shell/study/visibility`) at `/app/shelves`. What the
-page must do is `req/shelves` in [the page's requirements](../../../dev/requirements/requirements.md).
+page must do is `req/shelves` in [its requirements](../requirements.md).
 
 ## Map
 
