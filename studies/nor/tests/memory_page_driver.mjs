@@ -13,6 +13,7 @@ import http from "node:http";
 import path from "node:path";
 import { offSite } from "../../../web-tests/off_site.mjs";
 import { ENGINE } from "../../../web-tests/engine.mjs";
+import { standInDrive, openFromDrive } from "../../../web-tests/drive_open.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -58,6 +59,7 @@ const ctx = await browser.newContext();
 // nothing leaves this machine, and the cache of third-party files, which the stand-in never needs, is off
 await ctx.route(offSite(origin), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
+await standInDrive(ctx);
 const page = await ctx.newPage();
 page.on("pageerror", (e) => fail("page error: " + e.message));
 page.setDefaultTimeout(10000);
@@ -76,7 +78,8 @@ let opened = 0;
 const slide = fs.readFileSync(image);
 async function open() {
   const done = next("opened");
-  await page.setInputFiles("#file", { name: `corner ${++opened}.tif`, mimeType: "image/tiff", buffer: slide });
+  // two images by turns, each the same file on Drive every time, so the image selector lists the same two
+  await openFromDrive(page, { name: `corner ${(++opened % 2) + 1}.tif`, mimeType: "image/tiff", buffer: slide });
   await done; await settled();
 }
 // finding ends with the first filter pass on the new candidates

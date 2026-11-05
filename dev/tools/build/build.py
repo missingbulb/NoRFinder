@@ -46,11 +46,11 @@ def wheels():
 
 
 def studies(root):
-    """The studies the header's switcher may offer (req/shell/study/visibility), [{id, title, icon?, accounts?}] by title:
-    the listed ones, and those shown to named accounts alone with those accounts, for the page to offer only while one
-    is signed in; the icon each names, if any, relative to the study's folder."""
+    """The studies the header's switcher may offer (req/shell/study/visibility), [{id, title, stage, icon?, accounts?}] by
+    title: the listed ones, and those shown to named accounts alone with those accounts, for the page to offer only while
+    one is signed in; each with its stage and the icon it names, if any, relative to the study's folder."""
     found = [json.load(open(p)) for p in glob.glob(os.path.join(root, 'studies', '*', 'study.json'))]
-    entry = lambda m: {**{k: m[k] for k in ('id', 'title', 'icon') if k in m},
+    entry = lambda m: {**{k: m[k] for k in ('id', 'title', 'stage', 'icon') if k in m},
                        **({'accounts': m['visibility']['accounts']} if isinstance(m['visibility'], dict) else {})}
     return sorted((entry(m) for m in found if m['visibility'] != 'unlisted'), key=lambda m: m['title'])
 

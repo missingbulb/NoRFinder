@@ -2,18 +2,18 @@
 :root, :root[data-theme=dark] {
   --bg: #16181c; --panel: #1f2227; --line: #33373e; --text: #e6e6e6; --dim: #9aa0a8; --shade: #16181cb0; --tipbg: #000d;
   --pink: rgb(255, 105, 200); --blue: rgb(0, 140, 255); --accent: #4c8dff; --yes: #2fb344; --no: #e5484d; --warn: #ffc864; --err: #ff7b7b;
-  --icon: #929292; --housing: #3a3a3a; --unlit: #5a5a5a;
+  --icon: #929292;
   color-scheme: dark;
 }
 :root[data-theme=light] {
   --bg: #f4f5f7; --panel: #ffffff; --line: #d5d9e0; --text: #1c1f24; --dim: #5f6670; --shade: #f4f5f7c0; --tipbg: #fffffff0;
-  --accent: #2f6fe0; --warn: #a86a00; --err: #c62828; --icon: #6e6e6e; --housing: #4a4a4a; --unlit: #7a7a7a;
+  --accent: #2f6fe0; --warn: #a86a00; --err: #c62828; --icon: #6e6e6e;
   color-scheme: light;
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
     --bg: #f4f5f7; --panel: #ffffff; --line: #d5d9e0; --text: #1c1f24; --dim: #5f6670; --shade: #f4f5f7c0; --tipbg: #fffffff0;
-    --accent: #2f6fe0; --warn: #a86a00; --err: #c62828; --icon: #6e6e6e; --housing: #4a4a4a; --unlit: #7a7a7a;
+    --accent: #2f6fe0; --warn: #a86a00; --err: #c62828; --icon: #6e6e6e;
     color-scheme: light;
   }
 }
@@ -69,13 +69,20 @@ h1 { font-size: 16px; font-weight: 600; margin: 0; }
 #study-search { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; background: none; outline: none; }
 #study-search::-webkit-search-cancel-button { display: none; }
 #study-list { border-top: 1px solid var(--line); padding: 8px 0; border-bottom: 1px solid var(--line); }
-#study-list a { display: flex; align-items: center; gap: 8px; height: 32px; margin: 0 8px; padding: 0 0 0 8px; border-radius: var(--r-chip); color: var(--text); text-decoration: none; white-space: nowrap; }
+#study-list a { display: flex; align-items: center; gap: 8px; height: 32px; margin: 0 8px; padding: 0 8px; border-radius: var(--r-chip); color: var(--text); text-decoration: none; white-space: nowrap; }
 #study-list a[hidden] { display: none; }
 #study-list img.study-icon { width: 16px; height: 16px; flex: none; }
 #study-list .study-icon[hidden] { display: none; }
-#study-list .tick { visibility: hidden; color: var(--dim); }
-#study-list a[aria-current="page"] .tick { visibility: visible; }
-#study-list .name { flex: 1; align-self: stretch; display: flex; align-items: center; overflow: hidden; text-overflow: ellipsis; margin-right: 8px; border-bottom: 1px solid var(--line); }
+#study-list .name { flex: 1; align-self: stretch; display: flex; align-items: center; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid var(--line); }
+#study-list .offline-mark { margin-left: 0; }
+/* a study's stage (req/shell/study/stage): a small label bordered in its colour, last on its row; a study with none shows none */
+.stage-tag { --stage: var(--dim); order: 1; flex: none; padding: 0 5px; font-size: 10px; line-height: 14px; font-weight: 600; border: 1px solid var(--stage); border-radius: 2em;
+  color: color-mix(in srgb, var(--stage) 70%, var(--text)); cursor: default; }
+.stage-tag:empty { display: none; }
+.stage-tag[data-light=red] { --stage: var(--no); }
+.stage-tag[data-light=yellow] { --stage: #f5c400; }
+.stage-tag[data-light=green] { --stage: var(--yes); }
+.stage-tag[data-light=all] { --stage: var(--yes); background: color-mix(in srgb, var(--yes) 18%, transparent); }
 #study-list a.active { background: color-mix(in srgb, var(--text) 8%, var(--panel)); }
 #study-list a.active .name { border-bottom-color: transparent; }
 #study-none { margin: 8px 16px 0; font-size: 13px; }
@@ -92,31 +99,57 @@ select, input[type=text], input[type=number] { padding: 4px 8px; background: var
 input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 button:disabled { opacity: .45; cursor: default; }
 button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-/* Load: a button with a dropdown beside it for where to load from */
-.split { display: inline-flex; }
-/* the dropdown spans the panel's width under the button: the panel scrolls, so anything wider is cut off */
+/* Load (req/shell/load/button), or, in a study loading from Google Drive, the Image box's top line
+   (req/shell/load/selector): the image selector, Unload once an image is open, and Drive's button */
 #image-foot { position: relative; }
-#load .menu { position: static; }
-#load .pop { right: 0; }
-.split > button { border-radius: var(--r-ctl) 0 0 var(--r-ctl); font-weight: 600; padding: 4px 14px; }
-.split .menu summary { border-radius: 0 var(--r-ctl) var(--r-ctl) 0; padding: 4px 8px; border-left: 1px solid #ffffff55; height: 100%; }
-.split .menu summary.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.split .menu summary.primary::after { color: #fff; content: "▾"; }
+#image-foot:not(:has(> :not([hidden], input, svg))) { display: none; }
+#load { display: flex; gap: 8px; align-items: stretch; }
+#load:not([data-drive]) > #image-menu, #load:not([data-drive]) > #load-drive, #load[data-drive]:not([data-local]) > #load-main { display: none; }
+/* on the top line: the selector, Unload, the computer's button, Drive's */
+#load[data-drive] > #unload { order: 1; } #load[data-drive] > #load-main { order: 2; } #load[data-drive] > #load-drive { order: 3; }
+#load-main .computer-logo { display: none; }
+#load[data-drive] > #load-main .word { display: none; }
+#load[data-drive] > #load-main .computer-logo { display: block; width: 18px; height: 16px; }
+#load-main { font-weight: 600; padding: 4px 14px; }
 #load.done .primary { background: var(--panel); border-color: var(--accent); color: var(--accent); }
-#load.done .menu summary.primary { border-left-color: var(--accent); }
-#load.done .menu summary.primary::after { color: var(--accent); }
-.menu .pop.right { left: auto; right: 0; }
-.menu .pop .item { text-align: left; border: 0; background: none; padding: 4px 2px; white-space: nowrap; }
-.menu .pop .item:not(:disabled):hover { color: var(--accent); }
-.menu .pop .item:has(svg) { display: flex; align-items: center; gap: 6px; }
-.drive-logo, .computer-logo { width: 14px; height: 12px; flex: none; }
-#recent { display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--line); padding-top: 8px; }
-#recent[hidden] { display: none; }
-#recent .recent-head { color: var(--dim); font-size: 12px; }
-#recent .item { max-width: 100%; }
-#recent .item > span { display: flex; flex-direction: column; min-width: 0; }
+#load[data-drive] { margin: 0 0 10px; position: relative; }
+#load[data-drive] > #unload, #load[data-drive] > #load-main, #load-drive { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; flex: none; }
+#load[data-drive] > #unload[hidden] { display: none; }
+#load[data-drive] > #unload .word, #load:not([data-drive]) > #unload .x-icon { display: none; }
+#load[data-drive] > #load-main.primary { background: color-mix(in srgb, var(--accent) 22%, var(--panel)); color: var(--text); }
+#load-drive .drive-logo { width: 18px; height: 16px; }
+#load-drive.primary { background: color-mix(in srgb, var(--accent) 22%, var(--panel)); }
+/* the selector looks like the header's study switcher: a face holding the name, a darker caret beside it */
+#image-menu { flex: 1; min-width: 0; position: static; }
+#image-pick { display: flex; align-items: center; height: 32px; padding: 0; border: 0; border-radius: var(--r-chip); overflow: hidden; background: none; box-sizing: border-box; }
+#image-pick::after { content: none; }
+#image-pick .pick-name { flex: 1; min-width: 0; height: 32px; line-height: 32px; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 13px; background: color-mix(in srgb, var(--text) 7%, var(--bg)); }
+#image-pick.dim .pick-name { color: var(--dim); }
+#image-pick .caret { display: grid; place-items: center; width: 24px; height: 32px; flex: none; color: var(--text); background: color-mix(in srgb, var(--text) 13%, var(--bg)); }
+#image-pick .caret svg { fill: currentColor; }
+#image-pick:hover .pick-name, #image-menu[open] .pick-name { background: color-mix(in srgb, var(--text) 12%, var(--bg)); }
+#image-pick:hover .caret, #image-menu[open] .caret { background: color-mix(in srgb, var(--text) 18%, var(--bg)); }
+#image-pick.primary .pick-name { background: color-mix(in srgb, var(--accent) 22%, var(--bg)); color: var(--text); }
+#image-pick.primary .caret { background: var(--accent); color: #fff; }
+#image-pick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* the list spans the line under it: the panel scrolls, so anything wider is cut off */
+#image-menu .pop { left: 0; right: 0; top: calc(100% + 6px); min-width: 0; max-height: 360px; overflow-y: auto; padding: 6px 0; gap: 0;
+  border-radius: var(--r-panel); background: var(--panel); box-shadow: 0 8px 24px #0006; }
+#recent { display: flex; flex-direction: column; }
+#recent .hint { margin: 4px 12px; white-space: normal; }
+#recent .item { display: flex; align-items: center; gap: 8px; max-width: 100%; margin: 0 6px; padding: 4px 8px; border-radius: var(--r-chip); }
+#recent .item[aria-selected="true"] { background: color-mix(in srgb, var(--text) 8%, var(--panel)); }
+#recent .item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+#recent .item .what { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 #recent .name, #recent .where { overflow: hidden; text-overflow: ellipsis; }
 #recent .where { color: var(--dim); font-size: 11px; }
+.menu .pop .item { text-align: left; border: 0; background: none; padding: 4px 2px; white-space: nowrap; }
+.menu .pop .item:not(:disabled):hover { color: var(--accent); }
+.drive-logo, .computer-logo { width: 14px; height: 12px; flex: none; }
+/* how long since an image was opened: "3h", "6d" */
+.age { flex: none; font-size: 11px; color: var(--dim); padding: 0 5px; border-radius: var(--r-chip); background: color-mix(in srgb, var(--text) 8%, transparent);
+  font-variant-numeric: tabular-nums; }
 
 /* three columns of panels; the gutters between them are the handles that resize the side bars */
 #layout { --lw: 320px; --tw: 0px; display: grid; grid-template-columns: var(--tw) var(--lw-now, var(--lw)) var(--pad) minmax(0, 1fr) var(--pad);
@@ -133,7 +166,7 @@ body.resizing { cursor: col-resize; user-select: none; }
 .box + .box { margin-top: var(--pad); }
 .box h2 { margin-bottom: 10px; }
 .box select { width: 100%; }
-/* the Image box's foot: Load and, once an image is open, Unload */
+/* the Image box's foot: Load and, once an image is open, Unload; Load Original in Data Management */
 #image-foot { display: flex; gap: 8px; align-items: stretch; margin-top: 12px; }
 #unload[hidden] { display: none; }
 #file-box { margin: 0 0 10px; }
@@ -312,7 +345,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 /* a toolbar's hover popup, under its button (the popup's anchor), their right edges lined up, turned the other way at the window's edge */
 #grid-pop, #minimap-pop, .v3-pop { position-area: bottom span-left; margin: 6px 0 0; position-try-fallbacks: flip-inline; }
 @supports not (anchor-name: --a) { #grid-pop, #minimap-pop, .v3-pop { inset: 96px 16px auto auto; } }
-#grid-btn, #minimap-btn, #v3-tools .tool, #sb-stage { interest-delay: 0s 300ms; }
+#grid-btn, #minimap-btn, #v3-tools .tool { interest-delay: 0s 300ms; }
 #minimap-pop { position: fixed; inset: auto; padding: 10px 14px; flex-direction: column; gap: 4px; font-size: 13px;
   background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px #0004; }
 #minimap-pop label { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
@@ -386,7 +419,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #statusbar button.sb-item:hover, #statusbar button.sb-item:focus-visible { color: var(--text); }
 #statusbar .sb-item svg { flex: none; color: var(--icon); }
 #statusbar .sb-item:has(> .v:empty), #sb-thumbs:empty { display: none; }
-#statusbar #sb-stage, #sb-steps { padding-right: 10px; border-right: 1px solid var(--line); }
+#sb-steps { padding-right: 10px; border-right: 1px solid var(--line); }
 #sb-thumbs, #statusbar .grow ~ .sb-item, #statusbar #sb-res-icon, #sb-res-items > .sb-item:first-child { padding-left: 10px; border-left: 1px solid var(--line); }
 /* the disk, memory, network and CPU, folded into one icon (req/shell/status-bar/resources): unfolded always open,
    or auto-hiding while hovered or raised by what needs watching; the icon goes only always open */
@@ -413,18 +446,12 @@ html[data-motion=off] :is(#sb-res-items, #statusbar #sb-res-icon) { transition: 
 @keyframes roll { from { transform: translateY(100%); } }
 @media (prefers-reduced-motion: reduce) { #statusbar .roll > span { animation: none; } }
 #sb-version.stale { color: var(--warn); font-weight: 600; }
-/* the stage, a traffic light: red PreGT, yellow GT, green PostGT */
-#sb-stage { outline: none; cursor: default; }
-#sb-stage .housing { fill: var(--housing); }
-#sb-stage circle { fill: var(--unlit); }
-#sb-stage circle.lit[data-light=red], #stage-list .dot[data-light=red] { fill: var(--no); background: var(--no); }
-#sb-stage circle.lit[data-light=yellow], #stage-list .dot[data-light=yellow] { fill: #f5c400; background: #f5c400; }
-#sb-stage circle.lit[data-light=green], #stage-list .dot[data-light=green] { fill: var(--yes); background: var(--yes); }
-#sb-stage[data-stage=Published] circle.lit { fill: var(--yes); }
+#stage-list .dot[data-light=red] { background: var(--no); }
+#stage-list .dot[data-light=yellow] { background: #f5c400; }
+#stage-list .dot[data-light=green] { background: var(--yes); }
 #stage-list .dot[data-light=all] { background: var(--yes); box-shadow: 0 0 0 2px color-mix(in srgb, var(--yes) 40%, transparent); }
-#sb-stage:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
-/* the stages, over the status bar at the stage's left edge */
-#stage-pop { position: fixed; inset: auto auto calc(1cm + 6px) 8px; margin: 0; width: min(360px, calc(100vw - 16px)); padding: 12px 14px;
+/* the stages, beside the switcher at the hovered label's row */
+#stage-pop { position: fixed; inset: auto; margin: 0; width: min(360px, calc(100vw - 16px)); padding: 12px 14px;
   background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-panel); box-shadow: 0 6px 24px #0006; font-size: 13px; }
 #stage-pop h2 { font-size: 14px; margin: 0 0 6px; }
 #stage-list { list-style: none; margin: 0; padding: 0; }
@@ -479,6 +506,9 @@ html[data-motion=off] :is(#sb-res-items, #statusbar #sb-res-icon) { transition: 
 button.working:disabled { opacity: 1; cursor: progress; }
 button.working::after { content: ""; display: inline-block; width: .75em; height: .75em; margin-left: .45em; vertical-align: -.1em;
   border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
+#image-pick.working { cursor: progress; }
+#image-pick.working .pick-name::after { content: ""; display: inline-block; width: .75em; height: .75em; margin-left: .45em; vertical-align: -.1em;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
 .spin.big { width: 44px; height: 44px; border-width: 4px; visibility: visible; }
 @keyframes spin { to { transform: rotate(360deg); } }
 #busy { position: absolute; inset: 52px 0 0 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: var(--shade); color: var(--text); }
@@ -514,7 +544,12 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 #drive-list .item .name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 #drive-list .item .shape { color: var(--dim); font-size: 11px; white-space: nowrap; padding: 1px 6px; border: 1px solid var(--line); border-radius: var(--r-chip); }
 #drive-list .item .shape:empty { display: none; }
-#drive-list .item .meta { color: var(--dim); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* an image the folder did not hold when last listed here (req/shell/drive/dialog) */
+#drive-list .item .new { flex: none; font-size: 10px; font-weight: 600; color: var(--accent);
+  padding: 0 5px; border: 1px solid var(--accent); border-radius: var(--r-chip); cursor: default; }
+#drive-list .item .kept { display: contents; }
+#drive-list .item .kept .offline-mark { margin-left: 0; }
+#drive-list .item .meta { flex: none; color: var(--dim); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 #drive-throttle { height: 300px; margin-top: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px;
   text-align: center; font-size: 18px; font-weight: 600; border: 2px solid var(--no); border-radius: var(--r-ctl); }
 #drive-throttle[hidden] { display: none; }
@@ -524,6 +559,9 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 #drive-msg { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #drive-list .item + .item { border-top: 1px solid var(--line); }
 #drive-list .item:hover { background: var(--bg); }
+#drive-dlg.folders #drive-hint, #drive-dlg.folders #drive-link-row { display: none; }
+#drive-list .item:disabled { opacity: .45; }
+#drive-list .item:disabled:hover { background: none; }
 #drive-list .item[aria-selected="true"] { background: color-mix(in srgb, var(--accent) 18%, transparent); box-shadow: inset 3px 0 0 var(--accent); }
 #drive-list .item .pic { flex: none; width: 48px; height: 48px; border-radius: 3px; background: var(--bg); overflow: hidden; display: grid; place-items: center; }
 #drive-list .item .pic img, #drive-list .item .pic canvas { width: 100%; height: 100%; object-fit: cover; }
@@ -718,7 +756,7 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 
 /* animations turned off (the CPU tab): nothing moves but a spinner, which says the page is working rather than stuck */
 :root[data-motion="off"] *, :root[data-motion="off"] *::before, :root[data-motion="off"] *::after { animation: none !important; transition: none !important; }
-:root[data-motion="off"] .spin, :root[data-motion="off"] button.working::after { animation: spin .8s linear infinite !important; }
+:root[data-motion="off"] .spin, :root[data-motion="off"] button.working::after, :root[data-motion="off"] #image-pick.working .pick-name::after { animation: spin .8s linear infinite !important; }
 :root[data-motion="off"] #busy.scan #scan-light { display: none; }
 /* still, a shining button looks plain: a frozen sweep and a halo read as a smudge */
 :root[data-motion="off"] .shine { box-shadow: none; }
@@ -748,9 +786,8 @@ html.offline #sb-online .off { display: block; }
 #usage-dlg .install-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 #usage-dlg .install-row .hint { margin: 0; }
 @media (max-width: 520px) { #offline-dlg .where { display: none; } }
-/* what is available offline (req/shell/offline/mark): a small, quiet mark, explained on hover */
-.offline-mark { display: inline-flex; align-items: center; margin-left: 5px; color: var(--dim); vertical-align: -1px; cursor: help; }
-.offline-mark:hover { color: var(--text); }
+/* what is available offline (req/shell/offline/mark): a small green mark, a state rather than a prompt */
+.offline-mark { display: inline-flex; align-items: center; margin-left: 5px; color: var(--yes); vertical-align: -1px; }
 #storage-list .group > summary .title { display: inline-flex; align-items: center; }
 #storage-list .entry .del-none { width: 22px; }
 

@@ -17,6 +17,8 @@ import path from "node:path";
 import { offSite } from "./off_site.mjs";
 import { keptContext } from "./kept_context.mjs";
 import { until } from "./page_until.mjs";
+import { repoFile } from "./repo_file.mjs";
+import { pressDrive, pickRecent } from "./drive_open.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -35,10 +37,8 @@ const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(""); }
   if (u === "/web/config.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(CONFIG); }
-  // a folder serves its index.html, as the site does: the page rewrites its own address to the folder
-  let f = path.join(repo, u);
-  if (fs.existsSync(f) && fs.statSync(f).isDirectory()) f = path.join(f, "index.html");
-  if (!fs.existsSync(f)) { r.writeHead(404); return r.end(); }
+  const f = repoFile(repo, u);
+  if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
@@ -76,7 +76,7 @@ page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.me
 page.setDefaultTimeout(10000);
 await page.clock.install();
 
-const menu = async (sel) => { await page.click("#load-menu summary"); await page.click(sel); };
+
 const listed = () => page.waitForFunction((n) => document.querySelectorAll("#drive-list .item").length === n, FILES.length);
 // what the dialog shows of the wait: the notice, the clock and whether its controls are held
 const wait = () => page.evaluate(() => ({
@@ -86,17 +86,17 @@ const wait = () => page.evaluate(() => ({
 }));
 
 try {
-  await page.goto(origin + "/web/index.html");
+  await page.goto(origin + "/web/");
   await page.waitForFunction(() => window.$ && $("#title").textContent);
   // b.png opened while Drive answers, so it is kept on this device
-  await menu('#load-menu .item[data-src="drive"]'); await listed();
+  await pressDrive(page); await listed();
   await page.dblclick("#drive-list .item:nth-child(2)");
   await page.waitForFunction(() => st.fileName === "b.png");
   await until(page, async () => (await (await caches.open("nor-images-v1")).keys()).length === 1);
 
   // throttled: opening a.png is refused
   mode = "throttled";
-  await menu('#load-menu .item[data-src="drive"]'); await listed();
+  await pressDrive(page); await listed();
   await page.dblclick("#drive-list .item:nth-child(1)");
   await page.waitForFunction(() => !$("#drive-throttle").hidden);
   let w = await wait();
@@ -113,19 +113,19 @@ try {
   await page.dblclick("#drive-list .item:nth-child(1)", { force: true }).catch(() => {});
   await page.click("#drive-dlg button[value=close]");
   await page.reload(); await page.waitForFunction(() => window.$ && $("#title").textContent);
-  await menu('#load-menu .item[data-src="drive"]');
+  await pressDrive(page);
   await page.waitForTimeout(500);
   w = await wait();
   check(w.notice && w.held && calls.length === 0, `no call to Drive while it waits, after a reload too: ${calls}`);
   await page.click("#drive-dlg button[value=close]");
 
   // a kept image still opens, from this device
-  await menu("#load-menu .recent:nth-of-type(1)");
+  await pickRecent(page);
   await page.waitForFunction(() => st.fileName === "b.png");
   check(calls.length === 0, "an image kept on this device opens while it waits, with no call to Drive");
   // one no longer kept shows the notice instead of downloading
   await page.evaluate(async () => { const c = await caches.open("nor-images-v1"); for (const q of await c.keys()) await c.delete(q); });
-  await menu("#load-menu .recent:nth-of-type(1)");
+  await pickRecent(page);
   await page.waitForFunction(() => $("#drive-dlg").open && !$("#drive-throttle").hidden);
   await page.waitForTimeout(300);
   check(calls.length === 0, `a recent image no longer kept shows the notice, with no call to Drive: ${calls}`);
@@ -133,7 +133,7 @@ try {
 
   // the countdown ends: the notice goes and the dialog lists its link again
   mode = "ok";
-  await menu('#load-menu .item[data-src="drive"]');
+  await pressDrive(page);
   await page.clock.fastForward(15 * 60000);
   await listed();
   w = await wait();

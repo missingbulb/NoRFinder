@@ -55,6 +55,9 @@ def test_a_study_names_files_that_exist(path):
         assert 0 <= black < white <= 255, c
     # req/shell/data/roles: its Drive folders, each a folder link, and who holds each role, by email
     assert 'drive' not in m['files'], 'a study names its Drive folders in files.folders'
+    # req/shell/load/from: where it opens images from, which the shell has no default for
+    places = m['files'].get('from')
+    assert isinstance(places, list) and places and set(places) <= {'local', 'drive'}, 'files.from lists where the study opens images from: local, drive or both'
     for link in m['files'].get('folders', []):
         assert re.search(r'/folders/[\w-]{10,}', link), link
     for role, who in m.get('permissions', {}).items():
@@ -75,7 +78,7 @@ def test_a_study_names_files_that_exist(path):
 def test_a_study_names_its_stage_and_steps(path):
     """req/shell/study/stage, req/shell/status-bar/breadcrumbs: the stage and the study's own steps are stated, never assumed."""
     m = manifest(path)
-    assert m.get('stage') in ('PreGT', 'GT', 'PostGT', 'Published'), 'stage: PreGT, GT, PostGT or Published'
+    assert 'stage' in m and m['stage'] in ('PreGT', 'GT', 'PostGT', 'Published', None), 'stage: PreGT, GT, PostGT, Published, or null for a tool making no ground truth'
     if m['stage'] in ('GT', 'PostGT'):
         assert m.get('groundTruth', {}).keys() >= {'label', 'button'}, 'a study that makes ground truth names its label and button'
     assert isinstance(m.get('phases'), list), 'phases: the study\'s own steps, [] for none'

@@ -4,7 +4,7 @@
 // opens from this device once its SHA-256 matches Drive's (the listing's, or the file's details for a link); one
 // changed on Drive is downloaded again and kept in place of the old; with no SHA-256 from Drive it is downloaded,
 // and with none to be had it does not open from this device. Then req/shell/load/recents-tip: opening a kept image from the dialog shows
-// a tip at Load's dropdown arrow; its × closes it for good, after a reload too, and opening the dropdown does too.
+// a tip at the image selector; its × closes it for good, after a reload too, and opening the selector does too.
 // Optional SHOTS: a directory for a screenshot. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/drive_cache_driver.mjs [SHOTS]
 import { noisePng } from "./png_fixture.mjs";
@@ -16,8 +16,10 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { offSite } from "./off_site.mjs";
+import { repoFile } from "./repo_file.mjs";
 import { keptContext } from "./kept_context.mjs";
 import { until } from "./page_until.mjs";
+import { pressDrive, pickRecent } from "./drive_open.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -40,10 +42,8 @@ const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(""); }
   if (u === "/web/config.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(CONFIG); }
-  // a folder serves its index.html, as the site does: the page rewrites its own address to the folder
-  let f = path.join(repo, u);
-  if (fs.existsSync(f) && fs.statSync(f).isDirectory()) f = path.join(f, "index.html");
-  if (!fs.existsSync(f)) { r.writeHead(404); return r.end(); }
+  const f = repoFile(repo, u);
+  if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
@@ -81,7 +81,7 @@ page.setDefaultTimeout(10000);
 const downloads = () => calls.filter((c) => c === "download").length;
 // opens a.png from the Drive dialog, or from the recents, and waits until the page holds it
 const fromDialog = async () => {
-  await page.click("#load-menu summary"); await page.click('#load-menu .item[data-src="drive"]');
+  await pressDrive(page);
   if (await page.inputValue("#drive-link") !== FOLDER) { await page.fill("#drive-link", FOLDER); await page.click("#drive-go"); }
   await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 1);
   await page.evaluate(() => { st.fileName = ""; });
@@ -89,7 +89,7 @@ const fromDialog = async () => {
   await page.waitForFunction(() => st.fileName === "a.png");
 };
 const fromLink = async () => {
-  await page.click("#load-menu summary"); await page.click('#load-menu .item[data-src="drive"]');
+  await pressDrive(page);
   await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 1);
   await page.evaluate((id) => { st.fileName = ""; $("#drive-link").value = `https://drive.google.com/file/d/${id}/view`; }, FILE.id);
   await page.click("#drive-go");
@@ -97,7 +97,7 @@ const fromLink = async () => {
 };
 const fromRecents = async () => {
   await page.evaluate(() => { st.fileName = ""; });
-  await page.click("#load-menu summary"); await page.click("#load-menu .recent");
+  await pickRecent(page);
   await page.waitForFunction(() => st.fileName === "a.png");
 };
 // the SHA-256 of the copy kept on this device
@@ -111,7 +111,7 @@ const settle = async () => { await page.waitForTimeout(400); };
 const tip = () => page.evaluate(() => { const t = document.querySelector(".tip-bubble[data-tip]"); return t && !t.hidden ? t.dataset.tip : null; });
 
 try {
-  await page.goto(origin + "/web/index.html");
+  await page.goto(origin + "/web/");
   await page.waitForFunction(() => window.$ && $("#title").textContent);
 
   await fromDialog();
@@ -124,10 +124,10 @@ try {
   check(downloads() === 0 && !calls.includes("details"), `kept, and matching the listing's SHA-256, it opens from this device with no further request: ${calls}`);
   check((await tip()) === "recent-files", "and the tip shows");
   const near = await page.evaluate(() => {
-    const t = document.querySelector(".tip-bubble[data-tip]").getBoundingClientRect(), a = $("#load-menu summary").getBoundingClientRect();
+    const t = document.querySelector(".tip-bubble[data-tip]").getBoundingClientRect(), a = $("#image-pick").getBoundingClientRect();
     return Math.hypot((t.left + t.right) / 2 - (a.left + a.right) / 2, Math.min(Math.abs(t.top - a.bottom), Math.abs(t.bottom - a.top)));
   });
-  check(near < 200, `the tip sits by Load's dropdown arrow: ${Math.round(near)} px away`);
+  check(near < 200, `the tip sits by the image selector: ${Math.round(near)} px away`);
   check(/To load recent files click here/.test(await page.textContent(".tip-bubble[data-tip]")), "and says to click there for recent files");
   if (shots) await page.screenshot({ path: path.join(shots, "tip.png"), clip: { x: 0, y: 0, width: 520, height: 260 } });
 
@@ -161,7 +161,7 @@ try {
   check(downloads() === 1, `with no SHA-256 in the file's details, it is downloaded: ${calls}`);
   // a link's details also name the file, so with them unreachable nothing opens: the dialog shows the error
   checksums = true; details = false; calls.length = 0;
-  await page.click("#load-menu summary"); await page.click('#load-menu .item[data-src="drive"]');
+  await pressDrive(page);
   await page.evaluate((id) => { st.fileName = ""; $("#drive-link").value = `https://drive.google.com/file/d/${id}/view`; }, FILE.id);
   await page.click("#drive-go");
   await page.waitForFunction(() => $("#drive-msg").classList.contains("err"));
@@ -186,12 +186,12 @@ try {
   await fromDialog(); await settle();
   check((await tip()) === null, "nor after a reload");
 
-  // opening the dropdown closes it too
+  // opening the selector closes it too
   await page.evaluate(() => localStorage.removeItem("nor-tips-closed"));
   await fromDialog(); await settle();
   check((await tip()) === "recent-files", "with the closed tips cleared, it shows again");
-  await page.click("#load-menu summary"); await page.click("#load-menu summary");
-  check((await tip()) === null && (await page.evaluate(() => JSON.parse(localStorage.getItem("nor-tips-closed")) || [])).includes("recent-files"), "opening the dropdown closes it for good");
+  await pickRecent(page, null); await page.click("#image-pick");
+  check((await tip()) === null && (await page.evaluate(() => JSON.parse(localStorage.getItem("nor-tips-closed")) || [])).includes("recent-files"), "opening the selector closes it for good");
 
   await page.click("#user-menu summary"); await page.click("#open-settings");
   await page.waitForFunction(() => $("#settings-dlg").open);

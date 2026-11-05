@@ -16,6 +16,7 @@ import { helpTip } from "./help_tip.mjs";
 import { offSite } from "./off_site.mjs";
 import { ENGINE } from "./engine.mjs";
 import { asTagger } from "./tagger.mjs";
+import { localStudy } from "./local_study.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -57,6 +58,8 @@ const done = async (code) => { await browser.close(); server.close(); process.ex
 const check = async (ok, what, seen) => { if (!ok) { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); } console.log("ok: " + what); };
 
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+
+await localStudy(ctx, "fixture");
 
 await asTagger(ctx);
 await ctx.route(offSite(origin), (r) => r.abort());
@@ -266,7 +269,7 @@ await check(clear.stage && clear.empty && !clear.minimap && !clear.unload && !cl
 await check(clear.shine && !clear.done && clear.crumbs === "Load image", "Load shines again, and the steps start over", clear);
 await check(clear.fx === "Nothing counted yet." && !clear.overlay && clear.status.startsWith("Ready"), "the study starts over too", clear);
 await check(await page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].filter((b) => b.checkVisibility()).map((b) => b.classList.contains("folded")).join()) === "false,true,true,true", "and the boxes on show fold as before any image");
-await check((await rows()).map((r) => r.name).join() === "Grey", "and the channels are the study's again");
+await check((await rows()).length === 0, "and no channel rows are left, with no image (req/shell/channels/rows)");
 
 // ---- after Unload, the next image's switch still shows the item view ----
 await loadImage();

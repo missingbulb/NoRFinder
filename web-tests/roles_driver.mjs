@@ -5,6 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { standIn } from "./stand_in_drive.mjs";
+import { standInDrive, openFromDrive } from "./drive_open.mjs";
 
 const [answers, studies, rootDir, image, shots] = process.argv.slice(2);
 const shot = (page, name) => shots && page.screenshot({ path: path.join(shots, name + ".png") });
@@ -41,10 +42,10 @@ await check(!s.truth && !s.counted && !s.data && !s.bar, "a viewer sees no groun
 await page.context().close();
 
 // signed in, not a data manager: Viewer first, Ground Truth Tagger to choose
-page = await open(true, { email: OTHER });
+page = await open(true, { email: OTHER, prepare: standInDrive });
 s = await seen(page);
 await check(s.role === "Viewer" && s.list.join() === "Viewer,Ground Truth Tagger" && !s.hint, "signed in, the page opens as Viewer, Ground Truth Tagger offered", s);
-await page.setInputFiles("#file", image);
+await openFromDrive(page, image);
 await page.waitForFunction(() => !document.querySelector("#fx-count").disabled);
 const before = await page.evaluate(() => st.fileName);
 await choose(page, "Ground Truth Tagger", true);
@@ -65,12 +66,12 @@ await page.context().close();
 // the same study as PreGT: Ground Truth Tagger is offered; the postprocessing shows for the tagger alone, and nothing
 // exports ground truth for anyone
 const preGT = { ...JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "studies", "fixture", "study.json"), "utf8")), stage: "PreGT" };
-page = await open(true, { email: OTHER, prepare: (ctx) => ctx.route("**/studies/fixture/study.json", (r) => r.fulfill({ json: preGT })) });
+page = await open(true, { email: OTHER, prepare: async (ctx) => { await ctx.route("**/studies/fixture/study.json", (r) => r.fulfill({ json: preGT })); await standInDrive(ctx); } });
 await page.waitForFunction(() => document.documentElement.dataset.stage === "PreGT");
 s = await seen(page);
 await check(s.role === "Viewer" && s.list.join() === "Viewer,Ground Truth Tagger", "in a PreGT study the signed-in are offered Ground Truth Tagger", s);
 await check(!s.truth && !s.counted, "a viewer there sees no ground-truth button and no postprocessing", s);
-await page.setInputFiles("#file", image);
+await openFromDrive(page, image);
 await page.waitForFunction(() => !document.querySelector("#fx-count").disabled);
 await choose(page, "Ground Truth Tagger", true);
 await page.waitForFunction(() => !document.querySelector("#fx-count").disabled);

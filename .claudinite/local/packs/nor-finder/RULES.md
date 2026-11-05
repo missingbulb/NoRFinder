@@ -29,6 +29,13 @@ not belong here — propose it to the Claudinite canon instead, where every repo
   never `web/` or a study's `web/`: the production code is written for the live site alone.
   (tests-bend-test-surface)
 
+## The page's controls
+
+- **Placing several indicators on each row of a list** (a size, a date, an age tag, a mark) - put
+  the ones every row shows at the row's edges and the optional ones inward, between the name and
+  them, so what is always there lines up down the list and a missing one leaves no hole at the
+  edge. (row-indicators-edges)
+
 ## The page's version history
 
 - **Changing what a user of the NoR Finder page sees** — tell it in a `Version-history:` line of
@@ -41,6 +48,12 @@ not belong here — propose it to the Claudinite canon instead, where every repo
 - **Building or changing a study's ground-truth controls** (what its page shows in a GT or PostGT
   stage) — load the `designing-ground-truth-tasks` skill first: the tasks in the left bar, one
   item at a time, area by area, what is done cut out of the image. (designing-ground-truth-tasks)
+
+## The shell's states
+
+- **Working with `dev/requirements/shell-states.json` or what it generates** — treat it as a development harness
+  the owner does not review: never present a case there as approved, and bring each tentative or undecided case,
+  and each change to what a state shows, to the owner as a question. (shell-states-unreviewed)
 
 ## Merging
 

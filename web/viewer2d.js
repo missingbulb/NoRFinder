@@ -45,8 +45,9 @@ export function viewer(shell) {
   // slider holds its black and white points and its colour picker recolours it; a double click on the slider
   // puts the points back. They start over with every image. Rows another viewer puts under them (rowsAfter) follow.
   let added = [];
+  // none before an image shows (req/shell/channels/rows)
   function rows() {
-    $("#channels").replaceChildren(...chans.map((c, k) => {
+    $("#channels").replaceChildren(...(st.img || st.peeked ? chans : []).map((c, k) => {
       const row = html("div", { className: "channel" + (c.on ? "" : " off") });
       row.dataset.colour = c.colour; row.style.setProperty("--ch", c.colour);
       const box = html("input", { type: "checkbox", id: "show-" + k, checked: c.on });
@@ -382,7 +383,7 @@ export function viewer(shell) {
   function preview(painter) {
     st.peek?.stop?.(); st.peeked = false;
     return (st.peek = painter($("#base"), shown, (W, H) => {
-      st.img = null; st.plain = null; st.W = W; st.H = H; st.peeked = true; ruler.reset();
+      st.img = null; st.plain = null; st.W = W; st.H = H; st.peeked = true; ruler.reset(); rows();
       $("#overlay").innerHTML = ""; $("#empty").hidden = true; $("#stage").hidden = false;
       setZoom(st.zoom); tools();
     }));

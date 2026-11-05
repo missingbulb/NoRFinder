@@ -15,6 +15,7 @@ import { offSite } from "../../../web-tests/off_site.mjs";
 import { ENGINE } from "../../../web-tests/engine.mjs";
 import { asTagger } from "../../../web-tests/tagger.mjs";
 import { serve, ALGORITHMS } from "./stand_in.mjs";
+import { standInDrive, openFromDrive } from "../../../web-tests/drive_open.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -33,6 +34,7 @@ const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, a
 await asTagger(ctx);
 await ctx.route(offSite(site.origin), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
+await standInDrive(ctx);
 const page = await ctx.newPage();
 page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.message); });
 page.setDefaultTimeout(10000);
@@ -77,7 +79,7 @@ try {
     `... and ends with its precision and recall in bold, judged by a model, not the owner: ${algos.bold}`);
   check(algos.run && algos.last === "vm-run", "Execute ends the box, off until a stack is open");
 
-  await page.setInputFiles("#file", { name: model.source, mimeType: "image/tiff", buffer: Buffer.from([0x49, 0x49, 42, 0]) });
+  await openFromDrive(page, { name: model.source, mimeType: "image/tiff", buffer: Buffer.from([0x49, 0x49, 42, 0]) });
   await page.waitForFunction(() => !$("#vm-run").disabled);
   await page.evaluate(() => { $("#notice").hidden = true; });
   const before = await page.evaluate(() => ({ model: !$("#model-on").hidden, tasks: !$("#tasks-box").hidden,

@@ -6,7 +6,7 @@
 // clear. req/shell/offline/mark: the study switcher and the Drive dialog mark what is available offline. Then req/shell/drive/kept-images: the Drive dialog's Show
 // thumbnails and Auto-save images, and the link beside them showing what thumbnails and images take; an image
 // downloaded while Auto-save is on opens again with no download, one downloaded while it is off is not kept.
-// Then req/shell/load/recents: Load's dropdown lists the images opened from Drive, newest first, once each, two of one name told
+// Then req/shell/load/selector: the image selector lists the images opened from Drive, newest first, once each, two of one name told
 // apart by their folder; a recent one opens from this device when it is kept there, and is downloaded when not.
 // Optional SHOTS: a directory for screenshots.
 // Exits 1 on a failed check, 2 when it cannot run.
@@ -24,6 +24,7 @@ import { offSite } from "./off_site.mjs";
 import { keptContext } from "./kept_context.mjs";
 import { cutShort } from "./page_errors.mjs";
 import { until } from "./page_until.mjs";
+import { pressDrive, pickRecent } from "./drive_open.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -136,12 +137,22 @@ try {
     await im.put(url("ID9"), new Response(new Uint8Array(2048), { headers: { "x-nor-name": "old.tif" } }));
   }, { core: CORE, shared: SHARED, own: OWN });
 
-  // req/shell/offline/mark: a study whose Python is all here is marked in the switcher, with what that means on hover
+  // req/shell/offline/mark: a study whose Python is all here is marked in the switcher, green, a state rather than a
+  // prompt: no tooltip and no question-mark pointer, what it means said to assistive tech only
   await page.click("#study-menu summary");
   await page.waitForFunction(() => document.querySelector('#study-list a[data-id="viewer"] .offline-mark'), null, { timeout: 5000 }).catch(() => {});
-  const marks = await page.$$eval("#study-list a", (as) => as.map((a) => ({ id: a.dataset.id, mark: a.querySelector(".offline-mark")?.title || "" })));
-  check(/without the internet/.test(marks.find((m) => m.id === "viewer")?.mark) && !marks.find((m) => m.id === "nor")?.mark,
+  const marks = await page.$$eval("#study-list a", (as) => as.map((a) => {
+    const m = a.querySelector(".offline-mark"), cs = m && getComputedStyle(m);
+    const end = Math.max(...[...a.children].filter((c) => c.offsetParent).map((c) => c.getBoundingClientRect().right));
+    return { id: a.dataset.id, mark: m?.getAttribute("aria-label") || "", title: m?.title || "", cursor: cs?.cursor, colour: cs?.color, room: a.getBoundingClientRect().right - end };
+  }));
+  const green = await page.evaluate(() => { const s = document.createElement("span"); s.style.color = "var(--yes)"; document.body.append(s); const c = getComputedStyle(s).color; s.remove(); return c; });
+  const viewerMark = marks.find((m) => m.id === "viewer") || {};
+  check(/without the internet/.test(viewerMark.mark) && !marks.find((m) => m.id === "nor")?.mark,
     `the switcher marks the study whose Python is all here, and only it: ${JSON.stringify(marks)}`);
+  check(viewerMark.colour === green && !viewerMark.title && viewerMark.cursor !== "help",
+    `the mark is green, with no tooltip and no question-mark pointer: ${JSON.stringify({ ...viewerMark, green })}`);
+  check(marks.every((m) => m.room >= 8), `each row keeps 8 px at its right, past its mark and stage: ${JSON.stringify(marks.map((m) => m.room))}`);
   await page.click("#study-menu summary");
 
   const avatar = await page.$("header #user-menu summary img, header #user-menu summary svg");
@@ -227,8 +238,8 @@ try {
 
   // ---- req/shell/drive/kept-images: the Drive dialog's options, and images kept on this device ----
   const drive = async () => {
-    // from Load's menu: Load itself is held while an image waits for Python, which never answers here
-    await page.click("#load-menu summary"); await page.click('#load-menu .item[data-src="drive"]');
+    // Drive's button, free while an image waits for Python, which never answers here
+    await pressDrive(page);
     await page.waitForFunction((n) => $("#drive-dlg").open && document.querySelectorAll("#drive-list .item:not(.folder)").length === n && /\d/.test($("#drive-storage").textContent), DRIVE.length);
   };
   const saved = () => page.evaluate(async () => (await (await caches.open("nor-images-v1")).keys()).length);
@@ -256,7 +267,7 @@ try {
   check(names("study:nor", "image").join() === DRIVE[0].name && /\d/.test(g["study:nor"].find((e) => e.kind === "image").size), `the link opens Manage storage, which lists the saved image in its study: ${JSON.stringify(g["study:nor"])}`);
   await page.click("#usage-dlg button[value=close]");
   // req/shell/offline/mark: in the Drive dialog, still open beneath, the kept image is marked, the other not
-  const rowMarks = await page.$$eval("#drive-list .item:not(.folder)", (rs) => rs.map((r) => r.querySelector(".offline-mark")?.title || ""));
+  const rowMarks = await page.$$eval("#drive-list .item:not(.folder)", (rs) => rs.map((r) => r.querySelector(".offline-mark")?.getAttribute("aria-label") || ""));
   check(/without the internet/.test(rowMarks[0]) && !rowMarks[1], `the Drive dialog marks the image kept on this device, and only it: ${JSON.stringify(rowMarks)}`);
 
   await page.uncheck("#drive-autosave");
@@ -268,23 +279,21 @@ try {
   await page.waitForTimeout(300);
   check(downloads[DRIVE[1].id] === 1 && (await saved()) === 1, "with it off, an image is downloaded and not kept");
 
-  // ---- req/shell/load/recents: the recent images in Load's dropdown ----
+  // ---- req/shell/load/selector: the recent images in the image selector ----
   const recents = async () => {
-    await page.click("#load-menu summary");
-    const r = await page.$$eval("#load-menu .recent", (bs) => bs.map((b) => ({ name: b.querySelector(".name").textContent, where: b.querySelector(".where").textContent, logo: !!b.querySelector("svg.drive-logo") })));
-    await page.click("#load-menu summary");
+    await pickRecent(page, null);
+    const r = await page.$$eval("#image-menu .recent", (bs) => bs.map((b) => ({ name: b.querySelector(".name").textContent, where: b.querySelector(".where").textContent, logo: !!b.querySelector("svg.drive-logo") })));
+    await page.click("#image-pick");
     return r;
   };
   let r = await recents();
-  check(r.map((e) => e.name).join() === `${DRIVE[1].name},${DRIVE[0].name}`, `the dropdown lists the images opened, newest first, once each: ${JSON.stringify(r)}`);
-  check(r.every((e) => e.logo) && (await page.$('#load-menu .item[data-src="drive"] svg.drive-logo')), "each recent, and From Google Drive, shows Drive's logo");
-  check(!!(await page.$('#load-menu .item[data-src="local"] svg.computer-logo')), "req/shell/load/button: From this computer shows a computer");
-  await page.click("#load-menu summary");
-  const fit = await page.evaluate(() => { const p = $("#load-menu .pop").getBoundingClientRect(), bar = $("#left"), b = bar.getBoundingClientRect();
+  check(r.map((e) => e.name).join() === `${DRIVE[1].name},${DRIVE[0].name}`, `the selector lists the images opened, newest first, once each: ${JSON.stringify(r)}`);
+  check(r.every((e) => e.logo) && (await page.$("#load-drive svg.drive-logo")), "each recent, and Drive's button, shows Drive's logo");
+  await pickRecent(page, null);
+  const fit = await page.evaluate(() => { const p = $("#image-menu .pop").getBoundingClientRect(), bar = $("#left"), b = bar.getBoundingClientRect();
     return { pop: [Math.round(p.left), Math.round(p.right)], bar: [Math.round(b.left), Math.round(b.left + bar.clientWidth)], scrolls: bar.scrollWidth > bar.clientWidth }; });
-  await page.click("#load-menu summary");
-  check(fit.pop[0] >= fit.bar[0] && fit.pop[1] <= fit.bar[1] && !fit.scrolls, `the dropdown stays inside the left bar: ${JSON.stringify(fit)}`);
-  await page.click("#load-menu summary"); await shot("load_recents", "#load-menu .pop"); await page.click("#load-menu summary");
+  await shot("load_recents", "#image-menu .pop"); await page.click("#image-pick");
+  check(fit.pop[0] >= fit.bar[0] && fit.pop[1] <= fit.bar[1] && !fit.scrolls, `the selector's list stays inside the left bar: ${JSON.stringify(fit)}`);
   await drive();
   await page.check("#drive-autosave");
   await page.dblclick("#drive-list .item.folder");
@@ -295,7 +304,7 @@ try {
   check(r.length === 3 && r[0].name === TWIN.name && r[2].name === DRIVE[0].name && /sub/.test(r[0].where) && r[0].where !== r[2].where,
     `two images of one name are listed apart, by where they are in Drive: ${JSON.stringify(r)}`);
   const pick = async (k, id) => {
-    await page.click("#load-menu summary"); await page.click(`#load-menu .recent:nth-of-type(${k})`);
+    await pickRecent(page, k);
     await page.waitForFunction((i) => st.source && st.source.id === i, id);
   };
   await pick(3, DRIVE[0].id);
@@ -310,12 +319,12 @@ try {
     await page.goto(origin + "/web/index.html?study=" + id);
     // the steps are drawn once the study has mounted, as the recents are
     await page.waitForFunction(() => document.querySelector("#sb-steps .crumb"));
-    return page.evaluate(() => ({ hidden: $("#recent").hidden, n: document.querySelectorAll("#load-menu .recent").length }));
+    return page.evaluate(() => document.querySelectorAll("#image-menu .recent").length);
   };
-  const other = await inStudy("viewer");
-  check(other.hidden && other.n === 0, `another study lists none of the images opened in this one: ${JSON.stringify(other)}`);
+  const other = await inStudy("vascular");
+  check(other === 0, `another study lists none of the images opened in this one: ${other}`);
   const back = await inStudy("nor");
-  check(!back.hidden && back.n === 3, `back in the study, its own are listed again: ${JSON.stringify(back)}`);
+  check(back === 3, `back in the study, its own are listed again: ${back}`);
 } catch (e) {
   failed = true; console.error("FAILED: " + e.message);
 }

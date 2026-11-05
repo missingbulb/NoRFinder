@@ -42,6 +42,9 @@
     "style": "web/shelves.css"
   },
   "files": {
+    "from": [
+      "drive"
+    ],
     "accept": ".jpg,.jpeg,.png,.webp,.tif,.tiff,.bmp",
     "empty": "Load a photo of bookshelves (JPEG, PNG, WebP or TIFF), then press Find books.",
     "folders": [

@@ -148,3 +148,45 @@ The page still opens each finder on its own values; making tl's the common defau
 | T1 | Fit every filter value per finder by coordinate search on F1 over the labels | in sample +0.06..0.10 F1 (tl 0.746 → 0.806, all moving the same way: green balance 0.1, min_snr 2-3, min_solid 0.9) | **dropped**: on 2-fold held-out labels (12 folds) the gain vanishes for tl (-0.018) and rf (+0.011); only walk gains reliably (+0.061, 12/12 folds), from the line and solidity limits it lacks. 72 real spots are too few to fit 10 values |
 | T2 | One shared set per goal, fitted on mean F0.5 (precise) and F2 (sensitive) over all finders | in sample P up and R up together | **dropped**: held out, "precise" raised precision in 40% of folds and cost 0.056 recall; "sensitive" +0.011 recall. Fitting on ~7 false passes says nothing |
 | T3 | Presets by hand: every filter 40% of the way from the finder's own value towards a fixed strict (or loose) end, same share for all finders | a clean trade-off on every finder: tl P 0.92 R 0.49 / 0.87 0.65 / 0.85 0.69; recall falls monotonically with strictness by construction | **kept** as the R11 presets (`finder_metrics.py`). Precision rests on 3-13 false passes, so a 0.03 difference is noise |
+
+## 6. Mutation sweeps and transformed views (2026-11-04, Ariel: "mutate it ... gain some signal")
+
+The `mutating-an-algorithm` skill's first sweep: `python3 mutate.py sweep` on tl, every runnable trick
+in `dev/tools/trick_pool/` in three slots (pre-transform a channel; reject the passes in the lowest
+decile of a trick's map; rescue filtered candidates at or above the passes' 90th percentile).
+Registry: tl, rf, tl_post, fill, walk, blobs. On the 72 real / 93 not Claude labels, 20 real spots no
+finder finds and 2 false ones every finder keeps. **Chance bar**, the most of 8 null mutants per slot
+(never+ / always-): pre 1-2 / 0-1, reject 0 / 0, rescue 2 / 0. An idea-free blur under a random
+illumination field "rescues" 1-2 never-found spots, and a noise mutant reached P(better) 0.82, so
+counts at or under the bar are not signal. 178 mutants, 49 above the bar.
+
+| id | mutant | tp / fp (tl 47 / 7) | never+ / always- | P(better) | reading |
+|---|---|---|---|---|---|
+| M1 | verify:unsharp-mask@red:reject | 47 / 3 | 0 / 1 | 0.99 | **grown** (M1a) |
+| M1a | verify:<identity>@red:reject (a 0.01-unit smoothing) | 47 / 4 | 0 / 0 | 0.98 | the win is mostly a red floor relative to the image's own passes: the dimmest-red decile of passes holds 3 of tl's 7 false passes and no real one. Unsharp adds the 4th, an always-kept one. Insensitive to the trick's radius (0.35-1.5 u) and amount; decile 0.05 → -3 fp, 0.2 → -5 fp, -1 tp. **Next**: a switch in tl failing a pass whose red mean is below the image's passes' q-quantile, ablated on every ground-truth image. It assumes every image has some false passes at the dim end; on an image whose passes are all real it costs a real one per ten, so it needs the submitted ground truth before it can be a default |
+| M2 | pre:difference-of-gaussians@green | 52 / 11 | 4 / 0 | 0.76 | the strongest recall signal: band-passing Caspr (0.35-2 u) separates paranodes touching a bright neighbour. Costs +4 fp, loses 2 real. Not yet grown: try the band-pass only on the candidate stage (the greens tl colours in), with the filters on the raw channel |
+| M3 | verify:simpleitk-objectness@green:rescue | 50 / 9 | 3 / 0 | 0.81 | ITK Hessian blobness on Caspr rescues filtered candidates cheaply; with M2, two tricks pointing at "green structure the filters reject" |
+| M4 | verify:meijering-neuriteness@red:reject, verify:lbp-variance@green:reject, verify:sato-tubeness@green:reject | 46 / 3, 45 / 2, 45 / 3 | 0 / 1-2 | 0.82, 0.70, 0.59 | several unrelated maps reject the same two always-kept false spots: they are the same items, not independent evidence |
+| M5 | pre:h-dome, pre:tv-denoise, pre:bilateral, pre:richardson-lucy | 0-39 / 0-5 | ≤3 / ≤2 | 0.00 | wreck the candidate stage; their "signal" is collateral |
+
+Transformed views (`solving-a-transformed-view`), 6 tiles over the hard spots, a fresh agent per
+view that saw neither the labels nor the code. On the 17 real / 8 false labelled spots inside the
+tiles (the other marks fall on unlabelled spots and count for nothing, so the 0 fp is weak):
+
+| view | agent tp / fp | real tl misses that the agent found |
+|---|---|---|
+| raw | 7 / 0 | 2 |
+| difference of Gaussians | **10 / 0** | 3 |
+| unsharp mask | 7 / 0 (the agent was stopped partway; its marks are partial) | 0 |
+
+The DoG view agrees with M2: band-passing makes the triplet visible to an eye too. The DoG agent's
+rule, to build from: red blob, a green blob 3-12 px on each side, the two vectors within 30-40° of
+opposite, gaps of a few px, and a green-red-green-red-green chain as two nodes sharing the middle green.
+
+**M1a landed (2026-11-04, Ariel: "Build it, on by default", then "Keep it on at 0.1").** tl now runs
+`red_floor_q=0.1` (R7 "Not the faintest of its image"; the page's filter F, the lab's reason Q), last,
+after one-pixel-per-NoR. Lab (`nor_lab.py cmp`): tl 47 / 7 → 47 / 4, P 0.87 → 0.92. Page path
+(`finder_metrics.py`, nucleus filter after finding): balanced 47 / 7 → 46 / 5, P 0.87 → 0.90, R 0.65 → 0.64;
+it also drops 22 unlabelled passes, several of them plausible faint NoRs. The page and the lab differ
+because the nucleus rule removes different passes before the floor takes its quantile. Revisit if:
+submitted ground truth on more images shows the floor's losses, or an image with no false passes.

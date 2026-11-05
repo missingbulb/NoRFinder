@@ -3,7 +3,7 @@
   "title": "Image Viewer",
   "visibility": "listed",
   "icon": "web/icon.svg",
-  "stage": "PreGT",
+  "stage": null,
   "phases": [],
   "viewer": "image3d",
   "python": {
@@ -23,6 +23,7 @@
     "module": "web/viewer.js"
   },
   "files": {
+    "from": ["local", "drive"],
     "accept": ".tif,.tiff,.png",
     "empty": "Load a TIFF or PNG to look at it, each channel in its own colour."
   },

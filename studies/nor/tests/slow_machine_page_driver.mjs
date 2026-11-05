@@ -16,6 +16,7 @@ import { offSite } from "../../../web-tests/off_site.mjs";
 import { ENGINE } from "../../../web-tests/engine.mjs";
 import { asTagger } from "../../../web-tests/tagger.mjs";
 import { withItemView } from "./item_view_shown.mjs";
+import { standInDrive, openFromDrive } from "../../../web-tests/drive_open.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -76,6 +77,7 @@ async function open(gb) {
     delete Navigator.prototype.serviceWorker;
     Object.defineProperty(Navigator.prototype, "deviceMemory", { get: () => gb, configurable: true });
   }, gb);
+  await standInDrive(ctx);
   const page = await ctx.newPage();
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);
@@ -95,11 +97,11 @@ const unfold = async (page, box) => { await page.evaluate((b) => { const e = $(b
   const mem = await page.textContent("#sb-memory");
   await check(/^\d+ MB$/.test(mem) && parseInt(mem) >= 570, `the status bar shows the memory in use: "${mem}"`);
   await shot(page, "status_memory", "#statusbar");
-  await page.setInputFiles("#file", image);
-  await page.waitForFunction(() => $("#load-main").classList.contains("working"));
-  await check(await held(page, "#load-main") && !(await page.evaluate(() => !!st.img)), "Load is held while the image opens");
-  await free(page, "#load-main");
-  await check(await page.evaluate(() => !!st.img), "Load is free again once the image is open");
+  await openFromDrive(page, image);
+  await page.waitForFunction(() => $("#image-pick").classList.contains("working"));
+  await check(await held(page, "#image-pick") && !(await page.evaluate(() => !!st.img)), "the image selector is held while the image opens");
+  await free(page, "#image-pick");
+  await check(await page.evaluate(() => !!st.img), "the selector is free again once the image is open");
   await page.click("#find");
   await check(await held(page, "#find"), "Find Candidates is held at once, with its spinner");
   await shot(page, "find_working", ".row:has(#find)");
@@ -142,7 +144,7 @@ const unfold = async (page, box) => { await page.evaluate((b) => { const e = $(b
   await page.reload(); await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false);
   await check(!(await page.evaluate(() => $("#memory-dlg").open)), "after Don't show this again, it does not come back");
   // running out of memory shows it anyway, without the opt-out
-  await page.setInputFiles("#file", image); await free(page, "#load-main");
+  await openFromDrive(page, image); await free(page, "#image-pick");
   for (let k = 0; k < 3; k++) { await unfold(page, "#finder-box"); await page.click("#find"); await page.waitForFunction(() => !$("#find").classList.contains("working"), null, { timeout: 4 * LATE + 2000 }); }
   const oom = await page.evaluate(() => $("#memory-dlg").open && $("#memory-never").hidden && $("#memory-why").textContent);
   await check(oom && /ran out of memory/.test(oom), `running out of memory shows it, whatever the user chose: "${oom}"`);

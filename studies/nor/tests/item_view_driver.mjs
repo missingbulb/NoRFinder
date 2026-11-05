@@ -15,6 +15,7 @@ import { offSite } from "../../../web-tests/off_site.mjs";
 import { ENGINE } from "../../../web-tests/engine.mjs";
 import { asTagger } from "../../../web-tests/tagger.mjs";
 import { withItemView } from "./item_view_shown.mjs";
+import { standInDrive, openFromDrive } from "../../../web-tests/drive_open.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -65,12 +66,13 @@ await asTagger(ctx);
 await withItemView(ctx); // the switch to the shelved item view
 await ctx.route(offSite(origin), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
+await standInDrive(ctx);
 const page = await ctx.newPage();
 page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
 page.setDefaultTimeout(10000);
 await page.goto(origin + "/web/index.html?study=nor");
 await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false);
-await page.setInputFiles("#file", image);
+await openFromDrive(page, image);
 await page.waitForFunction(() => !document.querySelector("#find").disabled);
 await page.click("#find");
 await page.waitForFunction(() => st.alone && $("#busy").hidden);
