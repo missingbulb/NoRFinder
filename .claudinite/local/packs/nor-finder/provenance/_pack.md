@@ -43,3 +43,13 @@
 - **Model:** claude-opus-5-5
 - **Rejected:** fixing the environment instead (owner's choice): the next image with the same mix
   breaks the same way.
+
+## 2026-11-05 · scope-changed · env setup also fetches the page tests' Pyodide
+- **Reason:** the full set needs Pyodide under web-tests/node_modules, which no setup fetched, so a
+  fresh web session could not run it.
+- **Actor:** @missingbulb (owner).
+- **Model:** claude-opus-5-5
+- **Mechanism:** the manifest's env setup and probe.
+- **Rejected:** also fetching the ground-truth images at image build (owner's choice): a Drive
+  download that can be slow or fail there.
+- **Landed:** #779

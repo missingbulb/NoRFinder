@@ -36,7 +36,7 @@ def verdict(engine, code, supported):
 def main(engine):
     supported = json.load(open(os.path.join(ROOT, 'web', 'browsers.json')))['supported']
     counts(engine, supported)
-    code = subprocess.run([sys.executable, '-m', 'pytest', 'web-tests', 'studies', *SELECTED, '-q', '--durations=10'],
+    code = subprocess.run([sys.executable, '-m', 'pytest', 'web-tests', 'studies', *SELECTED, '-q', '-n', 'auto', '--durations=10'],
                           cwd=ROOT, env={**os.environ, 'PW_ENGINE': engine}).returncode
     return verdict(engine, code, supported)
 

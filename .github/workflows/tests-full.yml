@@ -54,7 +54,7 @@ jobs:
       - name: Fetch the ground-truth images not restored
         run: python3 studies/nor/detection/ground_truth.py fetch
       - name: Run every test
-        run: python3 -m pytest web-tests studies dev/tools/trick_pool -q --durations=10
+        run: python3 -m pytest web-tests studies dev/tools/trick_pool -q -n auto --durations=10
 
   # Main is released only once the full set is green on it; the release task owns the deploy.
       # Claudinite's checks; the engine update keeps these steps current.

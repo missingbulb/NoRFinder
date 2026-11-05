@@ -85,7 +85,8 @@ try {
   if (seen.title !== "Fixture" || seen.h1 !== "Fixture") problems.push("the page does not carry the study's title");
   if (!seen.icon.endsWith("/studies/fixture/web/icon.svg")) problems.push("the tab's icon is not the study's own: " + seen.icon);
   if (seen.threshold !== "100") problems.push("the study's ready hook did not get its Python's answer");
-  if (seen.channels.join() !== "Grey" || seen.accept !== ".png") problems.push("the study's channels or file types are not the page's");
+  // no image is open yet, so no channel rows (req/shell/channels/rows)
+  if (seen.channels.length || seen.accept !== ".png") problems.push("the page lists channels before an image, or the study's file types are not the page's");
   if (seen.other) problems.push("another study's panels are on the page");
   if (seen.path !== "/web/fixture") problems.push("the old ?study= address was not rewritten to the study's path: " + seen.path);
   await page.evaluate(() => { window.stayed = true; });
@@ -146,6 +147,8 @@ try {
   await page.waitForFunction(() => !document.querySelector("#fx-count").disabled);
   const base = await page.evaluate(() => [document.querySelector("#base").width, document.querySelector("#base").height]);
   if (base.join() !== "80,60") problems.push(`the viewer drew ${base} for an 80 x 60 image`);
+  const opened = await page.evaluate(() => [...document.querySelectorAll("#channels label")].map((l) => l.textContent).join());
+  if (opened !== "Grey") problems.push("the opened image's channels are not the study's: " + opened);
   await page.click("#fx-count");
   await page.waitForFunction(() => /pixels/.test(document.querySelector("#fx-result").textContent));
   const result = await page.evaluate(() => [document.querySelector("#fx-result").textContent, !!document.querySelector('#overlay g[data-layer="fx"] #fx-mask')]);

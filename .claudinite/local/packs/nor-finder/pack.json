@@ -9,8 +9,8 @@
     "dispatchWorkflow"
   ],
   "env": {
-    "label": "Python imaging stack (numpy, scipy, pillow, matplotlib)",
-    "setup": "python3 -m pip install --quiet --root-user-action=ignore -r requirements.txt && python3 -m pip install --quiet --root-user-action=ignore --ignore-installed pillow",
-    "probe": "python3 -c \"import numpy, scipy, PIL, matplotlib\" >/dev/null 2>&1"
+    "label": "Python imaging stack (numpy, scipy, pillow, matplotlib) and the page tests' Pyodide",
+    "setup": "python3 -m pip install --quiet --root-user-action=ignore -r requirements.txt && python3 -m pip install --quiet --root-user-action=ignore --ignore-installed pillow && npm install --silent --prefix web-tests pyodide@314.0.7",
+    "probe": "python3 -c \"import numpy, scipy, PIL, matplotlib\" >/dev/null 2>&1 && test -f web-tests/node_modules/pyodide/package.json"
   }
 }

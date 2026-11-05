@@ -16,7 +16,7 @@ page (req/shell/site/landing); writes sitemap.xml and robots.txt (req/shell/site
 settings into the published web/config.js from the repository variables: GOOGLE_API_KEY turns on
 loading from Google Drive, GOOGLE_CLIENT_ID signing in with Google. The folder its dialog opens on is each study's own (the first of files.folders in its study.json).
 """
-import glob, hashlib, json, os, re, shutil, subprocess, sys, urllib.parse
+import glob, hashlib, json, os, re, shutil, subprocess, sys, tempfile, urllib.parse
 from html import escape
 
 import version_history
@@ -255,12 +255,34 @@ def offline_list(out):
         json.dump({'files': sorted(files, key=lambda e: e['path'])}, f, indent=1)
 
 
+def write_json(path, value, **kw):
+    """Written whole or not at all, so a reader of web/ meanwhile, a test running beside the build among them,
+    sees the old file or the new one, never a truncated one."""
+    tmp = f'{path}.{os.getpid()}.tmp'
+    with open(tmp, 'w') as f:
+        json.dump(value, f, **kw)
+    os.replace(tmp, path)
+
+
+def vendor():
+    """The pinned wheels into web/vendor/, each file swapped in whole and the stale ones then removed, so the
+    folder is never empty or half-written while the build runs."""
+    os.makedirs(SITE, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=os.path.dirname(SITE)) as tmp:
+        subprocess.run([sys.executable, '-m', 'pip', 'download', '-q', '--no-deps', '--only-binary', ':all:', '-d', tmp, *wheels()], check=True)
+        got = sorted(os.listdir(tmp))
+        os.makedirs(OUT, exist_ok=True)
+        for f in got:
+            os.replace(os.path.join(tmp, f), os.path.join(OUT, f))
+    write_json(os.path.join(OUT, 'wheels.json'), [f for f in got if f.endswith('.whl')])
+    for f in set(os.listdir(OUT)) - set(got) - {'wheels.json'}:
+        os.remove(os.path.join(OUT, f))
+
+
 if __name__ == '__main__':
-    shutil.rmtree(OUT, ignore_errors=True)
-    subprocess.run([sys.executable, '-m', 'pip', 'download', '-q', '--no-deps', '--only-binary', ':all:', '-d', OUT, *wheels()], check=True)
-    json.dump(sorted(os.path.basename(f) for f in glob.glob(os.path.join(OUT, '*.whl'))), open(os.path.join(OUT, 'wheels.json'), 'w'))
-    json.dump(version_history.history(ROOT), open(version_history.OUT, 'w'), indent=1)
-    json.dump(studies(ROOT), open(os.path.join(WEB, 'studies.json'), 'w'), indent=1)
+    vendor()
+    write_json(version_history.OUT, version_history.history(ROOT), indent=1)
+    write_json(os.path.join(WEB, 'studies.json'), studies(ROOT), indent=1)
     count, drive = assemble(ROOT, SITE, os.environ)
     size = sum(os.path.getsize(os.path.join(d, f)) for d, _, fs in os.walk(SITE) for f in fs)
     print(f'build: assembled {count} repo files and the generated ones under dev/build/site/, {size / 1e6:.1f} MB; '
