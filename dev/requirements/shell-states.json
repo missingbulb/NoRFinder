@@ -242,22 +242,6 @@
                 {"name": "Save…", "select": "#edit-save", "control": true, "req": "req/shell/data/edit-save"},
                 {"name": "Done", "select": "#edit-done", "control": true, "req": "req/shell/data/edit"}
               ]
-            },
-            {"name": "Study: Threshold", "select": "#fx-box", "box": true, "req": "req/shell/left-bar/folding",
-              "rule": [
-                {"when": {"role": ["data"]}, "is": "hidden", "req": "req/shell/data/mode"},
-                {"when": {"image": ["none"]}, "is": "folded"},
-                {"when": {"counted": [true]}, "is": "folded"}
-              ],
-              "children": [
-                {"name": "Count", "select": "#fx-count", "control": true, "req": "req/shell/study/knows-none"}
-              ]
-            },
-            {"name": "Study: postprocessing", "select": "#fx-counted", "box": true, "req": "req/shell/account/role",
-              "rule": [
-                {"when": {"role": ["viewer", "data"]}, "is": "hidden"},
-                {"when": {"counted": [false]}, "is": "folded", "req": "req/shell/left-bar/folding"}
-              ]
             }
           ]
         },
@@ -309,13 +293,6 @@
               "rule": [
                 {"when": {"makesTruth": [false]}, "is": "hidden"},
                 {"when": {"view": ["image"]}, "is": "hidden"}
-              ],
-              "children": [
-                {"name": "Submit ground truth", "select": "#fx-truth", "control": true, "req": "req/shell/views/submit-task",
-                  "rule": [
-                    {"when": {"counted": [false]}, "is": "disabled", "req": "req/shell/study/knows-none"}
-                  ]
-                }
               ]
             },
             {"name": "Busy", "select": "#busy", "req": "req/shell/waiting/visible",
@@ -366,11 +343,6 @@
                     {"name": "Minimap's view", "select": "#minimap-view", "req": "req/shell/image/minimap"}
                   ]
                 }
-              ]
-            },
-            {"name": "Item view", "select": "#items-view", "req": "req/shell/views/second",
-              "rule": [
-                {"when": {"view": ["image"]}, "is": "hidden"}
               ]
             },
             {"name": "Folder view", "select": "#folder-view", "req": "req/shell/data/folder",

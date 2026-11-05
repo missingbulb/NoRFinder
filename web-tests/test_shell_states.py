@@ -113,8 +113,7 @@ def page_ids(*files):
 
 
 def tree():
-    with open(shell_states.RULES, encoding='utf-8') as f:
-        return list(shell_states.nodes(json.load(f)['tree']))
+    return list(shell_states.nodes(shell_states.load()['tree']))
 
 
 def lead(select):
@@ -151,3 +150,16 @@ def test_the_shell_tree_holds_only_the_shells_page():
     ids = set(p.state) | set(p.opened) | p.tags
     strays = [n['name'] for n, parent, _ in own if lead((parent if n.get('made') else n)['select']) not in ids]
     assert not strays, f'not the shell\'s, in dev/requirements/shell-states.json: {strays}'
+
+
+def test_a_study_grafts_its_elements_where_it_names():
+    rules = shell_states.graft(copy.deepcopy(PAGE), {'grafts': [
+        {'under': 'Box', 'after': 'Button', 'tree': [{'name': 'After', 'select': '#after', 'req': 'req/checks/spec-layout'}]},
+        {'under': 'Box', 'tree': [{'name': 'First', 'select': '#first', 'req': 'req/checks/spec-layout'}]},
+        {'under': 'Panel', 'tree': [{'name': 'Only', 'select': '#only', 'req': 'req/checks/spec-layout'}]}]})
+    assert [c['name'] for c in rules['tree'][0]['children']] == ['First', 'Button', 'After']
+    assert [c['name'] for c in rules['tree'][1]['children']] == ['Only']
+    with pytest.raises(AssertionError, match='no element'):
+        shell_states.graft(copy.deepcopy(PAGE), {'grafts': [{'under': 'Nowhere', 'tree': []}]})
+    with pytest.raises(AssertionError, match='holds no'):
+        shell_states.graft(copy.deepcopy(PAGE), {'grafts': [{'under': 'Box', 'after': 'Panel', 'tree': []}]})
