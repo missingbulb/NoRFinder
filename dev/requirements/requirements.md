@@ -1299,6 +1299,18 @@ nobody has decided: what the page does there is not a requirement yet.
   rules say. The arrows say where to look, not what to expect. The pictures are made on demand and kept nowhere. Test: `web-tests/test_shell_states_page.py`.
   </details>
 
+- `req/checks/spec-layout` The shell's requirements are in one spec, and each study's in its own folder.
+  <details>
+
+  Set by the owner on 2026-11-05. `dev/requirements/` holds what the shell does whichever study it runs:
+  `requirements.md` has only `req/shell` and `req/checks`, and `shell-states.json` only the shell's own elements.
+  Everything one study's page must do is under that study's folder: `studies/<id>/requirements.md` holds its
+  requirements, one section tagged `req/<id>`, and a study whose elements the shell's states walk (the fixture
+  study) gives them in `studies/<id>/states.json`, grafted into the shell's tree under the element it names.
+  Removing a study's folder removes its requirements with it. Test: `web-tests/test_requirement_tags.py`,
+  `web-tests/test_shell_states.py`.
+  </details>
+
 ## `req/nor` The NoR Finder page: detect once, filter live, in the browser
 
 Set by the owner on 2026-09-28: the shell running the NoR study with no backend. Its engine is

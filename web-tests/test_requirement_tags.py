@@ -4,6 +4,7 @@ its requirements sorted by tag, compared segment by segment so a branch stays to
 requirements side by side take no shared number and, unless their tags are neighbours, touch different lines.
 Every `req/...` cited anywhere in the repo names a tag the spec has, so a renamed or dropped tag fails here."""
 import collections
+import glob
 import os
 import re
 
@@ -72,3 +73,14 @@ def test_every_cited_tag_exists():
                     unknown.append(f'{os.path.relpath(path, ROOT)}: {tag}')
     assert scanned >= 200 and cited >= 200, f'swept {scanned} files and {cited} citations: the walk no longer reaches the repo'
     assert not unknown, 'cited tags the spec does not have:\n' + '\n'.join(unknown)
+
+
+def test_the_shell_spec_holds_only_the_shell_and_each_study_its_own():
+    """req/checks/spec-layout: no study's section in the shell's spec, and each study's spec one section of its own."""
+    shell = [s for s in sections(SPEC)]
+    assert shell == ['req/shell', 'req/checks'], f'the shell spec holds more than the shell: {shell}'
+    studies = sorted(glob.glob(os.path.join(ROOT, 'studies', '*', 'requirements.md')))
+    assert len(studies) >= 3, f'found {len(studies)} study specs'
+    for path in studies:
+        study = os.path.basename(os.path.dirname(path))
+        assert list(sections(path)) == [f'req/{study}'], f'{os.path.relpath(path, ROOT)} is not one req/{study} section'

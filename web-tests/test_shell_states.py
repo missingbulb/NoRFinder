@@ -141,3 +141,13 @@ def test_every_shell_element_is_in_the_tree():
     left = [i for i in p.state if i not in held]
     assert len(p.state) > 100
     assert not left, f'not in dev/requirements/shell-states.json: {left}'
+
+
+def test_the_shell_tree_holds_only_the_shells_page():
+    """req/checks/spec-layout: what a study's own panels hold is given by that study, in its states.json."""
+    with open(shell_states.RULES, encoding='utf-8') as f:
+        own = list(shell_states.nodes(json.load(f)['tree']))
+    p = page_ids('web/index.html')
+    ids = set(p.state) | set(p.opened) | p.tags
+    strays = [n['name'] for n, parent, _ in own if lead((parent if n.get('made') else n)['select']) not in ids]
+    assert not strays, f'not the shell\'s, in dev/requirements/shell-states.json: {strays}'
