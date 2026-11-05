@@ -3,7 +3,7 @@
 // second one level across it, the second a blob. Checks req/shell/viewer-3d: a stack opens on the 3D view, which draws it; the
 // channel rows drive it (hiding a channel or raising its black point darkens it); the toolbar holds Look from and
 // Zoom only, and the image box a row for the slices shown and their spacing; Side turns the view; a sideways scroll turns the picture about the line of sight; a drag turns on past
-// looking straight across; the depth slab hides slices; the spacing says where it came from; no 2D/3D switch
+// looking straight across; the Panning label toggles panning, shift holds it on, and it is stored nowhere; the depth slab hides slices; the spacing says where it came from; no 2D/3D switch
 // anywhere, and Edit Image on a stack offers no flat-image drawing tools. And req/shell/image-viewer: the Image Viewer
 // opens a stack in 3D and a flat image (a .png here) in 2D, and keeps its Image box open once either has loaded.
 // Exits 1 on a failed check, 2 when it cannot run.
@@ -150,6 +150,45 @@ try {
     const under = await picture();
     check(Math.abs(under.lit - top.lit) < top.lit * 0.15,
       `dragging down by half a turn turns on past looking straight across, to the stack from beneath: ${top.lit} → ${under.lit} lit pixels`);
+    await page.hover("#v3-look-btn"); await page.click('#v3-look [data-look="top"]');
+
+    // the Panning label: always at the bottom of the view, blue outlined while on, grey while off; a click toggles it,
+    // shift holds it on until let go, back to what the label holds; and nothing of it is stored
+    // (the action log, which records the clicks for a problem report, aside)
+    const stored = () => page.evaluate(() => { const l = { ...localStorage }; delete l["nor-actions"]; return JSON.stringify([l, { ...sessionStorage }]); });
+    const before = await stored();
+    const label = () => page.evaluate(() => {
+      const b = $("#v3-pan"), v = $("#v3-stage").getBoundingClientRect(), r = b?.getBoundingClientRect();
+      return b && { text: b.textContent.trim(), on: b.getAttribute("aria-pressed") === "true", border: getComputedStyle(b).borderTopColor,
+        shown: b.checkVisibility(), bottom: r.bottom <= v.bottom && v.bottom - r.bottom < 24 };
+    });
+    const drag = async () => {
+      const at = () => page.evaluate(() => { const S = window.shellForTests.viewer.three.S; return JSON.stringify([S.rot, S.pivot]); });
+      const [rot0, piv0] = JSON.parse(await at());
+      await page.mouse.move(...mid); await page.mouse.down(); await page.mouse.move(mid[0] + 60, mid[1] + 40, { steps: 6 }); await page.mouse.up();
+      const [rot1, piv1] = JSON.parse(await at());
+      return { turned: JSON.stringify(rot0) !== JSON.stringify(rot1), panned: JSON.stringify(piv0) !== JSON.stringify(piv1) };
+    };
+    const off = await label();
+    check(off && off.text === "Panning" && off.shown && off.bottom && !off.on, `a Panning label shows at the bottom of the 3D view, off: ${JSON.stringify(off)}`);
+    const d0 = await drag();
+    check(d0.turned && !d0.panned, `with panning off a drag turns the view: ${JSON.stringify(d0)}`);
+    await page.click("#v3-pan");
+    const on = await label();
+    check(on.on && on.border !== off.border && /^rgb\(\s*\d+,\s*\d+,\s*2\d\d/.test(on.border), `clicking the label turns panning on, outlined in blue: ${off.border} → ${on.border}`);
+    const d1 = await drag();
+    check(d1.panned && !d1.turned, `with panning on a drag pans: ${JSON.stringify(d1)}`);
+    await page.keyboard.down("Shift"); await page.keyboard.up("Shift");
+    check((await label()).on, "pressing and letting go of shift leaves panning on when it was on");
+    await page.click("#v3-pan");
+    check(!(await label()).on, "clicking the label again turns panning off");
+    await page.keyboard.down("Shift");
+    const held = await label(), d2 = await drag();
+    check(held.on && d2.panned && !d2.turned, `holding shift turns panning on: ${JSON.stringify({ on: held.on, ...d2 })}`);
+    await page.keyboard.up("Shift");
+    const let_ = await label(), d3 = await drag();
+    check(!let_.on && d3.turned && !d3.panned, `letting go of shift returns panning to off: ${JSON.stringify({ on: let_.on, ...d3 })}`);
+    const after = await stored(); check(after === before, `the panning state is stored nowhere: ${before} → ${after}`);
     await page.hover("#v3-look-btn"); await page.click('#v3-look [data-look="top"]');
 
     await page.evaluate(() => { const s = $("#v3-z1"); s.value = 0; s.dispatchEvent(new Event("input", { bubbles: true })); });
