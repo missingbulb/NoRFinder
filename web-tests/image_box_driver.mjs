@@ -143,6 +143,8 @@ const flight = () => page.waitForFunction(() => document.getAnimations().some((a
 const landed = () => page.waitForFunction(() => !document.getAnimations().some((a) => a.effect?.pseudoElement?.startsWith("::view-transition")));
 // the button itself never flies: a copy of it does, so the button stands where it is throughout
 const flier = () => page.evaluate(() => ({ button: getComputedStyle($("#minimap-btn")).viewTransitionName, copy: !!document.querySelector(".mm-flier") }));
+// no flight still under way from the minimap showing, which WebKit holds a click behind
+await landed();
 await page.click("#minimap-hide");
 await check(await flight().then(() => true, () => false), "hiding flies the minimap into its toolbar button");
 const folding = await flier();
