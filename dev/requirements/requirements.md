@@ -226,10 +226,12 @@ nobody has decided: what the page does there is not a requirement yet.
   and the steps; Load vanishes in a puff, Unload in its line with it: choosing another image or folder
   replaces the one open (set by the owner on 2026-11-04). The steps hidden are the status bar's breadcrumbs, with the item
   view's switch and its tasks' bar (set by the owner on 2026-11-04). Set by the owner on
-  2026-11-04: offline, Data Management as a whole needs the internet (`req/shell/offline/default`): the
-  column, the folder's box and Preprocessing say so and do nothing until the network is back. Undecided: how
-  Data Management and working offline meet at all, whether Data Manager is offered offline, what becomes of work
-  in progress (an Edit Image under way) when the network goes, and whether the Image box is held with the rest. Test: `web-tests/test_data_mode_page.py`.
+  2026-11-04, and on 2026-11-05 how it meets working offline (#768): offline, Data Manager is listed in the role
+  menu but says it needs the internet, and choosing it does nothing (`req/shell/offline/default`). Going offline
+  inside Data Management keeps what is open: the column and the folder's box say they need the internet and do
+  nothing until the network is back, and what reaches Drive (Save to Google Drive, Approve, Update previews, Needs
+  GT) is held with them; Preprocessing and an Edit Image under way stay usable, its marks being local, and the
+  Image box, the shell's own, stays usable. Test: `web-tests/test_data_mode_page.py`, `web-tests/test_shell_states_page.py`.
   </details>
 
 - `req/shell/data/preview-images` An image chosen in Data Management opens from its preview; Load Original opens the image itself.

@@ -138,6 +138,19 @@ const leftMode = () => $("#data-col").hidden && !$("#load").classList.contains("
 await page.waitForFunction(leftMode, null, { timeout: 5000 }).catch(() => {});
 await check(await page.evaluate(leftMode),
   "another role leaves the mode: the column gone, Load back, Preprocessing gone");
+// offline, Data Manager is listed, says it needs the internet, and choosing it does nothing (req/shell/data/mode)
+await page.context().setOffline(true);
+await page.waitForFunction(() => document.documentElement.classList.contains("offline"));
+await page.click("#role-menu summary");
+const offered = await page.evaluate(() => { const b = [...document.querySelectorAll("#role-list .item")].find((x) => x.textContent === "Data Manager");
+  return b && { needs: /needs the internet/i.test(b.title), dim: +getComputedStyle(b).opacity < 1 }; });
+await page.click('#role-list .item:text-is("Data Manager")', { force: true });
+await page.waitForTimeout(600);
+const after = await page.evaluate(() => ({ role: $("#role-name").textContent.trim(), mode: document.documentElement.dataset.mode || "" }));
+await check(offered?.needs && offered.dim && after.role === "Viewer" && !after.mode, "offline, Data Manager is listed, says it needs the internet, and choosing it does nothing", { offered, after });
+await page.evaluate(() => { $("#role-menu").open = false; });
+await page.context().setOffline(false);
+await page.waitForFunction(() => !document.documentElement.classList.contains("offline"));
 
 // a previews file whose pictures cannot be read, its index intact: each image shows no preview, and one chosen
 // opens itself, with nothing left uncaught; nor is it when what the site keeps cannot be counted as it is stored

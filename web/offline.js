@@ -62,6 +62,8 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
       if (!off && el.dataset.onlineTitle !== undefined) { el.title = el.dataset.onlineTitle; delete el.dataset.onlineTitle; el.removeAttribute("aria-disabled"); }
     }
   };
+  // what is drawn while offline says so too
+  new MutationObserver(() => { if (isOffline()) mark(); }).observe(document.body, { childList: true, subtree: true });
   addEventListener("online", () => { mark(); keepSite(); });
   addEventListener("offline", mark);
   mark();
