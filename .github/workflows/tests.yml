@@ -30,7 +30,7 @@ jobs:
       - name: Fetch the ground-truth images not restored
         run: python3 studies/nor/detection/ground_truth.py fetch
       - name: Run the fast tests
-        run: python3 -m pytest web-tests studies dev/tools/trick_pool -q -m "not full" --durations=5
+        run: python3 -m pytest web-tests studies dev/tools/trick_pool -q -n auto -m "not full" --durations=5
   version-history:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
