@@ -77,6 +77,9 @@ await ctx.route("https://www.googleapis.com/**", async (route) => {
 // them); delay(k) says how long row k's answer takes
 const asked = [];
 let inflight = 0, delay = () => 0;
+// while held, no thumbnail is answered: the answers are slower than whatever the test does meanwhile
+let held = null, letGo = () => {};
+const hold = () => { held = new Promise((ok) => { letGo = () => { held = null; ok(); }; }); };
 // resolves at the next request or answer
 let moved, next = new Promise((ok) => { moved = ok; });
 const note = () => { moved(); next = new Promise((ok) => { moved = ok; }); };
@@ -87,6 +90,7 @@ await ctx.route(`${origin}/studies/fixture/thumbs/*.jpg`, async (route) => {
   const id = path.basename(new URL(route.request().url()).pathname, ".jpg"), k = IMAGES.findIndex((f) => f.id === id);
   asked.push(k); inflight++; note();
   await new Promise((ok) => setTimeout(ok, delay(k))); // waits on purpose: the stand-in answers each row as slowly as the case asks
+  if (held) await held;
   try { await route.fulfill({ status: 200, contentType: "image/png", body: png(k + 1) }); } catch { /* aborted by the page */ }
   inflight--; note();
 });
@@ -161,10 +165,11 @@ try {
   if (shots) await page.locator("#drive-dlg").screenshot({ path: path.join(shots, "drive_thumbs.png") });
 
   // a fast scroll to the bottom, answers slower than the scroll: the rows passed over are never fetched
-  asked.length = 0; delay = () => 400;
+  asked.length = 0; hold();
   const height = await page.evaluate(() => $("#drive-list").scrollHeight);
   // a step a frame, as a flung wheel scrolls
   for (let y = 0; y <= height; y += 250) await page.evaluate((t) => new Promise((ok) => { $("#drive-list").scrollTop = t; requestAnimationFrame(ok); }), y);
+  letGo();
   await quiet();
   const last = span(await inView());
   // the fetches started as the scroll began, before it outran them, are the only rows passed over that are fetched
