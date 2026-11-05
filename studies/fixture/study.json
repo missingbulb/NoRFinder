@@ -46,7 +46,8 @@
     "count": "Counting…"
   },
   "groundTruth": {
-    "label": "fixture-ground-truth",
+    "submissions": null,
+    "curated": null,
     "button": "#fx-truth"
   }
 }

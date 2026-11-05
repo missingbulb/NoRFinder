@@ -84,7 +84,8 @@
     ]
   },
   "groundTruth": {
-    "label": "shelves-ground-truth",
+    "submissions": null,
+    "curated": null,
     "button": "#bs-truth"
   }
 }
