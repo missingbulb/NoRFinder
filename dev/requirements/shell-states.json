@@ -164,6 +164,16 @@
                 }
               ]
             },
+            {"name": "Ground truth box", "select": "#truth-box", "box": true, "req": "req/shell/ground-truth/view",
+              "rule": [
+                {"is": "hidden", "approval": "tentative"}
+              ],
+              "children": [
+                {"name": "Ground truth offer", "select": "#gt-offer", "req": "req/shell/ground-truth/view"},
+                {"name": "Load GT tagging", "select": "#load-gt", "control": true, "req": "req/shell/ground-truth/view"},
+                {"name": "Ground truth summary", "select": "#gt-summary", "req": "req/shell/ground-truth/view"}
+              ]
+            },
             {"name": "Selected Folder", "select": "#folder-box", "box": true, "req": "req/shell/data/folder",
               "rule": [
                 {"when": {"selected": ["nothing", "image"]}, "is": "hidden"},
