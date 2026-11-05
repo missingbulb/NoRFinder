@@ -6,7 +6,7 @@ GitHub. A study (`studies/<id>/`) is one piece of research: its data, its algori
 on the page, its ground truth and its docs. The shell knows no study; a study knows the shell only
 through the contract below. [`dev/requirements/requirements.md`](../dev/requirements/requirements.md) states what the page must do, the shell's part and each study's.
 
-Working on a study? Read its own warm-up next: [NoR Finder](../studies/nor/docs/WARMUP.md), [Vascular Measurements](../studies/vascular/docs/WARMUP.md).
+Working on a study? Read its own warm-up next: [NoR Finder](../studies/nor/docs/WARMUP.md), [Vascular Measurements](../studies/vascular/docs/WARMUP.md), [Bookshelf Reader](../studies/shelves/docs/WARMUP.md).
 
 ## Layers
 
@@ -25,7 +25,9 @@ second study needs it, not before.
 
 A study is a folder with a `study.json`:
 
-- `listed` — whether the header's study switcher offers it (`true` or `false`; the fixture is not).
+- `visibility` — who the page shows it to: `"listed"` (the header's study switcher and the landing page offer it),
+  `"unlisted"` (only by its address; the fixture) or `{"accounts": [email, …]}` (the switcher offers it only while one
+  of those Google accounts is signed in). It hides a study from the page, not its files from the network.
 - `viewer` — the viewer it is shown in (`image2d`, or `image3d` for z-stacks: the stack in 3D
   only, no switch to a flat view), and optionally `view`, what the 3D view opens with: `render` (`brightest` or
   `surface`), `depthColour`, `spacing` (µm between slices when the file does not say) and
@@ -103,6 +105,7 @@ web/              the shell, the viewer, the Python runtime (worker.js, bridge.j
 web-tests/        the shell's tests, run on the fixture study
 studies/nor/      the NoR Finder study: study.json, web/, detection/, data/, docs/, tests/
 studies/vascular/ the Vascular Measurements study: study.json, py/, web/, analysis/, data/, docs/, tests/
+studies/shelves/  the Bookshelf Reader, an image-processing outlier: study.json, py/, web/, reading/, docs/, tests/
 studies/viewer/   the Image Viewer, the page's default: any image, no analysis
 studies/fixture/  the smallest study, for the shell's tests (`/fixture`)
 docs/             this map

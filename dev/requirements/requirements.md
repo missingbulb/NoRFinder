@@ -411,7 +411,7 @@ nobody has decided: what the page does there is not a requirement yet.
 
   GitHub's repository switcher, for studies: the study's icon (as in its list, below), its title and a solid caret form one 32 px
   control; it opens, under the caret, a 320 px panel headed "Switch study", a search box (focused,
-  filtering by title as the user types) and every study whose `study.json` says `"listed": true`,
+  filtering by title as the user types) and every study it shows to the user (`req/shell/study/visibility`),
   by title, each with its own icon (the tab's icon its `study.json` names; the generic study icon
   when it names none, or the icon does not load), a rule under its name, then its offline mark (`req/shell/offline/mark`) and
   its stage (`req/shell/study/stage`), 8 px from the row's right edge. No tick marks the one on show: the
@@ -1039,8 +1039,8 @@ nobody has decided: what the page does there is not a requirement yet.
   A study is `studies/<id>/` with a `study.json` that names everything the shell needs, and every
   file it names exists. The app runs the study its path names (`rauntruth.com/app/nor`), the Image
   Viewer (`req/shell/image-viewer`) at its bare address (`rauntruth.com/app/`); `?study=<id>` there opens the same
-  study and is rewritten to its path. The build publishes the page once more under each listed
-  study's id, so the path opens it fresh too, and refuses an id the app already serves at its
+  study and is rewritten to its path. The build publishes the page once more under the id of each study
+  the switcher can offer (`req/shell/study/visibility`), so the path opens it fresh too, and refuses an id the app already serves at its
   top. Adding a study changes nothing in `web/`, in the deploy's settings or in CI. Test:
   `web-tests/test_study_contract.py`, `web-tests/test_published_site.py`, `web-tests/test_study_runs.py`.
   </details>
@@ -1102,6 +1102,22 @@ nobody has decided: what the page does there is not a requirement yet.
   behind one interface: show the opened image, draw the study's layers over it, report a pick and a
   lasso in image coordinates, zoom and pan. The 3D viewer (`req/shell/viewer-3d`) keeps that interface and shows
   a stack in 3D in the 2D view's place, with no change to the studies that keep the 2D viewer.
+  </details>
+
+- `req/shell/study/visibility` A study declares who sees it: everyone, no one but by its address, or the Google accounts it names.
+  <details>
+
+  Set by the owner on 2026-11-04. Every `study.json` names its `visibility`: `"listed"` (the
+  header's switcher offers it to everyone, and the landing page lists it), `"unlisted"` (offered
+  nowhere, opened only by its address; the fixture) or `{"accounts": [email, …]}` (the switcher
+  offers it only while one of those accounts is signed in, and the landing page never lists it).
+  Opened at its address by anyone else, signed out or signed in with another account, the page
+  says the study is shown only to the accounts it names and opens the Image Viewer instead; signing
+  in with one of them offers it in the switcher at once. This hides a study from the page, not
+  from the network: its files are published like any other study's, so it holds nothing secret.
+  The Bookshelf Reader is shown to its owner's account alone. Test:
+  `web-tests/test_study_contract.py`, `web-tests/test_published_site.py`,
+  `web-tests/test_study_visibility_page.py`.
   </details>
 
 - `req/shell/tools/grid` A Grid button beside the Ruler draws a grid over the image, its colour and spacing the user's.
@@ -1739,4 +1755,76 @@ owner's decisions on the stacks and the vessel model, are
   is out of the middle of the view. The Areas task frames one area at a time on the stack, seen
   from above; Draw a missed vessel adds one there, and "No missed vessels here" checks the area and
   moves on. Test: `studies/vascular/tests/test_vessel_tasks_page.py`.
+  </details>
+
+## `req/shelves` The Bookshelf Reader page: the books on a photo of shelves, boxed and read
+
+Set by the owner on 2026-11-04: a study of image processing, not biology, an outlier on the site. It
+takes a photo of bookshelves, boxes every book on it and reads the text on each, and writes what it
+read for a title matcher; matching the titles is not part of it.
+
+- `req/shelves/books/find` Find books boxes every book on the photo: four corners, spine or cover, standing or lying.
+  <details>
+
+  Find books runs the study's finder over the photo and draws each book it finds as four corners
+  joined, two strokes (dark under light) that show over any colour a book carries, a cover's dashed.
+  A book is a spine (its narrow face, standing upright or lying flat in a pile) or a cover (facing
+  the camera); one shelf can hold all three. Its corners go clockwise from the one nearest the
+  photo's top left. Set by the owner on 2026-11-04, a book leaning on its neighbours is boxed
+  leaning with it: its box's long sides follow the spine's own edges, at the angle they run.
+  Test: `studies/shelves/tests/test_books.py`, `studies/shelves/tests/test_shelves_page.py`.
+  </details>
+
+- `req/shelves/books/open` Load takes any single 2D photo: JPEG, PNG, WebP, BMP or a one-page TIFF.
+  <details>
+
+  The photo is shown in its own colours, turned as the camera said it was held (its EXIF
+  orientation); a grey or 16-bit image is shown grey. Test: `studies/shelves/tests/test_books.py`.
+  </details>
+
+- `req/shelves/matcher/export` Download for the matcher writes each book's text, view, corners and how sure the reading is.
+  <details>
+
+  Outside ground truth the Titles box lists each book's text in the order found, shelf by shelf
+  from the top; Download for the matcher saves `<image>_books.json`: the image, its size, and per
+  book an id, its view, its text (empty when nothing was read), the reader's confidence (0 to 1,
+  null when it was not read) and the reader's name, and its corners. Test:
+  `studies/shelves/tests/test_shelves_page.py`.
+  </details>
+
+- `req/shelves/read/readers` Read titles reads each book with the reader chosen, in Hebrew and English, the same in the page as in the sandbox.
+  <details>
+
+  Set by the owner on 2026-11-04, three readers are offered, kept side by side until the ground
+  truth chooses: Tesseract on the whole book (Hebrew and English), PaddleOCR's text finder marking
+  each line of text and Tesseract reading each line, and PP-OCR finding and reading the lines itself
+  (English only: it has no Hebrew, and on Hebrew it reads Latin letters with high confidence). Each
+  book is straightened to an upright rectangle first and read at each turn its shape allows, the
+  most confident kept. The page loads pinned builds of the engines from jsDelivr and the two
+  languages from the site; the sandbox (`studies/shelves/reading/read.mjs`) runs the same builds on
+  the same straightened crops, so a reading there is the page's. The reader last chosen is kept in
+  the browser. Test: `studies/shelves/tests/test_reading.py`, `studies/shelves/tests/test_shelves_page.py`.
+  </details>
+
+- `req/shelves/truth/task` One ground-truth task: each book in turn has its corners, view and title set right, then the missed books are drawn in.
+  <details>
+
+  Set by the owner on 2026-11-04: boxing and reading are made into ground truth together, as
+  NoR's finding and measuring are. A Ground Truth Tagger finds and reads the books, then works down
+  the Ground truth box: Books ("12/40 Books"), one book at a time, its straightened picture across
+  the box, Spine or Cover, its title in a text box filled with what the reader read, and Right or
+  Not a book under it, with Back and Skip on its row; its corners drag on the photo, and the
+  picture and the reading follow them. Then Missed books: Draw a book takes four clicks on the
+  photo, its corners, and the book is read and reviewed as the others; None missed ends the task.
+  Submit ground truth is last, and saves `<image>_books_gt.json`, each book with where it came from
+  (found or missed), its verdict, its corners, view and text, and for a found one what the finder
+  and the reader proposed. The Titles box is not shown while ground truth is made. Test:
+  `studies/shelves/tests/test_shelves_page.py`.
+  </details>
+
+- `req/shelves/visibility` The study is shown to its owner's account alone.
+  <details>
+
+  Its `visibility` names the owner's Google account (`req/shell/study/visibility`), so the site,
+  whose focus is biology, offers it to no one else. Test: `web-tests/test_study_contract.py`.
   </details>

@@ -1,7 +1,7 @@
 {
   "id": "viewer",
   "title": "Image Viewer",
-  "listed": true,
+  "visibility": "listed",
   "icon": "web/icon.svg",
   "stage": null,
   "phases": [],

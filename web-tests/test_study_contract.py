@@ -30,9 +30,13 @@ def test_there_are_studies_and_the_default_is_one():
 @pytest.mark.parametrize('path', STUDIES, ids=lambda p: os.path.basename(os.path.dirname(p)))
 def test_a_study_names_files_that_exist(path):
     m, base = manifest(path), os.path.dirname(path)
-    for key in ('id', 'title', 'listed', 'viewer', 'python', 'web', 'files', 'channels'):
+    for key in ('id', 'title', 'visibility', 'viewer', 'python', 'web', 'files', 'channels'):
         assert key in m, f'{key} missing'
-    assert isinstance(m['listed'], bool), 'listed says whether the header offers the study: true or false'
+    assert 'listed' not in m, 'a study says who sees it in visibility (req/shell/study/visibility)'
+    v = m['visibility']
+    assert v in ('listed', 'unlisted') or (isinstance(v, dict) and set(v) == {'accounts'} and v['accounts']
+            and all(re.fullmatch(r'[^@\s]+@[^@\s]+\.[^@\s]+', e) for e in v['accounts'])), \
+        f'visibility is "listed", "unlisted" or {{"accounts": [email, …]}}: {v!r}'
     assert os.path.exists(os.path.join(WEB, {'image2d': 'viewer2d.js', 'image3d': 'viewer3d.js'}[m['viewer']]))
     assert 'module' in m['web']
     for key in ('module', 'panels', 'style'):
@@ -132,15 +136,19 @@ def test_the_shell_names_no_study():
     assert not found, 'the shell names a study\'s own words:\n' + '\n'.join(found)
 
 
-def test_the_header_offers_the_listed_studies_by_title(tmp_path):
+def test_the_header_offers_the_studies_each_visitor_may_see_by_title(tmp_path):
+    """req/shell/study/visibility: the build's list holds the listed studies and those shown to named accounts, with
+    their accounts for the page to check; an unlisted one is left out."""
     import sys
     sys.path.insert(0, os.path.join(ROOT, 'dev', 'tools', 'build'))
     import build
-    for sid, title, listed in (('zeta', 'Zeta Counter', True), ('alpha', 'Alpha Viewer', True), ('test-only', 'A Fixture', False)):
+    for sid, title, visibility in (('zeta', 'Zeta Counter', 'listed'), ('alpha', 'Alpha Viewer', 'listed'), ('test-only', 'A Fixture', 'unlisted'),
+                                   ('mine', 'My Own', {'accounts': ['me@example.com']})):
         os.makedirs(tmp_path / 'studies' / sid)
         icon = dict(icon='web/icon.svg') if sid == 'zeta' else {}
-        (tmp_path / 'studies' / sid / 'study.json').write_text(json.dumps(dict(id=sid, title=title, listed=listed, **icon)))
-    assert build.studies(str(tmp_path)) == [{'id': 'alpha', 'title': 'Alpha Viewer'}, {'id': 'zeta', 'title': 'Zeta Counter', 'icon': 'web/icon.svg'}]
+        (tmp_path / 'studies' / sid / 'study.json').write_text(json.dumps(dict(id=sid, title=title, visibility=visibility, **icon)))
+    assert build.studies(str(tmp_path)) == [{'id': 'alpha', 'title': 'Alpha Viewer'}, {'id': 'mine', 'title': 'My Own', 'accounts': ['me@example.com']},
+                                            {'id': 'zeta', 'title': 'Zeta Counter', 'icon': 'web/icon.svg'}]
 
 
 def test_the_build_vendors_every_studys_wheels():

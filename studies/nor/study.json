@@ -1,7 +1,7 @@
 {
   "id": "nor",
   "title": "NoR Finder",
-  "listed": true,
+  "visibility": "listed",
   "stage": "GT",
   "icon": "web/icon.svg",
   "poster": "web/poster.png",

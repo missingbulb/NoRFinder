@@ -1,0 +1,90 @@
+{
+  "id": "shelves",
+  "title": "Bookshelf Reader",
+  "visibility": {
+    "accounts": [
+      "arielra@gmail.com"
+    ]
+  },
+  "stage": "GT",
+  "icon": "web/icon.svg",
+  "phases": [
+    {
+      "key": "find",
+      "name": "Find books",
+      "button": "#bs-find"
+    },
+    {
+      "key": "read",
+      "name": "Read titles",
+      "button": "#bs-read"
+    }
+  ],
+  "viewer": "image2d",
+  "python": {
+    "paths": [
+      "py/"
+    ],
+    "entry": "shelves",
+    "packages": [
+      "numpy",
+      "scipy",
+      "scikit-image",
+      "lazy-loader",
+      "packaging",
+      "pillow"
+    ],
+    "wheels": []
+  },
+  "web": {
+    "module": "web/shelves.js",
+    "panels": "web/shelves.html",
+    "style": "web/shelves.css"
+  },
+  "files": {
+    "from": [
+      "drive"
+    ],
+    "accept": ".jpg,.jpeg,.png,.webp,.tif,.tiff,.bmp",
+    "empty": "Load a photo of bookshelves (JPEG, PNG, WebP or TIFF), then press Find books.",
+    "folders": [
+      "https://drive.google.com/drive/folders/1Wt3__aNzVQConuhF8tUx4zmnMtmx-O3w"
+    ]
+  },
+  "channels": [
+    {
+      "name": "Red",
+      "colour": "#ff0000",
+      "shown": true,
+      "about": "The photo's red. The three colours together are the photo as the camera took it."
+    },
+    {
+      "name": "Green",
+      "colour": "#00ff00",
+      "shown": true,
+      "about": "The photo's green. The three colours together are the photo as the camera took it."
+    },
+    {
+      "name": "Blue",
+      "colour": "#0000ff",
+      "shown": true,
+      "about": "The photo's blue. The three colours together are the photo as the camera took it."
+    }
+  ],
+  "progress": {
+    "install": "Installing numpy, scipy, scikit-image, Pillow…",
+    "load": "Loading the book finder…",
+    "open": "Reading the photo…",
+    "find": "Finding the books…",
+    "straighten": "Straightening each book…"
+  },
+  "permissions": {
+    "data_management": [
+      "arielra@gmail.com"
+    ]
+  },
+  "groundTruth": {
+    "label": "shelves-ground-truth",
+    "button": "#bs-truth"
+  }
+}

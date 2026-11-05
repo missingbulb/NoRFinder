@@ -89,7 +89,7 @@ const signIn = account({
   clientId: ((window.NOR_CONFIG && window.NOR_CONFIG.google) || {}).clientId || "",
   applied: () => reapply(),
   // after the page's own start, which this may run during
-  changed: () => queueMicrotask(() => { data.signedIn(); showRole(); }),
+  changed: () => queueMicrotask(() => { data.signedIn(); showRole(); drawStudies(); }),
 });
 
 function readJSON(key, fallback = {}) {
@@ -1881,12 +1881,17 @@ function studyOf(loc) {
 }
 const addressOf = (id) => (id === DEFAULT_STUDY ? HOME : HOME + encodeURIComponent(id));
 
-// The header's switcher, after GitHub's repository switcher: every study the build lists, each a link to its
-// address, found by typing; the arrow keys mark one, Enter opens it. A plain click swaps it in place.
+// who may see a study (req/shell/study/visibility): everyone, unless it names the accounts it is shown to
+const maySee = (accounts) => !accounts || accounts.includes(signIn.email());
+// The header's switcher, after GitHub's repository switcher: every study the build lists that the user may see, each a
+// link to its address, found by typing; the arrow keys mark one, Enter opens it. A plain click swaps it in place.
+let listed = [];
 async function studyMenu() {
-  let listed = [];
   try { listed = await (await fetch(HOME + "studies.json", { cache: "no-cache" })).json(); } catch (e) { console.warn("no list of studies:", e); }
-  $("#study-list").replaceChildren(...listed.map((s) => {
+  drawStudies();
+}
+function drawStudies() {
+  $("#study-list").replaceChildren(...listed.filter((s) => maySee(s.accounts)).map((s) => {
     const a = document.createElement("a");
     a.href = addressOf(s.id); a.dataset.id = s.id;
     a.innerHTML = `<span class="name"></span><span class="stage-tag"></span>`;
@@ -1978,7 +1983,7 @@ function swap() {
     // before Python has started, it starts on this study
     if (!st.worker) return;
     $("#spin").classList.add("on");
-    st.worker.postMessage({ type: "study", id });
+    st.worker.postMessage({ type: "study", id: manifest.id });
   });
 }
 
@@ -1991,6 +1996,12 @@ async function mountStudy(id) {
   const r = await fetch(base + "study.json");
   if (!r.ok) throw new Error(`no study "${id}"`);
   manifest = await r.json();
+  if (!maySee(manifest.visibility.accounts)) {
+    manifest = null;
+    history.replaceState(null, "", addressOf(DEFAULT_STUDY));
+    await mountStudy(DEFAULT_STUDY);
+    return notice("That study is shown only to the accounts it names. Signed in with one of them, the switcher offers it.");
+  }
   data.mount(manifest);
   takeRole();
   document.title = manifest.title; $("#title").textContent = manifest.title; $("#title-icon").replaceChildren(...studyIcon(id, manifest.icon)); markCurrent();

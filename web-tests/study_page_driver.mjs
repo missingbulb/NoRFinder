@@ -36,7 +36,8 @@ try { pyodide = path.dirname(require.resolve("pyodide/pyodide.mjs", { paths: [pa
 }
 let stub = true;
 // the switcher's titles, as the build lists the studies
-const titles = JSON.parse(fs.readFileSync(studies, "utf8")).map((m) => m.title);
+// what the switcher offers a visitor not signed in: the build's list but the studies shown to named accounts alone
+const offered = JSON.parse(fs.readFileSync(studies, "utf8")).filter((m) => !m.accounts), titles = offered.map((m) => m.title);
 
 // answers every request the way web/worker.js does with the fixture's Python, from answers.json
 const STAND_IN = `
@@ -108,7 +109,7 @@ try {
   }));
   console.log(JSON.stringify(rowsLook));
   const colours = new Set(rowsLook.map((r) => r.border));
-  for (const s of JSON.parse(fs.readFileSync(studies, "utf8"))) {
+  for (const s of offered) {
     const r = rowsLook.find((x) => x.id === s.id) || {};
     if (s.stage === null ? r.stage !== null : r.stage !== s.stage || !r.border || !r.small || !r.last || !r.snug) problems.push(`the switcher does not label ${s.id} with its stage, ${s.stage}, last, small, snug and bordered: ${JSON.stringify(r)}`);
     if (!(r.room >= 8)) problems.push(`the switcher's ${s.id} row leaves ${r.room} px at its right, not 8`);
@@ -136,7 +137,7 @@ try {
     if (seen !== want) problems.push(`the switcher's control shows ${seen}, not ${want}`);
   };
   await headIcon("/studies/fixture/web/icon.svg");
-  for (const s of JSON.parse(fs.readFileSync(studies, "utf8"))) {
+  for (const s of offered) {
     const got = icons.find((i) => i.id === s.id) || {};
     const want = s.icon ? `/studies/${s.id}/${s.icon}` : null;
     if (got.src !== want || got.generic === !!s.icon) problems.push(`the switcher shows ${s.id} with ${got.src || (got.generic ? "the generic icon" : "no icon")}, not ${want || "the generic icon"}`);
