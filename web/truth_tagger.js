@@ -4,7 +4,7 @@
 // Submit (req/shell/ground-truth/submit).
 "use strict";
 import { studyDrive } from "./study_drive.js";
-import { folders, submit } from "./truth_folders.js";
+import { folders, submit, status, current } from "./truth_folders.js";
 
 const SAY = {
   unset: "This study has not set up its ground-truth folders yet, so ground truth cannot be submitted.",
@@ -25,6 +25,8 @@ export function truthTagger({ account, drive, google, manifest, image, on, clear
   // the study's clear: {what, fn}; the access last read: "write" | "view" | "none" | "unset" | "unknown"; epoch: the
   // draw a late answer belongs to
   let clear = null, access = null, epoch = 0;
+  // the study's ground-truth status as last read, {key, at, map}, kept a minute
+  let known = null;
   const where = () => folders(manifest()).submissions;
 
   async function read() {
@@ -65,7 +67,20 @@ export function truthTagger({ account, drive, google, manifest, image, on, clear
     draw, paint,
     // the study's progress on an image, which fn forgets on this device, the image then opened afresh: what names it
     clearable(what, fn) { clear = { what, fn }; paint(); },
-    leave() { clear = null; access = null; epoch++; },
+    leave() { clear = null; access = null; epoch++; known = null; },
+    // Map(subfolder name -> {curated, pending, rejected}) of the study's images (req/shell/ground-truth/pending);
+    // with submissions, the pending ones too, else the curated alone. Empty while the study names no folders.
+    async status(submissions) {
+      const f = folders(manifest());
+      if (!f.curated) return new Map();
+      const want = submissions ? f : { submissions: f.curated, curated: f.curated, same: true }, key = JSON.stringify(want);
+      if (known && known.key === key && Date.now() - known.at < 60e3) return known.map;
+      const map = await status(reader, want);
+      known = { key, at: Date.now(), map };
+      return map;
+    },
+    // the image's curated ground truth, {name, doc}, or null (req/shell/ground-truth/view)
+    curated(img) { const f = folders(manifest()); return f.curated ? current(reader, f.curated, img) : Promise.resolve(null); },
     // why Submit is off for the image open, "" when it is on
     blocked() {
       const im = image();

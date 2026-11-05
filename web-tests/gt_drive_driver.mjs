@@ -79,4 +79,42 @@ page.once("dialog", (d) => { asked = d.message(); d.accept(); });
 await page.click("#left .gt-access .gt-clear");
 await page.waitForFunction(() => /Nothing counted/.test($("#fx-result")?.textContent) && st.fileName && !$("#fx-count").disabled);
 await check(asked && asked.includes(png.name), "Clear progress asks first, naming the image", asked);
+
+// req/shell/ground-truth/pending: the Drive dialog marks the image as pending for the tagger
+const dialogTag = async () => {
+  await page.evaluate(() => document.querySelector("#load-drive").click());
+  await page.waitForFunction(() => document.querySelector("#drive-dlg").open);
+  const row = `#drive-list .item[data-id="${png.id}"] .gt-tag`;
+  const tag = await page.waitForFunction((r) => document.querySelector(r)?.textContent || null, row, { timeout: 5000 }).then((h) => h.jsonValue(), () => "");
+  await page.keyboard.press("Escape");
+  return tag;
+};
+let tag = await dialogTag();
+await check(tag === "GT pending", "to the tagger, the Drive dialog marks the submitted image GT pending", tag);
+
+// req/shell/ground-truth/curate: the data manager sees it pending, reviews it and accepts it into the curated folder
+approved.add(CUR);
+await role(page, "Data Manager");
+await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder").length >= 1);
+await page.click("#data-tree .tree-folder .name");
+const cell = `#folder-items .cell[data-id="${png.id}"]`;
+await page.waitForSelector(cell);
+const sums = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#folder-summary dd")].map((d) => [d.dataset.k, +d.textContent])));
+let s = await sums();
+await check(s.pending === 1 && s.truth === 0 && await page.isVisible(cell + " .review-gt"), "Data Management counts it pending and offers Review GT", s);
+await page.click(cell + " .review-gt");
+await page.waitForFunction(() => document.querySelector("#curate-list li .accept") && !document.querySelector("#curate-list li .accept").disabled);
+const who = await page.textContent("#curate-list li .who");
+await check(who === "tester@example.com", "the review lists the tagger's submission", who);
+await page.click("#curate-list li .accept");
+await page.waitForFunction(() => /Accepted/.test($("#curate-msg").textContent) || $("#curate-msg").classList.contains("err"));
+const into = FILES.find((f) => f.folder && f.name === sub && f.parent === CUR), copy = into && FILES.find((f) => f.parent === into.id);
+const accepted = copy && JSON.parse(copy.bytes.toString()).accepted;
+await check(copy?.name === file.name && accepted?.by === "tester@example.com" && accepted.from_sha256?.length === 64,
+  "Accept copies the submission into the image's subfolder of the curated folder, recording who accepted it and from which file", accepted || await page.textContent("#curate-msg"));
+await page.click("#curate-close");
+await page.waitForFunction(() => +document.querySelector('#folder-summary dd[data-k="truth"]')?.textContent === 1);
+s = await sums();
+await check(s.truth === 1 && s.pending === 0 && !(await page.$(cell + " .review-gt")), "accepted, the image has ground truth and nothing pending", s);
+await check(await page.isDisabled(cell + " .mark-gt"), "an image with ground truth needs no marker");
 await done(0);

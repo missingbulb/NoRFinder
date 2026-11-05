@@ -34,6 +34,7 @@ import { imageEditor, SPLIT_PATTERN } from "./image_edit.js";
 import { replacedBy } from "./edit.js";
 import { dialogMotion } from "./dialog_motion.js";
 import { truthTagger, LOCAL_GT } from "./truth_tagger.js";
+import { subfolderName } from "./truth_folders.js";
 
 const $ = (s) => document.querySelector(s);
 // what the user does here, kept on this device for a problem report (req/shell/report/action-log)
@@ -1047,7 +1048,7 @@ function driveDialog() {
       const added = f.created ? `Added to Google Drive on ${f.created.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}` : "When it was added to Google Drive is not known";
       const fresh = !f.folder && seen && !seen.has(f.id) ? `<span class="new" title="${esc(added)}">new</span>` : "";
       // what only some rows show sits inward, what every image shows at the row's edge
-      b.innerHTML = `<span class="pic"></span><span class="name">${esc(f.name)}</span>${fresh}${f.folder ? "" : agoTag(opened[f.id])}<span class="shape">${esc(readJSON(HOLDS)[f.id] || "")}</span><span class="kept"></span><span class="meta">${esc(meta)}</span>`;
+      b.innerHTML = `<span class="pic"></span><span class="name">${esc(f.name)}</span>${fresh}${f.folder ? "" : agoTag(opened[f.id])}<span class="gt-tag"></span><span class="shape">${esc(readJSON(HOLDS)[f.id] || "")}</span><span class="kept"></span><span class="meta">${esc(meta)}</span>`;
       if (!f.folder) { b.dataset.id = f.id; markOffline(b.querySelector(".kept"), "image", kept.has(f.id)); }
       if (off && (f.folder ? !listings[f.id] : !kept.has(f.id))) {
         b.disabled = true; b.title = f.folder ? "Not listed on this device yet: it needs the internet." : "Not kept on this device: it needs the internet.";
@@ -1057,6 +1058,20 @@ function driveDialog() {
       b.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); enter(f); } };
       $("#drive-list").append(b);
       if (!f.folder) thumbs.watch(b.querySelector(".pic"), f, k);
+    }
+    if (!off) markTruth(items, asked);
+  };
+  // which images have ground truth, and to a tagger or data manager which have it pending (req/shell/ground-truth/pending)
+  const markTruth = async (items, asked) => {
+    let map;
+    try { map = await truth.status(role === "tagger" || role === "data"); } catch (e) { console.warn("ground truth status not read:", e); return; }
+    if (asked !== listing) return;
+    for (const f of items) {
+      const g = !f.folder && f.sha && map.get(subfolderName(f.name, f.sha)), tag = $("#drive-list").querySelector(`.item[data-id="${f.id}"] .gt-tag`);
+      if (!g || !tag) continue;
+      const [text, title] = g.pending ? ["GT pending", "A tagger submitted ground truth for it, not curated yet"] : g.curated ? ["GT", "It has curated ground truth"]
+        : g.rejected ? ["GT rejected", "Its submitted ground truth was rejected"] : [];
+      if (text) { tag.textContent = text; tag.title = title; tag.dataset.state = g.pending ? "pending" : g.curated ? "curated" : "rejected"; }
     }
   };
   // the study's own folders to choose from, by name (req/shell/drive/dialog)

@@ -53,7 +53,7 @@ await page.click("#data-tree .tree-folder .name");
 await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell").length === 3);
 await check(await page.evaluate(() => !$("#folder-view").hidden && $("#image-view").hidden && $("#folder-box").checkVisibility() && !$("#image-box").checkVisibility()),
   "a folder chosen: its images in the main area, Selected Folder in place of the Image box");
-await check(JSON.stringify(await summary()) === JSON.stringify({ images: 3, previews: 1, stale: 1, truth: 1, missing: 1 }), "the folder's sums", await summary());
+await check(JSON.stringify(await summary()) === JSON.stringify({ images: 3, previews: 1, stale: 1, truth: 0, pending: 0, missing: 1 }), "the folder's sums", await summary());
 await page.click('#folder-layout button[data-layout="list"]');
 await page.waitForFunction(() => $("#folder-items").dataset.layout === "list");
 await check(true, "the list button lays the images out as a list");
@@ -69,7 +69,7 @@ await page.click("#update-previews");
 await page.waitForFunction(() => /3 previews made/.test($("#folder-msg").textContent), null, { timeout: 30000 });
 await check(JSON.stringify(writes) === JSON.stringify([["create", "rauntruth-previews.tiff"]]), "Update previews creates the file", writes);
 await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="previews"]')?.textContent === "3");
-await check(JSON.stringify(await summary()) === JSON.stringify({ images: 3, previews: 3, stale: 0, truth: 1, missing: 1 }), "then every image has a preview", await summary());
+await check(JSON.stringify(await summary()) === JSON.stringify({ images: 3, previews: 3, stale: 0, truth: 0, pending: 0, missing: 1 }), "then every image has a preview", await summary());
 await page.waitForFunction(() => document.querySelectorAll("#folder-items .pic img").length === 3);
 await shot("3-list");
 await page.click('#folder-layout button[data-layout="grid"]'); await page.waitForTimeout(500);
@@ -86,7 +86,6 @@ await check(JSON.stringify(writes.at(-1)) === JSON.stringify(["replace", "rauntr
 fs.writeFileSync(out, FILES.find((f) => f.name === "rauntruth-previews.tiff").bytes);
 
 const cell = (name) => `#folder-items .cell:has(.name:text-is("${name}"))`;
-await check(await page.isDisabled(cell("a flat.tif") + " .mark-gt"), "an image with ground truth needs no marker");
 await page.click(cell("e plain.tif") + " .mark-gt");
 await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="missing"]')?.textContent === "2");
 await check(JSON.stringify(writes.at(-1)) === JSON.stringify(["create", "e plain.ground_truth.MISSING"]), "marking an image creates its marker", writes);

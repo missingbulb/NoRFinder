@@ -422,9 +422,10 @@ nobody has decided: what the page does there is not a requirement yet.
   each a Google Drive folder. Taggers write to submissions; only Data Managers write to curated; viewers,
   the file dialog and the study's lab read curated. Ground truth is never sent to GitHub. When both name
   the same folder, every submission is curated as it lands and nothing is pending. Who may write is what
-  Drive's sharing of each folder allows, nothing listed in the study. Tentative: a study naming one folder
-  twice that anyone with the link may edit is warned in Data Management that anyone can change its
-  curated ground truth. Test: `web-tests/test_study_contract.py`.
+  Drive's sharing of each folder allows, nothing listed in the study. Tentative: Data Management tells a
+  study naming one folder twice that whatever a tagger submits is used at once; it cannot tell from Drive
+  whether anyone with the link may edit the folder. Tests: `web-tests/test_study_contract.py`,
+  `web-tests/test_truth_folders.py`.
   </details>
 
 - `req/shell/ground-truth/layout` Both folders hold one subfolder per image and one file per tagger in it, and a reader takes the newest that is not rejected.

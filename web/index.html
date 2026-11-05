@@ -224,6 +224,12 @@
     <span class="grow"></span><button id="gt-export" class="primary" type="button">Export file</button><button id="gt-send" type="button" data-needs-network>Submit</button><button id="gt-close" type="button">Close</button>
   </div>
 </dialog>
+<dialog id="curate-dlg" aria-labelledby="curate-title">
+  <h2>Ground truth for <span id="curate-title"></span></h2>
+  <ul id="curate-list" class="curate-list"></ul>
+  <p id="curate-msg" class="hint" role="status"></p>
+  <div class="drive-row end"><span class="grow"></span><button id="curate-close" type="button">Close</button></div>
+</dialog>
 <dialog id="history-dlg" aria-labelledby="history-title">
   <form method="dialog">
     <h2 id="history-title">Version history</h2>
