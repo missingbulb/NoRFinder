@@ -1,5 +1,6 @@
 {
  "baseline_sha256": "74ff1b481818a64da7de981ca488a22f621c50c1b9035d059de08c64db7b4148",
+ "dataset_sha256": "6b89defb8b5b50c1172b0b80f573ccc99600529d6cc438fe33b6bdeda8574ff0",
  "finders": {
   "blobs": {
    "filtered": {
@@ -365,6 +366,8 @@
  "format": "norfinder-finder-metrics/2",
  "images": [
   {
+   "gt_sha256": "2cec12a0c292bba7e3f92a73a641d26a7c74aea6b078960142b7e1b2ff8b2845",
+   "image_sha256": "126752b828cf54bfbe8f95b034e1d7a98ba467e732471846d5c506ab34f89f29",
    "name": "Slide5_4AP_NoR.sld - Slice1_up_left2.tif",
    "not_nor": 93,
    "real": 72

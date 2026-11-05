@@ -59,3 +59,10 @@
   the code found missing invocations, rules owned twice and hand-offs the family lacked; applied.
 - **Actor:** @missingbulb (owner), who asked for the review.
 - **Model:** claude-opus-5-5
+
+## 2026-11-05 · trigger-changed · new ground truth is curated on Drive, not added to the repo (#783)
+- **Reason:** the lab's ground truth now lives in the study's curated Drive folder; a change shows
+  as a new dataset SHA.
+- **Actor:** @missingbulb (owner).
+- **Mechanism:** the same skill, its description naming the curated folder and the dataset SHA.
+- **Landed:** #783

@@ -11,6 +11,7 @@ import { makePreview, buildPreviews } from "./previews_writer.js";
 import { readTiff, fromPlanes, writeTiff } from "./split.js";
 import { CONNECTION } from "./offline.js";
 import { replacedBy, stemOf } from "./edit.js";
+import * as tf from "./truth_folders.js";
 
 const IMAGE = /\.(tiff?|png)$/i;
 const MAX_FOLDERS = 200;
@@ -40,6 +41,11 @@ export function dataMode(ctx) {
   const { $, esc, drive, account, sizeText } = ctx;
   const google = (window.NOR_CONFIG && window.NOR_CONFIG.google) || {};
   const sd = studyDrive({ account, apiKey: google.apiKey || "", clientId: google.clientId || "" });
+  // the study's ground-truth folders (req/shell/ground-truth/folders), read with no sign-in and written by the user
+  const reader = { all: (id) => drive.all(id), text: async (id) => new TextDecoder().decode((await drive.file(id, "ground truth")).bytes) };
+  const writer = { folder: sd.folder, create: sd.create, replace: sd.replace, mark: sd.mark };
+  // gt: {submissions, curated, same}; gtNodes: those folders with their access, outside the tree
+  let gt = { submissions: null, curated: null, same: false }, gtNodes = [];
   const root = document.documentElement;
   // the study's folders, by id: {id, name, parent, files, folders (ids), access, el}; roots their ids
   let nodes = new Map(), roots = [], roles = new Set(), manifest = null, who = null, epoch = 0, loaded = null, chosen = null, layout = "grid";
@@ -75,12 +81,12 @@ export function dataMode(ctx) {
     })());
   }
   async function checkAccess() {
-    await Promise.all([...nodes.values()].map(async (n) => {
+    await Promise.all([...nodes.values(), ...gtNodes].map(async (n) => {
       try { n.access = (await sd.access(n.id)) || "unknown"; } catch (e) { console.warn("access not read:", e); n.access = "unknown"; }
     }));
     drawTree();
   }
-  const lacking = () => [...nodes.values()].filter((n) => n.access === "none");
+  const lacking = () => [...nodes.values(), ...gtNodes].filter((n) => n.access === "none");
 
   async function approve() {
     const want = lacking();
@@ -151,13 +157,19 @@ export function dataMode(ctx) {
     if (!src) { pic.classList.add("none"); return; }
     const i = new Image(); i.alt = ""; i.src = src; pic.replaceChildren(i);
   }
-  // each image's state in the folder: {f, entry, stale, truth, marker}
-  function states(n, pv) {
+  // each image's state in the folder: {f, entry, stale, truth, pending, rejected, marker}, its ground truth as gts
+  // (truth_folders.js status) has it
+  function states(n, pv, gts) {
     return imagesOf(n).map((f) => {
-      const entry = pv?.entry(f.name, f.sha) || null, s = stemOf(f.name) + ".ground_truth.";
+      const entry = pv?.entry(f.name, f.sha) || null, g = (f.sha && gts.get(tf.subfolderName(f.name, f.sha))) || {};
       return { f, entry, stale: !entry && !!pv?.index.images.some((e) => e.name === f.name),
-        truth: n.files.some((g) => g.name.startsWith(s) && g.name !== s + "MISSING"), marker: n.files.find((g) => g.name === s + "MISSING") || null };
+        truth: !!g.curated, pending: !!g.pending, rejected: !!g.rejected, marker: n.files.find((x) => x.name === truthMarker(f.name)) || null };
     });
+  }
+  // the ground truth of every image either folder holds, an empty Map while the study names none
+  async function truthStatus() {
+    if (!gt.curated) return new Map();
+    try { return await tf.status(reader, gt); } catch (e) { msg($("#folder-msg"), "The ground-truth folders could not be read: " + (e.message || e), true); return new Map(); }
   }
 
   async function chooseFolder(n) {
@@ -171,11 +183,12 @@ export function dataMode(ctx) {
     if (of !== epoch || chosen?.id !== n.id) return;
     if (n.el) n.el.querySelector(".tree-images").replaceChildren();
     drawTree();
-    const pv = await previewsOf(n);
+    const [pv, gts] = await Promise.all([previewsOf(n), truthStatus()]);
     if (of !== epoch || chosen?.id !== n.id) return;
-    const all = states(n, pv), count = (p) => all.filter(p).length;
+    const all = states(n, pv, gts), count = (p) => all.filter(p).length;
     const rows = [["images", "Images", all.length], ["previews", "With a preview", count((s) => s.entry)], ["stale", "Preview out of date", count((s) => s.stale)],
-      ["truth", "With ground truth", count((s) => s.truth)], ["missing", "Marked as needing it", count((s) => s.marker)]];
+      ["truth", "With ground truth", count((s) => s.truth)], ["pending", "Ground truth pending", count((s) => s.pending)], ["missing", "Marked as needing it", count((s) => s.marker)]];
+    if (gt.same) msg($("#folder-msg"), "This study's submissions are its curated ground truth: whatever a tagger submits is used at once.");
     $("#folder-summary").replaceChildren(...rows.flatMap(([k, label, v]) => {
       const dt = Object.assign(document.createElement("dt"), { textContent: label }), dd = Object.assign(document.createElement("dd"), { textContent: String(v) });
       dd.dataset.k = k; return [dt, dd];
@@ -195,9 +208,12 @@ export function dataMode(ctx) {
       if (k < 60) cell.style.viewTransitionName = "cell-" + k;
       const tag = s.entry ? "" : s.stale ? "Preview out of date" : "No preview";
       cell.innerHTML = `<span class="pic"></span><span class="name">${esc(s.f.name)}</span><span class="meta">${esc(s.f.size == null ? "" : sizeText(s.f.size))}</span>` +
-        `<span class="tags">${tag ? `<span class="tag warn">${tag}</span>` : ""}${s.truth ? '<span class="tag yes">Ground truth</span>' : ""}</span>` +
+        `<span class="tags">${tag ? `<span class="tag warn">${tag}</span>` : ""}${s.truth ? '<span class="tag yes">Ground truth</span>' : ""}` +
+        `${s.pending ? '<span class="tag pending">GT pending</span>' : ""}${s.rejected ? '<span class="tag warn">GT rejected</span>' : ""}</span>` +
+        (s.pending ? `<button type="button" class="review-gt" data-needs-network title="See the taggers' submissions, and accept or reject each">Review GT</button>` : "") +
         `<button type="button" class="mark-gt" data-needs-network aria-pressed="${!!s.marker}" title="Mark it as needing ground truth: a ${esc(truthMarker(s.f.name))} file beside it">Needs GT</button>`;
-      cell.onclick = (e) => { if (!e.target.closest(".mark-gt")) chooseImage(n, s.f); };
+      cell.onclick = (e) => { if (!e.target.closest(".mark-gt, .review-gt")) chooseImage(n, s.f); };
+      cell.querySelector(".review-gt")?.addEventListener("click", () => review(n, s.f));
       cell.onkeydown = (e) => { if (e.key === "Enter" && e.target === cell) chooseImage(n, s.f); };
       const mark = cell.querySelector(".mark-gt");
       mark.disabled = n.access !== "write" || s.truth; mark.onclick = () => markTruth(n, s, mark);
@@ -228,6 +244,50 @@ export function dataMode(ctx) {
       await relist(n);
     } catch (e) { msg($("#folder-msg"), e.message || String(e), true); b.disabled = false; }
   }
+  // An image's submissions (req/shell/ground-truth/curate): each tagger's newest, with when it was made and how many
+  // marks it holds, to accept into the curated folder or reject with a reason
+  async function review(n, f) {
+    const dlg = $("#curate-dlg"), list = $("#curate-list"), say = (text, err) => msg($("#curate-msg"), text, err);
+    const image = { name: f.name, sha256: f.sha };
+    $("#curate-title").textContent = f.name; list.replaceChildren(); say("Reading the submissions…");
+    dlg.showModal();
+    const curatedOk = gtNodes.find((g) => g.id === gt.curated)?.access === "write";
+    try {
+      const subs = await tf.files(reader, gt.submissions, image);
+      const rows = await Promise.all(subs.map(async (s) => {
+        let doc = null;
+        try { doc = JSON.parse(await reader.text(s.id)); } catch { /* shown as unreadable */ }
+        return { s, doc };
+      }));
+      list.replaceChildren(...rows.map(({ s, doc }) => {
+        const li = document.createElement("li");
+        const when = doc?.created ? new Date(doc.created).toLocaleString() : "no time";
+        li.innerHTML = `<span class="who"></span><span class="hint"></span><span class="grow"></span>` +
+          `<button type="button" class="accept primary" data-needs-network>Accept</button><button type="button" class="reject" data-needs-network>Reject</button>`;
+        li.querySelector(".who").textContent = doc?.tagger || s.name;
+        li.querySelector(".hint").textContent = s.rejected ? `rejected: ${s.reason || "no reason given"}` : `${when}, ${doc?.labels?.length ?? "?"} marks`;
+        const [ok, no] = li.querySelectorAll("button");
+        ok.disabled = !doc || !curatedOk; ok.title = curatedOk ? "Copy it into the curated folder, as this image's ground truth" : ACCESS.none[1];
+        no.disabled = s.rejected;
+        ok.onclick = async () => {
+          ok.disabled = no.disabled = true; say("Accepting…");
+          try { await tf.accept({ reader, writer, folders: gt, image, file: s, by: account.email() }); say(`Accepted ${doc.tagger || s.name}'s ground truth.`); await relist(n); }
+          catch (e) { say(e.message || String(e), true); ok.disabled = no.disabled = false; }
+        };
+        no.onclick = async () => {
+          const reason = prompt("Why is it rejected? The tagger sees this.", "");
+          if (reason === null) return;
+          ok.disabled = no.disabled = true; say("Rejecting…");
+          try { await tf.reject({ writer, file: s, reason }); say("Rejected."); await relist(n); }
+          catch (e) { say(e.message || String(e), true); no.disabled = false; }
+        };
+        return li;
+      }));
+      say(rows.length ? (curatedOk ? "" : "Approve the curated folder in the tree's head to accept.") : "No submissions.");
+    } catch (e) { say(e.message || String(e), true); }
+  }
+  $("#curate-close").onclick = () => $("#curate-dlg").close();
+
   // the image's planes as a reader gives them
   async function sourceOf(name, bytes) {
     if (!/\.png$/i.test(name)) return readTiff(new Uint8Array(bytes));
@@ -244,7 +304,7 @@ export function dataMode(ctx) {
     try {
       const f = previewsFile(n);
       if (f && !(await sd.ours(f.id))) return say(`This folder's ${PREVIEWS} was not made by this page, so the page leaves it alone. Delete it in Google Drive to let the page make and update it.`, true);
-      const pv = f ? await ctx.folderPreviews(n, f) : null, all = states(n, pv), kept = [], made = [];
+      const pv = f ? await ctx.folderPreviews(n, f) : null, all = states(n, pv, new Map()), kept = [], made = [];
       for (const s of all) if (s.entry) kept.push({ entry: s.entry, pages: await pv.pages(s.entry) });
       const todo = all.filter((s) => !s.entry);
       for (const [k, s] of todo.entries()) {
@@ -322,6 +382,8 @@ export function dataMode(ctx) {
       if (on()) enter(false);
       roles = account.signedIn() ? rolesOf(m, account.email()) : new Set();
       roots = [...new Set((m?.files?.folders || []).map((l) => drive.parse(l)).filter((r) => r?.kind === "folder").map((r) => r.id))];
+      gt = tf.folders(m);
+      gtNodes = gt.curated ? [{ id: gt.curated, name: "Curated ground truth", access: null }, ...(gt.same ? [] : [{ id: gt.submissions, name: "Ground truth submissions", access: null }])] : [];
       $("#data-tree").replaceChildren(); msg($("#data-msg"), "");
     },
     // whoever is signed in may have changed: the study's roles again, if so

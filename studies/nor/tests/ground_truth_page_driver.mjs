@@ -4,7 +4,8 @@
 // until the user decides; the measuring ends drag freely and keep the NoR on one axis; the
 // Ground truth button's colour follows the verdicts (red while an added NoR waits for one) and opens a popup that
 // names what is missing; the file holds only the candidates voted on, the added NoR once approved; for an image
-// from Google Drive (a stand-in Drive API) the popup opens a GitHub issue labelled for the intake. In a PreGT
+// from Google Drive (a stand-in Drive API) in a study whose ground-truth folders are not set up yet, Submit stays off
+// and says why (web-tests/test_gt_drive_page.py submits to them). In a PreGT
 // study, where the summary and the item views are (req/nor/layout), it checks the summary mask: lassoed areas,
 // combined by exclusive or, limit the summary and the CSVs but not the ground truth; and the item views' sort. And the study's steps in the status bar: Run algorithm shines with Find Candidates until the finder has run
 // with the settings chosen, then Review all items until every finalist has a verdict. Exits 1 on a failed check, 2
@@ -352,9 +353,8 @@ async function mask(page) {
     `the file names each candidate by its number on the image, the added NoR by ${miss.id}`);
   await check(gt.image.location.source === "local", "the file says the image was local");
   await check(!("mask" in gt), "the file holds no mask");
-  const issue = await page.$eval("#gt-issue", (b) => ({ off: b.disabled, why: b.title }));
-  await new Promise((ok) => setTimeout(ok, 300));
-  await check(!asked.length && issue.off && /local files/.test(issue.why), `no issue opens for a local image, and the button says why: "${issue.why}"`);
+  const send = await page.$eval("#gt-send", (b) => ({ off: b.disabled, why: b.title }));
+  await check(send.off && /local files/.test(send.why), `Submit is off for a local image, and says why: "${send.why}"`);
   await page.click("#gt-close");
   await page.evaluate(() => st.order.filter((c) => !st.forced.has(c.i)).forEach((c) => nor.decide(c.i, "approve")));
   await check(await gtColour(page) === "part", "with every candidate voted on but the areas not checked the button is orange");
@@ -414,18 +414,11 @@ async function mask(page) {
   await check(await page.isHidden("#notice"), "a Drive image shows no warning");
   await markAndVote(page);
   const { said, name, gt, after } = await download(page);
-  await check(after === "gt-issue", `after the export Open new GitHub issue turns blue (${after})`);
+  await check(after === "gt-close", `with Submit off, Close turns blue after the export (${after})`);
   await check(!/mask/i.test(said), `with no mask the mask item is crossed out: "${said}"`);
   await check(gt.image.location.source === "drive" && gt.image.location.drive_id === DRIVE_ID, "the file names the image's Drive id");
-  await page.click("#gt-issue");
-  for (let t = 0; t < 40 && !asked.length; t++) await new Promise((ok) => setTimeout(ok, 50));
-  const issue = asked.length === 1 && asked[0];
-  await check(issue && issue.host === "github.com" && /\/issues\/new$/.test(issue.pathname) && issue.searchParams.get("labels") === "new-ground-truth"
-    && issue.searchParams.get("body").includes(gt.image.sha256) && issue.searchParams.get("body").includes(DRIVE_ID) && issue.searchParams.get("body").includes(name),
-    `Open new GitHub issue opens one labelled new-ground-truth, naming the image and the file (${issue && issue.pathname})`);
-  await check(await blue(page) === "gt-close", `after the issue opens Close turns blue (${await blue(page)})`);
-  const note = await page.textContent("#gt-msg");
-  await check(note.includes(name) && /Attach/.test(note), `the popup says to attach the file: "${note}"`);
+  const send = await page.$eval("#gt-send", (b) => ({ off: b.disabled, why: b.title }));
+  await check(send.off && /not set up/.test(send.why), `with the study's folders not set up, Submit is off and says why: "${send.why}"`);
   await ctx.close();
 }
 await done(0);

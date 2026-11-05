@@ -92,9 +92,13 @@ export function studyDrive({ account, apiKey, clientId }) {
         return f.appProperties?.rauntruth === MINE.rauntruth;
       } catch (e) { if (e.status === 404 || e.status === 403) return false; throw e; }
     },
-    // new bytes for a file the page made
-    async replace(id, blob) {
-      return (await (await google(`${UPLOAD}/${encodeURIComponent(id)}?uploadType=media&fields=id,sha256Checksum&supportsAllDrives=true`, { method: "PATCH", ...(await media(blob)) })).json());
+    // new bytes for a file the page made; keepForever: Drive keeps the version replaced for good, not for its 30 days
+    async replace(id, blob, { keepForever = false } = {}) {
+      return (await (await google(`${UPLOAD}/${encodeURIComponent(id)}?uploadType=media&fields=id,sha256Checksum&supportsAllDrives=true${keepForever ? "&keepRevisionForever=true" : ""}`, { method: "PATCH", ...(await media(blob)) })).json());
+    },
+    // public properties set on a file the page made, which a reader with no sign-in sees too
+    async mark(id, properties) {
+      await google(`${FILES}/${encodeURIComponent(id)}?supportsAllDrives=true`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ properties }) });
     },
     // a file the page made, to Drive's bin
     async trash(id) {

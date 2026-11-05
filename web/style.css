@@ -738,6 +738,10 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 #v3-stage .v3-side { position: absolute; top: 0; left: 50%; width: 50%; height: 100%; border-left: 1px solid #333; }
 #v3-stage:not(.split) .v3-side { left: 0; width: 100%; border-left: 0; }
 #v3-note { z-index: 2; }
+/* the Panning label: always there at the bottom of the view, blue outlined while panning is on, grey while off */
+#v3-pan { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); z-index: 2; padding: 2px 10px; font-size: 12px;
+  color: var(--dim); background: #000a; border: 1px solid #6b7078; border-radius: var(--r-chip); cursor: pointer; }
+#v3-pan[aria-pressed="true"] { color: #e1e8ee; border-color: var(--blue); }
 /* the split dialog: the image with its parts at the left, what each part keeps at the right */
 .split-field { display: flex; gap: 10px; align-items: center; }
 .split-label { min-width: 72px; color: var(--dim); font-size: 12px; }
@@ -910,3 +914,21 @@ html:not(.offline) #welcome-offline { display: none; }
 #overlay .edit-lasso { fill: none; stroke: #ff4d4d; stroke-width: 2px; vector-effect: non-scaling-stroke; }
 :root[data-editing] #scroller { cursor: default; }
 :root[data-edit-tool] #scroller { cursor: crosshair; }
+/* the tagger's line in a study's ground-truth box: may they write to the submissions folder (req/shell/ground-truth/tagger-access) */
+.gt-access { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 0 0 8px; padding: 6px 8px; border-left: 3px solid var(--line); font-size: 12px; color: var(--dim); }
+.gt-access[hidden] { display: none; }
+.gt-access[data-access="write"] { border-left-color: var(--yes); }
+.gt-access[data-access="none"], .gt-access[data-access="view"], .gt-access[data-access="unset"], .gt-access[data-access="unknown"] { border-left-color: var(--warn); color: var(--text); }
+.gt-access .gt-say { flex: 1 1 100%; }
+.gt-access .gt-clear { margin-left: auto; }
+/* a pending submission, and the Data Manager's review of an image's submissions (req/shell/ground-truth/curate) */
+#folder-items .tag.pending { color: var(--accent); }
+.curate-list { list-style: none; margin: 8px 0; padding: 0; min-width: 360px; }
+.curate-list li { display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.curate-list .who { font-weight: 600; }
+.curate-list .grow { flex: 1; }
+/* an image's ground truth in the Drive dialog's rows (req/shell/ground-truth/pending) */
+#drive-list .gt-tag:empty { display: none; }
+#drive-list .gt-tag { font-size: 10.5px; padding: 0 5px; border-radius: 8px; border: 1px solid currentColor; color: var(--yes); }
+#drive-list .gt-tag[data-state="pending"] { color: var(--accent); }
+#drive-list .gt-tag[data-state="rejected"] { color: var(--warn); }

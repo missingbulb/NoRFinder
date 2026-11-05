@@ -215,9 +215,10 @@ export function mount(shell) {
     const items = [{ ok: true, text: `${found().length} books the finder proposed, each reviewed` },
       { ok: true, text: `${books.filter((b) => b.source === "missed" && b.verdict === "right").length} missed books drawn in` },
       ...(kept.some((b) => !b.text) ? [{ ok: false, level: "warning", text: `${kept.filter((b) => !b.text).length} books with no title typed` }] : [])];
-    shell.submitTruth({ doc, count: kept.length, file: name + "_books_gt.json", items, empty: "No book marked right yet.",
-      issue: { title: "Bookshelf ground truth: " + name, body: `${kept.length} books on ${st.fileName}.` } });
+    shell.submitTruth({ doc, count: kept.length, file: name + "_books_gt.json", items, empty: "No book marked right yet." });
   };
+  // the tagger's progress on the photo is kept nowhere but the page (req/shell/ground-truth/clear)
+  shell.clearable("book marks", () => {});
 
   // ---------- the pointer: dragging the current book's corners, drawing a missed one ----------
   const sc = $("#scroller"), at = (e) => shell.viewer.toImage(e);
@@ -260,6 +261,14 @@ export function mount(shell) {
         $("#bs-read").disabled = !books.length;
         draw();
       }
+    },
+    // a curated ground truth's final results (req/shell/ground-truth/view): the books marked right, each boxed, and
+    // none of the task's marks
+    showTruth(doc) {
+      books = (doc.books || []).filter((b) => b.verdict === "right" && Array.isArray(b.corners)).map((b) => ({ ...b }));
+      cur = null; draw();
+      const titled = books.filter((b) => b.text).length;
+      return `${books.length} book${books.length === 1 ? "" : "s"}, ${titled} with a title`;
     },
     error() { shell.busy(false); },
     capturesPointer: () => !!drawing || dragging !== null,

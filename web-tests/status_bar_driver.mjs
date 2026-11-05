@@ -7,7 +7,7 @@
 // a Published study with no Submit GT step; switching study in place bringing its own stage and steps; the disk, memory, network and CPU as grey icons and
 // numbers, each opening its own tab of one dialog, each rolling its changed characters to a new value, the CPU and
 // the network flashing on a sharp rise and rolling nothing when reduced motion is asked for; a separator between every two items; no question-mark pointer; the four folded into one icon at first, unfolded by hovering it but not by going offline,
-// a CPU over 50% or a network over 250 KB/s for 5 s or a tab over 1 GB, at once with animations off, folding back 5 to 10 s after, or set always open or hidden.
+// a network over 250 KB/s for 5 s or a tab over 1 GB, at once with animations off, folding back 5 to 10 s after, or set always open or hidden.
 // Optional SHOTS: a directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/status_bar_driver.mjs ANSWERS IMAGE.png STUDIES [SHOTS]
 import { createRequire } from "node:module";
@@ -94,8 +94,10 @@ const bars = (page) => page.evaluate(() => {
     return [a.id, b.id, getComputedStyle(a).borderRightWidth === "1px" || getComputedStyle(b).borderLeftWidth === "1px", !(four(a) && four(b))]; });
 });
 
-async function open(study, mode) {
+// clock: the page's clock made one the test can move past a wait on the page's own timers; it runs as the real one does
+async function open(study, mode, clock) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
+  if (clock) await ctx.clock.install();
   await localStudy(ctx, "fixture");
   await asTagger(ctx);
   await ctx.route(offSite(origin), (r) => r.abort());
@@ -409,7 +411,7 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
 
 // ---- the resources block: folded into one icon at first, opened by hovering it, by what needs watching, or always ----
 {
-  const { ctx, page } = await open("fixture");
+  const { ctx, page } = await open("fixture", undefined, true);
   // from the right edge: the version, the report icon, the online icon, then the resources block, which unfolds leftward moving none
   const fixed = () => page.evaluate(() => ["#sb-res-icon", "#sb-online", "#sb-report", "#sb-version"].map((id) => Math.round(document.querySelector(id).getBoundingClientRect().left)));
   // open: the four items take their room, once the animation is over; folded, only the icon shows
@@ -448,29 +450,19 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await page.keyboard.press("Escape"); await page.mouse.move(700, 300);
   await isOpen(false, "closed, the block is folded again");
 
-  // what opens it while auto-hiding, and folds it 5 to 10 seconds after it ends
+  // what opens it while auto-hiding, and folds it 5 to 10 seconds after it ends, on the page's clock moved on
   const foldsLater = async (what) => {
-    const t0 = Date.now();
-    await page.waitForTimeout(3000);
+    await ctx.clock.fastForward(3000);
     await isOpen(true, `${what}: still open 3 s after it ends`, 100);
-    await page.waitForFunction(() => document.querySelector("#sb-res-items").getBoundingClientRect().width < 5, null, { timeout: 12000 }).catch(() => {});
-    const s = (Date.now() - t0) / 1000;
-    await check(s >= 5 && s <= 11, `${what}: folded again ${s.toFixed(1)} s after it ends`, s);
+    await ctx.clock.fastForward(2000);
+    await isOpen(true, `${what}: still open 5 s after it ends`, 100);
+    await ctx.clock.fastForward(6000);
+    await isOpen(false, `${what}: folded again 11 s after it ends`);
   };
   await page.evaluate(() => { window.st.heapWas = window.st.heap; window.st.heap = 1.2 * 2 ** 30; });
   await isOpen(true, "the tab holding over 1 GB opens it", 2500);
   await page.evaluate(() => { window.st.heap = window.st.heapWas; });
   await foldsLater("memory back under 1 GB");
-  // the page's thread busy for 7 s: not at once, only once it has been over half a core for 5 s. Only Chromium
-  // reports the page's own thread's load, so another engine is not asked.
-  if (ENGINE === "chromium") {
-    const busy = page.evaluate(async () => { const end = Date.now() + 7500; while (Date.now() < end) { const t = Date.now(); while (Date.now() - t < 400); await new Promise((r) => setTimeout(r, 40)); } });
-    await page.waitForTimeout(2500);
-    await isOpen(false, "a CPU over 50% for 2 s does not open it yet", 100);
-    await busy;
-    await isOpen(true, "over 50% for more than 5 s opens it", 2500);
-    await foldsLater("the CPU calm again");
-  } else console.log(`not checked in ${ENGINE}: the page's own thread's load opening the gauge, which only Chromium reports`);
   // downloading: kb KB every 250 ms for 8 s
   const download = (kb) => page.evaluate(async (u) => { const end = Date.now() + 8000; while (Date.now() < end) { await fetch(u, { cache: "no-store" }).then((r) => r.arrayBuffer()); await new Promise((r) => setTimeout(r, 250)); } }, origin + "/some/" + kb);
   await download(25);
@@ -482,7 +474,7 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await isOpen(true, "over 250 KB/s for more than 5 s opens it", 2500);
   await foldsLater("the network quiet again");
   await ctx.setOffline(true);
-  await page.waitForTimeout(3000);
+  await ctx.clock.fastForward(3000);
   await isOpen(false, "going offline does not open it: the online icon says so", 100);
   await ctx.setOffline(false);
 

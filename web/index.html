@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>rauntruth.com app</title>
-<meta name="version" id="site-version" title="version 0.11105.95">
+<meta name="version" id="site-version" title="version 0.11105.98">
 <meta name="description" content="Image studies that run in your browser: find, count and measure in microscopy images, then review every result. Online or offline.">
 <link rel="icon" id="favicon" href="icon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
@@ -93,6 +93,12 @@
       </div>
     </section>
 
+    <section class="box" id="truth-box" hidden>
+      <div class="sec-head"><h2>Ground truth</h2></div>
+      <p class="hint" id="gt-offer">This image has curated ground truth.</p>
+      <button id="load-gt" class="primary" type="button" data-needs-network title="Show the ground truth curated for this image: only its final results, with no algorithm run">Load GT tagging</button>
+      <p id="gt-summary" class="hint" role="status" hidden></p>
+    </section>
     <section class="box foldable" id="folder-box" data-needs-network>
       <div class="sec-head"><h2>Selected Folder</h2></div>
       <div id="folder-name"></div>
@@ -221,8 +227,14 @@
   <ul id="gt-problems" class="checklist"></ul>
   <p id="gt-msg" class="hint"></p>
   <div class="drive-row end">
-    <span class="grow"></span><button id="gt-export" class="primary" type="button">Export file</button><button id="gt-issue" type="button" data-needs-network>Open new GitHub issue</button><button id="gt-close" type="button">Close</button>
+    <span class="grow"></span><button id="gt-export" class="primary" type="button">Export file</button><button id="gt-send" type="button" data-needs-network>Submit</button><button id="gt-close" type="button">Close</button>
   </div>
+</dialog>
+<dialog id="curate-dlg" aria-labelledby="curate-title">
+  <h2>Ground truth for <span id="curate-title"></span></h2>
+  <ul id="curate-list" class="curate-list"></ul>
+  <p id="curate-msg" class="hint" role="status"></p>
+  <div class="drive-row end"><span class="grow"></span><button id="curate-close" type="button">Close</button></div>
 </dialog>
 <dialog id="history-dlg" aria-labelledby="history-title">
   <form method="dialog">

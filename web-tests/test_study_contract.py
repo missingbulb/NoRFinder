@@ -61,7 +61,7 @@ def test_a_study_names_files_that_exist(path):
     for link in m['files'].get('folders', []):
         assert re.search(r'/folders/[\w-]{10,}', link), link
     for role, who in m.get('permissions', {}).items():
-        assert role in ('data_management', 'ground_truth_writer'), role
+        assert role == 'data_management', role
         assert who and all(re.fullmatch(r'[^@\s]+@[^@\s]+\.[^@\s]+', e) for e in who), (role, who)
     if 'driveThumbs' in m:
         assert os.path.isdir(os.path.join(base, m['driveThumbs']))
@@ -80,7 +80,13 @@ def test_a_study_names_its_stage_and_steps(path):
     m = manifest(path)
     assert 'stage' in m and m['stage'] in ('PreGT', 'GT', 'PostGT', 'Published', None), 'stage: PreGT, GT, PostGT, Published, or null for a tool making no ground truth'
     if m['stage'] in ('GT', 'PostGT'):
-        assert m.get('groundTruth', {}).keys() >= {'label', 'button'}, 'a study that makes ground truth names its label and button'
+        gt = m.get('groundTruth', {})
+        assert 'button' in gt, 'a study that makes ground truth names its button'
+        # req/shell/ground-truth/folders: its submissions and curated folders, each a folder link, or null until made
+        assert gt.keys() >= {'submissions', 'curated'}, 'a study that makes ground truth names its submissions and curated folders'
+        for k in ('submissions', 'curated'):
+            assert gt[k] is None or re.search(r'/folders/[\w-]{10,}', gt[k]), (k, gt[k])
+        assert 'label' not in gt, 'ground truth goes to Drive, not to a labelled GitHub issue'
     assert isinstance(m.get('phases'), list), 'phases: the study\'s own steps, [] for none'
     keys = [p['key'] for p in m['phases']]
     assert len(set(keys)) == len(keys) and not {'load', 'submit'} & set(keys), 'a step\'s key is its own, and not one of the shell\'s'
