@@ -420,8 +420,8 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
     icon: Math.round(document.querySelector("#sb-res-icon").getBoundingClientRect().width) }));
   const isOpen = async (want, what, ms = 1500) => {
     await page.waitForFunction((w) => (document.querySelector("#sb-res-items").getBoundingClientRect().width > 150) === w, want, { timeout: ms }).catch(() => {});
-    // and its folding or unfolding over, whichever is under way
-    await page.waitForFunction(() => !document.querySelector("#sb-res-items").getAnimations().length);
+    // and its folding or unfolding over, whichever is under way: the four's and the icon's, which each run their own
+    await page.waitForFunction(() => ["#sb-res-items", "#sb-res-icon"].every((id) => !document.querySelector(id).getAnimations().length));
     const b = await block();
     await check((b.items > 150) === want && (want || b.items === 0), what, b);
   };
