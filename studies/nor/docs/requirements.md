@@ -264,10 +264,10 @@ Set by the owner on 2026-10-03; its source moved from GitHub to Drive on 2026-11
   silently changes every score. No ground truth enters git, and nothing is submitted through GitHub.
 - **Images stay on Drive.** A ground-truth file names its image by Drive id and SHA-256; the fetch
   downloads each image into `data/raw/` and checks it (R6). No image enters git.
-- **A set changed is a baseline to re-record.** Tentative: a daily task fetches the curated set, and
-  when its dataset SHA (R11) differs from the recorded baseline's (R9) it re-records the baseline and
-  opens one pull request, where an agent then improves the finders following the pack's
-  `improve-on-ground-truth` skill; losses stay the owner's to accept (R9).
+- **A set changed is a baseline to re-record.** A changed curated set changes the dataset SHA (R11), so
+  `tests/test_finder_metrics.py` fails until the metrics and the quality baseline (R9) are measured on it
+  again; the finders are then improved following the pack's `improve-on-ground-truth` skill, and losses
+  stay the owner's to accept (R9).
 - **Newer and human beats older and Claude's.** For one image the curated file is the one reference;
   it wins over the lab's own labels at the same spot, and every quality assessment (the lock,
   `ground_truth.py score`) scores against that merged reference (`ground_truth.corpus()`).

@@ -1,8 +1,9 @@
-"""req/nor/downloads, R10 — ground truth saved from the page scores the finders in the lab, and submitted ground truth
-joins the data set by code.
+"""req/nor/downloads, R10, R11 — ground truth saved from the page scores the finders in the lab, the lab takes it from
+the study's curated Drive folder by code, and the data set is named by one SHA.
 
 Run: python3 tests/test_ground_truth.py
 """
+import hashlib
 import json
 import os
 import sys
@@ -98,37 +99,62 @@ def test_only_drive_images_with_marks_are_accepted():
     assert ground_truth.validate(dict(submission([MISSING]), format='norfinder-ground-truth/1'))
 
 
-def test_the_intake_adds_each_attached_submission_once(tmp_path):
-    files = {'https://github.com/user-attachments/files/1/acme_ground_truth.json': json.dumps(submission([MISSING])),
-             'https://github.com/user-attachments/files/2/local.json': json.dumps(submission([MISSING], source='local'))}
-    issues = [
-        {'number': 7, 'body': 'acme\n[acme_ground_truth.json](https://github.com/user-attachments/files/1/acme_ground_truth.json)'},
-        {'number': 8, 'body': 'forgot it', 'comments': ['here [f](https://github.com/user-attachments/files/2/local.json)']},
-        {'number': 9, 'body': 'nothing attached'},
-    ]
-    ds = str(tmp_path / 'dataset.json')
-    res = ground_truth.ingest(issues, get=files.__getitem__, dataset=ds, dirpath=str(tmp_path), today='2026-10-03')
-    assert res['added'] == [7] and set(res['refused']) == {8, 9}
-    saved = json.load(open(tmp_path / 'issue-7.json'))
-    assert saved['submission'] == {'issue': 7, 'added': '2026-10-03'}
-    img = ground_truth.images(ds)[SHA]
-    assert img['drive_id'] == 'D1' and [e['issue'] for e in img['files']] == [7]
-    assert ground_truth.ingest(issues, get=files.__getitem__, dataset=ds, dirpath=str(tmp_path))['added'] == []
+class Curated:
+    """A stand-in for the keyless Drive listing: a folder's files by path, each image's subfolder with its taggers'
+    files in it, and their bytes by id."""
+    def __init__(self, tree):
+        self.files = {f'id{k}': (path, body) for k, (path, body) in enumerate(sorted(tree.items()))}
+
+    def list_folder(self, drive_id):
+        return [(path, fid) for fid, (path, _) in self.files.items()]
+
+    def download(self, drive_id, out):
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        with open(out, 'w') as f:
+            f.write(self.files[drive_id][1])
 
 
-def test_the_newest_attachment_is_the_submission():
-    issue = {'body': '[a](https://github.com/user-attachments/files/1/a.json)',
-             'comments': ['fixed: [b](https://github.com/acme/acme-repo/files/2/b.json)']}
-    assert ground_truth.attachment(issue).endswith('/2/b.json')
+def doc(created, labels, who='jane@acme.example', sha=SHA):
+    return json.dumps(dict(submission(labels, sha=sha), created=created, tagger=who))
 
 
-def test_the_page_and_the_intake_use_one_label():
-    # the page opens the issue with its label and the intake task looks for it: two languages, one value
-    import json, re
-    page = json.load(open(os.path.join(HERE, '..', 'study.json')))['groundTruth']['label']
-    task = re.search(r"LABEL = '([^']+)'", open(os.path.join(
-        HERE, '..', '..', '..', '.claudinite', 'local', 'packs', 'nor-study', 'tasks', 'ground-truth-intake', 'label.mjs')).read()).group(1)
-    assert page == task == 'new-ground-truth'
+def test_the_lab_takes_each_images_newest_curated_file(tmp_path):
+    sub = 'acme__' + SHA[:8]
+    tree = {f'{sub}/gt_jane@acme.example.json': doc('2026-11-05T10:00:00Z', [MISSING]),
+            f'{sub}/gt_bob@acme.example.json': doc('2026-11-05T12:00:00Z', [MISSING, {'x': 60, 'y': 60, 'label': 0}], who='bob@acme.example'),
+            f'{sub}/notes.txt': 'not ground truth',
+            'other__cdcdcdcd/gt_jane@acme.example.json': doc('2026-11-05T09:00:00Z', [], sha='cd' * 32)}
+    got = ground_truth.collect(Curated(tree), 'CURATED', dirpath=str(tmp_path))
+    assert [(e['image'], e['tagger'], e['labels']) for e in got['files']] == [('acme.tif', 'bob@acme.example', 2)]
+    # an image whose only file cannot be used is left out, saying why
+    why = got['refused']
+    assert list(why) == ['other__cdcdcdcd/gt_jane@acme.example.json'] and 'no marked' in why['other__cdcdcdcd/gt_jane@acme.example.json']
+    img = ground_truth.images(str(tmp_path / 'dataset.json'))[SHA]
+    assert img['drive_id'] == 'D1' and len(img['files']) == 1
+    # the file the lab took is the one scored, by its own SHA-256
+    kept = open(tmp_path / img['files'][0]['file'], 'rb').read()
+    assert img['files'][0]['gt_sha256'] == hashlib.sha256(kept).hexdigest()
+
+
+def test_a_listing_of_50_entries_stops_the_fetch(tmp_path):
+    # the keyless listing may stop at 50: a set cut short would change every score with nothing saying so
+    tree = {f'img{k:02d}__{k:08x}/gt_jane@acme.example.json': doc('2026-11-05T10:00:00Z', [MISSING], sha=f'{k:064x}') for k in range(50)}
+    try:
+        ground_truth.collect(Curated(tree), 'CURATED', dirpath=str(tmp_path))
+    except ground_truth.ListingFull as e:
+        assert '50' in str(e)
+    else:
+        raise AssertionError('50 entries did not stop the fetch')
+    one_less = dict(sorted(tree.items())[:49])
+    assert len(ground_truth.collect(Curated(one_less), 'CURATED', dirpath=str(tmp_path))['files']) == 49
+
+
+def test_the_dataset_sha_names_the_images_and_their_ground_truth():
+    a = [dict(image_sha256='a' * 64, gt_sha256='1' * 64), dict(image_sha256='b' * 64, gt_sha256='2' * 64)]
+    expect = hashlib.sha256(f"{'a' * 64} {'1' * 64}\n{'b' * 64} {'2' * 64}".encode()).hexdigest()
+    assert ground_truth.dataset_sha(a) == ground_truth.dataset_sha(a[::-1]) == expect
+    # another ground-truth file on the same image is another data set
+    assert ground_truth.dataset_sha([a[0], dict(a[1], gt_sha256='3' * 64)]) != expect
 
 
 def main():
@@ -137,7 +163,7 @@ def main():
     test_a_missing_mark_is_a_real_nor_found_within_its_radius()
     test_a_newer_submission_wins_at_the_same_spot()
     test_only_drive_images_with_marks_are_accepted()
-    test_the_newest_attachment_is_the_submission()
+    test_the_dataset_sha_names_the_images_and_their_ground_truth()
     print('ok')
 
 

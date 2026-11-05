@@ -1,6 +1,6 @@
 ---
 name: improve-on-ground-truth
-description: Improving the NoR finders when new ground truth joins studies/nor/detection/lab/ground_truth/, or when asked to improve them on the ground truth.
+description: Improving the NoR finders when new ground truth is curated in the study's Drive folder (its dataset SHA moved), or when asked to improve them on the ground truth.
 paths:
   - "studies/nor/**"
 metadata:
@@ -17,8 +17,8 @@ skill. Each step below is its step of the same number, filled in with NoR's comm
 research-project's and `studies/nor/docs/requirements.md` R7, R9 and R10. Read
 `studies/nor/detection/STATE.md` and `studies/nor/detection/lab/ledger.md` first.
 
-The submitted files are the best reference there is: a person marked each label, where the lab's own
-labels are Claude's eye. Where the two disagree the submission wins, which `ground_truth.corpus()`
+The curated files are the best reference there is: a person marked each label, where the lab's own
+labels are Claude's eye. Where the two disagree the curated file wins, which `ground_truth.corpus()`
 already applies, so never re-weigh them by hand.
 
 ## 1. See what moved

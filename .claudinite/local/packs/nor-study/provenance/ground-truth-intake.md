@@ -55,3 +55,9 @@
 - **Model:** claude-opus-5-5
 - **Mechanism:** the same worker, one more path in its git add.
 - **Landed:** #572
+
+## 2026-11-05 · retired · ground truth no longer comes through GitHub issues (#783)
+- **Reason:** the owner moved ground truth to the study's Drive folders, curated by a Data Manager;
+  the lab fetches the curated folder at run time, so nothing is taken in.
+- **Actor:** @missingbulb (owner).
+- **Landed:** #783

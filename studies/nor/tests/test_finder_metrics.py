@@ -25,6 +25,9 @@ def test_metrics_are_current():
     assert d['format'] == fm.FORMAT
     assert d['baseline_sha256'] == fm.baseline_sha(), f'the quality baseline changed since the metrics were measured: {REGENERATE}'
     assert d['images'] == fm.corpus_summary(ground_truth.corpus()), f'the ground truth changed: {REGENERATE}'
+    # R11: the numbers name the data they were measured on, every image and ground-truth file by its SHA-256
+    assert all(len(im['image_sha256']) == 64 and len(im['gt_sha256']) >= 64 for im in d['images'])
+    assert d['dataset_sha256'] == ground_truth.dataset_sha(d['images']), f'the dataset SHA does not name its images: {REGENERATE}'
     assert d['presets'] == fm.PRESETS, f'the presets changed: {REGENERATE}'
     assert sorted(d['finders']) == sorted(interactive.FINDERS), f'the page offers other finders: {REGENERATE}'
     for f, per in d['finders'].items():

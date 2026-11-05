@@ -65,7 +65,7 @@ def baseline_sha(path=ground_truth.BASELINE):
 
 
 def corpus_summary(corpus):
-    return [dict(name=im['name'], real=sum(L['label'] == 1 for L in im['labels']),
+    return [dict(name=im['name'], image_sha256=im['image_sha256'], gt_sha256=im['gt_sha256'], real=sum(L['label'] == 1 for L in im['labels']),
                  not_nor=sum(L['label'] == 0 for L in im['labels'])) for im in corpus]
 
 
@@ -94,7 +94,8 @@ def measure(corpus=None):
                 s.refilter({'values': preset_values(f, p)})
                 for k, v in tally(s.cands, im['labels']).items():
                     sums[f][p][k] += v
-    return dict(format=FORMAT, baseline_sha256=baseline_sha(), images=corpus_summary(corpus),
+    images = corpus_summary(corpus)
+    return dict(format=FORMAT, baseline_sha256=baseline_sha(), images=images, dataset_sha256=ground_truth.dataset_sha(images),
                 presets={p: s for p, s in PRESETS.items()},
                 finders={f: dict(finder=rates(own[f]),
                                  filtered={p: dict(rates(t), values=preset_values(f, p)) for p, t in per.items()})

@@ -27,14 +27,17 @@ _Last updated 2026-10-06._
 - **Labels:** `lab/labels_claude_v1.json`, 200 spots labelled by Claude's eye (72 real, 93 not,
   35 unsure), **not by Ariel**. A pass within 5 px of a spot counts as that spot. With 72 real
   spots, a difference of 1-2 is noise.
-- **Submitted ground truth** (R10, 2026-10-03): people mark candidates (thumbs up/down) and missed
-  NoRs (right-click, Mark Missing Candidate) on the page and submit them as GitHub issues; the
-  nor-study pack's `ground-truth-intake` task adds them daily to `lab/ground_truth/` and then runs
-  the `improve-on-ground-truth` skill on opus. Submissions outrank the Claude labels wherever both
-  mark a spot, and `ground_truth.py score` / the quality lock score every finder on every image.
-  None has arrived yet.
+- **Curated ground truth** (R10, moved to Drive 2026-11-05): people mark candidates (thumbs up/down)
+  and missed NoRs on the page and submit them to the study's submissions folder on Drive; a Data
+  Manager accepts them into its curated folder (`study.json` `groundTruth`, both `null` until the
+  owner makes them). `ground_truth.py fetch` takes each image's newest curated file into
+  `data/raw/ground-truth/truth/`, never git, and stops when a folder lists 50 entries. Curated files
+  outrank the Claude labels wherever both mark a spot, and `ground_truth.py score` / the quality lock
+  score every finder on every image. None has arrived yet.
 - **Precision and recall per finder and filter preset** (R11, 2026-10-06):
-  `../web/finder_metrics.json`, written by `finder_metrics.py` (and by every baseline rewrite).
+  `../web/finder_metrics.json`, written by `finder_metrics.py` (and by every baseline rewrite), naming
+  the data it was measured on: each image's and ground-truth file's SHA-256 and the dataset SHA. Quote
+  that dataset SHA with any precision or recall.
   Presets: precise / balanced (the finder's own) / recalling, every filter 40% towards a fixed
   strict or loose end. Fitting filter values to the labels does not survive held-out labels
   (ledger §5), so don't tune filters per finder on these labels.
