@@ -20,6 +20,9 @@ const ready = (page) => page.waitForFunction(() => /^(Ready|Image loaded|Counted
 const settled = async (page) => {
   await page.waitForFunction(() => !document.documentElement.hasAttribute("data-drawers")
     && document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getTiming().iterations === Infinity));
+  // and the disk's count, which the page makes once it is ready and the Storage item waits for; one that never comes
+  // is reported as the item not showing
+  await page.waitForFunction(() => document.querySelector("#sb-disk .v")?.textContent !== "", null, { timeout: 5000 }).catch(() => {});
   // and the frame after them drawn
   await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
 };
