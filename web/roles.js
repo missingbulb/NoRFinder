@@ -25,6 +25,8 @@ export function roleMenu(menu, chose) {
       $("#role-list").replaceChildren(...roles.map((r) => {
         const b = Object.assign(document.createElement("button"), { type: "button", className: "item", textContent: ROLE_NAMES[r] });
         b.setAttribute("role", "menuitemradio"); b.setAttribute("aria-checked", String(r === now));
+        // Data Management works on Drive: offline it is listed and does nothing
+        if (r === "data") b.dataset.needsNetwork = "";
         b.onclick = () => { menu.open = false; if (r !== now) chose(r); };
         return b;
       }));
