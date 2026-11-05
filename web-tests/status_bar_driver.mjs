@@ -35,15 +35,15 @@ const MB = 2 ** 20;
 const BIG = 6 * MB; // a download fast enough to flash the network
 
 // the fixture's answers, each saying how much memory Python holds and how long it has worked as the real worker
-// does; memory: what Python holds in use after a collection. A count keeps Python working for WORK ms, and grows
-// Python's memory by 10 MB.
+// does; memory: what Python holds in use after a collection. A count keeps Python working for WORK ms, told once it
+// is done, so the CPU rises in one step, and grows Python's memory by 10 MB.
 const WORK = 1500;
 const STAND_IN = `
 const A = await (await fetch("answers.json")).json();
 const bytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 let ms = 0, heap = ${60 * MB};
 const mem = () => ({ heap, files: ${20 * MB}, busy: { ms, since: null } });
-const work = (n) => { postMessage({ type: "progress", text: "Counting…", ...mem(), busy: { ms, since: Date.now() } }); const t = Date.now(); while (Date.now() - t < n); ms += n; heap += ${10 * MB}; };
+const work = (n) => { postMessage({ type: "progress", text: "Counting…", ...mem() }); const t = Date.now(); while (Date.now() - t < n); ms += n; heap += ${10 * MB}; };
 const first = new URL(location.href).searchParams.get("study");
 if (A.ready[first]) postMessage({ type: "ready", info: A.ready[first], ...mem() });
 onmessage = ({ data: m }) => {
