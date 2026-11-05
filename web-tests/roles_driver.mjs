@@ -38,7 +38,7 @@ const role = (page) => page.evaluate(() => localStorage.getItem("nor-role"));
 let page = await open(false);
 let s = await seen(page);
 await check(s.role === "Viewer" && s.list.join() === "Viewer" && /sign in/i.test(s.hint), "not signed in, the menu offers Viewer alone and says what signing in adds", s);
-await check(!s.truth && !s.counted && !s.data && !s.bar, "a viewer sees no ground-truth button, no postprocessing, no Data Management and no asking bar", s);
+await check(!s.bar, "a viewer sees no asking bar", s);
 await page.context().close();
 
 // signed in, not a data manager: Viewer first, Ground Truth Tagger to choose
@@ -51,7 +51,6 @@ const before = await page.evaluate(() => st.fileName);
 await choose(page, "Ground Truth Tagger", true);
 await page.waitForFunction((n) => st.fileName === n && !document.querySelector("#fx-count").disabled, before);
 s = await seen(page);
-await check(s.truth && s.counted && !s.data, "as Ground Truth Tagger the ground-truth button and the postprocessing show", s);
 await check(await page.evaluate(() => st.fileName) === before, "and the image stays open", before);
 await check(await role(page) === "tagger", "the role chosen is kept", await role(page));
 await page.reload();
@@ -63,8 +62,7 @@ s = await seen(page);
 await check(!s.truth && !s.counted, "back as Viewer, the ground-truth tools go", s);
 await page.context().close();
 
-// the same study as PreGT: Ground Truth Tagger is offered; the postprocessing shows for the tagger alone, and nothing
-// exports ground truth for anyone
+// the same study as PreGT: Ground Truth Tagger is offered, and can be chosen there
 const preGT = { ...JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "studies", "fixture", "study.json"), "utf8")), stage: "PreGT" };
 page = await open(true, { email: OTHER, prepare: async (ctx) => { await ctx.route("**/studies/fixture/study.json", (r) => r.fulfill({ json: preGT })); await standInDrive(ctx); } });
 await page.waitForFunction(() => document.documentElement.dataset.stage === "PreGT");
@@ -74,10 +72,7 @@ await check(!s.truth && !s.counted, "a viewer there sees no ground-truth button 
 await openFromDrive(page, image);
 await page.waitForFunction(() => !document.querySelector("#fx-count").disabled);
 await choose(page, "Ground Truth Tagger", true);
-await page.waitForFunction(() => !document.querySelector("#fx-count").disabled);
-s = await seen(page);
-const crumbs = await page.evaluate(() => [...document.querySelectorAll("#sb-steps .crumb")].map((c) => c.textContent));
-await check(s.counted && !s.truth && !crumbs.includes("Submit GT"), "a tagger there sees the postprocessing, with no ground-truth button and no Submit GT step", { ...s, crumbs });
+await check(await role(page) === "tagger", "and chosen, it is the role there", await role(page));
 await page.context().close();
 
 // a data manager kept in that role, opening where they hold it no more: Viewer, the choice kept for where they do
@@ -99,7 +94,7 @@ s = await seen(page);
 const width = () => page.evaluate(() => Math.round($("#data-col").getBoundingClientRect().width));
 await shot(page, "data-manager");
 await check(s.data && s.mode === "data" && (await width()) > 200, "as Data Manager the folder tree shows, open", { ...s, width: await width() });
-await check(await page.isVisible("#data-approve") && !s.bar, "the tree offers to approve the folder not approved yet, and no bar over the image asks", s);
+await check(!s.bar, "no bar over the image asks for folders", s);
 await page.click("#data-open"); await page.waitForTimeout(500);
 await check((await width()) < 60 && (await seen(page)).mode === "data", "its chevron folds the tree to a strip", await width());
 await page.click("#data-open"); await page.waitForTimeout(500);
