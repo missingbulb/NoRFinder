@@ -132,6 +132,7 @@ for (const [k, p] of paths.entries()) {
   const shots = [];
   for (const [i, s] of p.states.entries()) {
     if (i > 0) await ACTIONS[p.actions[i - 1]](page).catch(async (e) => {
+      for (const d of differences) console.error("DIFFERENT: " + d);
       console.error(`${p.root}: ${p.actions[i - 1]} did not finish: ${e.message.split("\n")[0]}; status: ${await page.textContent("#status")}`);
       await done(1);
     });
