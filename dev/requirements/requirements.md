@@ -968,11 +968,11 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Set by the owner on 2026-11-03, in the place of a red mark on the network's and the resources' icons. Between the
-  resources and the report icon, a grey Wi-Fi icon while online; offline, the same crossed out, in red, the one red in the
-  status bar. Its tooltip says which, and that clicking it sets up working offline: it opens the Storage tab of the
-  resources dialog (`req/shell/resources-dialog`), where the page installs as an app and each study is made available
-  offline (`req/shell/offline/per-study`). Online and offline are what `req/shell/offline/default` says. Tests:
-  `web-tests/test_status_bar_page.py`, `web-tests/test_offline_page.py`.
+  resources and the report icon, a grey Wi-Fi icon while online; offline, a crossed-out cloud (set by the owner on
+  2026-11-05), in red, the one red in the status bar. Its tooltip says which, and that clicking it sets up working
+  offline: it opens the Storage tab of the resources dialog (`req/shell/resources-dialog`), where the page installs as
+  an app and each study is made available offline (`req/shell/offline/per-study`). Online and offline are what
+  `req/shell/offline/default` says. Tests: `web-tests/test_status_bar_page.py`, `web-tests/test_offline_page.py`.
   </details>
 
 - `req/shell/status-bar/resources` The disk, memory, network and CPU fold into one icon, unfolding on hover and while something needs watching.
