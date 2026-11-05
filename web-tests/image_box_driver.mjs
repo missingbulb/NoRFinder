@@ -84,7 +84,8 @@ const opacity = () => page.evaluate(() => Number(getComputedStyle(document.query
 // until the page shows what the next check reads, or a few seconds pass and the check says what it shows instead
 const opacityNear = (want) => page.waitForFunction((w) => Math.abs(Number(getComputedStyle(document.querySelector("#minimap")).opacity) - w) < 1e-6, want, { timeout: 3000 }).catch(() => {});
 const pixelIs = (x, y, rgb) => page.waitForFunction(([x, y, rgb]) => [...document.querySelector("#base").getContext("2d").getImageData(x, y, 1, 1).data].slice(0, 3).join() === rgb, [x, y, rgb], { timeout: 3000 }).catch(() => {});
-const pixelChanged = (x, y, was) => page.waitForFunction(([x, y, was]) => [...document.querySelector("#base").getContext("2d").getImageData(x, y, 1, 1).data].slice(0, 3).join() !== was, [x, y, was], { timeout: 3000 }).catch(() => {});
+// its red within 1 of a value, for a change made in more than one step, each of which the page may draw on its own
+const redNear = (x, y, v) => page.waitForFunction(([x, y, v]) => Math.abs(document.querySelector("#base").getContext("2d").getImageData(x, y, 1, 1).data[0] - v) <= 1, [x, y, v], { timeout: 3000 }).catch(() => {});
 const title = async () => { await page.click("#image-box > .sec-head h2"); await page.waitForFunction(() => !document.documentElement.hasAttribute("data-drawers")); };
 
 // ---- the box before an image: its title alone in its head, Load at its foot ----
@@ -191,7 +192,7 @@ await check((await pixel(15, 15)).join() === "200,200,200", "the image as it is 
 const level = (k, which, v) => page.$eval(`#channels .channel:nth-child(${k}) input.${which}`, (i, v) => { i.value = v; i.dispatchEvent(new Event("input", { bubbles: true })); }, v);
 await level(1, "white", 100); await pixelIs(15, 15, "255,255,255");
 await check((await pixel(15, 15)).join() === "255,255,255" && (await pixel(2, 2)).join() === "0,0,0", "a lower white point brightens the channel", await pixel(15, 15));
-await level(1, "white", 255); await level(1, "black", 150); await pixelChanged(15, 15, "255,255,255");
+await level(1, "white", 255); await level(1, "black", 150); await redNear(15, 15, (200 - 150) / (255 - 150) * 255);
 const dim = await pixel(15, 15);
 await check(dim[0] === Math.round((200 - 150) / (255 - 150) * 255) || Math.abs(dim[0] - (200 - 150) / (255 - 150) * 255) <= 1, "a higher black point darkens it", dim);
 await level(1, "black", 250); await level(1, "white", 240);
