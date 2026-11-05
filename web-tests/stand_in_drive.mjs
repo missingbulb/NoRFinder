@@ -49,7 +49,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
   const STAND_IN = `
   const A = await (await fetch("answers.json")).json();
   const bytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-  postMessage({ type: "ready", info: A.ready.fixture });
+  postMessage({ type: "ready", info: A.ready.fixture, heap: 0, files: 0 });
   onmessage = ({ data: m }) => {
     if (m.type === "open") { self.lastOpen = { name: m.name, bytes: new Uint8Array(m.bytes) }; const images = bytes(A.images); postMessage({ type: "opened", meta: A.opened, images }, [images.buffer]); }
     else if (m.type === "call") { const b = bytes(A.mask); postMessage({ type: "result", action: m.action, meta: A.count, bytes: b, echo: m.echo }, [b.buffer]); }

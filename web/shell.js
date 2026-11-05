@@ -113,8 +113,15 @@ const SHELL_STATE = new Set(Object.keys(st));
 let study = {}, view = null, manifest = null, base = "";
 
 // ---------- status ----------
+// said: the last thing the page said, {text, err}; loading: what the Drive dialog's thumbnails say while they
+// load, in its place unless that was an error (req/shell/drive/dialog)
+let said = null, loading = "";
+const say = () => {
+  const s = $("#status"); said ||= { text: s.textContent, err: false };
+  s.textContent = loading && !said.err ? loading : said.text; s.classList.toggle("err", said.err);
+};
 function status(text, err) {
-  const s = $("#status"); s.textContent = text; s.classList.toggle("err", !!err);
+  said = { text, err: !!err }; say();
   if (err) log.add(text, "error");
   if (st.busySince) $("#busy-text").textContent = text;
   if (err) busy(false);
@@ -1096,7 +1103,7 @@ function driveDialog() {
     const tell = () => {
       const t = asked ? `${done} of ${asked} · ${sizeText(bytes)}` : "";
       $("#drive-thumbs-note").textContent = t;
-      $("#sb-thumbs").textContent = running ? "Thumbnails " + t : "";
+      loading = running && t ? "Thumbnails " + t : ""; say();
     };
     // the rows from the first in view to AHEAD past the last, that no fetch has been started for
     const wanted = () => {

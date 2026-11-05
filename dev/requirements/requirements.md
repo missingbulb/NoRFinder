@@ -304,8 +304,9 @@ nobody has decided: what the page does there is not a requirement yet.
   in view still lack. Test: `web-tests/test_drive_thumbs_page.py`. An image opened from Drive saves its own in the browser (the latest 100), shown from then
   on without a download; a PNG shows Drive's own. All are in the colours the page gives the
   channels. A checkbox at the bottom, "Show thumbnails" (on at first, remembered in the browser),
-  turns the downloads off; beside it, and in the status bar while they load, how many have arrived
-  and their size. It needs the site's Google API key, kept in the repository variable
+  turns the downloads off; beside it, and in the status bar's message while they load ("Thumbnails 3 of 10 ·
+  1.2 MB"), how many have arrived and their size; once they are in, the message says again what it said
+  before (set by the owner on 2026-11-05: the message, not a text of its own beside it). It needs the site's Google API key, kept in the repository variable
   `GOOGLE_API_KEY` and written into `web/config.js` at deploy; without one the option is off
   (`web-tests/test_site_config.py`). Where it takes a link, the dialog opens on the link last pasted in this
   study, else on the link last pasted in any study, and lists a folder link at once; opening on a link is not
@@ -1265,8 +1266,8 @@ nobody has decided: what the page does there is not a requirement yet.
   role) and take actions one after another, each state one more action on the one before.
   `dev/tools/build/shell_states.py` writes from it the matrix, `dev/requirements/shell-states.GENERATED.md`, one table
   per path, and the browser test's expectations; a case no state reaches fails it. In the fast set the
-  generated files must be up to date and every element must be on the page; the shell's elements not in the tree
-  yet are counted, so the count only falls. In the full set one page per path takes the actions on the fixture
+  generated files must be up to date, every element in the tree must be on the page, and every element of the
+  shell's page, but what a dialog, popup or menu holds, must be in the tree. In the full set one page per path takes the actions on the fixture
   study, the study's stage set for it, against a stand-in Google, and at every state reads each element as shown,
   disabled, held offline, folded or gone; every difference is listed before it fails. Test: `web-tests/test_shell_states.py`,
   `web-tests/test_shell_states_page.py`.
