@@ -113,7 +113,8 @@ try {
   for (const s of offered) {
     const r = rowsLook.find((x) => x.id === s.id) || {};
     if (s.stage === null ? r.stage !== null : r.stage !== s.stage || !r.border || !r.small || !r.last || !r.snug) problems.push(`the switcher does not label ${s.id} with its stage, ${s.stage}, last, small, snug and bordered: ${JSON.stringify(r)}`);
-    if (!(r.room >= 8)) problems.push(`the switcher's ${s.id} row leaves ${r.room} px at its right, not 8`);
+    // to within the sub-pixel Firefox lays out in
+    if (!(r.room >= 8 - 0.01)) problems.push(`the switcher's ${s.id} row leaves ${r.room} px at its right, not 8`);
     if (r.tick) problems.push(`the switcher's ${s.id} row carries a tick`);
   }
   if (new Set(rowsLook.map((r) => r.iconLeft)).size !== 1) problems.push("the switcher's icons do not line up: " + rowsLook.map((r) => r.iconLeft));

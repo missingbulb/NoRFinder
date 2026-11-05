@@ -152,7 +152,8 @@ try {
     `the switcher marks the study whose Python is all here, and only it: ${JSON.stringify(marks)}`);
   check(viewerMark.colour === green && !viewerMark.title && viewerMark.cursor !== "help",
     `the mark is green, with no tooltip and no question-mark pointer: ${JSON.stringify({ ...viewerMark, green })}`);
-  check(marks.every((m) => m.room >= 8), `each row keeps 8 px at its right, past its mark and stage: ${JSON.stringify(marks.map((m) => m.room))}`);
+  check(marks.every((m) => m.room >= 8 - 0.01), // to within the sub-pixel Firefox lays out in
+    `each row keeps 8 px at its right, past its mark and stage: ${JSON.stringify(marks.map((m) => m.room))}`);
   await page.click("#study-menu summary");
 
   const avatar = await page.$("header #user-menu summary img, header #user-menu summary svg");
