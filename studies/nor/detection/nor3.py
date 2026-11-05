@@ -257,6 +257,21 @@ def finish(c, F, p):
     judge(c, p)
 
 
+FAINT = 'faint for its image'
+
+
+def red_floor(cands, q):
+    """R7 'not the faintest of its image': the passes whose red mean is below the q-quantile of this
+    image's passes fail. The bar is the image's own, so it needs no intensity constant."""
+    ps = [c for c in cands if c['fail'] is None]
+    if q <= 0 or len(ps) < 2:
+        return
+    t = np.quantile([c['red_mean'] for c in ps], q)
+    for c in ps:
+        if c['red_mean'] < t:
+            c['fail'] = FAINT
+
+
 def resolve_overlaps(cands, shape, max_shared=0.3):
     """A pixel can belong to one NoR only. Passing candidates claim their pixels strongest first
     (by the brightness of their red, the node itself); one whose red is already claimed, or whose
@@ -655,8 +670,10 @@ REASONS = {
     'greens unequal brightness': ('H', (255, 120, 120)),
     'dim':            ('I', (170, 170, 170)),
     'shares a segment': ('J', (120, 220, 255)),
+    FAINT:            ('Q', (200, 120, 255)),
 }
 REASON_TEXT = {
+    FAINT: 'red among the dimmest tenth of the image\'s passes',
     'one green': 'only one green touches the red',
     'greens joined': 'the two greens touch (one blob)',
     'not in a line': 'not along the fibre (bent, red off-line, or axis off)',
