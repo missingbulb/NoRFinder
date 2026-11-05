@@ -25,7 +25,9 @@ def load(tif=TIF):
     if os.path.exists(cache):
         z = np.load(cache); return z['c'], z['n'], float(z['um']), z['bm']
     c, n, um, d = nn_.load(tif); bm = nn_.blue_mask(d); os.makedirs(os.path.dirname(cache), exist_ok=True)
-    np.savez_compressed(cache, c=c, n=n, um=um or 0.0, bm=bm); return c, n, um, bm
+    # written beside and renamed over, so a load running at once (another test worker) finds no cache or a whole one
+    tmp = f'{cache[:-len(".npz")]}.{os.getpid()}.tmp.npz'
+    np.savez_compressed(tmp, c=c, n=n, um=um or 0.0, bm=bm); os.replace(tmp, cache); return c, n, um, bm
 
 def finders():
     f = {'fill': (nor3.segment_fill, nor3.P3), 'walk': (nor3.segment_walk, nor3.P2), 'blobs': (nor3.segment, nor3.P)}
