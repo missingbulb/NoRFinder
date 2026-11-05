@@ -49,6 +49,7 @@ const ctx = await keptContext(pw, { viewport: { width: 1400, height: 900 } });
 const cors = { "access-control-allow-origin": "*" };
 // every read of a file's bytes, by name: "whole" or "piece"
 const reads = [];
+let inflight = 0;
 await ctx.route("https://www.googleapis.com/**", async (route) => {
   const u = new URL(route.request().url()), id = u.pathname.match(/\/files\/?(.*)$/)[1], fields = u.searchParams.get("fields") || "";
   const meta = (f) => ({ id: f.id, name: f.name, mimeType: "image/tiff", size: String(f.bytes.length), createdTime: "2026-10-01T10:00:00Z", ...(fields.includes("sha256Checksum") ? { sha256Checksum: sha(f.bytes) } : {}) });
@@ -56,9 +57,11 @@ await ctx.route("https://www.googleapis.com/**", async (route) => {
   const f = FILES.find((g) => g.id === id);
   if (u.searchParams.get("alt") !== "media") return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify(meta(f)) });
   const range = (route.request().headers().range || "").match(/^bytes=(\d+)-(\d+)$/);
-  reads.push({ name: f.name, how: range ? "piece" : "whole" });
-  if (range) return route.fulfill({ status: 206, headers: cors, contentType: "image/tiff", body: f.bytes.subarray(+range[1], +range[2] + 1) });
-  return route.fulfill({ status: 200, headers: cors, contentType: "image/tiff", body: f.bytes });
+  reads.push({ name: f.name, how: range ? "piece" : "whole" }); inflight++;
+  try {
+    await route.fulfill(range ? { status: 206, headers: cors, contentType: "image/tiff", body: f.bytes.subarray(+range[1], +range[2] + 1) }
+      : { status: 200, headers: cors, contentType: "image/tiff", body: f.bytes });
+  } finally { inflight--; }
 });
 await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
 await ctx.addInitScript((link) => {
@@ -71,7 +74,23 @@ const page = await ctx.newPage();
 page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.message); });
 page.setDefaultTimeout(10000);
 
-const quiet = async (ms = 600) => { for (let n = -1; n !== reads.length; ) { n = reads.length; await page.waitForTimeout(ms); } };
+// the page's handlers for what was just done have all run: a read it would start has started
+const frames = () => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
+// every row says what it holds, the page says its thumbnails are in (the status bar's "Thumbnails n of m" gone), and no
+// read is on the way once the page has run its handlers; 10 s at most, the
+// checks after it saying what is missing
+const quiet = async () => {
+  const end = Date.now() + 10000;
+  for (;;) {
+    await page.waitForFunction(() => !/^Thumbnails /.test($("#status").textContent)
+      && [...document.querySelectorAll("#drive-list .item")].every((b) => b.querySelector(".shape").textContent),
+      null, { timeout: Math.max(1, end - Date.now()) }).catch(() => {});
+    await frames();
+    if (!inflight || Date.now() >= end) break;
+    await page.waitForEvent("requestfinished", { timeout: Math.max(1, end - Date.now()) }).catch(() => {});
+  }
+  if (Date.now() >= end) console.log("quiet: gave up after 10 s", JSON.stringify({ inflight, rows: await rows() }));
+};
 const open = async () => {
   await pressDrive(page);
   await page.waitForFunction((n) => document.querySelectorAll("#drive-list .item").length === n, FILES.length - 1);
@@ -111,11 +130,14 @@ try {
   // the turning canvas's picture, null when the row shows its still
   const frame = () => page.evaluate((sel) => document.querySelector(sel + " .pic canvas")?.toDataURL() ?? null, stackRow);
   await page.hover(stackRow);
-  await page.waitForTimeout(200);
-  const f1 = await frame(); await page.waitForTimeout(400); const f2 = await frame();
+  await page.waitForFunction((sel) => document.querySelector(sel + " .pic canvas"), stackRow, { timeout: 3000 }).catch(() => {});
+  const f1 = await frame();
+  await page.waitForFunction(([sel, f1]) => document.querySelector(sel + " .pic canvas")?.toDataURL() !== f1, [stackRow, f1], { timeout: 3000 }).catch(() => {});
+  const f2 = await frame();
   check(!!f1 && !!f2 && f1 !== f2, "hovering a stack's row turns it");
   if (shots && f2) fs.writeFileSync(path.join(shots, "turning.png"), Buffer.from(f2.split(",")[1], "base64"));
-  await page.mouse.move(5, 5); await page.waitForTimeout(100);
+  await page.mouse.move(5, 5);
+  await page.waitForFunction((sel) => !document.querySelector(sel + " .pic canvas"), stackRow, { timeout: 3000 }).catch(() => {});
   check((await frame()) === null, "and leaving it shows its still again");
   check(!readsOf("b stack.tif"), "turning reads nothing");
 
@@ -128,6 +150,9 @@ try {
   await page.click("#drive-dlg button[value=close]");
   reads.length = 0;
   await open();
+  // the new file read and its pictures drawn on the rows it covers
+  await page.waitForFunction(() => [...document.querySelectorAll("#drive-list .item")].find((b) => b.querySelector(".name").textContent === "a flat.tif")?.querySelector(".pic img, .pic canvas"),
+    null, { timeout: 5000 }).catch(() => {});
   check(readsOf(PREVIEWS) === "whole" && row(await rows(), "a flat.tif").pic, `changed on Drive, it is downloaded again: ${readsOf(PREVIEWS)}`);
   await page.click("#drive-dlg button[value=close]");
 

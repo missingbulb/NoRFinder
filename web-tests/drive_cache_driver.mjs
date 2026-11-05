@@ -84,19 +84,19 @@ const fromDialog = async () => {
   await pressDrive(page);
   if (await page.inputValue("#drive-link") !== FOLDER) { await page.fill("#drive-link", FOLDER); await page.click("#drive-go"); }
   await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 1);
-  await page.evaluate(() => { st.fileName = ""; });
+  await page.evaluate(() => { st.fileName = ""; st.sha = ""; });
   await page.dblclick("#drive-list .item");
   await page.waitForFunction(() => st.fileName === "a.png");
 };
 const fromLink = async () => {
   await pressDrive(page);
   await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 1);
-  await page.evaluate((id) => { st.fileName = ""; $("#drive-link").value = `https://drive.google.com/file/d/${id}/view`; }, FILE.id);
+  await page.evaluate((id) => { st.fileName = ""; st.sha = ""; $("#drive-link").value = `https://drive.google.com/file/d/${id}/view`; }, FILE.id);
   await page.click("#drive-go");
   await page.waitForFunction(() => st.fileName === "a.png");
 };
 const fromRecents = async () => {
-  await page.evaluate(() => { st.fileName = ""; });
+  await page.evaluate(() => { st.fileName = ""; st.sha = ""; });
   await pickRecent(page);
   await page.waitForFunction(() => st.fileName === "a.png");
 };
@@ -107,7 +107,8 @@ const keptSha = () => page.evaluate(async () => {
   const b = await (await c.match(q)).arrayBuffer();
   return [...new Uint8Array(await crypto.subtle.digest("SHA-256", b))].map((x) => x.toString(16).padStart(2, "0")).join("");
 });
-const settle = async () => { await page.waitForTimeout(400); };
+// the open gone as far as it goes with no Python: its SHA-256 taken, the image queued for Python
+const settle = () => page.waitForFunction(() => !!st.sha);
 const tip = () => page.evaluate(() => { const t = document.querySelector(".tip-bubble[data-tip]"); return t && !t.hidden ? t.dataset.tip : null; });
 
 try {
@@ -162,7 +163,7 @@ try {
   // a link's details also name the file, so with them unreachable nothing opens: the dialog shows the error
   checksums = true; details = false; calls.length = 0;
   await pressDrive(page);
-  await page.evaluate((id) => { st.fileName = ""; $("#drive-link").value = `https://drive.google.com/file/d/${id}/view`; }, FILE.id);
+  await page.evaluate((id) => { st.fileName = ""; st.sha = ""; $("#drive-link").value = `https://drive.google.com/file/d/${id}/view`; }, FILE.id);
   await page.click("#drive-go");
   await page.waitForFunction(() => $("#drive-msg").classList.contains("err"));
   check(!(await page.evaluate(() => st.fileName)), `with the file's details unreachable, the kept copy does not open, and the dialog shows the error: "${await page.textContent("#drive-msg")}"`);

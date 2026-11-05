@@ -63,6 +63,9 @@ const done = async (code, why) => { if (why) console.error(why); await browser.c
 const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
 // what the page took from Drive: per file, how often the whole file and how often a piece of it
 const asked = Object.fromEntries([...files, stranger].map((f) => [f.id, { whole: 0, pieces: 0 }]));
+// resolves once the whole file is asked for, or rejects after ms
+const wholeWaits = {};
+const askedWhole = (id, ms) => asked[id].whole ? Promise.resolve() : new Promise((ok, no) => { wholeWaits[id] = ok; setTimeout(no, ms); });
 const cors = { "access-control-allow-origin": "*" };
 await ctx.route("https://www.googleapis.com/**", (route) => {
   const q = route.request(), u = new URL(q.url());
@@ -80,7 +83,7 @@ await ctx.route("https://www.googleapis.com/**", (route) => {
   // a piece, as Drive answers a Range: the page reads a TIFF's header for what it holds (req/shell/drive/stacks)
   const range = (q.headers()["range"] || "").match(/^bytes=(\d+)-(\d+)$/);
   if (range) { asked[id].pieces++; return route.fulfill({ status: 206, headers: cors, contentType: "image/tiff", body: f.bytes.subarray(+range[1], +range[2] + 1) }); }
-  asked[id].whole++;
+  asked[id].whole++; wholeWaits[id]?.();
   return route.fulfill({ status: 200, headers: cors, contentType: "image/tiff", body: f.bytes });
 });
 await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
@@ -133,8 +136,7 @@ if (thumbsServed !== served) await done(1, "a thumbnail was fetched again");
 await page.click("#drive-list .item");
 await page.click("#drive-open");
 await page.waitForFunction(() => !document.querySelector("#drive-dlg").open);
-for (let t = 0; t < 50 && !asked[files[0].id].whole; t++) await new Promise((ok) => setTimeout(ok, 100));
-if (!asked[files[0].id].whole) await done(1, "Open did not load the image");
+if (!(await askedWhole(files[0].id, 5000).then(() => true, () => false))) await done(1, "Open did not load the image");
 console.log("select, double click and Open all work");
 
 // an opened image keeps its thumbnail in the browser, shown next time without a download
@@ -151,11 +153,14 @@ if (!(await fresh.$eval("#drive-thumbs", (c) => c.checked))) await done(1, "Down
 await fresh.uncheck("#drive-thumbs");
 await fresh.reload();
 const before = thumbsServed;
+let thumbsAsked = 0;
+fresh.on("request", (q) => { if (/\/ready-thumbs\/.*\.jpg$/.test(q.url())) thumbsAsked++; });
 await fresh.click("#load-drive");
 await fresh.waitForSelector("#drive-list .item:last-child .pic img");
 if (await fresh.$eval("#drive-thumbs", (c) => c.checked)) await done(1, "unticking Download thumbnails was not remembered");
-await new Promise((ok) => setTimeout(ok, 1000));
+// the dialog starts its thumbnails' fetches in the frame after it lists the rows: two frames on, none was asked for
+await fresh.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
 const shown = await fresh.$$eval("#drive-list .item .pic img", (is) => is.length);
-if (thumbsServed !== before || shown !== 1) await done(1, `unticked, ${thumbsServed - before} thumbnails were downloaded and ${shown} shown`);
+if (thumbsServed !== before || thumbsAsked || shown !== 1) await done(1, `unticked, ${thumbsAsked} thumbnails were asked for, ${thumbsServed - before} downloaded and ${shown} shown`);
 console.log("a saved thumbnail shows; unticking Download thumbnails is remembered and downloads none");
 await done(0);

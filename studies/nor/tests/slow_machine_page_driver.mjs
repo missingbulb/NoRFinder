@@ -86,6 +86,11 @@ async function open(gb) {
   return { ctx, page };
 }
 const held = (page, id) => page.evaluate((id) => { const b = $(id); return b.disabled && b.classList.contains("working"); }, id);
+// resolves once the worker's answer to this action has reached the page, after the page's own handler took it
+const answered = (page, action) => page.evaluate((a) => new Promise((ok) => {
+  const h = (e) => { if (e.data.type === "result" && e.data.action === a) { st.worker.removeEventListener("message", h); ok(); } };
+  st.worker.addEventListener("message", h);
+}), action);
 const free = (page, id) => page.waitForFunction((id) => !$(id).classList.contains("working") && !$(id).disabled, id);
 // a box folded with the steps (req/shell/tools/ruler), opened by its title as the user would
 const unfold = async (page, box) => { await page.evaluate((b) => { const e = $(b); if (e.classList.contains("folded")) e.querySelector(".sec-head h2").click(); }, box); await page.waitForFunction(() => !document.documentElement.hasAttribute("data-drawers")); };
@@ -102,10 +107,11 @@ const unfold = async (page, box) => { await page.evaluate((b) => { const e = $(b
   await check(await held(page, "#image-pick") && !(await page.evaluate(() => !!st.img)), "the image selector is held while the image opens");
   await free(page, "#image-pick");
   await check(await page.evaluate(() => !!st.img), "the selector is free again once the image is open");
+  const detected = answered(page, "detect");
   await page.click("#find");
   await check(await held(page, "#find"), "Find Candidates is held at once, with its spinner");
   await shot(page, "find_working", ".row:has(#find)");
-  await page.waitForTimeout(LATE * 1.3);
+  await detected;
   await check(await held(page, "#find"), "and stays held while the finder runs and the first filtering follows");
   await page.waitForFunction(() => !$("#find").classList.contains("working"), null, { timeout: 4 * LATE + 2000 });
   await check(await page.evaluate(() => st.meta && !st.inflight), "it lets go once the candidates are drawn");

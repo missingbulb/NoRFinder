@@ -54,7 +54,9 @@ const cors = { "access-control-allow-origin": "*", "access-control-allow-headers
 const browser = await pw[ENGINE].launch();
 let failed = false;
 const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: " + what); } else console.log("ok: " + what); };
-const pause = (ms) => new Promise((ok) => setTimeout(ok, ms));
+// whether the page asked for Google's script: it appends the script's element in the handler that wants it, so the
+// element is there once the action that would load it returns, before any request reaches the route
+const askedGoogle = (page) => page.evaluate((src) => !!document.querySelector(`script[src="${src}"]`), GSI);
 
 let scriptLoads = 0;
 // a device: its own browser storage; offline, the browser says so
@@ -76,7 +78,8 @@ async function device({ offline = false, seed = {} } = {}) {
   const page = await ctx.newPage();
   page.on("pageerror", (e) => { if (cutShort(e)) return; failed = true; console.error("page error: " + e.message); });
   page.setDefaultTimeout(10000);
-  const open = async () => { await page.goto(origin + "/web/index.html"); await page.waitForFunction(() => document.querySelector("#title").textContent); await pause(300); };
+  // the popup and the tip are decided as the shell's module runs, before the study's title is shown
+  const open = async () => { await page.goto(origin + "/web/index.html"); await page.waitForFunction(() => document.querySelector("#title").textContent); };
   await open();
   return { ctx, page, open };
 }
@@ -97,8 +100,7 @@ try {
   const a = await device();
   await a.page.hover("#welcome-google");
   await a.page.focus("#welcome-google");
-  await pause(300);
-  check(scriptLoads === 0, "the mouse passing over Sign in with Google, or focus reaching it, loads nothing from Google");
+  check(scriptLoads === 0 && !(await askedGoogle(a.page)), "the mouse passing over Sign in with Google, or focus reaching it, loads nothing from Google");
   check(await popup(a.page), "opening the page fades it behind the sign-in popup");
   check(await a.page.evaluate(() => {
     const d = document.querySelector("#welcome-dlg");
@@ -181,8 +183,7 @@ try {
   await shot(c.page, "welcome_offline");
   await c.page.hover("#welcome-google");
   await c.page.click("#welcome-google", { force: true });
-  await pause(300);
-  check(scriptLoads === loads && await popup(c.page), "clicking it offline reaches nothing and leaves the popup up");
+  check(scriptLoads === loads && !(await askedGoogle(c.page)) && await popup(c.page), "clicking it offline reaches nothing and leaves the popup up");
   await c.page.evaluate(() => { window.netDown = false; dispatchEvent(new Event("online")); });
   check(await c.page.isHidden("#welcome-offline") && await c.page.evaluate(() => document.querySelector("#welcome-google").getAttribute("aria-disabled") !== "true"),
     "back online, Sign in with Google is offered again");
@@ -207,7 +208,7 @@ try {
     && await popup(f.page) && !(await signedIn(f.page)), "a cancelled Google window leaves the popup up, saying sign-in did not finish");
   await f.page.evaluate(() => { window.googleAnswer = "blocked"; });
   await f.page.click("#welcome-google");
-  await pause(300);
+  await f.page.waitForSelector("#welcome-failed", { state: "visible" }).catch(() => {});
   check(await popup(f.page) && await f.page.isVisible("#welcome-failed") && !(await signedIn(f.page)), "and so does a blocked one");
   await f.page.evaluate(() => { window.googleAnswer = "token"; });
   await f.page.click("#welcome-google");
@@ -216,7 +217,11 @@ try {
   // the tip follows the avatar when the window is resized
   const g = await device({ seed: { "nor-welcome": JSON.stringify({ choice: "anonymous", remember: true }) } });
   await g.page.setViewportSize({ width: 700, height: 800 });
-  await pause(200);
+  // the tip moves with the avatar once the page has laid the narrower window out
+  await g.page.waitForFunction(() => {
+    const t = document.querySelector('.tip-bubble[data-tip="sign-in"]')?.getBoundingClientRect(), a = document.querySelector("#user-menu summary").getBoundingClientRect();
+    return t && t.right <= innerWidth && t.left < a.right && t.right > a.left;
+  }).catch(() => {});
   const moved = await signInTip(g.page);
   check(moved && moved.inside && moved.under && moved.arrow, "the tip follows the avatar when the window narrows: " + JSON.stringify(moved));
 
@@ -227,14 +232,15 @@ try {
   // two tabs: signing out in one is not undone by the other
   await h.page.keyboard.press("Escape");
   const h2 = await h.ctx.newPage();
-  await h2.goto(origin + "/web/index.html"); await h2.waitForFunction(() => document.querySelector("#title").textContent); await pause(300);
+  await h2.goto(origin + "/web/index.html"); await h2.waitForFunction(() => document.querySelector("#title").textContent);
   await h2.keyboard.press("Escape");
   await h.page.click("#user-menu summary");
   await h.page.click("#sign-out");
-  await pause(300);
+  await h2.waitForFunction(() => document.querySelector("#sign-out").hidden).catch(() => {});
   check(await h2.evaluate(() => document.querySelector("#sign-out").hidden), "signing out in one tab signs the other out too");
+  // signed out there, the other tab's change starts nothing that could write the record later: a sign-in written
+  // back would be written by the click itself
   await h2.click("#theme");
-  await pause(600);
   check(await h2.evaluate(() => localStorage.getItem("nor-google-sign-in")) === null, "and a change in the other tab does not sign the user back in");
 
   // no Google client

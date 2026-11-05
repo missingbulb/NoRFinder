@@ -137,7 +137,7 @@ async function measure() {
 }
 // the page's counts after a collection; twice, as DOM nodes freed by the first are swept only after it
 async function collected() {
-  await cdp.send("HeapProfiler.collectGarbage"); await page.waitForTimeout(50); await cdp.send("HeapProfiler.collectGarbage");
+  await cdp.send("HeapProfiler.collectGarbage"); await page.waitForTimeout(50); await cdp.send("HeapProfiler.collectGarbage"); // waits on purpose: the page runs between the two collections, so the second sweeps what the first freed
   return Object.fromEntries((await cdp.send("Performance.getMetrics")).metrics.map((m) => [m.name, m.value]));
 }
 // the nodes in the document, by the nearest ancestor with an id, and how many that is in all

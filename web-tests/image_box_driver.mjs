@@ -81,6 +81,11 @@ const visible = async (sel) => !!(await box(sel));
 // the base canvas's pixel, red green blue
 const pixel = (x, y) => page.evaluate(([x, y]) => [...document.querySelector("#base").getContext("2d").getImageData(x, y, 1, 1).data].slice(0, 3), [x, y]);
 const opacity = () => page.evaluate(() => Number(getComputedStyle(document.querySelector("#minimap")).opacity));
+// until the page shows what the next check reads, or a few seconds pass and the check says what it shows instead
+const opacityNear = (want) => page.waitForFunction((w) => Math.abs(Number(getComputedStyle(document.querySelector("#minimap")).opacity) - w) < 1e-6, want, { timeout: 3000 }).catch(() => {});
+const pixelIs = (x, y, rgb) => page.waitForFunction(([x, y, rgb]) => [...document.querySelector("#base").getContext("2d").getImageData(x, y, 1, 1).data].slice(0, 3).join() === rgb, [x, y, rgb], { timeout: 3000 }).catch(() => {});
+// its red within 1 of a value, for a change made in more than one step, each of which the page may draw on its own
+const redNear = (x, y, v) => page.waitForFunction(([x, y, v]) => Math.abs(document.querySelector("#base").getContext("2d").getImageData(x, y, 1, 1).data[0] - v) <= 1, [x, y, v], { timeout: 3000 }).catch(() => {});
 const title = async () => { await page.click("#image-box > .sec-head h2"); await page.waitForFunction(() => !document.documentElement.hasAttribute("data-drawers")); };
 
 // ---- the box before an image: its title alone in its head, Load at its foot ----
@@ -110,7 +115,7 @@ await check(mm && mm.x >= sc.x && mm.y >= sc.y && mm.x + mm.w <= sc.x + sc.w && 
 await check(mm.x - sc.x < 40 && mm.y - sc.y < 40, "in its top left corner", [mm, sc]);
 await check(await page.$eval("#minimap", (m) => { const s = getComputedStyle(m); return s.borderTopStyle === "solid" && parseFloat(s.borderTopWidth) >= 2 && s.borderTopColor === "rgb(255, 255, 255)"; }), "framed by a solid white border");
 await check(await page.textContent("#minimap .mm-head") === "Minimap" || (await page.textContent("#minimap .mm-title")) === "Minimap", "its header says Minimap");
-await page.mouse.move(5, 5); await page.waitForTimeout(250);
+await page.mouse.move(5, 5); await opacityNear(1);
 await check((await opacity()) === 1, "opaque at first", await opacity());
 await shot("minimap", "#view");
 
@@ -138,7 +143,14 @@ const flight = () => page.waitForFunction(() => document.getAnimations().some((a
 const landed = () => page.waitForFunction(() => !document.getAnimations().some((a) => a.effect?.pseudoElement?.startsWith("::view-transition")));
 // the button itself never flies: a copy of it does, so the button stands where it is throughout
 const flier = () => page.evaluate(() => ({ button: getComputedStyle($("#minimap-btn")).viewTransitionName, copy: !!document.querySelector(".mm-flier") }));
-await page.click("#minimap-hide");
+// no flight still under way from the minimap showing, which WebKit holds a click behind
+await landed();
+// a click that never completes says what the page was doing, or that it no longer answers
+const stuck = () => page.evaluate(() => {
+  const b = document.querySelector("#minimap-hide").getBoundingClientRect(), at = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
+  return { transition: !!document.activeViewTransition, animations: document.getAnimations().map((a) => `${a.effect?.target?.id || a.effect?.target?.className || "?"}${a.effect?.pseudoElement || ""} ${a.playState}`), at: at && (at.id || at.className || at.tagName) };
+}).then((x) => JSON.stringify(x), (e) => "the page does not answer: " + e.message);
+await page.click("#minimap-hide", { timeout: 8000 }).catch(async (e) => { console.error("FAILED: hiding the minimap: the click never completed: " + (await stuck())); throw e; });
 await check(await flight().then(() => true, () => false), "hiding flies the minimap into its toolbar button");
 const folding = await flier();
 await check(folding.button === "none" && folding.copy, "folding, a copy of the button is what the minimap lands as, not the button", folding);
@@ -157,9 +169,9 @@ await page.waitForFunction(() => document.querySelector("#minimap-pop").matches(
 const under = await page.evaluate(() => { const p = $("#minimap-pop").getBoundingClientRect(), b = $("#minimap-btn").getBoundingClientRect(); return { gap: p.top - b.bottom, right: p.right - b.right, inside: p.left >= 0 && p.right <= innerWidth }; });
 await check(under.gap >= 4 && under.gap <= 8 && Math.abs(under.right) <= 1 && under.inside, "under its button, their right edges lined up", under);
 await page.$eval("#minimap-opacity", (i) => { i.value = 40; i.dispatchEvent(new Event("input", { bubbles: true })); });
-await page.mouse.move(5, 5); await page.waitForTimeout(500);
+await page.mouse.move(5, 5); await opacityNear(0.4);
 await check(Math.abs((await opacity()) - 0.4) < 0.01, "its popup sets the minimap's opacity at rest", await opacity());
-await page.hover("#minimap canvas"); await page.waitForTimeout(250);
+await page.hover("#minimap canvas"); await opacityNear(1);
 await check((await opacity()) === 1, "and it is opaque under the pointer", await opacity());
 await page.mouse.move(5, 5);
 await check(await page.evaluate(() => JSON.parse(localStorage.getItem("nor-minimap")).opacity) === 0.4, "and the opacity is kept for the next visit");
@@ -185,9 +197,9 @@ await page.mouse.move(5, 5);
 // the squares are 200 and 250 in the image, the rest 0
 await check((await pixel(15, 15)).join() === "200,200,200", "the image as it is at first", await pixel(15, 15));
 const level = (k, which, v) => page.$eval(`#channels .channel:nth-child(${k}) input.${which}`, (i, v) => { i.value = v; i.dispatchEvent(new Event("input", { bubbles: true })); }, v);
-await level(1, "white", 100); await page.waitForTimeout(100);
+await level(1, "white", 100); await pixelIs(15, 15, "255,255,255");
 await check((await pixel(15, 15)).join() === "255,255,255" && (await pixel(2, 2)).join() === "0,0,0", "a lower white point brightens the channel", await pixel(15, 15));
-await level(1, "white", 255); await level(1, "black", 150); await page.waitForTimeout(100);
+await level(1, "white", 255); await level(1, "black", 150); await redNear(15, 15, (200 - 150) / (255 - 150) * 255);
 const dim = await pixel(15, 15);
 await check(dim[0] === Math.round((200 - 150) / (255 - 150) * 255) || Math.abs(dim[0] - (200 - 150) / (255 - 150) * 255) <= 1, "a higher black point darkens it", dim);
 await level(1, "black", 250); await level(1, "white", 240);
@@ -240,7 +252,7 @@ await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => { i
 // its colour picker starts at the channel's colour and recolours it
 await check((await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => i.value)) === "#ffffff", "its colour picker starts at its colour");
 await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => { i.value = "#ff0000"; i.dispatchEvent(new Event("input", { bubbles: true })); });
-await page.waitForTimeout(100);
+await pixelIs(15, 15, "200,0,0");
 await check((await pixel(15, 15)).join() === "200,0,0", "picking a colour recolours the channel", await pixel(15, 15));
 await page.$eval("#channels .channel:nth-child(1) input[type=color]", (i) => { i.value = "#ffffff"; i.dispatchEvent(new Event("input", { bubbles: true })); });
 await page.dblclick("#channels .channel:nth-child(1) .levels");

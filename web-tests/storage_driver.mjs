@@ -275,8 +275,8 @@ try {
   await drive();
   check(!(await page.isChecked("#drive-autosave")), "unticking Auto-save images is remembered");
   await openRow(2);
-  for (let t = 0; t < 50 && !downloads[DRIVE[1].id]; t++) await page.waitForTimeout(100);
-  await page.waitForTimeout(300);
+  // opening: the page decides whether to keep an image before it starts opening it
+  await page.waitForFunction((i) => st.source?.id === i, DRIVE[1].id);
   check(downloads[DRIVE[1].id] === 1 && (await saved()) === 1, "with it off, an image is downloaded and not kept");
 
   // ---- req/shell/load/selector: the recent images in the image selector ----
@@ -312,7 +312,6 @@ try {
   r = await recents();
   check(r.map((e) => e.name).join() === `${DRIVE[0].name},${TWIN.name},${DRIVE[1].name}` && /sub/.test(r[1].where), `opening it moves it to the top: ${JSON.stringify(r)}`);
   await pick(3, DRIVE[1].id);
-  for (let t = 0; t < 50 && downloads[DRIVE[1].id] < 2; t++) await page.waitForTimeout(100);
   check(downloads[DRIVE[1].id] === 2, "a recent image not kept is downloaded again");
   // each study lists only the images opened in it
   const inStudy = async (id) => {

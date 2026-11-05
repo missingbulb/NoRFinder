@@ -41,7 +41,7 @@ page.setDefaultTimeout(10000);
 
 // the 3D view's brightness now, its mean over every pixel of red, green and blue
 const brightness = () => page.evaluate(async () => {
-  await new Promise((r) => setTimeout(r, 300));
+  // the view draws in the frame after it is changed: two frames on, the change is on the canvas
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   const gl = document.querySelector("#v3-gl"), c = document.createElement("canvas"); c.width = gl.width; c.height = gl.height;
   const g = c.getContext("2d"); g.drawImage(gl, 0, 0);

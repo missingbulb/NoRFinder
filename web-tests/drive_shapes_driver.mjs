@@ -79,6 +79,7 @@ const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } })
 const cors = { "access-control-allow-origin": "*" };
 // every read of a file's bytes: its row and the Range asked for ("" for the whole file)
 const reads = [];
+let inflight = 0;
 await ctx.route("https://www.googleapis.com/**", async (route) => {
   const u = new URL(route.request().url()), id = u.pathname.match(/\/files\/?(.*)$/)[1];
   if (!id) {
@@ -86,9 +87,9 @@ await ctx.route("https://www.googleapis.com/**", async (route) => {
     return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ files }) });
   }
   const k = FILES.findIndex((f) => f.id === id), range = route.request().headers().range || "";
-  reads.push({ k, range });
+  reads.push({ k, range }); inflight++;
   const m = range.match(/^bytes=(\d+)-(\d+)$/), body = m ? FILES[k].bytes.subarray(+m[1], +m[2] + 1) : FILES[k].bytes;
-  return route.fulfill({ status: m ? 206 : 200, headers: cors, contentType: "image/tiff", body });
+  try { await route.fulfill({ status: m ? 206 : 200, headers: cors, contentType: "image/tiff", body }); } finally { inflight--; }
 });
 await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
 await ctx.addInitScript((link) => {
@@ -101,7 +102,26 @@ const page = await ctx.newPage();
 page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.message); });
 page.setDefaultTimeout(10000);
 
-const quiet = async (ms = 600) => { for (let n = -1; n !== reads.length; ) { n = reads.length; await page.waitForTimeout(ms); } };
+// the page's handlers for what was just done have all run: a read it would start has started
+const frames = () => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
+// every row in view has its badge (or holds nothing to tell), and no read is on the way once the page has run its
+// handlers, the rows ahead of the view among them; 10 s at most, the checks after it saying what is missing
+const quiet = async () => {
+  const end = Date.now() + 10000, wants = FILES.map((f) => f.want);
+  for (;;) {
+    await page.waitForFunction((wants) => {
+      const box = $("#drive-list").getBoundingClientRect(), rows = [...document.querySelectorAll("#drive-list .item")];
+      return rows.every((b, k) => { const r = b.getBoundingClientRect(); return !(r.bottom > box.top && r.top < box.bottom) || (b.querySelector(".shape")?.textContent || "") === wants[k]; });
+    }, wants, { timeout: Math.max(1, end - Date.now()) }).catch(() => {});
+    await frames();
+    if (!inflight || Date.now() >= end) break;
+    await page.waitForEvent("requestfinished", { timeout: Math.max(1, end - Date.now()) }).catch(() => {});
+  }
+  if (Date.now() >= end) {
+    const rows = await inView(), b = await badges();
+    console.log("quiet: gave up after 10 s", JSON.stringify({ inflight, rows, badges: rows.map((k) => b[k]) }));
+  }
+};
 const open = async () => {
   await pressDrive(page);
   await page.waitForFunction((n) => document.querySelectorAll("#drive-list .item").length === n, FILES.length);
@@ -138,7 +158,7 @@ try {
   // not read while Show thumbnails is off
   await page.uncheck("#drive-thumbs");
   await page.evaluate(() => { $("#drive-list").scrollTop = $("#drive-list").scrollHeight; });
-  await quiet();
+  await frames();
   check(reads.length === 0, `with Show thumbnails off, nothing is read: ${reads.length} reads`);
   await page.check("#drive-thumbs");
   await quiet();
@@ -151,7 +171,7 @@ try {
   await page.dblclick("#drive-list .item:nth-child(3)");
   await page.waitForFunction(() => !$("#drive-dlg").open);
   await page.waitForFunction(() => st.fileName === "c stack.tif");
-  for (let t = 0; t < 30 && !(await thumbOf(2)); t++) await page.waitForTimeout(100);
+  await page.waitForFunction((id) => localStorage.getItem("nor-drive-thumb:" + id), FILES[2].id, { timeout: 3000 }).catch(() => {});
   const pic = await thumbOf(2);
   check(reads.some((r) => r.k === 2 && !r.range), "opening the stack downloads the whole file");
   check(!!pic && JSON.parse(pic).startsWith("data:image/"), "and saves a thumbnail of it as it opens");
@@ -163,7 +183,7 @@ try {
   // a two-channel stack: each channel in its own colour
   await page.dblclick("#drive-list .item:nth-child(4)");
   await page.waitForFunction(() => st.fileName === "c two.tif");
-  for (let t = 0; t < 30 && !(await thumbOf(3)); t++) await page.waitForTimeout(100);
+  await page.waitForFunction((id) => localStorage.getItem("nor-drive-thumb:" + id), FILES[3].id, { timeout: 3000 }).catch(() => {});
   const two = await thumbOf(3);
   const hues = two && await page.evaluate((u) => new Promise((ok) => {
     const i = new Image();
@@ -181,7 +201,8 @@ try {
   await open();
   await page.dblclick("#drive-list .item:nth-child(1)");
   await page.waitForFunction(() => st.fileName === "a flat.tif");
-  await page.waitForTimeout(500);
+  // its shape remembered last: the moment, as it opens, that a stack's thumbnail is saved
+  await page.waitForFunction((id) => Object.keys(JSON.parse(localStorage.getItem("nor-drive-holds") || "{}")).at(-1) === id, FILES[0].id);
   check(!(await thumbOf(0)), "opening a flat image saves no thumbnail before it shows");
 } catch (e) {
   failed = true; console.error("FAILED: " + e.message);

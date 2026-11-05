@@ -90,7 +90,8 @@ await check(await page.evaluate((s) => [...document.querySelectorAll("#data-tree
 
 // Load's Drive dialog, out of the mode, lists the folder and not the image
 await role(page, "Viewer");
-await page.waitForTimeout(500);
+// the Viewer's page: Data Management gone, the Image box back
+await page.waitForFunction(() => $("#image-box").checkVisibility() && document.documentElement.dataset.mode !== "data" && $("#data-col").hidden);
 if (await page.evaluate(() => $("#image-box").classList.contains("folded"))) await page.click("#image-box .sec-head h2");
 await pressDrive(page);
 await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length > 0);

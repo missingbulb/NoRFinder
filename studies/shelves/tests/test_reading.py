@@ -1,10 +1,12 @@
 """req/shelves/read/readers: the sandbox's readers (reading/read.mjs, the page's own reading.js on the page's own engine
 builds) read a Hebrew spine and an English one, each set upright from its side. The labels are drawn, so this proves the
 engines run and turn the text, not how well they read real spines; ground truth scores that."""
+import fcntl
 import json
 import os
 import shutil
 import subprocess
+import tempfile
 
 import pytest
 from PIL import Image, ImageDraw, ImageFont
@@ -17,12 +19,21 @@ NODE, NPM = shutil.which('node'), shutil.which('npm')
 FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
 
 
+def install_engines():
+    """The readers' engines into reading/node_modules, once: pytest-xdist's workers can each run this module's fixture
+    at once, and two npm installs into one folder break each other, so each waits its turn and installs only what is
+    not whole yet. npm writes .package-lock.json last, so its presence is an install that finished."""
+    with open(os.path.join(tempfile.gettempdir(), 'nor-shelves-reading.lock'), 'w') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if not os.path.exists(os.path.join(READING, 'node_modules', '.package-lock.json')):
+            subprocess.run([NPM, 'ci', '--prefix', READING, '--ignore-scripts'], check=True, capture_output=True, timeout=300)
+
+
 @pytest.fixture(scope='module')
 def engines():
     if not (NODE and NPM):
         pytest.skip('node or npm missing')
-    if not os.path.isdir(os.path.join(READING, 'node_modules')):
-        subprocess.run([NPM, 'ci', '--prefix', READING, '--ignore-scripts'], check=True, capture_output=True, timeout=300)
+    install_engines()
 
 
 @pytest.fixture(scope='module')

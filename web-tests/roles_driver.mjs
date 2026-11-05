@@ -89,15 +89,17 @@ await page.click("#role-menu summary"); await shot(page, "menu"); await page.cli
 await check(s.list.join() === "Viewer,Ground Truth Tagger,Data Manager" && !s.data, "a data manager is offered Data Manager, and sees no Data Management until choosing it", s);
 await choose(page, "Data Manager");
 await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder").length === 2);
-await page.waitForTimeout(500);
-s = await seen(page);
 const width = () => page.evaluate(() => Math.round($("#data-col").getBoundingClientRect().width));
+// the column, folded or open, once its animation has reached the width asked for
+const widthReaches = (open) => page.waitForFunction((open) => { const w = $("#data-col").getBoundingClientRect().width; return open ? w > 200 : w < 60; }, open).catch(() => {});
+await widthReaches(true);
+s = await seen(page);
 await shot(page, "data-manager");
 await check(s.data && s.mode === "data" && (await width()) > 200, "as Data Manager the folder tree shows, open", { ...s, width: await width() });
 await check(!s.bar, "no bar over the image asks for folders", s);
-await page.click("#data-open"); await page.waitForTimeout(500);
+await page.click("#data-open"); await widthReaches(false);
 await check((await width()) < 60 && (await seen(page)).mode === "data", "its chevron folds the tree to a strip", await width());
-await page.click("#data-open"); await page.waitForTimeout(500);
+await page.click("#data-open"); await widthReaches(true);
 await check((await width()) > 200, "and opens it again", await width());
 await choose(page, "Viewer");
 s = await seen(page);

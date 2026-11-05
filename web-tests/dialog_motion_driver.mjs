@@ -37,8 +37,10 @@ const browser = await pw[ENGINE].launch();
 const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
 const check = async (ok, what, seen) => { if (!ok) { console.error("FAILED: " + what + (seen ? " " + JSON.stringify(seen) : "")); await done(1); } console.log("ok: " + what); };
 
-async function open({ motion = true, reducedMotion = "no-preference" } = {}) {
+// clock: the page's clock made one the test can move past the page's own time windows; it runs as the real one does
+async function open({ motion = true, reducedMotion = "no-preference", clock = false } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, reducedMotion });
+  if (clock) await ctx.clock.install();
   await ctx.route(offSite(origin), (r) => r.abort());
   await ctx.addInitScript((motion) => {
     delete Navigator.prototype.serviceWorker;
@@ -68,10 +70,10 @@ const resume = (page, dlg) => page.evaluate((dlg) => document.querySelector(dlg)
 
 // ---- a button opens its dialog out of itself ----
 {
-  const { ctx, page } = await open();
+  const { ctx, page } = await open({ clock: true });
   // the history arrives once, and the dialog grows with it: let that happen first
   await page.evaluate(() => { $("#sb-version").click(); $("#history-dlg").close(); });
-  await page.waitForTimeout(1200);
+  await page.waitForFunction(() => !/Loading/.test($("#history-list").textContent));
   // Version history fills in at once, so it starts exactly as big as its button; Resource Usage fills in a moment
 // later, past the frame its motion starts in, so it starts only about that big
 for (const [btn, dlg, what, by] of [["#sb-version", "#history-dlg", "Version history", 1.02], ["#sb-res-icon", "#usage-dlg", "Resource Usage", 1.5]]) {
@@ -90,7 +92,8 @@ for (const [btn, dlg, what, by] of [["#sb-version", "#history-dlg", "Version his
   }
   // a button that opens nothing, pressed over a second ago, does not lend the dialog its place
   await page.click("#theme"); await page.click("#theme");
-  await page.waitForTimeout(1200);
+  // past the second after a click in which the page takes a dialog opening as that click's (web/dialog_motion.js)
+  await ctx.clock.fastForward(1200);
   await page.evaluate(() => $("#history-dlg").showModal());
   const f = await firstFrame(page, "#history-dlg", "#sb-version");
   await check(f.open && f.count === 0, "a dialog opened with nothing pressed lately appears at once", f);

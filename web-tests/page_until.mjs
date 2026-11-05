@@ -6,6 +6,6 @@ export async function until(page, fn, arg, { timeout = 10000, every = 100 } = {}
     // a navigation under way destroys the page's context: not yet, rather than a failure
     if (await page.evaluate(fn, arg).catch(() => false)) return;
     if (Date.now() > end) throw new Error(`timed out after ${timeout} ms waiting for ${fn}`);
-    await new Promise((ok) => setTimeout(ok, every));
+    await new Promise((ok) => setTimeout(ok, every)); // waits on purpose: the poll's interval, an async fn having no event to wait on
   }
 }

@@ -52,8 +52,8 @@ try {
   await page.goto(origin + "/");
   const title = await page.title();
   check(!!(await page.$('a[href="app/"]')), "after: / shows the landing page: " + title);
-  let left = await scopes();
-  for (let t = 0; t < 40 && left.length; t++) { await page.waitForTimeout(250); left = await scopes(); }
+  await until(page, async () => !(await navigator.serviceWorker.getRegistrations()).length).catch(() => {});
+  const left = await scopes();
   check(!left.length, "after: the old registration is gone: " + JSON.stringify(left));
   await page.goto(origin + "/app/");
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 15000 }).catch(() => {});

@@ -43,7 +43,7 @@ page.setDefaultTimeout(10000);
 const brightness = () => page.evaluate(async () => {
   const v = window.shellForTests.viewer.three;
   Object.assign(v.S, { rot: v.facing(0, 0), dist: v.FIT_DIST, pivot: [0, 0, 0], clip: null }); v.redraw();
-  await new Promise((r) => setTimeout(r, 400));
+  // the view draws in the frame after it is changed: two frames on, the change is on the canvas
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   const gl = document.querySelector("#v3-gl"), c = document.createElement("canvas"); c.width = gl.width; c.height = gl.height;
   const g = c.getContext("2d"); g.drawImage(gl, 0, 0);

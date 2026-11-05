@@ -299,8 +299,7 @@ try {
   await shot("new_in_dialog", "#drive-dlg");
   await page.click("#drive-dlg button[value=close]");
   await page.click("#load-drive");
-  await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 5);
-  await page.waitForTimeout(300);
+  await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 5 && !document.querySelector("#drive-list .item .new"), null, { timeout: 3000 }).catch(() => {});
   d = await listed();
   check(d.every((x) => x.fresh === null), "listed again, the folder holding the same images, none is new any more", d);
   await page.click("#drive-dlg button[value=close]");
