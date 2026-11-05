@@ -505,7 +505,8 @@ nobody has decided: what the page does there is not a requirement yet.
 
   Set by the owner on 2026-10-30. Every box in the left bar folds under its title, and clicking the
   title opens or closes it. The first is the shell's Image box (the image selector or Load, the image's
-  details, its channels, Unload): open until an image opens, then folded. Each of a study's boxes
+  details, its channels, Unload): open until an image opens, then folded; in a study with no steps after Load
+  (the Image Viewer) it stays open, nothing else having opened (the owner, 2026-11-05). Each of a study's boxes
   names the step (`req/shell/status-bar/breadcrumbs`) after which it opens, or that only its title opens it, and may name the
   step after which it folds again. When a step is done by the user (an image opening, or the
   step's button pressed, never a dial set back to the last run's) its boxes open and the boxes it

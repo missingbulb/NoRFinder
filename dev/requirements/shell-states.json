@@ -103,7 +103,7 @@
               "rule": [
                 {"when": {"selected": ["folder"]}, "is": "hidden", "req": "req/shell/data/folder"},
                 {"when": {"role": ["data"], "online": [false]}, "is": "folded", "req": "req/shell/data/mode", "approval": "undecided"},
-                {"when": {"hasSteps": [false]}, "is": "shown", "approval": "tentative"},
+                {"when": {"hasSteps": [false]}, "is": "shown"},
                 {"when": {"image": ["local", "original"]}, "is": "folded"}
               ],
               "children": [

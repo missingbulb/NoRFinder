@@ -2286,7 +2286,7 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Image box | ●* | ●* |
+| &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's details | ○ | ○ |
@@ -2411,7 +2411,7 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Image box | ●* | ●* |
+| &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's details | ○ | ○ |
