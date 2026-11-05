@@ -46,15 +46,16 @@ A study is a folder with a `study.json`:
   `req/shell/load/from`), what Load accepts, the text the empty view shows, and optionally `folders`, the study's Google
   Drive folders: the Drive dialog browses them alone, with no link to paste, and Data Management works on them all.
 - `permissions` — optional, the Google accounts (by email) holding each role: `data_management` sees Data
-  Management, `ground_truth_writer` will write ground truth to Drive. A study's panels step aside while Data
-  Management is open.
+  Management. A study's panels step aside while Data Management is open.
 - `channels` — what the study says of the image's channels, by place: `name`, `colour` (`#rrggbb`),
   `shown` at first, and optionally `about` (the (?)'s description, at most 100 words) and `black` and
   `white` (its first points, 0–255). A channel it leaves out takes what the file says, then its place
   (red, green, blue…); the Image Viewer names none.
 - `progress` — the status line while Python installs (`install`), loads the study (`load`), opens an
   image (`open`) and runs each action (by its name).
-- `groundTruth.label` — optional, the GitHub issue label its submissions carry.
+- `groundTruth` — for a GT or PostGT study: its `button`, and its `submissions` and `curated` Google Drive
+  folders (links, `null` until made; the same folder twice for submission without review). Who may write is
+  Drive's sharing of them. The layout and the reader's rule are `web/truth_folders.js`'s.
 - `driveThumbs` — optional, the folder of ready-made thumbnails for the Google Drive dialog.
 
 The shell's controls draw from one page state (`web/page_state.js`: the image open, the minimap) and

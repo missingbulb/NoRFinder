@@ -11,7 +11,7 @@
 <main>
 <nav><a href="/">← Back to rauntruth.com</a> · <a href="terms">Terms of service</a> · <a href="license">License</a></nav>
 <h1>Privacy policy</h1>
-<p class="dim">Last updated 4 November 2026</p>
+<p class="dim">Last updated 5 November 2026</p>
 
 <p>rauntruth.com is a free research tool for viewing and analysing microscopy images, run by Ariel
 (<a href="mailto:ariel@rauntruth.com">ariel@rauntruth.com</a>). It runs in your browser. The site has
@@ -21,8 +21,8 @@ stays on your device, and what reaches other services, and when.</p>
 <h2>Your images and results</h2>
 <p>Images are analysed on your own computer, inside your browser. They are never uploaded to us. The site
 sends them to no one else either, with the exceptions a person asks for: a study's data manager can have
-it save small previews of a study folder's images, and the images they edit, back into that study's Google Drive folder. The results stay in your browser unless you download them yourself or choose
-to submit ground truth (below).</p>
+it save small previews of a study folder's images, and the images they edit, back into that study's Google Drive folder. The results stay in your browser unless you download them yourself or
+submit ground truth, which the site saves into the study's Google Drive folders (below).</p>
 
 <h2>What stays on your device</h2>
 <p>To start faster, to work without the internet and to remember your choices, the site keeps these in
@@ -65,11 +65,12 @@ sent to us.</p>
   <li><b>Google</b> answers when you open a Google Drive link you pasted (through the Drive API), when
     making a study available offline lists, or downloads, the images in its Drive folder, when
     you sign in with Google, and, while you are signed in, when the page reads or saves your settings
-    file (see below), and, for a study's data managers, when the page lists, checks and adds files in that
-    study's Drive folders (see below); Google's picker, which asks which of those folders the site may
+    file (see below); for a study's data managers and Ground Truth Taggers, when the page lists, checks and adds
+    files in that study's Drive folders (see below); and for anyone, when the page reads which images have
+    ground truth, and an image's curated ground truth, from the study's ground-truth folders; Google's picker, which asks which of those folders the site may
     use, loads from apis.google.com. Your profile picture and Drive's small pictures of images are loaded from
     Google's image servers. See <a href="https://policies.google.com/privacy">Google's privacy policy</a>.</li>
-  <li><b>GitHub</b> is reached only when you click a link to it, for example to submit ground truth or
+  <li><b>GitHub</b> is reached only when you click a link to it, for example to report a problem or
     propose a study. What you post there is public, under
     <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">GitHub's privacy statement</a>.</li>
 </ul>
@@ -82,24 +83,29 @@ permission for the site to:</p>
   <li>see, create and change its own settings file in a hidden folder in your Google Drive
     (the app data folder), to keep your settings the same on every device you sign in on.</li>
 </ul>
-<p>If a study names you as one of its data managers, choosing to approve its folders while you work as
-its Data Manager asks Google for its per-file Drive permission, and then shows Google's picker with just that study's folders, for you to
-choose the ones the site may use. In the folders you choose, the site adds files for you (preview files,
-markers saying an image needs ground truth, and the images you edit, in a folder named after the image), and changes or moves to the bin only the files it added
-itself. It never changes, moves or deletes a file anyone else made.</p>
+<p>If you work as a study's Ground Truth Tagger, or a study names you as one of its data managers, choosing to
+approve its folders asks Google for its per-file Drive permission, and then shows Google's picker with just that
+study's folders, for you to choose the ones the site may use. In the folders you choose, the site adds files for
+you: a tagger's ground-truth file; a data manager's preview files, markers saying an image needs ground truth, the
+images they edit, in a folder named after the image, and the ground truth they accept. It changes, marks or moves to
+the bin only files the site itself added, for you or for another of the study's taggers and data managers: a data
+manager accepting or rejecting your ground truth copies or marks your file. It never changes, moves or deletes a
+file someone made outside the site.</p>
 <p>Apart from those folders and the files it made, the site can't see, open or change anything in
 your Google Drive. The settings file holds only the settings listed in the avatar menu's Settings.</p>
 <p>How this data is handled:</p>
 <ul>
   <li><b>Accessed and used:</b> your name, email address and picture are shown in the avatar menu.
     Your settings file is read when you sign in and on later visits, and replaced when you change a
-    setting. Your email address is compared with the study's list of data managers, in your browser.
+    setting. Your email address is compared with the study's list of data managers, in your browser, and when
+    you submit ground truth it names your file and is written into it.
     In the study folders you chose, the site reads which ones you may add files to, and adds the files you
     ask it to. Nothing else is done with any of it.</li>
   <li><b>Stored:</b> your name, email address, picture and Google's sign-in token (which expires
     after about an hour) are kept in your browser on this device until you sign out. The settings file
     stays in your own Google Drive, and the files the site adds stay in the study's folders. We keep no copy of any of it, anywhere.</li>
-  <li><b>Shared:</b> with no one. Google user data goes only between your browser and Google, never to
+  <li><b>Shared:</b> your email address is in the ground-truth files you submit, which anyone with the study's
+    folder links can read. Otherwise Google user data goes only between your browser and Google, never to
     us or to any third party. It is not used for advertising, sold, or used to train any model.</li>
 </ul>
 <p>rauntruth.com's use and transfer of information received from Google APIs adheres to the
@@ -111,8 +117,12 @@ Google's sign-in window) and choose Delete hidden app data. To withdraw the site
 <a href="https://myaccount.google.com/connections">your Google Account's third-party connections</a>.</p>
 
 <h2>Ground truth</h2>
-<p>Submitting ground truth is something you do yourself: you download the file and attach it to an
-issue you open on GitHub, where it and your GitHub username are public.</p>
+<p>Submit saves your ground truth into the study's submissions folder in Google Drive, as a file named with your
+email address that holds your marks, your email address and when you made it. A study's data manager may copy it
+into the study's curated folder, which the study's algorithms are scored on. The study's owner shares these
+folders; anyone with their links can read the files, and Google Drive shows each file's owner, your name and
+email address, to anyone who can see it. Your file stays there under your Google account, and Drive keeps its
+earlier versions when you submit again. To remove it, delete it in Google Drive or ask the study's owner.</p>
 
 <h2>Changes and contact</h2>
 <p>If this policy changes, this page will say so, with a new date at the top. Questions, or requests
