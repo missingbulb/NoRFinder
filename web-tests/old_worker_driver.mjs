@@ -9,7 +9,7 @@ import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
-import { ENGINE } from "./engine.mjs";
+import { ENGINE, LAUNCH } from "./engine.mjs";
 import { until } from "./page_until.mjs";
 
 const require = createRequire(import.meta.url);
@@ -40,7 +40,7 @@ const origin = `http://127.0.0.1:${server.address().port}`;
 
 let failed = false;
 const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: " + what); } else console.log("ok: " + what); };
-const ctx = await pw[ENGINE].launchPersistentContext(fs.mkdtempSync(path.join(os.tmpdir(), "old-worker-")));
+const ctx = await pw[ENGINE].launchPersistentContext(fs.mkdtempSync(path.join(os.tmpdir(), "old-worker-")), LAUNCH);
 const page = ctx.pages()[0] || await ctx.newPage();
 const scopes = () => page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).map((r) => new URL(r.scope).pathname));
 try {
