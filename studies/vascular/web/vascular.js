@@ -56,11 +56,12 @@ export function mount(shell) {
   }
   MV.onChange((m) => { if (truth) $("#vm-truth").disabled = !m; if (!m) ran = null; steps(); });
 
+  // the tagger's progress on the stack: the model's edits, kept on this device (req/shell/ground-truth/clear)
+  shell.clearable("edits to the vessel model", () => MV.forget());
   if (truth) $("#vm-truth").onclick = () => {
     const gt = MV.truth();
     if (!gt) return;
     shell.submitTruth({ doc: gt.doc, count: gt.edits, file: gt.file, items: truth ? tasks.open() : gt.items,
-      issue: { title: `Ground truth: ${gt.stem}`, body: `The corrected vessel model of ${gt.stem}, with ${gt.edits} correction${gt.edits === 1 ? "" : "s"}.` },
       empty: "Correct the model first: approve or decline a vessel, check a junction or an area, or draw a missed vessel." });
   };
   // a stack already open when the study comes in (a switch from another study)
@@ -88,6 +89,14 @@ export function mount(shell) {
       MV.drawn(JSON.stringify(meta), `${meta.algorithm} model`);
       canRun(); steps();
       shell.status(`The vessel model is drawn: ${meta.edges.length} vessels, in ${meta.score?.seconds ?? "?"} s.`);
+    },
+    // a curated ground truth's final results (req/shell/ground-truth/view): the corrected model drawn as a model is,
+    // with none of the tasks' marks
+    showTruth(doc) {
+      MV.drawn(JSON.stringify(doc), "curated ground truth");
+      const m = MV.current();
+      steps();
+      return m ? `${m.segments.length} vessel segments` : "a vessel model that could not be read";
     },
     error() { if (running) { running = null; shell.busy(false); canRun(); } },
     async settled() { if (running) await shell.until("result:extract"); },

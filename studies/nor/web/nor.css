@@ -251,3 +251,6 @@
 #overlay #gt-reveal rect { shape-rendering: crispEdges; }
 #overlay .area-frame { fill: none; stroke: #ffd400; stroke-width: 2; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke; pointer-events: none; }
 #overlay.gt .ring { stroke: #ffd400; stroke-opacity: 1; stroke-width: 2; }
+/* a curated ground truth's NoRs, in the added NoRs' yellow, none of the image's own colours (req/shell/ground-truth/view) */
+#overlay .truth-marks circle { fill: none; stroke: #ffd400; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+#overlay .truth-marks text { fill: #ffd400; font-size: 11px; }

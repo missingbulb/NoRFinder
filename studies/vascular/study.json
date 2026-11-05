@@ -80,7 +80,8 @@
     ]
   },
   "groundTruth": {
-    "label": "vascular-ground-truth",
+    "submissions": null,
+    "curated": null,
     "button": "#vm-truth"
   }
 }

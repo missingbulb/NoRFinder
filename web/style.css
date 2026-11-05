@@ -910,3 +910,21 @@ html:not(.offline) #welcome-offline { display: none; }
 #overlay .edit-lasso { fill: none; stroke: #ff4d4d; stroke-width: 2px; vector-effect: non-scaling-stroke; }
 :root[data-editing] #scroller { cursor: default; }
 :root[data-edit-tool] #scroller { cursor: crosshair; }
+/* the tagger's line in a study's ground-truth box: may they write to the submissions folder (req/shell/ground-truth/tagger-access) */
+.gt-access { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 0 0 8px; padding: 6px 8px; border-left: 3px solid var(--line); font-size: 12px; color: var(--dim); }
+.gt-access[hidden] { display: none; }
+.gt-access[data-access="write"] { border-left-color: var(--yes); }
+.gt-access[data-access="none"], .gt-access[data-access="view"], .gt-access[data-access="unset"], .gt-access[data-access="unknown"] { border-left-color: var(--warn); color: var(--text); }
+.gt-access .gt-say { flex: 1 1 100%; }
+.gt-access .gt-clear { margin-left: auto; }
+/* a pending submission, and the Data Manager's review of an image's submissions (req/shell/ground-truth/curate) */
+#folder-items .tag.pending { color: var(--accent); }
+.curate-list { list-style: none; margin: 8px 0; padding: 0; min-width: 360px; }
+.curate-list li { display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.curate-list .who { font-weight: 600; }
+.curate-list .grow { flex: 1; }
+/* an image's ground truth in the Drive dialog's rows (req/shell/ground-truth/pending) */
+#drive-list .gt-tag:empty { display: none; }
+#drive-list .gt-tag { font-size: 10.5px; padding: 0 5px; border-radius: 8px; border: 1px solid currentColor; color: var(--yes); }
+#drive-list .gt-tag[data-state="pending"] { color: var(--accent); }
+#drive-list .gt-tag[data-state="rejected"] { color: var(--warn); }

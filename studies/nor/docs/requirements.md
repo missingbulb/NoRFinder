@@ -249,30 +249,28 @@ written into the baseline by a local test run and locked from then on
 (`tests/test_quality.py`). Until submissions cover it, the reference slide is scored on Claude's
 labels, not the owner's (`detection/STATE.md`), so the lock is only as right as they are. How CI runs these tests is the repo's `req/checks/ci-sets` ([`dev/requirements/requirements.md`](../../../dev/requirements/requirements.md)).
 
-## R10 — Submitted ground truth joins the data set by code, and outranks older labels
+## R10 — Ground truth is read from the study's curated Drive folder, never kept in git
 
-Set by the owner on 2026-10-03.
+Set by the owner on 2026-10-03; its source moved from GitHub to Drive on 2026-11-05.
 
-- **A daily intake, in code.** Every day an open issue labelled `new-ground-truth` exists, the
-  nor-study pack's `ground-truth-intake` task takes every such issue's newest attached `.json`,
-  checks it (`norfinder-ground-truth/2`, an image from Google Drive with its SHA-256, at least one
-  mark inside the image), and adds it to
-  [`detection/lab/ground_truth/`](../detection/lab/ground_truth/) with an entry in its
-  `dataset.json`. It re-records the quality baseline (R9) against the new reference and opens one
-  pull request that closes the issues it took when merged. A file it cannot use gets a comment on
-  its issue saying why, and the label comes off until its author fixes it
-  (`detection/ground_truth.py`, `tests/test_ground_truth.py`).
-- **Then an agent improves the finders**, on the same pull request, at the opus model, following
-  the pack's `improve-on-ground-truth` skill: every finder re-scored on every ground-truth image
-  against the last recorded results, candidate detection first for the newly marked missing
-  candidates, then overall quality. Losses stay the owner's to accept (R9).
-- **Images stay on Drive.** A ground-truth file names its image by Drive id and SHA-256;
-  `python3 detection/ground_truth.py fetch` downloads every one into `data/raw/` and checks it
-  (R6). No image enters git.
-- **Newer and human beats older and Claude's.** For one image, a newer submission's label wins over
-  an older one's at the same spot, and every submission wins over the lab's own labels; every
-  quality assessment (the lock, `ground_truth.py score`) scores against that merged reference
-  (`ground_truth.corpus()`).
+- **Curated on Drive, read by code.** The page's taggers submit to the study's submissions folder and a
+  Data Manager curates into its curated folder (the shell's `req/shell/ground-truth/folders`).
+  `python3 detection/ground_truth.py fetch` lists the curated folder with no key (the folder is shared
+  as "Anyone with the link"), downloads every file under it, and keeps per image the one with the
+  latest `created` (`req/shell/ground-truth/layout`). It checks each (`norfinder-ground-truth/2` or
+  later, an image from Google Drive with its SHA-256, at least one mark inside the image) and says why
+  it skips one it cannot use. **A listing that returns 50 entries stops the fetch with an error**:
+  the keyless listing returns at most 50, so a full one may be cut short, and a cut-short set
+  silently changes every score. No ground truth enters git, and nothing is submitted through GitHub.
+- **Images stay on Drive.** A ground-truth file names its image by Drive id and SHA-256; the fetch
+  downloads each image into `data/raw/` and checks it (R6). No image enters git.
+- **A set changed is a baseline to re-record.** A changed curated set changes the dataset SHA (R11), so
+  `tests/test_finder_metrics.py` fails until the metrics and the quality baseline (R9) are measured on it
+  again; the finders are then improved following the pack's `improve-on-ground-truth` skill, and losses
+  stay the owner's to accept (R9).
+- **Newer and human beats older and Claude's.** For one image the curated file is the one reference;
+  it wins over the lab's own labels at the same spot, and every quality assessment (the lock,
+  `ground_truth.py score`) scores against that merged reference (`ground_truth.corpus()`).
 - **A missing mark is a real NoR** found when a pass lies within its radius, and proposed when any
   candidate does.
 
@@ -288,6 +286,12 @@ passed. A preset moves every filter the same share of the way towards a fixed st
 quality baseline (R9) is, and `tests/test_finder_metrics.py` fails when it was measured against
 another baseline, another ground truth or other presets. The numbers are only as right as the labels
 behind them (R9).
+
+**Every number names the data it was measured on.** Set by the owner on 2026-11-05. Alongside its
+numbers the file records, per ground-truth image, the image's SHA-256 and its ground-truth file's
+SHA-256, and one dataset SHA: the SHA-256 of those pairs sorted and joined one per line as
+`<image sha> <ground-truth sha>`. Any precision or recall written anywhere (a pull request, a note, a
+reply) names the dataset SHA it was measured on, with the per-image list a lookup away.
 
 On the page (R8), the finder list shows each finder's precision and recall with its default filters (Balanced),
 its "How the <finder> algorithm works" note gives those numbers in bold on how many images, with its own

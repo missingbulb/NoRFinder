@@ -1,32 +1,45 @@
-"""The ground-truth data set: what people marked on the NoR Finder page and submitted as GitHub issues.
+"""The ground-truth data set: what people marked on the NoR Finder page, curated in the study's Drive folder.
 
-Each submission is one file in lab/ground_truth/ (norfinder-ground-truth/2, written by the page's
-Ground truth button) and one entry in lab/ground_truth/dataset.json. A file names its image by
-SHA-256 and by its Google Drive id, so the image itself never enters git: `fetch` downloads it into
-data/raw/ground-truth/ and checks the checksum.
+The study names its curated folder in study.json (groundTruth.curated; R10, the shell's
+req/shell/ground-truth/folders): one subfolder per image, one file per tagger in it. `fetch` lists that
+folder with no key, downloads every file, keeps per image the one with the latest `created`, and writes the
+data set (one entry per image) under data/raw/ground-truth/, never into git. A file names its image by SHA-256
+and by its Google Drive id, so the image itself never enters git either: `fetch` downloads it too and checks
+the checksum.
 
-Submitted files outrank everything older (studies/nor/docs/requirements.md R10): for one image, a newer
-submission's label wins over an older one's at the same spot, and every submission wins over the
-lab's own labels (lab/labels_claude_v1.json, Claude's eye) on the reference slide.
+The curated file outranks the lab's own labels (lab/labels_claude_v1.json, Claude's eye) on the reference
+slide. The data set is named by one SHA (dataset_sha, R11).
 
-    python3 detection/ground_truth.py fetch                     every data-set image, into data/raw/
+    python3 detection/ground_truth.py fetch                     the curated set and every image, into data/raw/
     python3 detection/ground_truth.py score [SPEC ...]          every finder on every image, vs the baseline
-    python3 detection/ground_truth.py ingest ISSUES.json        the daily intake (the nor-study pack's
-                                                                ground-truth-intake task runs it)
 """
-import argparse, datetime, json, math, os, re, sys, urllib.request
+import argparse, hashlib, json, math, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
 import nor_lab
 import fetch_data
 
 FORMAT = 'norfinder-ground-truth/2'
-DIR = os.path.join(HERE, 'lab', 'ground_truth')
+STUDY = os.path.join(HERE, '..', 'study.json')
+RAW = os.path.join(HERE, '..', 'data', 'raw', 'ground-truth')
+DIR = os.path.join(RAW, 'truth')
 DATASET = os.path.join(DIR, 'dataset.json')
 BASELINE = os.path.join(HERE, 'lab', 'quality_baseline.json')
-RAW = os.path.join(HERE, '..', 'data', 'raw', 'ground-truth')
-# where a GitHub issue keeps an attached file; the page's submission is the newest .json among them
-ATTACHMENT = re.compile(r'https://github\.com/(?:user-attachments/files|[\w.-]+/[\w.-]+/files)/[^\s)\]>"]+?\.json\b')
+# the most entries the keyless listing of one folder is trusted to return whole
+LISTING_MAX = 50
+GT_FILE = re.compile(r'^gt_.+\.json$')
+
+
+class ListingFull(Exception):
+    pass
+
+
+def curated_folder(study=STUDY):
+    """The study's curated folder's Drive id, or None while it names none."""
+    with open(study) as f:
+        link = (json.load(f).get('groundTruth') or {}).get('curated')
+    m = re.search(r'/folders/([\w-]{10,})', link or '')
+    return m.group(1) if m else None
 
 
 def entries(dataset=DATASET):
@@ -63,7 +76,7 @@ def validate(doc):
 def images(dataset=DATASET):
     """{sha256: {'name', 'sha256', 'drive_id', 'files': [entry, newest first]}}"""
     out = {}
-    for e in sorted(entries(dataset), key=lambda e: (e['added'], e['issue']), reverse=True):
+    for e in sorted(entries(dataset), key=lambda e: e['created'], reverse=True):
         img = out.setdefault(e['sha256'], dict(name=e['image'], sha256=e['sha256'], drive_id=e['drive_id'], files=[]))
         img['files'].append(e)
     return out
@@ -80,7 +93,7 @@ def merge(tiers):
     return out
 
 
-def submitted_labels(img, dirpath=DIR):
+def submitted_labels(img, dirpath):
     return [nor_lab.read_labels(os.path.join(dirpath, e['file'])) for e in img['files']]
 
 
@@ -98,24 +111,105 @@ def raw_path(img):
     return os.path.join(RAW, img['sha256'][:12] + '_' + os.path.basename(img['name']))
 
 
-def corpus(dataset=DATASET, dirpath=DIR):
-    """Every image quality is judged on: [{'name', 'path', 'labels', 'submitted'}]. The reference slide
-    comes first, its submitted labels over the lab's; every other image has only submitted labels."""
+def file_sha(path):
+    with open(path, 'rb') as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
+def corpus(dataset=DATASET, dirpath=None):
+    """Every image quality is judged on: [{'name', 'path', 'labels', 'submitted', 'image_sha256', 'gt_sha256'}].
+    The reference slide comes first, its curated labels over the lab's (its gt_sha256 then both files' SHAs, the
+    curated first, joined by +); every other image has only its curated labels."""
+    dirpath = dirpath or os.path.dirname(dataset)
     subs = images(dataset)
     ref = reference_sha()
     lab = [L for L in nor_lab.read_labels(nor_lab.LABELS) if L['label'] is not None]
     mine = subs.pop(ref, None)
-    out = [dict(name=os.path.basename(nor_lab.TIF), path=nor_lab.TIF, submitted=bool(mine),
+    out = [dict(name=os.path.basename(nor_lab.TIF), path=nor_lab.TIF, submitted=bool(mine), image_sha256=ref,
+                gt_sha256='+'.join([e['gt_sha256'] for e in (mine['files'] if mine else [])] + [file_sha(nor_lab.LABELS)]),
                 labels=merge((submitted_labels(mine, dirpath) if mine else []) + [lab]))]
     for img in subs.values():
-        out.append(dict(name=img['name'], path=raw_path(img), submitted=True, labels=merge(submitted_labels(img, dirpath))))
+        out.append(dict(name=img['name'], path=raw_path(img), submitted=True, image_sha256=img['sha256'],
+                        gt_sha256='+'.join(e['gt_sha256'] for e in img['files']), labels=merge(submitted_labels(img, dirpath))))
     return out
 
 
+def listed_whole(listing, folder):
+    """Raise ListingFull when any folder in the listing ([(path, id)]) holds LISTING_MAX entries or more."""
+    children = {}
+    for path, _ in listing:
+        parts = path.replace(os.sep, '/').split('/')
+        for depth in range(len(parts)):
+            children.setdefault('/'.join(parts[:depth]), set()).add(parts[depth])
+    for where, names in children.items():
+        if len(names) >= LISTING_MAX:
+            raise ListingFull(f'the curated folder {folder}{" (" + where + ")" if where else ""} listed {len(names)} entries: '
+                              f'its listing with no key may stop at {LISTING_MAX}, so the set may be cut short. '
+                              'Stopped rather than score part of it.')
+
+
+def collect(transport, folder, dirpath=DIR):
+    """Every image's newest curated file in folder, written into dirpath with the data set beside them.
+    Returns {'files': [entry], 'refused': {path: reason}}."""
+    listing = transport.list_folder(folder)
+    listed_whole(listing, folder)
+    by_image = {}
+    for path, fid in listing:
+        parts = path.replace(os.sep, '/').split('/')
+        if len(parts) == 2 and GT_FILE.match(parts[1]):
+            by_image.setdefault(parts[0], []).append((path, fid))
+    os.makedirs(dirpath, exist_ok=True)
+    kept, refused = [], {}
+    for sub, found in sorted(by_image.items()):
+        best = None
+        for path, fid in found:
+            out = os.path.join(dirpath, 'incoming', fid + '.json')
+            transport.download(fid, out)
+            with open(out, 'rb') as f:
+                raw = f.read()
+            try:
+                doc = json.loads(raw)
+            except ValueError as e:
+                refused[path] = f'not JSON ({e})'
+                continue
+            why = validate(doc) or (None if isinstance(doc.get('created'), str) else 'no `created` time')
+            if why:
+                refused[path] = why
+            elif not best or doc['created'] > best[1]['created']:
+                best = (path, doc, raw)
+        if best:
+            path, doc, raw = best
+            name = sub + '.json'
+            with open(os.path.join(dirpath, name), 'wb') as f:
+                f.write(raw)
+            img = doc['image']
+            kept.append(dict(file=name, from_path=path, created=doc['created'], tagger=doc.get('tagger'), image=img['name'],
+                             sha256=img['sha256'], drive_id=img['location']['drive_id'], gt_sha256=hashlib.sha256(raw).hexdigest(),
+                             labels=len(doc['labels']), missing=sum(L.get('kind') == 'missing' for L in doc['labels'])))
+    with open(os.path.join(dirpath, 'dataset.json'), 'w') as f:
+        json.dump({'format': 'norfinder-ground-truth-dataset/2', 'folder': folder, 'files': kept}, f, indent=1)
+        f.write('\n')
+    return dict(files=kept, refused=refused)
+
+
+def dataset_sha(pairs):
+    """One SHA for a data set: the SHA-256 of its (image_sha256, gt_sha256) pairs, sorted, one per line."""
+    lines = sorted(f"{p['image_sha256']} {p['gt_sha256']}" for p in pairs)
+    return hashlib.sha256('\n'.join(lines).encode()).hexdigest()
+
+
 def fetch(dataset=DATASET, transport=None):
-    """Download every image quality is judged on that is not here yet (the reference slide through the
-    data manifest, the rest by their Drive ids), and check each against its checksum."""
+    """The curated set, then every image quality is judged on that is not here yet (the reference slide through
+    the data manifest, the rest by their Drive ids), each checked against its checksum."""
     transport = transport or fetch_data.GoogleDrive()
+    folder = curated_folder()
+    if folder:
+        got = collect(transport, folder, os.path.dirname(dataset))
+        for path, why in got['refused'].items():
+            print(f'skipped   {path}: {why}')
+        print(f'ground truth: {len(got["files"])} curated images')
+    else:
+        print('ground truth: the study names no curated folder yet; the lab scores on its own labels alone')
     fetch_data.fetch_all(fetch_data.MANIFEST, fetch_data.RAW, transport=transport,
                          match=[os.path.relpath(nor_lab.TIF, fetch_data.RAW).replace(os.sep, '/')])
     for img in images(dataset).values():
@@ -182,92 +276,23 @@ def report(specs, baseline=BASELINE):
                 print('      gain ' + line)
 
 
-# ---------- the daily intake ----------
-def attachment(issue):
-    """The newest .json attached to the issue (its body, then its comments in order), or None."""
-    found = []
-    for text in [issue.get('body') or ''] + list(issue.get('comments') or []):
-        found += ATTACHMENT.findall(text)
-    return found[-1] if found else None
-
-
-def download(url, token=None):
-    req = urllib.request.Request(url, headers={'Accept': 'application/octet-stream'})
-    if token:
-        # GitHub answers with a redirect to storage that refuses a second credential, so the token
-        # must not follow the redirect
-        req.add_unredirected_header('Authorization', f'Bearer {token}')
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return r.read()
-
-
-def ingest(issues, get=download, dataset=DATASET, dirpath=DIR, today=None):
-    """Add each issue's submission to the data set. Returns {'added': [issue numbers], 'refused':
-    {issue number: reason}}. An issue already in the data set is left alone."""
-    today = today or datetime.date.today().isoformat()
-    have = entries(dataset); known = {e['issue'] for e in have}
-    added, refused = [], {}
-    for issue in sorted(issues, key=lambda i: i['number']):
-        n = issue['number']
-        if n in known:
-            continue
-        url = attachment(issue)
-        if not url:
-            refused[n] = 'no .json file is attached'
-            continue
-        try:
-            doc = json.loads(get(url))
-        except Exception as e:  # noqa: BLE001  (any unreadable attachment is the submitter's to fix)
-            refused[n] = f'the attached file could not be read ({e})'
-            continue
-        why = validate(doc)
-        if why:
-            refused[n] = why
-            continue
-        doc['submission'] = {'issue': n, 'added': today}
-        name = f'issue-{n}.json'
-        os.makedirs(dirpath, exist_ok=True)
-        with open(os.path.join(dirpath, name), 'w') as f:
-            json.dump(doc, f, indent=1)
-            f.write('\n')
-        img = doc['image']
-        have.append(dict(file=name, issue=n, added=today, image=img['name'], sha256=img['sha256'],
-                         drive_id=img['location']['drive_id'],
-                         labels=len(doc['labels']), missing=sum(L.get('kind') == 'missing' for L in doc['labels'])))
-        added.append(n)
-    if added:
-        with open(dataset, 'w') as f:
-            json.dump({'format': 'norfinder-ground-truth-dataset/1', 'files': sorted(have, key=lambda e: e['issue'])}, f, indent=1)
-            f.write('\n')
-    return dict(added=added, refused=refused)
-
-
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     sub = ap.add_subparsers(dest='cmd', required=True)
     sub.add_parser('fetch')
     sc = sub.add_parser('score', help='every finder (or SPEC...) on every ground-truth image, against the baseline')
     sc.add_argument('specs', nargs='*')
-    ing = sub.add_parser('ingest', help='add the submissions of the issues in ISSUES.json ([{number, body, comments}])')
-    ing.add_argument('issues')
-    ing.add_argument('--out', help='write the result as JSON here')
     a = ap.parse_args()
     if a.cmd == 'fetch':
         try:
             fetch()
         except fetch_data.ChecksumMismatch as e:
             sys.exit(f'CHECKSUM MISMATCH: the file on Drive is not the one the ground truth was marked on.\n{e}')
+        except ListingFull as e:
+            sys.exit(f'STOPPED: {e}')
         return
-    if a.cmd == 'score':
-        import interactive
-        report(a.specs or list(interactive.FINDERS))
-        return
-    with open(a.issues) as f:
-        res = ingest(json.load(f), get=lambda u: download(u, os.environ.get('GITHUB_TOKEN')))
-    print(json.dumps(res))
-    if a.out:
-        with open(a.out, 'w') as f:
-            json.dump(res, f)
+    import interactive
+    report(a.specs or list(interactive.FINDERS))
 
 
 if __name__ == '__main__':

@@ -19,7 +19,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 
 def folder(path):
-    """A flat image with ground truth, a stack marked as needing it, a third image, and a subfolder with a PNG."""
+    """A flat image, a stack marked as needing ground truth, a third image, and a subfolder with a PNG."""
     os.makedirs(path / 'sub')
     y, x = np.mgrid[0:120, 0:150]
     flat = np.stack([(x * 20).astype(np.uint16), (y * 20).astype(np.uint16), ((x + y) * 10).astype(np.uint16)])
@@ -32,7 +32,6 @@ def folder(path):
     with open(path / 'b stack.tif', 'ab') as f:  # changed since its preview was made
         f.write(b'\0')
     tifffile.imwrite(path / 'e plain.tif', flat[1:2], imagej=True, metadata={'axes': 'CYX'})  # made after the previews
-    (path / 'a flat.ground_truth.json').write_text('{}')
     (path / 'b stack.ground_truth.MISSING').write_text('')
     Image.fromarray(np.zeros((20, 20, 3), np.uint8)).save(path / 'sub' / 'c.png')
 

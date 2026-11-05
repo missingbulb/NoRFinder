@@ -249,8 +249,7 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Set by the owner on 2026-11-02. A study's `permissions` maps a role to the Google accounts, by
-  email, that hold it: `data_management` (the Data Manager role, `req/shell/account/role`) and
-  `ground_truth_writer` (writing ground truth to Drive, still to come). Its `files.folders` lists its
+  email, that hold it: `data_management` (the Data Manager role, `req/shell/account/role`), and nothing else: who may write ground truth is what Drive's sharing of the study's folders allows (`req/shell/ground-truth/folders`). Its `files.folders` lists its
   Drive folders, and Load's Drive dialog opens on the first. A role only shows or hides the page's
   tools; what anyone can change is still what Drive itself lets them. Test:
   `web-tests/test_study_contract.py`.
@@ -392,17 +391,96 @@ nobody has decided: what the page does there is not a requirement yet.
   `web-tests/test_drive_throttle_page.py`.
   </details>
 
-- `req/shell/ground-truth/submit` Ground truth goes to GitHub as a file and a labelled issue; an image from the computer cannot.
+- `req/shell/ground-truth/clear` Clear progress, in the Ground Truth Tasks, forgets the open image's tagging on this device.
   <details>
 
-  The study's submit button opens a popup with the study's checklist of what is left to do, an
-  Export file button that downloads the file, and beside it an Open new GitHub issue button: a new
-  issue on the repo, labelled with the study's `groundTruth.label` and naming the image, whose body
-  says to attach the file. The next step is the blue button: Export file, then Open new GitHub
-  issue, then Close; for a local image Close follows the export. An image from the computer cannot
-  be submitted: right after it loads, the page tells a Ground Truth Tagger so in one line (at most 15 words),
-  and in the popup the issue button is off and says why. Tentative: the line is for whoever makes ground
-  truth alone; a Viewer loading an image from the computer is not told (`studies/nor/tests/test_ground_truth_page.py`).
+  Set by the owner on 2026-11-05. A tagger's progress on an image (votes, added items, masks, the areas
+  checked) is kept in the browser, so they can come back to it. Clear progress, in the Ground Truth Tasks
+  box, asks first, naming what goes ("your votes, added items and checked areas on <image>"), then forgets
+  only the open image's progress: other images keep theirs, and anything already submitted stays in Drive.
+  Test: `web-tests/test_gt_drive_page.py`.
+  </details>
+
+- `req/shell/ground-truth/curate` A Data Manager accepts or rejects each pending submission into the curated folder.
+  <details>
+
+  Set by the owner on 2026-11-05. In Data Management, an image with pending ground truth
+  (`req/shell/ground-truth/pending`) lists its submissions, one per tagger. Accept copies the submission
+  into the image's subfolder in the curated folder under the same name, the copy recording the
+  submission's SHA-256 and who accepted it and when; Reject leaves the file in Submissions marked
+  rejected, with an optional reason the tagger sees. Tentative: the rejected mark and its reason are the
+  file's public Drive properties, so a reader that is not signed in can see them. Tentative: a study whose
+  two folders are the same has no review, so it offers neither button. Test:
+  `web-tests/test_gt_drive_page.py`.
+  </details>
+
+- `req/shell/ground-truth/folders` A study names a submissions folder and a curated folder; naming one folder twice is free submission.
+  <details>
+
+  Set by the owner on 2026-11-05. A GT or PostGT study's `groundTruth` names `submissions` and `curated`,
+  each a Google Drive folder. Taggers write to submissions; only Data Managers write to curated; viewers,
+  the file dialog and the study's lab read curated. Ground truth is never sent to GitHub. When both name
+  the same folder, every submission is curated as it lands and nothing is pending. Who may write is what
+  Drive's sharing of each folder allows, nothing listed in the study. Tentative: Data Management tells a
+  study naming one folder twice that whatever a tagger submits is used at once; it cannot tell from Drive
+  whether anyone with the link may edit the folder. Tests: `web-tests/test_study_contract.py`,
+  `web-tests/test_truth_folders.py`.
+  </details>
+
+- `req/shell/ground-truth/layout` Both folders hold one subfolder per image and one file per tagger in it, and a reader takes the newest that is not rejected.
+  <details>
+
+  Set by the owner on 2026-11-05. An image's subfolder is named `<image name>__<first 8 hex of its
+  SHA-256>`; in it, each tagger's file is `gt_<email>.json`. The file carries the image's full SHA-256,
+  its Drive id, who made it and `created`, the time it was made. Submitting again replaces the tagger's
+  own file, keeping Drive's earlier version forever (`keepRevisionForever`). A reader (the file dialog,
+  a viewer, the lab) takes, in an image's subfolder, the file with the latest `created` that is not
+  marked rejected. Only an image opened from Google Drive can be submitted; for one opened from the
+  computer the Ground Truth Tasks box says so. Test: `web-tests/test_gt_drive_page.py`.
+  </details>
+
+- `req/shell/ground-truth/pending` Taggers and Data Managers see which images have ground truth, and which have it pending.
+  <details>
+
+  Set by the owner on 2026-11-05. The Drive dialog and Data Management mark each image with ground truth
+  in the curated folder. To a Ground Truth Tagger and a Data Manager they also mark it pending when the
+  submissions folder holds a file for it newer than its curated one, or holds one and curated none; a
+  tagger's own rejected submission shows as rejected with its reason. Data Management's summary counts
+  the folder's images with ground truth, pending, and marked as needing it (the
+  `<name>.ground_truth.MISSING` marker, `req/shell/data/folder`). A viewer sees only curated ground
+  truth. Test: `web-tests/test_gt_drive_page.py`.
+  </details>
+
+- `req/shell/ground-truth/submit` Submit writes the tagger's ground truth into the study's submissions folder.
+  <details>
+
+  Set by the owner on 2026-11-05. The study's submit button opens a popup with the study's checklist of
+  what is left to do, an Export file button that downloads the file, and a Submit button that writes it to
+  the image's subfolder in the submissions folder (`req/shell/ground-truth/layout`), creating the
+  subfolder when it lacks one. The popup says when the file landed, or why it did not, the export still
+  there to keep a copy. Submit is off, saying why, for an image opened from the computer and for a tagger
+  Drive does not let write there (`req/shell/ground-truth/tagger-access`).
+  Tests: `studies/nor/tests/test_ground_truth_page.py`, `web-tests/test_gt_drive_page.py`.
+  </details>
+
+- `req/shell/ground-truth/tagger-access` The Ground Truth Tasks box shows whether the tagger may write to the submissions folder, and how to get there.
+  <details>
+
+  Set by the owner on 2026-11-05. At the top of the Ground Truth Tasks box, a line says where submissions
+  go and whether this tagger may write there: Writable; Not approved, with a button that asks Google for
+  the page's per-file permission and opens its picker on the submissions folder (as Data Management does,
+  `req/shell/data/drive-access`); or View only, telling them to ask the study's owner for edit access. It
+  is checked before any work, not first found at submit. Test: `web-tests/test_gt_drive_page.py`.
+  </details>
+
+- `req/shell/ground-truth/view` Anyone can load an image's curated ground truth and see only its final results.
+  <details>
+
+  Set by the owner on 2026-11-05. For an image with curated ground truth, a Viewer has Load GT tagging,
+  which reads it (no sign-in, the curated folder being public) and shows its final results on the image,
+  with no algorithm run: none of the tagging tasks' marks (no blacked-out areas, no rejected candidates,
+  no work areas). A summary follows: whose file, when it was made, and its counts. Test:
+  `web-tests/test_gt_drive_page.py`.
   </details>
 
 - `req/shell/header` A header with the logo, the study switcher and a dark/light switch (remembered).

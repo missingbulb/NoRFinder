@@ -33,6 +33,8 @@ import { ROLE, ROLE_NAMES, held, shown, roleMenu } from "./roles.js";
 import { imageEditor, SPLIT_PATTERN } from "./image_edit.js";
 import { replacedBy } from "./edit.js";
 import { dialogMotion } from "./dialog_motion.js";
+import { truthTagger, LOCAL_GT } from "./truth_tagger.js";
+import { subfolderName } from "./truth_folders.js";
 
 const $ = (s) => document.querySelector(s);
 // what the user does here, kept on this device for a problem report (req/shell/report/action-log)
@@ -76,9 +78,8 @@ const PAGE_GB = 1, LOW_GB = 4;
 // what Chrome holds for the tab beyond what a page can read: the compiled code of Python and its packages, and the
 // browser's own share; measured once as Chrome's private memory for the tab against the readable total (2026-10-07)
 const UNREAD_MB = 190;
-// where ground truth is submitted: an issue with the study's label, which the repo's intake reads
+// the repo the site's issues are opened on: a problem report, a new study's request
 const REPO = "missingbulb/RaunTruth";
-const LOCAL_GT = "Ground truth cannot be sent from local files, only from Google Drive.";
 // the issue form a proposal for a new study is written on
 const STUDY_REQUEST = "new-study.yml";
 // signing in (req/shell/account/sign-in): these settings follow the user to every device, in their own Google Drive; the rest stay with this one
@@ -91,6 +92,12 @@ const signIn = account({
   // after the page's own start, which this may run during
   changed: () => queueMicrotask(() => { data.signedIn(); showRole(); drawStudies(); }),
 });
+
+// the tagger's side of the study's ground-truth folders: the line in its ground-truth box, Clear progress and Submit
+const truth = truthTagger({ account: signIn, drive: { all: (id) => NorDrive.all(id), file: (...a) => NorDrive.file(...a) },
+  google: (window.NOR_CONFIG && window.NOR_CONFIG.google) || {}, manifest: () => manifest,
+  image: () => (st.img ? { name: st.fileName, sha256: st.sha, source: st.source } : null), on: () => !!manifest && makesTruth(),
+  cleared: () => restudy(true) });
 
 function readJSON(key, fallback = {}) {
   try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
@@ -433,6 +440,7 @@ function showRole() {
   takeRole();
   if ((role === "tagger") !== tagger) return restudy();
   data.role(role === "data");
+  truth.draw();
 }
 const roleChooser = roleMenu($("#role-menu"), (r) => {
   try { localStorage.setItem(ROLE, r); } catch { /* private mode: this page only */ }
@@ -645,6 +653,7 @@ function handle(m) {
     log.add(`Opened an image from ${from}, ${m.meta.W} × ${m.meta.H} px, ${m.meta.Z || 1} slice(s)`);
     status("Image loaded."); // the study's opened hook says what comes next, if anything
     study.opened?.(m.meta);
+    truth.paint(); offerTruth();
     if (st.source && st.source.kind === "local" && makesTruth()) notice(LOCAL_GT);
     if (st.source && st.source.kind === "drive" && st.pictured !== st.source.id) saveThumb(st.source.id, st.fileName);
   } else if (m.type === "result") {
@@ -768,6 +777,7 @@ function dropImage() {
   Object.assign(st, { kept: null, queued: null, fileName: "", source: null, sha: "", um: null, umY: null });
   if (st.ready) st.worker.postMessage({ type: "close" });
   page.set({ image: null, opening: null }); boxDone($("#image-box"), null);
+  offered++; $("#truth-box").hidden = true;
 }
 // Unload: no image open, the study starting over as one that has just come in
 $("#unload").onclick = () => {
@@ -1039,7 +1049,7 @@ function driveDialog() {
       const added = f.created ? `Added to Google Drive on ${f.created.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}` : "When it was added to Google Drive is not known";
       const fresh = !f.folder && seen && !seen.has(f.id) ? `<span class="new" title="${esc(added)}">new</span>` : "";
       // what only some rows show sits inward, what every image shows at the row's edge
-      b.innerHTML = `<span class="pic"></span><span class="name">${esc(f.name)}</span>${fresh}${f.folder ? "" : agoTag(opened[f.id])}<span class="shape">${esc(readJSON(HOLDS)[f.id] || "")}</span><span class="kept"></span><span class="meta">${esc(meta)}</span>`;
+      b.innerHTML = `<span class="pic"></span><span class="name">${esc(f.name)}</span>${fresh}${f.folder ? "" : agoTag(opened[f.id])}<span class="gt-tag"></span><span class="shape">${esc(readJSON(HOLDS)[f.id] || "")}</span><span class="kept"></span><span class="meta">${esc(meta)}</span>`;
       if (!f.folder) { b.dataset.id = f.id; markOffline(b.querySelector(".kept"), "image", kept.has(f.id)); }
       if (off && (f.folder ? !listings[f.id] : !kept.has(f.id))) {
         b.disabled = true; b.title = f.folder ? "Not listed on this device yet: it needs the internet." : "Not kept on this device: it needs the internet.";
@@ -1049,6 +1059,20 @@ function driveDialog() {
       b.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); enter(f); } };
       $("#drive-list").append(b);
       if (!f.folder) thumbs.watch(b.querySelector(".pic"), f, k);
+    }
+    if (!off) markTruth(items, asked);
+  };
+  // which images have ground truth, and to a tagger or data manager which have it pending (req/shell/ground-truth/pending)
+  const markTruth = async (items, asked) => {
+    let map;
+    try { map = await truth.status(role === "tagger" || role === "data"); } catch (e) { console.warn("ground truth status not read:", e); return; }
+    if (asked !== listing) return;
+    for (const f of items) {
+      const g = !f.folder && f.sha && map.get(subfolderName(f.name, f.sha)), tag = $("#drive-list").querySelector(`.item[data-id="${f.id}"] .gt-tag`);
+      if (!g || !tag) continue;
+      const [text, title] = g.pending ? ["GT pending", "A tagger submitted ground truth for it, not curated yet"] : g.curated ? ["GT", "It has curated ground truth"]
+        : g.rejected ? ["GT rejected", "Its submitted ground truth was rejected"] : [];
+      if (text) { tag.textContent = text; tag.title = title; tag.dataset.state = g.pending ? "pending" : g.curated ? "curated" : "rejected"; }
     }
   };
   // the study's own folders to choose from, by name (req/shell/drive/dialog)
@@ -1546,37 +1570,60 @@ function saveFile(name, text, type) {
 }
 // the shell's icons, by name, as SVG markup: done, part, todo
 const icon = (name) => `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">${$(`#icons .${name}`).innerHTML}</svg>`;
-// The ground-truth dialog: a checklist of what is still open, the file to export, and a new GitHub issue,
-// labelled for the study's intake, to attach it to. gt: {doc, count, file, items: [{level, ok, text}], empty,
-// issue: {title, body}}, count how many of its marks the document holds, nothing to send at 0; an image from the computer can be exported but not sent.
+// Load GT tagging (req/shell/ground-truth/view): for anyone but a tagger, an image from Drive with curated ground truth
+// shows it through the study's showTruth(doc), which draws only its final results and returns a line of its counts
+let offered = 0;
+async function offerTruth() {
+  const box = $("#truth-box"), b = $("#load-gt"), say = $("#gt-summary"), mine = ++offered;
+  box.hidden = true; b.hidden = false; say.hidden = true; $("#gt-offer").hidden = false;
+  if (role === "tagger" || !study.showTruth || st.source?.kind !== "drive" || !st.sha) return;
+  let got;
+  try { got = await truth.curated({ name: st.fileName, sha256: st.sha }); } catch (e) { console.warn("curated ground truth not read:", e); return; }
+  if (mine !== offered || !got) return;
+  box.hidden = false;
+  b.onclick = () => {
+    const d = got.doc, when = d.created ? new Date(d.created).toLocaleString() : "an unknown time";
+    const counts = study.showTruth(d);
+    b.hidden = true; $("#gt-offer").hidden = true; say.hidden = false;
+    say.textContent = `Ground truth by ${d.tagger || "a tagger"}, made ${when}${d.accepted?.by ? `, accepted by ${d.accepted.by}` : ""}${counts ? ": " + counts : "."}`;
+    log.add("Loaded the image's curated ground truth");
+  };
+}
+
+// The ground-truth dialog (req/shell/ground-truth/submit): a checklist of what is still open, the file to export,
+// and Submit, which writes it to the study's submissions folder. gt: {doc, count, file, items: [{level, ok, text}],
+// empty}, count how many of its marks the document holds, nothing to send at 0.
 function submitTruth(gt) {
   if (!makesTruth()) return;
-  const local = !st.source || st.source.kind !== "drive", n = gt.count;
+  const n = gt.count, send = $("#gt-send"), why = () => truth.blocked();
   $("#gt-problems").replaceChildren(...gt.items.map((t) => {
     const li = document.createElement("li"); li.className = t.ok ? "ok" : t.level;
     li.innerHTML = icon(t.ok ? "done" : t.level === "error" ? "todo" : "part") + `<span>${esc(t.text)}</span>`;
     return li;
   }));
-  $("#gt-msg").textContent = n ? "" : gt.empty;
+  $("#gt-msg").textContent = n ? why() : gt.empty;
   $("#gt-export").disabled = !n;
-  const issue = $("#gt-issue");
-  issue.disabled = !n || local; issue.title = local ? LOCAL_GT : "";
-  // the blue button is the next step: export, then open the issue (a local image cannot), then close
-  const next = (b) => { for (const id of ["#gt-export", "#gt-issue", "#gt-close"]) $(id).classList.toggle("primary", $(id) === b); };
-  next($("#gt-export"));
+  send.disabled = !n || !!why(); send.title = why();
+  // the blue button is the next step: Submit when it can, else the export; Close once either is done
+  const next = (b) => { for (const id of ["#gt-export", "#gt-send", "#gt-close"]) $(id).classList.toggle("primary", $(id) === b); };
+  next(send.disabled ? $("#gt-export") : send);
   $("#gt-export").onclick = () => {
     saveFile(gt.file, JSON.stringify(gt.doc, null, 1), "application/json");
-    $("#gt-msg").textContent = `Downloaded ${gt.file}.` + (local ? "" : " Open the issue next and attach it there.");
-    step("submit", local, local ? `Exported ${gt.file}; an image from this computer cannot be sent` : `Exported ${gt.file}; the GitHub issue is next`);
-    next(local ? $("#gt-close") : issue);
+    $("#gt-msg").textContent = `Downloaded ${gt.file}.`;
+    if (send.disabled) { step("submit", true, `Exported ${gt.file}; it was not submitted`); next($("#gt-close")); }
   };
-  issue.onclick = () => {
-    const q = new URLSearchParams({ labels: manifest.groundTruth.label, title: gt.issue.title,
-      body: gt.issue.body + `\n\n**Attach ${gt.file} below before submitting** (drag it into this box).` });
-    window.open(`https://github.com/${REPO}/issues/new?${q}`, "_blank", "noopener");
-    $("#gt-msg").textContent = `Attach ${gt.file} to the GitHub issue that just opened, then submit.`;
-    step("submit", true, `Exported ${gt.file} and opened a GitHub issue for it`);
-    next($("#gt-close"));
+  send.onclick = async () => {
+    send.disabled = true; $("#gt-msg").textContent = "Submitting…";
+    try {
+      await truth.submit(gt.doc);
+      $("#gt-msg").textContent = `Submitted to the study's submissions folder, as your ground truth for ${st.fileName}.`;
+      step("submit", true, `Submitted the ground truth of ${st.fileName}`);
+      log.add("Submitted ground truth");
+      next($("#gt-close"));
+    } catch (e) {
+      $("#gt-msg").textContent = `It was not submitted: ${e.message || e}. Export the file to keep a copy.`;
+      send.disabled = false;
+    }
   };
   $("#gt-dlg").showModal();
 }
@@ -2027,6 +2074,7 @@ async function mountStudy(id) {
   view.use(study);
   showStage();
   if (!makesTruth() && manifest.groundTruth?.button) $(manifest.groundTruth.button).hidden = true;
+  truth.draw();
   makeSteps();
   foldable();
   showRecent();
@@ -2037,6 +2085,7 @@ const viewers = {};
 // answers are dropped.
 function leaveStudy() {
   lifetime.abort(); lifetime = new AbortController();
+  truth.leave();
   for (const n of mounted.splice(0)) n.remove();
   css?.remove(); css = null;
   study = {}; manifest = null; view?.use({}); view?.clear();
@@ -2048,7 +2097,8 @@ function leaveStudy() {
 }
 
 const shell = {
-  $, state: st, page, still, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, showImage, boxDone, outline,
+  $, state: st, page, still, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon,
+  clearable: (what, fn) => truth.clearable(what, fn), showImage, boxDone, outline,
   views: { show: (v) => views.show(v), on: (fn) => views.on(fn), count: (l, t) => views.count(l, t), get now() { return views.now; }, get tasks() { return views.tasks; } },
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; }, get makesTruth() { return makesTruth(); },
 };
