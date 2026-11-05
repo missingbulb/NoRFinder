@@ -58,8 +58,8 @@ opened from your computer, never a copy, so its recent list opens it again; your
 Start here: **[docs/WARMUP.md](docs/WARMUP.md)** — the repo map: the shell, the study contract and
 how to add a study.
 
-- [dev/requirements/requirements.md](dev/requirements/requirements.md) — what the page must do:
-  the shell's part, the repo's checks, each study's page
+- [dev/requirements/requirements.md](dev/requirements/requirements.md) — what the shell must do,
+  and the repo's checks; each study's page is its own `studies/<id>/requirements.md`
 - [studies/nor/](studies/nor/docs/WARMUP.md) — the NoR Finder study: its brief, literature, finders
   and ground truth
 - [studies/vascular/](studies/vascular/docs/WARMUP.md) — Vascular Measurements, cerebral vessels in CD31 images and z-stacks: its literature, extraction lab and data

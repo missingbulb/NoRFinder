@@ -11,9 +11,8 @@ const [answers, studies, rootDir, out, shots] = process.argv.slice(2);
 const { FILES, writes, open, role, check, done } = await standIn({ answers, studies, rootDir, uploaded: (f) => { if (f.name === "rauntruth-previews.tiff") fs.writeFileSync(out, f.bytes); } });
 const shot = (name) => shots && page.screenshot({ path: path.join(shots, name + ".png") });
 
-// not signed in: no strip, no Preprocessing
+// not signed in: the drawers numbered as a viewer's, with no Preprocessing
 let page = await open(false);
-await check(await page.evaluate(() => $("#data-col").hidden && !$("#preprocessing-box").checkVisibility()), "not signed in, there is no Data Management strip, and no Preprocessing");
 await check(await page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].filter((b) => b.checkVisibility()).map((b) => b.querySelector(".step-mark").textContent).join()) === "1,2,3",
   "the drawers on show, a viewer's without the postprocessing, are numbered without Preprocessing");
 await page.context().close();
@@ -43,16 +42,11 @@ await check(await page.textContent("#data-approve") === "Approve 1 folder…" &&
 const access = await page.evaluate(() => [...document.querySelectorAll("#data-tree .tree-folder")].map((f) => [f.querySelector(":scope > .row .name").textContent, f.querySelector(":scope > .row .access").textContent]));
 await check(JSON.stringify(access) === JSON.stringify([["Study folder one", "Writable"], ["sub", "Not approved"]]), "the tree shows every folder with its access", access);
 await check(await page.evaluate(() => [...document.querySelectorAll(".tree-images")].every((b) => b.hidden)), "the images stay folded under their folders");
-// Load by the boxes it draws: WebKit's checkVisibility() calls it visible though it is display: none
-const shown = await page.evaluate(() => ({ load: $("#load").getClientRects().length > 0, pre: $("#preprocessing-box").checkVisibility(), study: $("#fx-box").checkVisibility(), image: $("#image-box").checkVisibility(), steps: $("#sb-steps").checkVisibility() }));
-await check(!shown.load && shown.pre && !shown.study && shown.image && !shown.steps, "in the mode: Load gone, Preprocessing and the Image box shown, the study's drawers and the steps hidden", shown);
 
 const summary = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#folder-summary dd")].map((d) => [d.dataset.k, +d.textContent])));
 const folderMsg = () => page.textContent("#folder-msg");
 await page.click("#data-tree .tree-folder .name");
 await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell").length === 3);
-await check(await page.evaluate(() => !$("#folder-view").hidden && $("#image-view").hidden && $("#folder-box").checkVisibility() && !$("#image-box").checkVisibility()),
-  "a folder chosen: its images in the main area, Selected Folder in place of the Image box");
 await check(JSON.stringify(await summary()) === JSON.stringify({ images: 3, previews: 1, stale: 1, truth: 0, pending: 0, missing: 1 }), "the folder's sums", await summary());
 await page.click('#folder-layout button[data-layout="list"]');
 await page.waitForFunction(() => $("#folder-items").dataset.layout === "list");
@@ -102,8 +96,7 @@ await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-fol
 await check(true, "a folder's images unfold with small previews");
 await page.click('#data-tree .tree-image:has(.name:text-is("a flat.tif"))');
 await page.waitForFunction(() => st.fileName === "a flat.preview.tif" && !$("#load-original").hidden);
-await check(await page.evaluate(() => shellForTests.page.get("image").source.kind === "preview" && !$("#image-view").hidden && $("#image-box").checkVisibility()),
-  "an image chosen opens from its preview, with Load Original");
+await check(await page.evaluate(() => shellForTests.page.get("image").source.kind === "preview"), "an image chosen opens from its preview, with Load Original");
 await shot("4-preview");
 // what reached Python, for the test to open as the study would
 const got = await page.workers()[0].evaluate(() => ({ name: self.lastOpen.name, bytes: Array.from(self.lastOpen.bytes) }));
@@ -125,18 +118,13 @@ await page.waitForFunction(() => document.documentElement.classList.contains("of
 await page.click(cell("e plain.tif") + " .mark-gt", { force: true });
 await page.waitForTimeout(300);
 await check(writes.length === before, "offline, marking an image does nothing", writes.slice(before));
-// Data Management as a whole needs the network: the column, the folder's box and Preprocessing say so and do nothing
-const held = () => page.evaluate(() => ["#data-col", "#folder-box", "#preprocessing-box"].map((s) => {
-  const el = $(s); return [s, el.getAttribute("aria-disabled") === "true" && /needs the internet/i.test(el.title) && +getComputedStyle(el).opacity < 1];
-}));
-await check((await held()).every(([, h]) => h), "offline, Data Management says it needs the internet", await held());
+// Data Management as a whole needs the network: its column's chevron does nothing
 const folded = () => page.evaluate(() => $("#data-open").getAttribute("aria-expanded"));
 await page.click("#data-open", { force: true });
 await page.waitForTimeout(300);
 await check(await folded() === "true", "and its chevron does nothing", await folded());
 await page.context().setOffline(false);
 await page.waitForFunction(() => !document.documentElement.classList.contains("offline"));
-await check((await held()).every(([, h]) => !h), "back online, Data Management works again", await held());
 
 await role(page, "Viewer");
 await page.waitForTimeout(600);

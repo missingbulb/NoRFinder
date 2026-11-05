@@ -1,0 +1,30 @@
+"""nor_lab.load caches each image's channels: processes loading the same image at once, as pytest-xdist's workers do on
+a fresh checkout, each read the whole cache or make it themselves, never a cache another is still writing."""
+import multiprocessing
+import os
+import sys
+import time
+
+import pytest
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, '..', 'detection'))
+import nor_lab
+
+needs_slide = pytest.mark.skipif(not os.path.exists(nor_lab.TIF), reason='reference slide missing (detection/ground_truth.py fetch)')
+
+
+def _load(delay):
+    time.sleep(delay)
+    c, n, um, bm = nor_lab.load()
+    return c.shape, repr(n), um, int(bm.sum()), float(c.sum())
+
+
+@needs_slide
+def test_loads_at_once_share_one_whole_cache(tmp_path, monkeypatch):
+    monkeypatch.setenv('NOR_CACHE_DIR', str(tmp_path))
+    # started across the time one load takes, so some find the cache while the first is still writing it
+    with multiprocessing.get_context('fork').Pool(8) as pool:
+        got = pool.map(_load, [k * 0.5 for k in range(8)])
+    assert len(got) == 8 and all(g == got[0] for g in got), got
+    assert os.listdir(tmp_path) == [os.path.basename(nor_lab.cache_path(nor_lab.TIF))]

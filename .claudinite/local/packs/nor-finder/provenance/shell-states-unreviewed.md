@@ -8,3 +8,9 @@
   check can make.
 - **Retire when:** the owner reviews the shell-states files, or the mechanism is retired.
 - **Landed:** #756
+
+## 2026-11-05 · scope-changed · the fixture study's elements moved into its own states.json
+- **Reason:** the owner moved each study's part of the shell's states under that study's folder
+  (req/checks/spec-layout); the harness now spans two files.
+- **Actor:** @missingbulb (owner).
+- **Mechanism:** prose, the same rule; only its trigger names the second file.

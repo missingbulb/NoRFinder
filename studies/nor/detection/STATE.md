@@ -44,7 +44,7 @@ _Last updated 2026-10-06._
 - **Filters are not finder-specific** (ledger §5): tl's filter values score as well as or better
   than each finder's own on all five finders. Each finder still opens on its own values.
 - **Only one image has been processed.**
-- **Browser page** (the shell in `web/` running this study, `dev/requirements/requirements.md` §3): open an image, detect once, then tune every filter
+- **Browser page** (the shell in `web/` running this study, `studies/nor/requirements.md`): open an image, detect once, then tune every filter
   live. It runs `interactive.py` over the unchanged finders under Pyodide. How it is published
   is the shell's business ([docs/WARMUP.md](../../../docs/WARMUP.md) says how to preview it).
   A finder's `MAIN` tuple names the settings the page shows first; adding a finder to

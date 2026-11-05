@@ -232,9 +232,9 @@ a question for the owner, shown with the objects that only that check rejects.
 
 ## R8 — The NoR Finder page
 
-What a user of the page sees and can do is in the page's one spec,
-[`dev/requirements/requirements.md`](../../../dev/requirements/requirements.md): §1 for the shell
-it runs in, §3 for this study's own page.
+What a user of the page sees and can do is in the page's specs: this study's own page in
+[`requirements.md`](../requirements.md), the shell it runs in in
+[`dev/requirements/requirements.md`](../../../dev/requirements/requirements.md).
 
 ## R9 — No finder change loses quality unless the owner accepts it
 

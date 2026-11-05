@@ -4,7 +4,7 @@ The repo is **one page and several studies**. The page (`web/`, the shell) knows
 image, run Python in the browser, show the image, keep the user's settings and send ground truth to
 GitHub. A study (`studies/<id>/`) is one piece of research: its data, its algorithms, its own flow
 on the page, its ground truth and its docs. The shell knows no study; a study knows the shell only
-through the contract below. [`dev/requirements/requirements.md`](../dev/requirements/requirements.md) states what the page must do, the shell's part and each study's.
+through the contract below. [`dev/requirements/requirements.md`](../dev/requirements/requirements.md) states what the shell must do; each study's own page is in its `studies/<id>/requirements.md`.
 
 Working on a study? Read its own warm-up next: [NoR Finder](../studies/nor/docs/WARMUP.md), [Vascular Measurements](../studies/vascular/docs/WARMUP.md), [Bookshelf Reader](../studies/shelves/docs/WARMUP.md).
 
@@ -23,7 +23,8 @@ second study needs it, not before.
 
 ## The study contract
 
-A study is a folder with a `study.json`:
+A study is a folder with a `study.json`, and a `requirements.md` for what its page does beyond the shell
+(`req/<id>`, `req/checks/spec-layout`):
 
 - `visibility` — who the page shows it to: `"listed"` (the header's study switcher and the landing page offer it),
   `"unlisted"` (only by its address; the fixture) or `{"accounts": [email, …]}` (the switcher offers it only while one
@@ -96,21 +97,24 @@ The build assembles under `dev/build/site/` exactly what is published (req/shell
 site's pages at the top, the app under `app/` and the studies under `studies/`, as rauntruth.com serves
 them (req/shell/site/app-address); serving the repo root instead and
 opening `/web/` shows the page with every file of every study reachable.
-The full set (`python3 -m pytest web-tests studies`) also needs Node, Pyodide
-(`npm i --prefix web-tests pyodide@314.0.7`, as CI does) and Playwright's Chromium.
+The full set (`python3 -m pytest web-tests studies -n auto`) also needs Node, Pyodide
+(`npm i --prefix web-tests pyodide@314.0.7`, as CI does) and Playwright's Chromium. `-n auto` runs one
+pytest-xdist worker per core, as CI does: most of the full set waits on browsers and timers, so it takes about
+3 minutes instead of 10. Each test keeps its files under its own `tmp_path`; the one writing into the tree,
+the offline test's build, writes each file whole.
 
 ## Map
 
 ```
 web/              the shell, the viewer, the Python runtime (worker.js, bridge.js)
 web-tests/        the shell's tests, run on the fixture study
-studies/nor/      the NoR Finder study: study.json, web/, detection/, data/, docs/, tests/
-studies/vascular/ the Vascular Measurements study: study.json, py/, web/, analysis/, data/, docs/, tests/
-studies/shelves/  the Bookshelf Reader, an image-processing outlier: study.json, py/, web/, reading/, docs/, tests/
+studies/nor/      the NoR Finder study: study.json, requirements.md, web/, detection/, data/, docs/, tests/
+studies/vascular/ the Vascular Measurements study: study.json, requirements.md, py/, web/, analysis/, data/, docs/, tests/
+studies/shelves/  the Bookshelf Reader, an image-processing outlier: study.json, requirements.md, py/, web/, reading/, docs/, tests/
 studies/viewer/   the Image Viewer, the page's default: any image, no analysis
-studies/fixture/  the smallest study, for the shell's tests (`/fixture`)
+studies/fixture/  the smallest study, for the shell's tests (`/fixture`); states.json, its part of the shell's states tree
 docs/             this map
-dev/requirements/ the page's one spec: the shell, the repo's checks, each study's page
+dev/requirements/ the shell's spec and the repo's checks, and the shell's states tree
 dev/tools/build/  the site build, the version history and the tests' pytest hooks
 dev/build/site/   the published tree: the build assembles the shell (at its root) and the studies'
                   published parts here; wrangler.json uploads it to Cloudflare (rauntruth.com)

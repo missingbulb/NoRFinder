@@ -1,915 +1,4662 @@
 {
- "elements": [
-  {
-   "name": "Header",
-   "select": "header",
-   "control": false,
-   "box": false,
-   "parent": null
-  },
-  {
-   "name": "Logo",
-   "select": "#logo",
-   "control": false,
-   "box": false,
-   "parent": "Header"
-  },
-  {
-   "name": "Study switcher",
-   "select": "#study-menu",
-   "control": false,
-   "box": false,
-   "parent": "Header"
-  },
-  {
-   "name": "Study's icon",
-   "select": "#title-icon",
-   "control": false,
-   "box": false,
-   "parent": "Study switcher"
-  },
-  {
-   "name": "Study's name",
-   "select": "#title",
-   "control": false,
-   "box": false,
-   "parent": "Study switcher"
-  },
-  {
-   "name": "Dark/light switch",
-   "select": "#theme",
-   "control": true,
-   "box": false,
-   "parent": "Header"
-  },
-  {
-   "name": "Role menu",
-   "select": "#role-menu",
-   "control": false,
-   "box": false,
-   "parent": "Header"
-  },
-  {
-   "name": "Role's name",
-   "select": "#role-name",
-   "control": false,
-   "box": false,
-   "parent": "Role menu"
-  },
-  {
-   "name": "You (the user menu)",
-   "select": "#user-menu",
-   "control": false,
-   "box": false,
-   "parent": "Header"
-  },
-  {
-   "name": "Layout",
-   "select": "#layout",
-   "control": false,
-   "box": false,
-   "parent": null
-  },
-  {
-   "name": "Data Management column",
-   "select": "#data-col",
-   "control": false,
-   "box": false,
-   "parent": "Layout"
-  },
-  {
-   "name": "Fold the folders",
-   "select": "#data-open",
-   "control": true,
-   "box": false,
-   "parent": "Data Management column"
-  },
-  {
-   "name": "Folders",
-   "select": "#data-body",
-   "control": false,
-   "box": false,
-   "parent": "Data Management column"
-  },
-  {
-   "name": "Approve folders",
-   "select": "#data-approve",
-   "control": true,
-   "box": false,
-   "parent": "Folders"
-  },
-  {
-   "name": "Folder tree",
-   "select": "#data-tree",
-   "control": false,
-   "box": false,
-   "parent": "Folders"
-  },
-  {
-   "name": "Tree's message",
-   "select": "#data-msg",
-   "control": false,
-   "box": false,
-   "parent": "Folders"
-  },
-  {
-   "name": "Left bar",
-   "select": "#left",
-   "control": false,
-   "box": false,
-   "parent": "Layout"
-  },
-  {
-   "name": "Collapsed strip",
-   "select": "#left-strip",
-   "control": false,
-   "box": false,
-   "parent": "Left bar"
-  },
-  {
-   "name": "Expand",
-   "select": "#left-expand",
-   "control": true,
-   "box": false,
-   "parent": "Collapsed strip"
-  },
-  {
-   "name": "Strip's marks",
-   "select": "#left-marks",
-   "control": false,
-   "box": false,
-   "parent": "Collapsed strip"
-  },
-  {
-   "name": "Left bar's head",
-   "select": "#left-head",
-   "control": false,
-   "box": false,
-   "parent": "Left bar"
-  },
-  {
-   "name": "Collapse",
-   "select": "#left-collapse",
-   "control": true,
-   "box": false,
-   "parent": "Left bar's head"
-  },
-  {
-   "name": "Image box",
-   "select": "#image-box",
-   "control": false,
-   "box": true,
-   "parent": "Left bar"
-  },
-  {
-   "name": "File name and info",
-   "select": "#file-box",
-   "control": false,
-   "box": false,
-   "parent": "Image box"
-  },
-  {
-   "name": "Image's name",
-   "select": "#file-name",
-   "control": false,
-   "box": false,
-   "parent": "File name and info"
-  },
-  {
-   "name": "Image's details",
-   "select": "#file-info",
-   "control": false,
-   "box": false,
-   "parent": "File name and info"
-  },
-  {
-   "name": "Channels",
-   "select": "#channels",
-   "control": false,
-   "box": false,
-   "parent": "Image box"
-  },
-  {
-   "name": "Channel row",
-   "select": "#channels .channel",
-   "control": false,
-   "box": false,
-   "parent": "Channels"
-  },
-  {
-   "name": "Show/hide checkbox",
-   "select": "#channels .channel input[type=checkbox]",
-   "control": true,
-   "box": false,
-   "parent": "Channel row"
-  },
-  {
-   "name": "Black and white points",
-   "select": "#channels .channel .levels",
-   "control": false,
-   "box": false,
-   "parent": "Channel row"
-  },
-  {
-   "name": "Colour picker",
-   "select": "#channels .channel input[type=color]",
-   "control": true,
-   "box": false,
-   "parent": "Channel row"
-  },
-  {
-   "name": "Load",
-   "select": "#load",
-   "control": false,
-   "box": false,
-   "parent": "Image box"
-  },
-  {
-   "name": "Image selector",
-   "select": "#image-menu",
-   "control": false,
-   "box": false,
-   "parent": "Load"
-  },
-  {
-   "name": "Selector's face",
-   "select": "#image-pick",
-   "control": false,
-   "box": false,
-   "parent": "Image selector"
-  },
-  {
-   "name": "This computer",
-   "select": "#load-main",
-   "control": true,
-   "box": false,
-   "parent": "Load"
-  },
-  {
-   "name": "Unload",
-   "select": "#unload",
-   "control": true,
-   "box": false,
-   "parent": "Load"
-  },
-  {
-   "name": "Google Drive button",
-   "select": "#load-drive",
-   "control": true,
-   "box": false,
-   "parent": "Load"
-  },
-  {
-   "name": "Image box's foot",
-   "select": "#image-foot",
-   "control": false,
-   "box": false,
-   "parent": "Image box"
-  },
-  {
-   "name": "Load Original",
-   "select": "#load-original",
-   "control": true,
-   "box": false,
-   "parent": "Image box's foot"
-  },
-  {
-   "name": "File chooser",
-   "select": "#file",
-   "control": false,
-   "box": false,
-   "parent": "Image box's foot"
-  },
-  {
-   "name": "Ground truth box",
-   "select": "#truth-box",
-   "control": false,
-   "box": true,
-   "parent": "Left bar"
-  },
-  {
-   "name": "Ground truth offer",
-   "select": "#gt-offer",
-   "control": false,
-   "box": false,
-   "parent": "Ground truth box"
-  },
-  {
-   "name": "Load GT tagging",
-   "select": "#load-gt",
-   "control": true,
-   "box": false,
-   "parent": "Ground truth box"
-  },
-  {
-   "name": "Ground truth summary",
-   "select": "#gt-summary",
-   "control": false,
-   "box": false,
-   "parent": "Ground truth box"
-  },
-  {
-   "name": "Selected Folder",
-   "select": "#folder-box",
-   "control": false,
-   "box": true,
-   "parent": "Left bar"
-  },
-  {
-   "name": "Folder's name",
-   "select": "#folder-name",
-   "control": false,
-   "box": false,
-   "parent": "Selected Folder"
-  },
-  {
-   "name": "Folder's sums",
-   "select": "#folder-summary",
-   "control": false,
-   "box": false,
-   "parent": "Selected Folder"
-  },
-  {
-   "name": "Update previews",
-   "select": "#update-previews",
-   "control": true,
-   "box": false,
-   "parent": "Selected Folder"
-  },
-  {
-   "name": "Folder's message",
-   "select": "#folder-msg",
-   "control": false,
-   "box": false,
-   "parent": "Selected Folder"
-  },
-  {
-   "name": "Preprocessing",
-   "select": "#preprocessing-box",
-   "control": false,
-   "box": true,
-   "parent": "Left bar"
-  },
-  {
-   "name": "Edit Image",
-   "select": "#edit-open",
-   "control": true,
-   "box": false,
-   "parent": "Preprocessing"
-  },
-  {
-   "name": "Edit Image box",
-   "select": "#edit-box",
-   "control": false,
-   "box": true,
-   "parent": "Left bar"
-  },
-  {
-   "name": "Split",
-   "select": "#edit-split",
-   "control": false,
-   "box": false,
-   "parent": "Edit Image box"
-  },
-  {
-   "name": "Split hint",
-   "select": "#edit-split-hint",
-   "control": false,
-   "box": false,
-   "parent": "Edit Image box"
-  },
-  {
-   "name": "Crop",
-   "select": "#edit-crop-row",
-   "control": false,
-   "box": false,
-   "parent": "Edit Image box"
-  },
-  {
-   "name": "Draw",
-   "select": "#edit-crop",
-   "control": true,
-   "box": false,
-   "parent": "Crop"
-  },
-  {
-   "name": "Crop's size",
-   "select": "#edit-crop-size",
-   "control": false,
-   "box": false,
-   "parent": "Crop"
-  },
-  {
-   "name": "Reset crop",
-   "select": "#edit-crop-reset",
-   "control": true,
-   "box": false,
-   "parent": "Crop"
-  },
-  {
-   "name": "Slices",
-   "select": "#edit-slices-sec",
-   "control": false,
-   "box": false,
-   "parent": "Edit Image box"
-  },
-  {
-   "name": "Slices' text",
-   "select": "#edit-z-text",
-   "control": false,
-   "box": false,
-   "parent": "Slices"
-  },
-  {
-   "name": "Use suggested",
-   "select": "#edit-suggest",
-   "control": true,
-   "box": false,
-   "parent": "Slices"
-  },
-  {
-   "name": "Slices slider",
-   "select": "#edit-slices",
-   "control": false,
-   "box": false,
-   "parent": "Slices"
-  },
-  {
-   "name": "Suggested band",
-   "select": "#edit-band",
-   "control": false,
-   "box": false,
-   "parent": "Slices slider"
-  },
-  {
-   "name": "First slice",
-   "select": "#edit-z0",
-   "control": true,
-   "box": false,
-   "parent": "Slices slider"
-  },
-  {
-   "name": "Last slice",
-   "select": "#edit-z1",
-   "control": true,
-   "box": false,
-   "parent": "Slices slider"
-  },
-  {
-   "name": "Channels kept",
-   "select": "#edit-channels",
-   "control": false,
-   "box": false,
-   "parent": "Edit Image box"
-  },
-  {
-   "name": "Imperfections",
-   "select": "#edit-flaws-row",
-   "control": false,
-   "box": false,
-   "parent": "Edit Image box"
-  },
-  {
-   "name": "Mark",
-   "select": "#edit-lasso",
-   "control": true,
-   "box": false,
-   "parent": "Imperfections"
-  },
-  {
-   "name": "Imperfections' list",
-   "select": "#edit-flaws",
-   "control": false,
-   "box": false,
-   "parent": "Imperfections"
-  },
-  {
-   "name": "Save…",
-   "select": "#edit-save",
-   "control": true,
-   "box": false,
-   "parent": "Edit Image box"
-  },
-  {
-   "name": "Done",
-   "select": "#edit-done",
-   "control": true,
-   "box": false,
-   "parent": "Edit Image box"
-  },
-  {
-   "name": "Study: Threshold",
-   "select": "#fx-box",
-   "control": false,
-   "box": true,
-   "parent": "Left bar"
-  },
-  {
-   "name": "Count",
-   "select": "#fx-count",
-   "control": true,
-   "box": false,
-   "parent": "Study: Threshold"
-  },
-  {
-   "name": "Study: postprocessing",
-   "select": "#fx-counted",
-   "control": false,
-   "box": true,
-   "parent": "Left bar"
-  },
-  {
-   "name": "Left bar gutter",
-   "select": "#gutter-left",
-   "control": false,
-   "box": false,
-   "parent": "Layout"
-  },
-  {
-   "name": "Main view",
-   "select": "#view",
-   "control": false,
-   "box": false,
-   "parent": "Layout"
-  },
-  {
-   "name": "Tasks/Items switch",
-   "select": "#switch",
-   "control": true,
-   "box": false,
-   "parent": "Main view"
-  },
-  {
-   "name": "Ruler",
-   "select": "#ruler-btn",
-   "control": true,
-   "box": false,
-   "parent": "Main view"
-  },
-  {
-   "name": "Grid",
-   "select": "#grid-btn",
-   "control": true,
-   "box": false,
-   "parent": "Main view"
-  },
-  {
-   "name": "Minimap button",
-   "select": "#minimap-btn",
-   "control": true,
-   "box": false,
-   "parent": "Main view"
-  },
-  {
-   "name": "Zoom out",
-   "select": "#zoom-out",
-   "control": true,
-   "box": false,
-   "parent": "Main view"
-  },
-  {
-   "name": "Zoom in",
-   "select": "#zoom-in",
-   "control": true,
-   "box": false,
-   "parent": "Main view"
-  },
-  {
-   "name": "Zoom",
-   "select": "#zoom-label",
-   "control": false,
-   "box": false,
-   "parent": "Main view"
-  },
-  {
-   "name": "Tasks bar",
-   "select": "#tasks-bar",
-   "control": false,
-   "box": false,
-   "parent": "Main view"
-  },
-  {
-   "name": "Submit ground truth",
-   "select": "#fx-truth",
-   "control": true,
-   "box": false,
-   "parent": "Tasks bar"
-  },
-  {
-   "name": "Busy",
-   "select": "#busy",
-   "control": false,
-   "box": false,
-   "parent": "Main view"
-  },
-  {
-   "name": "Scan light",
-   "select": "#scan-light",
-   "control": false,
-   "box": false,
-   "parent": "Busy"
-  },
-  {
-   "name": "Busy's text",
-   "select": "#busy-text",
-   "control": false,
-   "box": false,
-   "parent": "Busy"
-  },
-  {
-   "name": "Busy's time",
-   "select": "#busy-time",
-   "control": false,
-   "box": false,
-   "parent": "Busy"
-  },
-  {
-   "name": "Image view",
-   "select": "#image-view",
-   "control": false,
-   "box": false,
-   "parent": "Main view"
-  },
-  {
-   "name": "Scroller",
-   "select": "#scroller",
-   "control": false,
-   "box": false,
-   "parent": "Image view"
-  },
-  {
-   "name": "Empty view's text",
-   "select": "#empty",
-   "control": false,
-   "box": false,
-   "parent": "Scroller"
-  },
-  {
-   "name": "Empty view's words",
-   "select": "#empty-text",
-   "control": false,
-   "box": false,
-   "parent": "Empty view's text"
-  },
-  {
-   "name": "Image",
-   "select": "#stage",
-   "control": false,
-   "box": false,
-   "parent": "Scroller"
-  },
-  {
-   "name": "Image's canvas",
-   "select": "#base",
-   "control": false,
-   "box": false,
-   "parent": "Image"
-  },
-  {
-   "name": "Minimap",
-   "select": "#minimap",
-   "control": false,
-   "box": false,
-   "parent": "Image view"
-  },
-  {
-   "name": "Hide the minimap",
-   "select": "#minimap-hide",
-   "control": true,
-   "box": false,
-   "parent": "Minimap"
-  },
-  {
-   "name": "Fold the minimap",
-   "select": "#minimap-fold",
-   "control": true,
-   "box": false,
-   "parent": "Minimap"
-  },
-  {
-   "name": "Minimap's picture",
-   "select": "#minimap-canvas",
-   "control": false,
-   "box": false,
-   "parent": "Minimap"
-  },
-  {
-   "name": "Minimap's view",
-   "select": "#minimap-view",
-   "control": false,
-   "box": false,
-   "parent": "Minimap"
-  },
-  {
-   "name": "Item view",
-   "select": "#items-view",
-   "control": false,
-   "box": false,
-   "parent": "Main view"
-  },
-  {
-   "name": "Folder view",
-   "select": "#folder-view",
-   "control": false,
-   "box": false,
-   "parent": "Main view"
-  },
-  {
-   "name": "Folder's title",
-   "select": "#folder-title",
-   "control": false,
-   "box": false,
-   "parent": "Folder view"
-  },
-  {
-   "name": "Grid or list",
-   "select": "#folder-layout",
-   "control": false,
-   "box": false,
-   "parent": "Folder view"
-  },
-  {
-   "name": "Folder's images",
-   "select": "#folder-items",
-   "control": false,
-   "box": false,
-   "parent": "Folder view"
-  },
-  {
-   "name": "Status bar",
-   "select": "#statusbar",
-   "control": false,
-   "box": false,
-   "parent": null
-  },
-  {
-   "name": "Breadcrumbs",
-   "select": "#sb-steps",
-   "control": false,
-   "box": false,
-   "parent": "Status bar"
-  },
-  {
-   "name": "Submit GT crumb",
-   "select": "#sb-submit",
-   "control": false,
-   "box": false,
-   "parent": "Breadcrumbs"
-  },
-  {
-   "name": "Now",
-   "select": "#sb-now",
-   "control": false,
-   "box": false,
-   "parent": "Status bar"
-  },
-  {
-   "name": "Spinner",
-   "select": "#spin",
-   "control": false,
-   "box": false,
-   "parent": "Now"
-  },
-  {
-   "name": "Status",
-   "select": "#status",
-   "control": false,
-   "box": false,
-   "parent": "Now"
-  },
-  {
-   "name": "Resources",
-   "select": "#sb-res",
-   "control": false,
-   "box": false,
-   "parent": "Status bar"
-  },
-  {
-   "name": "Resources, unfolded",
-   "select": "#sb-res-items",
-   "control": false,
-   "box": false,
-   "parent": "Resources"
-  },
-  {
-   "name": "Storage",
-   "select": "#sb-disk",
-   "control": true,
-   "box": false,
-   "parent": "Resources, unfolded"
-  },
-  {
-   "name": "Memory",
-   "select": "#sb-memory",
-   "control": true,
-   "box": false,
-   "parent": "Resources, unfolded"
-  },
-  {
-   "name": "Network",
-   "select": "#sb-net",
-   "control": true,
-   "box": false,
-   "parent": "Resources, unfolded"
-  },
-  {
-   "name": "CPU",
-   "select": "#sb-cpu",
-   "control": true,
-   "box": false,
-   "parent": "Resources, unfolded"
-  },
-  {
-   "name": "Resources icon",
-   "select": "#sb-res-icon",
-   "control": true,
-   "box": false,
-   "parent": "Resources"
-  },
-  {
-   "name": "Online icon",
-   "select": "#sb-online",
-   "control": true,
-   "box": false,
-   "parent": "Status bar"
-  },
-  {
-   "name": "Report a problem",
-   "select": "#sb-report",
-   "control": true,
-   "box": false,
-   "parent": "Status bar"
-  },
-  {
-   "name": "Version",
-   "select": "#sb-version",
-   "control": true,
-   "box": false,
-   "parent": "Status bar"
-  },
-  {
-   "name": "What's new",
-   "select": "#whats-new",
-   "control": false,
-   "box": false,
-   "parent": "Status bar"
-  },
-  {
-   "name": "What's new, open",
-   "select": "#whats-new-open",
-   "control": true,
-   "box": false,
-   "parent": "What's new"
-  },
-  {
-   "name": "What's new, close",
-   "select": "#whats-new-x",
-   "control": true,
-   "box": false,
-   "parent": "What's new"
-  },
-  {
-   "name": "Tooltip",
-   "select": "#tip",
-   "control": false,
-   "box": false,
-   "parent": null
-  },
-  {
-   "name": "Icons",
-   "select": "#icons",
-   "control": false,
-   "box": false,
-   "parent": null
-  },
-  {
-   "name": "Notice",
-   "select": "#notice",
-   "control": false,
-   "box": false,
-   "parent": null
-  },
-  {
-   "name": "Notice's text",
-   "select": "#notice-text",
-   "control": false,
-   "box": false,
-   "parent": "Notice"
-  },
-  {
-   "name": "OK",
-   "select": "#notice-ok",
-   "control": true,
-   "box": false,
-   "parent": "Notice"
-  }
- ],
+ "elements": {
+  "fixture": [
+   {
+    "name": "Header",
+    "select": "header",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Logo",
+    "select": "#logo",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Study switcher",
+    "select": "#study-menu",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Study's icon",
+    "select": "#title-icon",
+    "control": false,
+    "box": false,
+    "parent": "Study switcher"
+   },
+   {
+    "name": "Study's name",
+    "select": "#title",
+    "control": false,
+    "box": false,
+    "parent": "Study switcher"
+   },
+   {
+    "name": "Dark/light switch",
+    "select": "#theme",
+    "control": true,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Role menu",
+    "select": "#role-menu",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Role's name",
+    "select": "#role-name",
+    "control": false,
+    "box": false,
+    "parent": "Role menu"
+   },
+   {
+    "name": "You (the user menu)",
+    "select": "#user-menu",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Layout",
+    "select": "#layout",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Data Management column",
+    "select": "#data-col",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Fold the folders",
+    "select": "#data-open",
+    "control": true,
+    "box": false,
+    "parent": "Data Management column"
+   },
+   {
+    "name": "Folders",
+    "select": "#data-body",
+    "control": false,
+    "box": false,
+    "parent": "Data Management column"
+   },
+   {
+    "name": "Approve folders",
+    "select": "#data-approve",
+    "control": true,
+    "box": false,
+    "parent": "Folders"
+   },
+   {
+    "name": "Folder tree",
+    "select": "#data-tree",
+    "control": false,
+    "box": false,
+    "parent": "Folders"
+   },
+   {
+    "name": "Tree's message",
+    "select": "#data-msg",
+    "control": false,
+    "box": false,
+    "parent": "Folders"
+   },
+   {
+    "name": "Left bar",
+    "select": "#left",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Collapsed strip",
+    "select": "#left-strip",
+    "control": false,
+    "box": false,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Expand",
+    "select": "#left-expand",
+    "control": true,
+    "box": false,
+    "parent": "Collapsed strip"
+   },
+   {
+    "name": "Strip's marks",
+    "select": "#left-marks",
+    "control": false,
+    "box": false,
+    "parent": "Collapsed strip"
+   },
+   {
+    "name": "Left bar's head",
+    "select": "#left-head",
+    "control": false,
+    "box": false,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Collapse",
+    "select": "#left-collapse",
+    "control": true,
+    "box": false,
+    "parent": "Left bar's head"
+   },
+   {
+    "name": "Image box",
+    "select": "#image-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "File name and info",
+    "select": "#file-box",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Image's name",
+    "select": "#file-name",
+    "control": false,
+    "box": false,
+    "parent": "File name and info"
+   },
+   {
+    "name": "Image's details",
+    "select": "#file-info",
+    "control": false,
+    "box": false,
+    "parent": "File name and info"
+   },
+   {
+    "name": "Channels",
+    "select": "#channels",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Channel row",
+    "select": "#channels .channel",
+    "control": false,
+    "box": false,
+    "parent": "Channels"
+   },
+   {
+    "name": "Show/hide checkbox",
+    "select": "#channels .channel input[type=checkbox]",
+    "control": true,
+    "box": false,
+    "parent": "Channel row"
+   },
+   {
+    "name": "Black and white points",
+    "select": "#channels .channel .levels",
+    "control": false,
+    "box": false,
+    "parent": "Channel row"
+   },
+   {
+    "name": "Colour picker",
+    "select": "#channels .channel input[type=color]",
+    "control": true,
+    "box": false,
+    "parent": "Channel row"
+   },
+   {
+    "name": "Load",
+    "select": "#load",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Image selector",
+    "select": "#image-menu",
+    "control": false,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Selector's face",
+    "select": "#image-pick",
+    "control": false,
+    "box": false,
+    "parent": "Image selector"
+   },
+   {
+    "name": "This computer",
+    "select": "#load-main",
+    "control": true,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Unload",
+    "select": "#unload",
+    "control": true,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Google Drive button",
+    "select": "#load-drive",
+    "control": true,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Image box's foot",
+    "select": "#image-foot",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Load Original",
+    "select": "#load-original",
+    "control": true,
+    "box": false,
+    "parent": "Image box's foot"
+   },
+   {
+    "name": "File chooser",
+    "select": "#file",
+    "control": false,
+    "box": false,
+    "parent": "Image box's foot"
+   },
+   {
+    "name": "Ground truth box",
+    "select": "#truth-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Ground truth offer",
+    "select": "#gt-offer",
+    "control": false,
+    "box": false,
+    "parent": "Ground truth box"
+   },
+   {
+    "name": "Load GT tagging",
+    "select": "#load-gt",
+    "control": true,
+    "box": false,
+    "parent": "Ground truth box"
+   },
+   {
+    "name": "Ground truth summary",
+    "select": "#gt-summary",
+    "control": false,
+    "box": false,
+    "parent": "Ground truth box"
+   },
+   {
+    "name": "Selected Folder",
+    "select": "#folder-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Folder's name",
+    "select": "#folder-name",
+    "control": false,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Folder's sums",
+    "select": "#folder-summary",
+    "control": false,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Update previews",
+    "select": "#update-previews",
+    "control": true,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Folder's message",
+    "select": "#folder-msg",
+    "control": false,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Preprocessing",
+    "select": "#preprocessing-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Edit Image",
+    "select": "#edit-open",
+    "control": true,
+    "box": false,
+    "parent": "Preprocessing"
+   },
+   {
+    "name": "Edit Image box",
+    "select": "#edit-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Split",
+    "select": "#edit-split",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Split hint",
+    "select": "#edit-split-hint",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Crop",
+    "select": "#edit-crop-row",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Draw",
+    "select": "#edit-crop",
+    "control": true,
+    "box": false,
+    "parent": "Crop"
+   },
+   {
+    "name": "Crop's size",
+    "select": "#edit-crop-size",
+    "control": false,
+    "box": false,
+    "parent": "Crop"
+   },
+   {
+    "name": "Reset crop",
+    "select": "#edit-crop-reset",
+    "control": true,
+    "box": false,
+    "parent": "Crop"
+   },
+   {
+    "name": "Slices",
+    "select": "#edit-slices-sec",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Slices' text",
+    "select": "#edit-z-text",
+    "control": false,
+    "box": false,
+    "parent": "Slices"
+   },
+   {
+    "name": "Use suggested",
+    "select": "#edit-suggest",
+    "control": true,
+    "box": false,
+    "parent": "Slices"
+   },
+   {
+    "name": "Slices slider",
+    "select": "#edit-slices",
+    "control": false,
+    "box": false,
+    "parent": "Slices"
+   },
+   {
+    "name": "Suggested band",
+    "select": "#edit-band",
+    "control": false,
+    "box": false,
+    "parent": "Slices slider"
+   },
+   {
+    "name": "First slice",
+    "select": "#edit-z0",
+    "control": true,
+    "box": false,
+    "parent": "Slices slider"
+   },
+   {
+    "name": "Last slice",
+    "select": "#edit-z1",
+    "control": true,
+    "box": false,
+    "parent": "Slices slider"
+   },
+   {
+    "name": "Channels kept",
+    "select": "#edit-channels",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Imperfections",
+    "select": "#edit-flaws-row",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Mark",
+    "select": "#edit-lasso",
+    "control": true,
+    "box": false,
+    "parent": "Imperfections"
+   },
+   {
+    "name": "Imperfections' list",
+    "select": "#edit-flaws",
+    "control": false,
+    "box": false,
+    "parent": "Imperfections"
+   },
+   {
+    "name": "Save…",
+    "select": "#edit-save",
+    "control": true,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Done",
+    "select": "#edit-done",
+    "control": true,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Study: Threshold",
+    "select": "#fx-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Count",
+    "select": "#fx-count",
+    "control": true,
+    "box": false,
+    "parent": "Study: Threshold"
+   },
+   {
+    "name": "Study: postprocessing",
+    "select": "#fx-counted",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Left bar gutter",
+    "select": "#gutter-left",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Main view",
+    "select": "#view",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Tasks/Items switch",
+    "select": "#switch",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Ruler",
+    "select": "#ruler-btn",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Grid",
+    "select": "#grid-btn",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Minimap button",
+    "select": "#minimap-btn",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Zoom out",
+    "select": "#zoom-out",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Zoom in",
+    "select": "#zoom-in",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Zoom",
+    "select": "#zoom-label",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Tasks bar",
+    "select": "#tasks-bar",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Submit ground truth",
+    "select": "#fx-truth",
+    "control": true,
+    "box": false,
+    "parent": "Tasks bar"
+   },
+   {
+    "name": "Busy",
+    "select": "#busy",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Scan light",
+    "select": "#scan-light",
+    "control": false,
+    "box": false,
+    "parent": "Busy"
+   },
+   {
+    "name": "Busy's text",
+    "select": "#busy-text",
+    "control": false,
+    "box": false,
+    "parent": "Busy"
+   },
+   {
+    "name": "Busy's time",
+    "select": "#busy-time",
+    "control": false,
+    "box": false,
+    "parent": "Busy"
+   },
+   {
+    "name": "Image view",
+    "select": "#image-view",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Scroller",
+    "select": "#scroller",
+    "control": false,
+    "box": false,
+    "parent": "Image view"
+   },
+   {
+    "name": "Empty view's text",
+    "select": "#empty",
+    "control": false,
+    "box": false,
+    "parent": "Scroller"
+   },
+   {
+    "name": "Empty view's words",
+    "select": "#empty-text",
+    "control": false,
+    "box": false,
+    "parent": "Empty view's text"
+   },
+   {
+    "name": "Image",
+    "select": "#stage",
+    "control": false,
+    "box": false,
+    "parent": "Scroller"
+   },
+   {
+    "name": "Image's canvas",
+    "select": "#base",
+    "control": false,
+    "box": false,
+    "parent": "Image"
+   },
+   {
+    "name": "Minimap",
+    "select": "#minimap",
+    "control": false,
+    "box": false,
+    "parent": "Image view"
+   },
+   {
+    "name": "Hide the minimap",
+    "select": "#minimap-hide",
+    "control": true,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Fold the minimap",
+    "select": "#minimap-fold",
+    "control": true,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Minimap's picture",
+    "select": "#minimap-canvas",
+    "control": false,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Minimap's view",
+    "select": "#minimap-view",
+    "control": false,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Item view",
+    "select": "#items-view",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Folder view",
+    "select": "#folder-view",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Folder's title",
+    "select": "#folder-title",
+    "control": false,
+    "box": false,
+    "parent": "Folder view"
+   },
+   {
+    "name": "Grid or list",
+    "select": "#folder-layout",
+    "control": false,
+    "box": false,
+    "parent": "Folder view"
+   },
+   {
+    "name": "Folder's images",
+    "select": "#folder-items",
+    "control": false,
+    "box": false,
+    "parent": "Folder view"
+   },
+   {
+    "name": "Status bar",
+    "select": "#statusbar",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Breadcrumbs",
+    "select": "#sb-steps",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Submit GT crumb",
+    "select": "#sb-submit",
+    "control": false,
+    "box": false,
+    "parent": "Breadcrumbs"
+   },
+   {
+    "name": "Now",
+    "select": "#sb-now",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Spinner",
+    "select": "#spin",
+    "control": false,
+    "box": false,
+    "parent": "Now"
+   },
+   {
+    "name": "Status",
+    "select": "#status",
+    "control": false,
+    "box": false,
+    "parent": "Now"
+   },
+   {
+    "name": "Resources",
+    "select": "#sb-res",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Resources, unfolded",
+    "select": "#sb-res-items",
+    "control": false,
+    "box": false,
+    "parent": "Resources"
+   },
+   {
+    "name": "Storage",
+    "select": "#sb-disk",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "Memory",
+    "select": "#sb-memory",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "Network",
+    "select": "#sb-net",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "CPU",
+    "select": "#sb-cpu",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "Resources icon",
+    "select": "#sb-res-icon",
+    "control": true,
+    "box": false,
+    "parent": "Resources"
+   },
+   {
+    "name": "Online icon",
+    "select": "#sb-online",
+    "control": true,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Report a problem",
+    "select": "#sb-report",
+    "control": true,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Version",
+    "select": "#sb-version",
+    "control": true,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "What's new",
+    "select": "#whats-new",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "What's new, open",
+    "select": "#whats-new-open",
+    "control": true,
+    "box": false,
+    "parent": "What's new"
+   },
+   {
+    "name": "What's new, close",
+    "select": "#whats-new-x",
+    "control": true,
+    "box": false,
+    "parent": "What's new"
+   },
+   {
+    "name": "Tooltip",
+    "select": "#tip",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Icons",
+    "select": "#icons",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Notice",
+    "select": "#notice",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Notice's text",
+    "select": "#notice-text",
+    "control": false,
+    "box": false,
+    "parent": "Notice"
+   },
+   {
+    "name": "OK",
+    "select": "#notice-ok",
+    "control": true,
+    "box": false,
+    "parent": "Notice"
+   }
+  ],
+  "nor": [
+   {
+    "name": "Header",
+    "select": "header",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Logo",
+    "select": "#logo",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Study switcher",
+    "select": "#study-menu",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Study's icon",
+    "select": "#title-icon",
+    "control": false,
+    "box": false,
+    "parent": "Study switcher"
+   },
+   {
+    "name": "Study's name",
+    "select": "#title",
+    "control": false,
+    "box": false,
+    "parent": "Study switcher"
+   },
+   {
+    "name": "Dark/light switch",
+    "select": "#theme",
+    "control": true,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Role menu",
+    "select": "#role-menu",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Role's name",
+    "select": "#role-name",
+    "control": false,
+    "box": false,
+    "parent": "Role menu"
+   },
+   {
+    "name": "You (the user menu)",
+    "select": "#user-menu",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Layout",
+    "select": "#layout",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Data Management column",
+    "select": "#data-col",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Fold the folders",
+    "select": "#data-open",
+    "control": true,
+    "box": false,
+    "parent": "Data Management column"
+   },
+   {
+    "name": "Folders",
+    "select": "#data-body",
+    "control": false,
+    "box": false,
+    "parent": "Data Management column"
+   },
+   {
+    "name": "Approve folders",
+    "select": "#data-approve",
+    "control": true,
+    "box": false,
+    "parent": "Folders"
+   },
+   {
+    "name": "Folder tree",
+    "select": "#data-tree",
+    "control": false,
+    "box": false,
+    "parent": "Folders"
+   },
+   {
+    "name": "Tree's message",
+    "select": "#data-msg",
+    "control": false,
+    "box": false,
+    "parent": "Folders"
+   },
+   {
+    "name": "Left bar",
+    "select": "#left",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Collapsed strip",
+    "select": "#left-strip",
+    "control": false,
+    "box": false,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Expand",
+    "select": "#left-expand",
+    "control": true,
+    "box": false,
+    "parent": "Collapsed strip"
+   },
+   {
+    "name": "Strip's marks",
+    "select": "#left-marks",
+    "control": false,
+    "box": false,
+    "parent": "Collapsed strip"
+   },
+   {
+    "name": "Left bar's head",
+    "select": "#left-head",
+    "control": false,
+    "box": false,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Collapse",
+    "select": "#left-collapse",
+    "control": true,
+    "box": false,
+    "parent": "Left bar's head"
+   },
+   {
+    "name": "Image box",
+    "select": "#image-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "File name and info",
+    "select": "#file-box",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Image's name",
+    "select": "#file-name",
+    "control": false,
+    "box": false,
+    "parent": "File name and info"
+   },
+   {
+    "name": "Image's details",
+    "select": "#file-info",
+    "control": false,
+    "box": false,
+    "parent": "File name and info"
+   },
+   {
+    "name": "Channels",
+    "select": "#channels",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Channel row",
+    "select": "#channels .channel",
+    "control": false,
+    "box": false,
+    "parent": "Channels"
+   },
+   {
+    "name": "Show/hide checkbox",
+    "select": "#channels .channel input[type=checkbox]",
+    "control": true,
+    "box": false,
+    "parent": "Channel row"
+   },
+   {
+    "name": "Black and white points",
+    "select": "#channels .channel .levels",
+    "control": false,
+    "box": false,
+    "parent": "Channel row"
+   },
+   {
+    "name": "Colour picker",
+    "select": "#channels .channel input[type=color]",
+    "control": true,
+    "box": false,
+    "parent": "Channel row"
+   },
+   {
+    "name": "Load",
+    "select": "#load",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Image selector",
+    "select": "#image-menu",
+    "control": false,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Selector's face",
+    "select": "#image-pick",
+    "control": false,
+    "box": false,
+    "parent": "Image selector"
+   },
+   {
+    "name": "This computer",
+    "select": "#load-main",
+    "control": true,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Unload",
+    "select": "#unload",
+    "control": true,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Google Drive button",
+    "select": "#load-drive",
+    "control": true,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Image box's foot",
+    "select": "#image-foot",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Load Original",
+    "select": "#load-original",
+    "control": true,
+    "box": false,
+    "parent": "Image box's foot"
+   },
+   {
+    "name": "File chooser",
+    "select": "#file",
+    "control": false,
+    "box": false,
+    "parent": "Image box's foot"
+   },
+   {
+    "name": "Ground truth box",
+    "select": "#truth-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Ground truth offer",
+    "select": "#gt-offer",
+    "control": false,
+    "box": false,
+    "parent": "Ground truth box"
+   },
+   {
+    "name": "Load GT tagging",
+    "select": "#load-gt",
+    "control": true,
+    "box": false,
+    "parent": "Ground truth box"
+   },
+   {
+    "name": "Ground truth summary",
+    "select": "#gt-summary",
+    "control": false,
+    "box": false,
+    "parent": "Ground truth box"
+   },
+   {
+    "name": "Selected Folder",
+    "select": "#folder-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Folder's name",
+    "select": "#folder-name",
+    "control": false,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Folder's sums",
+    "select": "#folder-summary",
+    "control": false,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Update previews",
+    "select": "#update-previews",
+    "control": true,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Folder's message",
+    "select": "#folder-msg",
+    "control": false,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Preprocessing",
+    "select": "#preprocessing-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Edit Image",
+    "select": "#edit-open",
+    "control": true,
+    "box": false,
+    "parent": "Preprocessing"
+   },
+   {
+    "name": "Edit Image box",
+    "select": "#edit-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Split",
+    "select": "#edit-split",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Split hint",
+    "select": "#edit-split-hint",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Crop",
+    "select": "#edit-crop-row",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Draw",
+    "select": "#edit-crop",
+    "control": true,
+    "box": false,
+    "parent": "Crop"
+   },
+   {
+    "name": "Crop's size",
+    "select": "#edit-crop-size",
+    "control": false,
+    "box": false,
+    "parent": "Crop"
+   },
+   {
+    "name": "Reset crop",
+    "select": "#edit-crop-reset",
+    "control": true,
+    "box": false,
+    "parent": "Crop"
+   },
+   {
+    "name": "Slices",
+    "select": "#edit-slices-sec",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Slices' text",
+    "select": "#edit-z-text",
+    "control": false,
+    "box": false,
+    "parent": "Slices"
+   },
+   {
+    "name": "Use suggested",
+    "select": "#edit-suggest",
+    "control": true,
+    "box": false,
+    "parent": "Slices"
+   },
+   {
+    "name": "Slices slider",
+    "select": "#edit-slices",
+    "control": false,
+    "box": false,
+    "parent": "Slices"
+   },
+   {
+    "name": "Suggested band",
+    "select": "#edit-band",
+    "control": false,
+    "box": false,
+    "parent": "Slices slider"
+   },
+   {
+    "name": "First slice",
+    "select": "#edit-z0",
+    "control": true,
+    "box": false,
+    "parent": "Slices slider"
+   },
+   {
+    "name": "Last slice",
+    "select": "#edit-z1",
+    "control": true,
+    "box": false,
+    "parent": "Slices slider"
+   },
+   {
+    "name": "Channels kept",
+    "select": "#edit-channels",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Imperfections",
+    "select": "#edit-flaws-row",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Mark",
+    "select": "#edit-lasso",
+    "control": true,
+    "box": false,
+    "parent": "Imperfections"
+   },
+   {
+    "name": "Imperfections' list",
+    "select": "#edit-flaws",
+    "control": false,
+    "box": false,
+    "parent": "Imperfections"
+   },
+   {
+    "name": "Save…",
+    "select": "#edit-save",
+    "control": true,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Done",
+    "select": "#edit-done",
+    "control": true,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Finder",
+    "select": "#finder-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Algorithm",
+    "select": "#finder",
+    "control": true,
+    "box": false,
+    "parent": "Finder"
+   },
+   {
+    "name": "About the algorithm",
+    "select": "#about-box",
+    "control": false,
+    "box": false,
+    "parent": "Finder"
+   },
+   {
+    "name": "Settings",
+    "select": "#settings-box",
+    "control": false,
+    "box": false,
+    "parent": "Finder"
+   },
+   {
+    "name": "Run algorithm",
+    "select": "#find",
+    "control": true,
+    "box": false,
+    "parent": "Finder"
+   },
+   {
+    "name": "Results",
+    "select": "#summary-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Ground truth tasks",
+    "select": "#tasks-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Left bar gutter",
+    "select": "#gutter-left",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Main view",
+    "select": "#view",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Tasks/Items switch",
+    "select": "#switch",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Show menu",
+    "select": "#show-menu",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Passed and failed tabs",
+    "select": "#tab-pass",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Card menu",
+    "select": "#card-menu",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Ruler",
+    "select": "#ruler-btn",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Grid",
+    "select": "#grid-btn",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Minimap button",
+    "select": "#minimap-btn",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Zoom out",
+    "select": "#zoom-out",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Zoom in",
+    "select": "#zoom-in",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Zoom",
+    "select": "#zoom-label",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Tasks bar",
+    "select": "#tasks-bar",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Busy",
+    "select": "#busy",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Scan light",
+    "select": "#scan-light",
+    "control": false,
+    "box": false,
+    "parent": "Busy"
+   },
+   {
+    "name": "Busy's text",
+    "select": "#busy-text",
+    "control": false,
+    "box": false,
+    "parent": "Busy"
+   },
+   {
+    "name": "Busy's time",
+    "select": "#busy-time",
+    "control": false,
+    "box": false,
+    "parent": "Busy"
+   },
+   {
+    "name": "Lasso hint",
+    "select": "#lasso-hint",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Image view",
+    "select": "#image-view",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Scroller",
+    "select": "#scroller",
+    "control": false,
+    "box": false,
+    "parent": "Image view"
+   },
+   {
+    "name": "Empty view's text",
+    "select": "#empty",
+    "control": false,
+    "box": false,
+    "parent": "Scroller"
+   },
+   {
+    "name": "Empty view's words",
+    "select": "#empty-text",
+    "control": false,
+    "box": false,
+    "parent": "Empty view's text"
+   },
+   {
+    "name": "Image",
+    "select": "#stage",
+    "control": false,
+    "box": false,
+    "parent": "Scroller"
+   },
+   {
+    "name": "Image's canvas",
+    "select": "#base",
+    "control": false,
+    "box": false,
+    "parent": "Image"
+   },
+   {
+    "name": "Minimap",
+    "select": "#minimap",
+    "control": false,
+    "box": false,
+    "parent": "Image view"
+   },
+   {
+    "name": "Hide the minimap",
+    "select": "#minimap-hide",
+    "control": true,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Fold the minimap",
+    "select": "#minimap-fold",
+    "control": true,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Minimap's picture",
+    "select": "#minimap-canvas",
+    "control": false,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Minimap's view",
+    "select": "#minimap-view",
+    "control": false,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Selected item",
+    "select": "#selected-box",
+    "control": false,
+    "box": false,
+    "parent": "Image view"
+   },
+   {
+    "name": "Item view",
+    "select": "#items-view",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Folder view",
+    "select": "#folder-view",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Folder's title",
+    "select": "#folder-title",
+    "control": false,
+    "box": false,
+    "parent": "Folder view"
+   },
+   {
+    "name": "Grid or list",
+    "select": "#folder-layout",
+    "control": false,
+    "box": false,
+    "parent": "Folder view"
+   },
+   {
+    "name": "Folder's images",
+    "select": "#folder-items",
+    "control": false,
+    "box": false,
+    "parent": "Folder view"
+   },
+   {
+    "name": "Status bar",
+    "select": "#statusbar",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Breadcrumbs",
+    "select": "#sb-steps",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Submit GT crumb",
+    "select": "#sb-submit",
+    "control": false,
+    "box": false,
+    "parent": "Breadcrumbs"
+   },
+   {
+    "name": "Now",
+    "select": "#sb-now",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Spinner",
+    "select": "#spin",
+    "control": false,
+    "box": false,
+    "parent": "Now"
+   },
+   {
+    "name": "Status",
+    "select": "#status",
+    "control": false,
+    "box": false,
+    "parent": "Now"
+   },
+   {
+    "name": "Resources",
+    "select": "#sb-res",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Resources, unfolded",
+    "select": "#sb-res-items",
+    "control": false,
+    "box": false,
+    "parent": "Resources"
+   },
+   {
+    "name": "Storage",
+    "select": "#sb-disk",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "Memory",
+    "select": "#sb-memory",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "Network",
+    "select": "#sb-net",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "CPU",
+    "select": "#sb-cpu",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "Resources icon",
+    "select": "#sb-res-icon",
+    "control": true,
+    "box": false,
+    "parent": "Resources"
+   },
+   {
+    "name": "Online icon",
+    "select": "#sb-online",
+    "control": true,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Report a problem",
+    "select": "#sb-report",
+    "control": true,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Version",
+    "select": "#sb-version",
+    "control": true,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "What's new",
+    "select": "#whats-new",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "What's new, open",
+    "select": "#whats-new-open",
+    "control": true,
+    "box": false,
+    "parent": "What's new"
+   },
+   {
+    "name": "What's new, close",
+    "select": "#whats-new-x",
+    "control": true,
+    "box": false,
+    "parent": "What's new"
+   },
+   {
+    "name": "Tooltip",
+    "select": "#tip",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Icons",
+    "select": "#icons",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Notice",
+    "select": "#notice",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Notice's text",
+    "select": "#notice-text",
+    "control": false,
+    "box": false,
+    "parent": "Notice"
+   },
+   {
+    "name": "OK",
+    "select": "#notice-ok",
+    "control": true,
+    "box": false,
+    "parent": "Notice"
+   }
+  ],
+  "shelves": [
+   {
+    "name": "Header",
+    "select": "header",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Logo",
+    "select": "#logo",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Study switcher",
+    "select": "#study-menu",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Study's icon",
+    "select": "#title-icon",
+    "control": false,
+    "box": false,
+    "parent": "Study switcher"
+   },
+   {
+    "name": "Study's name",
+    "select": "#title",
+    "control": false,
+    "box": false,
+    "parent": "Study switcher"
+   },
+   {
+    "name": "Dark/light switch",
+    "select": "#theme",
+    "control": true,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Role menu",
+    "select": "#role-menu",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Role's name",
+    "select": "#role-name",
+    "control": false,
+    "box": false,
+    "parent": "Role menu"
+   },
+   {
+    "name": "You (the user menu)",
+    "select": "#user-menu",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Layout",
+    "select": "#layout",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Data Management column",
+    "select": "#data-col",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Fold the folders",
+    "select": "#data-open",
+    "control": true,
+    "box": false,
+    "parent": "Data Management column"
+   },
+   {
+    "name": "Folders",
+    "select": "#data-body",
+    "control": false,
+    "box": false,
+    "parent": "Data Management column"
+   },
+   {
+    "name": "Approve folders",
+    "select": "#data-approve",
+    "control": true,
+    "box": false,
+    "parent": "Folders"
+   },
+   {
+    "name": "Folder tree",
+    "select": "#data-tree",
+    "control": false,
+    "box": false,
+    "parent": "Folders"
+   },
+   {
+    "name": "Tree's message",
+    "select": "#data-msg",
+    "control": false,
+    "box": false,
+    "parent": "Folders"
+   },
+   {
+    "name": "Left bar",
+    "select": "#left",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Collapsed strip",
+    "select": "#left-strip",
+    "control": false,
+    "box": false,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Expand",
+    "select": "#left-expand",
+    "control": true,
+    "box": false,
+    "parent": "Collapsed strip"
+   },
+   {
+    "name": "Strip's marks",
+    "select": "#left-marks",
+    "control": false,
+    "box": false,
+    "parent": "Collapsed strip"
+   },
+   {
+    "name": "Left bar's head",
+    "select": "#left-head",
+    "control": false,
+    "box": false,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Collapse",
+    "select": "#left-collapse",
+    "control": true,
+    "box": false,
+    "parent": "Left bar's head"
+   },
+   {
+    "name": "Image box",
+    "select": "#image-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "File name and info",
+    "select": "#file-box",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Image's name",
+    "select": "#file-name",
+    "control": false,
+    "box": false,
+    "parent": "File name and info"
+   },
+   {
+    "name": "Image's details",
+    "select": "#file-info",
+    "control": false,
+    "box": false,
+    "parent": "File name and info"
+   },
+   {
+    "name": "Channels",
+    "select": "#channels",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Channel row",
+    "select": "#channels .channel",
+    "control": false,
+    "box": false,
+    "parent": "Channels"
+   },
+   {
+    "name": "Show/hide checkbox",
+    "select": "#channels .channel input[type=checkbox]",
+    "control": true,
+    "box": false,
+    "parent": "Channel row"
+   },
+   {
+    "name": "Black and white points",
+    "select": "#channels .channel .levels",
+    "control": false,
+    "box": false,
+    "parent": "Channel row"
+   },
+   {
+    "name": "Colour picker",
+    "select": "#channels .channel input[type=color]",
+    "control": true,
+    "box": false,
+    "parent": "Channel row"
+   },
+   {
+    "name": "Load",
+    "select": "#load",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Image selector",
+    "select": "#image-menu",
+    "control": false,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Selector's face",
+    "select": "#image-pick",
+    "control": false,
+    "box": false,
+    "parent": "Image selector"
+   },
+   {
+    "name": "This computer",
+    "select": "#load-main",
+    "control": true,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Unload",
+    "select": "#unload",
+    "control": true,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Google Drive button",
+    "select": "#load-drive",
+    "control": true,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Image box's foot",
+    "select": "#image-foot",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Load Original",
+    "select": "#load-original",
+    "control": true,
+    "box": false,
+    "parent": "Image box's foot"
+   },
+   {
+    "name": "File chooser",
+    "select": "#file",
+    "control": false,
+    "box": false,
+    "parent": "Image box's foot"
+   },
+   {
+    "name": "Ground truth box",
+    "select": "#truth-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Ground truth offer",
+    "select": "#gt-offer",
+    "control": false,
+    "box": false,
+    "parent": "Ground truth box"
+   },
+   {
+    "name": "Load GT tagging",
+    "select": "#load-gt",
+    "control": true,
+    "box": false,
+    "parent": "Ground truth box"
+   },
+   {
+    "name": "Ground truth summary",
+    "select": "#gt-summary",
+    "control": false,
+    "box": false,
+    "parent": "Ground truth box"
+   },
+   {
+    "name": "Selected Folder",
+    "select": "#folder-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Folder's name",
+    "select": "#folder-name",
+    "control": false,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Folder's sums",
+    "select": "#folder-summary",
+    "control": false,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Update previews",
+    "select": "#update-previews",
+    "control": true,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Folder's message",
+    "select": "#folder-msg",
+    "control": false,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Preprocessing",
+    "select": "#preprocessing-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Edit Image",
+    "select": "#edit-open",
+    "control": true,
+    "box": false,
+    "parent": "Preprocessing"
+   },
+   {
+    "name": "Edit Image box",
+    "select": "#edit-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Split",
+    "select": "#edit-split",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Split hint",
+    "select": "#edit-split-hint",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Crop",
+    "select": "#edit-crop-row",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Draw",
+    "select": "#edit-crop",
+    "control": true,
+    "box": false,
+    "parent": "Crop"
+   },
+   {
+    "name": "Crop's size",
+    "select": "#edit-crop-size",
+    "control": false,
+    "box": false,
+    "parent": "Crop"
+   },
+   {
+    "name": "Reset crop",
+    "select": "#edit-crop-reset",
+    "control": true,
+    "box": false,
+    "parent": "Crop"
+   },
+   {
+    "name": "Slices",
+    "select": "#edit-slices-sec",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Slices' text",
+    "select": "#edit-z-text",
+    "control": false,
+    "box": false,
+    "parent": "Slices"
+   },
+   {
+    "name": "Use suggested",
+    "select": "#edit-suggest",
+    "control": true,
+    "box": false,
+    "parent": "Slices"
+   },
+   {
+    "name": "Slices slider",
+    "select": "#edit-slices",
+    "control": false,
+    "box": false,
+    "parent": "Slices"
+   },
+   {
+    "name": "Suggested band",
+    "select": "#edit-band",
+    "control": false,
+    "box": false,
+    "parent": "Slices slider"
+   },
+   {
+    "name": "First slice",
+    "select": "#edit-z0",
+    "control": true,
+    "box": false,
+    "parent": "Slices slider"
+   },
+   {
+    "name": "Last slice",
+    "select": "#edit-z1",
+    "control": true,
+    "box": false,
+    "parent": "Slices slider"
+   },
+   {
+    "name": "Channels kept",
+    "select": "#edit-channels",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Imperfections",
+    "select": "#edit-flaws-row",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Mark",
+    "select": "#edit-lasso",
+    "control": true,
+    "box": false,
+    "parent": "Imperfections"
+   },
+   {
+    "name": "Imperfections' list",
+    "select": "#edit-flaws",
+    "control": false,
+    "box": false,
+    "parent": "Imperfections"
+   },
+   {
+    "name": "Save…",
+    "select": "#edit-save",
+    "control": true,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Done",
+    "select": "#edit-done",
+    "control": true,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Books",
+    "select": "#bs-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Reader",
+    "select": "#bs-reader",
+    "control": true,
+    "box": false,
+    "parent": "Books"
+   },
+   {
+    "name": "Find books",
+    "select": "#bs-find",
+    "control": true,
+    "box": false,
+    "parent": "Books"
+   },
+   {
+    "name": "Read titles",
+    "select": "#bs-read",
+    "control": true,
+    "box": false,
+    "parent": "Books"
+   },
+   {
+    "name": "Books found",
+    "select": "#bs-found",
+    "control": false,
+    "box": false,
+    "parent": "Books"
+   },
+   {
+    "name": "Ground truth",
+    "select": "#bs-tasks",
+    "control": false,
+    "box": false,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Tasks' progress",
+    "select": "#bs-progress",
+    "control": false,
+    "box": false,
+    "parent": "Ground truth"
+   },
+   {
+    "name": "Tasks",
+    "select": "#bs-task-list",
+    "control": false,
+    "box": false,
+    "parent": "Ground truth"
+   },
+   {
+    "name": "Submit ground truth",
+    "select": "#bs-truth",
+    "control": true,
+    "box": false,
+    "parent": "Ground truth"
+   },
+   {
+    "name": "Titles",
+    "select": "#bs-titles",
+    "control": false,
+    "box": false,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Titles' list",
+    "select": "#bs-list",
+    "control": false,
+    "box": false,
+    "parent": "Titles"
+   },
+   {
+    "name": "Download for the matcher",
+    "select": "#bs-export",
+    "control": true,
+    "box": false,
+    "parent": "Titles"
+   },
+   {
+    "name": "Left bar gutter",
+    "select": "#gutter-left",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Main view",
+    "select": "#view",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Tasks/Items switch",
+    "select": "#switch",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Ruler",
+    "select": "#ruler-btn",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Grid",
+    "select": "#grid-btn",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Minimap button",
+    "select": "#minimap-btn",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Zoom out",
+    "select": "#zoom-out",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Zoom in",
+    "select": "#zoom-in",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Zoom",
+    "select": "#zoom-label",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Tasks bar",
+    "select": "#tasks-bar",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Busy",
+    "select": "#busy",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Scan light",
+    "select": "#scan-light",
+    "control": false,
+    "box": false,
+    "parent": "Busy"
+   },
+   {
+    "name": "Busy's text",
+    "select": "#busy-text",
+    "control": false,
+    "box": false,
+    "parent": "Busy"
+   },
+   {
+    "name": "Busy's time",
+    "select": "#busy-time",
+    "control": false,
+    "box": false,
+    "parent": "Busy"
+   },
+   {
+    "name": "Image view",
+    "select": "#image-view",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Scroller",
+    "select": "#scroller",
+    "control": false,
+    "box": false,
+    "parent": "Image view"
+   },
+   {
+    "name": "Empty view's text",
+    "select": "#empty",
+    "control": false,
+    "box": false,
+    "parent": "Scroller"
+   },
+   {
+    "name": "Empty view's words",
+    "select": "#empty-text",
+    "control": false,
+    "box": false,
+    "parent": "Empty view's text"
+   },
+   {
+    "name": "Image",
+    "select": "#stage",
+    "control": false,
+    "box": false,
+    "parent": "Scroller"
+   },
+   {
+    "name": "Image's canvas",
+    "select": "#base",
+    "control": false,
+    "box": false,
+    "parent": "Image"
+   },
+   {
+    "name": "Minimap",
+    "select": "#minimap",
+    "control": false,
+    "box": false,
+    "parent": "Image view"
+   },
+   {
+    "name": "Hide the minimap",
+    "select": "#minimap-hide",
+    "control": true,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Fold the minimap",
+    "select": "#minimap-fold",
+    "control": true,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Minimap's picture",
+    "select": "#minimap-canvas",
+    "control": false,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Minimap's view",
+    "select": "#minimap-view",
+    "control": false,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Drawing hint",
+    "select": "#bs-draw-hint",
+    "control": false,
+    "box": false,
+    "parent": "Image view"
+   },
+   {
+    "name": "Folder view",
+    "select": "#folder-view",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Folder's title",
+    "select": "#folder-title",
+    "control": false,
+    "box": false,
+    "parent": "Folder view"
+   },
+   {
+    "name": "Grid or list",
+    "select": "#folder-layout",
+    "control": false,
+    "box": false,
+    "parent": "Folder view"
+   },
+   {
+    "name": "Folder's images",
+    "select": "#folder-items",
+    "control": false,
+    "box": false,
+    "parent": "Folder view"
+   },
+   {
+    "name": "Status bar",
+    "select": "#statusbar",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Breadcrumbs",
+    "select": "#sb-steps",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Submit GT crumb",
+    "select": "#sb-submit",
+    "control": false,
+    "box": false,
+    "parent": "Breadcrumbs"
+   },
+   {
+    "name": "Now",
+    "select": "#sb-now",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Spinner",
+    "select": "#spin",
+    "control": false,
+    "box": false,
+    "parent": "Now"
+   },
+   {
+    "name": "Status",
+    "select": "#status",
+    "control": false,
+    "box": false,
+    "parent": "Now"
+   },
+   {
+    "name": "Resources",
+    "select": "#sb-res",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Resources, unfolded",
+    "select": "#sb-res-items",
+    "control": false,
+    "box": false,
+    "parent": "Resources"
+   },
+   {
+    "name": "Storage",
+    "select": "#sb-disk",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "Memory",
+    "select": "#sb-memory",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "Network",
+    "select": "#sb-net",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "CPU",
+    "select": "#sb-cpu",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "Resources icon",
+    "select": "#sb-res-icon",
+    "control": true,
+    "box": false,
+    "parent": "Resources"
+   },
+   {
+    "name": "Online icon",
+    "select": "#sb-online",
+    "control": true,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Report a problem",
+    "select": "#sb-report",
+    "control": true,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Version",
+    "select": "#sb-version",
+    "control": true,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "What's new",
+    "select": "#whats-new",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "What's new, open",
+    "select": "#whats-new-open",
+    "control": true,
+    "box": false,
+    "parent": "What's new"
+   },
+   {
+    "name": "What's new, close",
+    "select": "#whats-new-x",
+    "control": true,
+    "box": false,
+    "parent": "What's new"
+   },
+   {
+    "name": "Tooltip",
+    "select": "#tip",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Icons",
+    "select": "#icons",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Notice",
+    "select": "#notice",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Notice's text",
+    "select": "#notice-text",
+    "control": false,
+    "box": false,
+    "parent": "Notice"
+   },
+   {
+    "name": "OK",
+    "select": "#notice-ok",
+    "control": true,
+    "box": false,
+    "parent": "Notice"
+   }
+  ],
+  "vascular": [
+   {
+    "name": "Header",
+    "select": "header",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Logo",
+    "select": "#logo",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Study switcher",
+    "select": "#study-menu",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Study's icon",
+    "select": "#title-icon",
+    "control": false,
+    "box": false,
+    "parent": "Study switcher"
+   },
+   {
+    "name": "Study's name",
+    "select": "#title",
+    "control": false,
+    "box": false,
+    "parent": "Study switcher"
+   },
+   {
+    "name": "Dark/light switch",
+    "select": "#theme",
+    "control": true,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Role menu",
+    "select": "#role-menu",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Role's name",
+    "select": "#role-name",
+    "control": false,
+    "box": false,
+    "parent": "Role menu"
+   },
+   {
+    "name": "You (the user menu)",
+    "select": "#user-menu",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Layout",
+    "select": "#layout",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Data Management column",
+    "select": "#data-col",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Fold the folders",
+    "select": "#data-open",
+    "control": true,
+    "box": false,
+    "parent": "Data Management column"
+   },
+   {
+    "name": "Folders",
+    "select": "#data-body",
+    "control": false,
+    "box": false,
+    "parent": "Data Management column"
+   },
+   {
+    "name": "Approve folders",
+    "select": "#data-approve",
+    "control": true,
+    "box": false,
+    "parent": "Folders"
+   },
+   {
+    "name": "Folder tree",
+    "select": "#data-tree",
+    "control": false,
+    "box": false,
+    "parent": "Folders"
+   },
+   {
+    "name": "Tree's message",
+    "select": "#data-msg",
+    "control": false,
+    "box": false,
+    "parent": "Folders"
+   },
+   {
+    "name": "Left bar",
+    "select": "#left",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Collapsed strip",
+    "select": "#left-strip",
+    "control": false,
+    "box": false,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Expand",
+    "select": "#left-expand",
+    "control": true,
+    "box": false,
+    "parent": "Collapsed strip"
+   },
+   {
+    "name": "Strip's marks",
+    "select": "#left-marks",
+    "control": false,
+    "box": false,
+    "parent": "Collapsed strip"
+   },
+   {
+    "name": "Left bar's head",
+    "select": "#left-head",
+    "control": false,
+    "box": false,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Collapse",
+    "select": "#left-collapse",
+    "control": true,
+    "box": false,
+    "parent": "Left bar's head"
+   },
+   {
+    "name": "Image box",
+    "select": "#image-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "File name and info",
+    "select": "#file-box",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Image's name",
+    "select": "#file-name",
+    "control": false,
+    "box": false,
+    "parent": "File name and info"
+   },
+   {
+    "name": "Image's details",
+    "select": "#file-info",
+    "control": false,
+    "box": false,
+    "parent": "File name and info"
+   },
+   {
+    "name": "Channels",
+    "select": "#channels",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Channel row",
+    "select": "#channels .channel",
+    "control": false,
+    "box": false,
+    "parent": "Channels"
+   },
+   {
+    "name": "Show/hide checkbox",
+    "select": "#channels .channel input[type=checkbox]",
+    "control": true,
+    "box": false,
+    "parent": "Channel row"
+   },
+   {
+    "name": "Black and white points",
+    "select": "#channels .channel .levels",
+    "control": false,
+    "box": false,
+    "parent": "Channel row"
+   },
+   {
+    "name": "Colour picker",
+    "select": "#channels .channel input[type=color]",
+    "control": true,
+    "box": false,
+    "parent": "Channel row"
+   },
+   {
+    "name": "Load",
+    "select": "#load",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Image selector",
+    "select": "#image-menu",
+    "control": false,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Selector's face",
+    "select": "#image-pick",
+    "control": false,
+    "box": false,
+    "parent": "Image selector"
+   },
+   {
+    "name": "This computer",
+    "select": "#load-main",
+    "control": true,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Unload",
+    "select": "#unload",
+    "control": true,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Google Drive button",
+    "select": "#load-drive",
+    "control": true,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Image box's foot",
+    "select": "#image-foot",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Load Original",
+    "select": "#load-original",
+    "control": true,
+    "box": false,
+    "parent": "Image box's foot"
+   },
+   {
+    "name": "File chooser",
+    "select": "#file",
+    "control": false,
+    "box": false,
+    "parent": "Image box's foot"
+   },
+   {
+    "name": "Ground truth box",
+    "select": "#truth-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Ground truth offer",
+    "select": "#gt-offer",
+    "control": false,
+    "box": false,
+    "parent": "Ground truth box"
+   },
+   {
+    "name": "Load GT tagging",
+    "select": "#load-gt",
+    "control": true,
+    "box": false,
+    "parent": "Ground truth box"
+   },
+   {
+    "name": "Ground truth summary",
+    "select": "#gt-summary",
+    "control": false,
+    "box": false,
+    "parent": "Ground truth box"
+   },
+   {
+    "name": "Selected Folder",
+    "select": "#folder-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Folder's name",
+    "select": "#folder-name",
+    "control": false,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Folder's sums",
+    "select": "#folder-summary",
+    "control": false,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Update previews",
+    "select": "#update-previews",
+    "control": true,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Folder's message",
+    "select": "#folder-msg",
+    "control": false,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Preprocessing",
+    "select": "#preprocessing-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Edit Image",
+    "select": "#edit-open",
+    "control": true,
+    "box": false,
+    "parent": "Preprocessing"
+   },
+   {
+    "name": "Edit Image box",
+    "select": "#edit-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Split",
+    "select": "#edit-split",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Split hint",
+    "select": "#edit-split-hint",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Crop",
+    "select": "#edit-crop-row",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Draw",
+    "select": "#edit-crop",
+    "control": true,
+    "box": false,
+    "parent": "Crop"
+   },
+   {
+    "name": "Crop's size",
+    "select": "#edit-crop-size",
+    "control": false,
+    "box": false,
+    "parent": "Crop"
+   },
+   {
+    "name": "Reset crop",
+    "select": "#edit-crop-reset",
+    "control": true,
+    "box": false,
+    "parent": "Crop"
+   },
+   {
+    "name": "Slices",
+    "select": "#edit-slices-sec",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Slices' text",
+    "select": "#edit-z-text",
+    "control": false,
+    "box": false,
+    "parent": "Slices"
+   },
+   {
+    "name": "Use suggested",
+    "select": "#edit-suggest",
+    "control": true,
+    "box": false,
+    "parent": "Slices"
+   },
+   {
+    "name": "Slices slider",
+    "select": "#edit-slices",
+    "control": false,
+    "box": false,
+    "parent": "Slices"
+   },
+   {
+    "name": "Suggested band",
+    "select": "#edit-band",
+    "control": false,
+    "box": false,
+    "parent": "Slices slider"
+   },
+   {
+    "name": "First slice",
+    "select": "#edit-z0",
+    "control": true,
+    "box": false,
+    "parent": "Slices slider"
+   },
+   {
+    "name": "Last slice",
+    "select": "#edit-z1",
+    "control": true,
+    "box": false,
+    "parent": "Slices slider"
+   },
+   {
+    "name": "Channels kept",
+    "select": "#edit-channels",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Imperfections",
+    "select": "#edit-flaws-row",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Mark",
+    "select": "#edit-lasso",
+    "control": true,
+    "box": false,
+    "parent": "Imperfections"
+   },
+   {
+    "name": "Imperfections' list",
+    "select": "#edit-flaws",
+    "control": false,
+    "box": false,
+    "parent": "Imperfections"
+   },
+   {
+    "name": "Save…",
+    "select": "#edit-save",
+    "control": true,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Done",
+    "select": "#edit-done",
+    "control": true,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Processing",
+    "select": "#model-set",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Algorithm",
+    "select": "#vm-algo",
+    "control": true,
+    "box": false,
+    "parent": "Processing"
+   },
+   {
+    "name": "About the algorithm",
+    "select": "#vm-about",
+    "control": false,
+    "box": false,
+    "parent": "Processing"
+   },
+   {
+    "name": "Load a model",
+    "select": "#model-load",
+    "control": true,
+    "box": false,
+    "parent": "Processing"
+   },
+   {
+    "name": "Run algorithm",
+    "select": "#vm-run",
+    "control": true,
+    "box": false,
+    "parent": "Processing"
+   },
+   {
+    "name": "The model's controls",
+    "select": "#model-on",
+    "control": false,
+    "box": false,
+    "parent": "Processing"
+   },
+   {
+    "name": "Ground truth tasks",
+    "select": "#tasks-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Review",
+    "select": "#review-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Left bar gutter",
+    "select": "#gutter-left",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Main view",
+    "select": "#view",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Tasks/Items switch",
+    "select": "#switch",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "What to show",
+    "select": "#model-mode",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Colour by depth",
+    "select": "#vm-depth",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Vessel widths",
+    "select": "#m-widths",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Ruler",
+    "select": "#ruler-btn",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Grid",
+    "select": "#grid-btn",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Minimap button",
+    "select": "#minimap-btn",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Zoom out",
+    "select": "#zoom-out",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Zoom in",
+    "select": "#zoom-in",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Zoom",
+    "select": "#zoom-label",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Tasks bar",
+    "select": "#tasks-bar",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Busy",
+    "select": "#busy",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Scan light",
+    "select": "#scan-light",
+    "control": false,
+    "box": false,
+    "parent": "Busy"
+   },
+   {
+    "name": "Busy's text",
+    "select": "#busy-text",
+    "control": false,
+    "box": false,
+    "parent": "Busy"
+   },
+   {
+    "name": "Busy's time",
+    "select": "#busy-time",
+    "control": false,
+    "box": false,
+    "parent": "Busy"
+   },
+   {
+    "name": "Image view",
+    "select": "#image-view",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Scroller",
+    "select": "#scroller",
+    "control": false,
+    "box": false,
+    "parent": "Image view"
+   },
+   {
+    "name": "Empty view's text",
+    "select": "#empty",
+    "control": false,
+    "box": false,
+    "parent": "Scroller"
+   },
+   {
+    "name": "Empty view's words",
+    "select": "#empty-text",
+    "control": false,
+    "box": false,
+    "parent": "Empty view's text"
+   },
+   {
+    "name": "Image",
+    "select": "#stage",
+    "control": false,
+    "box": false,
+    "parent": "Scroller"
+   },
+   {
+    "name": "Image's canvas",
+    "select": "#base",
+    "control": false,
+    "box": false,
+    "parent": "Image"
+   },
+   {
+    "name": "Minimap",
+    "select": "#minimap",
+    "control": false,
+    "box": false,
+    "parent": "Image view"
+   },
+   {
+    "name": "Hide the minimap",
+    "select": "#minimap-hide",
+    "control": true,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Fold the minimap",
+    "select": "#minimap-fold",
+    "control": true,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Minimap's picture",
+    "select": "#minimap-canvas",
+    "control": false,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Minimap's view",
+    "select": "#minimap-view",
+    "control": false,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Item view",
+    "select": "#items-view",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Folder view",
+    "select": "#folder-view",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Folder's title",
+    "select": "#folder-title",
+    "control": false,
+    "box": false,
+    "parent": "Folder view"
+   },
+   {
+    "name": "Grid or list",
+    "select": "#folder-layout",
+    "control": false,
+    "box": false,
+    "parent": "Folder view"
+   },
+   {
+    "name": "Folder's images",
+    "select": "#folder-items",
+    "control": false,
+    "box": false,
+    "parent": "Folder view"
+   },
+   {
+    "name": "Status bar",
+    "select": "#statusbar",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Breadcrumbs",
+    "select": "#sb-steps",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Submit GT crumb",
+    "select": "#sb-submit",
+    "control": false,
+    "box": false,
+    "parent": "Breadcrumbs"
+   },
+   {
+    "name": "Now",
+    "select": "#sb-now",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Spinner",
+    "select": "#spin",
+    "control": false,
+    "box": false,
+    "parent": "Now"
+   },
+   {
+    "name": "Status",
+    "select": "#status",
+    "control": false,
+    "box": false,
+    "parent": "Now"
+   },
+   {
+    "name": "Resources",
+    "select": "#sb-res",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Resources, unfolded",
+    "select": "#sb-res-items",
+    "control": false,
+    "box": false,
+    "parent": "Resources"
+   },
+   {
+    "name": "Storage",
+    "select": "#sb-disk",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "Memory",
+    "select": "#sb-memory",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "Network",
+    "select": "#sb-net",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "CPU",
+    "select": "#sb-cpu",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "Resources icon",
+    "select": "#sb-res-icon",
+    "control": true,
+    "box": false,
+    "parent": "Resources"
+   },
+   {
+    "name": "Online icon",
+    "select": "#sb-online",
+    "control": true,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Report a problem",
+    "select": "#sb-report",
+    "control": true,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Version",
+    "select": "#sb-version",
+    "control": true,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "What's new",
+    "select": "#whats-new",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "What's new, open",
+    "select": "#whats-new-open",
+    "control": true,
+    "box": false,
+    "parent": "What's new"
+   },
+   {
+    "name": "What's new, close",
+    "select": "#whats-new-x",
+    "control": true,
+    "box": false,
+    "parent": "What's new"
+   },
+   {
+    "name": "Tooltip",
+    "select": "#tip",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Icons",
+    "select": "#icons",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Notice",
+    "select": "#notice",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Notice's text",
+    "select": "#notice-text",
+    "control": false,
+    "box": false,
+    "parent": "Notice"
+   },
+   {
+    "name": "OK",
+    "select": "#notice-ok",
+    "control": true,
+    "box": false,
+    "parent": "Notice"
+   }
+  ],
+  "viewer": [
+   {
+    "name": "Header",
+    "select": "header",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Logo",
+    "select": "#logo",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Study switcher",
+    "select": "#study-menu",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Study's icon",
+    "select": "#title-icon",
+    "control": false,
+    "box": false,
+    "parent": "Study switcher"
+   },
+   {
+    "name": "Study's name",
+    "select": "#title",
+    "control": false,
+    "box": false,
+    "parent": "Study switcher"
+   },
+   {
+    "name": "Dark/light switch",
+    "select": "#theme",
+    "control": true,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Role menu",
+    "select": "#role-menu",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Role's name",
+    "select": "#role-name",
+    "control": false,
+    "box": false,
+    "parent": "Role menu"
+   },
+   {
+    "name": "You (the user menu)",
+    "select": "#user-menu",
+    "control": false,
+    "box": false,
+    "parent": "Header"
+   },
+   {
+    "name": "Layout",
+    "select": "#layout",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Data Management column",
+    "select": "#data-col",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Fold the folders",
+    "select": "#data-open",
+    "control": true,
+    "box": false,
+    "parent": "Data Management column"
+   },
+   {
+    "name": "Folders",
+    "select": "#data-body",
+    "control": false,
+    "box": false,
+    "parent": "Data Management column"
+   },
+   {
+    "name": "Approve folders",
+    "select": "#data-approve",
+    "control": true,
+    "box": false,
+    "parent": "Folders"
+   },
+   {
+    "name": "Folder tree",
+    "select": "#data-tree",
+    "control": false,
+    "box": false,
+    "parent": "Folders"
+   },
+   {
+    "name": "Tree's message",
+    "select": "#data-msg",
+    "control": false,
+    "box": false,
+    "parent": "Folders"
+   },
+   {
+    "name": "Left bar",
+    "select": "#left",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Collapsed strip",
+    "select": "#left-strip",
+    "control": false,
+    "box": false,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Expand",
+    "select": "#left-expand",
+    "control": true,
+    "box": false,
+    "parent": "Collapsed strip"
+   },
+   {
+    "name": "Strip's marks",
+    "select": "#left-marks",
+    "control": false,
+    "box": false,
+    "parent": "Collapsed strip"
+   },
+   {
+    "name": "Left bar's head",
+    "select": "#left-head",
+    "control": false,
+    "box": false,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Collapse",
+    "select": "#left-collapse",
+    "control": true,
+    "box": false,
+    "parent": "Left bar's head"
+   },
+   {
+    "name": "Image box",
+    "select": "#image-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "File name and info",
+    "select": "#file-box",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Image's name",
+    "select": "#file-name",
+    "control": false,
+    "box": false,
+    "parent": "File name and info"
+   },
+   {
+    "name": "Image's details",
+    "select": "#file-info",
+    "control": false,
+    "box": false,
+    "parent": "File name and info"
+   },
+   {
+    "name": "Channels",
+    "select": "#channels",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Channel row",
+    "select": "#channels .channel",
+    "control": false,
+    "box": false,
+    "parent": "Channels"
+   },
+   {
+    "name": "Show/hide checkbox",
+    "select": "#channels .channel input[type=checkbox]",
+    "control": true,
+    "box": false,
+    "parent": "Channel row"
+   },
+   {
+    "name": "Black and white points",
+    "select": "#channels .channel .levels",
+    "control": false,
+    "box": false,
+    "parent": "Channel row"
+   },
+   {
+    "name": "Colour picker",
+    "select": "#channels .channel input[type=color]",
+    "control": true,
+    "box": false,
+    "parent": "Channel row"
+   },
+   {
+    "name": "Load",
+    "select": "#load",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Image selector",
+    "select": "#image-menu",
+    "control": false,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Selector's face",
+    "select": "#image-pick",
+    "control": false,
+    "box": false,
+    "parent": "Image selector"
+   },
+   {
+    "name": "This computer",
+    "select": "#load-main",
+    "control": true,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Unload",
+    "select": "#unload",
+    "control": true,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Google Drive button",
+    "select": "#load-drive",
+    "control": true,
+    "box": false,
+    "parent": "Load"
+   },
+   {
+    "name": "Image box's foot",
+    "select": "#image-foot",
+    "control": false,
+    "box": false,
+    "parent": "Image box"
+   },
+   {
+    "name": "Load Original",
+    "select": "#load-original",
+    "control": true,
+    "box": false,
+    "parent": "Image box's foot"
+   },
+   {
+    "name": "File chooser",
+    "select": "#file",
+    "control": false,
+    "box": false,
+    "parent": "Image box's foot"
+   },
+   {
+    "name": "Ground truth box",
+    "select": "#truth-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Ground truth offer",
+    "select": "#gt-offer",
+    "control": false,
+    "box": false,
+    "parent": "Ground truth box"
+   },
+   {
+    "name": "Load GT tagging",
+    "select": "#load-gt",
+    "control": true,
+    "box": false,
+    "parent": "Ground truth box"
+   },
+   {
+    "name": "Ground truth summary",
+    "select": "#gt-summary",
+    "control": false,
+    "box": false,
+    "parent": "Ground truth box"
+   },
+   {
+    "name": "Selected Folder",
+    "select": "#folder-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Folder's name",
+    "select": "#folder-name",
+    "control": false,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Folder's sums",
+    "select": "#folder-summary",
+    "control": false,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Update previews",
+    "select": "#update-previews",
+    "control": true,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Folder's message",
+    "select": "#folder-msg",
+    "control": false,
+    "box": false,
+    "parent": "Selected Folder"
+   },
+   {
+    "name": "Preprocessing",
+    "select": "#preprocessing-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Edit Image",
+    "select": "#edit-open",
+    "control": true,
+    "box": false,
+    "parent": "Preprocessing"
+   },
+   {
+    "name": "Edit Image box",
+    "select": "#edit-box",
+    "control": false,
+    "box": true,
+    "parent": "Left bar"
+   },
+   {
+    "name": "Split",
+    "select": "#edit-split",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Split hint",
+    "select": "#edit-split-hint",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Crop",
+    "select": "#edit-crop-row",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Draw",
+    "select": "#edit-crop",
+    "control": true,
+    "box": false,
+    "parent": "Crop"
+   },
+   {
+    "name": "Crop's size",
+    "select": "#edit-crop-size",
+    "control": false,
+    "box": false,
+    "parent": "Crop"
+   },
+   {
+    "name": "Reset crop",
+    "select": "#edit-crop-reset",
+    "control": true,
+    "box": false,
+    "parent": "Crop"
+   },
+   {
+    "name": "Slices",
+    "select": "#edit-slices-sec",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Slices' text",
+    "select": "#edit-z-text",
+    "control": false,
+    "box": false,
+    "parent": "Slices"
+   },
+   {
+    "name": "Use suggested",
+    "select": "#edit-suggest",
+    "control": true,
+    "box": false,
+    "parent": "Slices"
+   },
+   {
+    "name": "Slices slider",
+    "select": "#edit-slices",
+    "control": false,
+    "box": false,
+    "parent": "Slices"
+   },
+   {
+    "name": "Suggested band",
+    "select": "#edit-band",
+    "control": false,
+    "box": false,
+    "parent": "Slices slider"
+   },
+   {
+    "name": "First slice",
+    "select": "#edit-z0",
+    "control": true,
+    "box": false,
+    "parent": "Slices slider"
+   },
+   {
+    "name": "Last slice",
+    "select": "#edit-z1",
+    "control": true,
+    "box": false,
+    "parent": "Slices slider"
+   },
+   {
+    "name": "Channels kept",
+    "select": "#edit-channels",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Imperfections",
+    "select": "#edit-flaws-row",
+    "control": false,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Mark",
+    "select": "#edit-lasso",
+    "control": true,
+    "box": false,
+    "parent": "Imperfections"
+   },
+   {
+    "name": "Imperfections' list",
+    "select": "#edit-flaws",
+    "control": false,
+    "box": false,
+    "parent": "Imperfections"
+   },
+   {
+    "name": "Save…",
+    "select": "#edit-save",
+    "control": true,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Done",
+    "select": "#edit-done",
+    "control": true,
+    "box": false,
+    "parent": "Edit Image box"
+   },
+   {
+    "name": "Left bar gutter",
+    "select": "#gutter-left",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Main view",
+    "select": "#view",
+    "control": false,
+    "box": false,
+    "parent": "Layout"
+   },
+   {
+    "name": "Tasks/Items switch",
+    "select": "#switch",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Ruler",
+    "select": "#ruler-btn",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Grid",
+    "select": "#grid-btn",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Minimap button",
+    "select": "#minimap-btn",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Zoom out",
+    "select": "#zoom-out",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Zoom in",
+    "select": "#zoom-in",
+    "control": true,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Zoom",
+    "select": "#zoom-label",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Tasks bar",
+    "select": "#tasks-bar",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Busy",
+    "select": "#busy",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Scan light",
+    "select": "#scan-light",
+    "control": false,
+    "box": false,
+    "parent": "Busy"
+   },
+   {
+    "name": "Busy's text",
+    "select": "#busy-text",
+    "control": false,
+    "box": false,
+    "parent": "Busy"
+   },
+   {
+    "name": "Busy's time",
+    "select": "#busy-time",
+    "control": false,
+    "box": false,
+    "parent": "Busy"
+   },
+   {
+    "name": "Image view",
+    "select": "#image-view",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Scroller",
+    "select": "#scroller",
+    "control": false,
+    "box": false,
+    "parent": "Image view"
+   },
+   {
+    "name": "Empty view's text",
+    "select": "#empty",
+    "control": false,
+    "box": false,
+    "parent": "Scroller"
+   },
+   {
+    "name": "Empty view's words",
+    "select": "#empty-text",
+    "control": false,
+    "box": false,
+    "parent": "Empty view's text"
+   },
+   {
+    "name": "Image",
+    "select": "#stage",
+    "control": false,
+    "box": false,
+    "parent": "Scroller"
+   },
+   {
+    "name": "Image's canvas",
+    "select": "#base",
+    "control": false,
+    "box": false,
+    "parent": "Image"
+   },
+   {
+    "name": "Minimap",
+    "select": "#minimap",
+    "control": false,
+    "box": false,
+    "parent": "Image view"
+   },
+   {
+    "name": "Hide the minimap",
+    "select": "#minimap-hide",
+    "control": true,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Fold the minimap",
+    "select": "#minimap-fold",
+    "control": true,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Minimap's picture",
+    "select": "#minimap-canvas",
+    "control": false,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Minimap's view",
+    "select": "#minimap-view",
+    "control": false,
+    "box": false,
+    "parent": "Minimap"
+   },
+   {
+    "name": "Folder view",
+    "select": "#folder-view",
+    "control": false,
+    "box": false,
+    "parent": "Main view"
+   },
+   {
+    "name": "Folder's title",
+    "select": "#folder-title",
+    "control": false,
+    "box": false,
+    "parent": "Folder view"
+   },
+   {
+    "name": "Grid or list",
+    "select": "#folder-layout",
+    "control": false,
+    "box": false,
+    "parent": "Folder view"
+   },
+   {
+    "name": "Folder's images",
+    "select": "#folder-items",
+    "control": false,
+    "box": false,
+    "parent": "Folder view"
+   },
+   {
+    "name": "Status bar",
+    "select": "#statusbar",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Breadcrumbs",
+    "select": "#sb-steps",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Submit GT crumb",
+    "select": "#sb-submit",
+    "control": false,
+    "box": false,
+    "parent": "Breadcrumbs"
+   },
+   {
+    "name": "Now",
+    "select": "#sb-now",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Spinner",
+    "select": "#spin",
+    "control": false,
+    "box": false,
+    "parent": "Now"
+   },
+   {
+    "name": "Status",
+    "select": "#status",
+    "control": false,
+    "box": false,
+    "parent": "Now"
+   },
+   {
+    "name": "Resources",
+    "select": "#sb-res",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Resources, unfolded",
+    "select": "#sb-res-items",
+    "control": false,
+    "box": false,
+    "parent": "Resources"
+   },
+   {
+    "name": "Storage",
+    "select": "#sb-disk",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "Memory",
+    "select": "#sb-memory",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "Network",
+    "select": "#sb-net",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "CPU",
+    "select": "#sb-cpu",
+    "control": true,
+    "box": false,
+    "parent": "Resources, unfolded"
+   },
+   {
+    "name": "Resources icon",
+    "select": "#sb-res-icon",
+    "control": true,
+    "box": false,
+    "parent": "Resources"
+   },
+   {
+    "name": "Online icon",
+    "select": "#sb-online",
+    "control": true,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Report a problem",
+    "select": "#sb-report",
+    "control": true,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "Version",
+    "select": "#sb-version",
+    "control": true,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "What's new",
+    "select": "#whats-new",
+    "control": false,
+    "box": false,
+    "parent": "Status bar"
+   },
+   {
+    "name": "What's new, open",
+    "select": "#whats-new-open",
+    "control": true,
+    "box": false,
+    "parent": "What's new"
+   },
+   {
+    "name": "What's new, close",
+    "select": "#whats-new-x",
+    "control": true,
+    "box": false,
+    "parent": "What's new"
+   },
+   {
+    "name": "Tooltip",
+    "select": "#tip",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Icons",
+    "select": "#icons",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Notice",
+    "select": "#notice",
+    "control": false,
+    "box": false,
+    "parent": null
+   },
+   {
+    "name": "Notice's text",
+    "select": "#notice-text",
+    "control": false,
+    "box": false,
+    "parent": "Notice"
+   },
+   {
+    "name": "OK",
+    "select": "#notice-ok",
+    "control": true,
+    "box": false,
+    "parent": "Notice"
+   }
+  ]
+ },
  "paths": [
   {
+   "study": "fixture",
    "root": "GT, signed out",
-   "study": {
-    "stage": "GT"
-   },
+   "stage": "GT",
    "signedIn": false,
    "role": "viewer",
    "actions": [
@@ -1457,10 +5204,9 @@
    ]
   },
   {
+   "study": "fixture",
    "root": "GT, Viewer",
-   "study": {
-    "stage": "GT"
-   },
+   "stage": "GT",
    "signedIn": true,
    "role": "viewer",
    "actions": [
@@ -1873,10 +5619,9 @@
    ]
   },
   {
+   "study": "fixture",
    "root": "GT, Tagger",
-   "study": {
-    "stage": "GT"
-   },
+   "stage": "GT",
    "signedIn": true,
    "role": "tagger",
    "actions": [
@@ -2424,10 +6169,9 @@
    ]
   },
   {
+   "study": "fixture",
    "root": "PostGT, Tagger",
-   "study": {
-    "stage": "PostGT"
-   },
+   "stage": "PostGT",
    "signedIn": true,
    "role": "tagger",
    "actions": [
@@ -2975,10 +6719,9 @@
    ]
   },
   {
+   "study": "fixture",
    "root": "PreGT, signed out",
-   "study": {
-    "stage": "PreGT"
-   },
+   "stage": "PreGT",
    "signedIn": false,
    "role": "viewer",
    "actions": [
@@ -3391,10 +7134,9 @@
    ]
   },
   {
+   "study": "fixture",
    "root": "PreGT, Tagger",
-   "study": {
-    "stage": "PreGT"
-   },
+   "stage": "PreGT",
    "signedIn": true,
    "role": "tagger",
    "actions": [
@@ -3942,10 +7684,9 @@
    ]
   },
   {
+   "study": "fixture",
    "root": "Published, Viewer",
-   "study": {
-    "stage": "Published"
-   },
+   "stage": "Published",
    "signedIn": true,
    "role": "viewer",
    "actions": [
@@ -4493,10 +8234,9 @@
    ]
   },
   {
+   "study": "fixture",
    "root": "GT, Tagger",
-   "study": {
-    "stage": "GT"
-   },
+   "stage": "GT",
    "signedIn": true,
    "role": "tagger",
    "actions": [
@@ -5044,10 +8784,9 @@
    ]
   },
   {
+   "study": "fixture",
    "root": "GT, Data Manager",
-   "study": {
-    "stage": "GT"
-   },
+   "stage": "GT",
    "signedIn": true,
    "role": "data",
    "actions": [
@@ -5730,10 +9469,9 @@
    ]
   },
   {
+   "study": "fixture",
    "root": "GT, Data Manager",
-   "study": {
-    "stage": "GT"
-   },
+   "stage": "GT",
    "signedIn": true,
    "role": "data",
    "actions": [
@@ -6416,10 +10154,9 @@
    ]
   },
   {
+   "study": "fixture",
    "root": "GT, Data Manager",
-   "study": {
-    "stage": "GT"
-   },
+   "stage": "GT",
    "signedIn": true,
    "role": "data",
    "actions": [
@@ -6940,6 +10677,2318 @@
       "Folder's images": "on",
       "Status bar": "on",
       "Breadcrumbs": "gone",
+      "Submit GT crumb": "gone",
+      "Now": "on",
+      "Spinner": "gone",
+      "Status": "on",
+      "Resources": "on",
+      "Resources, unfolded": "on",
+      "Storage": "on",
+      "Memory": "on",
+      "Network": "on",
+      "CPU": "on",
+      "Resources icon": "on",
+      "Online icon": "on",
+      "Report a problem": "on",
+      "Version": "on",
+      "What's new": "gone",
+      "What's new, open": "gone",
+      "What's new, close": "gone",
+      "Tooltip": "gone",
+      "Icons": "gone",
+      "Notice": "gone",
+      "Notice's text": "gone",
+      "OK": "gone"
+     }
+    }
+   ]
+  },
+  {
+   "study": "nor",
+   "root": "GT, signed out",
+   "stage": "GT",
+   "signedIn": false,
+   "role": "viewer",
+   "actions": [
+    "load"
+   ],
+   "states": [
+    {
+     "label": "Start",
+     "expect": {
+      "Header": "on",
+      "Logo": "on",
+      "Study switcher": "on",
+      "Study's icon": "on",
+      "Study's name": "on",
+      "Dark/light switch": "on",
+      "Role menu": "on",
+      "Role's name": "on",
+      "You (the user menu)": "on",
+      "Layout": "on",
+      "Data Management column": "gone",
+      "Fold the folders": "gone",
+      "Folders": "gone",
+      "Approve folders": "gone",
+      "Folder tree": "gone",
+      "Tree's message": "gone",
+      "Left bar": "on",
+      "Collapsed strip": "gone",
+      "Expand": "gone",
+      "Strip's marks": "gone",
+      "Left bar's head": "on",
+      "Collapse": "on",
+      "Image box": "on",
+      "File name and info": "on",
+      "Image's name": "on",
+      "Image's details": "gone",
+      "Channels": "gone",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
+      "Load": "on",
+      "Image selector": "on",
+      "Selector's face": "on",
+      "This computer": "gone",
+      "Unload": "gone",
+      "Google Drive button": "on",
+      "Image box's foot": "gone",
+      "Load Original": "gone",
+      "File chooser": "gone",
+      "Ground truth box": "gone",
+      "Ground truth offer": "gone",
+      "Load GT tagging": "gone",
+      "Ground truth summary": "gone",
+      "Selected Folder": "gone",
+      "Folder's name": "gone",
+      "Folder's sums": "gone",
+      "Update previews": "gone",
+      "Folder's message": "gone",
+      "Preprocessing": "gone",
+      "Edit Image": "gone",
+      "Edit Image box": "gone",
+      "Split": "gone",
+      "Split hint": "gone",
+      "Crop": "gone",
+      "Draw": "gone",
+      "Crop's size": "gone",
+      "Reset crop": "gone",
+      "Slices": "gone",
+      "Slices' text": "gone",
+      "Use suggested": "gone",
+      "Slices slider": "gone",
+      "Suggested band": "gone",
+      "First slice": "gone",
+      "Last slice": "gone",
+      "Channels kept": "gone",
+      "Imperfections": "gone",
+      "Mark": "gone",
+      "Imperfections' list": "gone",
+      "Save…": "gone",
+      "Done": "gone",
+      "Finder": "folded",
+      "Algorithm": "gone",
+      "About the algorithm": "gone",
+      "Settings": "gone",
+      "Run algorithm": "gone",
+      "Results": "folded",
+      "Ground truth tasks": "gone",
+      "Left bar gutter": "on",
+      "Main view": "on",
+      "Tasks/Items switch": "gone",
+      "Show menu": "on",
+      "Passed and failed tabs": "gone",
+      "Card menu": "gone",
+      "Ruler": "off",
+      "Grid": "off",
+      "Minimap button": "off",
+      "Zoom out": "off",
+      "Zoom in": "off",
+      "Zoom": "on",
+      "Tasks bar": "gone",
+      "Busy": "gone",
+      "Scan light": "gone",
+      "Busy's text": "gone",
+      "Busy's time": "gone",
+      "Lasso hint": "gone",
+      "Image view": "on",
+      "Scroller": "on",
+      "Empty view's text": "on",
+      "Empty view's words": "on",
+      "Image": "gone",
+      "Image's canvas": "gone",
+      "Minimap": "gone",
+      "Hide the minimap": "gone",
+      "Fold the minimap": "gone",
+      "Minimap's picture": "gone",
+      "Minimap's view": "gone",
+      "Selected item": "gone",
+      "Item view": "gone",
+      "Folder view": "gone",
+      "Folder's title": "gone",
+      "Grid or list": "gone",
+      "Folder's images": "gone",
+      "Status bar": "on",
+      "Breadcrumbs": "on",
+      "Submit GT crumb": "gone",
+      "Now": "on",
+      "Spinner": "gone",
+      "Status": "on",
+      "Resources": "on",
+      "Resources, unfolded": "on",
+      "Storage": "on",
+      "Memory": "on",
+      "Network": "on",
+      "CPU": "on",
+      "Resources icon": "on",
+      "Online icon": "on",
+      "Report a problem": "on",
+      "Version": "on",
+      "What's new": "gone",
+      "What's new, open": "gone",
+      "What's new, close": "gone",
+      "Tooltip": "gone",
+      "Icons": "gone",
+      "Notice": "gone",
+      "Notice's text": "gone",
+      "OK": "gone"
+     }
+    },
+    {
+     "label": "Load",
+     "expect": {
+      "Header": "on",
+      "Logo": "on",
+      "Study switcher": "on",
+      "Study's icon": "on",
+      "Study's name": "on",
+      "Dark/light switch": "on",
+      "Role menu": "on",
+      "Role's name": "on",
+      "You (the user menu)": "on",
+      "Layout": "on",
+      "Data Management column": "gone",
+      "Fold the folders": "gone",
+      "Folders": "gone",
+      "Approve folders": "gone",
+      "Folder tree": "gone",
+      "Tree's message": "gone",
+      "Left bar": "on",
+      "Collapsed strip": "gone",
+      "Expand": "gone",
+      "Strip's marks": "gone",
+      "Left bar's head": "on",
+      "Collapse": "on",
+      "Image box": "folded",
+      "File name and info": "gone",
+      "Image's name": "gone",
+      "Image's details": "gone",
+      "Channels": "gone",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
+      "Load": "gone",
+      "Image selector": "gone",
+      "Selector's face": "gone",
+      "This computer": "gone",
+      "Unload": "gone",
+      "Google Drive button": "gone",
+      "Image box's foot": "gone",
+      "Load Original": "gone",
+      "File chooser": "gone",
+      "Ground truth box": "gone",
+      "Ground truth offer": "gone",
+      "Load GT tagging": "gone",
+      "Ground truth summary": "gone",
+      "Selected Folder": "gone",
+      "Folder's name": "gone",
+      "Folder's sums": "gone",
+      "Update previews": "gone",
+      "Folder's message": "gone",
+      "Preprocessing": "gone",
+      "Edit Image": "gone",
+      "Edit Image box": "gone",
+      "Split": "gone",
+      "Split hint": "gone",
+      "Crop": "gone",
+      "Draw": "gone",
+      "Crop's size": "gone",
+      "Reset crop": "gone",
+      "Slices": "gone",
+      "Slices' text": "gone",
+      "Use suggested": "gone",
+      "Slices slider": "gone",
+      "Suggested band": "gone",
+      "First slice": "gone",
+      "Last slice": "gone",
+      "Channels kept": "gone",
+      "Imperfections": "gone",
+      "Mark": "gone",
+      "Imperfections' list": "gone",
+      "Save…": "gone",
+      "Done": "gone",
+      "Finder": "on",
+      "Algorithm": "on",
+      "About the algorithm": "on",
+      "Settings": "on",
+      "Run algorithm": "on",
+      "Results": "folded",
+      "Ground truth tasks": "gone",
+      "Left bar gutter": "on",
+      "Main view": "on",
+      "Tasks/Items switch": "gone",
+      "Show menu": "on",
+      "Passed and failed tabs": "gone",
+      "Card menu": "gone",
+      "Ruler": "on",
+      "Grid": "on",
+      "Minimap button": "on",
+      "Zoom out": "on",
+      "Zoom in": "on",
+      "Zoom": "on",
+      "Tasks bar": "gone",
+      "Busy": "gone",
+      "Scan light": "gone",
+      "Busy's text": "gone",
+      "Busy's time": "gone",
+      "Lasso hint": "gone",
+      "Image view": "on",
+      "Scroller": "on",
+      "Empty view's text": "gone",
+      "Empty view's words": "gone",
+      "Image": "on",
+      "Image's canvas": "on",
+      "Minimap": "gone",
+      "Hide the minimap": "gone",
+      "Fold the minimap": "gone",
+      "Minimap's picture": "gone",
+      "Minimap's view": "gone",
+      "Selected item": "gone",
+      "Item view": "gone",
+      "Folder view": "gone",
+      "Folder's title": "gone",
+      "Grid or list": "gone",
+      "Folder's images": "gone",
+      "Status bar": "on",
+      "Breadcrumbs": "on",
+      "Submit GT crumb": "gone",
+      "Now": "on",
+      "Spinner": "gone",
+      "Status": "on",
+      "Resources": "on",
+      "Resources, unfolded": "on",
+      "Storage": "on",
+      "Memory": "on",
+      "Network": "on",
+      "CPU": "on",
+      "Resources icon": "on",
+      "Online icon": "on",
+      "Report a problem": "on",
+      "Version": "on",
+      "What's new": "gone",
+      "What's new, open": "gone",
+      "What's new, close": "gone",
+      "Tooltip": "gone",
+      "Icons": "gone",
+      "Notice": "gone",
+      "Notice's text": "gone",
+      "OK": "gone"
+     }
+    }
+   ]
+  },
+  {
+   "study": "nor",
+   "root": "GT, Tagger",
+   "stage": "GT",
+   "signedIn": true,
+   "role": "tagger",
+   "actions": [
+    "load"
+   ],
+   "states": [
+    {
+     "label": "Start",
+     "expect": {
+      "Header": "on",
+      "Logo": "on",
+      "Study switcher": "on",
+      "Study's icon": "on",
+      "Study's name": "on",
+      "Dark/light switch": "on",
+      "Role menu": "on",
+      "Role's name": "on",
+      "You (the user menu)": "on",
+      "Layout": "on",
+      "Data Management column": "gone",
+      "Fold the folders": "gone",
+      "Folders": "gone",
+      "Approve folders": "gone",
+      "Folder tree": "gone",
+      "Tree's message": "gone",
+      "Left bar": "on",
+      "Collapsed strip": "gone",
+      "Expand": "gone",
+      "Strip's marks": "gone",
+      "Left bar's head": "on",
+      "Collapse": "on",
+      "Image box": "on",
+      "File name and info": "on",
+      "Image's name": "on",
+      "Image's details": "gone",
+      "Channels": "gone",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
+      "Load": "on",
+      "Image selector": "on",
+      "Selector's face": "on",
+      "This computer": "gone",
+      "Unload": "gone",
+      "Google Drive button": "on",
+      "Image box's foot": "gone",
+      "Load Original": "gone",
+      "File chooser": "gone",
+      "Ground truth box": "gone",
+      "Ground truth offer": "gone",
+      "Load GT tagging": "gone",
+      "Ground truth summary": "gone",
+      "Selected Folder": "gone",
+      "Folder's name": "gone",
+      "Folder's sums": "gone",
+      "Update previews": "gone",
+      "Folder's message": "gone",
+      "Preprocessing": "gone",
+      "Edit Image": "gone",
+      "Edit Image box": "gone",
+      "Split": "gone",
+      "Split hint": "gone",
+      "Crop": "gone",
+      "Draw": "gone",
+      "Crop's size": "gone",
+      "Reset crop": "gone",
+      "Slices": "gone",
+      "Slices' text": "gone",
+      "Use suggested": "gone",
+      "Slices slider": "gone",
+      "Suggested band": "gone",
+      "First slice": "gone",
+      "Last slice": "gone",
+      "Channels kept": "gone",
+      "Imperfections": "gone",
+      "Mark": "gone",
+      "Imperfections' list": "gone",
+      "Save…": "gone",
+      "Done": "gone",
+      "Finder": "folded",
+      "Algorithm": "gone",
+      "About the algorithm": "gone",
+      "Settings": "gone",
+      "Run algorithm": "gone",
+      "Results": "gone",
+      "Ground truth tasks": "folded",
+      "Left bar gutter": "on",
+      "Main view": "on",
+      "Tasks/Items switch": "gone",
+      "Show menu": "on",
+      "Passed and failed tabs": "gone",
+      "Card menu": "gone",
+      "Ruler": "off",
+      "Grid": "off",
+      "Minimap button": "off",
+      "Zoom out": "off",
+      "Zoom in": "off",
+      "Zoom": "on",
+      "Tasks bar": "gone",
+      "Busy": "gone",
+      "Scan light": "gone",
+      "Busy's text": "gone",
+      "Busy's time": "gone",
+      "Lasso hint": "gone",
+      "Image view": "on",
+      "Scroller": "on",
+      "Empty view's text": "on",
+      "Empty view's words": "on",
+      "Image": "gone",
+      "Image's canvas": "gone",
+      "Minimap": "gone",
+      "Hide the minimap": "gone",
+      "Fold the minimap": "gone",
+      "Minimap's picture": "gone",
+      "Minimap's view": "gone",
+      "Selected item": "gone",
+      "Item view": "gone",
+      "Folder view": "gone",
+      "Folder's title": "gone",
+      "Grid or list": "gone",
+      "Folder's images": "gone",
+      "Status bar": "on",
+      "Breadcrumbs": "on",
+      "Submit GT crumb": "gone",
+      "Now": "on",
+      "Spinner": "gone",
+      "Status": "on",
+      "Resources": "on",
+      "Resources, unfolded": "on",
+      "Storage": "on",
+      "Memory": "on",
+      "Network": "on",
+      "CPU": "on",
+      "Resources icon": "on",
+      "Online icon": "on",
+      "Report a problem": "on",
+      "Version": "on",
+      "What's new": "gone",
+      "What's new, open": "gone",
+      "What's new, close": "gone",
+      "Tooltip": "gone",
+      "Icons": "gone",
+      "Notice": "gone",
+      "Notice's text": "gone",
+      "OK": "gone"
+     }
+    },
+    {
+     "label": "Load",
+     "expect": {
+      "Header": "on",
+      "Logo": "on",
+      "Study switcher": "on",
+      "Study's icon": "on",
+      "Study's name": "on",
+      "Dark/light switch": "on",
+      "Role menu": "on",
+      "Role's name": "on",
+      "You (the user menu)": "on",
+      "Layout": "on",
+      "Data Management column": "gone",
+      "Fold the folders": "gone",
+      "Folders": "gone",
+      "Approve folders": "gone",
+      "Folder tree": "gone",
+      "Tree's message": "gone",
+      "Left bar": "on",
+      "Collapsed strip": "gone",
+      "Expand": "gone",
+      "Strip's marks": "gone",
+      "Left bar's head": "on",
+      "Collapse": "on",
+      "Image box": "folded",
+      "File name and info": "gone",
+      "Image's name": "gone",
+      "Image's details": "gone",
+      "Channels": "gone",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
+      "Load": "gone",
+      "Image selector": "gone",
+      "Selector's face": "gone",
+      "This computer": "gone",
+      "Unload": "gone",
+      "Google Drive button": "gone",
+      "Image box's foot": "gone",
+      "Load Original": "gone",
+      "File chooser": "gone",
+      "Ground truth box": "gone",
+      "Ground truth offer": "gone",
+      "Load GT tagging": "gone",
+      "Ground truth summary": "gone",
+      "Selected Folder": "gone",
+      "Folder's name": "gone",
+      "Folder's sums": "gone",
+      "Update previews": "gone",
+      "Folder's message": "gone",
+      "Preprocessing": "gone",
+      "Edit Image": "gone",
+      "Edit Image box": "gone",
+      "Split": "gone",
+      "Split hint": "gone",
+      "Crop": "gone",
+      "Draw": "gone",
+      "Crop's size": "gone",
+      "Reset crop": "gone",
+      "Slices": "gone",
+      "Slices' text": "gone",
+      "Use suggested": "gone",
+      "Slices slider": "gone",
+      "Suggested band": "gone",
+      "First slice": "gone",
+      "Last slice": "gone",
+      "Channels kept": "gone",
+      "Imperfections": "gone",
+      "Mark": "gone",
+      "Imperfections' list": "gone",
+      "Save…": "gone",
+      "Done": "gone",
+      "Finder": "on",
+      "Algorithm": "on",
+      "About the algorithm": "on",
+      "Settings": "on",
+      "Run algorithm": "on",
+      "Results": "gone",
+      "Ground truth tasks": "folded",
+      "Left bar gutter": "on",
+      "Main view": "on",
+      "Tasks/Items switch": "gone",
+      "Show menu": "on",
+      "Passed and failed tabs": "gone",
+      "Card menu": "gone",
+      "Ruler": "on",
+      "Grid": "on",
+      "Minimap button": "on",
+      "Zoom out": "on",
+      "Zoom in": "on",
+      "Zoom": "on",
+      "Tasks bar": "gone",
+      "Busy": "gone",
+      "Scan light": "gone",
+      "Busy's text": "gone",
+      "Busy's time": "gone",
+      "Lasso hint": "gone",
+      "Image view": "on",
+      "Scroller": "on",
+      "Empty view's text": "gone",
+      "Empty view's words": "gone",
+      "Image": "on",
+      "Image's canvas": "on",
+      "Minimap": "gone",
+      "Hide the minimap": "gone",
+      "Fold the minimap": "gone",
+      "Minimap's picture": "gone",
+      "Minimap's view": "gone",
+      "Selected item": "gone",
+      "Item view": "gone",
+      "Folder view": "gone",
+      "Folder's title": "gone",
+      "Grid or list": "gone",
+      "Folder's images": "gone",
+      "Status bar": "on",
+      "Breadcrumbs": "on",
+      "Submit GT crumb": "gone",
+      "Now": "on",
+      "Spinner": "gone",
+      "Status": "on",
+      "Resources": "on",
+      "Resources, unfolded": "on",
+      "Storage": "on",
+      "Memory": "on",
+      "Network": "on",
+      "CPU": "on",
+      "Resources icon": "on",
+      "Online icon": "on",
+      "Report a problem": "on",
+      "Version": "on",
+      "What's new": "gone",
+      "What's new, open": "gone",
+      "What's new, close": "gone",
+      "Tooltip": "gone",
+      "Icons": "gone",
+      "Notice": "on",
+      "Notice's text": "on",
+      "OK": "on"
+     }
+    }
+   ]
+  },
+  {
+   "study": "shelves",
+   "root": "GT, Viewer",
+   "stage": "GT",
+   "signedIn": true,
+   "role": "viewer",
+   "actions": [
+    "load"
+   ],
+   "states": [
+    {
+     "label": "Start",
+     "expect": {
+      "Header": "on",
+      "Logo": "on",
+      "Study switcher": "on",
+      "Study's icon": "on",
+      "Study's name": "on",
+      "Dark/light switch": "on",
+      "Role menu": "on",
+      "Role's name": "on",
+      "You (the user menu)": "on",
+      "Layout": "on",
+      "Data Management column": "gone",
+      "Fold the folders": "gone",
+      "Folders": "gone",
+      "Approve folders": "gone",
+      "Folder tree": "gone",
+      "Tree's message": "gone",
+      "Left bar": "on",
+      "Collapsed strip": "gone",
+      "Expand": "gone",
+      "Strip's marks": "gone",
+      "Left bar's head": "on",
+      "Collapse": "on",
+      "Image box": "on",
+      "File name and info": "on",
+      "Image's name": "on",
+      "Image's details": "gone",
+      "Channels": "gone",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
+      "Load": "on",
+      "Image selector": "on",
+      "Selector's face": "on",
+      "This computer": "gone",
+      "Unload": "gone",
+      "Google Drive button": "on",
+      "Image box's foot": "gone",
+      "Load Original": "gone",
+      "File chooser": "gone",
+      "Ground truth box": "gone",
+      "Ground truth offer": "gone",
+      "Load GT tagging": "gone",
+      "Ground truth summary": "gone",
+      "Selected Folder": "gone",
+      "Folder's name": "gone",
+      "Folder's sums": "gone",
+      "Update previews": "gone",
+      "Folder's message": "gone",
+      "Preprocessing": "gone",
+      "Edit Image": "gone",
+      "Edit Image box": "gone",
+      "Split": "gone",
+      "Split hint": "gone",
+      "Crop": "gone",
+      "Draw": "gone",
+      "Crop's size": "gone",
+      "Reset crop": "gone",
+      "Slices": "gone",
+      "Slices' text": "gone",
+      "Use suggested": "gone",
+      "Slices slider": "gone",
+      "Suggested band": "gone",
+      "First slice": "gone",
+      "Last slice": "gone",
+      "Channels kept": "gone",
+      "Imperfections": "gone",
+      "Mark": "gone",
+      "Imperfections' list": "gone",
+      "Save…": "gone",
+      "Done": "gone",
+      "Books": "folded",
+      "Reader": "gone",
+      "Find books": "gone",
+      "Read titles": "gone",
+      "Books found": "gone",
+      "Ground truth": "gone",
+      "Tasks' progress": "gone",
+      "Tasks": "gone",
+      "Submit ground truth": "gone",
+      "Titles": "on",
+      "Titles' list": "on",
+      "Download for the matcher": "off",
+      "Left bar gutter": "on",
+      "Main view": "on",
+      "Tasks/Items switch": "gone",
+      "Ruler": "off",
+      "Grid": "off",
+      "Minimap button": "off",
+      "Zoom out": "off",
+      "Zoom in": "off",
+      "Zoom": "on",
+      "Tasks bar": "gone",
+      "Busy": "gone",
+      "Scan light": "gone",
+      "Busy's text": "gone",
+      "Busy's time": "gone",
+      "Image view": "on",
+      "Scroller": "on",
+      "Empty view's text": "on",
+      "Empty view's words": "on",
+      "Image": "gone",
+      "Image's canvas": "gone",
+      "Minimap": "gone",
+      "Hide the minimap": "gone",
+      "Fold the minimap": "gone",
+      "Minimap's picture": "gone",
+      "Minimap's view": "gone",
+      "Drawing hint": "gone",
+      "Folder view": "gone",
+      "Folder's title": "gone",
+      "Grid or list": "gone",
+      "Folder's images": "gone",
+      "Status bar": "on",
+      "Breadcrumbs": "on",
+      "Submit GT crumb": "gone",
+      "Now": "on",
+      "Spinner": "gone",
+      "Status": "on",
+      "Resources": "on",
+      "Resources, unfolded": "on",
+      "Storage": "on",
+      "Memory": "on",
+      "Network": "on",
+      "CPU": "on",
+      "Resources icon": "on",
+      "Online icon": "on",
+      "Report a problem": "on",
+      "Version": "on",
+      "What's new": "gone",
+      "What's new, open": "gone",
+      "What's new, close": "gone",
+      "Tooltip": "gone",
+      "Icons": "gone",
+      "Notice": "gone",
+      "Notice's text": "gone",
+      "OK": "gone"
+     }
+    },
+    {
+     "label": "Load",
+     "expect": {
+      "Header": "on",
+      "Logo": "on",
+      "Study switcher": "on",
+      "Study's icon": "on",
+      "Study's name": "on",
+      "Dark/light switch": "on",
+      "Role menu": "on",
+      "Role's name": "on",
+      "You (the user menu)": "on",
+      "Layout": "on",
+      "Data Management column": "gone",
+      "Fold the folders": "gone",
+      "Folders": "gone",
+      "Approve folders": "gone",
+      "Folder tree": "gone",
+      "Tree's message": "gone",
+      "Left bar": "on",
+      "Collapsed strip": "gone",
+      "Expand": "gone",
+      "Strip's marks": "gone",
+      "Left bar's head": "on",
+      "Collapse": "on",
+      "Image box": "folded",
+      "File name and info": "gone",
+      "Image's name": "gone",
+      "Image's details": "gone",
+      "Channels": "gone",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
+      "Load": "gone",
+      "Image selector": "gone",
+      "Selector's face": "gone",
+      "This computer": "gone",
+      "Unload": "gone",
+      "Google Drive button": "gone",
+      "Image box's foot": "gone",
+      "Load Original": "gone",
+      "File chooser": "gone",
+      "Ground truth box": "gone",
+      "Ground truth offer": "gone",
+      "Load GT tagging": "gone",
+      "Ground truth summary": "gone",
+      "Selected Folder": "gone",
+      "Folder's name": "gone",
+      "Folder's sums": "gone",
+      "Update previews": "gone",
+      "Folder's message": "gone",
+      "Preprocessing": "gone",
+      "Edit Image": "gone",
+      "Edit Image box": "gone",
+      "Split": "gone",
+      "Split hint": "gone",
+      "Crop": "gone",
+      "Draw": "gone",
+      "Crop's size": "gone",
+      "Reset crop": "gone",
+      "Slices": "gone",
+      "Slices' text": "gone",
+      "Use suggested": "gone",
+      "Slices slider": "gone",
+      "Suggested band": "gone",
+      "First slice": "gone",
+      "Last slice": "gone",
+      "Channels kept": "gone",
+      "Imperfections": "gone",
+      "Mark": "gone",
+      "Imperfections' list": "gone",
+      "Save…": "gone",
+      "Done": "gone",
+      "Books": "on",
+      "Reader": "on",
+      "Find books": "on",
+      "Read titles": "off",
+      "Books found": "on",
+      "Ground truth": "gone",
+      "Tasks' progress": "gone",
+      "Tasks": "gone",
+      "Submit ground truth": "gone",
+      "Titles": "on",
+      "Titles' list": "on",
+      "Download for the matcher": "off",
+      "Left bar gutter": "on",
+      "Main view": "on",
+      "Tasks/Items switch": "gone",
+      "Ruler": "on",
+      "Grid": "on",
+      "Minimap button": "on",
+      "Zoom out": "on",
+      "Zoom in": "on",
+      "Zoom": "on",
+      "Tasks bar": "gone",
+      "Busy": "gone",
+      "Scan light": "gone",
+      "Busy's text": "gone",
+      "Busy's time": "gone",
+      "Image view": "on",
+      "Scroller": "on",
+      "Empty view's text": "gone",
+      "Empty view's words": "gone",
+      "Image": "on",
+      "Image's canvas": "on",
+      "Minimap": "gone",
+      "Hide the minimap": "gone",
+      "Fold the minimap": "gone",
+      "Minimap's picture": "gone",
+      "Minimap's view": "gone",
+      "Drawing hint": "gone",
+      "Folder view": "gone",
+      "Folder's title": "gone",
+      "Grid or list": "gone",
+      "Folder's images": "gone",
+      "Status bar": "on",
+      "Breadcrumbs": "on",
+      "Submit GT crumb": "gone",
+      "Now": "on",
+      "Spinner": "gone",
+      "Status": "on",
+      "Resources": "on",
+      "Resources, unfolded": "on",
+      "Storage": "on",
+      "Memory": "on",
+      "Network": "on",
+      "CPU": "on",
+      "Resources icon": "on",
+      "Online icon": "on",
+      "Report a problem": "on",
+      "Version": "on",
+      "What's new": "gone",
+      "What's new, open": "gone",
+      "What's new, close": "gone",
+      "Tooltip": "gone",
+      "Icons": "gone",
+      "Notice": "gone",
+      "Notice's text": "gone",
+      "OK": "gone"
+     }
+    }
+   ]
+  },
+  {
+   "study": "shelves",
+   "root": "GT, Tagger",
+   "stage": "GT",
+   "signedIn": true,
+   "role": "tagger",
+   "actions": [
+    "load"
+   ],
+   "states": [
+    {
+     "label": "Start",
+     "expect": {
+      "Header": "on",
+      "Logo": "on",
+      "Study switcher": "on",
+      "Study's icon": "on",
+      "Study's name": "on",
+      "Dark/light switch": "on",
+      "Role menu": "on",
+      "Role's name": "on",
+      "You (the user menu)": "on",
+      "Layout": "on",
+      "Data Management column": "gone",
+      "Fold the folders": "gone",
+      "Folders": "gone",
+      "Approve folders": "gone",
+      "Folder tree": "gone",
+      "Tree's message": "gone",
+      "Left bar": "on",
+      "Collapsed strip": "gone",
+      "Expand": "gone",
+      "Strip's marks": "gone",
+      "Left bar's head": "on",
+      "Collapse": "on",
+      "Image box": "on",
+      "File name and info": "on",
+      "Image's name": "on",
+      "Image's details": "gone",
+      "Channels": "gone",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
+      "Load": "on",
+      "Image selector": "on",
+      "Selector's face": "on",
+      "This computer": "gone",
+      "Unload": "gone",
+      "Google Drive button": "on",
+      "Image box's foot": "gone",
+      "Load Original": "gone",
+      "File chooser": "gone",
+      "Ground truth box": "gone",
+      "Ground truth offer": "gone",
+      "Load GT tagging": "gone",
+      "Ground truth summary": "gone",
+      "Selected Folder": "gone",
+      "Folder's name": "gone",
+      "Folder's sums": "gone",
+      "Update previews": "gone",
+      "Folder's message": "gone",
+      "Preprocessing": "gone",
+      "Edit Image": "gone",
+      "Edit Image box": "gone",
+      "Split": "gone",
+      "Split hint": "gone",
+      "Crop": "gone",
+      "Draw": "gone",
+      "Crop's size": "gone",
+      "Reset crop": "gone",
+      "Slices": "gone",
+      "Slices' text": "gone",
+      "Use suggested": "gone",
+      "Slices slider": "gone",
+      "Suggested band": "gone",
+      "First slice": "gone",
+      "Last slice": "gone",
+      "Channels kept": "gone",
+      "Imperfections": "gone",
+      "Mark": "gone",
+      "Imperfections' list": "gone",
+      "Save…": "gone",
+      "Done": "gone",
+      "Books": "folded",
+      "Reader": "gone",
+      "Find books": "gone",
+      "Read titles": "gone",
+      "Books found": "gone",
+      "Ground truth": "on",
+      "Tasks' progress": "on",
+      "Tasks": "on",
+      "Submit ground truth": "off",
+      "Titles": "gone",
+      "Titles' list": "gone",
+      "Download for the matcher": "gone",
+      "Left bar gutter": "on",
+      "Main view": "on",
+      "Tasks/Items switch": "gone",
+      "Ruler": "off",
+      "Grid": "off",
+      "Minimap button": "off",
+      "Zoom out": "off",
+      "Zoom in": "off",
+      "Zoom": "on",
+      "Tasks bar": "gone",
+      "Busy": "gone",
+      "Scan light": "gone",
+      "Busy's text": "gone",
+      "Busy's time": "gone",
+      "Image view": "on",
+      "Scroller": "on",
+      "Empty view's text": "on",
+      "Empty view's words": "on",
+      "Image": "gone",
+      "Image's canvas": "gone",
+      "Minimap": "gone",
+      "Hide the minimap": "gone",
+      "Fold the minimap": "gone",
+      "Minimap's picture": "gone",
+      "Minimap's view": "gone",
+      "Drawing hint": "gone",
+      "Folder view": "gone",
+      "Folder's title": "gone",
+      "Grid or list": "gone",
+      "Folder's images": "gone",
+      "Status bar": "on",
+      "Breadcrumbs": "on",
+      "Submit GT crumb": "gone",
+      "Now": "on",
+      "Spinner": "gone",
+      "Status": "on",
+      "Resources": "on",
+      "Resources, unfolded": "on",
+      "Storage": "on",
+      "Memory": "on",
+      "Network": "on",
+      "CPU": "on",
+      "Resources icon": "on",
+      "Online icon": "on",
+      "Report a problem": "on",
+      "Version": "on",
+      "What's new": "gone",
+      "What's new, open": "gone",
+      "What's new, close": "gone",
+      "Tooltip": "gone",
+      "Icons": "gone",
+      "Notice": "gone",
+      "Notice's text": "gone",
+      "OK": "gone"
+     }
+    },
+    {
+     "label": "Load",
+     "expect": {
+      "Header": "on",
+      "Logo": "on",
+      "Study switcher": "on",
+      "Study's icon": "on",
+      "Study's name": "on",
+      "Dark/light switch": "on",
+      "Role menu": "on",
+      "Role's name": "on",
+      "You (the user menu)": "on",
+      "Layout": "on",
+      "Data Management column": "gone",
+      "Fold the folders": "gone",
+      "Folders": "gone",
+      "Approve folders": "gone",
+      "Folder tree": "gone",
+      "Tree's message": "gone",
+      "Left bar": "on",
+      "Collapsed strip": "gone",
+      "Expand": "gone",
+      "Strip's marks": "gone",
+      "Left bar's head": "on",
+      "Collapse": "on",
+      "Image box": "folded",
+      "File name and info": "gone",
+      "Image's name": "gone",
+      "Image's details": "gone",
+      "Channels": "gone",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
+      "Load": "gone",
+      "Image selector": "gone",
+      "Selector's face": "gone",
+      "This computer": "gone",
+      "Unload": "gone",
+      "Google Drive button": "gone",
+      "Image box's foot": "gone",
+      "Load Original": "gone",
+      "File chooser": "gone",
+      "Ground truth box": "gone",
+      "Ground truth offer": "gone",
+      "Load GT tagging": "gone",
+      "Ground truth summary": "gone",
+      "Selected Folder": "gone",
+      "Folder's name": "gone",
+      "Folder's sums": "gone",
+      "Update previews": "gone",
+      "Folder's message": "gone",
+      "Preprocessing": "gone",
+      "Edit Image": "gone",
+      "Edit Image box": "gone",
+      "Split": "gone",
+      "Split hint": "gone",
+      "Crop": "gone",
+      "Draw": "gone",
+      "Crop's size": "gone",
+      "Reset crop": "gone",
+      "Slices": "gone",
+      "Slices' text": "gone",
+      "Use suggested": "gone",
+      "Slices slider": "gone",
+      "Suggested band": "gone",
+      "First slice": "gone",
+      "Last slice": "gone",
+      "Channels kept": "gone",
+      "Imperfections": "gone",
+      "Mark": "gone",
+      "Imperfections' list": "gone",
+      "Save…": "gone",
+      "Done": "gone",
+      "Books": "on",
+      "Reader": "on",
+      "Find books": "on",
+      "Read titles": "off",
+      "Books found": "on",
+      "Ground truth": "on",
+      "Tasks' progress": "on",
+      "Tasks": "on",
+      "Submit ground truth": "off",
+      "Titles": "gone",
+      "Titles' list": "gone",
+      "Download for the matcher": "gone",
+      "Left bar gutter": "on",
+      "Main view": "on",
+      "Tasks/Items switch": "gone",
+      "Ruler": "on",
+      "Grid": "on",
+      "Minimap button": "on",
+      "Zoom out": "on",
+      "Zoom in": "on",
+      "Zoom": "on",
+      "Tasks bar": "gone",
+      "Busy": "gone",
+      "Scan light": "gone",
+      "Busy's text": "gone",
+      "Busy's time": "gone",
+      "Image view": "on",
+      "Scroller": "on",
+      "Empty view's text": "gone",
+      "Empty view's words": "gone",
+      "Image": "on",
+      "Image's canvas": "on",
+      "Minimap": "gone",
+      "Hide the minimap": "gone",
+      "Fold the minimap": "gone",
+      "Minimap's picture": "gone",
+      "Minimap's view": "gone",
+      "Drawing hint": "gone",
+      "Folder view": "gone",
+      "Folder's title": "gone",
+      "Grid or list": "gone",
+      "Folder's images": "gone",
+      "Status bar": "on",
+      "Breadcrumbs": "on",
+      "Submit GT crumb": "gone",
+      "Now": "on",
+      "Spinner": "gone",
+      "Status": "on",
+      "Resources": "on",
+      "Resources, unfolded": "on",
+      "Storage": "on",
+      "Memory": "on",
+      "Network": "on",
+      "CPU": "on",
+      "Resources icon": "on",
+      "Online icon": "on",
+      "Report a problem": "on",
+      "Version": "on",
+      "What's new": "gone",
+      "What's new, open": "gone",
+      "What's new, close": "gone",
+      "Tooltip": "gone",
+      "Icons": "gone",
+      "Notice": "on",
+      "Notice's text": "on",
+      "OK": "on"
+     }
+    }
+   ]
+  },
+  {
+   "study": "vascular",
+   "root": "GT, signed out",
+   "stage": "GT",
+   "signedIn": false,
+   "role": "viewer",
+   "actions": [
+    "load"
+   ],
+   "states": [
+    {
+     "label": "Start",
+     "expect": {
+      "Header": "on",
+      "Logo": "on",
+      "Study switcher": "on",
+      "Study's icon": "on",
+      "Study's name": "on",
+      "Dark/light switch": "on",
+      "Role menu": "on",
+      "Role's name": "on",
+      "You (the user menu)": "on",
+      "Layout": "on",
+      "Data Management column": "gone",
+      "Fold the folders": "gone",
+      "Folders": "gone",
+      "Approve folders": "gone",
+      "Folder tree": "gone",
+      "Tree's message": "gone",
+      "Left bar": "on",
+      "Collapsed strip": "gone",
+      "Expand": "gone",
+      "Strip's marks": "gone",
+      "Left bar's head": "on",
+      "Collapse": "on",
+      "Image box": "on",
+      "File name and info": "on",
+      "Image's name": "on",
+      "Image's details": "gone",
+      "Channels": "gone",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
+      "Load": "on",
+      "Image selector": "on",
+      "Selector's face": "on",
+      "This computer": "gone",
+      "Unload": "gone",
+      "Google Drive button": "on",
+      "Image box's foot": "gone",
+      "Load Original": "gone",
+      "File chooser": "gone",
+      "Ground truth box": "gone",
+      "Ground truth offer": "gone",
+      "Load GT tagging": "gone",
+      "Ground truth summary": "gone",
+      "Selected Folder": "gone",
+      "Folder's name": "gone",
+      "Folder's sums": "gone",
+      "Update previews": "gone",
+      "Folder's message": "gone",
+      "Preprocessing": "gone",
+      "Edit Image": "gone",
+      "Edit Image box": "gone",
+      "Split": "gone",
+      "Split hint": "gone",
+      "Crop": "gone",
+      "Draw": "gone",
+      "Crop's size": "gone",
+      "Reset crop": "gone",
+      "Slices": "gone",
+      "Slices' text": "gone",
+      "Use suggested": "gone",
+      "Slices slider": "gone",
+      "Suggested band": "gone",
+      "First slice": "gone",
+      "Last slice": "gone",
+      "Channels kept": "gone",
+      "Imperfections": "gone",
+      "Mark": "gone",
+      "Imperfections' list": "gone",
+      "Save…": "gone",
+      "Done": "gone",
+      "Processing": "folded",
+      "Algorithm": "gone",
+      "About the algorithm": "gone",
+      "Load a model": "gone",
+      "Run algorithm": "gone",
+      "The model's controls": "gone",
+      "Ground truth tasks": "gone",
+      "Review": "gone",
+      "Left bar gutter": "on",
+      "Main view": "on",
+      "Tasks/Items switch": "off",
+      "What to show": "on",
+      "Colour by depth": "on",
+      "Vessel widths": "on",
+      "Ruler": "off",
+      "Grid": "off",
+      "Minimap button": "off",
+      "Zoom out": "off",
+      "Zoom in": "off",
+      "Zoom": "on",
+      "Tasks bar": "gone",
+      "Busy": "gone",
+      "Scan light": "gone",
+      "Busy's text": "gone",
+      "Busy's time": "gone",
+      "Image view": "on",
+      "Scroller": "on",
+      "Empty view's text": "on",
+      "Empty view's words": "on",
+      "Image": "gone",
+      "Image's canvas": "gone",
+      "Minimap": "gone",
+      "Hide the minimap": "gone",
+      "Fold the minimap": "gone",
+      "Minimap's picture": "gone",
+      "Minimap's view": "gone",
+      "Item view": "gone",
+      "Folder view": "gone",
+      "Folder's title": "gone",
+      "Grid or list": "gone",
+      "Folder's images": "gone",
+      "Status bar": "on",
+      "Breadcrumbs": "on",
+      "Submit GT crumb": "gone",
+      "Now": "on",
+      "Spinner": "gone",
+      "Status": "on",
+      "Resources": "on",
+      "Resources, unfolded": "on",
+      "Storage": "on",
+      "Memory": "on",
+      "Network": "on",
+      "CPU": "on",
+      "Resources icon": "on",
+      "Online icon": "on",
+      "Report a problem": "on",
+      "Version": "on",
+      "What's new": "gone",
+      "What's new, open": "gone",
+      "What's new, close": "gone",
+      "Tooltip": "gone",
+      "Icons": "gone",
+      "Notice": "gone",
+      "Notice's text": "gone",
+      "OK": "gone"
+     }
+    },
+    {
+     "label": "Load",
+     "expect": {
+      "Header": "on",
+      "Logo": "on",
+      "Study switcher": "on",
+      "Study's icon": "on",
+      "Study's name": "on",
+      "Dark/light switch": "on",
+      "Role menu": "on",
+      "Role's name": "on",
+      "You (the user menu)": "on",
+      "Layout": "on",
+      "Data Management column": "gone",
+      "Fold the folders": "gone",
+      "Folders": "gone",
+      "Approve folders": "gone",
+      "Folder tree": "gone",
+      "Tree's message": "gone",
+      "Left bar": "on",
+      "Collapsed strip": "gone",
+      "Expand": "gone",
+      "Strip's marks": "gone",
+      "Left bar's head": "on",
+      "Collapse": "on",
+      "Image box": "folded",
+      "File name and info": "gone",
+      "Image's name": "gone",
+      "Image's details": "gone",
+      "Channels": "gone",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
+      "Load": "gone",
+      "Image selector": "gone",
+      "Selector's face": "gone",
+      "This computer": "gone",
+      "Unload": "gone",
+      "Google Drive button": "gone",
+      "Image box's foot": "gone",
+      "Load Original": "gone",
+      "File chooser": "gone",
+      "Ground truth box": "gone",
+      "Ground truth offer": "gone",
+      "Load GT tagging": "gone",
+      "Ground truth summary": "gone",
+      "Selected Folder": "gone",
+      "Folder's name": "gone",
+      "Folder's sums": "gone",
+      "Update previews": "gone",
+      "Folder's message": "gone",
+      "Preprocessing": "gone",
+      "Edit Image": "gone",
+      "Edit Image box": "gone",
+      "Split": "gone",
+      "Split hint": "gone",
+      "Crop": "gone",
+      "Draw": "gone",
+      "Crop's size": "gone",
+      "Reset crop": "gone",
+      "Slices": "gone",
+      "Slices' text": "gone",
+      "Use suggested": "gone",
+      "Slices slider": "gone",
+      "Suggested band": "gone",
+      "First slice": "gone",
+      "Last slice": "gone",
+      "Channels kept": "gone",
+      "Imperfections": "gone",
+      "Mark": "gone",
+      "Imperfections' list": "gone",
+      "Save…": "gone",
+      "Done": "gone",
+      "Processing": "on",
+      "Algorithm": "on",
+      "About the algorithm": "on",
+      "Load a model": "on",
+      "Run algorithm": "on",
+      "The model's controls": "gone",
+      "Ground truth tasks": "gone",
+      "Review": "gone",
+      "Left bar gutter": "on",
+      "Main view": "on",
+      "Tasks/Items switch": "off",
+      "What to show": "on",
+      "Colour by depth": "on",
+      "Vessel widths": "on",
+      "Ruler": "on",
+      "Grid": "on",
+      "Minimap button": "on",
+      "Zoom out": "on",
+      "Zoom in": "on",
+      "Zoom": "on",
+      "Tasks bar": "gone",
+      "Busy": "gone",
+      "Scan light": "gone",
+      "Busy's text": "gone",
+      "Busy's time": "gone",
+      "Image view": "on",
+      "Scroller": "on",
+      "Empty view's text": "gone",
+      "Empty view's words": "gone",
+      "Image": "on",
+      "Image's canvas": "on",
+      "Minimap": "gone",
+      "Hide the minimap": "gone",
+      "Fold the minimap": "gone",
+      "Minimap's picture": "gone",
+      "Minimap's view": "gone",
+      "Item view": "gone",
+      "Folder view": "gone",
+      "Folder's title": "gone",
+      "Grid or list": "gone",
+      "Folder's images": "gone",
+      "Status bar": "on",
+      "Breadcrumbs": "on",
+      "Submit GT crumb": "gone",
+      "Now": "on",
+      "Spinner": "gone",
+      "Status": "on",
+      "Resources": "on",
+      "Resources, unfolded": "on",
+      "Storage": "on",
+      "Memory": "on",
+      "Network": "on",
+      "CPU": "on",
+      "Resources icon": "on",
+      "Online icon": "on",
+      "Report a problem": "on",
+      "Version": "on",
+      "What's new": "gone",
+      "What's new, open": "gone",
+      "What's new, close": "gone",
+      "Tooltip": "gone",
+      "Icons": "gone",
+      "Notice": "gone",
+      "Notice's text": "gone",
+      "OK": "gone"
+     }
+    }
+   ]
+  },
+  {
+   "study": "vascular",
+   "root": "GT, Tagger",
+   "stage": "GT",
+   "signedIn": true,
+   "role": "tagger",
+   "actions": [
+    "load"
+   ],
+   "states": [
+    {
+     "label": "Start",
+     "expect": {
+      "Header": "on",
+      "Logo": "on",
+      "Study switcher": "on",
+      "Study's icon": "on",
+      "Study's name": "on",
+      "Dark/light switch": "on",
+      "Role menu": "on",
+      "Role's name": "on",
+      "You (the user menu)": "on",
+      "Layout": "on",
+      "Data Management column": "gone",
+      "Fold the folders": "gone",
+      "Folders": "gone",
+      "Approve folders": "gone",
+      "Folder tree": "gone",
+      "Tree's message": "gone",
+      "Left bar": "on",
+      "Collapsed strip": "gone",
+      "Expand": "gone",
+      "Strip's marks": "gone",
+      "Left bar's head": "on",
+      "Collapse": "on",
+      "Image box": "on",
+      "File name and info": "on",
+      "Image's name": "on",
+      "Image's details": "gone",
+      "Channels": "gone",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
+      "Load": "on",
+      "Image selector": "on",
+      "Selector's face": "on",
+      "This computer": "gone",
+      "Unload": "gone",
+      "Google Drive button": "on",
+      "Image box's foot": "gone",
+      "Load Original": "gone",
+      "File chooser": "gone",
+      "Ground truth box": "gone",
+      "Ground truth offer": "gone",
+      "Load GT tagging": "gone",
+      "Ground truth summary": "gone",
+      "Selected Folder": "gone",
+      "Folder's name": "gone",
+      "Folder's sums": "gone",
+      "Update previews": "gone",
+      "Folder's message": "gone",
+      "Preprocessing": "gone",
+      "Edit Image": "gone",
+      "Edit Image box": "gone",
+      "Split": "gone",
+      "Split hint": "gone",
+      "Crop": "gone",
+      "Draw": "gone",
+      "Crop's size": "gone",
+      "Reset crop": "gone",
+      "Slices": "gone",
+      "Slices' text": "gone",
+      "Use suggested": "gone",
+      "Slices slider": "gone",
+      "Suggested band": "gone",
+      "First slice": "gone",
+      "Last slice": "gone",
+      "Channels kept": "gone",
+      "Imperfections": "gone",
+      "Mark": "gone",
+      "Imperfections' list": "gone",
+      "Save…": "gone",
+      "Done": "gone",
+      "Processing": "folded",
+      "Algorithm": "gone",
+      "About the algorithm": "gone",
+      "Load a model": "gone",
+      "Run algorithm": "gone",
+      "The model's controls": "gone",
+      "Ground truth tasks": "gone",
+      "Review": "gone",
+      "Left bar gutter": "on",
+      "Main view": "on",
+      "Tasks/Items switch": "gone",
+      "What to show": "on",
+      "Colour by depth": "on",
+      "Vessel widths": "on",
+      "Ruler": "off",
+      "Grid": "off",
+      "Minimap button": "off",
+      "Zoom out": "off",
+      "Zoom in": "off",
+      "Zoom": "on",
+      "Tasks bar": "gone",
+      "Busy": "gone",
+      "Scan light": "gone",
+      "Busy's text": "gone",
+      "Busy's time": "gone",
+      "Image view": "on",
+      "Scroller": "on",
+      "Empty view's text": "on",
+      "Empty view's words": "on",
+      "Image": "gone",
+      "Image's canvas": "gone",
+      "Minimap": "gone",
+      "Hide the minimap": "gone",
+      "Fold the minimap": "gone",
+      "Minimap's picture": "gone",
+      "Minimap's view": "gone",
+      "Item view": "gone",
+      "Folder view": "gone",
+      "Folder's title": "gone",
+      "Grid or list": "gone",
+      "Folder's images": "gone",
+      "Status bar": "on",
+      "Breadcrumbs": "on",
+      "Submit GT crumb": "gone",
+      "Now": "on",
+      "Spinner": "gone",
+      "Status": "on",
+      "Resources": "on",
+      "Resources, unfolded": "on",
+      "Storage": "on",
+      "Memory": "on",
+      "Network": "on",
+      "CPU": "on",
+      "Resources icon": "on",
+      "Online icon": "on",
+      "Report a problem": "on",
+      "Version": "on",
+      "What's new": "gone",
+      "What's new, open": "gone",
+      "What's new, close": "gone",
+      "Tooltip": "gone",
+      "Icons": "gone",
+      "Notice": "gone",
+      "Notice's text": "gone",
+      "OK": "gone"
+     }
+    },
+    {
+     "label": "Load",
+     "expect": {
+      "Header": "on",
+      "Logo": "on",
+      "Study switcher": "on",
+      "Study's icon": "on",
+      "Study's name": "on",
+      "Dark/light switch": "on",
+      "Role menu": "on",
+      "Role's name": "on",
+      "You (the user menu)": "on",
+      "Layout": "on",
+      "Data Management column": "gone",
+      "Fold the folders": "gone",
+      "Folders": "gone",
+      "Approve folders": "gone",
+      "Folder tree": "gone",
+      "Tree's message": "gone",
+      "Left bar": "on",
+      "Collapsed strip": "gone",
+      "Expand": "gone",
+      "Strip's marks": "gone",
+      "Left bar's head": "on",
+      "Collapse": "on",
+      "Image box": "folded",
+      "File name and info": "gone",
+      "Image's name": "gone",
+      "Image's details": "gone",
+      "Channels": "gone",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
+      "Load": "gone",
+      "Image selector": "gone",
+      "Selector's face": "gone",
+      "This computer": "gone",
+      "Unload": "gone",
+      "Google Drive button": "gone",
+      "Image box's foot": "gone",
+      "Load Original": "gone",
+      "File chooser": "gone",
+      "Ground truth box": "gone",
+      "Ground truth offer": "gone",
+      "Load GT tagging": "gone",
+      "Ground truth summary": "gone",
+      "Selected Folder": "gone",
+      "Folder's name": "gone",
+      "Folder's sums": "gone",
+      "Update previews": "gone",
+      "Folder's message": "gone",
+      "Preprocessing": "gone",
+      "Edit Image": "gone",
+      "Edit Image box": "gone",
+      "Split": "gone",
+      "Split hint": "gone",
+      "Crop": "gone",
+      "Draw": "gone",
+      "Crop's size": "gone",
+      "Reset crop": "gone",
+      "Slices": "gone",
+      "Slices' text": "gone",
+      "Use suggested": "gone",
+      "Slices slider": "gone",
+      "Suggested band": "gone",
+      "First slice": "gone",
+      "Last slice": "gone",
+      "Channels kept": "gone",
+      "Imperfections": "gone",
+      "Mark": "gone",
+      "Imperfections' list": "gone",
+      "Save…": "gone",
+      "Done": "gone",
+      "Processing": "on",
+      "Algorithm": "on",
+      "About the algorithm": "on",
+      "Load a model": "on",
+      "Run algorithm": "on",
+      "The model's controls": "gone",
+      "Ground truth tasks": "gone",
+      "Review": "gone",
+      "Left bar gutter": "on",
+      "Main view": "on",
+      "Tasks/Items switch": "gone",
+      "What to show": "on",
+      "Colour by depth": "on",
+      "Vessel widths": "on",
+      "Ruler": "on",
+      "Grid": "on",
+      "Minimap button": "on",
+      "Zoom out": "on",
+      "Zoom in": "on",
+      "Zoom": "on",
+      "Tasks bar": "gone",
+      "Busy": "gone",
+      "Scan light": "gone",
+      "Busy's text": "gone",
+      "Busy's time": "gone",
+      "Image view": "on",
+      "Scroller": "on",
+      "Empty view's text": "gone",
+      "Empty view's words": "gone",
+      "Image": "on",
+      "Image's canvas": "on",
+      "Minimap": "gone",
+      "Hide the minimap": "gone",
+      "Fold the minimap": "gone",
+      "Minimap's picture": "gone",
+      "Minimap's view": "gone",
+      "Item view": "gone",
+      "Folder view": "gone",
+      "Folder's title": "gone",
+      "Grid or list": "gone",
+      "Folder's images": "gone",
+      "Status bar": "on",
+      "Breadcrumbs": "on",
+      "Submit GT crumb": "gone",
+      "Now": "on",
+      "Spinner": "gone",
+      "Status": "on",
+      "Resources": "on",
+      "Resources, unfolded": "on",
+      "Storage": "on",
+      "Memory": "on",
+      "Network": "on",
+      "CPU": "on",
+      "Resources icon": "on",
+      "Online icon": "on",
+      "Report a problem": "on",
+      "Version": "on",
+      "What's new": "gone",
+      "What's new, open": "gone",
+      "What's new, close": "gone",
+      "Tooltip": "gone",
+      "Icons": "gone",
+      "Notice": "on",
+      "Notice's text": "on",
+      "OK": "on"
+     }
+    }
+   ]
+  },
+  {
+   "study": "viewer",
+   "root": "signed out",
+   "stage": null,
+   "signedIn": false,
+   "role": "viewer",
+   "actions": [
+    "load"
+   ],
+   "states": [
+    {
+     "label": "Start",
+     "expect": {
+      "Header": "on",
+      "Logo": "on",
+      "Study switcher": "on",
+      "Study's icon": "on",
+      "Study's name": "on",
+      "Dark/light switch": "on",
+      "Role menu": "on",
+      "Role's name": "on",
+      "You (the user menu)": "on",
+      "Layout": "on",
+      "Data Management column": "gone",
+      "Fold the folders": "gone",
+      "Folders": "gone",
+      "Approve folders": "gone",
+      "Folder tree": "gone",
+      "Tree's message": "gone",
+      "Left bar": "on",
+      "Collapsed strip": "gone",
+      "Expand": "gone",
+      "Strip's marks": "gone",
+      "Left bar's head": "on",
+      "Collapse": "on",
+      "Image box": "on",
+      "File name and info": "on",
+      "Image's name": "on",
+      "Image's details": "gone",
+      "Channels": "gone",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
+      "Load": "on",
+      "Image selector": "on",
+      "Selector's face": "on",
+      "This computer": "on",
+      "Unload": "gone",
+      "Google Drive button": "on",
+      "Image box's foot": "gone",
+      "Load Original": "gone",
+      "File chooser": "gone",
+      "Ground truth box": "gone",
+      "Ground truth offer": "gone",
+      "Load GT tagging": "gone",
+      "Ground truth summary": "gone",
+      "Selected Folder": "gone",
+      "Folder's name": "gone",
+      "Folder's sums": "gone",
+      "Update previews": "gone",
+      "Folder's message": "gone",
+      "Preprocessing": "gone",
+      "Edit Image": "gone",
+      "Edit Image box": "gone",
+      "Split": "gone",
+      "Split hint": "gone",
+      "Crop": "gone",
+      "Draw": "gone",
+      "Crop's size": "gone",
+      "Reset crop": "gone",
+      "Slices": "gone",
+      "Slices' text": "gone",
+      "Use suggested": "gone",
+      "Slices slider": "gone",
+      "Suggested band": "gone",
+      "First slice": "gone",
+      "Last slice": "gone",
+      "Channels kept": "gone",
+      "Imperfections": "gone",
+      "Mark": "gone",
+      "Imperfections' list": "gone",
+      "Save…": "gone",
+      "Done": "gone",
+      "Left bar gutter": "on",
+      "Main view": "on",
+      "Tasks/Items switch": "gone",
+      "Ruler": "off",
+      "Grid": "off",
+      "Minimap button": "off",
+      "Zoom out": "off",
+      "Zoom in": "off",
+      "Zoom": "on",
+      "Tasks bar": "gone",
+      "Busy": "gone",
+      "Scan light": "gone",
+      "Busy's text": "gone",
+      "Busy's time": "gone",
+      "Image view": "on",
+      "Scroller": "on",
+      "Empty view's text": "on",
+      "Empty view's words": "on",
+      "Image": "gone",
+      "Image's canvas": "gone",
+      "Minimap": "gone",
+      "Hide the minimap": "gone",
+      "Fold the minimap": "gone",
+      "Minimap's picture": "gone",
+      "Minimap's view": "gone",
+      "Folder view": "gone",
+      "Folder's title": "gone",
+      "Grid or list": "gone",
+      "Folder's images": "gone",
+      "Status bar": "on",
+      "Breadcrumbs": "on",
+      "Submit GT crumb": "gone",
+      "Now": "on",
+      "Spinner": "gone",
+      "Status": "on",
+      "Resources": "on",
+      "Resources, unfolded": "on",
+      "Storage": "on",
+      "Memory": "on",
+      "Network": "on",
+      "CPU": "on",
+      "Resources icon": "on",
+      "Online icon": "on",
+      "Report a problem": "on",
+      "Version": "on",
+      "What's new": "gone",
+      "What's new, open": "gone",
+      "What's new, close": "gone",
+      "Tooltip": "gone",
+      "Icons": "gone",
+      "Notice": "gone",
+      "Notice's text": "gone",
+      "OK": "gone"
+     }
+    },
+    {
+     "label": "Load",
+     "expect": {
+      "Header": "on",
+      "Logo": "on",
+      "Study switcher": "on",
+      "Study's icon": "on",
+      "Study's name": "on",
+      "Dark/light switch": "on",
+      "Role menu": "on",
+      "Role's name": "on",
+      "You (the user menu)": "on",
+      "Layout": "on",
+      "Data Management column": "gone",
+      "Fold the folders": "gone",
+      "Folders": "gone",
+      "Approve folders": "gone",
+      "Folder tree": "gone",
+      "Tree's message": "gone",
+      "Left bar": "on",
+      "Collapsed strip": "gone",
+      "Expand": "gone",
+      "Strip's marks": "gone",
+      "Left bar's head": "on",
+      "Collapse": "on",
+      "Image box": "on",
+      "File name and info": "on",
+      "Image's name": "on",
+      "Image's details": "gone",
+      "Channels": "on",
+      "Channel row": "on",
+      "Show/hide checkbox": "on",
+      "Black and white points": "on",
+      "Colour picker": "on",
+      "Load": "on",
+      "Image selector": "on",
+      "Selector's face": "on",
+      "This computer": "on",
+      "Unload": "on",
+      "Google Drive button": "on",
+      "Image box's foot": "gone",
+      "Load Original": "gone",
+      "File chooser": "gone",
+      "Ground truth box": "gone",
+      "Ground truth offer": "gone",
+      "Load GT tagging": "gone",
+      "Ground truth summary": "gone",
+      "Selected Folder": "gone",
+      "Folder's name": "gone",
+      "Folder's sums": "gone",
+      "Update previews": "gone",
+      "Folder's message": "gone",
+      "Preprocessing": "gone",
+      "Edit Image": "gone",
+      "Edit Image box": "gone",
+      "Split": "gone",
+      "Split hint": "gone",
+      "Crop": "gone",
+      "Draw": "gone",
+      "Crop's size": "gone",
+      "Reset crop": "gone",
+      "Slices": "gone",
+      "Slices' text": "gone",
+      "Use suggested": "gone",
+      "Slices slider": "gone",
+      "Suggested band": "gone",
+      "First slice": "gone",
+      "Last slice": "gone",
+      "Channels kept": "gone",
+      "Imperfections": "gone",
+      "Mark": "gone",
+      "Imperfections' list": "gone",
+      "Save…": "gone",
+      "Done": "gone",
+      "Left bar gutter": "on",
+      "Main view": "on",
+      "Tasks/Items switch": "gone",
+      "Ruler": "on",
+      "Grid": "on",
+      "Minimap button": "on",
+      "Zoom out": "on",
+      "Zoom in": "on",
+      "Zoom": "on",
+      "Tasks bar": "gone",
+      "Busy": "gone",
+      "Scan light": "gone",
+      "Busy's text": "gone",
+      "Busy's time": "gone",
+      "Image view": "on",
+      "Scroller": "on",
+      "Empty view's text": "gone",
+      "Empty view's words": "gone",
+      "Image": "on",
+      "Image's canvas": "on",
+      "Minimap": "gone",
+      "Hide the minimap": "gone",
+      "Fold the minimap": "gone",
+      "Minimap's picture": "gone",
+      "Minimap's view": "gone",
+      "Folder view": "gone",
+      "Folder's title": "gone",
+      "Grid or list": "gone",
+      "Folder's images": "gone",
+      "Status bar": "on",
+      "Breadcrumbs": "on",
+      "Submit GT crumb": "gone",
+      "Now": "on",
+      "Spinner": "gone",
+      "Status": "on",
+      "Resources": "on",
+      "Resources, unfolded": "on",
+      "Storage": "on",
+      "Memory": "on",
+      "Network": "on",
+      "CPU": "on",
+      "Resources icon": "on",
+      "Online icon": "on",
+      "Report a problem": "on",
+      "Version": "on",
+      "What's new": "gone",
+      "What's new, open": "gone",
+      "What's new, close": "gone",
+      "Tooltip": "gone",
+      "Icons": "gone",
+      "Notice": "gone",
+      "Notice's text": "gone",
+      "OK": "gone"
+     }
+    }
+   ]
+  },
+  {
+   "study": "viewer",
+   "root": "signed in",
+   "stage": null,
+   "signedIn": true,
+   "role": "viewer",
+   "actions": [
+    "load"
+   ],
+   "states": [
+    {
+     "label": "Start",
+     "expect": {
+      "Header": "on",
+      "Logo": "on",
+      "Study switcher": "on",
+      "Study's icon": "on",
+      "Study's name": "on",
+      "Dark/light switch": "on",
+      "Role menu": "on",
+      "Role's name": "on",
+      "You (the user menu)": "on",
+      "Layout": "on",
+      "Data Management column": "gone",
+      "Fold the folders": "gone",
+      "Folders": "gone",
+      "Approve folders": "gone",
+      "Folder tree": "gone",
+      "Tree's message": "gone",
+      "Left bar": "on",
+      "Collapsed strip": "gone",
+      "Expand": "gone",
+      "Strip's marks": "gone",
+      "Left bar's head": "on",
+      "Collapse": "on",
+      "Image box": "on",
+      "File name and info": "on",
+      "Image's name": "on",
+      "Image's details": "gone",
+      "Channels": "gone",
+      "Channel row": "gone",
+      "Show/hide checkbox": "gone",
+      "Black and white points": "gone",
+      "Colour picker": "gone",
+      "Load": "on",
+      "Image selector": "on",
+      "Selector's face": "on",
+      "This computer": "on",
+      "Unload": "gone",
+      "Google Drive button": "on",
+      "Image box's foot": "gone",
+      "Load Original": "gone",
+      "File chooser": "gone",
+      "Ground truth box": "gone",
+      "Ground truth offer": "gone",
+      "Load GT tagging": "gone",
+      "Ground truth summary": "gone",
+      "Selected Folder": "gone",
+      "Folder's name": "gone",
+      "Folder's sums": "gone",
+      "Update previews": "gone",
+      "Folder's message": "gone",
+      "Preprocessing": "gone",
+      "Edit Image": "gone",
+      "Edit Image box": "gone",
+      "Split": "gone",
+      "Split hint": "gone",
+      "Crop": "gone",
+      "Draw": "gone",
+      "Crop's size": "gone",
+      "Reset crop": "gone",
+      "Slices": "gone",
+      "Slices' text": "gone",
+      "Use suggested": "gone",
+      "Slices slider": "gone",
+      "Suggested band": "gone",
+      "First slice": "gone",
+      "Last slice": "gone",
+      "Channels kept": "gone",
+      "Imperfections": "gone",
+      "Mark": "gone",
+      "Imperfections' list": "gone",
+      "Save…": "gone",
+      "Done": "gone",
+      "Left bar gutter": "on",
+      "Main view": "on",
+      "Tasks/Items switch": "gone",
+      "Ruler": "off",
+      "Grid": "off",
+      "Minimap button": "off",
+      "Zoom out": "off",
+      "Zoom in": "off",
+      "Zoom": "on",
+      "Tasks bar": "gone",
+      "Busy": "gone",
+      "Scan light": "gone",
+      "Busy's text": "gone",
+      "Busy's time": "gone",
+      "Image view": "on",
+      "Scroller": "on",
+      "Empty view's text": "on",
+      "Empty view's words": "on",
+      "Image": "gone",
+      "Image's canvas": "gone",
+      "Minimap": "gone",
+      "Hide the minimap": "gone",
+      "Fold the minimap": "gone",
+      "Minimap's picture": "gone",
+      "Minimap's view": "gone",
+      "Folder view": "gone",
+      "Folder's title": "gone",
+      "Grid or list": "gone",
+      "Folder's images": "gone",
+      "Status bar": "on",
+      "Breadcrumbs": "on",
+      "Submit GT crumb": "gone",
+      "Now": "on",
+      "Spinner": "gone",
+      "Status": "on",
+      "Resources": "on",
+      "Resources, unfolded": "on",
+      "Storage": "on",
+      "Memory": "on",
+      "Network": "on",
+      "CPU": "on",
+      "Resources icon": "on",
+      "Online icon": "on",
+      "Report a problem": "on",
+      "Version": "on",
+      "What's new": "gone",
+      "What's new, open": "gone",
+      "What's new, close": "gone",
+      "Tooltip": "gone",
+      "Icons": "gone",
+      "Notice": "gone",
+      "Notice's text": "gone",
+      "OK": "gone"
+     }
+    },
+    {
+     "label": "Load",
+     "expect": {
+      "Header": "on",
+      "Logo": "on",
+      "Study switcher": "on",
+      "Study's icon": "on",
+      "Study's name": "on",
+      "Dark/light switch": "on",
+      "Role menu": "on",
+      "Role's name": "on",
+      "You (the user menu)": "on",
+      "Layout": "on",
+      "Data Management column": "gone",
+      "Fold the folders": "gone",
+      "Folders": "gone",
+      "Approve folders": "gone",
+      "Folder tree": "gone",
+      "Tree's message": "gone",
+      "Left bar": "on",
+      "Collapsed strip": "gone",
+      "Expand": "gone",
+      "Strip's marks": "gone",
+      "Left bar's head": "on",
+      "Collapse": "on",
+      "Image box": "on",
+      "File name and info": "on",
+      "Image's name": "on",
+      "Image's details": "gone",
+      "Channels": "on",
+      "Channel row": "on",
+      "Show/hide checkbox": "on",
+      "Black and white points": "on",
+      "Colour picker": "on",
+      "Load": "on",
+      "Image selector": "on",
+      "Selector's face": "on",
+      "This computer": "on",
+      "Unload": "on",
+      "Google Drive button": "on",
+      "Image box's foot": "gone",
+      "Load Original": "gone",
+      "File chooser": "gone",
+      "Ground truth box": "gone",
+      "Ground truth offer": "gone",
+      "Load GT tagging": "gone",
+      "Ground truth summary": "gone",
+      "Selected Folder": "gone",
+      "Folder's name": "gone",
+      "Folder's sums": "gone",
+      "Update previews": "gone",
+      "Folder's message": "gone",
+      "Preprocessing": "gone",
+      "Edit Image": "gone",
+      "Edit Image box": "gone",
+      "Split": "gone",
+      "Split hint": "gone",
+      "Crop": "gone",
+      "Draw": "gone",
+      "Crop's size": "gone",
+      "Reset crop": "gone",
+      "Slices": "gone",
+      "Slices' text": "gone",
+      "Use suggested": "gone",
+      "Slices slider": "gone",
+      "Suggested band": "gone",
+      "First slice": "gone",
+      "Last slice": "gone",
+      "Channels kept": "gone",
+      "Imperfections": "gone",
+      "Mark": "gone",
+      "Imperfections' list": "gone",
+      "Save…": "gone",
+      "Done": "gone",
+      "Left bar gutter": "on",
+      "Main view": "on",
+      "Tasks/Items switch": "gone",
+      "Ruler": "on",
+      "Grid": "on",
+      "Minimap button": "on",
+      "Zoom out": "on",
+      "Zoom in": "on",
+      "Zoom": "on",
+      "Tasks bar": "gone",
+      "Busy": "gone",
+      "Scan light": "gone",
+      "Busy's text": "gone",
+      "Busy's time": "gone",
+      "Image view": "on",
+      "Scroller": "on",
+      "Empty view's text": "gone",
+      "Empty view's words": "gone",
+      "Image": "on",
+      "Image's canvas": "on",
+      "Minimap": "gone",
+      "Hide the minimap": "gone",
+      "Fold the minimap": "gone",
+      "Minimap's picture": "gone",
+      "Minimap's view": "gone",
+      "Folder view": "gone",
+      "Folder's title": "gone",
+      "Grid or list": "gone",
+      "Folder's images": "gone",
+      "Status bar": "on",
+      "Breadcrumbs": "on",
       "Submit GT crumb": "gone",
       "Now": "on",
       "Spinner": "gone",

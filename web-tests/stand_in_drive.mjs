@@ -2,7 +2,8 @@
 // files of a directory on disk, and its subdirectories as subfolders) served through the Drive API as a public folder;
 // the signed-in user's token approved for ROOT alone, and for the folders and files the page itself makes; the
 // fixture study given the user as its data manager and ROOT as its folder; a stand-in worker answering ANSWERS
-// (tests/test_study_runs.py), which keeps the last file it was handed as self.lastOpen. Exits 2 when it cannot run.
+// (tests/test_study_runs.py), which keeps the last file it was handed as self.lastOpen, and opens a study's image as
+// ANSWERS' studies[id] says where it says so. Exits 2 when it cannot run.
 import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
 import { execSync } from "node:child_process";
@@ -54,9 +55,15 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
   const STAND_IN = `
   const A = await (await fetch("answers.json")).json();
   const bytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-  postMessage({ type: "ready", info: A.ready.fixture, heap: 0, files: 0 });
+  let id = new URL(self.location.href).searchParams.get("study");
+  postMessage({ type: "ready", info: A.ready[id], heap: 0, files: 0 });
   onmessage = ({ data: m }) => {
-    if (m.type === "open") { self.lastOpen = { name: m.name, bytes: new Uint8Array(m.bytes) }; const images = bytes(A.images); postMessage({ type: "opened", meta: A.opened, images }, [images.buffer]); }
+    if (m.type === "study") { id = m.id; postMessage({ type: "ready", info: A.ready[id], heap: 0, files: 0 }); }
+    else if (m.type === "open") {
+      self.lastOpen = { name: m.name, bytes: new Uint8Array(m.bytes) };
+      const own = A.studies?.[id], images = bytes(own ? own.images : A.images);
+      postMessage({ type: "opened", meta: own ? own.opened : A.opened, images }, [images.buffer]);
+    }
     else if (m.type === "call") { const b = bytes(A.mask); postMessage({ type: "result", action: m.action, meta: A.count, bytes: b, echo: m.echo }, [b.buffer]); }
   };`;
   const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in", clientId: "123456-stand.apps.googleusercontent.com" } };`;
@@ -150,13 +157,15 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
   const SIGNED_IN = { user: { name: "Tester", email: EMAIL, picture: null }, token: "stand-in-token", until: Date.now() + 3600e3,
     scopes: "openid email profile https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file" };
   // scopes: what the signed-in user's token may do, in place of SIGNED_IN's; email: who is signed in, in place of the
-  // study's data manager; seed: browser keys kept before the page opens; study: what the fixture's study.json says
-  // otherwise for this page (its stage, say); prepare(ctx): routes of a driver's own, taking precedence over these
-  async function open(signedIn, { scopes, email, seed = {}, study, prepare } = {}) {
+  // study's data manager; seed: browser keys kept before the page opens; id: the study opened, the fixture unless
+  // named; study: what its study.json says otherwise for this page (its stage, say); prepare(ctx): routes of a
+  // driver's own, taking precedence over these
+  async function open(signedIn, { scopes, email, seed = {}, id = "fixture", study, prepare } = {}) {
     const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
     await ctx.route("https://www.googleapis.com/**", google);
     await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
-    if (study) await ctx.route("**/studies/fixture/study.json", (r) => r.fulfill({ json: { ...fixture, ...study } }));
+    const own = id === "fixture" ? fixture : JSON.parse(fs.readFileSync(path.join(repo, "studies", id, "study.json"), "utf8"));
+    if (study) await ctx.route(`**/studies/${id}/study.json`, (r) => r.fulfill({ json: { ...own, ...study } }));
     if (prepare) await prepare(ctx);
     // the welcome popup answered before, and remembered (req/shell/account/welcome)
     await ctx.addInitScript(([who, seed]) => {
@@ -168,7 +177,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
     const page = await ctx.newPage();
     page.on("pageerror", async (e) => { if (cutShort(e)) return; console.error("page error: " + e.message); await done(1); });
     page.setDefaultTimeout(10000);
-    await page.goto(origin + "/web/fixture");
+    await page.goto(origin + "/web/" + id);
     await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
     return page;
   }

@@ -17,6 +17,7 @@ spec.loader.exec_module(shell_states)
 
 # an invented page: a box holding a button, beside a panel
 PAGE = {
+    'study': 'acme',
     'vars': {'stage': ['GT'], 'signedIn': [True], 'role': ['viewer', 'tagger'], 'image': ['none', 'local'],
              'counted': [False, True], 'view': ['image'], 'selected': ['nothing']},
     'roots': {'acme': {'stage': 'GT', 'signedIn': True, 'role': 'viewer'}},
@@ -33,8 +34,12 @@ PAGE = {
 }
 
 
-def expected(rules):
-    expect, matrix, unused = shell_states.build(rules)
+# the study the invented page's paths open, as its study.json and its states.json would say
+ACME = {'study': {'title': 'Acme', 'files': {'from': ['drive']}, 'phases': [{'key': 'count'}]}}
+
+
+def expected(rules, studies=None):
+    expect, matrix, unused = shell_states.build(rules, studies or {'acme': ACME})
     return [[s['expect'] for s in p['states']] for p in expect['paths']][0], matrix, unused
 
 
@@ -50,7 +55,7 @@ def test_each_state_is_one_more_action_and_each_element_shows_as_its_rules_and_i
     assert (states[3]['Box'], states[3]['Button']) == ('gone', 'gone')
     # an undecided case is not checked; a tentative one is, and the matrix marks it
     assert states[2]['Panel'] is None and states[3]['Panel'] == 'on'
-    assert '| Panel | ● | ● | ? | ●* |' in matrix and '- acme: Load · Count · → Tagger, Count: Panel' in matrix
+    assert '| Panel | ● | ● | ? | ●* |' in matrix and '- Acme · acme: Load · Count · → Tagger, Count: Panel' in matrix
 
 
 def test_a_case_no_state_reaches_is_reported():
@@ -74,7 +79,7 @@ def test_rules_the_generator_cannot_read_are_refused(break_it, says):
     rules = copy.deepcopy(PAGE)
     break_it(rules)
     with pytest.raises(AssertionError, match=re.escape(says)):
-        shell_states.build(rules)
+        shell_states.build(rules, {'acme': ACME})
 
 
 def test_the_generated_files_are_up_to_date():
@@ -113,8 +118,15 @@ def page_ids(*files):
 
 
 def tree():
-    with open(shell_states.RULES, encoding='utf-8') as f:
-        return list(shell_states.nodes(json.load(f)['tree']))
+    """The shell's own tree, no study grafted in."""
+    return list(shell_states.nodes(shell_states.load()[0]['tree']))
+
+
+def study_trees():
+    """{id: [(element, parent, depth)]} for each study the paths walk, its elements grafted in."""
+    rules, studies = shell_states.load()
+    expect, _, _ = shell_states.build(rules, studies)
+    return {i: [(e, next((x for x in els if x['name'] == e['parent']), None)) for e in els] for i, els in expect['elements'].items()}, studies
 
 
 def lead(select):
@@ -123,15 +135,21 @@ def lead(select):
 
 
 def test_every_element_the_tree_names_is_on_the_page():
-    """By the id its selector starts from; one the page makes as it runs, from its parent's."""
-    p = page_ids('web/index.html', 'studies/fixture/web/fixture.html')
-    ids = set(p.state) | set(p.opened) | p.tags
+    """By the id its selector starts from, on the shell's page or the panels of the study the tree is walked on; one
+    the page makes as it runs, from its parent's."""
+    trees, studies = study_trees()
+    made = {n['name'] for n, _, _ in shell_states.nodes(shell_states.load()[0]['tree']) if n.get('made')}
+    made |= {n['name'] for st in studies.values() for g in st.get('grafts', []) for n, _, _ in shell_states.nodes(g['tree']) if n.get('made')}
     checked = 0
-    for n, parent, _ in tree():
-        owner = parent if n.get('made') else n
-        assert lead(owner['select']) in ids, f"{n['name']}: no #{lead(owner['select'])} on the page"
-        checked += 1
-    assert checked >= 35
+    for i, els in trees.items():
+        panels = studies[i]['study']['web'].get('panels')
+        p = page_ids('web/index.html', *([f'studies/{i}/{panels}'] if panels else []))
+        ids = set(p.state) | set(p.opened) | p.tags
+        for e, parent in els:
+            owner = parent if e['name'] in made else e
+            assert lead(owner['select']) in ids, f"{i}: {e['name']}: no #{lead(owner['select'])} on the page"
+            checked += 1
+    assert len(trees) >= 5 and checked >= 5 * 100
 
 
 def test_every_shell_element_is_in_the_tree():
@@ -141,3 +159,53 @@ def test_every_shell_element_is_in_the_tree():
     left = [i for i in p.state if i not in held]
     assert len(p.state) > 100
     assert not left, f'not in dev/requirements/shell-states.json: {left}'
+
+
+def test_the_shell_tree_holds_only_the_shells_page():
+    """req/checks/spec-layout: what a study's own panels hold is given by that study, in its states.json."""
+    with open(shell_states.RULES, encoding='utf-8') as f:
+        own = list(shell_states.nodes(json.load(f)['tree']))
+    p = page_ids('web/index.html')
+    ids = set(p.state) | set(p.opened) | p.tags
+    assert len(own) >= 80, f'the shell tree has {len(own)} elements: the sweep is not reading it'
+    strays = [n['name'] for n, parent, _ in own if lead((parent if n.get('made') else n)['select']) not in ids]
+    assert not strays, f'not the shell\'s, in dev/requirements/shell-states.json: {strays}'
+
+
+@pytest.mark.parametrize('study, panels, says', [
+    ({'files': {'from': ['local', 'drive']}, 'phases': []}, '', {'fromComputer': True, 'hasSteps': False, 'itemView': False, 'itemViewing': False}),
+    ({'files': {'from': ['drive']}, 'phases': [{}]}, '<div id="items-view" hidden>', {'fromComputer': False, 'hasSteps': True, 'itemView': True, 'itemViewing': False}),
+    ({'files': {'from': ['drive']}, 'phases': [{}]}, '<div id="items-view" data-viewing hidden>', {'itemView': True, 'itemViewing': True}),
+    ({'files': {'from': ['drive']}, 'phases': [{}]}, '<div id="items-view" data-viewing data-shelved hidden>', {'itemView': False, 'itemViewing': True}),
+    ({'files': {'from': ['drive']}, 'phases': [{}]}, '<div id="items-view-more" data-shelved></div><div id="items-view">', {'itemView': True}),
+])
+def test_what_a_study_says_of_itself_is_read_from_its_descriptor_and_panels(study, panels, says):
+    got = shell_states.facts({'study': study, 'panels': panels})
+    assert {k: got[k] for k in says} == says
+
+
+def test_each_study_walks_the_shells_tree_with_its_own_grafts():
+    """A study's paths open it, on the shell's tree with its elements alone grafted in; the shell's paths open the
+    study it names."""
+    studies = {'acme': ACME, 'other': {**ACME, 'study': {**ACME['study'], 'title': 'Other'},
+               'grafts': [{'under': 'Box', 'tree': [{'name': 'Own', 'select': '#own', 'req': 'req/checks/shell-states'}]}],
+               'roots': {'own root': {'stage': 'GT', 'signedIn': True, 'role': 'tagger'}},
+               'paths': [{'root': 'own root', 'actions': ['load']}]}}
+    expect, matrix, _ = shell_states.build(copy.deepcopy(PAGE), studies)
+    assert [(p['study'], p['root']) for p in expect['paths']] == [('acme', 'acme'), ('other', 'own root')]
+    assert 'Own' in [e['name'] for e in expect['elements']['other']] and 'Own' not in [e['name'] for e in expect['elements']['acme']]
+    # the tagger's box hidden there, and what it holds of the study's with it
+    assert expect['paths'][1]['states'][1]['expect']['Own'] == 'gone' and '## Other · own root: Load' in matrix
+
+
+def test_a_study_grafts_its_elements_where_it_names():
+    rules = shell_states.graft(copy.deepcopy(PAGE), {'grafts': [
+        {'under': 'Box', 'after': 'Button', 'tree': [{'name': 'After', 'select': '#after', 'req': 'req/checks/spec-layout'}]},
+        {'under': 'Box', 'tree': [{'name': 'First', 'select': '#first', 'req': 'req/checks/spec-layout'}]},
+        {'under': 'Panel', 'tree': [{'name': 'Only', 'select': '#only', 'req': 'req/checks/spec-layout'}]}]})
+    assert [c['name'] for c in rules['tree'][0]['children']] == ['First', 'Button', 'After']
+    assert [c['name'] for c in rules['tree'][1]['children']] == ['Only']
+    with pytest.raises(AssertionError, match='no element'):
+        shell_states.graft(copy.deepcopy(PAGE), {'grafts': [{'under': 'Nowhere', 'tree': []}]})
+    with pytest.raises(AssertionError, match='holds no'):
+        shell_states.graft(copy.deepcopy(PAGE), {'grafts': [{'under': 'Box', 'after': 'Panel', 'tree': []}]})

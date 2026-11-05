@@ -13,7 +13,7 @@ While a study is in its GT or PostGT stage, the page exists to make ground truth
 results. The person is working through a to-do list; the page should give them the pace of one
 item, one verdict, the next item, and show the progress on the image itself. The NoR study is the
 reference build: `req/nor/truth/tasks`, `req/nor/truth/order` and `req/nor/truth/marks` in
-`dev/requirements/requirements.md`, `studies/nor/web/nor.js`, and its test
+`studies/nor/requirements.md`, `studies/nor/web/nor.js`, and its test
 `studies/nor/tests/test_truth_tasks_page.py`.
 
 ## What the page is while ground truth is made
