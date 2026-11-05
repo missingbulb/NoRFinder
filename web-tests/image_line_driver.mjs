@@ -21,6 +21,7 @@ import http from "node:http";
 import path from "node:path";
 import { repoFile } from "./repo_file.mjs";
 import { offSite } from "./off_site.mjs";
+import { ENGINE } from "./engine.mjs";
 import { keptContext } from "./kept_context.mjs";
 import { until } from "./page_until.mjs";
 
@@ -101,9 +102,10 @@ await ctx.route("https://www.googleapis.com/**", async (route) => {
   return json(meta(f));
 });
 await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
-// the browser's own file picker stands in as one handing over picked.png, a file of the page's private storage, so the
-// reference the page keeps to it is a real one; picks counts the times it was shown
+// the browser's own file picker, where the browser has one, stands in as one handing over picked.png, a file of the
+// page's private storage, so the reference the page keeps to it is a real one; picks counts the times it was shown
 await ctx.addInitScript((png) => {
+  if (typeof window.showOpenFilePicker !== "function") return;
   window.picks = 0;
   window.showOpenFilePicker = async () => {
     window.picks++;
@@ -143,19 +145,27 @@ try {
   check(await page.$("#load-main svg.computer-logo"), "the computer's button bears a computer");
   const [vPick, vLocal, vDrive] = [await box("#image-menu"), await box("#load-main"), await box("#load-drive")];
   check(vLocal.x > vPick.x + vPick.w - 1 && vDrive.x > vLocal.x + vLocal.w - 1, "the computer's button, then Drive's, at the selector's right", { vPick, vLocal, vDrive });
-  await page.click("#load-main");
-  await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded.");
-  check(await page.evaluate(() => window.picks === 1 && st.fileName === "picked.png"), "the computer's button opens the image the browser's own picker hands over");
-  await page.click("#unload");
-  await page.waitForFunction(() => !window.st.img);
-  await page.click("#image-pick");
-  let v = await rows();
-  check(v.length === 1 && v[0].name === "picked.png" && v[0].where === "This computer" && v[0].age === "<1h", "its recent files list the file from this computer, saying so", v);
-  check(await page.$("#image-menu .recent svg.computer-logo"), "beside a computer");
-  await shot("viewer_line", "#left");
-  await page.click("#image-menu .recent");
-  await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded." && st.fileName === "picked.png");
-  check(await page.evaluate(() => window.picks === 1), "chosen there, the file opens again with no picker shown");
+  if (await page.evaluate(() => typeof window.showOpenFilePicker === "function")) {
+    await page.click("#load-main");
+    await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded.");
+    check(await page.evaluate(() => window.picks === 1 && st.fileName === "picked.png"), "the computer's button opens the image the browser's own picker hands over");
+    await page.click("#unload");
+    await page.waitForFunction(() => !window.st.img);
+    await page.click("#image-pick");
+    const v = await rows();
+    check(v.length === 1 && v[0].name === "picked.png" && v[0].where === "This computer" && v[0].age === "<1h", "its recent files list the file from this computer, saying so", v);
+    check(await page.$("#image-menu .recent svg.computer-logo"), "beside a computer");
+    await shot("viewer_line", "#left");
+    await page.click("#image-menu .recent");
+    await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded." && st.fileName === "picked.png");
+    check(await page.evaluate(() => window.picks === 1), "chosen there, the file opens again with no picker shown");
+  } else {
+    const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.click("#load-main")]);
+    await chooser.setFiles({ name: "picked.png", mimeType: "image/png", buffer: PNG });
+    await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded." && st.fileName === "picked.png");
+    check(true, `with no picker that keeps a reference to the file, as in this ${ENGINE}, the computer's button opens the file chooser`);
+    check(!(await rows()).some((r) => r.where === "This computer"), "and the file is not among the recent ones, which could not open it again");
+  }
   await page.click("#load-drive");
   await page.waitForFunction(() => $("#drive-dlg").open);
   check(await shown("#drive-link") && (await shown("#drive-go")), "the Image Viewer's Drive dialog takes a pasted link");
