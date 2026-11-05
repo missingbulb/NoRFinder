@@ -109,7 +109,7 @@ try {
   }));
   console.log(JSON.stringify(rowsLook));
   const colours = new Set(rowsLook.map((r) => r.border));
-  for (const s of JSON.parse(fs.readFileSync(studies, "utf8"))) {
+  for (const s of offered) {
     const r = rowsLook.find((x) => x.id === s.id) || {};
     if (s.stage === null ? r.stage !== null : r.stage !== s.stage || !r.border || !r.small || !r.last || !r.snug) problems.push(`the switcher does not label ${s.id} with its stage, ${s.stage}, last, small, snug and bordered: ${JSON.stringify(r)}`);
     if (!(r.room >= 8)) problems.push(`the switcher's ${s.id} row leaves ${r.room} px at its right, not 8`);
