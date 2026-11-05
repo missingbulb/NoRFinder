@@ -132,6 +132,7 @@ await boxes(["1 Load Image open", "2 Threshold folded", "3 Counted folded", "4 N
 const left = () => page.evaluate(() => Math.round(document.querySelector("#left").getBoundingClientRect().width));
 const viewW = () => page.evaluate(() => Math.round(document.querySelector("#view").getBoundingClientRect().width));
 // the column's slide over: the grid's transition and the drawers' slide in done
+// getAnimations() applies the style changes waiting, so a transition the last action started is among them
 const settled = () => page.waitForFunction(() => !document.getAnimations().some((a) => a.transitionProperty === "grid-template-columns" || a.animationName === "data-in"));
 const wide = await left(), imageW = await viewW();
 await check(await page.evaluate(() => document.querySelector("#data-col").getClientRects().length === 0), "no data manager: no sliver of the Data Management strip beside the bar");
@@ -142,7 +143,7 @@ const gutter = await page.evaluate(() => ({ w: Math.round(document.querySelector
 await check(gutter.holds === 0 && gutter.w <= 12, "the gutter holds no tab, only the resize handle", gutter);
 const openAt = await chev("#left-collapse .chev");
 await page.click("#left-collapse");
-await page.waitForTimeout(50); await settled();
+await page.waitForFunction(() => document.documentElement.dataset.left === "collapsed"); await settled();
 await check((await left()) < 60, "collapsing leaves a narrow strip", await left());
 await check((await viewW()) > imageW + 200, "and gives the image the room", [imageW, await viewW()]);
 const strip = await page.evaluate(() => ({ label: document.querySelector("#left-strip .strip-name").textContent, vertical: getComputedStyle(document.querySelector("#left-strip .strip-name")).writingMode,
@@ -167,13 +168,13 @@ await page.waitForFunction(() => !document.querySelector("#left").classList.cont
 await check((await left()) === wide, "expanding brings the bar back at its width", [wide, await left()]);
 await boxes(["1 Load Image open", "2 Threshold folded", "3 Counted folded", "4 Notes folded"], "with its drawers as they were");
 await page.click("#left-collapse");
-await page.waitForTimeout(50); await settled();
+await page.waitForFunction(() => document.documentElement.dataset.left === "collapsed"); await settled();
 await page.locator("#left-marks .step-mark").nth(2).click();
 await settled();
 await boxes(["1 Load Image open", "2 Threshold folded", "3 Counted open", "4 Notes folded"], "clicking a step mark expands the bar with that drawer open");
 // the gutter drags it shut, past the bar's narrowest, and out again from the strip's edge, following the pointer
 const drag = async (to) => { const g = await page.locator("#gutter-left").boundingBox(); await page.mouse.move(g.x + g.width / 2, g.y + 100); await page.mouse.down();
-  for (const x of to) await page.mouse.move(x, g.y + 100, { steps: 4 }); await page.mouse.up(); await page.waitForTimeout(50); await settled(); };
+  for (const x of to) await page.mouse.move(x, g.y + 100, { steps: 4 }); await page.mouse.up(); await settled(); };
 const barLeft = await page.evaluate(() => Math.round(document.querySelector("#left").getBoundingClientRect().left));
 await drag([barLeft + 150, barLeft + 40]);
 await check((await left()) < 60, "dragging the gutter past the bar's narrowest collapses it", await left());

@@ -401,7 +401,8 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   const net0 = await page.evaluate(() => { const s = window.seen["sb-net"]; s.spiked = false; return s.rolled; });
   await page.evaluate((u) => fetch(u, { cache: "no-store" }).then((r) => r.arrayBuffer()), origin + "/big");
   await page.waitForFunction((n) => window.seen["sb-net"].rolled > n, net0, { timeout: 4000 }).catch(() => {});
-  await page.waitForTimeout(1200);
+  // the number written, and whatever it does about it over
+  await page.waitForFunction(() => !document.querySelector("#sb-net").getAnimations({ subtree: true }).length);
   const quiet = await page.evaluate(() => window.seen["sb-net"]);
   await check(quiet.rolled > net0 && quiet.anim.slice(-1)[0] === "none" && !quiet.spiked, "a fast download neither rolls nor flashes the network", quiet);
   const alike = (a, b) => a.total && b.total && a.name === b.name && a.size === b.size && (!a.what || !b.what || a.what === b.what);
@@ -419,7 +420,8 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
     icon: Math.round(document.querySelector("#sb-res-icon").getBoundingClientRect().width) }));
   const isOpen = async (want, what, ms = 1500) => {
     await page.waitForFunction((w) => (document.querySelector("#sb-res-items").getBoundingClientRect().width > 150) === w, want, { timeout: ms }).catch(() => {});
-    await page.waitForTimeout(500);
+    // and its folding or unfolding over, whichever is under way
+    await page.waitForFunction(() => !document.querySelector("#sb-res-items").getAnimations().length);
     const b = await block();
     await check((b.items > 150) === want && (want || b.items === 0), what, b);
   };
@@ -464,11 +466,11 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await page.evaluate(() => { window.st.heap = window.st.heapWas; });
   await foldsLater("memory back under 1 GB");
   // downloading: kb KB every 250 ms for 8 s
-  const download = (kb) => page.evaluate(async (u) => { const end = Date.now() + 8000; while (Date.now() < end) { await fetch(u, { cache: "no-store" }).then((r) => r.arrayBuffer()); await new Promise((r) => setTimeout(r, 250)); } }, origin + "/some/" + kb);
+  const download = (kb) => page.evaluate(async (u) => { const end = Date.now() + 8000; while (Date.now() < end) { await fetch(u, { cache: "no-store" }).then((r) => r.arrayBuffer()); await new Promise((r) => setTimeout(r, 250)); } }, origin + "/some/" + kb); // waits on purpose: the pause between downloads sets the rate the page measures
   await download(25);
   await isOpen(false, "about 100 KB/s for 8 s does not open it: under 250 KB/s", 100);
   const pull = download(200);
-  await page.waitForTimeout(2500);
+  await page.waitForTimeout(2500); // waits on purpose: the page opens the block on a rate held for 5 s of real downloads
   await isOpen(false, "the network over 250 KB/s for 2 s does not open it yet", 100);
   await pull;
   await isOpen(true, "over 250 KB/s for more than 5 s opens it", 2500);

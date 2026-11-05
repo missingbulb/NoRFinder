@@ -114,7 +114,8 @@ try {
   await page.click("#drive-dlg button[value=close]");
   await page.reload(); await page.waitForFunction(() => window.$ && $("#title").textContent);
   await pressDrive(page);
-  await page.waitForTimeout(500);
+  // the notice is the page holding Drive: it shows in place of the listing it would otherwise ask for
+  await page.waitForFunction(() => $("#drive-dlg").open && !$("#drive-throttle").hidden);
   w = await wait();
   check(w.notice && w.held && calls.length === 0, `no call to Drive while it waits, after a reload too: ${calls}`);
   await page.click("#drive-dlg button[value=close]");
@@ -127,7 +128,6 @@ try {
   await page.evaluate(async () => { const c = await caches.open("nor-images-v1"); for (const q of await c.keys()) await c.delete(q); });
   await pickRecent(page);
   await page.waitForFunction(() => $("#drive-dlg").open && !$("#drive-throttle").hidden);
-  await page.waitForTimeout(300);
   check(calls.length === 0, `a recent image no longer kept shows the notice, with no call to Drive: ${calls}`);
   await page.click("#drive-dlg button[value=close]");
 
