@@ -104,18 +104,23 @@ page.setDefaultTimeout(10000);
 
 // the page's handlers for what was just done have all run: a read it would start has started
 const frames = () => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
-// every row in view has its badge (or holds nothing to tell), and no read is on the way once the page has run its
-// handlers, the rows ahead of the view among them; 10 s at most, the checks after it saying what is missing
+// every row in view, and every row read, has its badge (or holds nothing to tell), and no read is on the way once the
+// page has run its handlers, the rows ahead of the view among them; 10 s at most, the checks after it saying what is
+// missing
 const quiet = async () => {
   const end = Date.now() + 10000, wants = FILES.map((f) => f.want);
+  const told = () => page.waitForFunction(([wants, read]) => {
+    const box = $("#drive-list").getBoundingClientRect(), rows = [...document.querySelectorAll("#drive-list .item")];
+    return rows.every((b, k) => { const r = b.getBoundingClientRect(); return !(r.bottom > box.top && r.top < box.bottom || read.includes(k)) || (b.querySelector(".shape")?.textContent || "") === wants[k]; });
+  }, [wants, reads.map((r) => r.k)], { timeout: Math.max(1, end - Date.now()) }).catch(() => {});
   for (;;) {
-    await page.waitForFunction((wants) => {
-      const box = $("#drive-list").getBoundingClientRect(), rows = [...document.querySelectorAll("#drive-list .item")];
-      return rows.every((b, k) => { const r = b.getBoundingClientRect(); return !(r.bottom > box.top && r.top < box.bottom) || (b.querySelector(".shape")?.textContent || "") === wants[k]; });
-    }, wants, { timeout: Math.max(1, end - Date.now()) }).catch(() => {});
+    const asked = reads.length;
+    await told();
     await frames();
-    if (!inflight || Date.now() >= end) break;
-    await page.waitForEvent("requestfinished", { timeout: Math.max(1, end - Date.now()) }).catch(() => {});
+    // done when nothing is on the way and no read began since the rows read were told
+    if (!inflight && reads.length === asked) break;
+    if (Date.now() >= end) break;
+    if (inflight) await page.waitForEvent("requestfinished", { timeout: Math.max(1, end - Date.now()) }).catch(() => {});
   }
   if (Date.now() >= end) {
     const rows = await inView(), b = await badges();
@@ -145,7 +150,7 @@ try {
   const read = [...new Set(reads.map((r) => r.k))].sort((x, y) => x - y);
   check(read.length === window.length && read.every((k, i) => k === window[i]), `read for the rows in view and the next ${AHEAD} only: ${read} (want ${window})`);
   check(reads.length > 0 && reads.length === read.length && reads.every((r) => r.range === `bytes=0-${HEAD - 1}`), `each read once, its first 64 KB: ${JSON.stringify(reads.slice(0, 3))}`);
-  check(window.every((k) => b[k] === FILES[k].want), "every row read shows its badge");
+  check(window.every((k) => b[k] === FILES[k].want), `every row read shows its badge: ${JSON.stringify(window.map((k) => [k, b[k], FILES[k].want]))}`);
   if (shots) await page.locator("#drive-dlg").screenshot({ path: path.join(shots, "drive_shapes.png") });
 
   // remembered: a reload reads nothing it read before
