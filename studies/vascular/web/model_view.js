@@ -385,7 +385,7 @@ function grab(e) {
     };
   }
   const h = pick(e);
-  if (e.button === 0 && !e.shiftKey && h?.node != null && !drawing) {
+  if (e.button === 0 && !e.shiftKey && !V.panning && h?.node != null && !drawing) {
     const base = model, id = h.node, ndcZ = view.pts.get(id)[3];
     let moved = false;
     const done = () => { moving = null; V.S.spot = null; };

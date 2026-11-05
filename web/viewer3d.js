@@ -204,7 +204,18 @@ export function viewer3d(shell, flat) {
     <input id="v3-zs" type="number" min="0.05" max="50" step="0.05" title="Spacing between slices, µm" aria-label="Spacing between slices, µm">`;
   const stage = html("div", { id: "v3-stage", hidden: true });
   const cv = html("canvas", { id: "v3-gl" }), hudCv = html("canvas", { id: "v3-hud" }), note = html("p", { id: "v3-note" });
-  stage.append(cv, hudCv, note);
+  // whether a plain drag pans rather than turns: the label's state, and shift held over it; kept only while the page is open
+  const panBtn = html("button", { id: "v3-pan", type: "button", textContent: "Panning" });
+  let panOn = false, shiftHeld = false;
+  const panning = () => panOn || shiftHeld;
+  const showPan = () => panBtn.setAttribute("aria-pressed", String(panning()));
+  panBtn.onclick = () => { panOn = !panOn; showPan(); };
+  const heldShift = (on) => { if (shiftHeld !== on) { shiftHeld = on; showPan(); } };
+  addEventListener("keydown", (e) => { if (e.key === "Shift") heldShift(true); });
+  addEventListener("keyup", (e) => { if (e.key === "Shift") heldShift(false); });
+  addEventListener("blur", () => heldShift(false));
+  showPan();
+  stage.append(cv, hudCv, note, panBtn);
   $("#scroller").after(stage);
 
   // ---------- GL ----------
@@ -334,7 +345,7 @@ export function viewer3d(shell, flat) {
   flat.onDrawn(redraw);
 
   // ---------- turning, zooming and panning: drag turns about the screen's axes, a sideways scroll about the line of
-  // sight, shift-drag or right-drag pans, wheel or pinch zooms ----------
+  // sight, a drag pans while panning is on (or shift is held), as a right-drag does, wheel or pinch zooms ----------
   // on any canvas that shows the stack's camera; grab(e), when given, sees each press first and may take that pointer
   // for its own drag by returning {move(e), up(e), cancel()}; click(e) hears a left press let go where it began
   function controls(el, grab, click) {
@@ -365,7 +376,7 @@ export function viewer3d(shell, flat) {
         const [a, b] = [...pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
         if (last) zoomAt(el, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (S.dist * last) / d);
         last = d; pan((-dx * k * S.dist) / 6, (dy * k * S.dist) / 6);
-      } else if (e.shiftKey || e.buttons === 2) pan((-dx * k * S.dist) / 3, (dy * k * S.dist) / 3);
+      } else if (panning() || e.shiftKey || e.buttons === 2) pan((-dx * k * S.dist) / 3, (dy * k * S.dist) / 3);
       else { S.rot = turn(S.rot, 1, -dx * TURN_PER_PX); S.rot = turn(S.rot, 0, -dy * TURN_PER_PX); }
       redraw();
     });
@@ -458,6 +469,8 @@ export function viewer3d(shell, flat) {
     get half() { return half; },
     get stage() { return stage; },
     camera, redraw, controls, axes,
+    // whether a drag pans rather than turns just now, for a study's own drags to give way to it
+    get panning() { return panning(); },
     // a listener for every frame drawn, or every change of the slice spacing, until signal (the study's) ends it
     onDraw: (fn, signal) => hear(drawers, fn, signal),
     onSpacing: (fn, signal) => hear(spacingHeard, fn, signal),

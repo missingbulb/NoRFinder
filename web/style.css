@@ -738,6 +738,10 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 #v3-stage .v3-side { position: absolute; top: 0; left: 50%; width: 50%; height: 100%; border-left: 1px solid #333; }
 #v3-stage:not(.split) .v3-side { left: 0; width: 100%; border-left: 0; }
 #v3-note { z-index: 2; }
+/* the Panning label: always there at the bottom of the view, blue outlined while panning is on, grey while off */
+#v3-pan { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); z-index: 2; padding: 2px 10px; font-size: 12px;
+  color: var(--dim); background: #000a; border: 1px solid #6b7078; border-radius: var(--r-chip); cursor: pointer; }
+#v3-pan[aria-pressed="true"] { color: #e1e8ee; border-color: var(--blue); }
 /* the split dialog: the image with its parts at the left, what each part keeps at the right */
 .split-field { display: flex; gap: 10px; align-items: center; }
 .split-label { min-width: 72px; color: var(--dim); font-size: 12px; }
