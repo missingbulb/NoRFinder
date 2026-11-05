@@ -125,7 +125,9 @@ try {
   await quiet();
   const told = await page.evaluate(() => ({ said, before: saidBefore, now: $("#status").textContent, own: !!document.querySelector("#sb-thumbs") }));
   check(told.said.some((t) => /^Thumbnails \d+ of \d+ · /.test(t)) && !told.own, `while thumbnails load, the status message says how many: ${JSON.stringify(told.said)}`);
-  check(told.now === told.before, `and once they are in it says again what it said before: ${told.now} (was ${told.before})`);
+  // what the page last said besides them, which may have moved on while they loaded
+  const lastSaid = told.said.filter((t) => !t.startsWith("Thumbnails ")).at(-1) ?? told.before;
+  check(told.now === lastSaid, `and once they are in it says again what the page last said: ${told.now} (last said ${lastSaid})`);
   const first = span(await inView());
   check(same(sorted(asked), first), `fetched only the rows in view and the next ${AHEAD}: ${sorted(asked)} (want ${first})`);
   check(asked.length === first.length, `each once: ${asked.length} fetches for ${first.length} rows`);

@@ -412,11 +412,6 @@
             {"name": "Status", "select": "#status", "req": "req/shell/status-bar"}
           ]
         },
-        {"name": "Thumbnails", "select": "#sb-thumbs", "req": "req/shell/status-bar",
-          "rule": [
-            {"is": "hidden", "approval": "tentative"}
-          ]
-        },
         {"name": "Resources", "select": "#sb-res", "req": "req/shell/status-bar/resources",
           "children": [
             {"name": "Resources, unfolded", "select": "#sb-res-items", "req": "req/shell/status-bar/resources",

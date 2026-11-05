@@ -418,9 +418,9 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #statusbar button.sb-item { cursor: pointer; }
 #statusbar button.sb-item:hover, #statusbar button.sb-item:focus-visible { color: var(--text); }
 #statusbar .sb-item svg { flex: none; color: var(--icon); }
-#statusbar .sb-item:has(> .v:empty), #sb-thumbs:empty { display: none; }
+#statusbar .sb-item:has(> .v:empty) { display: none; }
 #sb-steps { padding-right: 10px; border-right: 1px solid var(--line); }
-#sb-thumbs, #statusbar .grow ~ .sb-item, #statusbar #sb-res-icon, #sb-res-items > .sb-item:first-child { padding-left: 10px; border-left: 1px solid var(--line); }
+#statusbar .grow ~ .sb-item, #statusbar #sb-res-icon, #sb-res-items > .sb-item:first-child { padding-left: 10px; border-left: 1px solid var(--line); }
 /* the disk, memory, network and CPU, folded into one icon (req/shell/status-bar/resources): unfolded always open,
    or auto-hiding while hovered or raised by what needs watching; the icon goes only always open */
 #sb-res { display: flex; align-items: center; }

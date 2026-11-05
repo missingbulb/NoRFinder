@@ -115,7 +115,6 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Now | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Spinner | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Status | ● | ● | ● | ● |
-| &nbsp;&nbsp;Thumbnails | ○* | ○* | ○* | ○* |
 | &nbsp;&nbsp;Resources | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Resources, unfolded | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Storage | ● | ● | ● | ● |
@@ -246,7 +245,6 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Now | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Spinner | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Status | ● | ● | ● |
-| &nbsp;&nbsp;Thumbnails | ○* | ○* | ○* |
 | &nbsp;&nbsp;Resources | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Resources, unfolded | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Storage | ● | ● | ● |
@@ -377,7 +375,6 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Now | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Spinner | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Status | ● | ● | ● | ● |
-| &nbsp;&nbsp;Thumbnails | ○* | ○* | ○* | ○* |
 | &nbsp;&nbsp;Resources | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Resources, unfolded | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Storage | ● | ● | ● | ● |
@@ -508,7 +505,6 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Now | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Spinner | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Status | ● | ● | ● | ● |
-| &nbsp;&nbsp;Thumbnails | ○* | ○* | ○* | ○* |
 | &nbsp;&nbsp;Resources | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Resources, unfolded | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Storage | ● | ● | ● | ● |
@@ -639,7 +635,6 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Now | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Spinner | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Status | ● | ● | ● |
-| &nbsp;&nbsp;Thumbnails | ○* | ○* | ○* |
 | &nbsp;&nbsp;Resources | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Resources, unfolded | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Storage | ● | ● | ● |
@@ -770,7 +765,6 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Now | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Spinner | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Status | ● | ● | ● | ● |
-| &nbsp;&nbsp;Thumbnails | ○* | ○* | ○* | ○* |
 | &nbsp;&nbsp;Resources | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Resources, unfolded | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Storage | ● | ● | ● | ● |
@@ -901,7 +895,6 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Now | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Spinner | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Status | ● | ● | ● | ● |
-| &nbsp;&nbsp;Thumbnails | ○* | ○* | ○* | ○* |
 | &nbsp;&nbsp;Resources | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Resources, unfolded | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Storage | ● | ● | ● | ● |
@@ -1032,7 +1025,6 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Now | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Spinner | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Status | ● | ● | ● | ● |
-| &nbsp;&nbsp;Thumbnails | ○* | ○* | ○* | ○* |
 | &nbsp;&nbsp;Resources | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Resources, unfolded | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Storage | ● | ● | ● | ● |
@@ -1163,7 +1155,6 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Now | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Spinner | ○ | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Status | ● | ● | ● | ● | ● |
-| &nbsp;&nbsp;Thumbnails | ○* | ○* | ○* | ○* | ○* |
 | &nbsp;&nbsp;Resources | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Resources, unfolded | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Storage | ● | ● | ● | ● | ● |
@@ -1294,7 +1285,6 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Now | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Spinner | ○ | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Status | ● | ● | ● | ● | ● |
-| &nbsp;&nbsp;Thumbnails | ○* | ○* | ○* | ○* | ○* |
 | &nbsp;&nbsp;Resources | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Resources, unfolded | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Storage | ● | ● | ● | ● | ● |
@@ -1425,7 +1415,6 @@ Each table is one path: a root (the study's stage, who is signed in, the role) a
 | &nbsp;&nbsp;Now | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Spinner | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Status | ● | ● | ● | ● |
-| &nbsp;&nbsp;Thumbnails | ○* | ○* | ○* | ○* |
 | &nbsp;&nbsp;Resources | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Resources, unfolded | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Storage | ● | ● | ● | ● |
