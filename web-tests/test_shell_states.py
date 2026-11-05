@@ -148,6 +148,7 @@ def test_the_shell_tree_holds_only_the_shells_page():
         own = list(shell_states.nodes(json.load(f)['tree']))
     p = page_ids('web/index.html')
     ids = set(p.state) | set(p.opened) | p.tags
+    assert len(own) >= 80, f'the shell tree has {len(own)} elements: the sweep is not reading it'
     strays = [n['name'] for n, parent, _ in own if lead((parent if n.get('made') else n)['select']) not in ids]
     assert not strays, f'not the shell\'s, in dev/requirements/shell-states.json: {strays}'
 
