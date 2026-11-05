@@ -64,7 +64,22 @@ await localStudy(ctx, "fixture");
 
 await asTagger(ctx);
 await ctx.route(offSite(origin), (r) => r.abort());
-await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
+await ctx.addInitScript(() => {
+  delete Navigator.prototype.serviceWorker;
+  // each view transition as its motion starts: whether the minimap flies, and the button and its copy then, so a
+  // loaded machine reading them after a 0.55 s flight has landed still finds them; one cut short says so
+  window.flights = [];
+  const start = Document.prototype.startViewTransition;
+  if (start) Document.prototype.startViewTransition = function (...a) {
+    const t = start.apply(this, a), f = { ready: false };
+    window.flights.push(f);
+    t.ready.then(() => Object.assign(f, { ready: true,
+      minimap: document.getAnimations().some((x) => x.effect?.pseudoElement === "::view-transition-group(minimap)"),
+      button: getComputedStyle(document.querySelector("#minimap-btn")).viewTransitionName, copy: !!document.querySelector(".mm-flier") }),
+    (e) => { f.cut = e.name; });
+    return t;
+  };
+});
 const page = await ctx.newPage();
 page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
 page.setDefaultTimeout(10000);
@@ -140,23 +155,27 @@ await shot("minimap_collapsed", "#minimap");
 await page.mouse.click(fold.x + fold.w / 2, fold.y + fold.h / 2);
 await check(await visible("#minimap canvas"), "a second click on the same spot undoes the first");
 // hiding folds the minimap into its toolbar button, and showing unfolds it back out of it
-const flight = () => page.waitForFunction(() => document.getAnimations().some((a) => a.effect?.pseudoElement === "::view-transition-group(minimap)"));
+// the minimap's flight begun after the flights counted so far, as it was when its motion started
+const flown = () => page.evaluate(() => window.flights.length);
+const flight = (since) => page.waitForFunction((n) => window.flights.slice(n).find((f) => f.minimap), since, { timeout: 5000 })
+  .then((h) => h.jsonValue(), async () => ({ missing: await page.evaluate((n) => window.flights.slice(n), since), motion: await motion(page) }));
 const landed = () => page.waitForFunction(() => !document.getAnimations().some((a) => a.effect?.pseudoElement?.startsWith("::view-transition")));
 // the button itself never flies: a copy of it does, so the button stands where it is throughout
-const flier = () => page.evaluate(() => ({ button: getComputedStyle($("#minimap-btn")).viewTransitionName, copy: !!document.querySelector(".mm-flier") }));
 // no flight still under way from the minimap showing, which WebKit holds a click behind
 await landed();
 // a click that never completes says what the page was doing, or that it no longer answers
 const stuck = () => motion(page);
+let flownBefore = await flown();
 await page.click("#minimap-hide", { timeout: 8000 }).catch(async (e) => { console.error("FAILED: hiding the minimap: the click never completed: " + (await stuck())); throw e; });
-await check(await flight().then(() => true, () => false), "hiding flies the minimap into its toolbar button");
-const folding = await flier();
+const folding = await flight(flownBefore);
+await check(!folding.missing, "hiding flies the minimap into its toolbar button", folding);
 await check(folding.button === "none" && folding.copy, "folding, a copy of the button is what the minimap lands as, not the button", folding);
 await landed();
 await check(!(await visible("#minimap")) && (await page.getAttribute("#minimap-btn", "aria-pressed")) === "false", "hidden: the minimap goes, and its toolbar button is up");
+flownBefore = await flown();
 await page.click("#minimap-btn");
-await check(await flight().then(() => true, () => false), "and showing flies it back out of the button");
-const unfolding = await flier();
+const unfolding = await flight(flownBefore);
+await check(!unfolding.missing, "and showing flies it back out of the button", unfolding);
 await check(unfolding.button === "none" && unfolding.copy, "unfolding, a copy of the button is what flies out, and the button stays", unfolding);
 await landed();
 await check((await visible("#minimap canvas")) && (await page.getAttribute("#minimap-btn", "aria-pressed")) === "true", "the toolbar button opens it again");
