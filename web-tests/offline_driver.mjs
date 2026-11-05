@@ -25,6 +25,7 @@ import os from "node:os";
 import path from "node:path";
 import { ENGINE } from "./engine.mjs";
 import { pressDrive, pickRecent } from "./drive_open.mjs";
+import { until } from "./page_until.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -134,8 +135,11 @@ try {
     }
     return out;
   }, listed);
-  let left = listed;
-  for (let t = 0; t < 60 && left.length; t++) { left = await missing(); if (left.length) await page.waitForTimeout(500); }
+  await until(page, async (paths) => {
+    for (const p of paths) if (!(await caches.match(new URL(p.replace(/(^|\/)index\.html$/, "$1").replace(/\.html$/, ""), location.origin + "/app/").href))) return false;
+    return true;
+  }, listed, { timeout: 30000 }).catch(() => {});
+  const left = await missing();
   check(listed.length > 30 && !left.length, `the site's own ${listed.length} files are kept on this device` + (left.length ? `; missing ${left.slice(0, 5)}` : ""));
 
   // req/shell/offline/per-study: the Storage tab, where each study is made available offline
@@ -187,7 +191,7 @@ try {
   for (let t = 0; t < 20; t++) {
     errors = (await cdp.send("Page.getInstallabilityErrors")).installabilityErrors.map((e) => e.errorId);
     if (!errors.length) break;
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(500); // waits on purpose: Chromium tells installability only when asked, with no event to wait on
   }
   check(!errors.length, "once asked for, the site is installable" + (errors.length ? ": " + errors.join(", ") : ""));
   await page.keyboard.press("Escape");

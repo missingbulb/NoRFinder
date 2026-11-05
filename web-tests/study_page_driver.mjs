@@ -127,13 +127,14 @@ try {
   console.log(JSON.stringify(icons));
   // the control showing the study on show carries its icon too: its own, loaded, or the generic one
   const headIcon = async (want) => {
-    const got = () => page.evaluate(() => {
+    const look = () => {
       const img = document.querySelector("#study-menu summary img.study-icon:not([hidden])");
       if (img) return img.complete && img.naturalWidth ? new URL(img.src).pathname : "loading";
       const svg = document.querySelector("#study-menu summary svg.study-icon:not([hidden])");
       return svg instanceof SVGSVGElement ? "generic" : "none";
-    });
-    for (let i = 0; i < 30 && (await got()) !== want; i++) await page.waitForTimeout(100);
+    };
+    const got = () => page.evaluate(look);
+    await page.waitForFunction(new Function("want", `return (${look})() === want`), want, { timeout: 3000 }).catch(() => {});
     const seen = await got();
     if (seen !== want) problems.push(`the switcher's control shows ${seen}, not ${want}`);
   };

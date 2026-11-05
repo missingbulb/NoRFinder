@@ -48,10 +48,12 @@ const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: "
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
 const cors = { "access-control-allow-origin": "*" };
 // every folder is empty: what the dialog opens on is what is checked, not what it lists; listed, the folders listed
-const listed = [];
+const listed = [], onList = [];
+// resolves at the next folder the dialog lists
+const nextListing = () => new Promise((ok) => onList.push(ok));
 await ctx.route("https://www.googleapis.com/**", (route) => {
   const q = new URL(route.request().url()).searchParams.get("q");
-  if (q) listed.push(q.match(/'([^']+)' in parents/)[1]);
+  if (q) { listed.push(q.match(/'([^']+)' in parents/)[1]); onList.splice(0).forEach((ok) => ok()); }
   return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ files: [], name: "A folder" }) });
 });
 await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
@@ -66,9 +68,11 @@ const opensOn = async (address) => {
   await page.goto(origin + address);
   await page.waitForFunction(() => window.$ && $("#title").textContent);
   listed.length = 0;
+  const listing = nextListing();
   await pressDrive(page);
   await page.waitForFunction(() => $("#drive-dlg").open);
-  await page.waitForTimeout(300);
+  // the dialog has opened on something: a folder it lists, or the link in its field
+  await Promise.race([listing, page.waitForFunction(() => window.$ && $("#drive-link")?.checkVisibility() && $("#drive-link").value).catch(() => {})]);
   const link = (await page.isVisible("#drive-link")) ? await page.inputValue("#drive-link") : listed.length ? folder(listed[listed.length - 1]) : "";
   await page.click("#drive-dlg button[value=close]");
   return link;

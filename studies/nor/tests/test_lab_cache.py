@@ -15,7 +15,7 @@ needs_slide = pytest.mark.skipif(not os.path.exists(nor_lab.TIF), reason='refere
 
 
 def _load(delay):
-    time.sleep(delay)
+    time.sleep(delay)  # waits on purpose: the loads start apart, so some read while another writes
     c, n, um, bm = nor_lab.load()
     return c.shape, repr(n), um, int(bm.sum()), float(c.sum())
 

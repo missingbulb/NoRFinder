@@ -20,7 +20,8 @@ const ready = (page) => page.waitForFunction(() => /^(Ready|Image loaded|Counted
 const settled = async (page) => {
   await page.waitForFunction(() => !document.documentElement.hasAttribute("data-drawers")
     && document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getTiming().iterations === Infinity));
-  await page.waitForTimeout(150);
+  // and the frame after them drawn
+  await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
 };
 // an image open, nothing working on it, and the fixture's Count ready for it
 const opened = () => !!shellForTests.page.get("image") && document.querySelector("#busy").hidden

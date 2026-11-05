@@ -79,7 +79,10 @@ async function open() {
   await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
   await ctx.addInitScript(([k, m]) => localStorage.setItem(k, JSON.stringify(m)), ["nor-mask-v1:" + path.basename(image), MASKED]);
   await standInDrive(ctx);
+  // the picture's fetch failing, as the page sees it when the picture is turned away
+  const pictureFailed = new Promise((ok) => ctx.on("requestfailed", (q) => { if (q.url() === "https://acme.example/dog.jpg") ok(); }));
   const page = await ctx.newPage();
+  page.pictureFailed = pictureFailed;
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);
   await page.goto(origin + "/web/index.html?study=nor");
@@ -250,7 +253,13 @@ await check(await page.evaluate(() => !st.edits.has(st.sel) && !document.querySe
 // a candidate clicked on the image becomes the current one
 const target = +W.filter((x) => x.t === "pass")[2].key.slice(2);
 await page.evaluate((i) => nor.focusOn(nor.candOf(i)), target);
-await page.waitForTimeout(600);
+// the view scrolled to it: the candidate in view, its place on screen the same two frames running
+await page.waitForFunction((sel) => {
+  const r = document.querySelector(sel)?.getBoundingClientRect(), v = $("#scroller").getBoundingClientRect();
+  const x = r && r.left + r.width / 2, y = r && r.top + r.height / 2, at = r && `${x},${y}`;
+  const still = !!r && x > v.left && x < v.right && y > v.top && y < v.bottom && window.wasAt === at;
+  window.wasAt = at; return still;
+}, `#overlay g[data-i="${target}"] .hit`);
 const at = await page.evaluate((i) => { const r = document.querySelector(`#overlay g[data-i="${i}"] .hit`).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, target);
 await page.mouse.click(at.x, at.y);
 s = await now();
@@ -299,7 +308,8 @@ await page.close();
 picture = false;
 page = await open();
 await page.evaluate(() => nor.decide(st.order[0].i, "approve"));
-await page.waitForTimeout(500);
+await page.pictureFailed;
+await page.evaluate(() => new Promise((ok) => requestAnimationFrame(ok)));
 const none = await page.evaluate(() => ({ image: !!document.querySelector("#overlay image.reveal"), bg: getComputedStyle(document.querySelector("#overlay .reveal-bg")).fill }));
 await check(!none.image && none.bg === "rgb(0, 0, 0)", "a picture that cannot load leaves the cut-outs black", none);
 await page.close();
