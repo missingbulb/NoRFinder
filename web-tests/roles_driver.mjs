@@ -6,6 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { standIn } from "./stand_in_drive.mjs";
 import { standInDrive, openFromDrive } from "./drive_open.mjs";
+import { motion } from "./page_motion.mjs";
 
 const [answers, studies, rootDir, image, shots] = process.argv.slice(2);
 const shot = (page, name) => shots && page.screenshot({ path: path.join(shots, name + ".png") });
@@ -95,7 +96,7 @@ const widthReaches = (open) => page.waitForFunction((open) => { const w = $("#da
 await widthReaches(true);
 s = await seen(page);
 await shot(page, "data-manager");
-await check(s.data && s.mode === "data" && (await width()) > 200, "as Data Manager the folder tree shows, open", { ...s, width: await width() });
+await check(s.data && s.mode === "data" && (await width()) > 200, "as Data Manager the folder tree shows, open", { ...s, width: await width(), motion: await motion(page) });
 await check(!s.bar, "no bar over the image asks for folders", s);
 await page.click("#data-open"); await widthReaches(false);
 await check((await width()) < 60 && (await seen(page)).mode === "data", "its chevron folds the tree to a strip", await width());
