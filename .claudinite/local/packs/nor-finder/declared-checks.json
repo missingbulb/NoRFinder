@@ -30,8 +30,8 @@
   {
     "id": "google-drive-in-one-file",
     "on_fail": "block",
-    "failureMessage": "the page knows Google in two files only: web/drive.js, the remote store (Google Drive), and web/account.js, the identity provider (signing in with Google and the settings it keeps in the user's Drive); anywhere else, Google is a detail the rest of the page must not depend on",
-    "fix": "move the Google-specific code or words into web/drive.js (the store, behind `remote`) or web/account.js (identity, behind the account it returns); a browser key or cache path named before this rule keeps its value as a constant alone on its line, `const NAME = \"nor-drive-…\";`",
+    "failureMessage": "the page knows Google in two files only, web/drive.js (the remote store) and web/account.js (the identity provider); anywhere else Google is a detail nothing may depend on",
+    "fix": "move the Google-specific code or words into web/drive.js (behind `remote`) or web/account.js (behind its account); an older browser key or cache path stays a constant alone on its line",
     "scanFiles": "/^(web|studies\\/[^/]+\\/web)\\/(?!(drive|account|config)\\.js$)(?!vendor\\/)[^]*\\.(m?js|html|css)$/",
     "matchLines": [
       {
