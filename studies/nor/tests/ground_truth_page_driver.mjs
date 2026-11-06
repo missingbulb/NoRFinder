@@ -96,8 +96,8 @@ async function open(drive) {
   await page.goto(origin + "/web/index.html?study=nor");
   await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false);
   if (drive) {
-    await page.click("#load-drive");
-    await page.dblclick(`#drive-list .item[data-id="${DRIVE_ID}"]`);
+    await page.click("#load-remote");
+    await page.dblclick(`#remote-list .item[data-id="${DRIVE_ID}"]`);
   } else {
     await page.setInputFiles("#file", image);
   }

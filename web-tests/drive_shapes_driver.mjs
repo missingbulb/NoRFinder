@@ -110,7 +110,7 @@ const frames = () => page.evaluate(() => new Promise((ok) => requestAnimationFra
 const quiet = async () => {
   const end = Date.now() + 10000, wants = FILES.map((f) => f.want);
   const told = () => page.waitForFunction(([wants, read]) => {
-    const box = $("#drive-list").getBoundingClientRect(), rows = [...document.querySelectorAll("#drive-list .item")];
+    const box = $("#remote-list").getBoundingClientRect(), rows = [...document.querySelectorAll("#remote-list .item")];
     return rows.every((b, k) => { const r = b.getBoundingClientRect(); return !(r.bottom > box.top && r.top < box.bottom || read.includes(k)) || (b.querySelector(".shape")?.textContent || "") === wants[k]; });
   }, [wants, reads.map((r) => r.k)], { timeout: Math.max(1, end - Date.now()) }).catch(() => {});
   for (;;) {
@@ -129,14 +129,14 @@ const quiet = async () => {
 };
 const open = async () => {
   await pressDrive(page);
-  await page.waitForFunction((n) => document.querySelectorAll("#drive-list .item").length === n, FILES.length);
+  await page.waitForFunction((n) => document.querySelectorAll("#remote-list .item").length === n, FILES.length);
   await quiet();
 };
 // each row's badge text, "" where it has none
-const badges = () => page.evaluate(() => [...document.querySelectorAll("#drive-list .item")].map((b) => b.querySelector(".shape")?.textContent || ""));
+const badges = () => page.evaluate(() => [...document.querySelectorAll("#remote-list .item")].map((b) => b.querySelector(".shape")?.textContent || ""));
 const inView = () => page.evaluate(() => {
-  const box = $("#drive-list").getBoundingClientRect();
-  return [...document.querySelectorAll("#drive-list .item")].flatMap((b, k) => { const r = b.getBoundingClientRect(); return r.bottom > box.top && r.top < box.bottom ? [k] : []; });
+  const box = $("#remote-list").getBoundingClientRect();
+  return [...document.querySelectorAll("#remote-list .item")].flatMap((b, k) => { const r = b.getBoundingClientRect(); return r.bottom > box.top && r.top < box.bottom ? [k] : []; });
 });
 const thumbOf = (k) => page.evaluate((id) => localStorage.getItem("nor-drive-thumb:" + id), FILES[k].id);
 
@@ -151,7 +151,7 @@ try {
   check(read.length === window.length && read.every((k, i) => k === window[i]), `read for the rows in view and the next ${AHEAD} only: ${read} (want ${window})`);
   check(reads.length > 0 && reads.length === read.length && reads.every((r) => r.range === `bytes=0-${HEAD - 1}`), `each read once, its first 64 KB: ${JSON.stringify(reads.slice(0, 3))}`);
   check(window.every((k) => b[k] === FILES[k].want), `every row read shows its badge: ${JSON.stringify(window.map((k) => [k, b[k], FILES[k].want]))}`);
-  if (shots) await page.locator("#drive-dlg").screenshot({ path: path.join(shots, "drive_shapes.png") });
+  if (shots) await page.locator("#remote-dlg").screenshot({ path: path.join(shots, "drive_shapes.png") });
 
   // remembered: a reload reads nothing it read before
   await page.reload(); await page.waitForFunction(() => window.$ && $("#title").textContent);
@@ -161,20 +161,20 @@ try {
   check(reads.length === 0 && window.every((k) => b[k] === FILES[k].want), `after a reload, the badges show with no read: ${reads.length} reads`);
 
   // not read while Show thumbnails is off
-  await page.uncheck("#drive-thumbs");
-  await page.evaluate(() => { $("#drive-list").scrollTop = $("#drive-list").scrollHeight; });
+  await page.uncheck("#remote-thumbs");
+  await page.evaluate(() => { $("#remote-list").scrollTop = $("#remote-list").scrollHeight; });
   await frames();
   check(reads.length === 0, `with Show thumbnails off, nothing is read: ${reads.length} reads`);
-  await page.check("#drive-thumbs");
+  await page.check("#remote-thumbs");
   await quiet();
   const end = await inView();
   b = await badges();
   check(end.length > 0 && end.every((k) => b[k] === FILES[k].want) && reads.every((r) => r.range), `ticked again, the rows in view are read: ${end.map((k) => b[k] || "-")}`);
-  await page.evaluate(() => { $("#drive-list").scrollTop = 0; });
+  await page.evaluate(() => { $("#remote-list").scrollTop = 0; });
 
   // opening the stack saves its 3D thumbnail at once; opening the flat image does not (its waits for the image to show)
-  await page.dblclick("#drive-list .item:nth-child(3)");
-  await page.waitForFunction(() => !$("#drive-dlg").open);
+  await page.dblclick("#remote-list .item:nth-child(3)");
+  await page.waitForFunction(() => !$("#remote-dlg").open);
   await page.waitForFunction(() => st.fileName === "c stack.tif");
   await page.waitForFunction((id) => localStorage.getItem("nor-drive-thumb:" + id), FILES[2].id, { timeout: 3000 }).catch(() => {});
   const pic = await thumbOf(2);
@@ -184,9 +184,9 @@ try {
   check(size && size[0] > 0 && size[0] <= 128 && size[1] <= 128, `a small picture: ${size}`);
   if (shots && pic) fs.writeFileSync(path.join(shots, "stack_preview.png"), Buffer.from(JSON.parse(pic).split(",")[1], "base64"));
   await open();
-  check(await page.evaluate(() => !!document.querySelector("#drive-list .item:nth-child(3) .pic img")), "the dialog shows it on the stack's row");
+  check(await page.evaluate(() => !!document.querySelector("#remote-list .item:nth-child(3) .pic img")), "the dialog shows it on the stack's row");
   // a two-channel stack: each channel in its own colour
-  await page.dblclick("#drive-list .item:nth-child(4)");
+  await page.dblclick("#remote-list .item:nth-child(4)");
   await page.waitForFunction(() => st.fileName === "c two.tif");
   await page.waitForFunction((id) => localStorage.getItem("nor-drive-thumb:" + id), FILES[3].id, { timeout: 3000 }).catch(() => {});
   const two = await thumbOf(3);
@@ -204,7 +204,7 @@ try {
   check(hues && hues.green > 10 && hues.magenta > 10, `a two-channel stack's thumbnail shows one channel green and the other magenta: ${JSON.stringify(hues)}`);
   if (shots && two) fs.writeFileSync(path.join(shots, "two_preview.png"), Buffer.from(JSON.parse(two).split(",")[1], "base64"));
   await open();
-  await page.dblclick("#drive-list .item:nth-child(1)");
+  await page.dblclick("#remote-list .item:nth-child(1)");
   await page.waitForFunction(() => st.fileName === "a flat.tif");
   // its shape remembered last: the moment, as it opens, that a stack's thumbnail is saved
   await page.waitForFunction((id) => Object.keys(JSON.parse(localStorage.getItem("nor-drive-holds") || "{}")).at(-1) === id, FILES[0].id);

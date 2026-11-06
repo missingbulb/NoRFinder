@@ -1,4 +1,4 @@
-// A study's ground truth on Google Drive (req/shell/ground-truth/folders, req/shell/ground-truth/layout): a submissions
+// A study's ground truth in the remote store (req/shell/ground-truth/folders, req/shell/ground-truth/layout): a submissions
 // folder taggers write to and a curated folder only Data Managers write to, the same folder twice for free submission.
 // Both hold one subfolder per image and one file per tagger in it. Reading goes through `reader` (the public folders,
 // no sign-in: all(folder) as [{id, name, folder, modified, properties}], text(id)); writing through `writer` (the
@@ -49,7 +49,7 @@ export async function current(reader, folder, image) {
 
 // Map(subfolder name -> {curated, pending, rejected}) over every image either folder holds ground truth for; pending
 // a submission not rejected newer than the image's curated file, or with none; rejected every submission rejected and
-// nothing curated. Times here are Drive's, for a listing reads no file.
+// nothing curated. Times here are the store's, for a listing reads no file.
 export async function status({ all }, { submissions, curated, same }) {
   const newest = async (folder) => {
     const out = new Map();

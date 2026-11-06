@@ -16,3 +16,13 @@
 - **Mechanism:** the dispatch is the SDK's `github.dispatchWorkflow`, granted in the pack's
   `githubActions`; finding and polling the run stay REST reads under the job token, as the SDK names
   no action for them; a red run fails through the SDK's `fail`.
+
+## 2026-11-05 · retired · the workflow runs itself nightly on its own schedule
+- **Reason:** the task only dispatched tests-full.yml and waited; its name and its issue confused
+  the owner.
+- **Actor:** @missingbulb (owner).
+- **Model:** claude-opus-5-5
+- **Mechanism:** a `schedule:` trigger in tests-full.yml, with the other-engines job gated on it; a
+  red night reaches a person through GitHub's own mail to whoever last changed the cron line.
+- **Rejected:** keeping the scheduler as the repo's only cron (owner's choice); a workflow step
+  opening an issue on failure.

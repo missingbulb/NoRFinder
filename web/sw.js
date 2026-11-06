@@ -56,7 +56,7 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   const u = new URL(req.url);
   const own = u.origin === self.location.origin && !u.pathname.includes("/vendor/");
-  // only the code the page runs is kept: never a user's own files, such as one read from Google Drive
+  // only the code the page runs is kept: never a user's own files, such as one read from the remote store
   const code = !own && (u.origin === self.location.origin || u.hostname === "cdn.jsdelivr.net");
   if (req.method !== "GET" || !(own || code)) return;
   const id = req.mode === "navigate" ? e.resultingClientId : e.clientId;

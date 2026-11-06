@@ -1,5 +1,6 @@
 // A stand-in Google Drive and the page that reaches it, shared by the Data Management drivers: the folder ROOT (the
-// files of a directory on disk, and its subdirectories as subfolders) served through the Drive API as a public folder;
+// files of a directory on disk, and its subdirectories as subfolders) served through the Drive API as a public folder,
+// to the site's key and the signed-in user's token alike;
 // the signed-in user's token approved for ROOT alone, and for the folders and files the page itself makes; the
 // fixture study given the user as its data manager and ROOT as its folder; a stand-in worker answering ANSWERS
 // (tests/test_study_runs.py), which keeps the last file it was handed as self.lastOpen, and opens a study's image as
@@ -144,8 +145,11 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
         return json(route, { id });
       }
       if (fields.includes("capabilities")) return may(id) ? json(route, { id, capabilities: { canAddChildren: !viewOnly.has(id) } }) : json(route, { error: { message: "File not found" } }, 404);
-      const f = FILES.find((g) => g.id === id);
-      return f?.mine ? json(route, { appProperties: { rauntruth: "made" } }) : json(route, { error: { message: "File not found" } }, 404);
+      if (fields.includes("appProperties")) {
+        const f = FILES.find((g) => g.id === id);
+        return f?.mine ? json(route, { appProperties: { rauntruth: "made" } }) : json(route, { error: { message: "File not found" } }, 404);
+      }
+      // any other read: the token reads what the public folder holds (req/shell/drive/credentials)
     }
     if (id === ROOT) return json(route, { name: "Study folder one" });
     const f = FILES.find((g) => g.id === id);
@@ -155,7 +159,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
   }
 
   const SIGNED_IN = { user: { name: "Tester", email: EMAIL, picture: null }, token: "stand-in-token", until: Date.now() + 3600e3,
-    scopes: "openid email profile https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file" };
+    scopes: "openid email profile https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file" };
   // scopes: what the signed-in user's token may do, in place of SIGNED_IN's; email: who is signed in, in place of the
   // study's data manager; seed: browser keys kept before the page opens; id: the study opened, the fixture unless
   // named; study: what its study.json says otherwise for this page (its stage, say); prepare(ctx): routes of a

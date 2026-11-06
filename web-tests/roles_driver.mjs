@@ -40,6 +40,16 @@ let page = await open(false);
 let s = await seen(page);
 await check(s.role === "Viewer" && s.list.join() === "Viewer" && /sign in/i.test(s.hint), "not signed in, the menu offers Viewer alone and says what signing in adds", s);
 await check(!s.bar, "a viewer sees no asking bar", s);
+// the header's menus at the window's right edge open leftward, wholly inside the window
+for (const menu of ["#role-menu", "#user-menu"]) {
+  await page.click(`${menu} summary`);
+  const box = await page.evaluate((m) => {
+    const r = document.querySelector(`${m} .pop`).getBoundingClientRect();
+    return { left: r.left, right: r.right, width: document.documentElement.clientWidth };
+  }, menu);
+  await check(box.left >= 0 && box.right <= box.width, `${menu}'s popup opens inside the window`, box);
+  await page.click(`${menu} summary`);
+}
 await page.context().close();
 
 // signed in, not a data manager: Viewer first, Ground Truth Tagger to choose

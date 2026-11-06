@@ -111,15 +111,15 @@ page.setDefaultTimeout(10000);
 
 // the image rows in view, by row number, and the window the page should fetch for them
 const inView = () => page.evaluate(() => {
-  const box = $("#drive-list").getBoundingClientRect();
-  return [...document.querySelectorAll("#drive-list .item:not(.folder)")].flatMap((b, k) => {
+  const box = $("#remote-list").getBoundingClientRect();
+  return [...document.querySelectorAll("#remote-list .item:not(.folder)")].flatMap((b, k) => {
     const r = b.getBoundingClientRect();
     return r.bottom > box.top && r.top < box.bottom ? [k] : [];
   });
 });
 const span = (rows) => { const out = []; for (let k = rows[0]; k <= Math.min(N - 1, rows[rows.length - 1] + AHEAD); k++) out.push(k); return out; };
 // the width of the picture each image row shows, null where it shows none
-const shown = () => page.evaluate(() => [...document.querySelectorAll("#drive-list .item:not(.folder) .pic")].map((p) => p.querySelector("img")?.naturalWidth || null));
+const shown = () => page.evaluate(() => [...document.querySelectorAll("#remote-list .item:not(.folder) .pic")].map((p) => p.querySelector("img")?.naturalWidth || null));
 // waits until every row in view and the next AHEAD has its picture or has been asked for, every request is answered, and the page says
 // its thumbnails are in (the status bar's "Thumbnails n of m" gone); 10 s at most, the checks after it saying what is missing
 const quiet = async () => {
@@ -142,7 +142,7 @@ const same = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
 const sorted = (a) => [...new Set(a)].sort((x, y) => x - y);
 const open = async () => {
   await pressDrive(page);
-  await page.waitForFunction((n) => document.querySelectorAll("#drive-list .item:not(.folder)").length === n, N);
+  await page.waitForFunction((n) => document.querySelectorAll("#remote-list .item:not(.folder)").length === n, N);
 };
 
 try {
@@ -168,13 +168,13 @@ try {
   check(asked.length === first.length, `each once: ${asked.length} fetches for ${first.length} rows`);
   let pics = await shown();
   check(first.every((k) => pics[k] === k + 1), `each thumbnail in its own row, whatever order they arrived in: ${first.map((k) => pics[k])}`);
-  if (shots) await page.locator("#drive-dlg").screenshot({ path: path.join(shots, "drive_thumbs.png") });
+  if (shots) await page.locator("#remote-dlg").screenshot({ path: path.join(shots, "drive_thumbs.png") });
 
   // a fast scroll to the bottom, answers slower than the scroll: the rows passed over are never fetched
   asked.length = 0; hold();
-  const height = await page.evaluate(() => $("#drive-list").scrollHeight);
+  const height = await page.evaluate(() => $("#remote-list").scrollHeight);
   // a step a frame, as a flung wheel scrolls
-  for (let y = 0; y <= height; y += 250) await page.evaluate((t) => new Promise((ok) => { $("#drive-list").scrollTop = t; requestAnimationFrame(ok); }), y);
+  for (let y = 0; y <= height; y += 250) await page.evaluate((t) => new Promise((ok) => { $("#remote-list").scrollTop = t; requestAnimationFrame(ok); }), y);
   letGo();
   await quiet();
   const last = span(await inView());
@@ -186,18 +186,18 @@ try {
   check(last.every((k) => pics[k] === k + 1), `which land in their own rows: ${last.map((k) => pics[k])}`);
 
   // closing midway stops the fetches; reopening shows what was fetched at once and fetches the rest in view
-  await page.evaluate(() => { $("#drive-list").scrollTop = 0; });
+  await page.evaluate(() => { $("#remote-list").scrollTop = 0; });
   await quiet();
   const had = (await shown()).flatMap((w, k) => (w ? [k] : []));
   asked.length = 0; delay = () => 300;
-  await page.evaluate(() => { $("#drive-list").scrollTop = $("#drive-list").scrollHeight / 2; });
+  await page.evaluate(() => { $("#remote-list").scrollTop = $("#remote-list").scrollHeight / 2; });
   // the first rows there asked for, their answers still on the way
   const from = await page.evaluate(() => window.thumbsAsked);
   await page.waitForFunction((n) => window.thumbsAsked > n, from).catch(() => {});
   const middle = span(await inView());
   check(had.length >= first.length && middle.length > AHEAD, `${had.length} thumbnails held before closing, ${middle.length} rows wanted midway`);
   // what the page had asked for, read in the same task as the close, so none is asked between the two
-  const cut = await page.evaluate(() => { const n = window.thumbsAsked; document.querySelector("#drive-dlg button[value=close]").click(); return n; }) - from;
+  const cut = await page.evaluate(() => { const n = window.thumbsAsked; document.querySelector("#remote-dlg button[value=close]").click(); return n; }) - from;
   // every request made before closing answered or cut off, and the page done with them
   for (const end = Date.now() + 5000; inflight && Date.now() < end; ) await Promise.race([next, atMost(end - Date.now())]);
   await frames();
@@ -207,20 +207,20 @@ try {
   await open();
   pics = await shown();
   check(had.every((k) => pics[k] === k + 1) && asked.length === 0, `reopened, the thumbnails fetched before show at once, none fetched again: ${had.filter((k) => pics[k] !== k + 1)}; asked ${asked}`);
-  await page.evaluate(() => { $("#drive-list").scrollTop = $("#drive-list").scrollHeight / 2; });
+  await page.evaluate(() => { $("#remote-list").scrollTop = $("#remote-list").scrollHeight / 2; });
   await quiet();
   pics = await shown();
   check(middle.every((k) => pics[k] === k + 1), `and it goes on to fetch what the rows in view lack: ${middle.map((k) => pics[k])}`);
   check(asked.every((k) => !had.includes(k)), `never one it already has: ${asked.filter((k) => had.includes(k))}`);
 
   // a folder asked for and left before its listing arrives never shows
-  await page.evaluate(() => { $("#drive-list").scrollTop = 0; });
-  await page.dblclick("#drive-list .item.folder");
-  await page.click("#drive-path button[data-k='0']");
+  await page.evaluate(() => { $("#remote-list").scrollTop = 0; });
+  await page.dblclick("#remote-list .item.folder");
+  await page.click("#remote-path button[data-k='0']");
   // the slow listing in, after the user moved on, and the page done with it
   await Promise.race([slowListed, atMost(5000)]);
   await frames();
-  const rows = await page.evaluate(() => [...document.querySelectorAll("#drive-list .item .name")].map((e) => e.textContent));
+  const rows = await page.evaluate(() => [...document.querySelectorAll("#remote-list .item .name")].map((e) => e.textContent));
   check(rows.length === N + 1 && !rows.includes("stale.tif"), `a listing that arrives after the user moved on is dropped: ${rows.length} rows${rows.includes("stale.tif") ? ", stale.tif among them" : ""}`);
 } catch (e) {
   failed = true; console.error("FAILED: " + e.message);

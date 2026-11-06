@@ -83,7 +83,7 @@ const quiet = async () => {
   const end = Date.now() + 10000;
   for (;;) {
     await page.waitForFunction(() => !/^Thumbnails /.test($("#status").textContent)
-      && [...document.querySelectorAll("#drive-list .item")].every((b) => b.querySelector(".shape").textContent),
+      && [...document.querySelectorAll("#remote-list .item")].every((b) => b.querySelector(".shape").textContent),
       null, { timeout: Math.max(1, end - Date.now()) }).catch(() => {});
     await frames();
     if (!inflight || Date.now() >= end) break;
@@ -93,11 +93,11 @@ const quiet = async () => {
 };
 const open = async () => {
   await pressDrive(page);
-  await page.waitForFunction((n) => document.querySelectorAll("#drive-list .item").length === n, FILES.length - 1);
+  await page.waitForFunction((n) => document.querySelectorAll("#remote-list .item").length === n, FILES.length - 1);
   await quiet();
 };
 // each row: its name, what it holds and whether it shows a picture
-const rows = () => page.evaluate(() => [...document.querySelectorAll("#drive-list .item")].map((b) => ({
+const rows = () => page.evaluate(() => [...document.querySelectorAll("#remote-list .item")].map((b) => ({
   name: b.querySelector(".name").textContent, shape: b.querySelector(".shape").textContent, pic: !!b.querySelector(".pic img, .pic canvas") })));
 const row = (all, name) => all.find((r) => r.name === name) || {};
 const readsOf = (name) => reads.filter((r) => r.name === name).map((r) => r.how).join();
@@ -116,17 +116,17 @@ try {
   check(readsOf("c changed.tif") === "piece" && readsOf("d new.tif") === "piece",
     `an image changed since the file was made, and one it lacks, are read as without it: ${readsOf("c changed.tif")} / ${readsOf("d new.tif")}`);
   const colour = await page.evaluate(() => {
-    const i = [...document.querySelectorAll("#drive-list .item")].find((b) => b.querySelector(".name").textContent === "a flat.tif").querySelector(".pic img");
+    const i = [...document.querySelectorAll("#remote-list .item")].find((b) => b.querySelector(".name").textContent === "a flat.tif").querySelector(".pic img");
     const c = document.createElement("canvas"); c.width = i.naturalWidth; c.height = i.naturalHeight;
     const g = c.getContext("2d"); g.drawImage(i, 0, 0); const d = g.getImageData(0, 0, c.width, c.height).data;
     let rg = 0, gb = 0; for (let j = 0; j < d.length; j += 4) { rg += Math.abs(d[j] - d[j + 1]); gb += Math.abs(d[j + 1] - d[j + 2]); }
     return [rg, gb].map((v) => v / (d.length / 4));
   });
   check(Math.min(...colour) > 5, `the flat preview is in colour: mean |r-g|, |g-b| ${colour.map((v) => v.toFixed(1))}`);
-  if (shots) await page.locator("#drive-dlg").screenshot({ path: path.join(shots, "drive_previews.png") });
+  if (shots) await page.locator("#remote-dlg").screenshot({ path: path.join(shots, "drive_previews.png") });
 
   // the stack turns while the pointer is over its row, and shows its still again after
-  const stackRow = `#drive-list .item:nth-child(${all.findIndex((r) => r.name === "b stack.tif") + 1})`;
+  const stackRow = `#remote-list .item:nth-child(${all.findIndex((r) => r.name === "b stack.tif") + 1})`;
   // the turning canvas's picture, null when the row shows its still
   const frame = () => page.evaluate((sel) => document.querySelector(sel + " .pic canvas")?.toDataURL() ?? null, stackRow);
   await page.hover(stackRow);
@@ -147,14 +147,14 @@ try {
   await open();
   check(!readsOf(PREVIEWS) && row(await rows(), "b stack.tif").pic, `after a reload it comes from this device: ${readsOf(PREVIEWS) || "no read"}`);
   const pv = file(PREVIEWS); pv.bytes = Buffer.concat([pv.bytes, Buffer.from([0])]);
-  await page.click("#drive-dlg button[value=close]");
+  await page.click("#remote-dlg button[value=close]");
   reads.length = 0;
   await open();
   // the new file read and its pictures drawn on the rows it covers
-  await page.waitForFunction(() => [...document.querySelectorAll("#drive-list .item")].find((b) => b.querySelector(".name").textContent === "a flat.tif")?.querySelector(".pic img, .pic canvas"),
+  await page.waitForFunction(() => [...document.querySelectorAll("#remote-list .item")].find((b) => b.querySelector(".name").textContent === "a flat.tif")?.querySelector(".pic img, .pic canvas"),
     null, { timeout: 5000 }).catch(() => {});
   check(readsOf(PREVIEWS) === "whole" && row(await rows(), "a flat.tif").pic, `changed on Drive, it is downloaded again: ${readsOf(PREVIEWS)}`);
-  await page.click("#drive-dlg button[value=close]");
+  await page.click("#remote-dlg button[value=close]");
 
   await page.click("#user-menu summary"); await page.click("#manage-storage");
   await page.waitForFunction(() => $("#usage-dlg").open && !/Reading/.test($("#storage-list").textContent));

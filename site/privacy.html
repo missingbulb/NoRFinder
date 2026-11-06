@@ -62,7 +62,8 @@ sent to us.</p>
     models that read it, when it first reads; and when you make a study available offline, which also
     asks it how large each package is. See
     <a href="https://www.jsdelivr.com/terms/privacy-policy-jsdelivr-net">jsDelivr's privacy policy</a>.</li>
-  <li><b>Google</b> answers when you open a Google Drive link you pasted (through the Drive API), when
+  <li><b>Google</b> answers when you open a Google Drive link you pasted (through the Drive API, as you while you
+    are signed in), when
     making a study available offline lists, or downloads, the images in its Drive folder, when
     you sign in with Google, and, while you are signed in, when the page reads or saves your settings
     file (see below); for a study's data managers and Ground Truth Taggers, when the page lists, checks and adds
@@ -81,8 +82,13 @@ permission for the site to:</p>
 <ul>
   <li>see your name, email address and profile picture, to show who is signed in in the avatar menu;</li>
   <li>see, create and change its own settings file in a hidden folder in your Google Drive
-    (the app data folder), to keep your settings the same on every device you sign in on.</li>
+    (the app data folder), to keep your settings the same on every device you sign in on;</li>
+  <li>see and download the files in your Google Drive, so that while you are signed in the Google Drive dialog opens
+    the images and folders your account can see, as you, whether or not they are shared publicly. The site reads
+    only the folders and images you open in it, and never changes anything with this permission.</li>
 </ul>
+<p>Google has not yet verified the site for reading your Drive, so its sign-in window warns that the app is
+unverified; continuing past the warning signs you in as above.</p>
 <p>If you work as a study's Ground Truth Tagger, or a study names you as one of its data managers, choosing to
 approve its folders asks Google for its per-file Drive permission, and then shows Google's picker with just that
 study's folders, for you to choose the ones the site may use. In the folders you choose, the site adds files for
@@ -91,8 +97,9 @@ images they edit, in a folder named after the image, and the ground truth they a
 the bin only files the site itself added, for you or for another of the study's taggers and data managers: a data
 manager accepting or rejecting your ground truth copies or marks your file. It never changes, moves or deletes a
 file someone made outside the site.</p>
-<p>Apart from those folders and the files it made, the site can't see, open or change anything in
-your Google Drive. The settings file holds only the settings listed in the avatar menu's Settings.</p>
+<p>The site changes nothing in your Google Drive but its own settings file and, in the study folders you chose, the
+files it adds there for you. It reads the folders and images you open in its Google Drive dialog, and the study
+folders it shows you. The settings file holds only the settings listed in the avatar menu's Settings.</p>
 <p>How this data is handled:</p>
 <ul>
   <li><b>Accessed and used:</b> your name, email address and picture are shown in the avatar menu.
@@ -100,7 +107,8 @@ your Google Drive. The settings file holds only the settings listed in the avata
     setting. Your email address is compared with the study's list of data managers, in your browser, and when
     you submit ground truth it names your file and is written into it.
     In the study folders you chose, the site reads which ones you may add files to, and adds the files you
-    ask it to. Nothing else is done with any of it.</li>
+    ask it to. A folder you open in the Google Drive dialog is listed (its files' names, sizes and dates), and an image
+    you open there is downloaded into your browser, as for a public link. Nothing else is done with any of it.</li>
   <li><b>Stored:</b> your name, email address, picture and Google's sign-in token (which expires
     after about an hour) are kept in your browser on this device until you sign out. The settings file
     stays in your own Google Drive, and the files the site adds stay in the study's folders. We keep no copy of any of it, anywhere.</li>

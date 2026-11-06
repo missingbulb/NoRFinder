@@ -132,7 +132,7 @@ const mounted = (id) => page.waitForFunction((t) => window.$ && $("#title").text
 const rows = () => page.$$eval("#image-menu .recent", (bs) => bs.map((b) => ({ name: b.querySelector(".name").textContent, where: b.querySelector(".where")?.textContent,
   age: b.querySelector(".age")?.textContent || "", grey: b.disabled, selected: b.getAttribute("aria-selected") === "true" })));
 // the dialog's rows: name, age, whether greyed and marked kept
-const listed = () => page.$$eval("#drive-list .item", (bs) => bs.map((b) => ({ name: b.querySelector(".name").textContent, age: b.querySelector(".age")?.textContent || "",
+const listed = () => page.$$eval("#remote-list .item", (bs) => bs.map((b) => ({ name: b.querySelector(".name").textContent, age: b.querySelector(".age")?.textContent || "",
   grey: b.disabled, kept: !!b.querySelector(".offline-mark"), fresh: b.querySelector(".new")?.title ?? null, meta: b.querySelector(".meta")?.textContent || "" })));
 
 try {
@@ -140,10 +140,10 @@ try {
   await page.goto(origin + "/web/index.html");
   await mounted("Image Viewer");
   await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
-  check(await shown("#image-menu") && (await shown("#load-main")) && (await shown("#load-drive")) && !(await shown("#load-menu")),
+  check(await shown("#image-menu") && (await shown("#load-main")) && (await shown("#load-remote")) && !(await shown("#load-menu")),
     "the Image Viewer offers the image selector, the computer's button and Drive's button");
   check(await page.$("#load-main svg.computer-logo"), "the computer's button bears a computer");
-  const [vPick, vLocal, vDrive] = [await box("#image-menu"), await box("#load-main"), await box("#load-drive")];
+  const [vPick, vLocal, vDrive] = [await box("#image-menu"), await box("#load-main"), await box("#load-remote")];
   check(vLocal.x > vPick.x + vPick.w - 1 && vDrive.x > vLocal.x + vLocal.w - 1, "the computer's button, then Drive's, at the selector's right", { vPick, vLocal, vDrive });
   if (await page.evaluate(() => typeof window.showOpenFilePicker === "function")) {
     await page.click("#load-main");
@@ -166,10 +166,10 @@ try {
     check(true, `with no picker that keeps a reference to the file, as in this ${ENGINE}, the computer's button opens the file chooser`);
     check(!(await rows()).some((r) => r.where === "This computer"), "and the file is not among the recent ones, which could not open it again");
   }
-  await page.click("#load-drive");
-  await page.waitForFunction(() => $("#drive-dlg").open);
-  check(await shown("#drive-link") && (await shown("#drive-go")), "the Image Viewer's Drive dialog takes a pasted link");
-  await page.click("#drive-dlg button[value=close]");
+  await page.click("#load-remote");
+  await page.waitForFunction(() => $("#remote-dlg").open);
+  check(await shown("#remote-link") && (await shown("#remote-go")), "the Image Viewer's Drive dialog takes a pasted link");
+  await page.click("#remote-dlg button[value=close]");
   await page.click("#user-menu summary"); await page.click("#open-settings");
   await page.waitForFunction(() => $("#settings-dlg").open && $("#settings-dlg [name=nor-theme]"));
   check(!(await page.$("#settings-dlg [name=nor-load-source]")), "where Load reads from is no setting");
@@ -179,29 +179,29 @@ try {
   for (const [id, title] of [["nor", "NoR Finder"], ["vascular", "Vascular Measurements"], ["fixture", "Fixture"]]) {
     await page.goto(origin + "/web/" + id);
     await mounted(title);
-    check(!(await shown("#load-main")) && !(await shown("#load-menu")) && (await shown("#image-menu")) && (await shown("#load-drive")),
+    check(!(await shown("#load-main")) && !(await shown("#load-menu")) && (await shown("#image-menu")) && (await shown("#load-remote")),
       `${title} offers the image selector and Drive's button, and no Load from the computer`);
   }
   check(!(await page.$$eval("#image-menu .recent .where", (ws) => ws.some((w) => w.textContent === "This computer"))), "a file from the computer is listed in the Image Viewer alone");
 
   // ---- req/shell/drive/dialog: a study's dialog browses its own folders, with no link to paste ----
-  await page.click("#load-drive");
-  await page.waitForFunction(() => $("#drive-dlg").open && document.querySelectorAll("#drive-list .item").length === 4);
-  check(!(await shown("#drive-link")) && !(await shown("#drive-go")), "a study's Drive dialog has no link to paste");
-  check(/Slides/.test(await page.textContent("#drive-path")), "and opens straight into the one folder the study names", await page.textContent("#drive-path"));
-  await page.click("#drive-dlg button[value=close]");
+  await page.click("#load-remote");
+  await page.waitForFunction(() => $("#remote-dlg").open && document.querySelectorAll("#remote-list .item").length === 4);
+  check(!(await shown("#remote-link")) && !(await shown("#remote-go")), "a study's Drive dialog has no link to paste");
+  check(/Slides/.test(await page.textContent("#remote-path")), "and opens straight into the one folder the study names", await page.textContent("#remote-path"));
+  await page.click("#remote-dlg button[value=close]");
   folders = [ROOT, OTHER];
   await page.reload(); await mounted("Fixture");
-  await page.click("#load-drive");
+  await page.click("#load-remote");
   // each folder's name, as Drive gives it
-  await page.waitForFunction(() => $("#drive-dlg").open && [...document.querySelectorAll("#drive-list .item.folder .name")].map((n) => n.textContent).join() === "Slides,Other slides")
+  await page.waitForFunction(() => $("#remote-dlg").open && [...document.querySelectorAll("#remote-list .item.folder .name")].map((n) => n.textContent).join() === "Slides,Other slides")
     .catch(() => {});
   let roots = await listed();
   check(roots.map((x) => x.name).join() === "Slides,Other slides", "naming two, it lists them by name to choose from", roots.map((x) => x.name));
-  await page.dblclick("#drive-list .item:nth-child(1)");
-  await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 4);
+  await page.dblclick("#remote-list .item:nth-child(1)");
+  await page.waitForFunction(() => document.querySelectorAll("#remote-list .item").length === 4);
   check(true, "and opens the one chosen");
-  await page.click("#drive-dlg button[value=close]");
+  await page.click("#remote-dlg button[value=close]");
   folders = [ROOT];
   await page.reload(); await mounted("Fixture");
 
@@ -215,8 +215,8 @@ try {
   check(/Choose an image/.test(await page.textContent("#image-pick")), "before an image, the selector says to choose one");
   check(!(await shown("#unload")), "with no Unload yet");
   check(await page.evaluate(() => $("#image-pick").classList.contains("primary")), "the selector shines until an image is open");
-  check(await page.$("#load-drive svg.drive-logo"), "Drive's button bears Drive's logo");
-  const [pick, drive] = [await box("#image-menu"), await box("#load-drive")];
+  check(await page.$("#load-remote svg.remote-logo"), "Drive's button bears Drive's logo");
+  const [pick, drive] = [await box("#image-menu"), await box("#load-remote")];
   check(drive.x > pick.x + pick.w - 1 && Math.abs(drive.y + drive.h / 2 - (pick.y + pick.h / 2)) < 4, "Drive's button stands at the selector's right, on its line", { pick, drive });
   await page.click("#image-pick");
   let r = await rows();
@@ -228,15 +228,15 @@ try {
   await page.keyboard.press("Escape");
 
   // a first open, from the dialog, downloads and keeps kept.png
-  await page.click("#load-drive");
-  await page.waitForFunction(() => $("#drive-dlg").open && document.querySelectorAll("#drive-list .item").length === 4);
+  await page.click("#load-remote");
+  await page.waitForFunction(() => $("#remote-dlg").open && document.querySelectorAll("#remote-list .item").length === 4);
   let d = await listed();
   check(d.find((x) => x.name === "kept.png").age === "<1h" && d.find((x) => x.name === "far.png").age === "6d" && !d.find((x) => x.name === "never.png").age,
     "the Drive dialog says how long since each image was opened, nothing for one never opened", d);
   check(d.every((x) => !x.kept), "online, nothing kept yet carries the mark", d);
   // req/shell/drive/dialog: no date added to Drive on a row; a folder listed for the first time marks nothing new
   check(d.every((x) => x.fresh === null && !/2026/.test(x.meta)), "a row shows no date, and a folder listed here for the first time marks none of its images new", d);
-  await page.dblclick('#drive-list .item[data-id="linekept000000000001"]');
+  await page.dblclick('#remote-list .item[data-id="linekept000000000001"]');
   await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded.");
   await until(page, async () => (await (await caches.open("nor-images-v1")).keys()).length === 1);
   // the box folds once the image is open, a step coming after Load: a click opens it again
@@ -244,7 +244,7 @@ try {
   await page.waitForFunction(() => !$("#image-box").classList.contains("folded") && $("#unload").getClientRects().length);
   check(/kept\.png/.test(await page.textContent("#image-pick")), "once open, the selector names the image");
   check(await shown("#unload"), "and Unload shows");
-  const [p2, u2, d2] = [await box("#image-menu"), await box("#unload"), await box("#load-drive")];
+  const [p2, u2, d2] = [await box("#image-menu"), await box("#unload"), await box("#load-remote")];
   check(u2.x > p2.x + p2.w - 1 && d2.x > u2.x + u2.w - 1 && Math.abs(u2.y + u2.h / 2 - (p2.y + p2.h / 2)) < 4, "Unload stands between the selector and Drive's button", { p2, u2, d2 });
   check(await page.evaluate(() => $("#file-name").textContent.trim() === "Details"), "the details below are titled Details");
   await shot("loaded", "#image-box");
@@ -253,22 +253,24 @@ try {
   check(true, "Unload clears the image");
 
   // ---- req/shell/drive/offline-listing ----
-  await page.click("#load-drive");
-  await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 4);
-  await until(page, () => document.querySelector('#drive-list .item[data-id="linekept000000000001"] .offline-mark'));
+  await page.click("#load-remote");
+  await page.waitForFunction(() => document.querySelectorAll("#remote-list .item").length === 4);
+  await until(page, () => document.querySelector('#remote-list .item[data-id="linekept000000000001"] .offline-mark'));
   d = await listed();
   check(d.find((x) => x.name === "kept.png").kept && !d.find((x) => x.name === "far.png").kept, "online, the image kept here carries the mark, the others nothing", d);
-  const colour = await page.evaluate(() => getComputedStyle(document.querySelector("#drive-list .offline-mark")).color.match(/\d+/g).map(Number));
+  const colour = await page.evaluate(() => getComputedStyle(document.querySelector("#remote-list .offline-mark")).color.match(/\d+/g).map(Number));
   check(colour[1] > colour[0] + 40 && colour[1] > colour[2] + 40, "the mark is green", colour);
   // the nor-finder pack's row-indicators-edges: what every row shows at its edges, what only some do inward
-  const order = await page.$eval('#drive-list .item[data-id="linekept000000000001"]', (b) => {
+  const order = await page.$eval('#remote-list .item[data-id="linekept000000000001"]', (b) => {
     const at = (sel) => [...b.querySelectorAll("*")].indexOf(b.querySelector(sel)), r = (sel) => b.querySelector(sel).getBoundingClientRect();
     return { meta: b.lastElementChild.classList.contains("meta"), inward: [".age", ".offline-mark"].every((sel) => r(sel).right <= r(".meta").left + 1 && r(sel).left >= r(".name").left),
-      before: at(".age") < at(".offline-mark") };
+      before: at(".age") < at(".offline-mark"), shape: at(".offline-mark") < at(".shape") && (!r(".shape").width || r(".offline-mark").right <= r(".shape").left + 1),
+      tip: b.querySelector(".offline-mark").title };
   });
-  check(order.meta && order.inward && order.before, "a row's size and date, which every image shows, sit at its edge; its age and mark inward", order);
+  check(order.meta && order.inward && order.before && order.shape, "a row's size and date, which every image shows, sit at its edge; its age and mark inward, the mark before what the image holds", order);
+  check(order.tip === "Available for offline", "the mark carries a tiny tooltip", order);
   check(await page.evaluate((id) => !!JSON.parse(localStorage.getItem("nor-drive-listings") || "{}")[id], ROOT), "the folder's listing is kept on this device");
-  await page.click("#drive-dlg button[value=close]");
+  await page.click("#remote-dlg button[value=close]");
 
   await ctx.setOffline(true);
   await page.waitForFunction(() => document.documentElement.classList.contains("offline"));
@@ -277,15 +279,15 @@ try {
   r = await rows();
   check(r.find((x) => x.name === "kept.png").grey === false && r.filter((x) => x.name !== "kept.png").every((x) => x.grey), "offline, the selector greys the images not kept here", r);
   await page.keyboard.press("Escape");
-  await page.click("#load-drive");
-  await page.waitForFunction(() => $("#drive-dlg").open && document.querySelectorAll("#drive-list .item").length === 4);
+  await page.click("#load-remote");
+  await page.waitForFunction(() => $("#remote-dlg").open && document.querySelectorAll("#remote-list .item").length === 4);
   d = await listed();
   check(d.map((x) => x.name).join() === "Sub,kept.png,far.png,never.png", "offline, the dialog opens on the folder as last listed", d.map((x) => x.name));
   check(!d.find((x) => x.name === "kept.png").grey && ["Sub", "far.png", "never.png"].every((n) => d.find((x) => x.name === n).grey),
     "the image kept here opens, the others and a folder never listed are greyed", d);
-  await shot("offline_dialog", "#drive-dlg");
+  await shot("offline_dialog", "#remote-dlg");
   calls.length = 0;
-  await page.dblclick('#drive-list .item[data-id="linekept000000000001"]');
+  await page.dblclick('#remote-list .item[data-id="linekept000000000001"]');
   await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded.");
   check(calls.length === 0, "and opens from this device", calls);
 
@@ -295,24 +297,24 @@ try {
   FILES.push({ id: "linenew000000000001", name: "new.png", bytes: Buffer.concat([PNG, Buffer.from([3])]) });
   calls.length = 0;
   await page.click("#image-box.folded");
-  await page.click("#load-drive");
-  await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 5);
+  await page.click("#load-remote");
+  await page.waitForFunction(() => document.querySelectorAll("#remote-list .item").length === 5);
   check(calls.includes("list"), "online, opening the dialog reads the folder again", calls);
   await until(page, (id) => JSON.parse(localStorage.getItem("nor-drive-listings") || "{}")[id]?.items?.some((f) => f.name === "new.png"), ROOT);
   check(true, "and keeps what Drive says now in place of the old listing");
-  await until(page, () => document.querySelector('#drive-list .item[data-id="linenew000000000001"] .new'));
+  await until(page, () => document.querySelector('#remote-list .item[data-id="linenew000000000001"] .new'));
   d = await listed();
   const added = d.find((x) => x.name === "new.png");
   check(/2026/.test(added.fresh || "") && d.filter((x) => x.fresh !== null).length === 1, "the image the folder did not hold last time is marked new, its hover saying when it was added to Drive", d);
-  const where = await page.$eval('#drive-list .item[data-id="linenew000000000001"]', (b) => { const r = (s) => b.querySelector(s).getBoundingClientRect(); return r(".new").left >= r(".name").left && r(".new").right <= r(".meta").left + 1; });
+  const where = await page.$eval('#remote-list .item[data-id="linenew000000000001"]', (b) => { const r = (s) => b.querySelector(s).getBoundingClientRect(); return r(".new").left >= r(".name").left && r(".new").right <= r(".meta").left + 1; });
   check(where, "the new mark sits inward, the size at the row's edge (the nor-finder pack's row-indicators-edges)");
-  await shot("new_in_dialog", "#drive-dlg");
-  await page.click("#drive-dlg button[value=close]");
-  await page.click("#load-drive");
-  await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 5 && !document.querySelector("#drive-list .item .new"), null, { timeout: 3000 }).catch(() => {});
+  await shot("new_in_dialog", "#remote-dlg");
+  await page.click("#remote-dlg button[value=close]");
+  await page.click("#load-remote");
+  await page.waitForFunction(() => document.querySelectorAll("#remote-list .item").length === 5 && !document.querySelector("#remote-list .item .new"), null, { timeout: 3000 }).catch(() => {});
   d = await listed();
   check(d.every((x) => x.fresh === null), "listed again, the folder holding the same images, none is new any more", d);
-  await page.click("#drive-dlg button[value=close]");
+  await page.click("#remote-dlg button[value=close]");
 } catch (e) {
   failed = true; console.error("FAILED: " + e.message);
 }

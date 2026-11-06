@@ -64,7 +64,9 @@ nobody has decided: what the page does there is not a requirement yet.
   in the app's hidden folder (`drive.appdata`), as one small file it reads whole and replaces whole.
   When the site has a Google client (the repository variable `GOOGLE_CLIENT_ID`, written into
   `config.js` by the build), the avatar's menu offers Sign in with Google, which asks Google for the
-  user's name, email and picture and for the app's own folder in their Drive, nothing else of it.
+  user's name, email and picture, for the app's own folder in their Drive, and, set by the owner on
+  2026-11-06, to read their Drive (`req/shell/drive/credentials`); it changes nothing in their Drive but its own folder
+  and what a study's folders let it write (`req/shell/data/drive-access`).
   Signed in, the avatar is the user's picture, the menu names them and offers Sign out. These
   settings follow the user: dark or light, the tips closed, the version last seen, the low-memory
   popup turned off, the role the user works in (`req/shell/account/role`), the last Drive link (in each study too), Show thumbnails,
@@ -281,13 +283,28 @@ nobody has decided: what the page does there is not a requirement yet.
   `web-tests/test_dialog_motion_page.py`.
   </details>
 
-- `req/shell/drive/dialog` Google Drive, no sign-in: a study browses its own folders, the Image Viewer takes a pasted link; open on Open, double click or Enter.
+- `req/shell/drive/credentials` Signed in, the page reads Google Drive as the user, with their token alone; signed out, with the site's API key.
+  <details>
+
+  Set by the owner on 2026-11-06. Signed in, every Drive read the page makes (a folder's listing, a file's details,
+  a download) carries the user's own Google token and never the site's API key, so a folder the user's account can
+  see opens whether or not it is shared publicly, a shared drive's included, and one it cannot see is refused as
+  Google refuses it. Signed out, the same reads carry the site's API key alone, and reach only what is shared as
+  "Anyone with the link". A signed-in user whose token has run out is not read for with the key: the next click on
+  a Drive control renews the token, and a read with none says to click again. Sign-in asks Google for read access
+  to the user's Drive (`drive.readonly`) along with the rest (`req/shell/account/sign-in`); a token from before
+  that, lacking it, is renewed on the next click on a Drive control. `drive.readonly` is a restricted scope: until
+  Google verifies the site, Google shows an "unverified app" screen on signing in and lets in at most 100 new users
+  (missingbulb/NoRFinder#803). Test: `web-tests/test_drive_credentials_page.py`.
+  </details>
+
+- `req/shell/drive/dialog` Google Drive: a study browses its own folders, the Image Viewer takes a pasted link; open on Open, double click or Enter.
   <details>
 
   Set by the owner on 2026-11-04: a study naming Drive folders (its `files.folders`) offers no link to paste; its
   dialog opens on its folders, straight into the one when it names one, else on a list of them by name, and browses
-  only within them. A study naming none, the Image Viewer, takes the pasted link of an image or a folder shared as
-  "Anyone with the link". An image's link loads it at once; a folder lists its images and subfolders to pick from, each image
+  only within them. A study naming none, the Image Viewer, takes the pasted link of an image or a folder: one shared as
+  "Anyone with the link", or, signed in, any the user's account can see (`req/shell/drive/credentials`). An image's link loads it at once; a folder lists its images and subfolders to pick from, each image
   with its size, a small colour thumbnail and, for one opened before in the study, how long since, as the image
   selector says it (`req/shell/load/selector`); set by the owner on 2026-11-04, in place of the date it was added to
   Drive, an image the folder did not hold when this device last listed it carries a small boxed "new", and hovering
@@ -728,9 +745,11 @@ nobody has decided: what the page does there is not a requirement yet.
   section, and an image kept on this device, in the Google Drive dialog's rows; what is not available
   offline carries nothing. The image selector's images carry none: with Auto-save on, they are all kept; offline,
   one not kept is greyed (`req/shell/load/selector`). The owner set on
-  2026-11-04 that the mark states a state rather than prompting an action, so it is green, with no tooltip and no
-  question-mark pointer; assistive tech is told what it means: the study runs, or the image opens, without the internet. Test:
-  `web-tests/test_storage_page.py`.
+  2026-11-04 that the mark states a state rather than prompting an action, so it is green, with no
+  question-mark pointer; assistive tech is told what it means: the study runs, or the image opens, without the internet.
+  The owner set on 2026-11-06 a tiny tooltip on it, "Available for offline", and that in a Drive row it sits before what
+  the image holds (2D, 3D), which every image shows (the nor-finder pack's row-indicators-edges). Tests:
+  `web-tests/test_storage_page.py`, `web-tests/test_image_line_page.py`.
   </details>
 
 - `req/shell/offline/per-study` Each study can be made available offline from the Storage tab, after a popup with what it takes and how long.
@@ -1332,7 +1351,7 @@ nobody has decided: what the page does there is not a requirement yet.
 
   The fast set runs on each PR (`.github/workflows/tests.yml`, `-m "not full"`) and needs neither
   Node nor a browser; every test that drives Node, Pyodide or Chromium, or measures speed or memory,
-  is marked `full` and runs only in the full set, nightly (the nor-finder pack's `full-tests` task)
+  is marked `full` and runs only in the full set, nightly (the workflow's own schedule)
   and on every push to main, so it has run on anything a release can ship: a green full run on main
   wakes the site release (`.github/workflows/tests-full.yml`, `web-tests/test_ci_split.py`). The nightly run also
   runs the full set on Firefox and WebKit (`req/checks/other-engines`).
@@ -1341,7 +1360,7 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/checks/other-engines` Every night the full set also runs on Firefox and WebKit; their failures fail the night only once the page supports their browser.
   <details>
 
-  Set by the owner on 2026-11-03. The nightly full run (the nor-finder pack's `full-tests` task) runs the full
+  Set by the owner on 2026-11-03. The nightly full run (the workflow's own schedule) runs the full
   set again on Playwright's Firefox and on its WebKit, standing for Safari; a push to main does not, and
   neither gates a release. An engine whose browser `web/browsers.json` does not list (`req/shell/browsers/supported`) reports
   its failures as a warning on the run and the night stays green; once its browser is listed, a failure

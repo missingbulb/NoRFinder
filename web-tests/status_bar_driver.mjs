@@ -526,6 +526,16 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await page.click("#sb-online");
   const tab = await page.evaluate(() => document.querySelector("#usage-dlg").open && document.querySelector("#usage-dlg").dataset.tab);
   await check(tab === "storage", "clicking it opens the Storage tab, where offline is set up", tab);
+  // a clicked item is not left ringed when its dialog closes, by the keyboard or by the mouse
+  const ringed = () => page.evaluate(() => [...document.querySelectorAll("#statusbar *")].filter((e) => {
+    const cs = getComputedStyle(e);
+    return cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0;
+  }).map((e) => e.id || e.className));
+  await page.keyboard.press("Escape");
+  await check(!(await ringed()).length, "closing its dialog with Escape leaves no ring in the status bar", await ringed());
+  await page.click("#sb-online");
+  await page.click('#usage-dlg button[value="close"]');
+  await check(!(await ringed()).length, "closing it with its Close button leaves none either", await ringed());
   await ctx.setOffline(false);
   await page.waitForFunction(() => !document.documentElement.classList.contains("offline"), null, { timeout: 40000 }).catch(() => {});
   const back = await icon();
@@ -577,7 +587,7 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await page.click("#study-list a >> text=NoR Finder");
   await page.waitForFunction(() => document.documentElement.dataset.stage === "GT");
   // NoR Finder loads from Drive (req/shell/load/from): with no image opened there yet, Drive's button is the step's
-  await steps(page, ["Load image*"], ["#load-drive", "#sb-load"]);
+  await steps(page, ["Load image*"], ["#load-remote", "#sb-load"]);
   await ctx.close();
 }
 await done(0);

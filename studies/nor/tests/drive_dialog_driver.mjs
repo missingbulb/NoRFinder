@@ -92,21 +92,21 @@ const page = await ctx.newPage();
 page.on("pageerror", (e) => done(1, "page error: " + e.message));
 page.setDefaultTimeout(15000);
 await page.goto(origin + "/web/index.html?study=nor");
-await page.click("#load-drive");
-await page.waitForSelector("#drive-list .item");
-const rows = await page.$$eval("#drive-list .item", (b) => b.map((e) => e.querySelector(".name").textContent));
+await page.click("#load-remote");
+await page.waitForSelector("#remote-list .item");
+const rows = await page.$$eval("#remote-list .item", (b) => b.map((e) => e.querySelector(".name").textContent));
 console.log("rows:", rows.join(" | "));
 if (rows.length !== files.length + 2) await done(1, `expected ${files.length + 2} rows`);
 
 // the lab's images show the site's thumbnails, the other none, and nothing is read from Drive
-await page.waitForFunction((n) => document.querySelectorAll("#drive-list .item .pic img").length === n, files.length);
-await page.waitForFunction((n) => document.querySelector("#drive-thumbs-note").textContent.startsWith(`${n} of ${n} ·`), files.length);
-const pics = await page.$$eval("#drive-list .item .pic", (ps) => ps.map((p) => (p.querySelector("img") ? p.querySelector("img").naturalWidth : 0)));
-console.log("thumbnail widths:", JSON.stringify(pics), "· beside the checkbox:", await page.textContent("#drive-thumbs-note"));
+await page.waitForFunction((n) => document.querySelectorAll("#remote-list .item .pic img").length === n, files.length);
+await page.waitForFunction((n) => document.querySelector("#remote-thumbs-note").textContent.startsWith(`${n} of ${n} ·`), files.length);
+const pics = await page.$$eval("#remote-list .item .pic", (ps) => ps.map((p) => (p.querySelector("img") ? p.querySelector("img").naturalWidth : 0)));
+console.log("thumbnail widths:", JSON.stringify(pics), "· beside the checkbox:", await page.textContent("#remote-thumbs-note"));
 if (pics[pics.length - 1]) await done(1, "an image the lab's list lacks has a thumbnail");
 if (Object.values(asked).some((a) => a.whole)) await done(1, "thumbnails were read from Drive");
 // a colour thumbnail: its three colours differ
-const colour = await page.$eval("#drive-list .item .pic img", (i) => {
+const colour = await page.$eval("#remote-list .item .pic img", (i) => {
   const c = document.createElement("canvas"); c.width = i.naturalWidth; c.height = i.naturalHeight;
   const x = c.getContext("2d"); x.drawImage(i, 0, 0); const d = x.getImageData(0, 0, c.width, c.height).data;
   let rg = 0, gb = 0; for (let j = 0; j < d.length; j += 4) { rg += Math.abs(d[j] - d[j + 1]); gb += Math.abs(d[j + 1] - d[j + 2]); }
@@ -115,27 +115,27 @@ const colour = await page.$eval("#drive-list .item .pic img", (i) => {
 console.log("mean |r-g|, |g-b|:", colour.map((v) => v.toFixed(1)).join(", "));
 if (Math.min(...colour) < 5) await done(1, "the thumbnail is not in colour");
 // the checkbox and the message beside it share a line
-const tops = await page.evaluate(() => ["#drive-thumbs-l", "#drive-msg"].map((q) => { const r = document.querySelector(q).getBoundingClientRect(); return r.top + r.height / 2; }));
+const tops = await page.evaluate(() => ["#remote-thumbs-l", "#remote-msg"].map((q) => { const r = document.querySelector(q).getBoundingClientRect(); return r.top + r.height / 2; }));
 if (Math.abs(tops[0] - tops[1]) > 1) await done(1, "the checkbox and the message are not aligned: " + tops);
 
 // a click selects and loads nothing; Open waits for a selection
-if (!(await page.$eval("#drive-open", (b) => b.disabled))) await done(1, "Open is on with nothing selected");
-await page.click("#drive-list .item:nth-child(2)");
-const selected = await page.$$eval("#drive-list .item", (b) => b.map((e) => e.getAttribute("aria-selected")));
+if (!(await page.$eval("#remote-open", (b) => b.disabled))) await done(1, "Open is on with nothing selected");
+await page.click("#remote-list .item:nth-child(2)");
+const selected = await page.$$eval("#remote-list .item", (b) => b.map((e) => e.getAttribute("aria-selected")));
 if (selected.join() !== rows.map((_, k) => String(k === 1)).join()) await done(1, "a click did not select just that row: " + selected);
-if (!(await page.$eval("#drive-dlg", (d) => d.open)) || asked[files[0].id].whole) await done(1, "a click loaded the image");
-if (shot && shot !== "-") await page.locator("#drive-dlg").screenshot({ path: shot });
+if (!(await page.$eval("#remote-dlg", (d) => d.open)) || asked[files[0].id].whole) await done(1, "a click loaded the image");
+if (shot && shot !== "-") await page.locator("#remote-dlg").screenshot({ path: shot });
 
 // a double click enters a folder, and its thumbnail is kept from before
 const served = thumbsServed;
-await page.dblclick("#drive-list .item:nth-child(1)");
-await page.waitForFunction(() => document.querySelector("#drive-path").textContent.includes("More slides") && document.querySelectorAll("#drive-list .item").length === 1);
-await page.waitForSelector("#drive-list .item .pic img");
+await page.dblclick("#remote-list .item:nth-child(1)");
+await page.waitForFunction(() => document.querySelector("#remote-path").textContent.includes("More slides") && document.querySelectorAll("#remote-list .item").length === 1);
+await page.waitForSelector("#remote-list .item .pic img");
 if (thumbsServed !== served) await done(1, "a thumbnail was fetched again");
 // Open loads the selected image
-await page.click("#drive-list .item");
-await page.click("#drive-open");
-await page.waitForFunction(() => !document.querySelector("#drive-dlg").open);
+await page.click("#remote-list .item");
+await page.click("#remote-open");
+await page.waitForFunction(() => !document.querySelector("#remote-dlg").open);
 if (!(await askedWhole(files[0].id, 5000).then(() => true, () => false))) await done(1, "Open did not load the image");
 console.log("select, double click and Open all work");
 
@@ -146,21 +146,21 @@ await page.evaluate((id) => { st.W = 8; st.H = 8; const v = (k) => Uint8Array.fr
 const fresh = await ctx.newPage();
 fresh.on("pageerror", (e) => done(1, "page error: " + e.message));
 await fresh.goto(origin + "/web/index.html?study=nor");
-await fresh.click("#load-drive");
-await fresh.waitForSelector("#drive-list .item");
-await fresh.waitForSelector("#drive-list .item:last-child .pic img");
-if (!(await fresh.$eval("#drive-thumbs", (c) => c.checked))) await done(1, "Download thumbnails starts unticked");
-await fresh.uncheck("#drive-thumbs");
+await fresh.click("#load-remote");
+await fresh.waitForSelector("#remote-list .item");
+await fresh.waitForSelector("#remote-list .item:last-child .pic img");
+if (!(await fresh.$eval("#remote-thumbs", (c) => c.checked))) await done(1, "Download thumbnails starts unticked");
+await fresh.uncheck("#remote-thumbs");
 await fresh.reload();
 const before = thumbsServed;
 let thumbsAsked = 0;
 fresh.on("request", (q) => { if (/\/ready-thumbs\/.*\.jpg$/.test(q.url())) thumbsAsked++; });
-await fresh.click("#load-drive");
-await fresh.waitForSelector("#drive-list .item:last-child .pic img");
-if (await fresh.$eval("#drive-thumbs", (c) => c.checked)) await done(1, "unticking Download thumbnails was not remembered");
+await fresh.click("#load-remote");
+await fresh.waitForSelector("#remote-list .item:last-child .pic img");
+if (await fresh.$eval("#remote-thumbs", (c) => c.checked)) await done(1, "unticking Download thumbnails was not remembered");
 // the dialog starts its thumbnails' fetches in the frame after it lists the rows: two frames on, none was asked for
 await fresh.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
-const shown = await fresh.$$eval("#drive-list .item .pic img", (is) => is.length);
+const shown = await fresh.$$eval("#remote-list .item .pic img", (is) => is.length);
 if (thumbsServed !== before || thumbsAsked || shown !== 1) await done(1, `unticked, ${thumbsAsked} thumbnails were asked for, ${thumbsServed - before} downloaded and ${shown} shown`);
 console.log("a saved thumbnail shows; unticking Download thumbnails is remembered and downloads none");
 await done(0);

@@ -1,4 +1,4 @@
-// Drives the tree's Approve folders… (web/data_mode.js, web/study_drive.js) in headless Chromium, against the stand-in Google of
+// Drives the tree's Approve folders… (web/data_mode.js, web/drive.js) in headless Chromium, against the stand-in Google of
 // stand_in_drive.mjs serving ROOT, for a data manager whose token lasts but was never given Drive's per-file
 // permission: the click asks Google for it, then shows Google's picker on the study's folders. Checks
 // req/shell/data/drive-access. Exits 1 on a failed check, 2 when it cannot run.

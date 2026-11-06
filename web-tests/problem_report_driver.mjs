@@ -132,9 +132,9 @@ const reportIcon = (page) => page.evaluate(() => { const b = $("#sb-report"); re
   await page.click("#image-pick");
   await page.click("#recent .recent");
   // the image is not on this device and Drive cannot be reached: the Drive dialog opens on its folder
-  await page.waitForFunction(() => $("#drive-dlg").open);
+  await page.waitForFunction(() => $("#remote-dlg").open);
   await page.keyboard.press("Escape");
-  await page.waitForFunction(() => !$("#drive-dlg").open);
+  await page.waitForFunction(() => !$("#remote-dlg").open);
   await page.click("#user-menu summary");
   await page.click("#open-settings");
   await page.click("#settings-cancel");

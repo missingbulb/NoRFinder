@@ -936,7 +936,7 @@ export function mount(shell) {
         width_px: c.m.width, lines: { length: c.lines.length, red: c.lines.red, width: c.lines.width } });
     }
     const src = st.source || { kind: "local" };
-    const location = src.kind === "drive" ? { source: "drive", drive_id: src.id, url: `https://drive.google.com/file/d/${src.id}/view` } : { source: "local" };
+    const location = shell.remote.owns(src) ? shell.remote.locate(src) : { source: "local" };
     return { format: "norfinder-ground-truth/2", exported: new Date().toISOString(),
       image: { name: st.fileName, sha256: st.sha, width: st.W, height: st.H, um_per_px: st.um || null, location },
       finder: st.meta ? st.meta.finder : null, finder_settings: st.runOverrides || {}, filters: { values: st.values, off: [...st.off] }, labels };
@@ -950,7 +950,7 @@ export function mount(shell) {
     const waiting = st.added.filter((a) => !a.verdict).length, voted = st.forced.size + st.added.length - waiting;
     const finalists = TRUTH ? taskItems("pass") : (st.passes || []).filter((c) => !c.added), open = finalists.filter((c) => !verdict(c)).length;
     const rejected = TRUTH ? taskItems("fail") : [], left = rejected.filter((c) => !verdict(c)).length;
-    const local = !st.source || st.source.kind !== "drive", s = (n) => (n === 1 ? "" : "s");
+    const local = !shell.remote.owns(st.source), s = (n) => (n === 1 ? "" : "s");
     // instructions to the user, crossed out once done; the added NoRs show only when there are any
     const items = [
       st.added.length && { level: "error", grade: true, ok: !waiting, text: waiting ? `Approve or reject the ${waiting} NoR${s(waiting)} you added` : "Approve or reject the NoRs you added" },
@@ -958,7 +958,7 @@ export function mount(shell) {
       { level: "warn", grade: true, ok: voted > 0 && !open, text: open ? `Vote on every finalist: ${open} of ${finalists.length} have no vote and won't be exported` : "Vote on every finalist" },
       TRUTH && { level: "warn", grade: true, ok: voted > 0 && !left, text: left ? `Vote on every rejected candidate: ${left} of ${rejected.length} have no vote and won't be exported` : "Vote on every rejected candidate" },
       TRUTH && { level: "warn", grade: true, ok: st.areas.size === AREAS, text: st.areas.size === AREAS ? "Check every area for missed NoRs" : `Check every area for missed NoRs: ${AREAS - st.areas.size} of ${AREAS} left` },
-      { level: "warn", ok: !local, text: "Only images from Google Drive can be submitted" },
+      { level: "warn", ok: !local, text: `Only images from ${shell.remote.label} can be submitted` },
     ].filter(Boolean);
     return { state: !voted || waiting ? "todo" : open || left || (TRUTH && st.areas.size < AREAS) ? "part" : "done", items };
   }

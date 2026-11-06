@@ -75,7 +75,7 @@ await page.click("#edit-lasso");
 await page.uncheck("#edit-channels input");
 await page.click("#edit-save");
 await page.waitForFunction(() => $("#save-dlg").open);
-await check(await page.isDisabled("#save-drive") && /channel/.test(await page.textContent("#save-msg")), "no channel kept holds the save");
+await check(await page.isDisabled("#save-remote") && /channel/.test(await page.textContent("#save-msg")), "no channel kept holds the save");
 await page.click("#save-close");
 await page.check("#edit-channels input");
 
@@ -85,7 +85,7 @@ const listed = await page.evaluate(() => [...document.querySelectorAll("#save-na
 const stem = name.replace(/\.[^.]*$/, "");
 await check(JSON.stringify(listed) === JSON.stringify([`${stem}_r1c1.tif`, `${stem}_r2c1.tif`, `${stem}_r2c2.tif`]), "the parts kept are named by the pattern", listed);
 await check(/folder .*beside/.test(await page.textContent("#save-where")), "Save… says the files go into a folder beside the image");
-await page.click("#save-drive");
+await page.click("#save-remote");
 await page.waitForFunction(() => !$("#save-dlg").open, null, { timeout: 20000 });
 const made = FILES.find((f) => f.folder && f.mine && f.name === stem);
 await check(made && JSON.stringify(writes.slice(-4)) === JSON.stringify([["folder", stem], ...listed.map((n) => ["create", n])]) && FILES.filter((f) => f.parent === made.id).length === 3,
@@ -99,7 +99,7 @@ await role(page, "Viewer");
 await page.waitForFunction(() => $("#image-box").checkVisibility() && document.documentElement.dataset.mode !== "data" && $("#data-col").hidden);
 if (await page.evaluate(() => $("#image-box").classList.contains("folded"))) await page.click("#image-box .sec-head h2");
 await pressDrive(page);
-await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length > 0);
-const items = await page.evaluate(() => [...document.querySelectorAll("#drive-list .item .name")].map((e) => e.textContent));
+await page.waitForFunction(() => document.querySelectorAll("#remote-list .item").length > 0);
+const items = await page.evaluate(() => [...document.querySelectorAll("#remote-list .item .name")].map((e) => e.textContent));
 await check(items.includes(stem) && !items.includes(name), "Load's Drive dialog lists the folder in the image's place", items);
 await done(0);

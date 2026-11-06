@@ -1,7 +1,7 @@
 engine:
   channel: "staging"
-  version: "1.61027.8"
-  manifest: "sha512-0K2g+VQ0Cuj4XN1ThBaFuaWk/kNxy9YQY+KXjxFUlQWaLG+N7/qcrYIyxWXI/DxbGyglvhame1kXTZTjMSOTcw=="
+  version: "1.61105.1"
+  manifest: "sha512-pI0wPndndDMZmhR0SDMcDdXAQkR6wKUJjGrB+3EcaXa2vwzmh8jTEGCGDBvVr9q/Fd88L/x2CVszZ2LAZbvw+Q=="
 packs:
   channel: "canary"
   declared:
