@@ -11,3 +11,14 @@
 - **Rejected:** forbidding only Google hosts, which would let Drive's words, ids and link shapes
   stay spread through the page.
 - **Landed:** missingbulb/NoRFinder#804
+
+## 2026-11-06 · strengthened · sign-in and its settings are the identity provider's alone
+- **Source:** owner on missingbulb/NoRFinder#804: signing in and the settings kept in the user's
+  Drive are one aspect, identity, known only to the identity provider.
+- **Reason:** the welcome popup, the menu and the role hint carried Google's words; now only
+  web/account.js may.
+- **Actor:** @missingbulb (owner).
+- **Model:** claude-opus-5-5
+- **Mechanism:** the same line check, its exemptions narrowed to web/drive.js and web/account.js
+  (web/welcome.js and the sign-in phrases no longer pass).
+- **Landed:** missingbulb/NoRFinder#804

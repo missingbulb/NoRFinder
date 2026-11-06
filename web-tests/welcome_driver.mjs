@@ -98,13 +98,13 @@ const shot = async (page, name) => { if (shots) await page.screenshot({ path: pa
 try {
   // a first visit
   const a = await device();
-  await a.page.hover("#welcome-google");
-  await a.page.focus("#welcome-google");
+  await a.page.hover("#welcome-sign-in");
+  await a.page.focus("#welcome-sign-in");
   check(scriptLoads === 0 && !(await askedGoogle(a.page)), "the mouse passing over Sign in with Google, or focus reaching it, loads nothing from Google");
   check(await popup(a.page), "opening the page fades it behind the sign-in popup");
   check(await a.page.evaluate(() => {
     const d = document.querySelector("#welcome-dlg");
-    return /Sign in with Google/.test(d.querySelector("#welcome-google").textContent) && /anonymous/i.test(d.querySelector("#welcome-anonymous").textContent)
+    return /Sign in with Google/.test(d.querySelector("#welcome-sign-in").textContent) && /anonymous/i.test(d.querySelector("#welcome-anonymous").textContent)
       && !d.querySelector("#welcome-remember").checked && getComputedStyle(d, "::backdrop").backgroundColor !== "rgba(0, 0, 0, 0)";
   }), "it offers Sign in with Google and Continue anonymously, Remember this choice unticked, over a faded page");
   check(scriptLoads === 0, "the popup loads nothing from Google by itself");
@@ -139,7 +139,7 @@ try {
 
   // signed in, not remembered
   const b = await device();
-  await b.page.hover("#welcome-google");
+  await b.page.hover("#welcome-sign-in");
   await b.page.mouse.down();
   check(await b.page.waitForFunction(() => window.google).then(() => true, () => false), "pressing Sign in with Google loads Google's script");
   await b.page.mouse.up();
@@ -154,7 +154,7 @@ try {
   // signed in, remembered
   await b.open();
   await b.page.check("#welcome-remember");
-  await b.page.click("#welcome-google");
+  await b.page.click("#welcome-sign-in");
   await b.page.waitForFunction(() => !document.querySelector("#sign-out").hidden);
   await b.open();
   check(!(await popup(b.page)) && await signedIn(b.page), "ticked, the next visit opens signed in with no popup");
@@ -177,15 +177,15 @@ try {
   const loads = scriptLoads;
   const c = await device({ offline: true });
   check(await popup(c.page), "offline, the popup still comes");
-  const off = await c.page.evaluate(() => ({ held: document.querySelector("#welcome-google").getAttribute("aria-disabled") === "true", note: document.querySelector("#welcome-offline"), }));
+  const off = await c.page.evaluate(() => ({ held: document.querySelector("#welcome-sign-in").getAttribute("aria-disabled") === "true", note: document.querySelector("#welcome-offline"), }));
   check(off.held, "Sign in with Google is held");
   check(await c.page.isVisible("#welcome-offline") && /online/i.test(await c.page.textContent("#welcome-offline")), "and a line says signing in can wait until the network is back");
   await shot(c.page, "welcome_offline");
-  await c.page.hover("#welcome-google");
-  await c.page.click("#welcome-google", { force: true });
+  await c.page.hover("#welcome-sign-in");
+  await c.page.click("#welcome-sign-in", { force: true });
   check(scriptLoads === loads && !(await askedGoogle(c.page)) && await popup(c.page), "clicking it offline reaches nothing and leaves the popup up");
   await c.page.evaluate(() => { window.netDown = false; dispatchEvent(new Event("online")); });
-  check(await c.page.isHidden("#welcome-offline") && await c.page.evaluate(() => document.querySelector("#welcome-google").getAttribute("aria-disabled") !== "true"),
+  check(await c.page.isHidden("#welcome-offline") && await c.page.evaluate(() => document.querySelector("#welcome-sign-in").getAttribute("aria-disabled") !== "true"),
     "back online, Sign in with Google is offered again");
   await c.page.evaluate(() => { window.netDown = true; dispatchEvent(new Event("offline")); });
   await c.page.click("#welcome-anonymous");
@@ -203,15 +203,15 @@ try {
   // Google's window cancelled, or blocked: the popup stays, saying so; trying again signs in
   const f = await device();
   await f.page.evaluate(() => { window.googleAnswer = "cancel"; });
-  await f.page.click("#welcome-google");
+  await f.page.click("#welcome-sign-in");
   check(await f.page.waitForFunction(() => /did not finish/i.test(document.querySelector("#welcome-failed")?.textContent) && !document.querySelector("#welcome-failed").hidden).then(() => true, () => false)
     && await popup(f.page) && !(await signedIn(f.page)), "a cancelled Google window leaves the popup up, saying sign-in did not finish");
   await f.page.evaluate(() => { window.googleAnswer = "blocked"; });
-  await f.page.click("#welcome-google");
+  await f.page.click("#welcome-sign-in");
   await f.page.waitForSelector("#welcome-failed", { state: "visible" }).catch(() => {});
   check(await popup(f.page) && await f.page.isVisible("#welcome-failed") && !(await signedIn(f.page)), "and so does a blocked one");
   await f.page.evaluate(() => { window.googleAnswer = "token"; });
-  await f.page.click("#welcome-google");
+  await f.page.click("#welcome-sign-in");
   check(await f.page.waitForFunction(() => !document.querySelector("#sign-out").hidden).then(() => true, () => false) && !(await popup(f.page)), "trying again signs in and closes it");
 
   // the tip follows the avatar when the window is resized

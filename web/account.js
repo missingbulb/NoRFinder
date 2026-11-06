@@ -91,6 +91,7 @@ export function account({ keys, menu, clientId = ((window.NOR_CONFIG && window.N
     $("#who-name").textContent = user ? user.name : "You";
     $("#who-where").textContent = user ? user.email : "On this device, not signed in";
     $("#sign-in").hidden = !!user || !clientId;
+    $("#sign-in").textContent = "Sign in with Google…";
     $("#sign-out").hidden = !user;
     const summary = menu.querySelector("summary"), was = summary.querySelector(".avatar");
     const pic = user && user.picture;
@@ -186,6 +187,15 @@ export function account({ keys, menu, clientId = ((window.NOR_CONFIG && window.N
       saving = setTimeout(() => save().catch((e) => console.warn("settings not saved to Google Drive:", e.message)), SAVE_AFTER_MS);
     },
     signedIn: () => !!(me && me.user),
+    // what the welcome popup keeps as the choice of signing in
+    kind: "google",
+    // the words the page shows about signing in
+    words: {
+      signIn: "Sign in with Google",
+      tip: "Sign in with Google to keep your settings on every device and reach your data files as yourself.",
+      failed: "Google sign-in did not finish. Try again, or continue anonymously.",
+      offline: "You are offline. You can sign in with Google once you are back online, from your avatar's menu at the top right.",
+    },
     // where the settings that follow the user are kept, as the Settings dialog says it
     kept: () => (me && me.user ? "Kept in your Google Drive, so they follow you to every device." : "Kept on this device only. Sign in with Google to keep them with you."),
     user: () => (me && me.user) || null,

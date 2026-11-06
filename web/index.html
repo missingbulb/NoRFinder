@@ -52,7 +52,7 @@
     <summary title="You, on this device" aria-label="You, on this device"><svg class="avatar" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><circle cx="16" cy="16" r="16"/><circle cx="16" cy="12.5" r="5.5"/><path d="M5.5 27a11 9 0 0 1 21 0"/></svg></summary>
     <div class="pop right">
       <div class="who"><b id="who-name">You</b><span class="dim" id="who-where">On this device, not signed in</span></div>
-      <button class="item" id="sign-in" type="button" data-needs-network hidden>Sign in with Google…</button>
+      <button class="item" id="sign-in" type="button" data-needs-network hidden></button>
       <button class="item" id="open-settings" type="button">Settings…</button>
       <button class="item" id="manage-storage" type="button">Manage storage…</button>
       <button class="item" id="report-problem" type="button" data-needs-network>Report a problem…</button>
@@ -276,11 +276,11 @@
     <p class="hint">Sign in to keep your settings on every device, or go on without an account.</p>
     <p id="welcome-who" hidden></p>
     <div class="welcome-choices">
-      <button id="welcome-google" type="button" class="primary" data-needs-network>Sign in with Google</button>
+      <button id="welcome-sign-in" type="button" class="primary" data-needs-network></button>
       <button id="welcome-anonymous" type="button" autofocus>Continue anonymously</button>
     </div>
-    <p id="welcome-failed" class="hint" role="alert" hidden>Google sign-in did not finish. Try again, or continue anonymously.</p>
-    <p id="welcome-offline" class="hint">You are offline. You can sign in with Google once you are back online, from your avatar's menu at the top right.</p>
+    <p id="welcome-failed" class="hint" role="alert" hidden></p>
+    <p id="welcome-offline" class="hint"></p>
     <label class="hint"><input type="checkbox" id="welcome-remember"> Remember this choice</label>
   </form>
 </dialog>

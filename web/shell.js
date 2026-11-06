@@ -454,7 +454,7 @@ function takeRole() {
   role = shown(roles, keptRole());
   document.documentElement.dataset.role = role;
   const hint = roles.length > 1 ? "" : !signIn.signedIn() && signIn.offered
-    ? (takesTaggers() ? "Sign in with Google to tag ground truth." : "Sign in with Google for the roles your studies give you.") : "";
+    ? (takesTaggers() ? `${signIn.words.signIn} to tag ground truth.` : `${signIn.words.signIn} for the roles your studies give you.`) : "";
   roleChooser.draw(roles, role, hint);
 }
 // the role shown again, once what it rests on may have changed (a choice, a sign-in, the settings synced): a change
