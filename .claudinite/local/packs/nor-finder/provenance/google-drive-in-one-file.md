@@ -31,3 +31,8 @@
 - **Model:** claude-opus-5-5
 - **Mechanism:** unchanged: the same line check, the same exemptions; only the words shortened.
 - **Landed:** missingbulb/NoRFinder#796
+
+## 2026-11-06 · reworded · the messages fit the declared-check-messages cap
+- **Reason:** both ran past 32 words, which blocked Full tests on main.
+- **Actor:** @missingbulb (owner).
+- **Model:** claude-opus-5-5

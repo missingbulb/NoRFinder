@@ -30,8 +30,8 @@
   {
     "id": "google-drive-in-one-file",
     "on_fail": "block",
-    "failureMessage": "the page knows Google in two files only, web/drive.js (the remote store) and web/account.js (the identity provider); anywhere else Google is a detail nothing may depend on",
-    "fix": "move the Google-specific code or words into web/drive.js (behind `remote`) or web/account.js (behind its account); an older browser key or cache path stays a constant alone on its line",
+    "failureMessage": "Google is a detail of the remote store and the identity provider, so code elsewhere that depends on it breaks when that detail changes",
+    "fix": "move it into web/drive.js (behind `remote`) or web/account.js; an older browser key or cache path may stay, as a constant alone on its line",
     "scanFiles": "/^(web|studies\\/[^/]+\\/web)\\/(?!(drive|account|config)\\.js$)(?!vendor\\/)[^]*\\.(m?js|html|css)$/",
     "matchLines": [
       {
