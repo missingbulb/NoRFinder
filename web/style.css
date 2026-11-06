@@ -417,6 +417,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #statusbar .sb-item { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; border-radius: 0; background: none; font: inherit; color: inherit; font-variant-numeric: tabular-nums; }
 #statusbar button.sb-item { cursor: pointer; }
 #statusbar button.sb-item:hover, #statusbar button.sb-item:focus-visible { color: var(--text); }
+#statusbar :focus-visible { outline: none; }
 #statusbar .sb-item svg { flex: none; color: var(--icon); }
 #statusbar .sb-item:has(> .v:empty) { display: none; }
 #sb-steps { padding-right: 10px; border-right: 1px solid var(--line); }
@@ -470,7 +471,6 @@ html[data-motion=off] :is(#sb-res-items, #statusbar #sb-res-icon) { transition: 
 #sb-steps .crumb:not(:last-child)::after { content: "›"; margin-left: 12px; color: var(--dim); }
 #sb-steps .crumb:not(.now):hover, #sb-steps .crumb:not(.now):focus-visible { color: var(--text); }
 #sb-steps .crumb.now { color: #fff; background: var(--accent); font-weight: 600; cursor: pointer; }
-#sb-steps .crumb.now:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
 #status { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 #status.err { color: var(--err); }
 #statusbar .spin { width: 12px; height: 12px; display: none; }
