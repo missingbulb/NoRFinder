@@ -145,7 +145,7 @@ await page.click("#role-menu summary");
 const offered = await page.evaluate(() => { const b = [...document.querySelectorAll("#role-list .item")].find((x) => x.textContent === "Data Manager");
   return b && { needs: /needs the internet/i.test(b.title), dim: +getComputedStyle(b).opacity < 1 }; });
 await page.click('#role-list .item:text-is("Data Manager")', { force: true });
-await page.waitForTimeout(600);
+await page.waitForTimeout(600); // waits on purpose: what is checked is that nothing happens, which no event announces
 const after = await page.evaluate(() => ({ role: $("#role-name").textContent.trim(), mode: document.documentElement.dataset.mode || "" }));
 await check(offered?.needs && offered.dim && after.role === "Viewer" && !after.mode, "offline, Data Manager is listed, says it needs the internet, and choosing it does nothing", { offered, after });
 await page.evaluate(() => { $("#role-menu").open = false; });
