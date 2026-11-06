@@ -138,7 +138,7 @@ try {
   }, { core: CORE, shared: SHARED, own: OWN });
 
   // req/shell/offline/mark: a study whose Python is all here is marked in the switcher, green, a state rather than a
-  // prompt: no tooltip and no question-mark pointer, what it means said to assistive tech only
+  // prompt: a tiny tooltip and no question-mark pointer, what it means in full said to assistive tech
   await page.click("#study-menu summary");
   await page.waitForFunction(() => document.querySelector('#study-list a[data-id="viewer"] .offline-mark'), null, { timeout: 5000 }).catch(() => {});
   const marks = await page.$$eval("#study-list a", (as) => as.map((a) => {
@@ -150,8 +150,8 @@ try {
   const viewerMark = marks.find((m) => m.id === "viewer") || {};
   check(/without the internet/.test(viewerMark.mark) && !marks.find((m) => m.id === "nor")?.mark,
     `the switcher marks the study whose Python is all here, and only it: ${JSON.stringify(marks)}`);
-  check(viewerMark.colour === green && !viewerMark.title && viewerMark.cursor !== "help",
-    `the mark is green, with no tooltip and no question-mark pointer: ${JSON.stringify({ ...viewerMark, green })}`);
+  check(viewerMark.colour === green && viewerMark.title === "Available for offline" && viewerMark.cursor !== "help",
+    `the mark is green, with a tiny tooltip and no question-mark pointer: ${JSON.stringify({ ...viewerMark, green })}`);
   check(marks.every((m) => m.room >= 8), `each row keeps 8 px at its right, past its mark and stage: ${JSON.stringify(marks.map((m) => m.room))}`);
   await page.click("#study-menu summary");
 

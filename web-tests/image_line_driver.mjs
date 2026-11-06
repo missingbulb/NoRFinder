@@ -254,9 +254,11 @@ try {
   const order = await page.$eval('#drive-list .item[data-id="linekept000000000001"]', (b) => {
     const at = (sel) => [...b.querySelectorAll("*")].indexOf(b.querySelector(sel)), r = (sel) => b.querySelector(sel).getBoundingClientRect();
     return { meta: b.lastElementChild.classList.contains("meta"), inward: [".age", ".offline-mark"].every((sel) => r(sel).right <= r(".meta").left + 1 && r(sel).left >= r(".name").left),
-      before: at(".age") < at(".offline-mark") };
+      before: at(".age") < at(".offline-mark"), shape: at(".offline-mark") < at(".shape") && (!r(".shape").width || r(".offline-mark").right <= r(".shape").left + 1),
+      tip: b.querySelector(".offline-mark").title };
   });
-  check(order.meta && order.inward && order.before, "a row's size and date, which every image shows, sit at its edge; its age and mark inward", order);
+  check(order.meta && order.inward && order.before && order.shape, "a row's size and date, which every image shows, sit at its edge; its age and mark inward, the mark before what the image holds", order);
+  check(order.tip === "Available for offline", "the mark carries a tiny tooltip", order);
   check(await page.evaluate((id) => !!JSON.parse(localStorage.getItem("nor-drive-listings") || "{}")[id], ROOT), "the folder's listing is kept on this device");
   await page.click("#drive-dlg button[value=close]");
 

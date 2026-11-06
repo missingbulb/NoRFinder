@@ -728,9 +728,11 @@ nobody has decided: what the page does there is not a requirement yet.
   section, and an image kept on this device, in the Google Drive dialog's rows; what is not available
   offline carries nothing. The image selector's images carry none: with Auto-save on, they are all kept; offline,
   one not kept is greyed (`req/shell/load/selector`). The owner set on
-  2026-11-04 that the mark states a state rather than prompting an action, so it is green, with no tooltip and no
-  question-mark pointer; assistive tech is told what it means: the study runs, or the image opens, without the internet. Test:
-  `web-tests/test_storage_page.py`.
+  2026-11-04 that the mark states a state rather than prompting an action, so it is green, with no
+  question-mark pointer; assistive tech is told what it means: the study runs, or the image opens, without the internet.
+  The owner set on 2026-11-06 a tiny tooltip on it, "Available for offline", and that in a Drive row it sits before what
+  the image holds (2D, 3D), which every image shows (the nor-finder pack's row-indicators-edges). Tests:
+  `web-tests/test_storage_page.py`, `web-tests/test_image_line_page.py`.
   </details>
 
 - `req/shell/offline/per-study` Each study can be made available offline from the Storage tab, after a popup with what it takes and how long.
