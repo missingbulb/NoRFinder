@@ -8,7 +8,7 @@
 // ask for more (more(scope), req/shell/data/drive-access): Google's per-file Drive permission, added to the same token.
 "use strict";
 import { CONNECTION } from "./offline.js";
-import { multipart } from "./drive_upload.js";
+import { multipart } from "./drive.js";
 
 const GOOGLE_SCRIPT = "https://accounts.google.com/gsi/client";
 export const DRIVE_READ = "https://www.googleapis.com/auth/drive.readonly";
@@ -23,10 +23,12 @@ const SAVE_AFTER_MS = 400;
 // who is signed in on this device: {user: {name, email, picture}, token, until (ms), scopes (what the token may do,
 // as Google listed it), fileId, changed}, changed the keys whose settings this device changed since Drive last had them
 export const SIGNED_IN = "nor-google-sign-in";
+// what the Storage tab calls that key
+export const SIGNED_IN_LABEL = "Who is signed in with Google, and Google's token for the hour";
 
 // keys: the browser keys whose settings follow the user; applied(): runs once Drive's settings have replaced them;
 // changed(): runs whenever who is signed in may have changed
-export function account({ keys, menu, clientId, applied, changed = () => {} }) {
+export function account({ keys, menu, clientId = ((window.NOR_CONFIG && window.NOR_CONFIG.google) || {}).clientId || "", applied, changed = () => {} }) {
   const $ = (s) => menu.querySelector(s);
   // waiting: {ok, fail} of a sign-in the popup is waiting on (req/shell/account/welcome)
   let me = read(), client = null, script = null, saving = null, waiting = null;
@@ -183,9 +185,9 @@ export function account({ keys, menu, clientId, applied, changed = () => {} }) {
       clearTimeout(saving);
       saving = setTimeout(() => save().catch((e) => console.warn("settings not saved to Google Drive:", e.message)), SAVE_AFTER_MS);
     },
-    // the user is about to use Google Drive (Load): a token run out is renewed in their click, and the settings sync
-    drive() { renew(); },
     signedIn: () => !!(me && me.user),
+    // where the settings that follow the user are kept, as the Settings dialog says it
+    kept: () => (me && me.user ? "Kept in your Google Drive, so they follow you to every device." : "Kept on this device only. Sign in with Google to keep them with you."),
     user: () => (me && me.user) || null,
     offered: !!clientId,
     // the user is reaching for Sign in: Google's script, so their click can ask at once

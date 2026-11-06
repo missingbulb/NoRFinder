@@ -4,10 +4,10 @@
 // network is the browser saying so, or the site not answering, asked all session long: a plane's Wi-Fi with no
 // internet beyond it leaves the browser saying it is online.
 // Making a study available offline (req/shell/offline/per-study), from the Storage tab: a popup of what the study's Python and the images
-// in its Google Drive folder take, beside the room left and the time at this session's speeds, then the download;
+// in its remote folder take, beside the room left and the time at this session's speeds, then the download;
 // and Install as an app, at the top of the tab.
-// deps: $, esc, sizeText; drive, the Drive module; kept(id), whether an image is kept on this device;
-// keep(id, name, bytes, {path, study}), keeping one; throttled() and throttle(), Google's wait (req/shell/drive/throttle); stored(),
+// deps: $, esc, sizeText; remote, the remote store; kept(id), whether an image is kept on this device;
+// keep(id, name, bytes, {path, study}), keeping one; throttled() and throttle(), the store's wait (req/shell/drive/throttle); stored(),
 // once something is kept.
 import { CORE, packagesOf } from "./python_files.js";
 import { PREVIEWS } from "./previews.js";
@@ -38,10 +38,10 @@ export function markOffline(el, what, on) {
   if (on && !had) el.append(offlineMark(what));
   if (!on && had) had.remove();
 }
-// a ticked study's Drive folder is read this deep and this far at most
+// a ticked study's remote folder is read this deep and this far at most
 const MAX_FOLDERS = 200, MAX_FILES = 2000;
 
-export function offline({ $, esc, sizeText, drive, kept, keep, throttled, throttle, stored }) {
+export function offline({ $, esc, sizeText, remote, kept, keep, throttled, throttle, stored }) {
   // ---------- offline by default ----------
   const NEEDS = "[data-needs-network]", WHY = "Needs the internet: you are offline.", AGAIN_MS = 30000, AGAIN_OFF_MS = 5000;
   const NET_OFF = "Offline: no internet. The page runs what is on this device. Click for more.";
@@ -164,7 +164,7 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
   }
 
   // This session's download speeds, bytes per second by source, or null: Python's as the service worker measured
-  // its downloads from the CDN, Google Drive's as the Drive module measured its own; else the browser's estimate of
+  // its downloads from the CDN, the remote store's as it measured its own; else the browser's estimate of
   // the connection, flagged as one.
   async function speeds() {
     const sw = navigator.serviceWorker && (await navigator.serviceWorker.ready.catch(() => null))?.active;
@@ -179,10 +179,10 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
     const rate = (m) => (m && m.bytes > 0 && m.ms > 0 ? (m.bytes / m.ms) * 1000 : null);
     const guess = navigator.connection?.downlink ? { rate: navigator.connection.downlink * 125000, guessed: true } : null;
     const of = (m) => (rate(m) ? { rate: rate(m) } : guess);
-    return { python: of(hosts[new URL(CORE[0]).host]), drive: of(drive.speed?.()) };
+    return { python: of(hosts[new URL(CORE[0]).host]), remote: of(remote.speed?.()) };
   }
   const duration = (s) => (s < 60 ? `${Math.max(1, Math.round(s))} s` : s < 3600 ? `${Math.floor(s / 60)} min ${Math.round(s % 60)} s` : `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} min`);
-  // "200 MB of Python at 15 MB/s + 1 GB from Google Drive at 25 MB/s, about 1 min 20 s"
+  // "200 MB of Python at 15 MB/s + 1 GB from the remote store at 25 MB/s, about 1 min 20 s"
   function timeText(parts) {
     const said = [], known = [];
     for (const p of parts.filter((x) => x.bytes)) {
@@ -194,25 +194,25 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
     return "Time: " + said.join(" + ") + (known.length ? `, about ${duration(known.reduce((a, b) => a + b, 0))}${known.length < said.length ? " and more" : ""}.` : ".");
   }
 
-  // the images in a study's own Drive folder and the folders under it: [{id, name, size, path, study, kept}], or
+  // the images in a study's own remote folder and the folders under it: [{id, name, size, path, study, kept}], or
   // a sentence saying why there are none
   async function imagesOf(s) {
-    const refs = (s.manifest.files.folders || []).map((l) => drive.parse(l)).filter((r) => r?.kind === "folder");
-    if (!refs.length) return "This study has no Google Drive folder of its own.";
-    if (!drive.ready) return "Its Google Drive folder needs this site's Google API key.";
-    if (isOffline()) return "Its Google Drive folder can be read once you are online.";
-    if (throttled()) return "Google is throttling this site's downloads; try again in a while.";
+    const refs = remote.study(s.manifest).folders.map((id) => ({ id }));
+    if (!refs.length) return `This study has no ${remote.label} folder of its own.`;
+    if (!remote.ready) return `Its ${remote.label} folder ${remote.words.noKey}.`;
+    if (isOffline()) return `Its ${remote.label} folder can be read once you are online.`;
+    if (throttled()) return `${remote.words.throttling}; try again in a while.`;
     const found = [];
     for (const queue = refs.map((r) => ({ id: r.id, path: [] })), seen = new Set(); queue.length && seen.size < MAX_FOLDERS && found.length < MAX_FILES; ) {
       const at = queue.shift();
       if (seen.has(at.id)) continue;
       seen.add(at.id);
-      for (const f of await drive.list(at.id)) {
+      for (const f of await remote.list(at.id)) {
         if (f.folder) queue.push({ id: f.id, path: [...at.path, f.name] });
         else if (f.name !== PREVIEWS) found.push({ ...f, path: at.path, study: s.id, kept: await kept(f.id) });
       }
     }
-    return found.length ? found : "Its Google Drive folder holds no images.";
+    return found.length ? found : `Its ${remote.label} folder holds no images.`;
   }
 
   // The popup for one study: what making it available offline takes, then the download. done() once it closes.
@@ -225,7 +225,7 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
     if (!s) return;
     $("#offline-title").textContent = `Make ${s.title} available offline`;
     for (const el of ["#offline-python", "#offline-total", "#offline-free", "#offline-time", "#offline-warn"]) $(el).textContent = "";
-    $("#offline-files").textContent = "Reading its Google Drive folder…"; msg(""); $("#offline-go").disabled = true; $("#offline-go").hidden = false;
+    $("#offline-files").textContent = `Reading its ${remote.label} folder…`; msg(""); $("#offline-go").disabled = true; $("#offline-go").hidden = false;
     $("#offline-close").onclick = () => dlg.close();
     dlg.onclose = () => { ctl?.abort(); showing = null; done?.(); };
     if (!dlg.open) dlg.showModal();
@@ -233,13 +233,13 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
     let images = [];
     try { images = await imagesOf(s); } catch (e) {
       if (e.throttled) throttle();
-      images = `Its Google Drive folder could not be read: ${e.message || e}`;
+      images = `Its ${remote.label} folder could not be read: ${e.message || e}`;
     }
     if (asked !== run) return;
     if (typeof images === "string") $("#offline-files").innerHTML = `<p class="hint">${esc(images)}</p>`;
     else {
       const fresh = images.filter((f) => !f.kept);
-      $("#offline-files").innerHTML = `<p class="hint">Its images on Google Drive${fresh.length < images.length ? `, ${images.length - fresh.length} of them already on this device` : ""}:</p>` +
+      $("#offline-files").innerHTML = `<p class="hint">Its images on ${remote.label}${fresh.length < images.length ? `, ${images.length - fresh.length} of them already on this device` : ""}:</p>` +
         (fresh.length ? `<label class="all-row"><input type="checkbox" class="all" checked> All ${fresh.length}</label>` : "") + `<div class="files"></div>`;
       $("#offline-files .files").replaceChildren(...images.map((f) => {
         const l = document.createElement("label"); l.className = "file-row";
@@ -267,7 +267,7 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
     $("#offline-python").textContent = python.urls.length ? `Its Python: ${sizeText(python.bytes)}${python.unknown ? " or more" : ""} from jsDelivr.` : "Its Python is already on this device.";
     $("#offline-free").textContent = free == null ? "This browser does not say how much more the site may keep." : `This browser lets the site keep about ${sizeText(free)} more.`;
     $("#offline-total").textContent = bytes ? `This downloads ${sizeText(bytes)}${chosen.length ? `: its Python and ${chosen.length === 1 ? "1 image" : chosen.length + " images"}` : ""}.` : "Everything is already on this device.";
-    $("#offline-time").textContent = timeText([{ what: "of Python", bytes: python.bytes, speed: speed.python }, { what: "from Google Drive", bytes: imageBytes, speed: speed.drive }]);
+    $("#offline-time").textContent = timeText([{ what: "of Python", bytes: python.bytes, speed: speed.python }, { what: `from ${remote.label}`, bytes: imageBytes, speed: speed.remote }]);
     const tooMuch = free != null && bytes > free;
     $("#offline-warn").hidden = !tooMuch;
     $("#offline-warn").textContent = tooMuch ? `That is more than this browser lets the site keep (${sizeText(free)}). Untick some images.` : "";
@@ -301,9 +301,9 @@ export function offline({ $, esc, sizeText, drive, kept, keep, throttled, thrott
       }
       for (const f of chosen) {
         if (signal.aborted) break;
-        if (throttled()) throw Object.assign(new Error("Google is throttling this site's downloads"), { throttled: true });
+        if (throttled()) throw Object.assign(new Error(remote.words.throttling), { throttled: true });
         msg(`Downloading ${f.name} · ${sizeText(done)} of ${sizeText(bytes)}`);
-        const got = await drive.file(f.id, f.name);
+        const got = await remote.file(f.id, f.name);
         await keep(f.id, got.name, got.bytes, { path: f.path, study: f.study });
         done += got.bytes.byteLength; bar.value = done; images++;
       }

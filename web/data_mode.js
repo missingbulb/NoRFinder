@@ -1,11 +1,11 @@
 // Data Management (req/shell/data/mode, req/shell/data/drive-access, req/shell/data/folder,
 // req/shell/data/update-previews, req/shell/data/preview-images): the Data Manager role's view, for a signed-in user a
-// study's permissions name: the study's Drive folders as a tree in a column left of the left bar, its chevron folding
+// study's permissions name: the study's remote folders as a tree in a column left of the left bar, its chevron folding
 // it; a folder chosen fills the main area with its images and the left bar with their sums, and its actions; an image
-// chosen opens from its preview. The tree's head asks for the folders' access (study_drive.js), and it writes only
+// chosen opens from its preview. The tree's head asks for the folders' access, and it writes only
 // files it creates.
 "use strict";
-import { rolesOf, studyDrive } from "./study_drive.js";
+import { rolesOf } from "./roles.js";
 import { PREVIEWS } from "./previews.js";
 import { makePreview, buildPreviews } from "./previews_writer.js";
 import { readTiff, fromPlanes, writeTiff } from "./split.js";
@@ -18,9 +18,9 @@ const MAX_FOLDERS = 200;
 // what each access means beside a folder
 const ACCESS = {
   write: ["Writable", "This site may add files here for you."],
-  view: ["View only", "Drive lets you only view this folder: ask its owner for edit access."],
+  view: ["View only", "The store lets you only view this folder: ask its owner for edit access."],
   none: ["Not approved", "Not yet open to this site: approve it to add files here."],
-  unknown: ["Checking…", "Your Google sign-in is being renewed."],
+  unknown: ["Checking…", "Your sign-in is being renewed."],
 };
 export const truthMarker = (name) => stemOf(name) + ".ground_truth.MISSING";
 
@@ -38,11 +38,10 @@ export function previewTiff(e, pages) {
 
 // ctx: what the shell lends it, named below where it is used
 export function dataMode(ctx) {
-  const { $, esc, drive, account, sizeText } = ctx;
-  const google = (window.NOR_CONFIG && window.NOR_CONFIG.google) || {};
-  const sd = studyDrive({ account, apiKey: google.apiKey || "", clientId: google.clientId || "" });
+  const { $, esc, remote, account, sizeText } = ctx;
+  const sd = remote.writer(account);
   // the study's ground-truth folders (req/shell/ground-truth/folders), read with no sign-in and written by the user
-  const reader = { all: (id) => drive.all(id), text: async (id) => new TextDecoder().decode((await drive.file(id, "ground truth")).bytes) };
+  const reader = { all: (id) => remote.all(id), text: async (id) => new TextDecoder().decode((await remote.file(id, "ground truth")).bytes) };
   const writer = { folder: sd.folder, create: sd.create, replace: sd.replace, mark: sd.mark };
   // gt: {submissions, curated, same}; gtNodes: those folders with their access, outside the tree
   let gt = { submissions: null, curated: null, same: false }, gtNodes = [];
@@ -66,7 +65,7 @@ export function dataMode(ctx) {
         const at = queue.shift();
         if (nodes.has(at.id)) continue;
         let all;
-        try { all = await drive.all(at.id); } catch (e) { if (of !== epoch) return; all = []; at.error = e.message || String(e); }
+        try { all = await remote.all(at.id); } catch (e) { if (of !== epoch) return; all = []; at.error = e.message || String(e); }
         if (of !== epoch) return;
         const node = { id: at.id, name: at.name || "Study folder", parent: at.parent, error: at.error || null, files: all.filter((f) => !f.folder),
           folders: all.filter((f) => f.folder).map((f) => f.id), access: null, el: null };
@@ -75,7 +74,7 @@ export function dataMode(ctx) {
       }
       // a study folder's own name, which its listing does not give
       await Promise.all(roots.map(async (id) => {
-        try { const n = nodes.get(id), r = await drive.name(id); if (n && r) n.name = r; } catch { /* keeps "Study folder" */ }
+        try { const n = nodes.get(id), r = await remote.name(id); if (n && r) n.name = r; } catch { /* keeps "Study folder" */ }
       }));
       await checkAccess();
     })());
@@ -92,7 +91,7 @@ export function dataMode(ctx) {
     const want = lacking();
     if (!want.length) return;
     try {
-      if (!(await sd.approve(want.map((n) => ({ id: n.id, name: n.name }))))) return msg($("#data-msg"), "Google gave no permission: nothing changed.", true);
+      if (!(await sd.approve(want.map((n) => ({ id: n.id, name: n.name }))))) return msg($("#data-msg"), "No permission was given: nothing changed.", true);
       for (const n of want) n.access = null;
       drawTree(); await checkAccess();
     } catch (e) { msg($("#data-msg"), e.message || String(e), true); }
@@ -120,7 +119,7 @@ export function dataMode(ctx) {
       }
       el.querySelector(".name span").textContent = n.name;
       const acc = el.querySelector(".access");
-      acc.dataset.access = n.access || "unknown"; acc.textContent = a[0]; acc.title = n.error ? "Drive did not list it: " + n.error : a[1];
+      acc.dataset.access = n.access || "unknown"; acc.textContent = a[0]; acc.title = n.error ? "The store did not list it: " + n.error : a[1];
       const count = el.querySelector(".count");
       count.textContent = ims.length === 1 ? "1 image" : `${ims.length} images`; count.disabled = !ims.length;
       el.classList.toggle("chosen", chosen?.kind === "folder" && chosen.id === id);
@@ -178,8 +177,8 @@ export function dataMode(ctx) {
     $("#folder-name").textContent = n.name; $("#folder-title").textContent = n.name;
     msg($("#folder-msg"), "");
     const of = epoch;
-    // read again: the folder may have changed in Drive since
-    try { n.files = (await drive.all(n.id)).filter((f) => !f.folder); } catch (e) { msg($("#folder-msg"), e.message || String(e), true); }
+    // read again: the folder may have changed in the store since
+    try { n.files = (await remote.all(n.id)).filter((f) => !f.folder); } catch (e) { msg($("#folder-msg"), e.message || String(e), true); }
     if (of !== epoch || chosen?.id !== n.id) return;
     if (n.el) n.el.querySelector(".tree-images").replaceChildren();
     drawTree();
@@ -303,17 +302,17 @@ export function dataMode(ctx) {
     const say = (t, err) => msg($("#folder-msg"), t, err);
     try {
       const f = previewsFile(n);
-      if (f && !(await sd.ours(f.id))) return say(`This folder's ${PREVIEWS} was not made by this page, so the page leaves it alone. Delete it in Google Drive to let the page make and update it.`, true);
+      if (f && !(await sd.ours(f.id))) return say(`This folder's ${PREVIEWS} was not made by this page, so the page leaves it alone. Delete it in ${remote.label} to let the page make and update it.`, true);
       const pv = f ? await ctx.folderPreviews(n, f) : null, all = states(n, pv, new Map()), kept = [], made = [];
       for (const s of all) if (s.entry) kept.push({ entry: s.entry, pages: await pv.pages(s.entry) });
       const todo = all.filter((s) => !s.entry);
       for (const [k, s] of todo.entries()) {
         say(`Making previews: ${k + 1} of ${todo.length}, ${s.f.name}…`);
-        const got = (await ctx.savedImage(s.f.id)) || (await drive.file(s.f.id, s.f.name));
+        const got = (await ctx.savedImage(s.f.id)) || (await remote.file(s.f.id, s.f.name));
         const src = await sourceOf(s.f.name, got.bytes), spacing = src.ij?.spacing ? +src.ij.spacing : null;
         made.push({ name: s.f.name, sha256: await ctx.sha256(got.bytes), ...(await makePreview(src, spacing)) });
       }
-      say("Saving the previews to Google Drive…");
+      say(`Saving the previews to ${remote.label}…`);
       const blob = new Blob([await buildPreviews(kept, made)], { type: "image/tiff" });
       if (f) await sd.replace(f.id, blob); else await sd.create(n.id, PREVIEWS, blob);
       await relist(n);
@@ -328,7 +327,7 @@ export function dataMode(ctx) {
   async function chooseImage(n, f) {
     chosen = { kind: "image", id: f.id, folder: n.id }; root.dataset.sel = "image"; ctx.relabel();
     drawTree(); ctx.showFolder(false);
-    const pv = await previewsOf(n), e = pv?.entry(f.name, f.sha), source = { kind: "drive", id: f.id, name: f.name, folder: n.id };
+    const pv = await previewsOf(n), e = pv?.entry(f.name, f.sha), source = remote.source(f.id, { name: f.name, folder: n.id });
     if (!e) { ctx.status(`${f.name} has no preview yet: opening the image itself.`); return ctx.loadOriginal(source); }
     let pages;
     try { pages = await pv.pages(e); } catch (err) {
@@ -381,7 +380,7 @@ export function dataMode(ctx) {
       epoch++; manifest = m; who = account.email(); nodes = new Map(); loaded = null; chosen = null;
       if (on()) enter(false);
       roles = account.signedIn() ? rolesOf(m, account.email()) : new Set();
-      roots = [...new Set((m?.files?.folders || []).map((l) => drive.parse(l)).filter((r) => r?.kind === "folder").map((r) => r.id))];
+      roots = remote.study(m).folders;
       gt = tf.folders(m);
       gtNodes = gt.curated ? [{ id: gt.curated, name: "Curated ground truth", access: null }, ...(gt.same ? [] : [{ id: gt.submissions, name: "Ground truth submissions", access: null }])] : [];
       $("#data-tree").replaceChildren(); msg($("#data-msg"), "");
@@ -389,7 +388,7 @@ export function dataMode(ctx) {
     // whoever is signed in may have changed: the study's roles again, if so
     signedIn() { if (manifest && account.email() !== who) this.mount(manifest); },
     // whether the user may work as the study's data manager: named in its permissions, the study having folders
-    get manager() { return roles.has("data_management") && roots.length > 0 && drive.ready; },
+    get manager() { return roles.has("data_management") && roots.length > 0 && remote.ready; },
     // the Data Manager role chosen, or left (req/shell/account/role)
     role(open) { $("#data-col").hidden = !open; enter(open); },
     get on() { return on(); },
@@ -400,7 +399,7 @@ export function dataMode(ctx) {
     async saveEdits(folder, image, files, say) {
       const n = nodes.get(folder);
       if (!n || n.access !== "write") throw new Error(ACCESS[n?.access || "unknown"][1]);
-      const name = stemOf(image), there = (await drive.all(folder)).find((f) => f.folder && f.name === name);
+      const name = stemOf(image), there = (await remote.all(folder)).find((f) => f.folder && f.name === name);
       if (there && !(await sd.ours(there.id))) throw new Error(`This folder already holds a folder named ${name} that this page did not make.`);
       const into = there ? there.id : await sd.folder(folder, name);
       for (const [k, f] of files.entries()) {

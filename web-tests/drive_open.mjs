@@ -49,29 +49,29 @@ export async function openFromDrive(page, file) {
   state.opening = true;
   try {
     // the Image box may be folded: the button is pressed where it is
-    await page.evaluate(() => document.querySelector("#load-drive").click());
-    await page.waitForFunction(() => document.querySelector("#drive-dlg").open);
-    if (await page.evaluate(() => document.querySelector("#drive-link").checkVisibility())) {
-      await page.fill("#drive-link", `https://drive.google.com/file/d/${f.id}/view`);
-      await page.click("#drive-go");
+    await page.evaluate(() => document.querySelector("#load-remote").click());
+    await page.waitForFunction(() => document.querySelector("#remote-dlg").open);
+    if (await page.evaluate(() => document.querySelector("#remote-link").checkVisibility())) {
+      await page.fill("#remote-link", `https://drive.google.com/file/d/${f.id}/view`);
+      await page.click("#remote-go");
     } else {
-      const row = `#drive-list .item[data-id="${f.id}"]`;
+      const row = `#remote-list .item[data-id="${f.id}"]`;
       // the study's folders listed to choose from: the first
       // a boolean: a predicate's element would come back as a handle that keeps it alive
-      await page.waitForFunction((r) => !!(document.querySelector(r) || document.querySelector("#drive-list .item.folder:not(:disabled)")), row);
-      if (!(await page.evaluate((r) => !!document.querySelector(r), row))) await page.dblclick("#drive-list .item.folder");
+      await page.waitForFunction((r) => !!(document.querySelector(r) || document.querySelector("#remote-list .item.folder:not(:disabled)")), row);
+      if (!(await page.evaluate((r) => !!document.querySelector(r), row))) await page.dblclick("#remote-list .item.folder");
       await page.dblclick(row);
     }
     // the dialog closes once the download starts; a folder it listed first may have left an error showing meanwhile
-    await page.waitForFunction(() => !document.querySelector("#drive-dlg").open, null, { timeout: 15000 })
-      .catch(async () => { throw new Error("the Drive dialog did not open the file: " + (await page.textContent("#drive-msg"))); });
+    await page.waitForFunction(() => !document.querySelector("#remote-dlg").open, null, { timeout: 15000 })
+      .catch(async () => { throw new Error("the Drive dialog did not open the file: " + (await page.textContent("#remote-msg"))); });
   } finally { state.opening = false; }
 }
 
 // the Image box opened, as a user opens it when it has folded after an image, then Drive's button pressed
 export async function pressDrive(page) {
   await unfold(page);
-  await page.click("#load-drive");
+  await page.click("#load-remote");
 }
 // the image selector opened (the Image box opened first), and its nth image chosen, from 1; null leaves it open
 export async function pickRecent(page, nth = 1) {

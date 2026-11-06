@@ -3,24 +3,23 @@
 // and how to get there (req/shell/ground-truth/tagger-access), its Clear progress (req/shell/ground-truth/clear), and
 // Submit (req/shell/ground-truth/submit).
 "use strict";
-import { studyDrive } from "./study_drive.js";
 import { folders, submit, status, current } from "./truth_folders.js";
 
 const SAY = {
   unset: "This study has not set up its ground-truth folders yet, so ground truth cannot be submitted.",
   none: "Not approved: this site may not write to the study's submissions folder for you yet.",
-  view: "View only: Drive lets you only view the study's submissions folder. Ask its owner for edit access.",
+  view: "View only: the store lets you only view the study's submissions folder. Ask its owner for edit access.",
   write: "Writable: Submit sends your ground truth to the study's submissions folder.",
-  unknown: "Your Google sign-in ran out. Sign in again to submit.",
+  unknown: "Your sign-in ran out. Sign in again to submit.",
 };
-export const LOCAL_GT = "Ground truth cannot be sent from local files, only from Google Drive.";
+export const LOCAL_GT = (remote) => `Ground truth cannot be sent from local files, only from ${remote.label}.`;
 
-// account: the sign-in; drive: the public Drive reader (drive.js); google: the site's Google settings; manifest() the
+// account: the sign-in; remote: the remote store; manifest() the
 // study on show; image() the image open, {name, sha256, source} or null; on() whether the user makes ground truth now;
 // cleared() opens the image afresh once the study has forgotten its progress on it
-export function truthTagger({ account, drive, google, manifest, image, on, cleared }) {
-  const sd = studyDrive({ account, apiKey: google.apiKey || "", clientId: google.clientId || "" });
-  const reader = { all: (id) => drive.all(id), text: async (id) => new TextDecoder().decode((await drive.file(id, "ground truth")).bytes) };
+export function truthTagger({ account, remote, manifest, image, on, cleared }) {
+  const sd = remote.writer(account);
+  const reader = { all: (id) => remote.all(id), text: async (id) => new TextDecoder().decode((await remote.file(id, "ground truth")).bytes) };
   const writer = { folder: sd.folder, create: sd.create, replace: sd.replace, mark: sd.mark };
   // the study's clear: {what, fn}; the access last read: "write" | "view" | "none" | "unset" | "unknown"; epoch: the
   // draw a late answer belongs to
@@ -49,7 +48,7 @@ export function truthTagger({ account, drive, google, manifest, image, on, clear
       });
       el.querySelector(".gt-clear")?.addEventListener("click", () => {
         const name = image()?.name;
-        if (!clear || !name || !confirm(`Clear your ${clear.what} on ${name}? This forgets your progress on this image on this device; anything you submitted stays in Google Drive.`)) return;
+        if (!clear || !name || !confirm(`Clear your ${clear.what} on ${name}? This forgets your progress on this image on this device; anything you submitted stays in ${remote.label}.`)) return;
         clear.fn(); cleared();
       });
     }
@@ -84,7 +83,7 @@ export function truthTagger({ account, drive, google, manifest, image, on, clear
     // why Submit is off for the image open, "" when it is on
     blocked() {
       const im = image();
-      if (!im || im.source?.kind !== "drive") return LOCAL_GT;
+      if (!im || !remote.owns(im.source)) return LOCAL_GT(remote);
       if (access !== "write") return SAY[access || "unknown"];
       return "";
     },
@@ -92,7 +91,7 @@ export function truthTagger({ account, drive, google, manifest, image, on, clear
     async submit(doc) {
       const im = image(), email = account.email();
       const full = { ...doc, created: new Date().toISOString(), tagger: email,
-        image: { ...(doc.image && typeof doc.image === "object" ? doc.image : {}), name: im.name, sha256: im.sha256, drive_id: im.source.id } };
+        image: { ...(doc.image && typeof doc.image === "object" ? doc.image : {}), name: im.name, sha256: im.sha256, ...remote.cite(im.source) } };
       await submit({ reader, writer, folder: where(), image: { name: im.name, sha256: im.sha256 }, email, doc: full });
       return full;
     },

@@ -208,7 +208,7 @@ export function imageEditor(ctx) {
     if (im.source?.kind !== "preview") return Promise.resolve(im);
     return new Promise((ok) => {
       const ctl = new AbortController();
-      page.watch("image", (next) => { if (next && next.source?.kind === "drive" && next.source.id === im.source.id) { ctl.abort(); ok(next); } }, { signal: ctl.signal });
+      page.watch("image", (next) => { if (next && ctx.remote.owns(next.source) && next.source.id === im.source.id) { ctl.abort(); ok(next); } }, { signal: ctl.signal });
       ctx.loadOriginal(im.source);
     });
   }
@@ -251,8 +251,8 @@ export function imageEditor(ctx) {
     $("#save-msg").textContent = why || ""; $("#save-msg").classList.toggle("err", !!why);
     $("#save-download").disabled = !!why;
     const access = base.source?.folder ? ctx.accessOf(base.source.folder) : null;
-    $("#save-drive").disabled = !!why || access !== "write";
-    $("#save-drive").title = access === "write" ? "" : base.source?.folder ? "This folder is not writable for you here: see its access in the tree." : "Only an image from the study's Drive folders can be saved there.";
+    $("#save-remote").disabled = !!why || access !== "write";
+    $("#save-remote").title = access === "write" ? "" : base.source?.folder ? "This folder is not writable for you here: see its access in the tree." : `Only an image from the study's ${ctx.remote.short} folders can be saved there.`;
     return why;
   }
   $("#edit-save").onclick = () => {
@@ -261,8 +261,8 @@ export function imageEditor(ctx) {
     $("#save-pattern").value = n > 1 ? kept || PARTS_PATTERN : ONE_PATTERN;
     const image = base.source?.name || ctx.original().name;
     $("#save-where").textContent = base.source?.folder
-      ? `Into the folder ${stemOf(image)}, beside ${image}, in Google Drive: the page makes it the first time.`
-      : "This image is not from the study's Drive folders: it can be downloaded.";
+      ? `Into the folder ${stemOf(image)}, beside ${image}, in ${ctx.remote.label}: the page makes it the first time.`
+      : `This image is not from the study's ${ctx.remote.short} folders: it can be downloaded.`;
     names(); dlg.showModal();
   };
   $("#save-pattern").addEventListener("input", () => { if (n > 1) ctx.writeJSON(SPLIT_PATTERN, pattern()); names(); });
@@ -280,7 +280,7 @@ export function imageEditor(ctx) {
     }
     const look = ctx.viewer().channelList();
     return splitImage(src, { xs: e.xs, ys: e.ys, parts: gridParts(e.xs, e.ys, e.left), channels: [...e.channels].sort((a, b) => a - b), slices: src.Z > 1 ? e.z : null,
-      look, pattern: pattern(), source: { name: f.name, sha256: ctx.state.sha, ...(base.source?.id && { drive_id: base.source.id }) }, removed: polygons, mask: e.mask });
+      look, pattern: pattern(), source: { name: f.name, sha256: ctx.state.sha, ...(base.source?.id && ctx.remote.cite(base.source)) }, removed: polygons, mask: e.mask });
   }
   const busy = (b, act) => async () => {
     if (names()) return;
@@ -293,7 +293,7 @@ export function imageEditor(ctx) {
     else ctx.saveFile(stemOf(ctx.original().name) + "_parts.zip", zip(out), "application/zip");
     $("#save-msg").textContent = `Downloaded ${out.length === 1 ? out[0].name : out.length + " files"}.`;
   });
-  $("#save-drive").onclick = busy($("#save-drive"), async () => {
+  $("#save-remote").onclick = busy($("#save-remote"), async () => {
     const out = await files(), say = (t) => { $("#save-msg").textContent = t; };
     const into = stemOf(base.source.name);
     await ctx.saveEdits(base.source.folder, base.source.name, out, say);

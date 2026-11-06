@@ -150,7 +150,7 @@
                         {"when": {"image": ["none"]}, "is": "hidden"}
                       ]
                     },
-                    {"name": "Google Drive button", "select": "#load-drive", "control": true, "req": "req/shell/load/selector"}
+                    {"name": "Google Drive button", "select": "#load-remote", "control": true, "req": "req/shell/load/selector"}
                   ]
                 },
                 {"name": "Image box's foot", "select": "#image-foot", "req": "req/shell/data/preview-images",

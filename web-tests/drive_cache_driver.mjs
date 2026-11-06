@@ -82,17 +82,17 @@ const downloads = () => calls.filter((c) => c === "download").length;
 // opens a.png from the Drive dialog, or from the recents, and waits until the page holds it
 const fromDialog = async () => {
   await pressDrive(page);
-  if (await page.inputValue("#drive-link") !== FOLDER) { await page.fill("#drive-link", FOLDER); await page.click("#drive-go"); }
-  await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 1);
+  if (await page.inputValue("#remote-link") !== FOLDER) { await page.fill("#remote-link", FOLDER); await page.click("#remote-go"); }
+  await page.waitForFunction(() => document.querySelectorAll("#remote-list .item").length === 1);
   await page.evaluate(() => { st.fileName = ""; st.sha = ""; });
-  await page.dblclick("#drive-list .item");
+  await page.dblclick("#remote-list .item");
   await page.waitForFunction(() => st.fileName === "a.png");
 };
 const fromLink = async () => {
   await pressDrive(page);
-  await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 1);
-  await page.evaluate((id) => { st.fileName = ""; st.sha = ""; $("#drive-link").value = `https://drive.google.com/file/d/${id}/view`; }, FILE.id);
-  await page.click("#drive-go");
+  await page.waitForFunction(() => document.querySelectorAll("#remote-list .item").length === 1);
+  await page.evaluate((id) => { st.fileName = ""; st.sha = ""; $("#remote-link").value = `https://drive.google.com/file/d/${id}/view`; }, FILE.id);
+  await page.click("#remote-go");
   await page.waitForFunction(() => st.fileName === "a.png");
 };
 const fromRecents = async () => {
@@ -163,11 +163,11 @@ try {
   // a link's details also name the file, so with them unreachable nothing opens: the dialog shows the error
   checksums = true; details = false; calls.length = 0;
   await pressDrive(page);
-  await page.evaluate((id) => { st.fileName = ""; st.sha = ""; $("#drive-link").value = `https://drive.google.com/file/d/${id}/view`; }, FILE.id);
-  await page.click("#drive-go");
-  await page.waitForFunction(() => $("#drive-msg").classList.contains("err"));
-  check(!(await page.evaluate(() => st.fileName)), `with the file's details unreachable, the kept copy does not open, and the dialog shows the error: "${await page.textContent("#drive-msg")}"`);
-  await page.click("#drive-dlg button[value=close]");
+  await page.evaluate((id) => { st.fileName = ""; st.sha = ""; $("#remote-link").value = `https://drive.google.com/file/d/${id}/view`; }, FILE.id);
+  await page.click("#remote-go");
+  await page.waitForFunction(() => $("#remote-msg").classList.contains("err"));
+  check(!(await page.evaluate(() => st.fileName)), `with the file's details unreachable, the kept copy does not open, and the dialog shows the error: "${await page.textContent("#remote-msg")}"`);
+  await page.click("#remote-dlg button[value=close]");
   details = true;
   checksums = false; calls.length = 0;
   await fromRecents(); await settle();

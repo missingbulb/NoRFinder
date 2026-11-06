@@ -107,7 +107,7 @@ export function drawVolume({ vol, Z, n, m, depth, colours }, turn, SIDE = 96) {
   return cv;
 }
 
-// what a row in the Drive dialog says the file holds: "3D · 8 slices", "3D · 30 slices · 2 channels",
+// what a row in the remote files dialog says the file holds: "3D · 8 slices", "3D · 30 slices · 2 channels",
 // "2D · 3 channels", or "" when it cannot tell
 export function holds(s) {
   if (!s || s.images == null) return "";

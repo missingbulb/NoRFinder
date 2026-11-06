@@ -77,12 +77,12 @@ page.setDefaultTimeout(10000);
 await page.clock.install();
 
 
-const listed = () => page.waitForFunction((n) => document.querySelectorAll("#drive-list .item").length === n, FILES.length);
+const listed = () => page.waitForFunction((n) => document.querySelectorAll("#remote-list .item").length === n, FILES.length);
 // what the dialog shows of the wait: the notice, the clock and whether its controls are held
 const wait = () => page.evaluate(() => ({
-  notice: !$("#drive-throttle").hidden && $("#drive-throttle").textContent.includes("Try again in 15 minutes"),
-  clock: $("#drive-clock").textContent, red: getComputedStyle($("#drive-clock")).color,
-  held: ["#drive-link", "#drive-go", "#drive-open"].every((s) => $(s).disabled),
+  notice: !$("#remote-throttle").hidden && $("#remote-throttle").textContent.includes("Try again in 15 minutes"),
+  clock: $("#remote-clock").textContent, red: getComputedStyle($("#remote-clock")).color,
+  held: ["#remote-link", "#remote-go", "#remote-open"].every((s) => $(s).disabled),
 }));
 
 try {
@@ -90,35 +90,35 @@ try {
   await page.waitForFunction(() => window.$ && $("#title").textContent);
   // b.png opened while Drive answers, so it is kept on this device
   await pressDrive(page); await listed();
-  await page.dblclick("#drive-list .item:nth-child(2)");
+  await page.dblclick("#remote-list .item:nth-child(2)");
   await page.waitForFunction(() => st.fileName === "b.png");
   await until(page, async () => (await (await caches.open("nor-images-v1")).keys()).length === 1);
 
   // throttled: opening a.png is refused
   mode = "throttled";
   await pressDrive(page); await listed();
-  await page.dblclick("#drive-list .item:nth-child(1)");
-  await page.waitForFunction(() => !$("#drive-throttle").hidden);
+  await page.dblclick("#remote-list .item:nth-child(1)");
+  await page.waitForFunction(() => !$("#remote-throttle").hidden);
   let w = await wait();
   check(w.notice && /^1[45]:\d\d$/.test(w.clock) && w.held, `a refused download shows the notice and a countdown from 15:00, and holds the dialog: ${JSON.stringify(w)}`);
   check(/rgb\((1\d\d|2\d\d), \d{1,2}, \d{1,2}\)/.test(w.red), `the countdown is red: ${w.red}`);
-  if (shots) await page.locator("#drive-dlg").screenshot({ path: path.join(shots, "drive_throttle.png") });
+  if (shots) await page.locator("#remote-dlg").screenshot({ path: path.join(shots, "drive_throttle.png") });
   await page.clock.fastForward(61000);
   w = await wait();
   check(/^1[34]:\d\d$/.test(w.clock), `it counts down: ${w.clock} a minute later`);
 
   // nothing reaches Drive from the dialog while it waits, across a reload
   calls.length = 0;
-  await page.evaluate(() => { $("#drive-go").click(); $("#drive-open").click(); });
-  await page.dblclick("#drive-list .item:nth-child(1)", { force: true }).catch(() => {});
-  await page.click("#drive-dlg button[value=close]");
+  await page.evaluate(() => { $("#remote-go").click(); $("#remote-open").click(); });
+  await page.dblclick("#remote-list .item:nth-child(1)", { force: true }).catch(() => {});
+  await page.click("#remote-dlg button[value=close]");
   await page.reload(); await page.waitForFunction(() => window.$ && $("#title").textContent);
   await pressDrive(page);
   // the notice is the page holding Drive: it shows in place of the listing it would otherwise ask for
-  await page.waitForFunction(() => $("#drive-dlg").open && !$("#drive-throttle").hidden);
+  await page.waitForFunction(() => $("#remote-dlg").open && !$("#remote-throttle").hidden);
   w = await wait();
   check(w.notice && w.held && calls.length === 0, `no call to Drive while it waits, after a reload too: ${calls}`);
-  await page.click("#drive-dlg button[value=close]");
+  await page.click("#remote-dlg button[value=close]");
 
   // a kept image still opens, from this device
   await pickRecent(page);
@@ -127,9 +127,9 @@ try {
   // one no longer kept shows the notice instead of downloading
   await page.evaluate(async () => { const c = await caches.open("nor-images-v1"); for (const q of await c.keys()) await c.delete(q); });
   await pickRecent(page);
-  await page.waitForFunction(() => $("#drive-dlg").open && !$("#drive-throttle").hidden);
+  await page.waitForFunction(() => $("#remote-dlg").open && !$("#remote-throttle").hidden);
   check(calls.length === 0, `a recent image no longer kept shows the notice, with no call to Drive: ${calls}`);
-  await page.click("#drive-dlg button[value=close]");
+  await page.click("#remote-dlg button[value=close]");
 
   // the countdown ends: the notice goes and the dialog lists its link again
   mode = "ok";
@@ -141,16 +141,16 @@ try {
 
   // a failure where the details fail too is an error, not a wait
   mode = "down";
-  await page.dblclick("#drive-list .item:nth-child(1)");
-  await page.waitForFunction(() => $("#drive-dlg").open && $("#drive-msg").classList.contains("err"));
+  await page.dblclick("#remote-list .item:nth-child(1)");
+  await page.waitForFunction(() => $("#remote-dlg").open && $("#remote-msg").classList.contains("err"));
   w = await wait();
-  check(!w.notice && !w.held, `with Drive unreachable, the dialog shows an error and does not wait: "${await page.textContent("#drive-msg")}"`);
+  check(!w.notice && !w.held, `with Drive unreachable, the dialog shows an error and does not wait: "${await page.textContent("#remote-msg")}"`);
 
   // a refused read for a row's badge starts the wait too
   mode = "throttled";
   await page.evaluate(() => localStorage.removeItem("nor-drive-holds"));
-  await page.click("#drive-go");
-  await page.waitForFunction(() => !$("#drive-throttle").hidden);
+  await page.click("#remote-go");
+  await page.waitForFunction(() => !$("#remote-throttle").hidden);
   check((await wait()).notice, "a refused read for a TIFF row's badge starts the wait too");
 } catch (e) {
   failed = true; console.error("FAILED: " + e.message);

@@ -80,13 +80,13 @@ async function session(who) {
 // the dialog's answer to a pasted folder link: the names it lists, else its message
 async function listFolder(page, id) {
   await pressDrive(page);
-  await page.waitForFunction(() => $("#drive-dlg").open);
-  await page.fill("#drive-link", `https://drive.google.com/drive/folders/${id}`);
-  await page.click("#drive-go");
-  await page.waitForFunction(() => $("#drive-list .item") || /refused|not found|sign/i.test($("#drive-dlg").textContent));
-  const names = await page.$$eval("#drive-list .item", (rows) => rows.map((r) => r.textContent));
-  const text = await page.evaluate(() => $("#drive-dlg").textContent);
-  await page.click("#drive-dlg button[value=close]");
+  await page.waitForFunction(() => $("#remote-dlg").open);
+  await page.fill("#remote-link", `https://drive.google.com/drive/folders/${id}`);
+  await page.click("#remote-go");
+  await page.waitForFunction(() => $("#remote-list .item") || /refused|not found|sign/i.test($("#remote-dlg").textContent));
+  const names = await page.$$eval("#remote-list .item", (rows) => rows.map((r) => r.textContent));
+  const text = await page.evaluate(() => $("#remote-dlg").textContent);
+  await page.click("#remote-dlg button[value=close]");
   return { names, text };
 }
 
@@ -97,7 +97,7 @@ const user = { name: "Tester", email: "tester@example.com", picture: null };
   const { ctx, page, reads } = await session({ user, token: TOKEN, until: Date.now() + 3600e3, scopes: SCOPES });
   const got = await listFolder(page, PRIVATE);
   check(got.names.some((n) => n.includes("private.png")), "signed in, the dialog lists a private folder the user's account can see", got);
-  const bytes = await page.evaluate((id) => NorDrive.file(id).then((f) => f.bytes.byteLength, (e) => e.message), IMAGE);
+  const bytes = await page.evaluate((id) => import("/web/drive.js").then(({ remote }) => remote.file(id)).then((f) => f.bytes.byteLength, (e) => e.message), IMAGE);
   check(bytes === PNG.length, "signed in, an image in the private folder downloads", bytes);
   check(reads.length > 0 && reads.every((r) => r.bearer === TOKEN), "signed in, every Drive read carries the user's token", reads);
   check(reads.every((r) => r.key === null), "signed in, no Drive read carries the site's API key", reads);
@@ -115,7 +115,7 @@ const user = { name: "Tester", email: "tester@example.com", picture: null };
 {
   // the token ran out an hour ago; nothing renews it without the user's click on Google's window
   const { ctx, page, reads } = await session({ user, token: TOKEN, until: Date.now() - 3600e3, scopes: SCOPES });
-  const err = await page.evaluate((id) => NorDrive.list(id).then(() => "listed", (e) => e.message), PUBLIC);
+  const err = await page.evaluate((id) => import("/web/drive.js").then(({ remote }) => remote.list(id)).then(() => "listed", (e) => e.message), PUBLIC);
   check(err !== "listed" && reads.every((r) => r.key === null), "signed in with the token run out, no read falls back to the site's API key", { err, reads });
   await ctx.close();
 }

@@ -70,20 +70,20 @@ const opensOn = async (address) => {
   listed.length = 0;
   const listing = nextListing();
   await pressDrive(page);
-  await page.waitForFunction(() => $("#drive-dlg").open);
+  await page.waitForFunction(() => $("#remote-dlg").open);
   // the dialog has opened on something: a folder it lists, or the link in its field
-  await Promise.race([listing, page.waitForFunction(() => window.$ && $("#drive-link")?.checkVisibility() && $("#drive-link").value).catch(() => {})]);
-  const link = (await page.isVisible("#drive-link")) ? await page.inputValue("#drive-link") : listed.length ? folder(listed[listed.length - 1]) : "";
-  await page.click("#drive-dlg button[value=close]");
+  await Promise.race([listing, page.waitForFunction(() => window.$ && $("#remote-link")?.checkVisibility() && $("#remote-link").value).catch(() => {})]);
+  const link = (await page.isVisible("#remote-link")) ? await page.inputValue("#remote-link") : listed.length ? folder(listed[listed.length - 1]) : "";
+  await page.click("#remote-dlg button[value=close]");
   return link;
 };
 const paste = async (address, link) => {
   await page.goto(origin + address);
   await page.waitForFunction(() => window.$ && $("#title").textContent);
   await pressDrive(page);
-  await page.fill("#drive-link", link); await page.click("#drive-go");
-  await page.waitForFunction(() => !$("#drive-msg").textContent.includes("Reading"));
-  await page.click("#drive-dlg button[value=close]");
+  await page.fill("#remote-link", link); await page.click("#remote-go");
+  await page.waitForFunction(() => !$("#remote-msg").textContent.includes("Reading"));
+  await page.click("#remote-dlg button[value=close]");
 };
 
 try {
@@ -99,7 +99,7 @@ try {
   check(at === PASTED, `the Image Viewer's dialog opens on the link last pasted there: ${at}`);
   at = await opensOn("/web/fixture");
   check(at === FIXTURE_FOLDER, `a link pasted elsewhere leaves a study's folder: ${at}`);
-  check(!(await page.evaluate(() => { $("#load-drive").click(); return $("#drive-link").checkVisibility(); })), "and a study's dialog has no link to paste");
+  check(!(await page.evaluate(() => { $("#load-remote").click(); return $("#remote-link").checkVisibility(); })), "and a study's dialog has no link to paste");
 } catch (e) {
   failed = true; console.error(e);
 }

@@ -224,11 +224,11 @@ try {
   await ready(60000);
   check(true, "offline, the prepared study runs");
   await pressDrive(page);
-  await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length >= 2, null, { timeout: 10000 }).catch(() => {});
-  const kept = await page.$$eval("#drive-list .item .name", (ns) => ns.map((n) => n.textContent));
+  await page.waitForFunction(() => document.querySelectorAll("#remote-list .item").length >= 2, null, { timeout: 10000 }).catch(() => {});
+  const kept = await page.$$eval("#remote-list .item .name", (ns) => ns.map((n) => n.textContent));
   check(kept.includes("stack one.tif") && kept.includes("stack two.tif"), "offline, the Drive dialog lists the images kept here: " + kept.join(", "));
   await shot(page, "offline-drive");
-  await page.dblclick('#drive-list .item:has-text("stack two.tif")');
+  await page.dblclick('#remote-list .item:has-text("stack two.tif")');
   await page.waitForFunction(() => window.shellForTests.page.get("image")?.name === "stack two.tif", null, { timeout: 60000 }).catch(() => {});
   check((await page.evaluate(() => window.shellForTests.page.get("image")?.name)) === "stack two.tif", "offline, a kept image opens");
 
@@ -267,23 +267,23 @@ try {
   await page.goto(origin + "/app/vascular");
   await page.waitForFunction(() => window.$ && $("#title").textContent);
   await pressDrive(page);
-  await page.waitForSelector("#drive-dlg[open]");
-  await page.waitForFunction(() => document.querySelectorAll("#drive-list .item").length === 2);
-  const drivePath = () => page.textContent("#drive-path");
+  await page.waitForSelector("#remote-dlg[open]");
+  await page.waitForFunction(() => document.querySelectorAll("#remote-list .item").length === 2);
+  const drivePath = () => page.textContent("#remote-path");
   down = true;
   await pastHeartbeat();
   await page.waitForSelector("#sb-online .off", { state: "visible", timeout: 40000 }).catch(() => {});
   check(await page.isVisible("#sb-online .off"), "mid-session, with the browser still saying online, the page notices the site not answering");
   // req/shell/drive/offline-listing: the folder stays as last listed, what is not kept here greyed
-  const greyed = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#drive-list .item")].map((b) => [b.querySelector(".name").textContent, b.disabled])));
-  await page.waitForFunction(() => document.querySelector("#drive-list .item:disabled"), null, { timeout: 5000 }).catch(() => {});
+  const greyed = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#remote-list .item")].map((b) => [b.querySelector(".name").textContent, b.disabled])));
+  await page.waitForFunction(() => document.querySelector("#remote-list .item:disabled"), null, { timeout: 5000 }).catch(() => {});
   let g = await greyed();
   check(g.sub === true && g["stack one.tif"] === false && !/offline/.test(await drivePath()), "the open Drive dialog then greys the subfolder never listed, the kept image left to open: " + JSON.stringify(g) + " " + (await drivePath()));
   down = false;
   await pastOfflineRetry();
   await page.waitForSelector("#sb-online .off", { state: "hidden", timeout: 40000 }).catch(() => {});
   check(!(await page.isVisible("#sb-online .off")), "and notices it answering again");
-  await page.waitForFunction(() => document.querySelector("#drive-list .item") && !document.querySelector("#drive-list .item:disabled"), null, { timeout: 5000 }).catch(() => {});
+  await page.waitForFunction(() => document.querySelector("#remote-list .item") && !document.querySelector("#remote-list .item:disabled"), null, { timeout: 5000 }).catch(() => {});
   g = await greyed();
   check(Object.keys(g).length === 2 && !Object.values(g).some(Boolean), "and the Drive dialog's folder can be opened from again: " + JSON.stringify(g));
   await page.keyboard.press("Escape");
