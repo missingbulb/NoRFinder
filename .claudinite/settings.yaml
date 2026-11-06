@@ -45,8 +45,3 @@ tasks:
     "engine/update": "weekly"
 growth:
   sessionHistory: "localEncrypted"
-checks:
-  accept:
-    - rule: no-scheduled-fleet-executor
-      path: .github/workflows/tests-full.yml
-      reason: "the owner chose this workflow's own nightly schedule; the canon retires the check (Claudinite/PublicPacks#182)"
