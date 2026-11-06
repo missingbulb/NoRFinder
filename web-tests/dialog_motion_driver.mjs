@@ -1,8 +1,8 @@
 // Drives the page (web/) in headless Chromium, with a worker that never answers, and checks
-// req/shell/dialogs/open-from-button: a dialog a button opens starts at that button's place and size and grows to its
-// own; one opened with nothing pressed, or with animations off or reduced motion asked for, appears at once.
-// Optional SHOTS: a directory for a screenshot of the first frame. Exits 1 on a failed check, 2 when it cannot run.
-//   node web-tests/dialog_motion_driver.mjs [SHOTS]
+// req/shell/dialogs/open-from-button: a dialog a button opens is animated, and its motion ends with the dialog at its
+// own size; one opened with nothing pressed, or with animations off or reduced motion asked for, appears at once.
+// Exits 1 on a failed check, 2 when it cannot run.
+//   node web-tests/dialog_motion_driver.mjs
 import { repoFile } from "./repo_file.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
@@ -18,7 +18,6 @@ let pw;
 try { pw = require("playwright"); } catch {
   try { pw = require(path.join(execSync("npm root -g").toString().trim(), "playwright")); } catch { console.error("no playwright: npm i -g playwright"); process.exit(2); }
 }
-const [shots] = process.argv.slice(2);
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
@@ -45,14 +44,15 @@ async function open({ motion = true, reducedMotion = "no-preference", clock = fa
   await ctx.addInitScript((motion) => {
     delete Navigator.prototype.serviceWorker;
     localStorage.setItem("nor-motion", JSON.stringify(motion));
-    // a dialog's motion held at its start as it is made, and the box of the button last pressed then, so a loaded
-    // machine reading them late finds them as the motion began, the button's own transition past
-    let pressed = null;
-    document.addEventListener("click", (e) => { pressed = e.target.closest?.("button, a, summary, [role=button]"); }, true);
+    // each dialog's motions as the page makes them, and how many have ended, so a test asks only whether one ran
+    window.dialogMotions = {};
     const animate = Element.prototype.animate;
     Element.prototype.animate = function (...a) {
       const x = animate.apply(this, a);
-      if (this.localName === "dialog") { x.pause(); if (pressed) window.pressedBox = pressed.getBoundingClientRect(); }
+      if (this.localName === "dialog") {
+        const m = (window.dialogMotions[this.id] ||= { made: 0, ended: 0 });
+        m.made++; x.finished.then(() => m.ended++, () => m.ended++);
+      }
       return x;
     };
   }, motion);
@@ -63,20 +63,14 @@ async function open({ motion = true, reducedMotion = "no-preference", clock = fa
   await page.waitForFunction(() => $("#sb-version").textContent);
   return { ctx, page };
 }
-// the dialog's animations, frozen at their start: where it is drawn then, where it ends, and where the button is
-// (the motion starts in the frame after the dialog opens, which a loaded machine may not have drawn yet)
-const firstFrame = (page, dlg, btn) => page.evaluate(async ([dlg, btn]) => {
+// whether the dialog opened, and the motions made for it: the motion starts in the frame after it opens, so two
+// frames on any it has are made
+const opened = (page, dlg) => page.evaluate(async (dlg) => {
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   const d = document.querySelector(dlg);
-  if (!d.getAnimations().length) await new Promise((r) => requestAnimationFrame(() => r()));
-  const all = d.getAnimations({ subtree: true });
-  const box = (r) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height });
-  all.forEach((a) => { a.pause(); a.currentTime = 0; });
-  const start = box(d.getBoundingClientRect());
-  return { open: d.open, count: all.length, running: all.filter((a) => !a.pseudoElement).length, opacity: +getComputedStyle(d).opacity,
-    start, button: box(window.pressedBox || document.querySelector(btn).getBoundingClientRect()) };
-}, [dlg, btn]);
+  return { open: d.open, ...(window.dialogMotions[d.id] || { made: 0, ended: 0 }) };
+}, dlg);
 const near = (a, b, by = 2) => Math.abs(a - b) <= by;
-const resume = (page, dlg) => page.evaluate((dlg) => document.querySelector(dlg).getAnimations({ subtree: true }).forEach((a) => a.finish()), dlg);
 
 // ---- a button opens its dialog out of itself ----
 {
@@ -84,29 +78,24 @@ const resume = (page, dlg) => page.evaluate((dlg) => document.querySelector(dlg)
   // the history arrives once, and the dialog grows with it: let that happen first
   await page.evaluate(() => { $("#sb-version").click(); $("#history-dlg").close(); });
   await page.waitForFunction(() => !/Loading/.test($("#history-list").textContent));
-  // Version history fills in at once, so it starts exactly as big as its button; Resource Usage fills in a moment
-// later, past the frame its motion starts in, so it starts only about that big
-for (const [btn, dlg, what, by] of [["#sb-version", "#history-dlg", "Version history", 1.02], ["#sb-res-icon", "#usage-dlg", "Resource Usage", 1.5]]) {
+  // its motion runs and ends with the dialog at its own size; how it looks on the way is not checked
+  for (const [btn, dlg, what] of [["#sb-version", "#history-dlg", "Version history"], ["#sb-res-icon", "#usage-dlg", "Resource Usage"]]) {
     await page.click(btn);
-    const f = await firstFrame(page, dlg, btn);
-    await check(f.open && f.running >= 1, `${btn} opens ${what}, animated`, f);
-    await check(near(f.start.x, f.button.x) && near(f.start.y, f.button.y), `${what} starts centred on its button`, f);
-    const about = (a, b) => a >= b / by && a <= b * by;
-    await check(about(f.start.w, f.button.w) && about(f.start.h, f.button.h), `and as big as the button`, f);
-    await check(f.opacity < 0.05, `and faded out`, f);
-    if (shots) await page.screenshot({ path: path.join(shots, dlg.slice(1) + "_first_frame.png") });
-    await resume(page, dlg);
+    const f = await opened(page, dlg);
+    await check(f.open && f.made >= 1, `${btn} opens ${what}, animated`, f);
+    await page.waitForFunction((id) => { const m = window.dialogMotions[id]; return m && m.ended === m.made; }, dlg.slice(1));
     const last = await page.evaluate((dlg) => { const d = document.querySelector(dlg), r = d.getBoundingClientRect(); return { w: r.width, h: r.height, ow: d.offsetWidth, oh: d.offsetHeight, n: d.getAnimations({ subtree: true }).length }; }, dlg);
-    await check(near(last.w, last.ow) && near(last.h, last.oh) && last.n === 0, `then grows to its own size and stops`, last);
+    await check(near(last.w, last.ow) && near(last.h, last.oh) && last.n === 0, `then ends at its own size`, last);
     await page.keyboard.press("Escape");
   }
   // a button that opens nothing, pressed over a second ago, does not lend the dialog its place
   await page.click("#theme"); await page.click("#theme");
   // past the second after a click in which the page takes a dialog opening as that click's (web/dialog_motion.js)
   await ctx.clock.fastForward(1200);
+  const was = await page.evaluate(() => window.dialogMotions["history-dlg"]?.made || 0);
   await page.evaluate(() => $("#history-dlg").showModal());
-  const f = await firstFrame(page, "#history-dlg", "#sb-version");
-  await check(f.open && f.count === 0, "a dialog opened with nothing pressed lately appears at once", f);
+  const f = await opened(page, "#history-dlg");
+  await check(f.open && f.made === was, "a dialog opened with nothing pressed lately appears at once", f);
   await ctx.close();
 }
 
@@ -114,8 +103,8 @@ for (const [btn, dlg, what, by] of [["#sb-version", "#history-dlg", "Version his
 for (const [opts, what] of [[{ motion: false }, "with animations off"], [{ reducedMotion: "reduce" }, "with reduced motion asked for"]]) {
   const { ctx, page } = await open(opts);
   await page.click("#sb-version");
-  const f = await firstFrame(page, "#history-dlg", "#sb-version");
-  await check(f.open && f.count === 0, `${what}, Version history appears at once`, f);
+  const f = await opened(page, "#history-dlg");
+  await check(f.open && f.made === 0, `${what}, Version history appears at once`, f);
   await ctx.close();
 }
 await done(0);

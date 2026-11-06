@@ -16,6 +16,7 @@ import { repoFile } from "./repo_file.mjs";
 import { offSite } from "./off_site.mjs";
 import { ENGINE, LAUNCH } from "./engine.mjs";
 import { asTagger } from "./tagger.mjs";
+import { record, begun, moved, played, ran } from "./page_motions.mjs";
 import { localStudy } from "./local_study.mjs";
 
 const require = createRequire(import.meta.url);
@@ -57,6 +58,7 @@ await localStudy(ctx, "fixture");
 await asTagger(ctx);
 await ctx.route(offSite(origin), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
+await record(ctx);
 const page = await ctx.newPage();
 page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
 page.setDefaultTimeout(10000);
@@ -94,13 +96,13 @@ await check((await bars()).join() === "true,false,false,false", "the open drawer
 await loadImage();
 await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted folded", "4 Notes folded"],
   "an image open: Load Image folds to its preview, name and what it holds, checked, and the drawer opening on it opens");
-// a drawer slides open or shut, and the drawers below slide to their new places
-const slid = page.waitForFunction(() => document.getAnimations().filter((a) => /^::view-transition-group\(drawer-/.test(a.effect?.pseudoElement)).length >= 2).then(() => true, () => false);
+// a drawer slides open or shut, and the drawers below slide to their new places: the slide starts and ends
+const before = await begun(page);
 await title(0);
 // where the browser has the view transitions it takes; elsewhere the drawers change at once
 const slides = await page.evaluate(() => !!document.startViewTransition && CSS.supports("view-transition-group", "contain"));
-await check(!slides || await slid, slides ? "a drawer slides open, and the drawers below it slide down" : "a browser without the view transitions the slide takes: the drawers change at once");
-await page.waitForFunction(() => !document.getAnimations().some((a) => a.effect?.pseudoElement?.startsWith("::view-transition")));
+const slid = slides ? await moved(page, before, /^drawer-/) : null;
+await check(!slides || (!slid.missing && slid.groups.filter((g) => g.startsWith("drawer-")).length >= 2), slides ? "a drawer slides open, and the drawers below it slide down" : "a browser without the view transitions the slide takes: the drawers change at once", slid);
 await boxes(["✓ Loaded Image open", "2 Threshold open", "3 Counted folded", "4 Notes folded"], "its title opens a folded drawer, done: Loaded Image");
 await title(0);
 await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted folded", "4 Notes folded"], "and folds it again");
@@ -158,11 +160,11 @@ await page.waitForFunction(() => document.querySelector("#status").textContent.s
 await settled();
 await check((await left()) < 60, "collapsed stays collapsed on the next visit", await left());
 // expanding: the column slides out as Data Management's does, the drawers sliding in
-const slideOut = () => page.waitForFunction(() => document.getAnimations().some((a) => a.transitionProperty === "grid-template-columns")
-  && document.getAnimations().some((a) => a.animationName === "data-in" && a.effect?.target?.closest?.("#left"))).then(() => true, () => false);
-let slid2 = slideOut();
+const slideOut = (since) => ran(page, since, [{ name: "grid-template-columns" }, { name: "data-in", left: true }]);
+const played0 = await played(page);
 await page.click("#left-strip .strip-name");
-await check(await slid2, "clicking the strip slides the bar out and the drawers in");
+const out = await slideOut(played0);
+await check(!out.missing, "clicking the strip slides the bar out and the drawers in, and both end", out);
 await settled();
 await page.waitForFunction(() => !document.querySelector("#left").classList.contains("sliding-in"));
 await check((await left()) === wide, "expanding brings the bar back at its width", [wide, await left()]);
