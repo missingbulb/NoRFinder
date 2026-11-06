@@ -745,9 +745,11 @@ nobody has decided: what the page does there is not a requirement yet.
   section, and an image kept on this device, in the Google Drive dialog's rows; what is not available
   offline carries nothing. The image selector's images carry none: with Auto-save on, they are all kept; offline,
   one not kept is greyed (`req/shell/load/selector`). The owner set on
-  2026-11-04 that the mark states a state rather than prompting an action, so it is green, with no tooltip and no
-  question-mark pointer; assistive tech is told what it means: the study runs, or the image opens, without the internet. Test:
-  `web-tests/test_storage_page.py`.
+  2026-11-04 that the mark states a state rather than prompting an action, so it is green, with no
+  question-mark pointer; assistive tech is told what it means: the study runs, or the image opens, without the internet.
+  The owner set on 2026-11-06 a tiny tooltip on it, "Available for offline", and that in a Drive row it sits before what
+  the image holds (2D, 3D), which every image shows (the nor-finder pack's row-indicators-edges). Tests:
+  `web-tests/test_storage_page.py`, `web-tests/test_image_line_page.py`.
   </details>
 
 - `req/shell/offline/per-study` Each study can be made available offline from the Storage tab, after a popup with what it takes and how long.
@@ -1349,7 +1351,7 @@ nobody has decided: what the page does there is not a requirement yet.
 
   The fast set runs on each PR (`.github/workflows/tests.yml`, `-m "not full"`) and needs neither
   Node nor a browser; every test that drives Node, Pyodide or Chromium, or measures speed or memory,
-  is marked `full` and runs only in the full set, nightly (the nor-finder pack's `full-tests` task)
+  is marked `full` and runs only in the full set, nightly (the workflow's own schedule)
   and on every push to main, so it has run on anything a release can ship: a green full run on main
   wakes the site release (`.github/workflows/tests-full.yml`, `web-tests/test_ci_split.py`). The nightly run also
   runs the full set on Firefox and WebKit (`req/checks/other-engines`).
@@ -1358,7 +1360,7 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/checks/other-engines` Every night the full set also runs on Firefox and WebKit; their failures fail the night only once the page supports their browser.
   <details>
 
-  Set by the owner on 2026-11-03. The nightly full run (the nor-finder pack's `full-tests` task) runs the full
+  Set by the owner on 2026-11-03. The nightly full run (the workflow's own schedule) runs the full
   set again on Playwright's Firefox and on its WebKit, standing for Safari; a push to main does not, and
   neither gates a release. An engine whose browser `web/browsers.json` does not list (`req/shell/browsers/supported`) reports
   its failures as a warning on the run and the night stays green; once its browser is listed, a failure

@@ -1036,7 +1036,7 @@ function remoteDialog() {
     for (const f of kept) {
       const b = document.createElement("button"); b.type = "button"; b.className = "item"; b.setAttribute("aria-selected", "false");
       const meta = [sizeText(f.size), [remote.label, ...f.path].join(" / ")].join(" · ");
-      b.innerHTML = `<span class="pic"></span><span class="name">${esc(f.name)}</span><span class="shape">${esc(readJSON(HOLDS)[f.id] || "")}</span><span class="kept"></span><span class="meta">${esc(meta)}</span>`;
+      b.innerHTML = `<span class="pic"></span><span class="name">${esc(f.name)}</span><span class="kept"></span><span class="shape">${esc(readJSON(HOLDS)[f.id] || "")}</span><span class="meta">${esc(meta)}</span>`;
       markOffline(b.querySelector(".kept"), "image", true);
       const pic = readJSON(SAVED_THUMB + f.id, "");
       if (pic) b.querySelector(".pic").append(Object.assign(new Image(), { alt: "", src: pic }));
@@ -1074,7 +1074,7 @@ function remoteDialog() {
       const added = f.created ? `Added to ${remote.label} on ${f.created.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}` : `When it was added to ${remote.label} is not known`;
       const fresh = !f.folder && seen && !seen.has(f.id) ? `<span class="new" title="${esc(added)}">new</span>` : "";
       // what only some rows show sits inward, what every image shows at the row's edge
-      b.innerHTML = `<span class="pic"></span><span class="name">${esc(f.name)}</span>${fresh}${f.folder ? "" : agoTag(opened[f.id])}<span class="gt-tag"></span><span class="shape">${esc(readJSON(HOLDS)[f.id] || "")}</span><span class="kept"></span><span class="meta">${esc(meta)}</span>`;
+      b.innerHTML = `<span class="pic"></span><span class="name">${esc(f.name)}</span>${fresh}${f.folder ? "" : agoTag(opened[f.id])}<span class="gt-tag"></span><span class="kept"></span><span class="shape">${esc(readJSON(HOLDS)[f.id] || "")}</span><span class="meta">${esc(meta)}</span>`;
       if (!f.folder) { b.dataset.id = f.id; markOffline(b.querySelector(".kept"), "image", kept.has(f.id)); }
       if (off && (f.folder ? !listings[f.id] : !kept.has(f.id))) {
         b.disabled = true; b.title = f.folder ? "Not listed on this device yet: it needs the internet." : "Not kept on this device: it needs the internet.";
