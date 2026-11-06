@@ -23,7 +23,7 @@ import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
-import { ENGINE } from "./engine.mjs";
+import { ENGINE, LAUNCH } from "./engine.mjs";
 import { pressDrive, pickRecent } from "./drive_open.mjs";
 import { until } from "./page_until.mjs";
 
@@ -75,7 +75,7 @@ const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: "
 
 // a profile of its own: a browser's private window can install nothing
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), "offline-"));
-const ctx = await pw[ENGINE].launchPersistentContext(profile, { viewport: { width: 1400, height: 900 } });
+const ctx = await pw[ENGINE].launchPersistentContext(profile, { ...LAUNCH, viewport: { width: 1400, height: 900 } });
 // the page's clock, which runs as the real one does, so the test can move it past a wait on the page's own timers
 await ctx.clock.install();
 // the page asks whether the site answers every 30 s while the browser says it is online, every 5 s while offline
@@ -106,7 +106,7 @@ try {
   // a first visit, no copy of the site kept yet, the network dropping as the study's own Python modules are fetched:
   // the status says what the network's going stops, never Python's traceback
   {
-    const fresh = await pw[ENGINE].launch(), first = await fresh.newPage();
+    const fresh = await pw[ENGINE].launch(LAUNCH), first = await fresh.newPage();
     pyDown = true;
     await first.goto(origin + "/app/fixture");
     // the status and the spinner read at the one moment the failure is told: the site still answering, the page

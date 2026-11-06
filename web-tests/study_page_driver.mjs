@@ -19,7 +19,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { offSite } from "./off_site.mjs";
-import { ENGINE } from "./engine.mjs";
+import { ENGINE, LAUNCH } from "./engine.mjs";
 import { cutShort } from "./page_errors.mjs";
 import { localStudy } from "./local_study.mjs";
 
@@ -63,7 +63,7 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[ENGINE].launch();
+const browser = await pw[ENGINE].launch(LAUNCH);
 const problems = [];
 const done = async () => { await browser.close(); server.close(); for (const p of problems) console.error(p); process.exitCode = problems.length ? 1 : 0; };
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
@@ -113,7 +113,8 @@ try {
   for (const s of offered) {
     const r = rowsLook.find((x) => x.id === s.id) || {};
     if (s.stage === null ? r.stage !== null : r.stage !== s.stage || !r.border || !r.small || !r.last || !r.snug) problems.push(`the switcher does not label ${s.id} with its stage, ${s.stage}, last, small, snug and bordered: ${JSON.stringify(r)}`);
-    if (!(r.room >= 8)) problems.push(`the switcher's ${s.id} row leaves ${r.room} px at its right, not 8`);
+    // to within the sub-pixel Firefox lays out in
+    if (!(r.room >= 8 - 0.01)) problems.push(`the switcher's ${s.id} row leaves ${r.room} px at its right, not 8`);
     if (r.tick) problems.push(`the switcher's ${s.id} row carries a tick`);
   }
   if (new Set(rowsLook.map((r) => r.iconLeft)).size !== 1) problems.push("the switcher's icons do not line up: " + rowsLook.map((r) => r.iconLeft));

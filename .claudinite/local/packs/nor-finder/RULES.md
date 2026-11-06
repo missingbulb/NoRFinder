@@ -29,6 +29,10 @@ not belong here — propose it to the Claudinite canon instead, where every repo
   never `web/` or a study's `web/`: the production code is written for the live site alone.
   (tests-bend-test-surface)
 
+- **Testing a motion the page makes** (a transition, an animation, a view transition) - check that it is on where
+  it should be, that it starts and that it ends in the right state, through `web-tests/page_motions.mjs`; never
+  how it looks on the way. (testing-motion-ends)
+
 ## The page's controls
 
 - **Placing several indicators on each row of a list** (a size, a date, an age tag, a mark) - put
