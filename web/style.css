@@ -294,6 +294,7 @@ button.tool[aria-pressed=true] { border-color: var(--accent); box-shadow: inset 
 .menu summary::after { content: " ▾"; color: var(--dim); }
 .menu .pop { position: absolute; top: calc(100% + 4px); left: 0; z-index: 20; display: flex; flex-direction: column; gap: 8px; min-width: 170px;
   padding: 10px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px #0004; }
+.menu .pop.right { left: auto; right: 0; }
 .menu .pop label { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .menu .pop label[hidden] { display: none; }
 .menu .opt { display: flex; align-items: center; gap: 8px; }
