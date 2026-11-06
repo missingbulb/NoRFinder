@@ -90,8 +90,13 @@ const signIn = account({
   clientId: ((window.NOR_CONFIG && window.NOR_CONFIG.google) || {}).clientId || "",
   applied: () => reapply(),
   // after the page's own start, which this may run during
-  changed: () => queueMicrotask(() => { data.signedIn(); showRole(); drawStudies(); }),
+  changed: () => queueMicrotask(() => { data.signedIn(); showRole(); drawStudies(); driveHint(); }),
 });
+// signed in, Drive is read as the user (req/shell/drive/credentials)
+NorDrive.use(signIn);
+const driveHint = () => { $("#drive-hint").textContent = signIn.signedIn()
+  ? "Paste the link of an image or a folder your Google account can see."
+  : 'Paste the link of an image or a folder shared as "Anyone with the link".'; };
 
 // the tagger's side of the study's ground-truth folders: the line in its ground-truth box, Clear progress and Submit
 const truth = truthTagger({ account: signIn, drive: { all: (id) => NorDrive.all(id), file: (...a) => NorDrive.file(...a) },
