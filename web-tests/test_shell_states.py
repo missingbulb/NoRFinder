@@ -136,7 +136,7 @@ def lead(select):
 
 def test_every_element_the_tree_names_is_on_the_page():
     """By the id its selector starts from, on the shell's page or the panels of the study the tree is walked on; one
-    the page makes as it runs, from its parent's."""
+    the page makes as it runs, from the nearest it is in that the page does not make."""
     trees, studies = study_trees()
     made = {n['name'] for n, _, _ in shell_states.nodes(shell_states.load()[0]['tree']) if n.get('made')}
     made |= {n['name'] for st in studies.values() for g in st.get('grafts', []) for n, _, _ in shell_states.nodes(g['tree']) if n.get('made')}
@@ -145,8 +145,11 @@ def test_every_element_the_tree_names_is_on_the_page():
         panels = studies[i]['study']['web'].get('panels')
         p = page_ids('web/index.html', *([f'studies/{i}/{panels}'] if panels else []))
         ids = set(p.state) | set(p.opened) | p.tags
+        up = dict((e['name'], parent) for e, parent in els)
         for e, parent in els:
-            owner = parent if e['name'] in made else e
+            owner = e
+            while owner['name'] in made:
+                owner = up[owner['name']]
             assert lead(owner['select']) in ids, f"{i}: {e['name']}: no #{lead(owner['select'])} on the page"
             checked += 1
     assert len(trees) >= 5 and checked >= 5 * 100
@@ -168,7 +171,13 @@ def test_the_shell_tree_holds_only_the_shells_page():
     p = page_ids('web/index.html')
     ids = set(p.state) | set(p.opened) | p.tags
     assert len(own) >= 80, f'the shell tree has {len(own)} elements: the sweep is not reading it'
-    strays = [n['name'] for n, parent, _ in own if lead((parent if n.get('made') else n)['select']) not in ids]
+    up = {n['name']: parent for n, parent, _ in own}
+
+    def owner(n):
+        while n.get('made'):
+            n = up[n['name']]
+        return n
+    strays = [n['name'] for n, _, _ in own if lead(owner(n)['select']) not in ids]
     assert not strays, f'not the shell\'s, in dev/requirements/shell-states.json: {strays}'
 
 

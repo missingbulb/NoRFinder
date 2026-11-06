@@ -21,7 +21,8 @@ EXPECT = os.path.join(ROOT, 'web-tests', 'shell-states.GENERATED.json')
 
 # what each action leaves changed; the browser test does the same action on the page
 ACTIONS = {
-    'load': ('Load', {'image': 'local', 'counted': False, 'view': 'image'}),
+    'load': ('Load', {'image': 'local', 'stack': False, 'counted': False, 'view': 'image'}),
+    'stack': ('Load a stack', {'image': 'local', 'stack': True, 'counted': False, 'view': 'image'}),
     'count': ('Count', {'counted': True}),
     'items': ('Items', {'view': 'items'}),
     'image': ('Image', {'view': 'image'}),
@@ -102,7 +103,7 @@ def walk(study, roots, paths):
             s = {**s, **change}
             # an image from the computer, open for whoever makes ground truth, is told it cannot be submitted
             # (req/shell/ground-truth/submit); the study opening afresh for a new tagger tells it again
-            if a in ('load', 'tagger'):
+            if a in ('load', 'stack', 'tagger'):
                 s['notice'] = derived(s)['makesTruth'] and s['image'] == 'local'
             states.append((label, dict(s)))
         out.append((p, states))
