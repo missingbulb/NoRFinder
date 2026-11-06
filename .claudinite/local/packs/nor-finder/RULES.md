@@ -29,6 +29,13 @@ not belong here — propose it to the Claudinite canon instead, where every repo
   never `web/` or a study's `web/`: the production code is written for the live site alone.
   (tests-bend-test-surface)
 
+## What the page reaches
+
+- **Planning a change that adds or alters a network call or a permission request** (the page's,
+  the lab's or CI's: what is called, when, by whom, how often; a scope, a picker, a share) - put
+  each one to the owner as its own approval question before building it, never folded into an
+  approved plan. (network-calls-approved)
+
 ## The page's controls
 
 - **Placing several indicators on each row of a list** (a size, a date, an age tag, a mark) - put
