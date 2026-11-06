@@ -47,9 +47,10 @@ const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(""); }
   if (u === "/web/config.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(CONFIG); }
+  // the fixture with ready-made thumbnails, opening the TIFFs its folder holds
   if (u === "/studies/fixture/study.json") {
     const m = JSON.parse(fs.readFileSync(path.join(repo, u), "utf8"));
-    r.writeHead(200, { "content-type": "application/json" }); return r.end(JSON.stringify({ ...m, driveThumbs: "thumbs/" }));
+    r.writeHead(200, { "content-type": "application/json" }); return r.end(JSON.stringify({ ...m, driveThumbs: "thumbs/", files: { ...m.files, accept: ".tif,.tiff" } }));
   }
   if (u === "/studies/fixture/thumbs/index.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end(JSON.stringify(IMAGES.map((f) => f.id))); }
   const f = repoFile(repo, u);
