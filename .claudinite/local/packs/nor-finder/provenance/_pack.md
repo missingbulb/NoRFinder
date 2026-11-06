@@ -53,3 +53,9 @@
 - **Rejected:** also fetching the ground-truth images at image build (owner's choice): a Drive
   download that can be slow or fail there.
 - **Landed:** #779
+
+## 2026-11-05 · scope-changed · githubActions drops dispatchWorkflow
+- **Reason:** the full-tests task, its only user, is retired.
+- **Actor:** @missingbulb (owner).
+- **Model:** claude-opus-5-5
+- **Mechanism:** the manifest's `githubActions` grant.
