@@ -587,7 +587,7 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await page.click("#study-list a >> text=NoR Finder");
   await page.waitForFunction(() => document.documentElement.dataset.stage === "GT");
   // NoR Finder loads from Drive (req/shell/load/from): with no image opened there yet, Drive's button is the step's
-  await steps(page, ["Load image*"], ["#load-drive", "#sb-load"]);
+  await steps(page, ["Load image*"], ["#load-remote", "#sb-load"]);
   await ctx.close();
 }
 await done(0);

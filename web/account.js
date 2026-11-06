@@ -2,14 +2,17 @@
 // in its own window and hands this page a token, and the page keeps the user's settings in their own Google Drive,
 // in the app's hidden folder, as one file it reads whole and replaces whole: {browser key: the string this device
 // keeps under it}, for the keys whose settings follow the user. The services it reaches: Google's sign-in script
-// and window, Google's account details (name, email, picture), and the Drive API for that one file. A study may
+// and window, Google's account details (name, email, picture), and the Drive API for that one file. The token also
+// reads the user's Drive (DRIVE_READ), the only credential the page's Drive reads carry while they are signed in
+// (req/shell/drive/credentials). A study may
 // ask for more (more(scope), req/shell/data/drive-access): Google's per-file Drive permission, added to the same token.
 "use strict";
 import { CONNECTION } from "./offline.js";
-import { multipart } from "./drive_upload.js";
+import { multipart } from "./drive.js";
 
 const GOOGLE_SCRIPT = "https://accounts.google.com/gsi/client";
-const SCOPES = "openid email profile https://www.googleapis.com/auth/drive.appdata";
+export const DRIVE_READ = "https://www.googleapis.com/auth/drive.readonly";
+const SCOPES = "openid email profile https://www.googleapis.com/auth/drive.appdata " + DRIVE_READ;
 const USER_INFO = "https://openidconnect.googleapis.com/v1/userinfo";
 const FILES = "https://www.googleapis.com/drive/v3/files";
 const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
@@ -20,10 +23,12 @@ const SAVE_AFTER_MS = 400;
 // who is signed in on this device: {user: {name, email, picture}, token, until (ms), scopes (what the token may do,
 // as Google listed it), fileId, changed}, changed the keys whose settings this device changed since Drive last had them
 export const SIGNED_IN = "nor-google-sign-in";
+// what the Storage tab calls that key
+export const SIGNED_IN_LABEL = "Who is signed in with Google, and Google's token for the hour";
 
 // keys: the browser keys whose settings follow the user; applied(): runs once Drive's settings have replaced them;
 // changed(): runs whenever who is signed in may have changed
-export function account({ keys, menu, clientId, applied, changed = () => {} }) {
+export function account({ keys, menu, clientId = ((window.NOR_CONFIG && window.NOR_CONFIG.google) || {}).clientId || "", applied, changed = () => {} }) {
   const $ = (s) => menu.querySelector(s);
   // waiting: {ok, fail} of a sign-in the popup is waiting on (req/shell/account/welcome)
   let me = read(), client = null, script = null, saving = null, waiting = null;
@@ -86,6 +91,7 @@ export function account({ keys, menu, clientId, applied, changed = () => {} }) {
     $("#who-name").textContent = user ? user.name : "You";
     $("#who-where").textContent = user ? user.email : "On this device, not signed in";
     $("#sign-in").hidden = !!user || !clientId;
+    $("#sign-in").textContent = "Sign in with Google…";
     $("#sign-out").hidden = !user;
     const summary = menu.querySelector("summary"), was = summary.querySelector(".avatar");
     const pic = user && user.picture;
@@ -121,10 +127,12 @@ export function account({ keys, menu, clientId, applied, changed = () => {} }) {
       });
     })
     .catch((e) => { script = null; console.warn("Google sign-in did not load:", e); }));
+  const reads = () => (me?.scopes || "").split(" ").includes(DRIVE_READ);
   // a token can be asked for only in the user's own click or key press: Google's window opens, and closes by itself
-  // while Google still remembers their consent; the new token syncs at once
+  // while Google still remembers their consent; the new token syncs at once. A token from before the page read
+  // Drive is renewed too, Google then asking for that
   const renew = () => {
-    if (!me || live() || !client || !navigator.userActivation?.isActive) return false;
+    if (!me || (live() && reads()) || !client || !navigator.userActivation?.isActive) return false;
     client.requestAccessToken({ prompt: "", login_hint: me.user.email });
     return true;
   };
@@ -178,9 +186,18 @@ export function account({ keys, menu, clientId, applied, changed = () => {} }) {
       clearTimeout(saving);
       saving = setTimeout(() => save().catch((e) => console.warn("settings not saved to Google Drive:", e.message)), SAVE_AFTER_MS);
     },
-    // the user is about to use Google Drive (Load): a token run out is renewed in their click, and the settings sync
-    drive() { renew(); },
     signedIn: () => !!(me && me.user),
+    // what the welcome popup keeps as the choice of signing in
+    kind: "google",
+    // the words the page shows about signing in
+    words: {
+      signIn: "Sign in with Google",
+      tip: "Sign in with Google to keep your settings on every device and reach your data files as yourself.",
+      failed: "Google sign-in did not finish. Try again, or continue anonymously.",
+      offline: "You are offline. You can sign in with Google once you are back online, from your avatar's menu at the top right.",
+    },
+    // where the settings that follow the user are kept, as the Settings dialog says it
+    kept: () => (me && me.user ? "Kept in your Google Drive, so they follow you to every device." : "Kept on this device only. Sign in with Google to keep them with you."),
     user: () => (me && me.user) || null,
     offered: !!clientId,
     // the user is reaching for Sign in: Google's script, so their click can ask at once
@@ -189,6 +206,8 @@ export function account({ keys, menu, clientId, applied, changed = () => {} }) {
     email: () => (me && me.user && me.user.email) || null,
     // the token while it lasts, else null; renewing it needs the user's click (renew)
     token: () => (live() ? me.token : null),
+    // Google refused the token: forgotten, to be renewed on the next click
+    refused() { if (me) { me.token = null; keep(); } },
     renew,
     // whether the token Google gave may do scope, as far as the last one said
     may: (scope) => !!(me && (me.scopes || "").split(" ").includes(scope)),

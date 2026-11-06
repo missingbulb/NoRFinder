@@ -43,9 +43,9 @@ page = await open(true, { study });
 said = await asTagger(page);
 await check(/Writable/.test(said), "writable: the line says so", said);
 const png = FILES.find((f) => /\.png$/.test(f.name));
-await page.click("#load-drive");
-await page.waitForFunction(() => document.querySelector("#drive-dlg").open);
-await page.dblclick(`#drive-list .item[data-id="${png.id}"]`);
+await page.click("#load-remote");
+await page.waitForFunction(() => document.querySelector("#remote-dlg").open);
+await page.dblclick(`#remote-list .item[data-id="${png.id}"]`);
 await page.waitForFunction((n) => st.fileName === n && !$("#fx-count").disabled, png.name);
 await page.click("#fx-count");
 await page.waitForFunction(() => !$("#fx-truth").disabled);
@@ -82,9 +82,9 @@ await check(asked && asked.includes(png.name), "Clear progress asks first, namin
 
 // req/shell/ground-truth/pending: the Drive dialog marks the image as pending for the tagger
 const dialogTag = async () => {
-  await page.evaluate(() => document.querySelector("#load-drive").click());
-  await page.waitForFunction(() => document.querySelector("#drive-dlg").open);
-  const row = `#drive-list .item[data-id="${png.id}"] .gt-tag`;
+  await page.evaluate(() => document.querySelector("#load-remote").click());
+  await page.waitForFunction(() => document.querySelector("#remote-dlg").open);
+  const row = `#remote-list .item[data-id="${png.id}"] .gt-tag`;
   const tag = await page.waitForFunction((r) => document.querySelector(r)?.textContent || null, row, { timeout: 5000 }).then((h) => h.jsonValue(), () => "");
   await page.keyboard.press("Escape");
   return tag;
@@ -121,9 +121,9 @@ await page.context().close();
 
 // req/shell/ground-truth/view: a viewer, not signed in, loads the image and its curated ground truth, with no algorithm run
 page = await open(false, { study });
-await page.click("#load-drive");
-await page.waitForFunction(() => document.querySelector("#drive-dlg").open);
-await page.dblclick(`#drive-list .item[data-id="${png.id}"]`);
+await page.click("#load-remote");
+await page.waitForFunction(() => document.querySelector("#remote-dlg").open);
+await page.dblclick(`#remote-list .item[data-id="${png.id}"]`);
 await page.waitForFunction((n) => st.fileName === n && !$("#fx-count").disabled, png.name);
 await page.waitForSelector("#load-gt:not([hidden])", { timeout: 5000 }).catch(() => {});
 await check(await page.isVisible("#load-gt"), "a viewer is offered Load GT tagging for an image with curated ground truth");

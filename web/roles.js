@@ -2,6 +2,14 @@
 // the menu beside the avatar that names it and lists the rest. Each role is its own view; the shell draws it.
 "use strict";
 
+// the roles a study's permissions may give
+export const ROLES = ["data_management", "ground_truth_writer"];
+// the roles the study's permissions give email
+export function rolesOf(manifest, email) {
+  const e = (email || "").toLowerCase(), held = manifest?.permissions || {};
+  return new Set(ROLES.filter((r) => (held[r] || []).some((x) => x.toLowerCase() === e)));
+}
+
 // the browser key the role chosen is kept under, as its name: "viewer" | "tagger" | "data"; absent = "viewer"
 export const ROLE = "nor-role";
 export const ROLE_NAMES = { viewer: "Viewer", tagger: "Ground Truth Tagger", data: "Data Manager" };
@@ -25,7 +33,7 @@ export function roleMenu(menu, chose) {
       $("#role-list").replaceChildren(...roles.map((r) => {
         const b = Object.assign(document.createElement("button"), { type: "button", className: "item", textContent: ROLE_NAMES[r] });
         b.setAttribute("role", "menuitemradio"); b.setAttribute("aria-checked", String(r === now));
-        // Data Management works on Drive: offline it is listed and does nothing
+        // Data Management works on the remote store: offline it is listed and does nothing
         if (r === "data") b.dataset.needsNetwork = "";
         b.onclick = () => { menu.open = false; if (r !== now) chose(r); };
         return b;

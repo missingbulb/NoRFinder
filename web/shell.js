@@ -1,6 +1,6 @@
 // The page's shell: it runs the study the address names (/<id>, the default at the bare address), and knows
 // none of them; the header's switcher offers the ones the build lists and swaps one in without a reload. What it gives a study, as shell in mount(shell): loading images (from the
-// computer or Google Drive), Python (the study's own, run in worker.js), the viewer the study asks for,
+// computer or the remote store), Python (the study's own, run in worker.js), the viewer the study asks for,
 // the page's state its controls are drawn from (page: get, set, watch(key, fn, {signal})), the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own), the switch to its item view (views) and the boxes' titles (boxDone(box, summary) once a box's task is done), a Markdown outline as HTML (outline(text)), notices, the user's saved settings, downloads and ground-truth
 // submission; and around them the theme, the left bar, foldable boxes, Data Management (data_mode.js) with its Preprocessing (Split into parts), the resources dialog (storage, memory,
 // network and CPU) and the version history.
@@ -21,7 +21,8 @@ import { viewer3d } from "./viewer3d.js";
 import { pageState } from "./page_state.js";
 import { shape, stackPicture, holds, drawVolume, TURN } from "./stack.js";
 import { PREVIEWS, readPreviews } from "./previews.js";
-import { account, SIGNED_IN } from "./account.js";
+import { account, SIGNED_IN, SIGNED_IN_LABEL } from "./account.js";
+import { remote } from "./drive.js";
 import { settingsDialog } from "./settings_dialog.js";
 import { offline, APP_ASKED, markOffline, CONNECTION } from "./offline.js";
 import { welcome, WELCOME } from "./welcome.js";
@@ -46,27 +47,41 @@ const DEFAULT_STUDY = "viewer";
 // the browser keys the shell saves under; their names predate studies, and a user's saved state lives in them
 const THEME = "nor-theme"; // "dark" | "light"; absent = follow the system
 const BARS = "nor-bars-v1"; // {left, collapsed}: the left bar's width in pixels, and whether it is collapsed (a right bar's, from before it went, is ignored)
-const DRIVE_LINK = "nor-drive-link"; // the last Google Drive link pasted, in any study
-const DRIVE_LINKS = "nor-drive-links"; // {study id: the last Google Drive link pasted in that study}
-const THUMBS = "nor-drive-thumbs"; // "on" | "off": whether the Drive dialog shows thumbnails
-const AUTO_SAVE = "nor-drive-autosave"; // "on" | "off": whether an image downloaded from Drive is kept on this device
-const SAVED_THUMB = "nor-drive-thumb:"; // + Drive id: a JPEG data URL of the image, saved when it was opened
-const SAVED_THUMBS = "nor-drive-thumbs-saved"; // [Drive id], oldest first: which images have one
-const THUMB_NAMES = "nor-drive-thumb-names"; // {Drive id: file name}: the image each saved thumbnail shows
-const HOLDS = "nor-drive-holds"; // {Drive id: what the file holds, "3D · 8 slices" or "" when it cannot tell}, oldest first
+// the last remote link pasted, in any study
+const REMOTE_LINK = "nor-drive-link";
+// {study id: the last remote link pasted in that study}
+const REMOTE_LINKS = "nor-drive-links";
+// "on" | "off": whether the remote files dialog shows thumbnails
+const THUMBS = "nor-drive-thumbs";
+// "on" | "off": whether an image downloaded from the remote store is kept on this device
+const AUTO_SAVE = "nor-drive-autosave";
+// + remote id: a JPEG data URL of the image, saved when it was opened
+const SAVED_THUMB = "nor-drive-thumb:";
+// [remote id], oldest first: which images have one
+const SAVED_THUMBS = "nor-drive-thumbs-saved";
+// {remote id: file name}: the image each saved thumbnail shows
+const THUMB_NAMES = "nor-drive-thumb-names";
+// {remote id: what the file holds, "3D · 8 slices" or "" when it cannot tell}, oldest first
+const HOLDS = "nor-drive-holds";
 const TIPS = "nor-tips-closed"; // [tip id]: the tips the user closed, never shown again
-const THROTTLE = "nor-drive-throttled-until"; // when the wait after Google throttled the site's downloads ends, in ms
-const RECENT = "nor-drive-recent"; // [{id, name, path, study, at}], newest first: images opened from Drive, path their folders under the link, study the one it was opened in, at when it was last opened (ms; absent for one kept before that was)
+// when the wait after the store throttled the site's downloads ends, in ms
+const THROTTLE = "nor-drive-throttled-until";
+// [{id, name, path, study, at}], newest first: images opened from the remote store, path their folders under the link, study the one it was opened in, at when it was last opened (ms; absent for one kept before that was)
+const RECENT = "nor-drive-recent";
 const LOCAL_RECENT = "nor-local-recent"; // [{id, name, study, at}], newest first: files opened from this computer, each the browser's reference to it kept in FILE_HANDLES under id; on this device only
 const FILE_HANDLES = "nor-file-handles-v1"; // the IndexedDB database of those references
-const LISTINGS = "nor-drive-listings"; // {folder id: {at, items: [{id, name, folder, size, created, sha}]}}: each folder as the Drive dialog last listed it, created in ms
-// Cache Storage, + Drive id: an image downloaded from Drive, its file name (URI-encoded) and when it was saved
+// {folder id: {at, items: [{id, name, folder, size, created, sha}]}}: each folder as the remote files dialog last listed it, created in ms
+const LISTINGS = "nor-drive-listings";
+// Cache Storage, + remote id: an image downloaded from the remote store, its file name (URI-encoded) and when it was saved
 // in the headers
 const IMAGES = "nor-images-v1", IMAGE_NAME = "x-nor-name", IMAGE_AT = "x-nor-saved-at";
 // and, for one kept since offline came, its folders under the study's link (a JSON list, URI-encoded) and the study
 const IMAGE_PATH = "x-nor-path", IMAGE_STUDY = "x-nor-study";
-// Cache Storage, + Drive folder id: the folder's rauntruth-previews.tiff, its SHA-256, the folder's name and the study it was read in in the headers
+// Cache Storage, + remote folder id: the folder's rauntruth-previews.tiff, its SHA-256, the folder's name and the study it was read in in the headers
 const FOLDER_PREVIEWS = "nor-previews-v1", PREVIEWS_SHA = "x-nor-sha256";
+// the paths each of those caches keeps its entries under, + remote id
+const PREVIEWS_PATH = "drive-previews/";
+const CACHED_IMAGE_PATH = "drive-image/";
 const MOTION = "nor-motion"; // false: the user turned the page's animations off
 const RESOURCES = "nor-resources"; // the status bar's disk, memory, network and CPU: "hidden" | "auto" | "open"; absent = "auto"
 const SEEN_VERSION = "nor-seen-version"; // the site version the user last saw, to tell them what changed since
@@ -82,20 +97,30 @@ const UNREAD_MB = 190;
 const REPO = "missingbulb/RaunTruth";
 // the issue form a proposal for a new study is written on
 const STUDY_REQUEST = "new-study.yml";
-// signing in (req/shell/account/sign-in): these settings follow the user to every device, in their own Google Drive; the rest stay with this one
-const FOLLOWS = [THEME, ROLE, TIPS, SEEN_VERSION, MEMORY_TIP, DRIVE_LINK, DRIVE_LINKS, THUMBS, RECENT, MOTION, RESOURCES];
+// signing in (req/shell/account/sign-in): these settings follow the user to every device, in their own account's storage; the rest stay with this one
+const FOLLOWS = [THEME, ROLE, TIPS, SEEN_VERSION, MEMORY_TIP, REMOTE_LINK, REMOTE_LINKS, THUMBS, RECENT, MOTION, RESOURCES];
 const signIn = account({
   keys: FOLLOWS,
   menu: $("#user-menu"),
-  clientId: ((window.NOR_CONFIG && window.NOR_CONFIG.google) || {}).clientId || "",
   applied: () => reapply(),
   // after the page's own start, which this may run during
-  changed: () => queueMicrotask(() => { data.signedIn(); showRole(); drawStudies(); }),
+  changed: () => queueMicrotask(() => { data.signedIn(); showRole(); drawStudies(); remoteHint(); }),
 });
+// signed in, the remote store is read as the user (req/shell/drive/credentials)
+remote.use(signIn);
+const remoteHint = () => { $("#remote-hint").textContent = remote.words.hint(signIn.signedIn()); };
+// the remote store's name, words and logo, where the page shows them
+$("#logos").insertAdjacentHTML("afterbegin", remote.logo.symbol);
+$("#load-remote").title = $("#load-remote").ariaLabel = `Open from ${remote.label}`;
+$("#load-original").title = `Open the image itself, not its preview: from this device when it is kept here, else from ${remote.label}`;
+$("#remote-title").textContent = `Load from ${remote.label}`;
+$("#remote-link").placeholder = remote.words.placeholder;
+$("#remote-throttle-say").textContent = remote.words.throttled;
+$("#remote-autosave-l").title = `Keep each image opened from ${remote.short} on this device, so it opens again without a download`;
+$("#save-remote").textContent = `Save to ${remote.label}`;
 
 // the tagger's side of the study's ground-truth folders: the line in its ground-truth box, Clear progress and Submit
-const truth = truthTagger({ account: signIn, drive: { all: (id) => NorDrive.all(id), file: (...a) => NorDrive.file(...a) },
-  google: (window.NOR_CONFIG && window.NOR_CONFIG.google) || {}, manifest: () => manifest,
+const truth = truthTagger({ account: signIn, remote, manifest: () => manifest,
   image: () => (st.img ? { name: st.fileName, sha256: st.sha, source: st.source } : null), on: () => !!manifest && makesTruth(),
   cleared: () => restudy(true) });
 
@@ -120,7 +145,7 @@ const SHELL_STATE = new Set(Object.keys(st));
 let study = {}, view = null, manifest = null, base = "";
 
 // ---------- status ----------
-// said: the last thing the page said, {text, err}; loading: what the Drive dialog's thumbnails say while they
+// said: the last thing the page said, {text, err}; loading: what the remote files dialog's thumbnails say while they
 // load, in its place unless that was an error (req/shell/drive/dialog)
 let said = null, loading = "";
 const say = () => {
@@ -277,13 +302,13 @@ $("#sb-cpu").onclick = () => usage("cpu");
 // ---------- what this tab downloads ----------
 // A browser gives a page no total, so it is summed from three places. The page's and Python's own timings,
 // which give 0 for what the service worker answered and for a site that keeps its sizes from other pages;
-// the service worker's, for what it fetched for this page and for its Python (sw.js); and Drive's, which
-// counts its own (drive.js). From the browser's caches nothing is downloaded and nothing counts.
+// the service worker's, for what it fetched for this page and for its Python (sw.js); and the remote store's, which
+// counts its own. From the browser's caches nothing is downloaded and nothing counts.
 const net = { page: 0, worker: 0, sw: {} };
 try {
   net.page = performance.getEntriesByType("navigation")[0]?.transferSize || 0;
   new PerformanceObserver((l) => { for (const e of l.getEntries()) net.page += e.transferSize || 0; }).observe({ type: "resource", buffered: true });
-} catch { /* no timings: the service worker's and Drive's counts alone */ }
+} catch { /* no timings: the service worker's and the remote store's counts alone */ }
 // the service worker's counts, by client: a count lower than the last is a new service worker counting from 0
 function swCounted({ page, workers }) {
   for (const [id, n, role] of [[page.id, page.bytes, "page"], ...Object.entries(workers).map(([id, n]) => [id, n, "worker"])]) {
@@ -296,8 +321,8 @@ navigator.serviceWorker?.addEventListener("message", (e) => { if (e.data?.type =
 const askSw = () => navigator.serviceWorker?.controller?.postMessage({ type: "net", workers: Object.keys(net.sw).filter((id) => net.sw[id].role === "worker") });
 function netNow() {
   const sw = (role) => Object.values(net.sw).filter((c) => c.role === role).reduce((a, c) => a + c.before + c.last, 0);
-  const page = net.page + sw("page"), python = net.worker + sw("worker"), drive = window.NorDrive?.received() || 0;
-  return { page, python, drive, total: page + python + drive };
+  const page = net.page + sw("page"), python = net.worker + sw("worker"), store = remote.received();
+  return { page, python, store, total: page + python + store };
 }
 // how fast: what was downloaded over the last CPU_MS, as the CPU's share is counted
 const netSamples = [];
@@ -315,7 +340,7 @@ function netList(n, rate) {
   $("#net-list").replaceChildren(
     entry("The page", "Its own files; what this browser had kept counts nothing", sizeText(n.page)),
     entry("Python", "Python, its packages and the study's Python", sizeText(n.python)),
-    entry("Google Drive", "Images and folder lists; not Google's small pictures of images", sizeText(n.drive)));
+    entry(remote.label, "Images and folder lists; not its small pictures of images", sizeText(n.store)));
 }
 
 // ---------- how busy this tab's threads are ----------
@@ -429,7 +454,7 @@ function takeRole() {
   role = shown(roles, keptRole());
   document.documentElement.dataset.role = role;
   const hint = roles.length > 1 ? "" : !signIn.signedIn() && signIn.offered
-    ? (takesTaggers() ? "Sign in with Google to tag ground truth." : "Sign in with Google for the roles your studies give you.") : "";
+    ? (takesTaggers() ? `${signIn.words.signIn} to tag ground truth.` : `${signIn.words.signIn} for the roles your studies give you.`) : "";
   roleChooser.draw(roles, role, hint);
 }
 // the role shown again, once what it rests on may have changed (a choice, a sign-in, the settings synced): a change
@@ -648,14 +673,14 @@ function handle(m) {
     busy(false); statusBar();
     showImage();
     boxDone($("#image-box"), loadedSummary());
-    const from = { drive: "Google Drive", preview: "its preview in Google Drive" }[st.source?.kind] || "this computer";
+    const from = remote.owns(st.source) ? remote.label : st.source?.kind === "preview" ? `its preview in ${remote.label}` : "this computer";
     step("load", true, `${st.fileName}, ${m.meta.W} × ${m.meta.H} px, from ${from}`);
     log.add(`Opened an image from ${from}, ${m.meta.W} × ${m.meta.H} px, ${m.meta.Z || 1} slice(s)`);
     status("Image loaded."); // the study's opened hook says what comes next, if anything
     study.opened?.(m.meta);
     truth.paint(); offerTruth();
-    if (st.source && st.source.kind === "local" && makesTruth()) notice(LOCAL_GT);
-    if (st.source && st.source.kind === "drive" && st.pictured !== st.source.id) saveThumb(st.source.id, st.fileName);
+    if (st.source && st.source.kind === "local" && makesTruth()) notice(LOCAL_GT(remote));
+    if (remote.owns(st.source) && st.pictured !== st.source.id) saveThumb(st.source.id, st.fileName);
   } else if (m.type === "result") {
     study.result?.(m.action, m.meta, m.bytes, m.echo);
   } else if (m.type === "memory") {
@@ -673,13 +698,13 @@ function fileInfo(rows) {
   if (!rows) $("#file-box").open = false;
 }
 // where the study opens images from (req/shell/load/from): Load at the box's foot for this computer alone; else the
-// image selector on its top line, with the computer's button where it opens local files and Drive's button
-const fromDrive = () => !!manifest?.files.from.includes("drive");
+// image selector on its top line, with the computer's button where it opens local files and the remote store's button
+const fromRemote = () => remote.study(manifest).opens;
 const fromLocal = () => !!manifest?.files.from.includes("local");
 // the browser keeps a reference to a file a page chose only where the page chooses it itself (Chrome and Edge)
 const remembersFiles = () => typeof window.showOpenFilePicker === "function";
 const RECENT_KEEP = 30;
-// the images opened lately in the study on show (req/shell/load/selector): from Drive, and where it opens local
+// the images opened lately in the study on show (req/shell/load/selector): from the remote store, and where it opens local
 // files and the browser can keep a reference to them, from this computer; newest first
 const recentHere = (list) => list.filter((r) => r.study === manifest?.id);
 function recentAll() {
@@ -687,29 +712,29 @@ function recentAll() {
   return [...recentHere(readJSON(RECENT, [])), ...local].sort((a, b) => (b.at ?? -Infinity) - (a.at ?? -Infinity)).slice(0, RECENT_KEEP);
 }
 // the control the Load image step points at, and the one held while an image opens
-const loadButton = () => (!fromDrive() ? "#load-main" : recentAll().length ? "#image-pick" : fromLocal() ? "#load-main" : "#load-drive");
-const loadHolder = () => $(fromDrive() ? "#image-pick" : "#load-main");
+const loadButton = () => (!fromRemote() ? "#load-main" : recentAll().length ? "#image-pick" : fromLocal() ? "#load-main" : "#load-remote");
+const loadHolder = () => $(fromRemote() ? "#image-pick" : "#load-main");
 function placeLoad() {
-  $("#load").toggleAttribute("data-drive", fromDrive()); $("#load").toggleAttribute("data-local", fromLocal());
-  if (fromDrive()) $("#file-box").before($("#load")); else $("#image-foot").prepend($("#load"));
+  $("#load").toggleAttribute("data-remote", fromRemote()); $("#load").toggleAttribute("data-local", fromLocal());
+  if (fromRemote()) $("#file-box").before($("#load")); else $("#image-foot").prepend($("#load"));
 }
 // the Image box draws from the page's state: the image's name and what its file says, the control to load with
 // filled until an image is open and plain after, and Unload once one is
 function imageBox() {
-  const opening = page.get("opening"), im = page.get("image"), name = opening?.name || im?.name, drive = fromDrive();
-  $("#file-name").textContent = drive && name ? "Details" : name || "No image loaded"; $("#file-name").classList.toggle("dim", !name);
+  const opening = page.get("opening"), im = page.get("image"), name = opening?.name || im?.name, remoteOn = fromRemote();
+  $("#file-name").textContent = remoteOn && name ? "Details" : name || "No image loaded"; $("#file-name").classList.toggle("dim", !name);
   fileInfo(opening ? null : im?.info || null);
   $("#load").classList.toggle("done", !!im); $("#unload").hidden = !im;
-  const listed = drive && recentAll().length > 0;
+  const listed = remoteOn && recentAll().length > 0;
   $("#image-pick .pick-name").textContent = name || (listed ? "Choose an image" : "No image opened here yet");
   $("#image-pick").classList.toggle("dim", !name);
-  $("#image-pick").classList.toggle("primary", !im && listed); $("#load-drive").classList.toggle("primary", !im && !listed && !fromLocal());
-  $("#load-main").classList.toggle("primary", !drive || (!im && !listed));
+  $("#image-pick").classList.toggle("primary", !im && listed); $("#load-remote").classList.toggle("primary", !im && !listed && !fromLocal());
+  $("#load-main").classList.toggle("primary", !remoteOn || (!im && !listed));
   $("#load-original").hidden = im?.source?.kind !== "preview";
 }
 page.watch("image", imageBox); page.watch("opening", imageBox);
 
-// source: where the image came from, {kind: "local"} or {kind: "drive", id}
+// source: where the image came from, {kind: "local"} or the remote store's source of it
 async function openBytes(name, bytes, source) {
   const opened = taken(until("opened")); working(loadHolder(), () => opened);
   st.fileName = name; st.source = source;
@@ -743,24 +768,24 @@ $("#file").onchange = async (e) => {
   const bytes = await f.arrayBuffer(); peek()(bytes, bytes.byteLength);
   openBytes(f.name, bytes, { kind: "local" }); e.target.value = "";
 };
-// the study's own Drive folders, which its dialog browses alone; a study naming none (the Image Viewer) takes a pasted
+// the study's own remote folders, which its dialog browses alone; a study naming none (the Image Viewer) takes a pasted
 // link instead (req/shell/drive/dialog)
-const studyFolders = () => (manifest?.files.folders || []).map((l) => NorDrive.parse(l)).filter((r) => r?.kind === "folder").map((r) => r.id);
-// the link the Drive dialog opened on: listing it is not pasting it
-let driveFrom = "", driveOpened = () => {};
-function openDrive() {
+const studyFolders = () => remote.study(manifest).folders;
+// the link the remote files dialog opened on: listing it is not pasting it
+let remoteFrom = "", remoteOpened = () => {};
+function openRemote() {
   $("#image-menu").open = false;
   const pastes = !studyFolders().length;
-  $("#drive-dlg").classList.toggle("folders", !pastes);
-  driveFrom = $("#drive-link").value = pastes ? readJSON(DRIVE_LINKS)[manifest.id] || readJSON(DRIVE_LINK, "") : "";
-  $("#drive-dlg").showModal(); if (pastes) $("#drive-link").select(); showSaved();
-  holdDrive();
-  driveOpened();
+  $("#remote-dlg").classList.toggle("folders", !pastes);
+  remoteFrom = $("#remote-link").value = pastes ? readJSON(REMOTE_LINKS)[manifest.id] || readJSON(REMOTE_LINK, "") : "";
+  $("#remote-dlg").showModal(); if (pastes) $("#remote-link").select(); showSaved();
+  holdRemote();
+  remoteOpened();
 }
 // a file from this computer: through the browser's own picker where it keeps a reference to the file, so the file
 // opens again from the recents (req/shell/load/selector); else through the file chooser
 $("#load-main").onclick = async () => {
-  if (!remembersFiles() || !fromDrive()) return $("#file").click();
+  if (!remembersFiles() || !fromRemote()) return $("#file").click();
   let handle;
   try { [handle] = await showOpenFilePicker({ types: [{ description: "Images", accept: { "image/*": manifest.files.accept.split(",") } }] }); } catch (e) {
     if (e.name !== "AbortError") status("Error: " + (e.message || e), true);
@@ -768,8 +793,8 @@ $("#load-main").onclick = async () => {
   }
   openLocal(handle);
 };
-$("#load-drive").onclick = () => { signIn.drive(); openDrive(); };
-$("#image-pick").addEventListener("click", () => signIn.drive());
+$("#load-remote").onclick = () => { signIn.renew(); openRemote(); };
+$("#image-pick").addEventListener("click", () => signIn.renew());
 // a setting from before each study loaded from one place (req/shell/load/from)
 try { localStorage.removeItem("nor-load-source"); } catch { /* nothing kept */ }
 // no image open, nor one waiting for Python, and Python letting it go
@@ -833,8 +858,8 @@ $("#image-menu").addEventListener("keydown", (e) => {
   }
 });
 
-// the images opened from Drive lately in the study on show, in the image selector; a Drive id names one file wherever
-// it is, so two of one name stay apart; one kept from before recents had a study belongs to none. openRecent is the Drive dialog's, which opens the copy kept on this device when there is one.
+// the images opened from the remote store lately in the study on show, in the image selector; a remote id names one file wherever
+// it is, so two of one name stay apart; one kept from before recents had a study belongs to none. openRecent is the remote files dialog's, which opens the copy kept on this device when there is one.
 let openRecent = () => {}, showKept = () => {};
 const UNREACHED = "The internet cannot be reached, and this image is not kept on this device.";
 function remember(id, name, path) {
@@ -898,17 +923,17 @@ function ago(at) {
 const agoTag = (at) => (at == null ? "" : `<span class="age" title="Opened ${esc(new Date(at).toLocaleString())}">${ago(at)}</span>`);
 function showRecent() {
   const list = recentAll(), box = $("#recent"), open = page.get("image")?.source;
-  const on = open?.kind === "drive" && list.some((r) => r.id === open.id) ? open.id : list[0]?.id;
+  const on = remote.owns(open) && list.some((r) => r.id === open.id) ? open.id : list[0]?.id;
   box.replaceChildren(...list.map((r) => {
-    const b = document.createElement("button"), where = r.local ? "This computer" : ["Google Drive", ...(r.path || [])].join(" / ");
+    const b = document.createElement("button"), where = r.local ? "This computer" : [remote.label, ...(r.path || [])].join(" / ");
     b.type = "button"; b.className = "item recent"; b.title = `${where} / ${r.name}`; b.dataset.id = r.id; if (r.local) b.dataset.local = "";
     b.setAttribute("role", "option"); b.setAttribute("aria-selected", String(r.id === on));
-    const logo = r.local ? "computer-logo" : "drive-logo";
+    const logo = r.local ? "computer-logo" : remote.logo.id;
     b.innerHTML = `<svg class="${logo}" aria-hidden="true"><use href="#${logo}"/></svg><span class="what"><span class="name">${esc(r.name)}</span><span class="where">${esc(where)}</span></span>${agoTag(r.at)}`;
     b.onclick = () => { $("#image-menu").open = false; r.local ? openLocalRecent(r) : openRecent(r); };
     return b;
   }));
-  const how = fromLocal() ? "the buttons at the right open one" : "Drive's button, at the right, opens one";
+  const how = fromLocal() ? "the buttons at the right open one" : `${remote.short}'s button, at the right, opens one`;
   if (!list.length) box.append(Object.assign(document.createElement("p"), { className: "hint", textContent: `No image opened here yet: ${how}.` }));
   imageBox();
   const s = steps.find((p) => p.key === "load");
@@ -922,64 +947,64 @@ async function greyRecents() {
 page.watch("image", () => showRecent());
 addEventListener(CONNECTION, () => greyRecents());
 
-// once Google throttles the site's downloads the Drive dialog waits WAIT, with a notice and a countdown, and
-// calls Drive for nothing; the end is kept in the browser, so a reload does not cut it short. waitEnded is the
+// once the store throttles the site's downloads the remote files dialog waits WAIT, with a notice and a countdown, and
+// calls the remote store for nothing; the end is kept in the browser, so a reload does not cut it short. waitEnded is the
 // dialog's, which lists its link again.
 const WAIT = 15 * 60000;
 let ticker = 0, waitEnded = () => {};
 const throttled = () => readJSON(THROTTLE, 0) > Date.now();
-function holdDrive() {
+function holdRemote() {
   const on = throttled(), left = Math.max(0, readJSON(THROTTLE, 0) - Date.now()), two = (n) => String(n).padStart(2, "0");
-  $("#drive-throttle").hidden = !on; $("#drive-dlg").classList.toggle("throttled", on);
-  $("#drive-link").disabled = $("#drive-go").disabled = on;
-  if (on) $("#drive-open").disabled = true;
-  $("#drive-clock").textContent = `${two(Math.floor(left / 60000))}:${two(Math.floor(left / 1000) % 60)}`;
-  if (on && !ticker) ticker = setInterval(holdDrive, 1000);
+  $("#remote-throttle").hidden = !on; $("#remote-dlg").classList.toggle("throttled", on);
+  $("#remote-link").disabled = $("#remote-go").disabled = on;
+  if (on) $("#remote-open").disabled = true;
+  $("#remote-clock").textContent = `${two(Math.floor(left / 60000))}:${two(Math.floor(left / 1000) % 60)}`;
+  if (on && !ticker) ticker = setInterval(holdRemote, 1000);
   if (!on && ticker) {
     clearInterval(ticker); ticker = 0;
     try { localStorage.removeItem(THROTTLE); } catch { /* nothing kept */ }
     waitEnded();
   }
 }
-function throttle() { writeJSON(THROTTLE, Date.now() + WAIT); holdDrive(); }
+function throttle() { writeJSON(THROTTLE, Date.now() + WAIT); holdRemote(); }
 
-// the Drive dialog: a pasted file link loads at once; a folder link lists its images and subfolders, where a
+// the remote files dialog: a pasted file link loads at once; a folder link lists its images and subfolders, where a
 // click selects and Open (or a double click) opens the selection
-function driveDialog() {
-  const msg = (t, err) => { const m = $("#drive-msg"); m.textContent = m.title = t; m.classList.toggle("err", !!err); };
-  // keptOn: the dialog lists the images kept here, offline, in place of a Drive folder
+function remoteDialog() {
+  const msg = (t, err) => { const m = $("#remote-msg"); m.textContent = m.title = t; m.classList.toggle("err", !!err); };
+  // keptOn: the dialog lists the images kept here, offline, in place of a remote folder
   let trail = [], chosen = null, listing = 0, keptOn = false;
   // path: the folders the image is in under the link it was opened from; sha: its SHA-256 as the listing gave
-  // it (null when Drive gave none), undefined when not yet asked; recent: whether it was chosen from the recents.
-  // A recent image opens from its kept copy; one chosen from Drive does only once its SHA-256 matches Drive's.
+  // it (null when the store gave none), undefined when not yet asked; recent: whether it was chosen from the recents.
+  // A recent image opens from its kept copy; one chosen from the remote store does only once its SHA-256 matches the store's.
   const take = async (id, name, path, sha, recent) => {
     thumbs.stop();
     const kept = await savedImage(id);
-    if (kept && !recent && sha === undefined && !throttled()) sha = await NorDrive.checksum(id).catch(() => null);
+    if (kept && !recent && sha === undefined && !throttled()) sha = await remote.checksum(id).catch(() => null);
     // offline, a copy kept here is the only one to be had
     if (kept && (recent || offlineCopy.offline() || (sha && sha === (await sha256(kept.bytes))))) {
-      $("#drive-dlg").close(); msg("");
+      $("#remote-dlg").close(); msg("");
       peek()(kept.bytes, kept.bytes.byteLength); remember(id, kept.name, path); picture(id, kept.name, kept.bytes);
       if (!recent) tip("recent-files", $("#image-pick"), "To load recent files click here");
-      return openBytes(kept.name, kept.bytes, { kind: "drive", id });
+      return openBytes(kept.name, kept.bytes, remote.source(id));
     }
-    if (throttled()) { if (!$("#drive-dlg").open) $("#drive-dlg").showModal(); return holdDrive(); }
+    if (throttled()) { if (!$("#remote-dlg").open) $("#remote-dlg").showModal(); return holdRemote(); }
     msg("Downloading " + (name || "the image") + "…");
     const mb = (n) => (n / 1048576).toFixed(1);
     let push, what;
     try {
-      const f = await NorDrive.file(id, name, (n) => {
-        what = n; $("#drive-dlg").close(); msg(""); push = peek(); busy(true, `Downloading ${n}…`, "peek");
+      const f = await remote.file(id, name, (n) => {
+        what = n; $("#remote-dlg").close(); msg(""); push = peek(); busy(true, `Downloading ${n}…`, "peek");
       }, (buf, got, total) => {
         push(buf, got);
         $("#busy-text").textContent = `Downloading ${what} · ${mb(got)}${total ? " of " + mb(total) : ""} MB`;
       });
       if (f.folder) { trail = [f]; return show(); }
-      if ($("#drive-autosave").checked) saveImage(id, f.name, f.bytes, { path, study: manifest.id });
+      if ($("#remote-autosave").checked) saveImage(id, f.name, f.bytes, { path, study: manifest.id });
       remember(id, f.name, path); picture(id, f.name, f.bytes);
-      openBytes(f.name, f.bytes, { kind: "drive", id });
+      openBytes(f.name, f.bytes, remote.source(id));
     } catch (err) {
-      busy(false); if (!$("#drive-dlg").open) $("#drive-dlg").showModal();
+      busy(false); if (!$("#remote-dlg").open) $("#remote-dlg").showModal();
       // what the download had painted goes: the image open before, or none
       if (push) page.get("image") ? showImage() : view.clear();
       if (err.throttled) { msg(""); return throttle(); }
@@ -987,16 +1012,16 @@ function driveDialog() {
     }
   };
   const choose = (f, b) => {
-    chosen = f; $("#drive-open").disabled = !f;
-    $("#drive-list").querySelectorAll(".item").forEach((e) => e.setAttribute("aria-selected", e === b));
+    chosen = f; $("#remote-open").disabled = !f;
+    $("#remote-list").querySelectorAll(".item").forEach((e) => e.setAttribute("aria-selected", e === b));
   };
   // where an image is: the folders under the one it was opened from, the study's own list of folders no folder
   const enter = (f) => (f.folder ? (trail.push(f), show()) : f.kept ? take(f.id, f.name, f.path, undefined, true)
     : take(f.id, f.name, trail.filter((t) => !t.roots).slice(1).map((t) => t.name), f.sha));
-  // offline, in place of a Drive folder: the images kept on this device, the study's own first (req/shell/offline/default)
+  // offline, in place of a remote folder: the images kept on this device, the study's own first (req/shell/offline/default)
   showKept = async () => {
     keptOn = true; thumbs.stop(); trail = []; choose(null);
-    $("#drive-path").textContent = "You are offline: the images kept on this device"; $("#drive-list").replaceChildren();
+    $("#remote-path").textContent = "You are offline: the images kept on this device"; $("#remote-list").replaceChildren();
     const kept = [];
     try {
       const c = await caches.open(IMAGES);
@@ -1010,7 +1035,7 @@ function driveDialog() {
     msg(kept.length ? "" : "No image is kept here: Make available offline, in Manage storage, keeps a study's.");
     for (const f of kept) {
       const b = document.createElement("button"); b.type = "button"; b.className = "item"; b.setAttribute("aria-selected", "false");
-      const meta = [sizeText(f.size), ["Google Drive", ...f.path].join(" / ")].join(" · ");
+      const meta = [sizeText(f.size), [remote.label, ...f.path].join(" / ")].join(" · ");
       b.innerHTML = `<span class="pic"></span><span class="name">${esc(f.name)}</span><span class="kept"></span><span class="shape">${esc(readJSON(HOLDS)[f.id] || "")}</span><span class="meta">${esc(meta)}</span>`;
       markOffline(b.querySelector(".kept"), "image", true);
       const pic = readJSON(SAVED_THUMB + f.id, "");
@@ -1018,12 +1043,12 @@ function driveDialog() {
       b.onclick = () => choose(f, b);
       b.ondblclick = () => enter(f);
       b.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); enter(f); } };
-      $("#drive-list").append(b);
+      $("#remote-list").append(b);
     }
   };
   openRecent = (r) => take(r.id, r.name, r.path || [], undefined, true);
   // the folders as last listed, kept on this device so the dialog opens offline too (req/shell/drive/offline-listing),
-  // the latest KEEP_LISTINGS of them; created in ms, size and sha null where Drive gave none
+  // the latest KEEP_LISTINGS of them; created in ms, size and sha null where the store gave none
   const KEEP_LISTINGS = 50;
   const keptListing = (id) => readJSON(LISTINGS)[id]?.items.map((f) => ({ ...f, created: f.created == null ? null : new Date(f.created) })) || null;
   const keepListing = (id, all, name) => {
@@ -1039,14 +1064,14 @@ function driveDialog() {
     // an image an edit replaced is not listed: the folder of its edits stands in its place
     const file = all.find((f) => !f.folder && f.name === PREVIEWS), edited = replacedBy(all), items = all.filter((f) => f !== file && !edited(f));
     const opened = Object.fromEntries(recentHere(readJSON(RECENT, [])).map((r) => [r.id, r.at])), listings = readJSON(LISTINGS);
-    $("#drive-list").replaceChildren(); choose(null); thumbs.reset();
+    $("#remote-list").replaceChildren(); choose(null); thumbs.reset();
     thumbs.cover(file ? folderPreviews(at, file) : null);
     msg(items.length ? "" : "No TIFF or PNG images here.");
     for (const [k, f] of items.entries()) {
       const b = document.createElement("button"); b.type = "button"; b.className = "item" + (f.folder ? " folder" : "");
       b.setAttribute("aria-selected", "false");
       const meta = f.size == null ? "" : sizeText(f.size);
-      const added = f.created ? `Added to Google Drive on ${f.created.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}` : "When it was added to Google Drive is not known";
+      const added = f.created ? `Added to ${remote.label} on ${f.created.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}` : `When it was added to ${remote.label} is not known`;
       const fresh = !f.folder && seen && !seen.has(f.id) ? `<span class="new" title="${esc(added)}">new</span>` : "";
       // what only some rows show sits inward, what every image shows at the row's edge
       b.innerHTML = `<span class="pic"></span><span class="name">${esc(f.name)}</span>${fresh}${f.folder ? "" : agoTag(opened[f.id])}<span class="gt-tag"></span><span class="kept"></span><span class="shape">${esc(readJSON(HOLDS)[f.id] || "")}</span><span class="meta">${esc(meta)}</span>`;
@@ -1057,7 +1082,7 @@ function driveDialog() {
       b.onclick = () => choose(f, b);
       b.ondblclick = () => enter(f);
       b.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); enter(f); } };
-      $("#drive-list").append(b);
+      $("#remote-list").append(b);
       if (!f.folder) thumbs.watch(b.querySelector(".pic"), f, k);
     }
     if (!off) markTruth(items, asked);
@@ -1068,7 +1093,7 @@ function driveDialog() {
     try { map = await truth.status(role === "tagger" || role === "data"); } catch (e) { console.warn("ground truth status not read:", e); return; }
     if (asked !== listing) return;
     for (const f of items) {
-      const g = !f.folder && f.sha && map.get(subfolderName(f.name, f.sha)), tag = $("#drive-list").querySelector(`.item[data-id="${f.id}"] .gt-tag`);
+      const g = !f.folder && f.sha && map.get(subfolderName(f.name, f.sha)), tag = $("#remote-list").querySelector(`.item[data-id="${f.id}"] .gt-tag`);
       if (!g || !tag) continue;
       const [text, title] = g.pending ? ["GT pending", "A tagger submitted ground truth for it, not curated yet"] : g.curated ? ["GT", "It has curated ground truth"]
         : g.rejected ? ["GT rejected", "Its submitted ground truth was rejected"] : [];
@@ -1079,31 +1104,31 @@ function driveDialog() {
   const showRoots = async () => {
     keptOn = false;
     const off = offlineCopy.offline(), listings = readJSON(LISTINGS), asked = ++listing;
-    $("#drive-path").textContent = trail[0].name;
+    $("#remote-path").textContent = trail[0].name;
     const roots = studyFolders().map((id) => ({ id, name: listings[id]?.name || "Folder", folder: true }));
     await draw(trail[0], roots, off, asked);
     if (off) return;
-    const named = await Promise.all(roots.map((f) => (listings[f.id]?.name ? f : NorDrive.name(f.id).then((name) => ({ ...f, name }), () => f))));
+    const named = await Promise.all(roots.map((f) => (listings[f.id]?.name ? f : remote.name(f.id).then((name) => ({ ...f, name }), () => f))));
     if (named.some((f, k) => f.name !== roots[k].name)) await draw(trail[0], named, false, asked);
   };
   const show = async () => {
     if (trail[trail.length - 1].roots) return showRoots();
     keptOn = false;
     const at = trail[trail.length - 1], off = offlineCopy.offline(), before = keptListing(at.id);
-    $("#drive-path").innerHTML = trail.map((t, k) => `<button type="button" class="link" data-k="${k}">${esc(t.name)}</button>`).join(" / ");
-    $("#drive-path").querySelectorAll("button").forEach((b) => (b.onclick = () => { trail = trail.slice(0, +b.dataset.k + 1); show(); }));
-    $("#drive-path").scrollLeft = $("#drive-path").scrollWidth;
+    $("#remote-path").innerHTML = trail.map((t, k) => `<button type="button" class="link" data-k="${k}">${esc(t.name)}</button>`).join(" / ");
+    $("#remote-path").querySelectorAll("button").forEach((b) => (b.onclick = () => { trail = trail.slice(0, +b.dataset.k + 1); show(); }));
+    $("#remote-path").scrollLeft = $("#remote-path").scrollWidth;
     // a listing the user has moved on from by the time it arrives is dropped
     const asked = ++listing;
-    $("#drive-list").replaceChildren(); choose(null); thumbs.reset();
+    $("#remote-list").replaceChildren(); choose(null); thumbs.reset();
     if (before) await draw(at, before, off, asked);
     if (off) { if (!before && asked === listing) msg("This folder is not listed on this device yet: it needs the internet.", true); return; }
     if (!before) msg("Reading the folder…");
     try {
-      const all = await NorDrive.list(at.id);
+      const all = await remote.list(at.id);
       if (asked !== listing) return;
       keepListing(at.id, all, at.unnamed ? readJSON(LISTINGS)[at.id]?.name : at.name);
-      // what Drive says now takes the kept listing's place, redrawn only where it differs
+      // what the store says now takes the kept listing's place, redrawn only where it differs
       if (!before || JSON.stringify(keptListing(at.id)) !== JSON.stringify(before)) await draw(at, all, false, asked, before && new Set(before.map((f) => f.id)));
     } catch (err) {
       if (asked !== listing) return;
@@ -1111,7 +1136,7 @@ function driveDialog() {
     }
   };
   // each image's thumbnail: the one saved when it was last opened here, else the study's ready-made one,
-  // fetched for the rows in view and the next AHEAD, in order, as the user scrolls; never read from Drive,
+  // fetched for the rows in view and the next AHEAD, in order, as the user scrolls; never read from the remote store,
   // which refuses a burst of reads and then the image itself. One fetched stays for the page's life. A TIFF's
   // row also says what the file holds, read once from the file's first HEAD bytes for the same rows. Progress
   // shows beside the checkbox and in the status bar.
@@ -1126,13 +1151,13 @@ function driveDialog() {
     const put = (pic, url) => { const i = new Image(); i.alt = ""; i.src = url; pic.replaceChildren(i); };
     const tell = () => {
       const t = asked ? `${done} of ${asked} · ${sizeText(bytes)}` : "";
-      $("#drive-thumbs-note").textContent = t;
+      $("#remote-thumbs-note").textContent = t;
       loading = running && t ? "Thumbnails " + t : ""; say();
     };
     // the rows from the first in view to AHEAD past the last, that no fetch has been started for
     const wanted = () => {
-      const list = $("#drive-list"), items = list.children;
-      if (!$("#drive-dlg").open || !$("#drive-thumbs").checked || throttled() || !items.length) return [];
+      const list = $("#remote-list"), items = list.children;
+      if (!$("#remote-dlg").open || !$("#remote-thumbs").checked || throttled() || !items.length) return [];
       const box = list.getBoundingClientRect();
       let first = 0, last = items.length - 1;
       for (let hi = last; first < hi; ) { const m = (first + hi) >> 1; if (items[m].getBoundingClientRect().bottom > box.top) hi = m; else first = m + 1; }
@@ -1155,7 +1180,7 @@ function driveDialog() {
         if (b && !signal.aborted) { bytes += b.size; made.set(r.f.id, URL.createObjectURL(b)); put(r.row.querySelector(".pic"), made.get(r.f.id)); }
       }
       if (r.holds) {
-        const buf = await NorDrive.head(r.f.id, HEAD, signal);
+        const buf = await remote.head(r.f.id, HEAD, signal);
         if (signal.aborted) return;
         r.row.querySelector(".shape").textContent = know(r.f.id, shape(buf));
       }
@@ -1169,7 +1194,7 @@ function driveDialog() {
     };
     const reset = () => {
       stop(); rows = []; epoch++; covered = Promise.resolve(null);
-      const own = manifest?.driveThumbs ? base + manifest.driveThumbs : null;
+      const own = remote.study(manifest).thumbs ? base + remote.study(manifest).thumbs : null;
       if (own !== dir) { dir = own; ready = null; }
       ready = ready || (dir ? fetch(dir + "index.json").then((r) => r.json()).then((ids) => new Set(ids)).catch(() => new Set()) : Promise.resolve(new Set()));
     };
@@ -1188,26 +1213,26 @@ function driveDialog() {
       if (e) return fromPreviews(pic, e, pv);
       const url = made.get(f.id) || readJSON(SAVED_THUMB + f.id, "") || f.preview;
       if (url) put(pic, url);
-      const holds = /\.tiff?$/i.test(f.name) && NorDrive.ready && !offlineCopy.offline() && !(f.id in readJSON(HOLDS)), thumb = !url && (await ready).has(f.id);
+      const holds = /\.tiff?$/i.test(f.name) && remote.ready && !offlineCopy.offline() && !(f.id in readJSON(HOLDS)), thumb = !url && (await ready).has(f.id);
       if (of !== epoch || !(thumb || holds)) return;
       rows.push({ at, row: pic.closest(".item"), f, thumb, holds, asked: false, done: false }); later();
     };
-    $("#drive-list").addEventListener("scroll", later, { passive: true });
-    $("#drive-dlg").addEventListener("close", stop);
+    $("#remote-list").addEventListener("scroll", later, { passive: true });
+    $("#remote-dlg").addEventListener("close", stop);
     return { reset, watch, stop, later, cover };
   })();
-  $("#drive-open").onclick = () => chosen && enter(chosen);
-  $("#drive-thumbs").checked = readJSON(THUMBS, "on") !== "off";
-  $("#drive-thumbs").onchange = (e) => {
+  $("#remote-open").onclick = () => chosen && enter(chosen);
+  $("#remote-thumbs").checked = readJSON(THUMBS, "on") !== "off";
+  $("#remote-thumbs").onchange = (e) => {
     writeJSON(THUMBS, e.target.checked ? "on" : "off");
     if (!e.target.checked) thumbs.stop(); else thumbs.later();
   };
-  $("#drive-autosave").checked = readJSON(AUTO_SAVE, "on") !== "off";
-  $("#drive-autosave").onchange = (e) => writeJSON(AUTO_SAVE, e.target.checked ? "on" : "off");
-  $("#drive-storage").onclick = () => usage("storage");
-  if (!NorDrive.ready) {
-    const d = $("#load-drive");
-    d.disabled = true; d.title = "Needs this site's Google API key (issue #234)";
+  $("#remote-autosave").checked = readJSON(AUTO_SAVE, "on") !== "off";
+  $("#remote-autosave").onchange = (e) => writeJSON(AUTO_SAVE, e.target.checked ? "on" : "off");
+  $("#remote-storage").onclick = () => usage("storage");
+  if (!remote.ready) {
+    const d = $("#load-remote");
+    d.disabled = true; d.title = remote.words.unready;
   }
   // offline, a folder link opens on the folder as last listed, and anything else on the images kept here
   const open = async () => {
@@ -1215,42 +1240,42 @@ function driveDialog() {
     const roots = studyFolders();
     if (roots.length) {
       if (offlineCopy.offline() && !roots.some((id) => keptListing(id))) return showKept();
-      keptOn = false; $("#drive-list").replaceChildren(); choose(null); msg("");
-      const name = readJSON(LISTINGS)[roots[0]]?.name || (offlineCopy.offline() ? null : await NorDrive.name(roots[0]).catch(() => null));
+      keptOn = false; $("#remote-list").replaceChildren(); choose(null); msg("");
+      const name = readJSON(LISTINGS)[roots[0]]?.name || (offlineCopy.offline() ? null : await remote.name(roots[0]).catch(() => null));
       trail = roots.length === 1 ? [{ id: roots[0], name: name || "Folder" }] : [{ roots: true, name: "The study's folders" }];
       return show();
     }
-    const link = $("#drive-link").value, ref = NorDrive.parse(link);
+    const link = $("#remote-link").value, ref = remote.parse(link);
     if (offlineCopy.offline() && !(ref?.kind === "folder" && keptListing(ref.id))) return showKept();
     keptOn = false;
-    $("#drive-list").replaceChildren(); $("#drive-path").replaceChildren(); choose(null);
-    if (!ref) return msg("That does not look like a Google Drive link.", true);
-    if (link !== driveFrom) { writeJSON(DRIVE_LINK, link); writeJSON(DRIVE_LINKS, { ...readJSON(DRIVE_LINKS), [manifest.id]: link }); driveFrom = link; }
+    $("#remote-list").replaceChildren(); $("#remote-path").replaceChildren(); choose(null);
+    if (!ref) return msg(remote.words.notLink, true);
+    if (link !== remoteFrom) { writeJSON(REMOTE_LINK, link); writeJSON(REMOTE_LINKS, { ...readJSON(REMOTE_LINKS), [manifest.id]: link }); remoteFrom = link; }
     if (ref.kind === "file") return take(ref.id, undefined, []);
-    // a pasted folder's name is not asked of Drive: "Folder" stands in, and is not kept as its name
+    // a pasted folder's name is not asked of the remote store: "Folder" stands in, and is not kept as its name
     trail = [{ id: ref.id, name: "Folder", unnamed: true }]; show();
   };
-  $("#drive-go").onclick = open;
-  waitEnded = () => { if ($("#drive-dlg").open) open(); };
+  $("#remote-go").onclick = open;
+  waitEnded = () => { if ($("#remote-dlg").open) open(); };
   // the dialog opened: offline on what is kept here, online on its folder link read afresh
-  driveOpened = () => {
+  remoteOpened = () => {
     if (offlineCopy.offline()) return open();
-    if (!throttled() && (studyFolders().length || NorDrive.parse($("#drive-link").value)?.kind === "folder")) open();
+    if (!throttled() && (studyFolders().length || remote.parse($("#remote-link").value)?.kind === "folder")) open();
   };
   // the open dialog follows the network: once it goes, the folder on show greyed where it cannot open (or the
   // images kept here); once it is back, the folder read afresh
   addEventListener(CONNECTION, (e) => {
-    if (!$("#drive-dlg").open) return;
+    if (!$("#remote-dlg").open) return;
     if (!e.detail.online) { if (keptOn) return; return trail.length && keptListing(trail[trail.length - 1].id) ? show() : showKept(); }
     if (trail.length && !keptOn) return show();
-    if (NorDrive.parse($("#drive-link").value)) return open();
-    keptOn = false; $("#drive-path").replaceChildren(); $("#drive-list").replaceChildren(); msg("");
+    if (remote.parse($("#remote-link").value)) return open();
+    keptOn = false; $("#remote-path").replaceChildren(); $("#remote-list").replaceChildren(); msg("");
   });
-  holdDrive();
-  $("#drive-link").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); open(); } });
+  holdRemote();
+  $("#remote-link").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); open(); } });
 }
 
-// the open image's thumbnail, every colour on show, for the Drive dialog to show next time without a download;
+// the open image's thumbnail, every colour on show, for the remote files dialog to show next time without a download;
 // shrunk and brightened as the studies' ready-made ones are, and only the latest few hundred are kept
 function saveThumb(id, name) {
   const SIDE = 96, GAIN = 2;
@@ -1266,7 +1291,7 @@ function saveThumb(id, name) {
   x.putImageData(small, 0, 0);
   keepThumb(id, name, c.toDataURL("image/jpeg", 0.85));
 }
-// a thumbnail for the Drive dialog to show from now on; only the latest KEEP are kept
+// a thumbnail for the remote files dialog to show from now on; only the latest KEEP are kept
 function keepThumb(id, name, url) {
   const KEEP = 100;
   const kept = readJSON(SAVED_THUMBS, []).filter((i) => i !== id).concat(id);
@@ -1277,7 +1302,7 @@ function keepThumb(id, name, url) {
   diskBar();
 }
 
-// what each Drive file holds, remembered so it is read once; the latest KEEP. Returns its words for the row.
+// what each remote file holds, remembered so it is read once; the latest KEEP. Returns its words for the row.
 function know(id, s) {
   const KEEP = 1000, said = holds(s), all = readJSON(HOLDS);
   delete all[id]; all[id] = said;
@@ -1286,7 +1311,7 @@ function know(id, s) {
   writeJSON(HOLDS, all);
   return said;
 }
-// a Drive image about to open: what it holds is remembered, and a stack's 3D thumbnail is saved at once, drawn
+// a remote image about to open: what it holds is remembered, and a stack's 3D thumbnail is saved at once, drawn
 // from the bytes in hand; a flat image's waits until it shows
 function picture(id, name, bytes) {
   const s = shape(bytes);
@@ -1295,15 +1320,15 @@ function picture(id, name, bytes) {
   if (url) { keepThumb(id, name, url); st.pictured = id; }
 }
 
-// a folder's rauntruth-previews.tiff, read: the copy kept on this device while Drive gives the file the same
+// a folder's rauntruth-previews.tiff, read: the copy kept on this device while the store gives the file the same
 // SHA-256, else downloaded and kept; null when there is none to read
 async function folderPreviews(folder, f) {
-  const url = new URL("drive-previews/" + encodeURIComponent(folder.id), location.href).href;
+  const url = new URL(PREVIEWS_PATH + encodeURIComponent(folder.id), location.href).href;
   try {
     const cache = await caches.open(FOLDER_PREVIEWS), kept = await cache.match(url);
     if (kept && f.sha && kept.headers.get(PREVIEWS_SHA) === f.sha) return readPreviews(await kept.arrayBuffer());
     if (throttled()) return null;
-    const got = await NorDrive.file(f.id, f.name);
+    const got = await remote.file(f.id, f.name);
     await cache.put(url, new Response(new Blob([got.bytes]), { headers: { [PREVIEWS_SHA]: f.sha || "", [IMAGE_NAME]: encodeURIComponent(folder.name), [IMAGE_STUDY]: manifest?.id || "" } }));
     diskBar();
     return readPreviews(got.bytes);
@@ -1329,10 +1354,10 @@ function turning(row, pic, volume) {
   row.addEventListener("mouseleave", () => { cancelAnimationFrame(frame); if (still) pic.replaceChildren(still); });
 }
 
-// images downloaded from Drive, kept on this device while Auto-save images is on
-const imageUrl = (id) => new URL("drive-image/" + encodeURIComponent(id), location.href).href;
+// images downloaded from the remote store, kept on this device while Auto-save images is on
+const imageUrl = (id) => new URL(CACHED_IMAGE_PATH + encodeURIComponent(id), location.href).href;
 const idOf = (url) => decodeURIComponent(new URL(url).pathname.split("/").pop());
-// the Drive ids of the images kept here
+// the remote ids of the images kept here
 async function keptIds() {
   try { return new Set((await (await caches.open(IMAGES)).keys()).map((q) => idOf(q.url))); } catch { return new Set(); }
 }
@@ -1353,19 +1378,19 @@ async function saveImage(id, name, bytes, where = {}) {
   showSaved(); diskBar();
 }
 const bytesOf = (k) => 2 * (k.length + (localStorage.getItem(k) || "").length); // UTF-16
-// the Drive dialog's link to Manage storage: what thumbnails and saved images take on this device
+// the remote files dialog's link to Manage storage: what thumbnails and saved images take on this device
 async function showSaved() {
   let n = 0;
   try { for (const k of Object.keys(localStorage)) if (k.startsWith(SAVED_THUMB) || k === SAVED_THUMBS || k === THUMB_NAMES) n += bytesOf(k); } catch { /* no storage */ }
   try { const c = await caches.open(IMAGES); for (const q of await c.keys()) n += (await (await c.match(q)).blob()).size; } catch { /* no caches */ }
-  $("#drive-storage").textContent = sizeText(n);
+  $("#remote-storage").textContent = sizeText(n);
 }
 
 // ---------- the user: whoever opened the page on this device, and what the site keeps here ----------
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
-  [THEME]: "Theme", [ROLE]: "The role you work in", [BARS]: "Left bar width, and whether it is collapsed", [DRIVE_LINK]: "Last Google Drive link", [DRIVE_LINKS]: "Last Google Drive link in each study",
-  [THUMBS]: "Show thumbnails in the Drive dialog", [AUTO_SAVE]: "Auto-save images from Google Drive", [RECENT]: "Recent images from Google Drive", [LOCAL_RECENT]: "Recent files from this computer", [LISTINGS]: "Google Drive folders as last listed, for working offline", [HOLDS]: "What each Drive image holds (2D or 3D)", [THROTTLE]: "Wait after Google throttled Drive downloads", [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: "Who is signed in with Google, and Google's token for the hour", [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [RESOURCES]: "The status bar's disk, memory, network and CPU: hidden, auto-hiding or always open", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
+  [THEME]: "Theme", [ROLE]: "The role you work in", [BARS]: "Left bar width, and whether it is collapsed", [REMOTE_LINK]: `Last ${remote.label} link`, [REMOTE_LINKS]: `Last ${remote.label} link in each study`,
+  [THUMBS]: `Show thumbnails in the ${remote.short} dialog`, [AUTO_SAVE]: `Auto-save images from ${remote.label}`, [RECENT]: `Recent images from ${remote.label}`, [LOCAL_RECENT]: "Recent files from this computer", [LISTINGS]: `${remote.label} folders as last listed, for working offline`, [HOLDS]: `What each ${remote.short} image holds (2D or 3D)`, [THROTTLE]: `Wait after ${remote.short} downloads were throttled`, [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: SIGNED_IN_LABEL, [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [RESOURCES]: "The status bar's disk, memory, network and CPU: hidden, auto-hiding or always open", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
 };
 // What the site keeps, by what it takes to work offline (req/shell/storage/manage): a section per study, then what they share; settings
 // apart, which Settings keeps (req/shell/account/settings), and with them what nobody names. An entry: {kind, name, what, size, del, held, ask}, del
@@ -1379,7 +1404,7 @@ async function inventory() {
   const drop = (...keys) => keys.forEach((k) => { try { localStorage.removeItem(k); } catch { /* nothing kept */ } });
   const studies = await offlineCopy.studyFiles().catch((e) => { console.warn("the studies could not be read:", e); return []; });
   const live = await offlineCopy.available().catch(() => new Set());
-  const sections = studies.map((s) => ({ id: "study:" + s.id, study: s.id, title: s.title, mark: live.has(s.id), drive: !!s.manifest.files.folders?.length, entries: [] }));
+  const sections = studies.map((s) => ({ id: "study:" + s.id, study: s.id, title: s.title, mark: live.has(s.id), folders: !!s.manifest.files.folders?.length, entries: [] }));
   const shared = { id: "shared", title: "Shared by every study", about: SHARED_ABOUT, entries: [] };
   // a study's own, else the study on show's: kept before images were told apart by study
   const sectionOf = (id) => sections.find((x) => x.study === id) || sections.find((x) => x.study === manifest?.id) || shared;
@@ -1389,7 +1414,7 @@ async function inventory() {
     t[preview ? "previews" : "pics"]++; t.size += size; t.dels.push(del); thumbsOf.set(x, t);
   };
   const unused = { size: 0, dels: [] };
-  // the study each Drive image belongs to: the one it was kept in, else the one it was last opened in
+  // the study each remote image belongs to: the one it was kept in, else the one it was last opened in
   const studyOf = {};
   for (const r of readJSON(RECENT, [])) if (r.study && !(r.id in studyOf)) studyOf[r.id] = r.study;
   let settings = 0, overhead = 0, keys = [];
@@ -1441,7 +1466,7 @@ async function inventory() {
       if (c === IMAGES) {
         const at = Number(res.headers.get(IMAGE_AT)), id = idOf(req.url);
         sectionOf(studyOf[id]).entries.push({ kind: "image", name: decodeURIComponent(res.headers.get(IMAGE_NAME) || id), size, del,
-          what: "Image from Google Drive" + (at ? " · saved " + new Date(at).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "") });
+          what: `Image from ${remote.label}` + (at ? " · saved " + new Date(at).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "") });
         continue;
       }
       if (itself.has(req.url) || u.pathname.endsWith("/vendor/wheels.json")) { python.size += size; python.dels.push(del); continue; }
@@ -1455,7 +1480,7 @@ async function inventory() {
   for (const x of sections) if (code[x.study]) x.entries.push({ kind: "code", name: "Its pages and code", what: "Part of the site's copy, kept whole with it", size: code[x.study] });
   for (const [x, t] of thumbsOf) {
     const what = [t.pics && `${t.pics} ${t.pics === 1 ? "image" : "images"}`, t.previews && `${t.previews} ${t.previews === 1 ? "folder's" : "folders'"} previews`].filter(Boolean).join(", ");
-    x.entries.push({ kind: "thumb", name: "Thumbnails", what: `Small pictures for the Google Drive dialog: ${what}`, size: t.size, del: () => Promise.all(t.dels.map((d) => d())) });
+    x.entries.push({ kind: "thumb", name: "Thumbnails", what: `Small pictures for the ${remote.label} dialog: ${what}`, size: t.size, del: () => Promise.all(t.dels.map((d) => d())) });
   }
   if (unused.dels.length) shared.entries.push({ kind: "other", name: "Older code", what: `${unused.dels.length} files no study uses now`, size: unused.size, del: () => Promise.all(unused.dels.map((d) => d())) });
   if (python.dels.length) shared.entries.push({ kind: "python", name: "Python itself", what: "Every study runs on it", size: python.size, del: () => Promise.all(python.dels.map((d) => d())) });
@@ -1483,9 +1508,9 @@ async function storageTab(fresh) {
     const box = document.createElement("details"); box.className = "group"; box.dataset.group = x.id; box.open = open.has(x.id);
     box.innerHTML = `<summary><span class="title">${esc(x.title)}</span><span class="count">${items.length ? `${items.length} · ${sizeText(size)}` : x.study ? "Nothing of its own" : "Nothing kept"}</span></summary>`;
     if (x.mark) markOffline(box.querySelector(".title"), "study", true);
-    // a study not all here offers to make it so; one that is, to keep its Drive images too
-    if (x.study && (!x.mark || x.drive)) {
-      const make = Object.assign(document.createElement("button"), { type: "button", className: x.mark ? "link get-images" : "link make-offline", textContent: x.mark ? "Its Drive images…" : "Make available offline" });
+    // a study not all here offers to make it so; one that is, to keep its remote images too
+    if (x.study && (!x.mark || x.folders)) {
+      const make = Object.assign(document.createElement("button"), { type: "button", className: x.mark ? "link get-images" : "link make-offline", textContent: x.mark ? `Its ${remote.short} images…` : "Make available offline" });
       make.onclick = (e) => { e.preventDefault(); offlineCopy.makeAvailable(x.study, () => storageTab(false)); };
       box.firstChild.append(make);
     }
@@ -1532,12 +1557,12 @@ const settings = settingsDialog({
   fields: () => [
     { key: THEME, label: "Theme", kind: "choice", raw: true, fallback: "", options: [["", "Follow the system"], ["dark", "Dark"], ["light", "Light"]] },
     { key: ROLE, label: "The role you work in", kind: "choice", raw: true, fallback: "viewer", options: Object.entries(ROLE_NAMES) },
-    { key: THUMBS, label: "Show thumbnails in the Google Drive dialog", kind: "toggle", on: "on", off: "off", fallback: "on" },
+    { key: THUMBS, label: `Show thumbnails in the ${remote.label} dialog`, kind: "toggle", on: "on", off: "off", fallback: "on" },
     { key: MEMORY_TIP, label: "Show the low-memory popup", kind: "toggle", on: false, off: true, fallback: false },
-    { key: DRIVE_LINK, label: "Last Google Drive link", kind: "text" },
-    { key: DRIVE_LINKS, label: "Last Google Drive link in each study", kind: "map" },
+    { key: REMOTE_LINK, label: `Last ${remote.label} link`, kind: "text" },
+    { key: REMOTE_LINKS, label: `Last ${remote.label} link in each study`, kind: "map" },
     { key: TIPS, label: "Tips you closed (clear one to see it again)", kind: "set" },
-    { key: RECENT, label: "Recent images from Google Drive (clear one to drop it)", kind: "list", name: (r) => (r.study ? `${r.study}: ` : "") + (r.path?.length ? `${r.path.join("/")}/` : "") + r.name },
+    { key: RECENT, label: `Recent images from ${remote.label} (clear one to drop it)`, kind: "list", name: (r) => (r.study ? `${r.study}: ` : "") + (r.path?.length ? `${r.path.join("/")}/` : "") + r.name },
     { key: MOTION, label: "Animations", kind: "toggle", on: true, off: false, fallback: true },
     { key: RESOURCES, label: "The status bar's disk, memory, network and CPU", kind: "choice", fallback: "auto", options: [["hidden", "Hidden always"], ["auto", "Auto-hiding"], ["open", "Always open"]] },
     { key: SEEN_VERSION, label: "Version you saw last", kind: "text" },
@@ -1548,10 +1573,10 @@ const settings = settingsDialog({
     try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* private mode: this page only */ }
     signIn.changed(k);
   },
-  where: () => (signIn.signedIn() ? "Kept in your Google Drive, so they follow you to every device." : "Kept on this device only. Sign in with Google to keep them with you."),
+  where: () => signIn.kept(),
   saved: () => reapply(),
 });
-// the settings that follow the user, drawn again once Drive's or the Settings dialog's have replaced this device's
+// the settings that follow the user, drawn again once the account's or the Settings dialog's have replaced this device's
 function reapply() {
   let t = null;
   try { t = localStorage.getItem(THEME); } catch { /* no storage */ }
@@ -1560,7 +1585,7 @@ function reapply() {
 }
 $("#open-settings").onclick = () => { $("#user-menu").open = false; settings.open(); };
 $("#storage-reload").onclick = () => location.reload();
-$("#usage-dlg").addEventListener("close", () => { $("#storage-msg").textContent = ""; if ($("#drive-dlg").open) showSaved(); });
+$("#usage-dlg").addEventListener("close", () => { $("#storage-msg").textContent = ""; if ($("#remote-dlg").open) showSaved(); });
 
 // ---------- downloads and ground truth ----------
 function saveFile(name, text, type) {
@@ -1570,13 +1595,13 @@ function saveFile(name, text, type) {
 }
 // the shell's icons, by name, as SVG markup: done, part, todo
 const icon = (name) => `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">${$(`#icons .${name}`).innerHTML}</svg>`;
-// Load GT tagging (req/shell/ground-truth/view): for anyone but a tagger, an image from Drive with curated ground truth
+// Load GT tagging (req/shell/ground-truth/view): for anyone but a tagger, an image from the remote store with curated ground truth
 // shows it through the study's showTruth(doc), which draws only its final results and returns a line of its counts
 let offered = 0;
 async function offerTruth() {
   const box = $("#truth-box"), b = $("#load-gt"), say = $("#gt-summary"), mine = ++offered;
   box.hidden = true; b.hidden = false; say.hidden = true; $("#gt-offer").hidden = false;
-  if (role === "tagger" || !study.showTruth || st.source?.kind !== "drive" || !st.sha) return;
+  if (role === "tagger" || !study.showTruth || !remote.owns(st.source) || !st.sha) return;
   let got;
   try { got = await truth.curated({ name: st.fileName, sha256: st.sha }); } catch (e) { console.warn("curated ground truth not read:", e); return; }
   if (mine !== offered || !got) return;
@@ -1651,7 +1676,7 @@ function browserText() {
 }
 // the page's state as a report quotes it: never the image's name
 function pageNow() {
-  const im = page.get("image"), from = (s) => (s?.kind === "drive" ? "Google Drive" : "this computer");
+  const im = page.get("image"), from = (s) => (remote.owns(s) ? remote.label : "this computer");
   return [
     ["Site version", VERSION],
     ["Study", manifest ? `${manifest.title} (${manifest.id}), stage ${manifest.stage ?? "none"}` : "none open"],
@@ -2097,16 +2122,16 @@ function leaveStudy() {
 }
 
 const shell = {
-  $, state: st, page, still, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon,
+  $, state: st, page, still, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, remote,
   clearable: (what, fn) => truth.clearable(what, fn), showImage, boxDone, outline,
   views: { show: (v) => views.show(v), on: (fn) => views.on(fn), count: (l, t) => views.count(l, t), get now() { return views.now; }, get tasks() { return views.tasks; } },
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; }, get makesTruth() { return makesTruth(); },
 };
-const offlineCopy = offline({ $, esc, sizeText, drive: NorDrive, throttled, throttle, stored: () => diskBar(),
+const offlineCopy = offline({ $, esc, sizeText, remote, throttled, throttle, stored: () => diskBar(),
   kept: async (id) => !!(await caches.open(IMAGES).then((c) => c.match(imageUrl(id)), () => null)), keep: saveImage });
 // Data Management (req/shell/data/mode): what it borrows from the shell
 const data = dataMode({
-  $, esc, sizeText, still, status, drive: NorDrive, account: signIn, working, sha256, savedImage, folderPreviews, throttle,
+  $, esc, sizeText, still, status, remote, account: signIn, working, sha256, savedImage, folderPreviews, throttle,
   // the folder's images in the main area, or the image
   showFolder(on) {
     $("#folder-view").hidden = !on; $("#image-view").hidden = on || views.now !== "image";
@@ -2122,21 +2147,21 @@ const data = dataMode({
   openPreview: (name, bytes, source) => openBytes(name, bytes, source),
   loadOriginal,
 });
-// the image itself, for the preview on show: the copy kept on this device, else downloaded from Drive
+// the image itself, for the preview on show: the copy kept on this device, else downloaded from the remote store
 async function loadOriginal(source) {
   if (!source?.id) return;
   const kept = await savedImage(source.id);
   // where it is in the study's folders goes with it, for Edit Image to save beside it
-  const opened = { kind: "drive", id: source.id, name: source.name, folder: source.folder };
+  const opened = remote.source(source.id, { name: source.name, folder: source.folder });
   if (kept) { peek()(kept.bytes, kept.bytes.byteLength); return openBytes(kept.name, kept.bytes, opened); }
   if (document.documentElement.classList.contains("offline")) return notice("This image is not kept on this device, and needs the internet: you are offline.");
-  if (throttled()) return notice("Google is throttling this site's downloads. Try again in 15 minutes.");
+  if (throttled()) return notice(remote.words.throttled);
   const mb = (n) => (n / 1048576).toFixed(1);
   let push;
   try {
-    const f = await NorDrive.file(source.id, source.name, (n) => { push = peek(); busy(true, `Downloading ${n}…`, "peek"); },
+    const f = await remote.file(source.id, source.name, (n) => { push = peek(); busy(true, `Downloading ${n}…`, "peek"); },
       (buf, got, total) => { push(buf, got); $("#busy-text").textContent = `Downloading ${source.name} · ${mb(got)}${total ? " of " + mb(total) : ""} MB`; });
-    if ($("#drive-autosave").checked) saveImage(source.id, f.name, f.bytes, { study: manifest.id });
+    if ($("#remote-autosave").checked) saveImage(source.id, f.name, f.bytes, { study: manifest.id });
     picture(source.id, f.name, f.bytes);
     openBytes(f.name, f.bytes, opened);
   } catch (e) {
@@ -2145,10 +2170,10 @@ async function loadOriginal(source) {
     status("Error: " + (e.message || e), true);
   }
 }
-$("#load-original").onclick = () => { signIn.drive(); loadOriginal(page.get("image")?.source); };
+$("#load-original").onclick = () => { signIn.renew(); loadOriginal(page.get("image")?.source); };
 // Edit Image (req/shell/data/edit): what it borrows from the shell and Data Management
 imageEditor({
-  $, page, state: st, still, status, notice, readJSON, writeJSON, saveFile, boxDone, relabel: () => retitle(), loadOriginal,
+  $, page, state: st, still, status, notice, readJSON, writeJSON, saveFile, boxDone, relabel: () => retitle(), loadOriginal, remote,
   viewer: () => view, original: () => st.kept, accessOf: (f) => data.accessOf(f), saveEdits: (...a) => data.saveEdits(...a),
 });
 
@@ -2163,5 +2188,5 @@ window.st = st; window.$ = $; window.shellForTests = { saveThumb, page, get view
 // an old address, ?study=<id> or index.html, becomes the study's own
 if (new URLSearchParams(location.search).has("study") || location.pathname.endsWith("/index.html")) history.replaceState(null, "", addressOf(studyOf(location)) + location.hash);
 studyMenu();
-driveDialog(); slow($("#gt-export"));
+remoteDialog(); slow($("#gt-export"));
 mountStudy(studyOf(location)).then(start).catch((e) => status("Error: " + (e.message || e), true));

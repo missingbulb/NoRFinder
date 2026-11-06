@@ -64,7 +64,9 @@ nobody has decided: what the page does there is not a requirement yet.
   in the app's hidden folder (`drive.appdata`), as one small file it reads whole and replaces whole.
   When the site has a Google client (the repository variable `GOOGLE_CLIENT_ID`, written into
   `config.js` by the build), the avatar's menu offers Sign in with Google, which asks Google for the
-  user's name, email and picture and for the app's own folder in their Drive, nothing else of it.
+  user's name, email and picture, for the app's own folder in their Drive, and, set by the owner on
+  2026-11-06, to read their Drive (`req/shell/drive/credentials`); it changes nothing in their Drive but its own folder
+  and what a study's folders let it write (`req/shell/data/drive-access`).
   Signed in, the avatar is the user's picture, the menu names them and offers Sign out. These
   settings follow the user: dark or light, the tips closed, the version last seen, the low-memory
   popup turned off, the role the user works in (`req/shell/account/role`), the last Drive link (in each study too), Show thumbnails,
@@ -281,13 +283,28 @@ nobody has decided: what the page does there is not a requirement yet.
   `web-tests/test_dialog_motion_page.py`.
   </details>
 
-- `req/shell/drive/dialog` Google Drive, no sign-in: a study browses its own folders, the Image Viewer takes a pasted link; open on Open, double click or Enter.
+- `req/shell/drive/credentials` Signed in, the page reads Google Drive as the user, with their token alone; signed out, with the site's API key.
+  <details>
+
+  Set by the owner on 2026-11-06. Signed in, every Drive read the page makes (a folder's listing, a file's details,
+  a download) carries the user's own Google token and never the site's API key, so a folder the user's account can
+  see opens whether or not it is shared publicly, a shared drive's included, and one it cannot see is refused as
+  Google refuses it. Signed out, the same reads carry the site's API key alone, and reach only what is shared as
+  "Anyone with the link". A signed-in user whose token has run out is not read for with the key: the next click on
+  a Drive control renews the token, and a read with none says to click again. Sign-in asks Google for read access
+  to the user's Drive (`drive.readonly`) along with the rest (`req/shell/account/sign-in`); a token from before
+  that, lacking it, is renewed on the next click on a Drive control. `drive.readonly` is a restricted scope: until
+  Google verifies the site, Google shows an "unverified app" screen on signing in and lets in at most 100 new users
+  (missingbulb/NoRFinder#803). Test: `web-tests/test_drive_credentials_page.py`.
+  </details>
+
+- `req/shell/drive/dialog` Google Drive: a study browses its own folders, the Image Viewer takes a pasted link; open on Open, double click or Enter.
   <details>
 
   Set by the owner on 2026-11-04: a study naming Drive folders (its `files.folders`) offers no link to paste; its
   dialog opens on its folders, straight into the one when it names one, else on a list of them by name, and browses
-  only within them. A study naming none, the Image Viewer, takes the pasted link of an image or a folder shared as
-  "Anyone with the link". An image's link loads it at once; a folder lists its images and subfolders to pick from, each image
+  only within them. A study naming none, the Image Viewer, takes the pasted link of an image or a folder: one shared as
+  "Anyone with the link", or, signed in, any the user's account can see (`req/shell/drive/credentials`). An image's link loads it at once; a folder lists its images and subfolders to pick from, each image
   with its size, a small colour thumbnail and, for one opened before in the study, how long since, as the image
   selector says it (`req/shell/load/selector`); set by the owner on 2026-11-04, in place of the date it was added to
   Drive, an image the folder did not hold when this device last listed it carries a small boxed "new", and hovering

@@ -255,7 +255,7 @@
    },
    {
     "name": "Google Drive button",
-    "select": "#load-drive",
+    "select": "#load-remote",
     "control": true,
     "box": false,
     "parent": "Load"
@@ -1160,7 +1160,7 @@
    },
    {
     "name": "Google Drive button",
-    "select": "#load-drive",
+    "select": "#load-remote",
     "control": true,
     "box": false,
     "parent": "Load"
@@ -2121,7 +2121,7 @@
    },
    {
     "name": "Google Drive button",
-    "select": "#load-drive",
+    "select": "#load-remote",
     "control": true,
     "box": false,
     "parent": "Load"
@@ -3082,7 +3082,7 @@
    },
    {
     "name": "Google Drive button",
-    "select": "#load-drive",
+    "select": "#load-remote",
     "control": true,
     "box": false,
     "parent": "Load"
@@ -4036,7 +4036,7 @@
    },
    {
     "name": "Google Drive button",
-    "select": "#load-drive",
+    "select": "#load-remote",
     "control": true,
     "box": false,
     "parent": "Load"
