@@ -4,7 +4,7 @@
 // the signed-in user's token approved for ROOT alone, and for the folders and files the page itself makes; the
 // fixture study given the user as its data manager and ROOT as its folder; a stand-in worker answering ANSWERS
 // (tests/test_study_runs.py), which keeps the last file it was handed as self.lastOpen, and opens a study's image as
-// ANSWERS' studies[id] says where it says so. Exits 2 when it cannot run.
+// ANSWERS' studies[id] says where it says so, a file its named[file's name] names as that says. Exits 2 when it cannot run.
 import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
 import { execSync } from "node:child_process";
@@ -62,7 +62,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
     if (m.type === "study") { id = m.id; postMessage({ type: "ready", info: A.ready[id], heap: 0, files: 0 }); }
     else if (m.type === "open") {
       self.lastOpen = { name: m.name, bytes: new Uint8Array(m.bytes) };
-      const own = A.studies?.[id], images = bytes(own ? own.images : A.images);
+      const own = A.studies?.[id]?.named?.[m.name] ?? A.studies?.[id], images = bytes(own ? own.images : A.images);
       postMessage({ type: "opened", meta: own ? own.opened : A.opened, images }, [images.buffer]);
     }
     else if (m.type === "call") { const b = bytes(A.mask); postMessage({ type: "result", action: m.action, meta: A.count, bytes: b, echo: m.echo }, [b.buffer]); }

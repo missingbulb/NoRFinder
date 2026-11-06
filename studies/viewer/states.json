@@ -1,11 +1,11 @@
 {
-  "about": "The Image Viewer in the shell's states (req/checks/shell-states, req/checks/spec-layout): it has no panels of its own, so its paths walk the shell's elements alone, as dev/requirements/shell-states.json gives them, on a study with no stage that opens images from the computer as well as from Drive.",
+  "about": "The Image Viewer in the shell's states (req/checks/shell-states, req/checks/spec-layout): it has no panels of its own, so its paths walk the shell's elements alone, as dev/requirements/shell-states.json gives them, on a study with no stage that opens images from the computer as well as from Drive, and shows a z-stack in 3D.",
   "roots": {
     "signed out": {"stage": null, "signedIn": false, "role": "viewer"},
     "signed in": {"stage": null, "signedIn": true, "role": "viewer"}
   },
   "paths": [
     {"root": "signed out", "actions": ["load"]},
-    {"root": "signed in", "actions": ["load"]}
+    {"root": "signed in", "actions": ["load", "stack", "load"]}
   ]
 }

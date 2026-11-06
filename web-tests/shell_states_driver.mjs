@@ -3,13 +3,13 @@
 // actions one after another, and at every state reads each element as shown, disabled, folded or gone, against what
 // the rules expect. Every difference is reported, then the run fails. Optional RENDERS: a directory for a picture of
 // every state, arrows pointing at the elements that changed there, and an index.html of them all (req/checks/shell-states/renders).
-// Exits 1 on a difference, 2 when it cannot run.
-//   node web-tests/shell_states_driver.mjs ANSWERS STUDIES ROOT IMAGE EXPECT [RENDERS]
+// STACK is the z-stack a path loads with its stack action. Exits 1 on a difference, 2 when it cannot run.
+//   node web-tests/shell_states_driver.mjs ANSWERS STUDIES ROOT IMAGE STACK EXPECT [RENDERS]
 import fs from "node:fs";
 import path from "node:path";
 import { standIn } from "./stand_in_drive.mjs";
 
-const [answers, studies, rootDir, image, expectFile, renders] = process.argv.slice(2);
+const [answers, studies, rootDir, image, stack, expectFile, renders] = process.argv.slice(2);
 const { FILES, open, role, check, done } = await standIn({ answers, studies, rootDir });
 const { elements: trees, paths } = JSON.parse(fs.readFileSync(expectFile, "utf8"));
 const OTHER = "someone@example.com";
@@ -32,6 +32,12 @@ const opened = () => !!shellForTests.page.get("image") && document.querySelector
 const ACTIONS = {
   async load(page) {
     await page.setInputFiles("#file", image);
+    await page.waitForFunction(opened);
+  },
+  // the stack shown in 3D, the 2D view stepped aside
+  async stack(page) {
+    await page.setInputFiles("#file", stack);
+    await page.waitForFunction(() => document.querySelector("#view").hasAttribute("data-v3"));
     await page.waitForFunction(opened);
   },
   async count(page) {
