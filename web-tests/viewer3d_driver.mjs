@@ -197,6 +197,16 @@ try {
 
     const note = await page.textContent("#v3-note");
     check(/owner/i.test(note), `the spacing says who stated it: "${note}"`);
+    // the note keeps clear of the Panning label, in a narrower window too
+    for (const width of [1400, 1000]) {
+      await page.setViewportSize({ width, height: 900 });
+      const clash = await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => {
+        const p = $("#v3-pan").getBoundingClientRect();
+        done([...$("#v3-note").getClientRects()].some((r) => r.left < p.right && p.left < r.right && r.top < p.bottom && p.top < r.bottom));
+      })));
+      check(!clash, `at ${width}px the spacing's note stays clear of the Panning label`);
+    }
+    await page.setViewportSize({ width: 1400, height: 900 });
 
     // Data Management wants a signed-in Drive; its Edit Image box is only kept out of sight outside it
     await page.evaluate(() => { document.documentElement.dataset.mode = "data"; $("#edit-open").click(); });

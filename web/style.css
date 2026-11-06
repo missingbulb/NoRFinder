@@ -731,7 +731,7 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 .v3-pop input[type="number"] { width: 70px; padding: 2px 6px; }
 #v3-look { display: flex; gap: 6px; }
 #v3-look button { padding: 4px 10px; font-size: 13px; }
-#v3-note { position: absolute; left: 8px; bottom: 6px; margin: 0; color: rgba(225, 232, 238, .75); font-size: 12px; pointer-events: none; }
+#v3-note { position: absolute; left: 8px; right: calc(50% + 48px); bottom: 6px; margin: 0; color: rgba(225, 232, 238, .75); font-size: 12px; pointer-events: none; }
 #view[data-v3] #minimap, #view[data-v3] #ruler-btn, #view[data-v3] #grid-btn, #view[data-v3] #minimap-btn { display: none; }
 /* the slices' row: the channels' row with the depth's start and end on a plain track, and the spacing in the colour's place */
 .channel.v3-slices .levels::before { background: var(--line); }
