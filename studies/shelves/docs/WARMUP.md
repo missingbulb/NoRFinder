@@ -20,15 +20,14 @@ tests/                test_books.py (fast), test_reading.py and test_shelves_pag
 
 ## The pipeline
 
-1. **Find** (`books.find`, Python, R2, req/shelves/books/find): shelves are rows a horizontal edge crosses at least half
-   the photo on, each looked at with a margin. Within a shelf, a spine's sides are long straight edges found in colour
-   (Canny per channel, then pieces reaching 4% of the shelf, then a Hough transform at leans up to 30°). Between two
-   side lines, the book's top and foot are its own: where its texture stops, then the first line across the strip, at
-   its own tilt, where the colour changes and past which hardly any of the strip is the book's own colour. A box is kept
-   only once it checks out as a readable spine (`books.spine`): sides on edges, ends a real change, convex, long sides of
-   a length, ends near square to them, no strong edge inside it, a book's texture inside. Of those, the most that share
-   no ground are the books; then the photo's perspective, read from the surest boxes, drops a box whose ends turn
-   otherwise (`books.perspective`). Every book is a spine: R2 tells no cover apart.
+1. **Find** (`books.find`, Python, R3, req/shelves/books/find): shelves are rows a horizontal edge crosses at least half
+   the photo on, each looked at with a margin. Within a shelf, the edges between books are lines found as Osef does
+   (unblurred Sobel, 80% of the rows every book crosses, strongest first, none crossing, wide gaps searched again),
+   at leans up to 30°. Between two neighbouring lines, the book's top and foot are its own: where its texture stops,
+   then the first colour change across its strip, square to its sides give or take 12°, past which hardly any of the
+   strip is the book's colour. A box is kept only once it checks out as a readable spine (`books.spine`). The photo's
+   perspective, read from the surest boxes, drops a box whose ends turn otherwise (`books.perspective`). Every book
+   is a spine: R3 tells no cover apart.
 2. **Straighten** (`books.straighten`, Python): the four corners pulled through a homography into an upright
    rectangle, as wide as the box's top and bottom edges on average and as tall as its sides.
 3. **Read** (`reading.js`, JavaScript): the crop at each turn its shape allows (a tall crop turned a quarter either
@@ -71,6 +70,37 @@ finder and the reader proposed beside the corrected values, so one file scores b
 each reader (text). No grader is written yet: it waits for the first ground truth.
 
 ## Iterations
+
+### R3 — spine edges by Osef's boundary search; tops past the shadow (2026-11-07)
+
+On the owner's ask to fix R2's series merge and shadow tops, with the spine segmentation of yoavberliner/Osef (commit
+f8afe1b, `src/services/spineSegmentation.js`) as reference: "something there that you missed".
+
+- **What R2 missed, from Osef:** the edges between books come from the *unblurred* Sobel gradient (|gx| > 40 and
+  1.5×|gy|), not from Canny after a σ=2 blur, which smears away a seam a pixel or two wide. A line is an edge between
+  books only if it lies on such an edge along 80% of the rows nearly every book crosses (where the mean upright
+  gradient is 35% of its strongest), since lettering runs along only part of a spine. Lines are kept strongest
+  first, none crossing or crowding another, and a gap 1.8× the shelf's usual spine is searched again with a lower
+  bar. Each book is then the strip between two neighbouring lines (`REACH` 1), still checked by `books.spine`.
+  Two changes from Osef: leans up to 30° (Osef's 10° missed every leaning photo here), and a line counts as crowding
+  only when it is close to a kept one at *both* ends, since two books leaning apart touch at one end only.
+- **Shadow tops:** a book's top was the first colour change within 60% of the strongest, and the shadow under the
+  board above meets that board in a far stronger edge than the book meets the shadow. A top is now the first change
+  sharp enough to be an end at all (`END_STEP`); a foot keeps the 60% rule, because a logo or label near a foot
+  changes the strip as sharply and nothing like the shadow lies beyond it. The ends are also searched square to
+  the book's sides, give or take 12° (`END_TURN`), not at any tilt up to the spine's lean.
+- **Perspective:** fitted as a line over x, not a plane over x and y: three sure boxes fitted a three-term plane
+  exactly and dropped two real books on the drawn side view. Now at least four.
+- **On the photos, by eye (no ground truth yet):** `1tsK-N` 23 boxes (R2: 19), tops on the books' own tops;
+  `16acjV` 15, `1sdDdH` 13, `1g4iFN` 10, `16w5nW` 7, nearly all one spine each. Still broken: `1sdDdH`'s two black
+  Herbert spines stay one box (the series merge is **not** fixed); two multi-shelf photos (`12msl6`, `1Rx9mp`) now
+  give no box at all (R2: 3 and 4), not yet looked at.
+- **Tried and rejected for the series seam:** a dark-valley test (darker than the strip ±6 px, along the book's
+  lean) scored the seam 0.47 against 0.38–0.42 for lines inside single books, and in a wide gap it added false
+  lines on `16acjV`'s second shelf while still missing the seam; Osef's edge test at full resolution scores the seam
+  0.54 against 0.61 for lettering in a single book; a box holding two lettering columns did not separate it either.
+  What would: the two spines repeat one publisher's logo at their feet, so a box holding two copies of one mark is
+  two books (template matching, not built).
 
 ### R2 — each box the book's own spine, verified before it is kept (2026-11-07)
 
@@ -167,7 +197,7 @@ number below is a score.
   private for now (missingbulb/NoRFinder#766); once it is shared by link, a `data/sources.json` and its fetch, then the first ground truth, then a grader (`proposed` against the corrected values) and the
   finder's first real iteration.
 - Hebrew word spaces in the `lines` reader.
-- R2's own breaks: one series' spines boxed as one, tops into the shadow under a board, pale spines on a pale wall; a
-  perspective trusted on a real photo; the multi-shelf and wide photos; covers and piles.
+- R3's own breaks: one series' spines boxed as one (a repeated logo is the next cue to try); the multi-shelf photos
+  `12msl6`, `1Rx9mp` give no box; pale spines on a pale wall; a perspective trusted on a real photo; covers and piles.
 - A study pack (`shelves-study`) for its improving-on-ground-truth skill and its ground-truth intake, once there is
   ground truth to take in.

@@ -59,7 +59,7 @@ SNAP = 0.04
 END_TURN = 12
 # [camera-uniform] the perspective is read from at least this many boxes; a box whose ends turn more than this many
 # degrees otherwise than it has them turn there is dropped
-SURE_MIN, PERSPECTIVE_TOL = 3, 15
+SURE_MIN, PERSPECTIVE_TOL = 4, 15
 # a perspective that disagrees with more than this share of the boxes it was read from is not the photo's
 PERSPECTIVE_TRUST = 2 / 3
 # and how far beyond it, as a share of the shelf's height, a plain end of the book is followed to the edge it ends on
@@ -244,7 +244,7 @@ def end_edge(e, la, lb, y, out, win, limit, tilt, colour):
     """((y at la, y at lb), step): a book's end, from row y where its texture stops. Of the lines across its strip,
     from three windows inside that row (a board under a book carries texture of its own) to limit rows beyond it (out:
     -1 up, +1 down), each square to its sides give or take tilt rows across, it is the first, going outward, where the strip's
-    colour changes by STEP_NEAR of the most it changes there and past which hardly any of the strip is the book's own
+    colour changes by END_STEP of the shelf's brightness range (a foot: by STEP_NEAR of the most it changes there) and past which hardly any of the strip is the book's own
     colour: the board's and the wall's edges lie beyond the book's end, and past a row of its lettering most of the strip
     is still the book's. step is that change as a share of the shelf's brightness range."""
     u = np.linspace(0.15, 0.85, 12)
@@ -273,8 +273,12 @@ def end_edge(e, la, lb, y, out, win, limit, tilt, colour):
     best = step.max(axis=1)
     if best.max() <= 0:
         return (y, y), 0.0
-    peaks = [i for i in range(n) if best[i] >= STEP_NEAR * best.max() and best[i] >= best[max(0, i - 1)] and best[i] >= best[min(n - 1, i + 1)]]
-    i = peaks[0]
+    # a top: the first change sharp enough to be an end at all, since a book's top against the shadow under the board
+    # above is softer than the shadow's own edge against that board, beyond it. A foot stands on its board, with no
+    # such edge beyond it, and a logo or label near it changes the strip as sharply: the first near the strongest
+    least = END_STEP * e.spread if out < 0 else STEP_NEAR * best.max()
+    peaks = [i for i in range(n) if best[i] >= least and best[i] >= best[max(0, i - 1)] and best[i] >= best[min(n - 1, i + 1)]]
+    i = peaks[0] if peaks else int(np.argmax(best))
     j = int(np.argmax(step[i]))
     dy = tilts[j]
     yc = y + out * shifts[i]
@@ -398,14 +402,15 @@ def most_books(found, n):
 def perspective(boxes):
     """[camera-uniform] The photo's perspective, from the boxes found surest (their sides and their ends both on edges as
     much as the median box's or more): per end (top, foot), how its turn from
-    square to the sides varies across the photo, a plane over x and y fitted to them; None while too few are sure."""
+    square to the sides varies across the photo, a line over x fitted to them (along a shelf the camera's angle on
+    each book changes with where it stands); None while too few are sure."""
     if len(boxes) < SURE_MIN:
         return None
     fit, steps = (np.median([b[k] for _, b in boxes]) for k in ('fit', 'steps'))
     sure = [c for c, b in boxes if b['fit'] >= fit and b['steps'] >= steps]
     if len(sure) < SURE_MIN:
         return None
-    X = np.array([[1, *np.mean(c, axis=0)] for c in sure])
+    X = np.array([[1, np.mean(c, axis=0)[0]] for c in sure])
     fits = []
     for end in (0, 1):
         y = np.array([slant(c, end) for c in sure])
@@ -421,7 +426,7 @@ def perspective(boxes):
 
 def agrees(c, fits):
     """Whether a box's top and foot turn as the photo's perspective has every end there turn."""
-    p = np.array([1, *np.mean(c, axis=0)])
+    p = np.array([1, np.mean(c, axis=0)[0]])
     return all(abs(slant(c, end) - p @ fits[end]) <= PERSPECTIVE_TOL for end in (0, 1))
 
 
