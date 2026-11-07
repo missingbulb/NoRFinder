@@ -3,7 +3,7 @@
 // subfolder holding the first image again: a click only selects a row, Open loads the selection, a double
 // click enters a folder, and thumbnails come from the study's ready-made ones (served from THUMBS, a
 // stand-in driveThumbs folder) or one saved when an image was opened, never from Drive, and not at all
-// while the remembered "Download thumbnails" is unticked.
+// while Show thumbnails, in Settings, is off.
 // Prints what it measured; exits 1 when something is wrong, 2 when it cannot run. With SHOT, also saves a
 // screenshot of the dialog there.
 //   node tests/drive_dialog_driver.mjs SHOT|- THUMBS IMAGE...
@@ -100,9 +100,8 @@ if (rows.length !== files.length + 2) await done(1, `expected ${files.length + 2
 
 // the lab's images show the site's thumbnails, the other none, and nothing is read from Drive
 await page.waitForFunction((n) => document.querySelectorAll("#remote-list .item .pic img").length === n, files.length);
-await page.waitForFunction((n) => document.querySelector("#remote-thumbs-note").textContent.startsWith(`${n} of ${n} ·`), files.length);
 const pics = await page.$$eval("#remote-list .item .pic", (ps) => ps.map((p) => (p.querySelector("img") ? p.querySelector("img").naturalWidth : 0)));
-console.log("thumbnail widths:", JSON.stringify(pics), "· beside the checkbox:", await page.textContent("#remote-thumbs-note"));
+console.log("thumbnail widths:", JSON.stringify(pics));
 if (pics[pics.length - 1]) await done(1, "an image the lab's list lacks has a thumbnail");
 if (Object.values(asked).some((a) => a.whole)) await done(1, "thumbnails were read from Drive");
 // a colour thumbnail: its three colours differ
@@ -114,9 +113,6 @@ const colour = await page.$eval("#remote-list .item .pic img", (i) => {
 });
 console.log("mean |r-g|, |g-b|:", colour.map((v) => v.toFixed(1)).join(", "));
 if (Math.min(...colour) < 5) await done(1, "the thumbnail is not in colour");
-// the checkbox and the message beside it share a line
-const tops = await page.evaluate(() => ["#remote-thumbs-l", "#remote-msg"].map((q) => { const r = document.querySelector(q).getBoundingClientRect(); return r.top + r.height / 2; }));
-if (Math.abs(tops[0] - tops[1]) > 1) await done(1, "the checkbox and the message are not aligned: " + tops);
 
 // a click selects and loads nothing; Open waits for a selection
 if (!(await page.$eval("#remote-open", (b) => b.disabled))) await done(1, "Open is on with nothing selected");
@@ -142,25 +138,23 @@ console.log("select, double click and Open all work");
 // an opened image keeps its thumbnail in the browser, shown next time without a download
 await page.evaluate((id) => { st.W = 8; st.H = 8; const v = (k) => Uint8Array.from({ length: 64 }, (_, i) => (i * k) % 256); st.img = { planes: Uint8Array.from([...v(3), ...v(5), ...v(7)]), n: 3 }; shellForTests.saveThumb(id); }, stranger.id);
 
-// "Download thumbnails" is on at first, and once unticked it is remembered and nothing is downloaded
+// with Show thumbnails off in Settings, nothing is downloaded
 const fresh = await ctx.newPage();
 fresh.on("pageerror", (e) => done(1, "page error: " + e.message));
 await fresh.goto(origin + "/web/index.html?study=nor");
 await fresh.click("#load-remote");
 await fresh.waitForSelector("#remote-list .item");
 await fresh.waitForSelector("#remote-list .item:last-child .pic img");
-if (!(await fresh.$eval("#remote-thumbs", (c) => c.checked))) await done(1, "Download thumbnails starts unticked");
-await fresh.uncheck("#remote-thumbs");
+await fresh.evaluate(() => localStorage.setItem("nor-drive-thumbs", JSON.stringify("off")));
 await fresh.reload();
 const before = thumbsServed;
 let thumbsAsked = 0;
 fresh.on("request", (q) => { if (/\/ready-thumbs\/.*\.jpg$/.test(q.url())) thumbsAsked++; });
 await fresh.click("#load-remote");
 await fresh.waitForSelector("#remote-list .item:last-child .pic img");
-if (await fresh.$eval("#remote-thumbs", (c) => c.checked)) await done(1, "unticking Download thumbnails was not remembered");
 // the dialog starts its thumbnails' fetches in the frame after it lists the rows: two frames on, none was asked for
 await fresh.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
 const shown = await fresh.$$eval("#remote-list .item .pic img", (is) => is.length);
-if (thumbsServed !== before || thumbsAsked || shown !== 1) await done(1, `unticked, ${thumbsAsked} thumbnails were asked for, ${thumbsServed - before} downloaded and ${shown} shown`);
-console.log("a saved thumbnail shows; unticking Download thumbnails is remembered and downloads none");
+if (thumbsServed !== before || thumbsAsked || shown !== 1) await done(1, `turned off, ${thumbsAsked} thumbnails were asked for, ${thumbsServed - before} downloaded and ${shown} shown`);
+console.log("a saved thumbnail shows; with Show thumbnails off, none is downloaded");
 await done(0);

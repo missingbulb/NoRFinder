@@ -3,8 +3,8 @@
 // per study, then the shared and the rest, folded at first, each entry with its size, and no setting; deleting an
 // entry removes exactly what it lists, and a study's Delete all purges it but what other studies use; a thumbnail
 // saved from now on is listed by its image's name. req/shell/account/settings: Settings lists the settings kept on this device only, to
-// clear. req/shell/offline/mark: the study switcher and the Drive dialog mark what is available offline. Then req/shell/drive/kept-images: the Drive dialog's Show
-// thumbnails and Auto-save images, and the link beside them showing what thumbnails and images take; an image
+// clear. req/shell/offline/mark: the study switcher and the Drive dialog mark what is available offline. Then req/shell/drive/kept-images: the Drive
+// dialog holds no Show thumbnails, Auto-save images or storage size, Settings holds Auto-save images; an image
 // downloaded while Auto-save is on opens again with no download, one downloaded while it is off is not kept.
 // Then req/shell/load/selector: the image selector lists the images opened from Drive, newest first, once each, two of one name told
 // apart by their folder; a recent one opens from this device when it is kept there, and is downloaded when not.
@@ -241,40 +241,53 @@ try {
   const drive = async () => {
     // Drive's button, free while an image waits for Python, which never answers here
     await pressDrive(page);
-    await page.waitForFunction((n) => $("#remote-dlg").open && document.querySelectorAll("#remote-list .item:not(.folder)").length === n && /\d/.test($("#remote-storage").textContent), DRIVE.length);
+    await page.waitForFunction((n) => $("#remote-dlg").open && document.querySelectorAll("#remote-list .item:not(.folder)").length === n, DRIVE.length);
   };
   const saved = () => page.evaluate(async () => (await (await caches.open("nor-images-v1")).keys()).length);
-  const sizeOf = (t) => { const [n, u] = t.split(" "); return Number(n) * { KB: 1, MB: 1024, GB: 1024 * 1024 }[u]; };
   const openRow = async (k) => { await page.dblclick(`#remote-list .item:nth-child(${k})`); await page.waitForFunction(() => !$("#remote-dlg").open); };
   await drive();
-  const labels = await page.evaluate(() => [$("#remote-thumbs-l").textContent, $("#remote-thumbs").checked, $("#remote-autosave-l").textContent, $("#remote-autosave").checked]);
-  check(/^Show thumbnails/.test(labels[0]) && labels[1] && /^Auto-save images/.test(labels[2]) && labels[3], `Show thumbnails and Auto-save images, both on at first: ${labels}`);
-  const before = await page.textContent("#remote-storage");
+  const inDialog = await page.evaluate(() => ["#remote-thumbs", "#remote-autosave", "#remote-storage"].filter((q) => $("#remote-dlg").querySelector(q)));
+  const row = await page.textContent("#remote-dlg .dlg-row.end");
+  check(!inDialog.length && !/thumbnails|auto-save|\d (KB|MB|GB)/i.test(row), `the Drive dialog holds no Show thumbnails, Auto-save images or storage size: ${inDialog} ${row}`);
+  // Auto-save images, in Settings, on at first
+  const autosave = async (on) => {
+    await page.click("#user-menu summary"); await page.click("#open-settings");
+    await page.waitForFunction(() => $("#settings-dlg").open);
+    const box = 'input[name="nor-drive-autosave"]';
+    const was = await page.$eval(`#settings-dlg ${box}`, (c) => [c.checked, c.closest("label").textContent]);
+    check(!(await page.$('#settings-dlg input[name="device-only"][value="nor-drive-autosave"]')), "Auto-save images is not listed again among the settings kept on this device only");
+    if (on !== undefined) await page.setChecked(`#settings-dlg ${box}`, on);
+    await page.click("#settings-save");
+    return was;
+  };
+  await page.click("#remote-dlg button[value=close]");
+  const first = await autosave();
+  check(first[0] && /Auto-save images/.test(first[1]), `Settings holds Auto-save images, on at first: ${first}`);
+  await drive();
   await shot("drive_row", "#remote-dlg");
   await openRow(1);
   await until(page, async () => (await (await caches.open("nor-images-v1")).keys()).length === 1);
   check(downloads[DRIVE[0].id] === 1, "an image opened from Drive is downloaded once");
   await drive();
-  const after = await page.textContent("#remote-storage");
-  check(sizeOf(after) - sizeOf(before) >= PNG.length / 1024 - 1, `the link counts the saved image: ${before} → ${after}`);
   await openRow(1);
   await page.waitForFunction((name) => st.fileName === name, DRIVE[0].name);
   check(downloads[DRIVE[0].id] === 1, "opened again, it comes from this device with no download");
 
-  await drive();
-  await page.click("#remote-storage");
+  await page.click("#user-menu summary"); await page.click("#manage-storage");
   await page.waitForFunction(() => $("#usage-dlg").open && !/Reading/.test($("#storage-list").textContent));
   g = await groups();
-  check(names("study:nor", "image").join() === DRIVE[0].name && /\d/.test(g["study:nor"].find((e) => e.kind === "image").size), `the link opens Manage storage, which lists the saved image in its study: ${JSON.stringify(g["study:nor"])}`);
+  check(names("study:nor", "image").join() === DRIVE[0].name && /\d/.test(g["study:nor"].find((e) => e.kind === "image").size), `Manage storage lists the saved image in its study: ${JSON.stringify(g["study:nor"])}`);
   await page.click("#usage-dlg button[value=close]");
+  await drive();
   // req/shell/offline/mark: in the Drive dialog, still open beneath, the kept image is marked, the other not
   const rowMarks = await page.$$eval("#remote-list .item:not(.folder)", (rs) => rs.map((r) => r.querySelector(".offline-mark")?.getAttribute("aria-label") || ""));
   check(/without the internet/.test(rowMarks[0]) && !rowMarks[1], `the Drive dialog marks the image kept on this device, and only it: ${JSON.stringify(rowMarks)}`);
 
-  await page.uncheck("#remote-autosave");
+  await page.click("#remote-dlg button[value=close]");
+  await autosave(false);
   await page.reload(); await page.waitForFunction(() => $("#title").textContent);
+  check(!(await autosave())[0], "unticking Auto-save images in Settings is remembered");
   await drive();
-  check(!(await page.isChecked("#remote-autosave")), "unticking Auto-save images is remembered");
   await openRow(2);
   // opening: the page decides whether to keep an image before it starts opening it
   await page.waitForFunction((i) => st.source?.id === i, DRIVE[1].id);
@@ -295,8 +308,8 @@ try {
     return { pop: [Math.round(p.left), Math.round(p.right)], bar: [Math.round(b.left), Math.round(b.left + bar.clientWidth)], scrolls: bar.scrollWidth > bar.clientWidth }; });
   await shot("load_recents", "#image-menu .pop"); await page.click("#image-pick");
   check(fit.pop[0] >= fit.bar[0] && fit.pop[1] <= fit.bar[1] && !fit.scrolls, `the selector's list stays inside the left bar: ${JSON.stringify(fit)}`);
+  await autosave(true);
   await drive();
-  await page.check("#remote-autosave");
   await page.dblclick("#remote-list .item.folder");
   await page.waitForFunction(() => document.querySelectorAll("#remote-list .item").length === 1 && /sub/.test($("#remote-path").textContent));
   await page.dblclick("#remote-list .item:nth-child(1)"); await page.waitForFunction(() => !$("#remote-dlg").open);

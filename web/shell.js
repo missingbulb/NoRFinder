@@ -56,6 +56,8 @@ const REMOTE_LINKS = "nor-drive-links";
 const THUMBS = "nor-drive-thumbs";
 // "on" | "off": whether an image downloaded from the remote store is kept on this device
 const AUTO_SAVE = "nor-drive-autosave";
+// Auto-save images (req/shell/drive/kept-images): an image downloaded from the remote store is kept on this device
+const autoSave = () => readJSON(AUTO_SAVE, "on") !== "off";
 // + remote id: a JPEG data URL of the image, saved when it was opened
 const SAVED_THUMB = "nor-drive-thumb:";
 // [remote id], oldest first: which images have one
@@ -117,7 +119,6 @@ $("#load-original").title = `Open the image itself, not its preview: from this d
 $("#remote-title").textContent = `Load from ${remote.label}`;
 $("#remote-link").placeholder = remote.words.placeholder;
 $("#remote-throttle-say").textContent = remote.words.throttled;
-$("#remote-autosave-l").title = `Keep each image opened from ${remote.short} on this device, so it opens again without a download`;
 $("#save-remote").textContent = `Save to ${remote.label}`;
 
 // the tagger's side of the study's ground-truth folders: the line in its ground-truth box, Clear progress and Submit
@@ -775,7 +776,7 @@ function openRemote() {
   const pastes = !studyFolders().length;
   $("#remote-dlg").classList.toggle("folders", !pastes);
   remoteFrom = $("#remote-link").value = pastes ? readJSON(REMOTE_LINKS)[manifest.id] || readJSON(REMOTE_LINK, "") : "";
-  $("#remote-dlg").showModal(); if (pastes) $("#remote-link").select(); showSaved();
+  $("#remote-dlg").showModal(); if (pastes) $("#remote-link").select();
   holdRemote();
   remoteOpened();
 }
@@ -997,7 +998,7 @@ function remoteDialog() {
         $("#busy-text").textContent = `Downloading ${what} · ${mb(got)}${total ? " of " + mb(total) : ""} MB`;
       });
       if (f.folder) { trail = [f]; return show(); }
-      if ($("#remote-autosave").checked) saveImage(id, f.name, f.bytes, { path, study: manifest.id });
+      if (autoSave()) saveImage(id, f.name, f.bytes, { path, study: manifest.id });
       remember(id, f.name, path); picture(id, f.name, f.bytes);
       openBytes(f.name, f.bytes, remote.source(id));
     } catch (err) {
@@ -1148,13 +1149,12 @@ function remoteDialog() {
     const put = (pic, url) => { const i = new Image(); i.alt = ""; i.src = url; pic.replaceChildren(i); };
     const tell = () => {
       const t = asked ? `${done} of ${asked} · ${sizeText(bytes)}` : "";
-      $("#remote-thumbs-note").textContent = t;
       loading = running && t ? "Thumbnails " + t : ""; say();
     };
     // the rows from the first in view to AHEAD past the last, that no fetch has been started for
     const wanted = () => {
       const list = $("#remote-list"), items = list.children;
-      if (!$("#remote-dlg").open || !$("#remote-thumbs").checked || throttled() || !items.length) return [];
+      if (!$("#remote-dlg").open || readJSON(THUMBS, "on") === "off" || throttled() || !items.length) return [];
       const box = list.getBoundingClientRect();
       let first = 0, last = items.length - 1;
       for (let hi = last; first < hi; ) { const m = (first + hi) >> 1; if (items[m].getBoundingClientRect().bottom > box.top) hi = m; else first = m + 1; }
@@ -1219,14 +1219,6 @@ function remoteDialog() {
     return { reset, watch, stop, later, cover };
   })();
   $("#remote-open").onclick = () => chosen && enter(chosen);
-  $("#remote-thumbs").checked = readJSON(THUMBS, "on") !== "off";
-  $("#remote-thumbs").onchange = (e) => {
-    writeJSON(THUMBS, e.target.checked ? "on" : "off");
-    if (!e.target.checked) thumbs.stop(); else thumbs.later();
-  };
-  $("#remote-autosave").checked = readJSON(AUTO_SAVE, "on") !== "off";
-  $("#remote-autosave").onchange = (e) => writeJSON(AUTO_SAVE, e.target.checked ? "on" : "off");
-  $("#remote-storage").onclick = () => usage("storage");
   if (!remote.ready) {
     const d = $("#load-remote");
     d.disabled = true; d.title = remote.words.unready;
@@ -1372,16 +1364,9 @@ async function saveImage(id, name, bytes, where = {}) {
   try {
     await (await caches.open(IMAGES)).put(imageUrl(id), new Response(body, { headers }));
   } catch (e) { console.warn("image not saved:", e); }
-  showSaved(); diskBar();
+  diskBar();
 }
 const bytesOf = (k) => 2 * (k.length + (localStorage.getItem(k) || "").length); // UTF-16
-// the remote files dialog's link to Manage storage: what thumbnails and saved images take on this device
-async function showSaved() {
-  let n = 0;
-  try { for (const k of Object.keys(localStorage)) if (k.startsWith(SAVED_THUMB) || k === SAVED_THUMBS || k === THUMB_NAMES) n += bytesOf(k); } catch { /* no storage */ }
-  try { const c = await caches.open(IMAGES); for (const q of await c.keys()) n += (await (await c.match(q)).blob()).size; } catch { /* no caches */ }
-  $("#remote-storage").textContent = sizeText(n);
-}
 
 // ---------- the user: whoever opened the page on this device, and what the site keeps here ----------
 // what each of the shell's own setting keys holds, in the user's words
@@ -1544,7 +1529,7 @@ function deviceSettings() {
   let keys = [];
   try { keys = Object.keys(localStorage); } catch { /* no storage */ }
   return keys.map((k) => {
-    const label = OWN_SETTINGS[k] && !FOLLOWS.includes(k) && k !== SIGNED_IN ? OWN_SETTINGS[k] : !OWN_SETTINGS[k] && study.stored?.(k)?.group === "settings" ? study.stored(k).what : null;
+    const label = OWN_SETTINGS[k] && !FOLLOWS.includes(k) && k !== SIGNED_IN && k !== AUTO_SAVE ? OWN_SETTINGS[k] : !OWN_SETTINGS[k] && study.stored?.(k)?.group === "settings" ? study.stored(k).what : null;
     return label && { key: k, label, size: sizeText(bytesOf(k)) };
   }).filter(Boolean).sort((a, b) => a.label.localeCompare(b.label));
 }
@@ -1563,6 +1548,7 @@ const settings = settingsDialog({
     { key: MOTION, label: "Animations", kind: "toggle", on: true, off: false, fallback: true },
     { key: RESOURCES, label: "The status bar's disk, memory, network and CPU", kind: "choice", fallback: "auto", options: [["hidden", "Hidden always"], ["auto", "Auto-hiding"], ["open", "Always open"]] },
     { key: SEEN_VERSION, label: "Version you saw last", kind: "text" },
+    { key: AUTO_SAVE, label: `Auto-save images from ${remote.label}, on this device`, kind: "toggle", on: "on", off: "off", fallback: "on" },
     { key: "device-only", label: "Kept on this device only", kind: "device", entries: deviceSettings },
   ],
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
@@ -1582,7 +1568,7 @@ function reapply() {
 }
 $("#open-settings").onclick = () => { $("#user-menu").open = false; settings.open(); };
 $("#storage-reload").onclick = () => location.reload();
-$("#usage-dlg").addEventListener("close", () => { $("#storage-msg").textContent = ""; if ($("#remote-dlg").open) showSaved(); });
+$("#usage-dlg").addEventListener("close", () => { $("#storage-msg").textContent = ""; });
 
 // ---------- downloads and ground truth ----------
 function saveFile(name, text, type) {
@@ -2151,7 +2137,7 @@ async function loadOriginal(source) {
   try {
     const f = await remote.file(source.id, source.name, (n) => { push = peek(); busy(true, `Downloading ${n}…`, "peek"); },
       (buf, got, total) => { push(buf, got); $("#busy-text").textContent = `Downloading ${source.name} · ${mb(got)}${total ? " of " + mb(total) : ""} MB`; });
-    if ($("#remote-autosave").checked) saveImage(source.id, f.name, f.bytes, { study: manifest.id });
+    if (autoSave()) saveImage(source.id, f.name, f.bytes, { study: manifest.id });
     picture(source.id, f.name, f.bytes);
     openBytes(f.name, f.bytes, opened);
   } catch (e) {
