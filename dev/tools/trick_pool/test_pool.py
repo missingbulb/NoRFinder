@@ -37,7 +37,7 @@ def test_runnable_entries_and_functions_match_both_ways():
 @pytest.fixture(scope='module')
 def crop():
     if not os.path.exists(REF):
-        pytest.skip('the reference slide is not fetched (studies/nor/detection/ground_truth.py fetch)')
+        pytest.skip('the reference slide is not here (studies/nor/detection/ground_truth.py score downloads it)')
     import tifffile
     a = tifffile.imread(REF).astype(float)
     a = a[..., 1] if a.ndim == 3 and a.shape[-1] <= 4 else a[1] if a.ndim == 3 else a

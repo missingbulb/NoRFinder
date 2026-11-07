@@ -9,7 +9,7 @@ _Last updated 2026-10-06._
 
 ## Setup
 1. `python3 -m pip install -r requirements.txt`
-2. `python3 studies/nor/detection/ground_truth.py fetch`: fetches the reference slide
+2. `python3 studies/nor/detection/ground_truth.py score`: downloads, the first time, the reference slide
    (`Slide5_4AP_NoR.sld - Slice1_up_left2.tif`) and every image submitted ground truth was marked on
    into `data/raw/`, which is never committed.
 3. `cd studies/nor/detection && python3 nor_lab.py cmp tl rf`. The first run builds `.cache/` (image plus blue
@@ -30,7 +30,7 @@ _Last updated 2026-10-06._
 - **Curated ground truth** (R10, moved to Drive 2026-11-05): people mark candidates (thumbs up/down)
   and missed NoRs on the page and submit them to the study's submissions folder on Drive; a Data
   Manager accepts them into its curated folder (`study.json` `groundTruth`, both `null` until the
-  owner makes them). `ground_truth.py fetch` takes each image's newest curated file into
+  owner makes them). scoring takes each image's newest curated file, the first time, into
   `data/raw/ground-truth/truth/`, never git, and stops when a folder lists 50 entries. Curated files
   outrank the Claude labels wherever both mark a spot, and `ground_truth.py score` / the quality lock
   score every finder on every image. None has arrived yet.

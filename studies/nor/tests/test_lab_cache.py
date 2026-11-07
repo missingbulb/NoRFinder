@@ -11,7 +11,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'detection'))
 import nor_lab
 
-needs_slide = pytest.mark.skipif(not os.path.exists(nor_lab.TIF), reason='reference slide missing (detection/ground_truth.py fetch)')
+needs_slide = pytest.mark.skipif(not os.path.exists(nor_lab.TIF), reason='reference slide missing (detection/ground_truth.py score downloads it)')
 
 
 def _load(delay):

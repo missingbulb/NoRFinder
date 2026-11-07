@@ -24,10 +24,6 @@ already applies, so never re-weigh them by hand.
 ## 1. See what moved
 
 ```
-python3 studies/nor/detection/ground_truth.py fetch
-```
-
-```
 python3 studies/nor/detection/ground_truth.py score tl rf fill walk blobs tl_post
 ```
 

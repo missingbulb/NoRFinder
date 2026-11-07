@@ -66,3 +66,9 @@
 - **Actor:** @missingbulb (owner).
 - **Mechanism:** the same skill, its description naming the curated folder and the dataset SHA.
 - **Landed:** #783
+
+## 2026-11-07 · reworded · scoring downloads the ground truth itself; no fetch step (#815)
+- **Reason:** the owner chose that the lab downloads an image's ground truth when it first scores
+  it; the separate fetch is gone.
+- **Actor:** @missingbulb (owner).
+- **Landed:** #815

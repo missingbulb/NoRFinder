@@ -1,16 +1,15 @@
-"""The ground-truth data set: what people marked on the NoR Finder page, curated in the study's Drive folder.
+"""The ground-truth data set: what people marked on the NoR Finder page, curated in the study's Drive folders.
 
-The study names its curated folder in study.json (groundTruth.curated; R10, the shell's
-req/shell/ground-truth/folders): one subfolder per image, one file per tagger in it. `fetch` lists that
-folder with no key, downloads every file, keeps per image the one with the latest `created`, and writes the
-data set (one entry per image) under data/raw/ground-truth/, never into git. A file names its image by SHA-256
-and by its Google Drive id, so the image itself never enters git either: `fetch` downloads it too and checks
-the checksum.
+The study names its Drive root in study.json (`root`; R10, the shell's req/shell/data/roles): the root's settings
+file (rauntruth-study.json) names its curated folder by id, else the folder named `GT curated` or `GT` is it. In it,
+one subfolder per image, one file per tagger. There is no fetch step: scoring (`score`, finder_metrics.py) lists the
+curated folder with no key, keeps per image the file with the latest `created`, and downloads a file the first time
+it is scored, then keeps it under data/raw/ground-truth/, never git; each image too, checked against its SHA-256.
+The tests read only what is already there.
 
 The curated file outranks the lab's own labels (lab/labels_claude_v1.json, Claude's eye) on the reference
 slide. The data set is named by one SHA (dataset_sha, R11).
 
-    python3 detection/ground_truth.py fetch                     the curated set and every image, into data/raw/
     python3 detection/ground_truth.py score [SPEC ...]          every finder on every image, vs the baseline
 """
 import argparse, hashlib, json, math, os, re, sys
@@ -28,18 +27,42 @@ BASELINE = os.path.join(HERE, 'lab', 'quality_baseline.json')
 # the most entries the keyless listing of one folder is trusted to return whole
 LISTING_MAX = 50
 GT_FILE = re.compile(r'^gt_.+\.json$')
+SETTINGS = 'rauntruth-study.json'
+# the names the curated folder is found by while the root's settings file names none, best first
+CURATED_NAMES = ('gt curated', 'gt')
 
 
 class ListingFull(Exception):
     pass
 
 
-def curated_folder(study=STUDY):
-    """The study's curated folder's Drive id, or None while it names none."""
+def study_root(study=STUDY):
+    """The study's Drive root's id, or None while it names none."""
     with open(study) as f:
-        link = (json.load(f).get('groundTruth') or {}).get('curated')
-    m = re.search(r'/folders/([\w-]{10,})', link or '')
+        m = re.search(r'/folders/([\w-]{10,})', json.load(f).get('root') or '')
     return m.group(1) if m else None
+
+
+def curated_listing(transport, root, dirpath):
+    """([(path under the curated folder, id)], where): the curated folder's files, from the root's settings file, else
+    by the folder's name; ([], None) while the root has none."""
+    listing = transport.list_folder(root)
+    settings = next((fid for path, fid in listing if path == SETTINGS), None)
+    if settings:
+        out = os.path.join(dirpath, 'incoming', SETTINGS)
+        transport.download(settings, out)
+        try:
+            curated = json.load(open(out)).get('curated')
+        except ValueError:
+            curated = None
+        if curated:
+            return transport.list_folder(curated), curated
+    tops = {path.split('/')[0] for path, _ in listing if '/' in path}
+    for name in CURATED_NAMES:
+        top = next((x for x in sorted(tops) if x.strip().lower() == name), None)
+        if top:
+            return [(path[len(top) + 1:], fid) for path, fid in listing if path.startswith(top + '/')], f'{root}/{top}'
+    return [], None
 
 
 def entries(dataset=DATASET):
@@ -148,23 +171,25 @@ def listed_whole(listing, folder):
                               'Stopped rather than score part of it.')
 
 
-def collect(transport, folder, dirpath=DIR):
-    """Every image's newest curated file in folder, written into dirpath with the data set beside them.
-    Returns {'files': [entry], 'refused': {path: reason}}."""
-    listing = transport.list_folder(folder)
-    listed_whole(listing, folder)
+def collect(transport, root, dirpath=DIR):
+    """Every image's newest curated file under the study's root, written into dirpath with the data set beside them;
+    a file kept from an earlier run is not downloaded again. Returns {'files': [entry], 'refused': {path: reason}}."""
+    os.makedirs(dirpath, exist_ok=True)
+    listing, folder = curated_listing(transport, root, dirpath)
+    if folder:
+        listed_whole(listing, folder)
     by_image = {}
     for path, fid in listing:
         parts = path.replace(os.sep, '/').split('/')
         if len(parts) == 2 and GT_FILE.match(parts[1]):
             by_image.setdefault(parts[0], []).append((path, fid))
-    os.makedirs(dirpath, exist_ok=True)
     kept, refused = [], {}
     for sub, found in sorted(by_image.items()):
         best = None
         for path, fid in found:
             out = os.path.join(dirpath, 'incoming', fid + '.json')
-            transport.download(fid, out)
+            if not os.path.exists(out):
+                transport.download(fid, out)
             with open(out, 'rb') as f:
                 raw = f.read()
             try:
@@ -198,18 +223,19 @@ def dataset_sha(pairs):
     return hashlib.sha256('\n'.join(lines).encode()).hexdigest()
 
 
-def fetch(dataset=DATASET, transport=None):
-    """The curated set, then every image quality is judged on that is not here yet (the reference slide through
-    the data manifest, the rest by their Drive ids), each checked against its checksum."""
+def sync(dataset=DATASET, transport=None):
+    """Before scoring: the curated set as the study's root has it, and every image quality is judged on that is not
+    here yet (the reference slide through the data manifest, the rest by their Drive ids), each checked against its
+    checksum. Nothing kept from an earlier run is downloaded again."""
     transport = transport or fetch_data.GoogleDrive()
-    folder = curated_folder()
-    if folder:
-        got = collect(transport, folder, os.path.dirname(dataset))
+    root = study_root()
+    if root:
+        got = collect(transport, root, os.path.dirname(dataset))
         for path, why in got['refused'].items():
             print(f'skipped   {path}: {why}')
         print(f'ground truth: {len(got["files"])} curated images')
     else:
-        print('ground truth: the study names no curated folder yet; the lab scores on its own labels alone')
+        print('ground truth: the study names no root; the lab scores on its own labels alone')
     fetch_data.fetch_all(fetch_data.MANIFEST, fetch_data.RAW, transport=transport,
                          match=[os.path.relpath(nor_lab.TIF, fetch_data.RAW).replace(os.sep, '/')])
     for img in images(dataset).values():
@@ -219,7 +245,16 @@ def fetch(dataset=DATASET, transport=None):
         if not os.path.exists(out):
             transport.download(img['drive_id'], out)
         fetch_data.verify(out, img['sha256'])
-        print('ok       ', os.path.relpath(out, RAW))
+
+
+def synced():
+    """sync(), stopping with the reason when the store's answer cannot be trusted."""
+    try:
+        sync()
+    except fetch_data.ChecksumMismatch as e:
+        sys.exit(f'CHECKSUM MISMATCH: the file on Drive is not the one the ground truth was marked on.\n{e}')
+    except ListingFull as e:
+        sys.exit(f'STOPPED: {e}')
 
 
 # ---------- scoring ----------
@@ -279,18 +314,10 @@ def report(specs, baseline=BASELINE):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     sub = ap.add_subparsers(dest='cmd', required=True)
-    sub.add_parser('fetch')
     sc = sub.add_parser('score', help='every finder (or SPEC...) on every ground-truth image, against the baseline')
     sc.add_argument('specs', nargs='*')
     a = ap.parse_args()
-    if a.cmd == 'fetch':
-        try:
-            fetch()
-        except fetch_data.ChecksumMismatch as e:
-            sys.exit(f'CHECKSUM MISMATCH: the file on Drive is not the one the ground truth was marked on.\n{e}')
-        except ListingFull as e:
-            sys.exit(f'STOPPED: {e}')
-        return
+    synced()
     import interactive
     report(a.specs or list(interactive.FINDERS))
 

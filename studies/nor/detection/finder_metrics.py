@@ -134,4 +134,5 @@ def transfer(corpus=None):
 
 
 if __name__ == '__main__':
+    ground_truth.synced()
     transfer() if sys.argv[1:] == ['transfer'] else write()

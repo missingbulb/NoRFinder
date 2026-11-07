@@ -15,7 +15,7 @@ gain nobody recorded could later be lost silently.
 
 --accept is for a loss the owner agreed to, and for a new reference (the intake records the
 submissions it adds); the baseline's diff in the PR shows exactly which spots moved. Needs the
-images: python3 detection/ground_truth.py fetch.
+images: python3 detection/ground_truth.py score, which downloads them the first time.
 """
 import json
 import multiprocessing
@@ -36,7 +36,7 @@ IN_CI = bool(os.environ.get('CI'))
 
 CORPUS = ground_truth.corpus()
 needs_images = pytest.mark.skipif(not all(os.path.exists(im['path']) for im in CORPUS),
-                                  reason='ground-truth images missing (detection/fetch_data.py, detection/ground_truth.py fetch)')
+                                  reason='ground-truth images missing (detection/ground_truth.py score downloads them)')
 
 
 def read_baseline():
