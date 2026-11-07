@@ -179,8 +179,8 @@ try {
   check(driveDownloads === 2, `it downloads the two ticked images (${driveDownloads})`);
   await page.click("#offline-close");
   await page.waitForFunction(() => document.querySelector('#storage-list .group[data-group="study:vascular"] summary .offline-mark'), null, { timeout: 10000 }).catch(() => {});
-  check(!!(await page.$('#storage-list .group[data-group="study:vascular"] summary .offline-mark')) && !(await page.$('#storage-list .group[data-group="study:vascular"] .make-offline')),
-    "the study is then marked available offline, and offers it no more");
+  check(!!(await page.$('#storage-list .group[data-group="study:vascular"] summary .offline-mark')) && !!(await page.$('#storage-list .group[data-group="study:vascular"] .make-offline')),
+    "the study, its Python and images here, is then marked available offline, and with a Drive folder still offers to fetch more");
   await shot(page, "offline-prepared");
 
   // Install as an app: only now does the page name its manifest, and the browser finds the site installable
@@ -189,6 +189,16 @@ try {
   const cdp = await ctx.newCDPSession(page);
   let errors = ["not asked"];
   for (let t = 0; t < 20; t++) {
+  // its Python here but none of its images: not available offline
+  const keptImages = await page.evaluate(async () => {
+    const c = await caches.open("nor-images-v1"), out = [];
+    for (const q of await c.keys()) { out.push([q.url, await c.match(q)]); await c.delete(q); }
+    window.keptImages = out; return out.length;
+  });
+  await page.click("#usage-dlg [role=tab][data-tab=memory]"); await page.click("#usage-dlg [role=tab][data-tab=storage]");
+  await page.waitForFunction(() => !document.querySelector('#storage-list .group[data-group="study:vascular"] summary .offline-mark'), null, { timeout: 10000 }).catch(() => {});
+  check(keptImages === 2 && !(await page.$('#storage-list .group[data-group="study:vascular"] summary .offline-mark')), "with its Python here and none of its images, the study is not marked");
+  await page.evaluate(async () => { const c = await caches.open("nor-images-v1"); for (const [u, r] of window.keptImages) await c.put(u, r); });
     errors = (await cdp.send("Page.getInstallabilityErrors")).installabilityErrors.map((e) => e.errorId);
     if (!errors.length) break;
     await page.waitForTimeout(500); // waits on purpose: Chromium tells installability only when asked, with no event to wait on

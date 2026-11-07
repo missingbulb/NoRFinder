@@ -796,7 +796,8 @@ nobody has decided: what the page does there is not a requirement yet.
 
   Set by the owner on 2026-11-02, so the user knows before doing anything what works with no network
   (`req/shell/offline/default`). A small green mark, the same everywhere, an arrow into a tray for saved on this device,
-  follows a study whose Python is all on this device, in the header's switcher and its Storage
+  follows a study whose Python is all on this device and, for a study with a Google Drive folder of its own, at least
+  one of its images too (set by the owner on 2026-11-07), in the header's switcher and its Storage
   section, and an image kept on this device, in the Google Drive dialog's rows; what is not available
   offline carries nothing. The image selector's images carry none: with Auto-save on, they are all kept; offline,
   one not kept is greyed (`req/shell/load/selector`). The owner set on

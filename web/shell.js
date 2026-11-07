@@ -1510,7 +1510,8 @@ async function storageTab(fresh) {
       clear.onclick = (e) => { e.preventDefault(); act(gone, ask); };
       box.firstChild.append(clear);
     }
-    const about = x.about || (x.mark ? "Available offline: its Python is on this device." : "Not available offline yet: its Python is not all on this device.");
+    const needs = x.folders ? "its Python and at least one of its images" : "its Python";
+    const about = x.about || (x.mark ? `Available offline: ${needs} ${x.folders ? "are" : "is"} on this device.` : `Not available offline yet: it needs ${needs} on this device.`);
     box.append(Object.assign(document.createElement("p"), { className: "hint", textContent: about }));
     for (const e of items) {
       const row = document.createElement("div"); row.className = "entry"; row.dataset.name = e.name; row.dataset.kind = e.kind;
@@ -2120,7 +2121,13 @@ const shell = {
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; }, get makesTruth() { return makesTruth(); },
 };
 const offlineCopy = offline({ $, esc, sizeText, remote, throttled, throttle, stored: () => diskBar(),
-  kept: async (id) => !!(await caches.open(IMAGES).then((c) => c.match(imageUrl(id)), () => null)), keep: saveImage });
+  kept: async (id) => !!(await caches.open(IMAGES).then((c) => c.match(imageUrl(id)), () => null)), keep: saveImage,
+  // the studies at least one kept image was kept in
+  keptIn: async () => {
+    const c = await caches.open(IMAGES).catch(() => null), out = new Set();
+    for (const q of c ? await c.keys() : []) { const s = (await c.match(q))?.headers.get(IMAGE_STUDY); if (s) out.add(s); }
+    return out;
+  } });
 // Data Management (req/shell/data/mode): what it borrows from the shell
 const data = dataMode({
   $, esc, sizeText, still, status, remote, account: signIn, place, working, sha256, savedImage, folderPreviews, throttle,

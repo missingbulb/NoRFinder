@@ -7,7 +7,7 @@
 // in its remote folder take, beside the room left and the time at this session's speeds, then the download;
 // and Install as an app, at the top of the tab.
 // deps: $, esc, sizeText; remote, the remote store; kept(id), whether an image is kept on this device;
-// keep(id, name, bytes, {path, study}), keeping one; throttled() and throttle(), the store's wait (req/shell/drive/throttle); stored(),
+// keptIn(), the ids of the studies an image is kept in; keep(id, name, bytes, {path, study}), keeping one; throttled() and throttle(), the store's wait (req/shell/drive/throttle); stored(),
 // once something is kept.
 import { CORE, packagesOf } from "./python_files.js";
 import { PREVIEWS } from "./previews.js";
@@ -20,10 +20,10 @@ export const CONNECTION = "nor-connection";
 // the browser key that says the user asked for the app, so the page names its manifest from then on
 export const APP_ASKED = "nor-app-asked";
 
-// The mark of what is available offline (req/shell/offline/mark): a study whose Python is all on this device, or an
-// image kept on it. Its tooltip is a tiny one; what it means in full is said to assistive tech.
+// The mark of what is available offline (req/shell/offline/mark): a study whose Python is all on this device, with one
+// of its images when it has a remote folder, or an image kept on it. Its tooltip is a tiny one; what it means in full is said to assistive tech.
 const SAYS = {
-  study: "Available offline: this study's Python is on this device, so the study runs without the internet.",
+  study: "Available offline: this study's Python, and an image when it has a folder of them, are on this device, so the study runs without the internet.",
   image: "Available offline: this image is kept on this device, so it opens without the internet.",
 };
 export function offlineMark(what) {
@@ -42,7 +42,7 @@ export function markOffline(el, what, on) {
 // a ticked study's remote folder is read this deep and this far at most
 const MAX_FOLDERS = 200, MAX_FILES = 2000;
 
-export function offline({ $, esc, sizeText, remote, kept, keep, throttled, throttle, stored }) {
+export function offline({ $, esc, sizeText, remote, kept, keptIn, keep, throttled, throttle, stored }) {
   // ---------- offline by default ----------
   const NEEDS = "[data-needs-network]", WHY = "Needs the internet: you are offline.", AGAIN_MS = 30000, AGAIN_OFF_MS = 5000;
   const NET_OFF = "Offline: no internet. The page runs what is on this device. Click for more.";
@@ -150,10 +150,16 @@ export function offline({ $, esc, sizeText, remote, kept, keep, throttled, throt
       return { ...s, manifest: m, python: packagesOf(m.python, lock, vendored, new URL("vendor/", import.meta.url).href).map((w) => w.url) };
     }));
   })().catch((e) => { listing = null; throw e; }));
-  // the ids of the studies whose Python is all on this device
+  // the ids of the studies available offline: their Python all on this device and, with a remote folder of their
+  // own, at least one of its images
   async function available() {
     const core = (await Promise.all(CORE.map(here))).every(Boolean), out = new Set();
-    if (core) for (const s of await studyFiles()) if ((await Promise.all(s.python.map(here))).every(Boolean)) out.add(s.id);
+    if (!core) return out;
+    const images = await keptIn().catch(() => new Set());
+    for (const s of await studyFiles()) {
+      if (remote.study(s.manifest).root && !images.has(s.id)) continue;
+      if ((await Promise.all(s.python.map(here))).every(Boolean)) out.add(s.id);
+    }
     return out;
   }
   // what is missing of a list of urls, and its size
