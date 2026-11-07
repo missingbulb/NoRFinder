@@ -120,12 +120,20 @@ try {
   await page.click('.bs-tools [data-do="back"]');
   check((await rows())[0] === "1/3 Books" && await page.evaluate(() => $(".bs-item input").value) === "Title 240x35", "Back returns to the book before, its verdict undone", await rows());
   await page.click('.bs-verdicts [data-do="right"]');
-  // the cover's top-right corner dragged 40 px to the right: the book is straightened and read again
+  // the cover's top-right corner dragged 40 px to the right, the photo zoomed in so it could pan: the book is
+  // straightened and read again, and the photo stays where it was (req/shell/image/minimap)
+  for (let i = 0; i < 3; i++) await page.click("#zoom-in");
+  await page.evaluate(() => { const sc = $("#scroller"); sc.scrollLeft = 300 * st.zoom - sc.clientWidth / 2; sc.scrollTop = 100 * st.zoom - sc.clientHeight / 2; });
+  const scrolled = () => page.evaluate(() => [$("#scroller").scrollLeft, $("#scroller").scrollTop]);
+  const before = await scrolled();
   const knob = await page.$$eval("#overlay .bs-corner", (cs) => { const r = cs[1].getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; });
   const zoom = await page.evaluate(() => st.zoom);
   await page.mouse.move(...knob); await page.mouse.down(); await page.mouse.move(knob[0] + 40 * zoom, knob[1], { steps: 4 }); await page.mouse.up();
+  const after = await scrolled();
+  check(before[0] > 0 && after.join() === before.join(), "dragging a corner moves the corner alone, never the photo under it", { before, after });
   await page.waitForFunction(() => $(".bs-item input")?.value === "Title 220x180");
   check(true, "a corner dragged on the photo re-straightens and re-reads the book");
+  for (let i = 0; i < 3; i++) await page.click("#zoom-out");
   await page.click('.bs-verdicts [data-do="right"]');
   check((await rows())[0] === "3/3 Books" && await page.evaluate(() => $("#gt-submit").disabled), "every book reviewed, Submit waits for the missed books", await rows());
   await page.click('[data-do="draw"]');

@@ -619,7 +619,9 @@ nobody has decided: what the page does there is not a requirement yet.
   motion for a user who asks the system for reduced motion); hovering over the button opens a popup choosing how
   see-through it is at rest, opaque at first and always opaque under the pointer. Whether it shows and its opacity are kept as the user's settings for the
   next visit. Dragging moves the image, wherever it starts, a label or the ruler's length included:
-  no drag selects or drags the page's text (set by the owner on 2026-10-31). Scrolling up and down zooms around the pointer in small steps;
+  no drag selects or drags the page's text (set by the owner on 2026-10-31). Only a glyph of a study's
+  drawing that the user drags (a book's corner, say) moves alone, the image staying still under it, in
+  every study and viewer (set by the owner on 2026-11-07; `studies/shelves/tests/test_shelves_page.py`). Scrolling up and down zooms around the pointer in small steps;
   scrolling sideways steps to the study's previous or next item (for NoR, the candidate). The main
   area's toolbar holds the zoom at its right, and its tools wait for an image; a preview opened in Data
   Management (`req/shell/data/preview-images`) is one (set by the owner on 2026-11-04). Test:

@@ -6,7 +6,8 @@
 //
 // The study's hooks it calls: pickAt(event) -> what was clicked, or null; pick(it) when a click, not a
 // drag, landed on it, pick(null) when it landed on nothing; open(it) when a double click did; step(dir) on a sideways swipe; capturesPointer() while the study's own tool (a
-// lasso, say) takes the pointer; zoomed() after every zoom.
+// lasso, say) takes the pointer; zoomed() after every zoom. A study's press listener that calls preventDefault()
+// takes that press, which then never pans the view nor picks.
 import { resolve, ramp } from "./channels.js";
 import { asLoaded } from "./as_loaded.js";
 
@@ -271,15 +272,17 @@ export function viewer(shell) {
     const sc = $("#scroller"); let drag = null;
     sc.addEventListener("pointerdown", (e) => {
       if (e.button !== 0 || !st.img || hooks.capturesPointer?.() || ruler.armed) return;
-      drag = { x: e.clientX, y: e.clientY, l: sc.scrollLeft, t: sc.scrollTop, c: hooks.pickAt?.(e) ?? null, moved: false, id: e.pointerId };
+      drag = { x: e.clientX, y: e.clientY, l: sc.scrollLeft, t: sc.scrollTop, c: hooks.pickAt?.(e) ?? null, moved: false, id: e.pointerId, down: e };
     });
+    // a press the study's own listener took (a glyph of its drawing grabbed) is not the view's: it neither pans nor picks
+    const taken = () => { if (drag?.down.defaultPrevented) drag = null; return !drag; };
     sc.addEventListener("pointermove", (e) => {
-      if (!drag) return;
+      if (taken()) return;
       if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 4) { drag.moved = true; sc.setPointerCapture(drag.id); sc.classList.add("dragging"); $("#tip").hidden = true; }
       if (drag.moved) { sc.scrollLeft = drag.l - (e.clientX - drag.x); sc.scrollTop = drag.t - (e.clientY - drag.y); }
     });
     const end = () => {
-      if (drag && !drag.moved) hooks.pick?.(drag.c);
+      if (!taken() && !drag.moved) hooks.pick?.(drag.c);
       drag = null; sc.classList.remove("dragging");
     };
     sc.addEventListener("pointerup", end); sc.addEventListener("pointercancel", () => { drag = null; sc.classList.remove("dragging"); });
