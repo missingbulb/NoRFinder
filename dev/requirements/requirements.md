@@ -211,7 +211,9 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Set by the owner on 2026-11-02. Choosing a folder in the tree fills the main area with its images,
-  a grid of previews or a list, a button switching them with a slide. The left bar's Selected Folder
+  a grid of previews or a list, a button switching them with a slide. A folder's images, in the tree and the
+  folder view, are the kinds the study opens, those its `files.accept` names (set by the owner on 2026-11-07:
+  the Bookshelf Reader's JPEG photos among them). The left bar's Selected Folder
   box replaces the Image box and counts its images, how many have a preview, how many previews are
   out of date (the image's SHA-256 differs from the preview's), how many have ground truth beside
   them (`<name>.ground_truth.*`, `<name>` the image's name without its extension) and how many are
@@ -274,7 +276,8 @@ nobody has decided: what the page does there is not a requirement yet.
   Set by the owner on 2026-11-02. Under the folder's summary, Update previews is on while an image
   lacks a preview or has an out-of-date one. It downloads only those images, makes their previews in
   the browser as `dev/tools/previews/make_previews.py` does (`req/shell/drive/previews`; a flat image at
-  most 256 px a side, a stack at most 96 px and 24 slices), keeps every still-valid preview as it was,
+  most 256 px a side, a photo that is not a TIFF (a PNG, JPEG, WebP or BMP) a flat colour image, a stack at most
+  96 px and 24 slices), keeps every still-valid preview as it was,
   and writes `rauntruth-previews.tiff`: a new file, or the page's own one replaced. A previews file the
   page did not make is left alone, and the page says to delete it in Drive to let the page manage it;
   deleting the page's own makes it start over. Test: `web-tests/test_data_mode_page.py`,
@@ -376,7 +379,7 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   A Drive folder may hold `rauntruth-previews.tiff`, made by `dev/tools/previews/make_previews.py`
-  on a computer that has the folder's images and uploaded beside them: a multi-page TIFF, its pages
+  on a computer that has the folder's images (its TIFFs, and the photos Pillow opens) and uploaded beside them: a multi-page TIFF, its pages
   deflate-compressed, whose first page's description is a JSON index naming each image, its SHA-256
   and its pages. A flat image has one colour page; a stack has a mini-volume, one 8-bit page per
   slice and channel. The dialog never lists the file; when a folder has one it downloads it at

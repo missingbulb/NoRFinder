@@ -9,6 +9,7 @@ import sys
 import numpy as np
 import pytest
 import tifffile
+from PIL import Image
 
 pytestmark = pytest.mark.full
 
@@ -53,6 +54,24 @@ def test_previews_keep_the_files_colours(tmp_path):
     # the first channel alone lit: green where its LUT is green, red without one
     assert lit['lut.tif'][1] > 200 and lit['lut.tif'][0] < 50
     assert lit['plain.tif'][0] > 200 and lit['plain.tif'][1] < 50
+
+
+def test_previews_cover_photos(tmp_path):
+    """A JPEG, the photo a study may open beside TIFFs and PNGs, is a flat colour preview; a file no image reader opens is left out."""
+    sys.path.insert(0, os.path.join(REPO, 'dev', 'tools', 'previews'))
+    import make_previews
+    images = tmp_path / 'images'
+    images.mkdir()
+    rgb = np.zeros((30, 50, 3), np.uint8)
+    rgb[:, :25, 0] = 250
+    Image.fromarray(rgb).save(images / 'photo.jpg')
+    (images / 'photo.ground_truth.json').write_text('{}')
+    make_previews.main(str(images))
+    with tifffile.TiffFile(images / 'rauntruth-previews.tiff') as t:
+        index = json.loads(t.pages[0].description)
+        page = t.pages[0].asarray()
+    assert [(e['name'], e['kind'], e['channels']) for e in index['images']] == [('photo.jpg', 'flat', 3)]
+    assert page.shape == (30, 50, 3) and page[15, 5, 0] > 200 and page[15, 40, 0] < 50
 
 
 @pytest.mark.skipif(not NODE, reason='node missing')

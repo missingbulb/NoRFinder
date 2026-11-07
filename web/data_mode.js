@@ -10,11 +10,11 @@ import { makePreview, buildPreviews } from "./previews_writer.js";
 import { readTiff, fromPlanes, writeTiff } from "./split.js";
 import { CONNECTION, holdOwns } from "./offline.js";
 import { asLoaded } from "./as_loaded.js";
+import { accepts } from "./accepts.js";
 import { replacedBy, stemOf } from "./edit.js";
 import * as tf from "./truth_folders.js";
 import { setup as setUp, switchMode } from "./study_root.js";
 
-const IMAGE = /\.(tiff?|png)$/i;
 const MAX_FOLDERS = 200;
 // what each access means beside a folder
 const ACCESS = {
@@ -185,10 +185,11 @@ export function dataMode(ctx) {
   };
 
   // ---------- the tree ----------
-  // a folder's images, but those an edit replaced (req/shell/data/edit-save)
+  // a folder's images, the kinds the study opens, but those an edit replaced (req/shell/data/edit-save)
   const imagesOf = (n) => {
     const edited = replacedBy([...n.files, ...n.folders.map((id) => ({ name: nodes.get(id)?.name, folder: true }))]);
-    return n.files.filter((f) => IMAGE.test(f.name) && f.name !== PREVIEWS && !edited(f));
+    const opens = accepts(manifest.files.accept);
+    return n.files.filter((f) => opens(f.name) && f.name !== PREVIEWS && !edited(f));
   };
   function drawTree() {
     if (!on()) return;
@@ -378,7 +379,7 @@ export function dataMode(ctx) {
 
   // the image's planes as a reader gives them
   async function sourceOf(name, bytes) {
-    if (!/\.png$/i.test(name)) return readTiff(new Uint8Array(bytes));
+    if (/\.tiff?$/i.test(name)) return readTiff(new Uint8Array(bytes));
     const bmp = await createImageBitmap(new Blob([bytes])), c = new OffscreenCanvas(bmp.width, bmp.height), g = c.getContext("2d");
     g.drawImage(bmp, 0, 0);
     const d = g.getImageData(0, 0, bmp.width, bmp.height).data, n = bmp.width * bmp.height, planes = [0, 1, 2].map(() => new Uint8Array(n));
