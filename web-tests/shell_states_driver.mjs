@@ -23,7 +23,7 @@ const ready = (page) => page.waitForFunction(() => /^(Ready|Image loaded|Counted
 // done: the page settled, its drawers and fades over (a spinner going round never ends, so it is left out)
 const settled = async (page) => {
   // no call of a live study's on its way, nor one more after the last answered
-  for (let quiet = 0; quiet < 3; ) { await new Promise((ok) => setTimeout(ok, 100)); quiet = calls() ? 0 : quiet + 1; }
+  for (let quiet = 0; quiet < 3; ) { await new Promise((ok) => setTimeout(ok, 100)); quiet = calls() ? 0 : quiet + 1; } // waits on purpose: a call the page makes after the last one answered can only be ruled out by a quiet spell
   await page.waitForFunction(() => !document.documentElement.hasAttribute("data-drawers")
     && document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getTiming().iterations === Infinity));
   // and the disk's count, which the page makes once it is ready and the Storage item waits for; one that never comes
