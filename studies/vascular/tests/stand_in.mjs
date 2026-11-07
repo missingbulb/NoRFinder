@@ -2,6 +2,7 @@
 // that offers two algorithms (their names, icons and steps as the build lists them), opens any file as a drawn stack as many slices deep as the given model, and answers
 // Execute with that model, the arguments it was asked with in its "asked" field. The study is served in the
 // stage asked for.
+import { EARLY } from "../../../web-tests/early_messages.mjs";
 import { repoFile } from "../../../web-tests/repo_file.mjs";
 import fs from "node:fs";
 import http from "node:http";
@@ -35,7 +36,7 @@ const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/ja
 export async function serve(repo, studies, model, stage) {
   const server = http.createServer((q, r) => {
     const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
-    if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(standIn(model)); }
+    if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(EARLY + standIn(model)); }
     if (u === "/studies/vascular/web/algorithms.GENERATED.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end(JSON.stringify(ALGORITHMS)); }
     if (u === "/web/vendor/wheels.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end("[]"); }
     if (u === "/studies/vascular/study.json") {

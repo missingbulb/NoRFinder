@@ -27,8 +27,6 @@ class Session:
     def __init__(self, path):
         with open(path, 'rb') as f:
             self.size = len(f.read())
-    def opened(self):
-        return json.dumps({'H': N, 'W': N, 'um': 0.17, 'info': [["Pixel", "0.17 µm"]]}), bytes(4 * N * N)
     def call(self, action, args):
         if action == 'detect':
             return json.dumps({'finder': args['finder'], 'cands': []}), bytes(2 * N * N)

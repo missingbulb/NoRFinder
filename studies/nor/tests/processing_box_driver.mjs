@@ -6,6 +6,7 @@
 // default filters, as the list shows them, with those before any filter after them, not bold. Prints what it saw; exits 1 on a failure, 2
 // when it cannot run.
 //   node tests/processing_box_driver.mjs READY
+import { EARLY } from "../../../web-tests/early_messages.mjs";
 import { repoFile } from "../../../web-tests/repo_file.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
@@ -30,7 +31,7 @@ const STAND_IN = `postMessage({ type: "ready", info: ${JSON.stringify(READY)}, s
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
-  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
+  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(EARLY + STAND_IN); }
   const f = repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);

@@ -5,6 +5,7 @@
 // shows whenever the page runs out of memory; the status bar shows the memory in use. Optional SHOTS: a directory for screenshots.
 // Exits 1 on a failed check, 2 when it cannot run.
 //   node tests/slow_machine_page_driver.mjs ANSWERS IMAGE [SHOTS]
+import { EARLY } from "../../../web-tests/early_messages.mjs";
 import { repoFile } from "../../../web-tests/repo_file.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
@@ -36,8 +37,7 @@ postMessage({ type: "ready", info: { finders: A.finders, about: A.about }, secs:
 onmessage = async ({ data: m }) => {
   await late();
   if (m.type === "open") {
-    const images = await bin("images.bin");
-    postMessage({ type: "opened", meta: { H: A.H, W: A.W, um: A.um }, images, secs: 0 }, [images.buffer]);
+    postMessage({ type: "held", secs: 0 });
   } else if (m.type === "call" && m.action === "detect") {
     if (++runs === 3) return postMessage({ type: "error", text: "MemoryError" });
     finder = m.args.finder; const seg = await bin("seg_" + finder + ".bin");
@@ -50,7 +50,7 @@ onmessage = async ({ data: m }) => {
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
-  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
+  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(EARLY + STAND_IN); }
   // the item views only show what was found, so they are driven in a PreGT study (req/shell/views/second)
   if (u === "/studies/nor/study.json") {
     r.writeHead(200, { "content-type": "application/json" });

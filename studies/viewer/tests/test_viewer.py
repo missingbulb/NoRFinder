@@ -1,9 +1,9 @@
-"""req/shell/image-viewer: the Image Viewer shows any TIFF or PNG one plane per channel, with the names and colours the file
-gives its channels, and says what the file says about the image.
+"""req/shell/image-viewer, req/shell/image/open: the Image Viewer shows any TIFF or PNG one plane per channel, with the
+names and colours the file gives its channels, and says what the file says about the image, as the page's own reader
+(web/image_open.js, under Node) opens it; it offers no action of its own.
 
 Run: python3 -m pytest studies/viewer/tests
 """
-import json
 import os
 import sys
 
@@ -12,9 +12,13 @@ import pytest
 import tifffile
 from PIL import Image
 
+pytestmark = pytest.mark.full
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'py'))
+sys.path.insert(0, os.path.join(HERE, '..', '..', '..', 'web-tests'))
 import viewer
+from image_open import open_image
 
 H, W = 30, 40
 
@@ -24,12 +28,20 @@ def lut(r, g, b):
     return np.stack([ramp * r, ramp * g, ramp * b]).astype(np.uint8)
 
 
+PATH = None
+
+
 def planes(path):
     """The meta and the planes, one per channel the meta names."""
-    meta, data = viewer.Session(path).opened()
-    meta = json.loads(meta)
+    meta, ps, _ = open_image(PATH, path)
     assert (meta['H'], meta['W']) == (H, W)
-    return meta, np.frombuffer(data, np.uint8).reshape(len(meta['channels']), H, W)
+    return meta, ps
+
+
+@pytest.fixture(autouse=True)
+def _scratch(tmp_path):
+    global PATH
+    PATH = tmp_path
 
 
 def spots(n=3):
@@ -86,7 +98,7 @@ def test_a_pixel_taller_than_wide_gives_both_sides(tmp_path):
     tifffile.imwrite(p, spots(), imagej=True, resolution=(5.0, 2.0), metadata={'axes': 'CYX', 'unit': 'micron'})
     meta, _ = planes(p)
     rows = dict(meta['info'])
-    assert meta['um'] == pytest.approx(0.2) and meta['um_y'] == pytest.approx(0.5)
+    assert meta['um'] == pytest.approx(0.2) and meta['umY'] == pytest.approx(0.5)
     assert rows['Field'] == '8.0 × 15.0 µm (40 × 30 px)' and rows['Pixel'] == '0.2000 × 0.5000 µm'
 
 
@@ -102,7 +114,7 @@ def test_a_tiff_that_says_nothing_of_its_channels_leaves_their_names_and_colours
     tifffile.imwrite(p, spots(5), metadata={'axes': 'CYX'})
     meta, ps = planes(p)
     assert len(ps) == 5 and meta['channels'] == [{}] * 5, 'a fourth and fifth channel are kept too'
-    assert 'Field' in dict(meta['info']) and meta['um'] is None and meta['um_y'] is None, 'a scale the file never states is not shown'
+    assert 'Field' in dict(meta['info']) and meta['um'] is None and meta['umY'] is None, 'a scale the file never states is not shown'
 
 
 def test_past_eight_channels_the_first_eight_are_shown_and_the_box_says_so(tmp_path):
@@ -143,11 +155,8 @@ def test_a_z_stack_comes_flattened_then_slice_by_slice_for_the_3d_view(tmp_path)
     a = np.zeros((4, 2, H, W), np.uint16)  # ZCYX
     a[1, 0, 2:6, 2:6] = 4000; a[3, 1, 10:14, 20:24] = 4000
     tifffile.imwrite(p, a, imagej=True, resolution=(5.0, 5.0), metadata={'axes': 'ZCYX', 'unit': 'micron', 'spacing': 2.5})
-    meta, data = viewer.Session(p).opened()
-    meta = json.loads(meta)
+    meta, flat, vol = open_image(tmp_path, p)
     assert meta['Z'] == 4 and meta['spacing'] == pytest.approx(2.5) and len(meta['channels']) == 2
-    flat = np.frombuffer(data, np.uint8)[:2 * H * W].reshape(2, H, W)
-    vol = np.frombuffer(data, np.uint8)[2 * H * W:].reshape(2, 4, H, W)
     assert bright(flat[0]) == (2, 2) and bright(flat[1]) == (10, 20), 'the flat planes are each channel\'s brightest through depth'
     assert vol[0, 1, 3, 3] == 255 and vol[0, 0, 3, 3] == 0 and vol[1, 3, 11, 21] == 255, 'every slice of every channel follows'
     assert dict(meta['info'])['Slices'] == '4'
@@ -157,14 +166,12 @@ def test_a_z_stack_comes_flattened_then_slice_by_slice_for_the_3d_view(tmp_path)
 def test_a_tiff_that_names_no_axes_is_a_stack_of_its_pages(tmp_path, shaped):
     p = str(tmp_path / 'pages.tif')
     tifffile.imwrite(p, spots(5), metadata={} if shaped else None)
-    meta, _ = viewer.Session(p).opened()
-    meta = json.loads(meta)
+    meta, _, _ = open_image(tmp_path, p)
     assert meta['Z'] == 5 and meta['spacing'] is None and len(meta['channels']) == 1
 
 
 def test_a_flat_image_has_one_slice(tmp_path):
     p = str(tmp_path / 'flat.tif')
     tifffile.imwrite(p, spots(), imagej=True, metadata={'axes': 'CYX'})
-    meta, data = viewer.Session(p).opened()
-    meta = json.loads(meta)
-    assert meta.get('Z', 1) == 1 and len(data) == 3 * H * W and 'Slices' not in dict(meta['info'])
+    meta, ps, vol = open_image(tmp_path, p)
+    assert meta['Z'] == 1 and vol is None and ps.shape == (3, H, W) and 'Slices' not in dict(meta['info'])

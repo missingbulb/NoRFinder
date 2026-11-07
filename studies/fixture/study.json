@@ -44,5 +44,8 @@
     "count": "Counting…"
   },
   "groundTruth": {
+  },
+  "view": {
+    "stretch": false
   }
 }

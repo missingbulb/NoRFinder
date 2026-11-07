@@ -6,6 +6,7 @@
 // req/nor/show-menu); the summary's mask waits for the summary (req/nor/summary/mask); in a PreGT study the
 // summary is back. Prints what it saw; exits 1 on a failure, 2 when it cannot run.
 //   node tests/truth_tasks_page_driver.mjs ANSWERS IMAGE
+import { EARLY } from "../../../web-tests/early_messages.mjs";
 import { repoFile } from "../../../web-tests/repo_file.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
@@ -33,8 +34,7 @@ let finder;
 postMessage({ type: "ready", info: { finders: A.finders, about: A.about }, secs: 0 });
 onmessage = async ({ data: m }) => {
   if (m.type === "open") {
-    const images = await bin("images.bin");
-    postMessage({ type: "opened", meta: { H: A.H, W: A.W, um: A.um }, images, secs: 0 }, [images.buffer]);
+    postMessage({ type: "held", secs: 0 });
   } else if (m.type === "call" && m.action === "detect") {
     finder = m.args.finder; const seg = await bin("seg_" + finder + ".bin");
     postMessage({ type: "result", action: "detect", meta: A.detected[finder], bytes: seg, secs: 0 }, [seg.buffer]);
@@ -47,7 +47,7 @@ let stage = null; // the study's stage as served; null: as committed
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
-  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
+  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(EARLY + STAND_IN); }
   // the study as served: its stage, and a link to a picture to reveal (turned away like every off-site request: black shows under it)
   if (u === "/studies/nor/study.json") {
     const m = JSON.parse(fs.readFileSync(path.join(repo, u)));

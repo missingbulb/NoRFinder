@@ -8,6 +8,7 @@
 // opens a stack in 3D and a flat image (a .png here) in 2D, and keeps its Image box open once either has loaded.
 // Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/viewer3d_driver.mjs [SHOT.png]
+import { EARLY } from "./early_messages.mjs";
 import { repoFile } from "./repo_file.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
@@ -50,7 +51,7 @@ onmessage = ({ data: m }) => {
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
-  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
+  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(EARLY + STAND_IN); }
   if (u === "/web/vendor/wheels.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end("[]"); }
   const f = repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }

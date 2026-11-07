@@ -1,7 +1,7 @@
 """req/shell/image/open: the page reads and shows the image itself (web/image_open.js, under Node through
 image_open_driver.mjs). On TIFFs written by tifffile in the shapes the studies meet, its 8-bit planes and slices are
-the Image Viewer's Python's (studies/viewer/py/viewer.py) to the bit, and so are its channels' names and colours and
-what it says of the file; a study's upper quantile and an 8-bit image kept as stored are honoured."""
+the rule's own in numpy (numpy_view.py) to the bit, and so are its channels' names and colours and what it says of
+the file; a study's upper quantile and an 8-bit image kept as stored are honoured."""
 import json
 import os
 import shutil
@@ -17,10 +17,7 @@ pytestmark = pytest.mark.full
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, '..')
 NODE = shutil.which('node')
-sys.path.insert(0, os.path.join(ROOT, 'studies', 'viewer', 'py'))
-sys.path.insert(0, os.path.join(ROOT, 'studies', 'nor', 'detection'))
-import viewer
-import naive_nor
+from numpy_view import View
 
 RED, GREEN, BLUE = (np.stack([np.arange(256) * k for k in rgb]).astype(np.uint8) for rgb in ((1, 0, 0), (0, 1, 0), (0, 0, 1)))
 
@@ -43,7 +40,7 @@ def opened(tmp_path, *jobs):
 
 
 def same_as_the_viewer(path, got):
-    s = viewer.Session(path)
+    s = View(path)
     assert (got['W'], got['H'], got['Z']) == (s.planes.shape[2], s.planes.shape[1], s.Z)
     assert got['planes'] == s.planes.tobytes(), f'{np.count_nonzero(np.frombuffer(got["planes"], np.uint8) != s.planes.ravel())} pixels differ'
     assert got['volume_bytes'] == (s.volume.tobytes() if s.Z > 1 else b'')
@@ -86,8 +83,7 @@ def test_a_compressed_three_channel_export_and_what_it_says(tmp_path):
     got, = opened(tmp_path, {'file': p})
     same_as_the_viewer(p, got)
     said = dict(got['info'])
-    for k, v in naive_nor.file_info(p):
-        assert said[k] == v, k
+    assert (said['Series'], said['Microscope'], said['Date']) == ('Slice1_up - 2.2', 'Acme Scope 9', '2026:10:01 12:00:00')
 
 
 def test_float_samples_and_an_rgb_tiff(tmp_path):

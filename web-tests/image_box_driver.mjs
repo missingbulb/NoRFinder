@@ -5,6 +5,7 @@
 // row (the study's words, then the file's, then red, green and blue) with its black and white points, and
 // Unload clearing the page back to where it started. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/image_box_driver.mjs ANSWERS IMAGE.png STUDIES [SHOTS]
+import { EARLY } from "./early_messages.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -24,29 +25,23 @@ let pw;
 try { pw = require("playwright"); } catch {
   try { pw = require(path.join(execSync("npm root -g").toString().trim(), "playwright")); } catch { console.error("no playwright: npm i -g playwright"); process.exit(2); }
 }
-const [answers, image, studies, shots] = process.argv.slice(2);
+const [answers, image, studies, three, shots] = process.argv.slice(2);
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-// the first image opens as the fixture's Python reads it, one grey plane, with a plane's worth of the study's
-// own bytes after it; every later one as a file of three channels: the first the study names, the second the file names and colours, the third named by nothing
+// the page reads each image itself; THREE is a file of three channels: the first the study names, the second the file
+// names and colours, the third named by nothing
 const STAND_IN = `
 const A = await (await fetch("answers.json")).json();
 const bytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-let opens = 0;
 postMessage({ type: "ready", info: A.ready.fixture });
 onmessage = ({ data: m }) => {
-  if (m.type === "open") {
-    const one = bytes(A.images);
-    // bytes past the planes the study names are its own, not a channel
-    if (!opens++) { const more = new Uint8Array(one.length * 2); more.set(one); return postMessage({ type: "opened", meta: A.opened, images: more }, [more.buffer]); }
-    const three = new Uint8Array(one.length * 3); three.set(one, 0); three.set(one, one.length); three.set(one, 2 * one.length);
-    postMessage({ type: "opened", meta: { ...A.opened, channels: [{ name: "Ch1", colour: "#00ff00" }, { name: "Nuclei", colour: "#ff00ff" }, {}] }, images: three }, [three.buffer]);
-  } else if (m.type === "call") { const b = bytes(A.mask); postMessage({ type: "result", action: m.action, meta: A.count, bytes: b, echo: m.echo }, [b.buffer]); }
+  if (m.type === "open") postMessage({ type: "held" });
+  else if (m.type === "call") { const b = bytes(A.mask); postMessage({ type: "result", action: m.action, meta: A.count, bytes: b, echo: m.echo }, [b.buffer]); }
 };`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
-  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
+  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(EARLY + STAND_IN); }
   const f = u === "/web/answers.json" ? answers : u === "/web/studies.json" ? studies : repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
@@ -73,9 +68,9 @@ await page.goto(origin + "/web/fixture");
 await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
 const shot = async (name, sel) => { if (shots) await page.locator(sel).screenshot({ path: path.join(shots, name + ".png") }); };
 
-const loadImage = async () => {
+const loadImage = async (file = image) => {
   await page.evaluate(() => { document.querySelector("#status").textContent = ""; });
-  await page.setInputFiles("#file", image);
+  await page.setInputFiles("#file", file);
   await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded.");
 };
 const box = (sel) => page.evaluate((s) => { const e = document.querySelector(s); if (!e || !e.offsetParent) return null; const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; }, sel);
@@ -254,7 +249,7 @@ await page.click("#channels .channel:nth-child(1) input[type=checkbox]");
 await check((await pixel(15, 15)).join() === "0,0,0", "its checkbox hides it");
 
 // ---- a file of three channels: the study's words first, then the file's, then red, green and blue ----
-await loadImage();
+await loadImage(three);
 await title();
 ch = await rows();
 await check(ch.map((r) => r.name).join() === "Grey,Nuclei,Blue" && ch.map((r) => r.colour).join() === "#ffffff,#ff00ff,#0000ff", "the study names its channel; the file the next; red, green and blue the rest", ch);

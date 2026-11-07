@@ -4,6 +4,7 @@
 // card, and on a card shows it on the image (req/nor/candidates/decide); only the cards in view and two rows past it are drawn
 // (req/nor/cards/lazy). Prints what it saw; exits 1 on a failure, 2 when it cannot run.
 //   node tests/item_view_driver.mjs ANSWERS IMAGE
+import { EARLY } from "../../../web-tests/early_messages.mjs";
 import { repoFile } from "../../../web-tests/repo_file.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
@@ -32,8 +33,7 @@ let finder;
 postMessage({ type: "ready", info: { finders: A.finders, about: A.about }, secs: 0 });
 onmessage = async ({ data: m }) => {
   if (m.type === "open") {
-    const images = await bin("images.bin");
-    postMessage({ type: "opened", meta: { H: A.H, W: A.W, um: A.um }, images, secs: 0 }, [images.buffer]);
+    postMessage({ type: "held", secs: 0 });
   } else if (m.type === "call" && m.action === "detect") {
     finder = m.args.finder; const seg = await bin("seg_" + finder + ".bin");
     postMessage({ type: "result", action: "detect", meta: A.detected[finder], bytes: seg, secs: 0 }, [seg.buffer]);
@@ -45,7 +45,7 @@ onmessage = async ({ data: m }) => {
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
-  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
+  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(EARLY + STAND_IN); }
   // the item views only show what was found, so they are driven in a PreGT study (req/shell/views/second)
   if (u === "/studies/nor/study.json") {
     r.writeHead(200, { "content-type": "application/json" });

@@ -21,22 +21,36 @@ const isTiff = (b) => b.length >= 4 && ((b[0] === 0x49 && b[1] === 0x49 && b[2] 
 export async function openImage(bytes, view = {}) {
   const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   if (isTiff(b)) return openTiff(b, view);
-  const bitmap = await createImageBitmap(new Blob([b]));
-  const cv = new OffscreenCanvas(bitmap.width, bitmap.height), ctx = cv.getContext("2d", { willReadFrequently: true });
+  const bitmap = await createImageBitmap(new Blob([b])), W = bitmap.width, H = bitmap.height;
+  const cv = new OffscreenCanvas(W, H), ctx = cv.getContext("2d", { willReadFrequently: true });
   ctx.drawImage(bitmap, 0, 0);
-  const rgba = ctx.getImageData(0, 0, bitmap.width, bitmap.height).data;
+  const rgba = ctx.getImageData(0, 0, W, H).data;
   bitmap.close?.();
-  return fromPixels(bitmap.width, bitmap.height, rgba, view);
+  return fromPixels(W, H, rgba, view, greyFile(b));
 }
 
-// an image the browser decoded, RGBA: one grey channel when red, green and blue agree everywhere, else the three
-export function fromPixels(W, H, rgba, view = {}) {
+// whether a PNG or a JPEG says it is grey (true) or in colour (false); null for a file that does not say
+export function greyFile(b) {
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 && b.length > 25) return b[25] === 0 || b[25] === 4;
+  if (b[0] === 0xff && b[1] === 0xd8) {
+    for (let at = 2; at + 9 < b.length && b[at] === 0xff;) {
+      const kind = b[at + 1], len = (b[at + 2] << 8) | b[at + 3];
+      if (kind >= 0xc0 && kind <= 0xcf && kind !== 0xc4 && kind !== 0xc8 && kind !== 0xcc) return b[at + 9] === 1;
+      at += 2 + len;
+    }
+  }
+  return null;
+}
+
+// an image the browser decoded, RGBA: one grey channel where the file says it is grey, or, where it does not say,
+// when red, green and blue agree everywhere; else the three
+export function fromPixels(W, H, rgba, view = {}, said = null) {
   const n = W * H, ch = [0, 1, 2].map((k) => { const p = new Uint8Array(n); for (let i = 0; i < n; i++) p[i] = rgba[4 * i + k]; return p; });
-  let grey = true;
-  for (let i = 0; i < n && grey; i++) grey = ch[0][i] === ch[1][i] && ch[1][i] === ch[2][i];
-  const chans = grey ? [ch[0]] : ch, said = grey ? [{ name: "Grey", colour: "#ffffff" }] : RGB;
+  let grey = said ?? true;
+  if (said === null) for (let i = 0; i < n && grey; i++) grey = ch[0][i] === ch[1][i] && ch[1][i] === ch[2][i];
+  const chans = grey ? [ch[0]] : ch, names = grey ? [{ name: "Grey", colour: "#ffffff" }] : RGB;
   const info = [["Field", `${W} × ${H} px`], ["Depth", grey ? "8-bit grey" : "8-bit RGB"]];
-  return shown(W, H, 1, chans.map((p) => [p]), said, view, { um: null, umY: null, spacing: null, info });
+  return shown(W, H, 1, chans.map((p) => [p]), names, view, { um: null, umY: null, spacing: null, info });
 }
 
 // a TIFF read whole, its first time point
@@ -149,3 +163,16 @@ function order(slices, count) {
   return (k) => all[k];
 }
 
+// the image's channels in a study's own order, where its rule (order(im) -> the file's channel for each of the study's
+// channels) says which holds what (req/shell/image/open); the ones it leaves out after them, as the file has them
+export function inOrder(im, rule) {
+  const C = im.channels.length, want = rule?.(im) || [];
+  const order = [...want.filter((k) => k >= 0 && k < C), ...Array.from({ length: C }, (_, k) => k).filter((k) => !want.includes(k))];
+  if (order.every((k, i) => k === i)) return im;
+  const n = im.W * im.H, per = n * im.Z, planes = new Uint8Array(im.planes.length), volume = im.volume && new Uint8Array(im.volume.length);
+  order.forEach((k, i) => {
+    planes.set(im.planes.subarray(k * n, (k + 1) * n), i * n);
+    volume?.set(im.volume.subarray(k * per, (k + 1) * per), i * per);
+  });
+  return { ...im, channels: order.map((k) => im.channels[k]), raw: order.map((k) => im.raw[k]), planes, volume };
+}

@@ -6,6 +6,7 @@
 // (tests/test_study_runs.py), which keeps the last file it was handed as self.lastOpen, and opens a study's image as
 // ANSWERS' studies[id] says where it says so, a file its named[file's name] names as that says, and answers the calls
 // of a study ANSWERS' live names from that study's own Python (study_calls.py). Exits 2 when it cannot run.
+import { EARLY } from "./early_messages.mjs";
 import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
 import { execSync, spawn } from "node:child_process";
@@ -115,7 +116,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {}, 
       q.on("data", (c) => chunks.push(c)).on("end", async () => { send("application/json", await ask(Buffer.concat(chunks).toString())); setTimeout(() => calls--, 200); });
       return;
     }
-    if (u === "/web/worker.js") return send("text/javascript", STAND_IN);
+    if (u === "/web/worker.js") return send("text/javascript", EARLY + STAND_IN);
     if (u === "/web/config.js") return send("text/javascript", CONFIG);
     if (u === "/web/vendor/wheels.json") return send("application/json", "[]");
     if (u === "/studies/fixture/study.json") return send("application/json", JSON.stringify(fixture));

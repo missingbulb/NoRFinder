@@ -1,28 +1,16 @@
-"""req/shell/image-viewer: a TIFF compressed the ways ImageJ, bfconvert and Pillow compress it opens in the page's
-Python as its uncompressed twin does, through the bridge in Pyodide under Node (compressed_tiff_driver.mjs)."""
-import json
+"""req/shell/image-viewer, req/shell/image/open: a TIFF compressed the ways ImageJ, bfconvert and Pillow compress it
+opens in the page's own reader (web/image_open.js, under Node) as its uncompressed twin does."""
 import os
-import subprocess
-import sys
 
 import numpy as np
 import pytest
 from PIL import Image
 
-from test_study_runs import NODE, run
+from image_open import open_images
 
 pytestmark = pytest.mark.full
 HERE = os.path.dirname(os.path.abspath(__file__))
 COMPRESSIONS = ('tiff_lzw', 'tiff_adobe_deflate', 'packbits')
-
-
-@pytest.fixture(scope='module')
-def wheels(tmp_path_factory):
-    """The Image Viewer's wheels, at the versions its study.json pins."""
-    d = tmp_path_factory.mktemp('wheels')
-    pins = json.load(open(os.path.join(HERE, '..', 'studies', 'viewer', 'study.json')))['python']['wheels']
-    subprocess.run([sys.executable, '-m', 'pip', 'download', '-q', '--no-deps', '--only-binary', ':all:', '-d', str(d), *pins], check=True)
-    return str(d)
 
 
 def images():
@@ -50,6 +38,9 @@ def pairs(tmp_path_factory):
     return out
 
 
-@pytest.mark.skipif(not NODE, reason='node missing')
-def test_compressed_tiffs_open_as_their_twins(wheels, pairs):
-    run('compressed_tiff_driver.mjs', wheels, *pairs)
+def test_compressed_tiffs_open_as_their_twins(pairs, tmp_path):
+    files = [f for pair in pairs for f in pair.split(':')]
+    got = open_images(tmp_path, *files)
+    for (meta, planes, _), (twin_meta, twin, _), pair in zip(got[0::2], got[1::2], pairs):
+        assert (meta['W'], meta['H'], len(meta['channels'])) == (twin_meta['W'], twin_meta['H'], len(twin_meta['channels'])), pair
+        assert np.array_equal(planes, twin), pair

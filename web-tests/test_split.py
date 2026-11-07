@@ -182,5 +182,5 @@ def test_the_nor_finder_opens_a_part(tmp_path, stack):
     [res] = split(tmp_path, dict(src=path, grid=2, slices=[0, 0]))
     sys.path.insert(0, os.path.join(HERE, '..', 'studies', 'nor', 'detection'))
     import interactive
-    meta = json.loads(interactive.Session(str(tmp_path / 'out0' / res['files'][0]['name'])).opened()[0])
-    assert (meta['W'], meta['H'], meta['um']) == (45, 35, 0.25)
+    s = interactive.Session(str(tmp_path / 'out0' / res['files'][0]['name']))
+    assert s.caspr.shape == (35, 45) and s.um == 0.25

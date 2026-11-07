@@ -10,6 +10,7 @@
 // a network over 250 KB/s for 5 s or a tab over 1 GB, at once with animations off, folding back 5 to 10 s after, or set always open or hidden.
 // Optional SHOTS: a directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/status_bar_driver.mjs ANSWERS IMAGE.png STUDIES [SHOTS]
+import { EARLY } from "./early_messages.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -55,7 +56,7 @@ let stage = null; // the fixture's stage as served; null: as committed
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
-  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
+  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(EARLY + STAND_IN); }
   if (u === "/studies/fixture/study.json" && stage) {
     r.writeHead(200, { "content-type": "application/json" });
     return r.end(JSON.stringify({ ...JSON.parse(fs.readFileSync(path.join(repo, u))), stage }));

@@ -31,9 +31,7 @@ def photo():
 def test_every_single_2d_format_opens_as_rgb(tmp_path, ext):
     path = tmp_path / ('shelf' + ext)
     Image.fromarray(photo()).save(path)
-    meta, planes = shelves.Session(str(path)).opened()
-    m = json.loads(meta)
-    assert (m['W'], m['H']) == (320, 240) and len(planes) == 3 * 320 * 240
+    assert shelves.Session(str(path)).rgb.shape == (240, 320, 3)
 
 
 def test_a_grey_16_bit_tiff_is_stretched_to_grey(tmp_path):

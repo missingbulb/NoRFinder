@@ -4,6 +4,7 @@
 // event listeners. Prints what it measured; exits 1 on growth, 2 when it cannot run.
 // THROTTLE=n slows its CPU n times over, as a slow test machine is.
 //   node tests/memory_page_driver.mjs ANSWERS IMAGE
+import { EARLY } from "../../../web-tests/early_messages.mjs";
 import { repoFile } from "../../../web-tests/repo_file.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
@@ -31,8 +32,7 @@ let finder;
 postMessage({ type: "ready", info: { finders: A.finders, about: A.about }, secs: 0 });
 onmessage = async ({ data: m }) => {
   if (m.type === "open") {
-    const images = await bin("images.bin");
-    postMessage({ type: "opened", meta: { H: A.H, W: A.W, um: A.um }, images, secs: 0 }, [images.buffer]);
+    postMessage({ type: "held", secs: 0 });
   } else if (m.type === "call" && m.action === "detect") {
     finder = m.args.finder; const seg = await bin("seg_" + finder + ".bin");
     postMessage({ type: "result", action: "detect", meta: A.detected[finder], bytes: seg, secs: 0 }, [seg.buffer]);
@@ -44,7 +44,7 @@ onmessage = async ({ data: m }) => {
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
-  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
+  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(EARLY + STAND_IN); }
   let f = u.startsWith("/web/answers/") ? path.join(answers, u.slice("/web/answers/".length)) : repoFile(repo, u);
   if (f.endsWith(path.sep)) f = path.join(f, "index.html");
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }

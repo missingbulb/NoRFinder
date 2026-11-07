@@ -27,11 +27,6 @@ class Session:
     def __init__(self, path):
         self.rgb = load(path)
 
-    def opened(self):
-        H, W = self.rgb.shape[:2]
-        meta = dict(W=W, H=H, um=None, um_y=None, info=[['Pixels', f'{W} × {H}']])
-        return json.dumps(meta), np.ascontiguousarray(self.rgb.transpose(2, 0, 1)).tobytes()
-
     def call(self, action, args):
         if action == 'find':
             return json.dumps(dict(books=books.find(self.rgb))), b''

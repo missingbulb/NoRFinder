@@ -6,6 +6,7 @@
 // the next and through zoom; the choices outlive a reload and Settings lists them. Optional SHOTS: a
 // directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/grid_driver.mjs ANSWERS IMAGE.png STUDIES [SHOTS]
+import { EARLY } from "./early_messages.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -37,7 +38,7 @@ let scale = [null, null]; // the pixel's width and height in µm the image opens
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
-  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
+  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(EARLY + STAND_IN); }
   if (u === "/web/vendor/wheels.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end("[]"); }
   if (u === "/web/answers.json") {
     const A = JSON.parse(fs.readFileSync(answers));

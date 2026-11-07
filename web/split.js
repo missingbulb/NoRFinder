@@ -204,6 +204,19 @@ export function readTiff(input) {
     index = (c, z, t) => { const at = { C: c, Z: z, T: t }; let i = 0, m = 1; for (const a of axes) { i += at[a] * m; m *= size[a]; } return [i, 0]; };
     names = [...desc.matchAll(/<Channel\b[^>]*>/g)].map((m) => m[0].match(/\bName="([^"]*)"/)?.[1] || null).slice(0, C);
   }
+  else if (desc.startsWith("{") && p0.spp === 1) {
+    // tifffile's own description: the array's shape, and its axes when it names them; pages in row-major order
+    let shaped = null;
+    try { shaped = JSON.parse(desc); } catch { shaped = null; }
+    const axes = typeof shaped?.axes === "string" ? shaped.axes.toUpperCase() : "", shape = Array.isArray(shaped?.shape) ? shaped.shape : [];
+    if (axes.length === shape.length && axes.endsWith("YX")) {
+      const lead = axes.slice(0, -2).split(""), size = lead.map((_, i) => shape[i]);
+      const of = (a) => { const i = lead.indexOf(a); return i < 0 ? 1 : size[i]; };
+      const depth = ["Z", "Q", "I"].find((a) => lead.includes(a));
+      C = of("C"); Z = depth ? of(depth) : 1; T = of("T");
+      index = (c, z, t) => { const at = { C: c, T: t, [depth]: z }; let i = 0; lead.forEach((a, k) => { i = i * size[k] + (at[a] || 0); }); return [i, 0]; };
+    }
+  }
   if (C * Z * T > pages.length * (p0.spp === 1 ? 1 : p0.spp)) throw new Error("this TIFF has fewer planes than its header says");
   const recLine = (meta.info || "").split("\n").find((l) => l.startsWith(SPLIT_KEY + "="));
   let record = null;

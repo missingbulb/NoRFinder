@@ -38,6 +38,8 @@ import { truthTagger, LOCAL_GT } from "./truth_tagger.js";
 import { truthTasks } from "./truth_tasks.js";
 import { subfolderName } from "./truth_folders.js";
 import { studyPlace } from "./study_root.js";
+import { openImage, inOrder } from "./image_open.js";
+import { CORE, PYODIDE, packagesOf } from "./python_files.js";
 
 const $ = (s) => document.querySelector(s);
 // what the user does here, kept on this device for a problem report (req/shell/report/action-log)
@@ -160,7 +162,7 @@ const esc = (t) => String(t).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 
 // the page's state: the shell's fields below, and whatever the study keeps beside them
 const st = { worker: null, H: 0, W: 0, um: null, umY: null, img: null, plain: null, zoom: 2, fileName: "", sha: "", source: null, heap: null, files: 0,
-  ready: false, readyInfo: null, queued: null, kept: null, busySince: 0, busyTimer: null, peeked: false, peek: null };
+  ready: false, readyInfo: null, held: null, kept: null, busySince: 0, busyTimer: null, peeked: false, peek: null };
 // What the shell's controls are drawn from (page_state.js): image, the image open ({name, source, W, H, um, umY,
 // info, planes, channels, Z, spacing}: Z slices, spacing µm between them or null) or null; opening, the one being read ({name}) or null; and the viewer's own fields.
 const page = pageState({ image: null, opening: null });
@@ -639,9 +641,24 @@ async function start() {
     } catch (e) { console.warn("no cache for third-party files:", e); }
     offlineCopy.keepSite().then(diskBar, (e) => console.warn("no copy of the site for offline:", e));
   }
-  status("Loading Python in the background…"); $("#spin").classList.add("on");
-  pythonWorker();
+  status("Ready. Load an image.");
+  keepPython();
   if (navigator.deviceMemory <= LOW_GB) memoryTip();
+}
+// Python's own files and the study's packages kept on this device while the page is open, those not there yet, one
+// after another and below everything else, so the first Run only starts Python (req/shell/python/on-run)
+async function keepPython() {
+  // a study with no step to run never starts Python
+  if (!manifest?.phases?.length || !("caches" in self)) return;
+  const id = manifest.id, python = manifest.python;
+  try {
+    const [lock, vendored] = await Promise.all([fetch(PYODIDE + "pyodide-lock.json", { priority: "low" }), fetch("vendor/wheels.json")].map(async (r) => (await r).json()));
+    const urls = [...CORE, ...packagesOf(python, lock, vendored, new URL("vendor/", location.href).href).map((w) => w.url)];
+    for (const u of urls) {
+      if (manifest?.id !== id || st.worker) return;
+      if (!(await caches.match(u))) await (await fetch(u, { priority: "low" })).arrayBuffer();
+    }
+  } catch (e) { console.warn("Python's files are not kept yet:", e); }
 }
 // Python's thread, on the study the address names, in place of any before it
 function pythonWorker() {
@@ -650,8 +667,17 @@ function pythonWorker() {
   st.worker.onmessage = (e) => onWorker(e.data);
   st.worker.onerror = (e) => onWorker({ type: "error", text: e.message || "Python stopped." });
 }
-// one of the study's Python actions; its answer reaches the study's result hook
-function call(action, args, echo) { st.worker.postMessage({ type: "call", action, args, echo }); }
+// one of the study's Python actions; its answer reaches the study's result hook. Python starts with the first, and is
+// handed the image's file as it is stored before any (req/shell/python/file-bytes)
+function call(action, args, echo) {
+  if (!st.worker) { $("#spin").classList.add("on"); pythonWorker(); }
+  if (st.kept && st.held !== st.kept) {
+    const bytes = st.kept.bytes.slice(0);
+    st.worker.postMessage({ type: "open", name: st.kept.name, bytes }, [bytes]);
+    st.held = st.kept;
+  }
+  st.worker.postMessage({ type: "call", action, args, echo });
+}
 
 // ---------- the low-memory popup: on a computer with little memory, and whenever the page runs out of it ----------
 const OUT_OF_MEMORY = /MemoryError|out of memory|Memory\.grow|allocation failed|Maximum memory|OOM/i;
@@ -674,6 +700,8 @@ function onWorker(m) {
   if (m.net != null) net.worker = m.net;
   // a late answer for a study that has left, or a word from one still coming in
   if (m.study && m.study !== manifest?.id) return statusBar();
+  // the page opens images itself (req/shell/image/open): Python only holds the file
+  if (m.type === "opened") return statusBar();
   handle(m); settle(m); statusBar();
 }
 function handle(m) {
@@ -688,26 +716,26 @@ function handle(m) {
   } else if (m.type === "ready") {
     st.ready = true; st.readyInfo = m.info; $("#spin").classList.remove("on");
     study.ready?.(m.info); statusBar(); diskBar();
-    status("Ready. Load an image.");
-    if (st.queued) { const q = st.queued; st.queued = null; send(q.name, q.bytes); }
-  } else if (m.type === "opened") {
-    st.um = m.meta.um; st.umY = m.meta.um_y;
-    page.set({ opening: null, image: { name: st.fileName, source: st.source, W: m.meta.W, H: m.meta.H, um: st.um, umY: st.umY,
-      info: m.meta.info, planes: m.images, channels: m.meta.channels || null, Z: m.meta.Z || 1, spacing: m.meta.spacing ?? null } });
-    busy(false); statusBar();
-    showImage();
-    boxDone($("#image-box"), loadedSummary());
-    const from = remote.owns(st.source) ? remote.label : st.source?.kind === "preview" ? `its preview in ${remote.label}` : "this computer";
-    step("load", true, `${st.fileName}, ${m.meta.W} × ${m.meta.H} px, from ${from}`);
-    log.add(`Opened an image from ${from}, ${m.meta.W} × ${m.meta.H} px, ${m.meta.Z || 1} slice(s)`);
-    status("Image loaded."); // the study's opened hook says what comes next, if anything
-    study.opened?.(m.meta);
-    truth.paint(); offerTruth();
-    if (st.source && st.source.kind === "local" && makesTruth()) notice(LOCAL_GT(remote));
-    if (remote.owns(st.source) && st.pictured !== st.source.id) saveThumb(st.source.id, st.fileName);
   } else if (m.type === "result") {
     study.result?.(m.action, m.meta, m.bytes, m.echo);
   }
+}
+// the image the page has read, shown: in the page's state, the viewer, the steps and the study
+function imageOpened(m) {
+  st.um = m.meta.um; st.umY = m.meta.um_y;
+  page.set({ opening: null, image: { name: st.fileName, source: st.source, W: m.meta.W, H: m.meta.H, um: st.um, umY: st.umY,
+    info: m.meta.info, planes: m.images, channels: m.meta.channels || null, Z: m.meta.Z || 1, spacing: m.meta.spacing ?? null } });
+  busy(false); statusBar();
+  showImage();
+  boxDone($("#image-box"), loadedSummary());
+  const from = remote.owns(st.source) ? remote.label : st.source?.kind === "preview" ? `its preview in ${remote.label}` : "this computer";
+  step("load", true, `${st.fileName}, ${m.meta.W} × ${m.meta.H} px, from ${from}`);
+  log.add(`Opened an image from ${from}, ${m.meta.W} × ${m.meta.H} px, ${m.meta.Z || 1} slice(s)`);
+  status("Image loaded."); // the study's opened hook says what comes next, if anything
+  study.opened?.(m.meta);
+  truth.paint(); offerTruth();
+  if (st.source && st.source.kind === "local" && makesTruth()) notice(LOCAL_GT(remote));
+  if (remote.owns(st.source) && st.pictured !== st.source.id) saveThumb(st.source.id, st.fileName);
 }
 
 // ---------- loading ----------
@@ -763,23 +791,27 @@ async function openBytes(name, bytes, source) {
   for (const p of steps) Object.assign(p, { done: false, info: "", at: null, pressed: false });
   drawSteps(); boxes().forEach((b) => summaries.delete(b)); retitle();
   // a copy, for Edit Image and the problem report: the bytes themselves go to Python
-  st.kept = { name, source, bytes: bytes.slice(0) };
+  const kept = st.kept = { name, source, bytes: bytes.slice(0) };
   study.opening?.(name, source);
   st.sha = await sha256(bytes);
   page.set({ opening: { name } }); statusBar();
   view.clear();
-  if (st.ready) return send(name, bytes);
-  // Python is still loading: the image opens the moment it is ready
-  st.queued = { name, bytes }; busy(true, "Python is still loading; your image opens as soon as it is ready…", st.peeked && "peek");
+  busy(true, "Reading the image…", st.peeked && "peek");
+  let im;
+  try { im = inOrder(await openImage(bytes, manifest.view || {}), study.order); } catch (e) {
+    busy(false); page.set({ opening: null });
+    return onWorker({ type: "error", text: `${name} could not be read: ${e.message || e}` });
+  }
+  if (st.kept !== kept) return; // another image came meanwhile, or none is open
+  const images = new Uint8Array(im.planes.length + (im.volume?.length || 0));
+  images.set(im.planes); if (im.volume) images.set(im.volume, im.planes.length);
+  const meta = { W: im.W, H: im.H, Z: im.Z, um: im.um, um_y: im.umY, spacing: im.spacing, info: im.info, channels: im.channels };
+  imageOpened({ type: "opened", meta, images }); settle({ type: "opened", meta }); statusBar();
 }
 async function sha256(bytes) {
   return [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
-function send(name, bytes) {
-  busy(true, "Reading the image…", st.peeked && "peek");
-  st.worker.postMessage({ type: "open", name, bytes }, [bytes]);
-}
-// a painter for the image's bytes as they arrive, shown until Python's own drawing replaces it; the study's,
+// a painter for the image's bytes as they arrive, shown until the page's own drawing replaces it; the study's,
 // when it has one
 function peek() {
   st.peeked = false;
@@ -819,10 +851,10 @@ $("#load-remote").onclick = () => { signIn.renew(); openRemote(); };
 $("#image-pick").addEventListener("click", () => signIn.renew());
 // a setting from before each study loaded from one place (req/shell/load/from)
 try { localStorage.removeItem("nor-load-source"); } catch { /* nothing kept */ }
-// no image open, nor one waiting for Python, and Python letting it go
+// no image open, and Python, if it holds it, letting it go
 function dropImage() {
-  Object.assign(st, { kept: null, queued: null, fileName: "", source: null, sha: "", um: null, umY: null });
-  if (st.ready) st.worker.postMessage({ type: "close" });
+  if (st.held && st.worker) st.worker.postMessage({ type: "close" });
+  Object.assign(st, { kept: null, held: null, fileName: "", source: null, sha: "", um: null, umY: null });
   page.set({ image: null, opening: null }); boxDone($("#image-box"), null);
   offered++; $("#truth-box").hidden = true;
 }
@@ -839,7 +871,7 @@ function restudy(again = true) {
     leaveStudy();
     try { await mountStudy(id); } catch (e) { return status("Error: " + (e.message || e), true); }
     if (ready) { st.ready = true; study.ready?.(readyInfo); }
-    statusBar(); status(ready ? "Ready. Load an image." : "Loading Python in the background…");
+    statusBar(); status("Ready. Load an image.");
     if (image) openBytes(image.name, image.bytes, image.source);
   });
 }
@@ -1700,7 +1732,7 @@ function pageNow() {
   return [
     ["Site version", VERSION],
     ["Study", manifest ? `${manifest.title} (${manifest.id}), stage ${manifest.stage ?? "none"}` : "none open"],
-    ["Python", st.ready ? "ready" : "loading"],
+    ["Python", st.ready ? "ready" : st.worker ? "loading" : "not started"],
     ["Steps", steps.map((p) => p.name + (p.done ? " (done)" : "")).join(" → ") || "none"],
     ["Image", im ? `from ${from(im.source)}, ${im.W} × ${im.H} px, ${im.channels?.length ?? "?"} channel(s), ${im.Z} slice(s)` : page.get("opening") ? "opening" : "none open"],
     ["View", `${views.now}, ${manifest?.viewer || "no viewer"}`],
@@ -2046,8 +2078,9 @@ function swap() {
     try {
       await mountStudy(id);
     } catch (e) { return status("Error: " + (e.message || e), true); }
-    // before Python has started, it starts on this study
-    if (!st.worker) return;
+    status("Ready. Load an image.");
+    // Python, not started, starts on this study at its first Run; its files are kept meanwhile
+    if (!st.worker) return keepPython();
     $("#spin").classList.add("on");
     st.worker.postMessage({ type: "study", id: manifest.id });
   });

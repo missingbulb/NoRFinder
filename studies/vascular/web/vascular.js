@@ -5,6 +5,7 @@
 import * as MV from "./model_view.js";
 import * as items from "./items.js";
 import * as tasks from "./tasks.js";
+import { order } from "./channel_order.js";
 
 export function mount(shell) {
   const { $ } = shell, V = shell.viewer.three, truth = shell.makesTruth;
@@ -84,6 +85,7 @@ export function mount(shell) {
   });
 
   return {
+    order,
     opening() { ran = null; MV.stackOpened(); canRun(); },
     opened() { canRun(); shell.status("Stack loaded. Press Execute to draw its vessel model."); },
     result(action, meta) {

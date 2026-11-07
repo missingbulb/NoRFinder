@@ -1,41 +1,13 @@
-"""The vascular study's page: a TIFF z-stack read whole, every channel scaled by one window over the whole stack, never
-per slice, so signal that fades with depth still looks faded; returned flattened (each pixel the brightest of every
-slice), then slice by slice, for the shell's 3D viewer. Its CD31 channel is kept as read, for the extraction lab's
-versions to draw a vessel model from (analysis/extraction/lab.py)."""
+"""The vascular study's Python: a TIFF z-stack's CD31 channel, as read, for the extraction lab's versions to draw a
+vessel model from (analysis/extraction/lab.py); the page reads and shows the stack itself."""
 import json
 
 import numpy as np
-
-# A single-channel stack is a CD31 stack cut from the originals; a two-channel one is an original, DAPI then
-# CD31 (data/README.md: established by looking at the four originals' max projections), and is shown CD31 first, so
-# CD31 is always the study's first channel. Fails on a stack whose channels are in another order: they are shown
-# under the wrong names.
-CD31 = {'name': 'CD31', 'colour': '#ff0000'}
-DAPI = {'name': 'DAPI', 'colour': '#0000ff'}
-
 
 def ready():
     """Nothing for the page: the versions it offers ship beside it (analysis/extraction/menu.py), and the lab, with
     scipy, loads at the first extraction."""
     return '{}'
-
-
-def window(c):
-    """The 0.5% and 99.9% quantiles of a whole channel, as the 3D MicroViewer windows a stack."""
-    lo, hi = np.quantile(c, 0.005), np.quantile(c, 0.999)
-    if hi <= lo:
-        lo, hi = float(c.min()), float(c.max())
-    return float(lo), float(hi)
-
-
-def stretch(c):
-    """A channel [Z, Y, X] as 8 bits between its window, slice by slice so no float copy of the stack is held."""
-    lo, hi = window(c)
-    out = np.zeros(c.shape, np.uint8)
-    if hi > lo:
-        for z in range(len(c)):
-            out[z] = (np.clip((c[z].astype(np.float32) - lo) / (hi - lo), 0, 1) * 255).astype(np.uint8)
-    return out
 
 
 def read_stack(path):
@@ -62,26 +34,14 @@ def read_stack(path):
     return np.transpose(a, [axes.index(x) for x in 'CZYX']), um, spacing
 
 
+# A single-channel stack is a CD31 stack cut from the originals; a two-channel one is an original, DAPI then CD31
+# (data/README.md: established by looking at the four originals' max projections). Fails on a stack whose channels
+# are in another order: the extraction runs on DAPI.
 class Session:
     def __init__(self, path):
         stack, self.um, self.spacing = read_stack(path)
-        C, Z, H, W = stack.shape
-        order = [1, 0] if C == 2 else list(range(C))
-        self.cd31 = np.ascontiguousarray(stack[order[0]])
-        self.volume = np.stack([stretch(stack[k]) for k in order])
-        self.planes = self.volume.max(axis=1)
-        self.Z = Z
-        self.channels = [CD31] if C == 1 else [CD31, DAPI] if C == 2 else [{} for _ in range(C)]
-        x = self.um
-        self.info = [['Field', f'{W * x:.1f} × {H * x:.1f} µm ({W} × {H} px)' if x else f'{W} × {H} px']]
-        if x:
-            self.info.append(['Pixel', f'{x:.4f} µm'])
-        self.info += [['Slices', str(Z)], ['Channels', str(C)]]
-
-    def opened(self):
-        _, H, W = self.planes.shape
-        meta = dict(H=H, W=W, Z=self.Z, spacing=self.spacing, um=self.um, um_y=self.um, info=self.info, channels=self.channels)
-        return json.dumps(meta), self.planes.tobytes() + self.volume.tobytes()
+        cd31 = 1 if len(stack) == 2 else 0
+        self.cd31 = np.ascontiguousarray(stack[cd31])
 
     def call(self, action, args):
         if action == 'extract':

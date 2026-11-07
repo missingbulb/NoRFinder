@@ -72,6 +72,7 @@
   },
   "view": {
     "render": "brightest",
+    "upper": 0.999,
     "spacing": 1.0,
     "spacingSource": "the owner (2026-10-29)"
   },

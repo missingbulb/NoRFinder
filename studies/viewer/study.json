@@ -11,13 +11,8 @@
       "py/"
     ],
     "entry": "viewer",
-    "packages": [
-      "numpy",
-      "pillow"
-    ],
-    "wheels": [
-      "tifffile==2026.3.3"
-    ]
+    "packages": [],
+    "wheels": []
   },
   "web": {
     "module": "web/viewer.js"
@@ -29,7 +24,6 @@
   },
   "channels": [],
   "progress": {
-    "install": "Installing numpy…",
     "load": "Loading the viewer…",
     "open": "Reading the image…"
   }

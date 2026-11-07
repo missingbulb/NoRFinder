@@ -102,7 +102,6 @@ def page_answers(crop, tmp_path_factory):
     d = tmp_path_factory.mktemp('answers')
     s = interactive.Session(crop)
     H, W = s.caspr.shape
-    (d / 'images.bin').write_bytes(s.images())
     out = dict(finders=interactive.FINDERS, about={f: interactive.describe(f) for f in interactive.FINDERS},
                H=H, W=W, um=s.um, detected={}, filtered={})
     for f in ('tl', 'rf'):
