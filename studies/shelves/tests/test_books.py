@@ -194,3 +194,44 @@ def test_each_box_is_its_own_spine_and_none_is_made_up(view):
     assert on_wall == 0, 'a box on the wall'
     assert matched >= len(truth) - 1, (matched, len(truth))
     assert found <= len(truth), 'a book split, or a box that is no book'
+
+
+def one_series():
+    """Two books of one series against each other among three others: one colour, the same title, logo and author at
+    the same heights, and no seam between them. (photo, each book's corners clockwise)."""
+    rng = np.random.default_rng(7)
+    H, W = 420, 520
+    # the other books in colours that stand clear of the board's grey
+    a = np.full((H, W, 3), 214, np.float32)
+    a[372:392] = 150
+    truth, x = [], 40
+    for k, (w, h) in enumerate([(34, 250), (40, 280), (40, 280), (30, 230), (36, 260)]):
+        top = 372 - h
+        series = k in (1, 2)
+        a[top:372, x:x + w] = (30, 30, 34) if series else [(150, 60, 40), (60, 110, 160), (170, 140, 40)][k % 3]
+        if not series:
+            # a seam: the spine's own rim, a little darker
+            a[top:372, x] *= 0.6
+            a[top:372, x + w - 1] *= 0.6
+        marks = np.random.default_rng(1 if series else 10 + k)
+        for y in range(top + 20, 330, 22):
+            mw = int(marks.integers(6, w // 2))
+            a[y:y + 9, x + (w - mw) // 2:x + (w + mw) // 2] = 235
+        # the series' logo near the foot
+        if series:
+            a[340:352, x + w // 2 - 7:x + w // 2 + 7] = 235
+            a[344:348, x + w // 2 - 3:x + w // 2 + 3] = 30
+        truth.append([[x, top], [x + w, top], [x + w, 372], [x, 372]])
+        x += w
+    a += rng.normal(0, 3, a.shape)
+    return np.clip(a, 0, 255).astype(np.uint8), truth
+
+
+def test_two_books_of_one_series_are_two_boxes():
+    """req/shelves/books/find (2026-11-07): two books of one series, one colour and parted by no visible edge, are two
+    boxes, each its own; nothing on the wall."""
+    a, truth = one_series()
+    matched, found, on_wall = own_boxes(a, truth)
+    assert on_wall == 0
+    assert matched == len(truth), (matched, len(truth))
+    assert found == len(truth), found
