@@ -53,6 +53,7 @@
       "colour": "#ff0000",
       "shown": true,
       "black": 161,
+      "depth": true,
       "about": "CD31 (PECAM-1), a protein on the surface of the endothelial cells that line every blood vessel, so it outlines the vessel network: capillaries as thin tubes, arterioles and venules wider. The study traces, counts and measures what it marks. Its first black point is the view the owner approved on their stacks. Shown red, or in depth colours in 3D."
     },
     {
@@ -70,7 +71,6 @@
   },
   "view": {
     "render": "brightest",
-    "depthColour": true,
     "spacing": 1.0,
     "spacingSource": "the owner (2026-10-29)"
   },

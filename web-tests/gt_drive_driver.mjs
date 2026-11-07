@@ -27,6 +27,10 @@ await page.context().close();
 // the folder never approved for this site: the line offers to approve it
 page = await open(true, { study });
 said = await asTagger(page);
+// the line is in the Ground Truth Tasks box, folded until the study's first step: opened, as a person would
+if (await page.evaluate(() => $("#tasks-box").classList.contains("folded"))) {
+  await page.click("#tasks-box"); await page.waitForFunction(() => !$("#tasks-box").classList.contains("folded"));
+}
 await check(/Not approved/.test(said) && await page.isVisible("#left .gt-access .gt-approve"), "not approved: the line says so and offers Approve", said);
 await page.context().close();
 

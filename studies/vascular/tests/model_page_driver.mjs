@@ -72,38 +72,57 @@ try {
   await page.click("#vm-run");
   await page.waitForFunction(() => !$("#model-on").hidden);
   check(/vessel edges/.test(await facts()), `Execute opens the model it draws: ${(await facts()).slice(0, 80)}`);
+  // req/vascular/model/view: every choice of how the model shows is in one Show menu at the toolbar's left, as NoR's
+  const menu = await page.evaluate(() => { const m = $("#vm-show");
+    return { menu: !!m && m.matches(".toolbar details.menu") && m.querySelector("summary").textContent.trim(),
+      inside: ["#model-mode", "#m-widths", "#m-candidates", "#review-mode", "#reach"].filter((s) => !$(s)?.closest("#vm-show .pop")),
+      loose: [...document.querySelectorAll(".toolbar [data-study-panel]")].filter((e) => e.id !== "vm-show").map((e) => e.id || e.tagName) }; });
+  check(menu.menu === "Show" && !menu.inside.length && !menu.loose.length, `a Show menu holds the views, Vessel widths, Low-confidence and Everything, Detected, Missed: ${JSON.stringify(menu)}`);
+  // a control in the menu, reached as a person reaches it: the menu opened first
+  const inMenu = async (sel) => { if (!(await page.evaluate(() => $("#vm-show").open))) await page.click("#vm-show summary"); return sel; };
   const shown = () => page.evaluate(() => ({ pressed: $("#model-mode [aria-pressed=true]").dataset.v, split: $("#v3-stage").classList.contains("split"), over: !!$("#v3-stage #mcv") }));
   check(JSON.stringify(await shown()) === JSON.stringify({ pressed: "overlay", split: false, over: true }), "the model opens over the stack");
-  await page.click('#model-mode [data-v="image"]');
+  await page.click(await inMenu('#model-mode [data-v="image"]'));
   check((await drawn()).lit === 0, "Image shows the stack alone");
-  await page.click('#model-mode [data-v="side"]');
+  await page.click(await inMenu('#model-mode [data-v="side"]'));
   check((await shown()).split, "Side by side splits the view in two");
-  await page.click('#model-mode [data-v="model"]');
+  await page.click(await inMenu('#model-mode [data-v="model"]'));
   const alone = await drawn();
   check(!(await shown()).split && alone.lit > 500, `Model shows the model alone, over the whole view: ${alone.lit} lit pixels`);
-  const depth = await page.getAttribute("#vm-depth", "aria-pressed");
-  await page.click("#vm-depth");
-  const flip = await drawn(), [byDepth, plain] = depth === "true" ? [alone, flip] : [flip, alone];
+  // CD31's Colour by depth, its tick in the image box (req/shell/viewer-3d), paints the model as it paints the stack
+  if (await page.evaluate(() => $("#image-box").classList.contains("folded"))) { await page.click("#image-box"); await page.waitForFunction(() => !$("#image-box").classList.contains("folded")); }
+  const depth = await page.isChecked("#depth-0");
+  await page.setChecked("#depth-0", !depth);
+  const flip = await drawn(), [byDepth, plain] = depth ? [alone, flip] : [flip, alone];
   check(byDepth.coloured > plain.coloured * 4 + 100, `Colour by depth paints the model in depth colours: ${plain.coloured} → ${byDepth.coloured} coloured pixels`);
-  check(await page.evaluate(() => window.shellForTests.viewer.three.S.depth) === (depth === "true" ? 0 : 1), "and the stack too");
-  await page.click("#vm-depth");
-  await page.uncheck("#m-widths");
+  check(await page.evaluate(() => !!window.shellForTests.viewer.three.depthPalette()) === !depth, "and the stack too");
+  await page.setChecked("#depth-0", depth);
+  await page.uncheck(await inMenu("#m-widths"));
   const thin = await drawn();
   check(thin.lit < alone.lit * 0.7, `Vessel widths off draws the vessels as lines: ${alone.lit} → ${thin.lit} lit pixels`);
-  await page.check("#m-widths");
-  await page.click('#model-mode [data-v="overlay"]');
+  await page.check(await inMenu("#m-widths"));
+  await page.click(await inMenu('#model-mode [data-v="overlay"]'));
 
   // what the 3D view draws needs WebGL2, which a headless browser may lack
   if (await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"))) {
     const all = await brightness();
-    await page.click('#review-mode [data-v="detected"]');
+    await page.click(await inMenu('#review-mode [data-v="detected"]'));
     const detected = await brightness();
     check(detected < all * 0.8, `Detected keeps only the signal near the model's vessels: ${all.toFixed(2)} → ${detected.toFixed(2)}`);
-    await page.click('#review-mode [data-v="all"]');
+    await page.click(await inMenu('#review-mode [data-v="all"]'));
   } else console.log(`not checked in this ${ENGINE}: what Detected leaves in the 3D view, which needs the WebGL2 it lacks`);
 
-  check(await page.isHidden("#tasks-box") && await page.isHidden("#vm-truth") && await page.isVisible("#review-box #m-draw"),
-    "outside a ground-truth stage there are no tasks and no Submit, and a missed vessel is drawn from Review");
+  check(await page.isHidden("#tasks-box") && await page.isHidden("#vm-truth") && await page.isHidden("#m-draw") && await page.isVisible("#summary-box #m-lasso"),
+    "outside a ground-truth stage there are no tasks, no Submit and no Draw a missed vessel, a ground-truth task; a damaged area is marked from Summary");
+  // req/shell/image/toolbar: how the model shows is the toolbar's left, and the left bar holds none of it
+  const where = await page.evaluate(() => ["#model-mode", "#m-widths", "#review-mode", "#reach"].map((s) => !!$(s)?.closest(".toolbar") && !$(s).closest("#left")));
+  check(where.every(Boolean), `what the model shows and how sit at the toolbar's left: ${where}`);
+  // the study's options and the viewer's tools together never push one out of the toolbar (a menu's popup hangs below it)
+  const out = await page.evaluate(() => { const t = $("#view .toolbar").getBoundingClientRect();
+    return [...$("#view .toolbar").querySelectorAll("button, label, input")].filter((e) => e.offsetParent !== null && !e.closest(".pop"))
+      .filter((e) => { const r = e.getBoundingClientRect(); return r.right > t.right + 0.5 || r.bottom > t.bottom + 0.5 || r.left < t.left - 0.5; })
+      .map((e) => e.id || e.textContent.trim()); });
+  check(!out.length, `every toolbar control is inside the toolbar: ${out}`);
   await page.click("#switch");
   await page.click('#item-kind [data-v="vessels"]');
   await page.selectOption("#item-filter", "review");

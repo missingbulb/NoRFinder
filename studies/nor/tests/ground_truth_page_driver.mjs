@@ -144,7 +144,7 @@ const offAxis = (L) => {
 // a box folded with the steps (req/shell/tools/ruler), opened by its title as the user would
 const unfold = async (page, box) => { await page.evaluate((b) => { const e = $(b); if (e.classList.contains("folded")) e.querySelector(".sec-head h2").click(); }, box); await page.waitForFunction(() => !document.documentElement.hasAttribute("data-drawers")); };
 async function markAndVote(page) {
-  await unfold(page, "#finder-box");
+  await unfold(page, "#processing-box");
   await page.click("#find");
   await page.waitForFunction(() => st.alone && $("#busy").hidden);
   const ran = await crumbs(page);

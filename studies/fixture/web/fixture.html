@@ -1,20 +1,15 @@
-<template data-slot="left">
-  <section class="box foldable" id="fx-box" data-opens="load" data-folds="count">
-    <div class="sec-head"><h2>Threshold</h2></div>
+<template data-slot="processing">
+  <div id="fx-box">
     <input type="range" id="fx-threshold" min="0" max="255" value="128">
     <button id="fx-count" class="primary" disabled>Count</button>
-  </section>
-  <section class="box foldable unpublished" id="fx-counted" data-opens="count">
-    <div class="sec-head"><h2>Counted</h2></div>
-    <p class="hint">The count is in the Result box. Its postprocessing, gone once the study is published.</p>
-  </section>
-  <section class="box foldable" data-opens="user">
-    <div class="sec-head"><h2>Notes</h2></div>
-    <p class="hint">Opened only by its title.</p>
-  </section>
+  </div>
 </template>
-<template data-slot="left">
-  <section class="box"><h2>Result</h2><div class="gt-access" hidden></div><div id="fx-result" class="dim">Nothing counted yet.</div></section>
+<template data-slot="tasks">
+  <div id="fx-result" class="dim">Nothing counted yet.</div>
+  <p class="hint unpublished" id="fx-counted">The count's postprocessing, gone once the study is published.</p>
+</template>
+<template data-slot="summary">
+  <div id="fx-sum" class="dim">Nothing counted yet.</div>
 </template>
 <template data-slot="views">
   <div id="items-view" hidden>

@@ -11,7 +11,7 @@ page must do is `req/shelves` in [its requirements](../requirements.md).
 study.json            the study's contract with the shell; stage GT
 py/shelves.py         the Python entry: opens the photo, answers find and straighten
 py/books.py           the finder (find) and the straightening of four corners into an upright crop
-web/shelves.js        the page: Find books, Read titles, the Titles box, the ground-truth task
+web/shelves.js        the page: Find books, Read titles, the titles in Summary, the ground-truth task
 web/reading.js        the three readers, the same module in the page and in the sandbox
 web/tessdata/         Tesseract's Hebrew and English (4.0.0_best_int, from @tesseract.js-data/*@1.0.0, MIT)
 reading/              the sandbox: read.mjs and the pinned engine builds (package.json)

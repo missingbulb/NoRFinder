@@ -128,7 +128,19 @@
       <div class="edit-row end"><button id="edit-save" class="primary" type="button">Save…</button><button id="edit-done" type="button" title="Leave Edit Image and show the image as it was">Done</button></div>
     </section>
 
-    <slot-here data-slot-for="left"></slot-here>
+    <section class="box foldable study-box" id="processing-box" hidden>
+      <div class="sec-head"><h2>Processing</h2></div>
+      <slot-here data-slot-for="processing"></slot-here>
+    </section>
+    <section class="box foldable study-box" id="tasks-box" hidden>
+      <div class="sec-head"><h2>Ground Truth Tasks</h2></div>
+      <div class="gt-access" hidden></div>
+      <slot-here data-slot-for="tasks"></slot-here>
+    </section>
+    <section class="box foldable study-box" id="summary-box" hidden>
+      <div class="sec-head"><h2>Summary</h2></div>
+      <slot-here data-slot-for="summary"></slot-here>
+    </section>
   </aside>
   <div class="gutter" id="gutter-left" title="Drag to resize; drag it to the left edge to collapse the bar"></div>
 

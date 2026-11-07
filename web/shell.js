@@ -1771,8 +1771,9 @@ function outline(text) {
   }
   return out;
 }
-// a box's task done, summed up (text, or a node), or waiting again (null)
-function boxDone(box, summary) {
+// a box's task done, summed up (text, or a node), or waiting again (null): the box, or what the study put in it
+function boxDone(el, summary) {
+  const box = el.closest(".box");
   if (summary == null) summaries.delete(box); else summaries.set(box, summary);
   retitle();
 }
@@ -2089,6 +2090,7 @@ async function mountStudy(id) {
       $(`slot-here[data-slot-for="${t.dataset.slot}"]`).before(...nodes); mounted.push(...nodes);
     }
   }
+  studyBoxes();
   unfoldFirst(); // before the first paint with them, so they do not fold in view
   view = viewers[manifest.viewer] ||= VIEWERS[manifest.viewer](shell);
   for (const v of new Set(Object.values(viewers))) v.active?.(v === view);
@@ -2105,6 +2107,20 @@ async function mountStudy(id) {
   showRecent();
   data.role(role === "data");
 }
+// The left bar's boxes the study fills (req/shell/left-bar/shells): one it leaves empty is not shown, and Ground
+// Truth Tasks shows in Summary's place while the study makes ground truth. Processing opens with the image and
+// folds after the study's first step, which opens the others (req/shell/left-bar/folding).
+const STUDY_BOXES = { processing: "#processing-box", tasks: "#tasks-box", summary: "#summary-box" };
+function studyBoxes() {
+  const first = manifest.phases[0]?.key || "load", truthNow = makesTruth();
+  for (const [slot, sel] of Object.entries(STUDY_BOXES)) {
+    const b = $(sel), filled = !!b.querySelector("[data-study-panel]");
+    b.hidden = !filled || (slot === "tasks" && !truthNow) || (slot === "summary" && truthNow);
+    b.dataset.opens = slot === "processing" ? "load" : first;
+    if (slot === "processing" && first !== "load") b.dataset.folds = first; else delete b.dataset.folds;
+    summaries.delete(b);
+  }
+}
 const viewers = {};
 // The study on show leaves: its panels, stylesheet, drawing, listeners and state go, and its Python's late
 // answers are dropped.
@@ -2112,6 +2128,7 @@ function leaveStudy() {
   lifetime.abort(); lifetime = new AbortController();
   truth.leave();
   for (const n of mounted.splice(0)) n.remove();
+  for (const sel of Object.values(STUDY_BOXES)) { $(sel).hidden = true; summaries.delete($(sel)); }
   css?.remove(); css = null;
   study = {}; manifest = null; view?.use({}); view?.clear();
   for (const k of Object.keys(st)) if (!SHELL_STATE.has(k)) delete st[k];

@@ -138,6 +138,14 @@
                         {"name": "Last slice shown", "select": "#v3-z1", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"},
                         {"name": "Spacing between slices", "select": "#v3-zs", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"}
                       ]
+                    },
+                    {"name": "Channel's Colour by depth", "select": "#channels .v3-depth-row", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
+                      "rule": [
+                        {"when": {"stack": [false]}, "is": "hidden"}
+                      ],
+                      "children": [
+                        {"name": "Colour by depth tick", "select": "#channels .v3-depth-row input", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"}
+                      ]
                     }
                   ]
                 },
@@ -266,6 +274,29 @@
                 {"name": "Save…", "select": "#edit-save", "control": true, "req": "req/shell/data/edit-save"},
                 {"name": "Done", "select": "#edit-done", "control": true, "req": "req/shell/data/edit"}
               ]
+            },
+            {"name": "Processing", "select": "#processing-box", "box": true, "req": "req/shell/left-bar/shells",
+              "rule": [
+                {"when": {"hasSteps": [false]}, "is": "hidden", "approval": "tentative"},
+                {"when": {"role": ["data"]}, "is": "hidden", "req": "req/shell/data/mode"},
+                {"when": {"image": ["none"]}, "is": "folded", "req": "req/shell/left-bar/folding"},
+                {"when": {"counted": [true]}, "is": "folded", "req": "req/shell/left-bar/folding"}
+              ]
+            },
+            {"name": "Ground Truth Tasks", "select": "#tasks-box", "box": true, "req": "req/shell/left-bar/shells",
+              "rule": [
+                {"when": {"hasSteps": [false]}, "is": "hidden", "approval": "tentative"},
+                {"when": {"makesTruth": [false]}, "is": "hidden"},
+                {"when": {"counted": [false]}, "is": "folded", "req": "req/shell/left-bar/folding"}
+              ]
+            },
+            {"name": "Summary", "select": "#summary-box", "box": true, "req": "req/shell/left-bar/shells",
+              "rule": [
+                {"when": {"hasSteps": [false]}, "is": "hidden", "approval": "tentative"},
+                {"when": {"role": ["data"]}, "is": "hidden", "req": "req/shell/data/mode"},
+                {"when": {"makesTruth": [true]}, "is": "hidden"},
+                {"when": {"counted": [false]}, "is": "folded", "req": "req/shell/left-bar/folding"}
+              ]
             }
           ]
         },
@@ -301,17 +332,13 @@
                 {"when": {"image": ["none"]}, "is": "disabled"}
               ]
             },
-            {"name": "Look from", "select": "#v3-tools", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
+            {"name": "Reset View group", "select": "#v3-tools", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
               "rule": [
                 {"when": {"stack": [false]}, "is": "hidden"}
               ],
               "children": [
-                {"name": "Look from button", "select": "#v3-look-btn", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"},
-                {"name": "Look from popup", "select": "#v3-look-pop", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
-                  "rule": [
-                    {"is": "hidden"}
-                  ]
-                }
+                {"name": "Reset View", "select": "#v3-reset", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"},
+                {"name": "Reset View's arrow", "select": "#v3-look-menu", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d"}
               ]
             },
             {"name": "Zoom out", "select": "#zoom-out", "control": true, "req": "req/shell/image/minimap",
@@ -383,7 +410,6 @@
                   "children": [
                     {"name": "3D picture", "select": "#v3-gl", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d"},
                     {"name": "Drawn over the 3D view", "select": "#v3-hud", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d"},
-                    {"name": "Slice spacing's note", "select": "#v3-note", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d"},
                     {"name": "Panning", "select": "#v3-pan", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"}
                   ]
                 },

@@ -1,6 +1,5 @@
-<template data-slot="left">
-    <section class="box foldable" id="model-set" data-opens="load" data-folds="find">
-      <div class="sec-head"><h2>Processing</h2></div>
+<template data-slot="processing">
+    <div id="model-set">
       <select id="vm-algo" disabled aria-label="Extraction algorithm"></select>
       <details id="vm-about" class="fold">
         <summary>How the algorithm works</summary>
@@ -12,20 +11,24 @@
       </div>
       <input id="model-file" type="file" accept=".json,application/json" hidden>
       <div id="model-on" class="col" hidden>
-        <label class="check" id="m-candidates-row"><input type="checkbox" id="m-candidates" checked> Show low-confidence vessels (faded)</label>
-        <p class="note" id="model-facts"></p>
-        <div class="views">
+        <div class="views" id="vm-edits">
           <button type="button" id="m-undo">Undo</button>
           <button type="button" id="m-redo">Redo</button>
           <button type="button" id="m-reset">Discard edits</button>
         </div>
       </div>
       <p class="note" id="model-msg"></p>
-    </section>
-
-    <section class="box foldable" id="tasks-box" data-opens="find" hidden>
-      <div class="sec-head"><h2>Ground Truth Tasks</h2></div>
-      <div class="gt-access" hidden></div>
+    </div>
+</template>
+<template data-slot="summary">
+    <p class="note" id="model-facts">No vessel model yet: Execute the algorithm, or load a model file.</p>
+    <div id="vm-marks" class="col" hidden>
+      <div class="views"><button type="button" id="m-lasso" aria-pressed="false">Mark a damaged area</button></div>
+      <p class="note" id="lasso-note"></p>
+    </div>
+</template>
+<template data-slot="tasks">
+    <div id="vm-tasks" hidden>
       <div id="gt-bar"><span data-task="vessels"></span><span data-task="candidates"></span><span data-task="junctions"></span><span data-task="missed"></span></div>
       <ol id="gt-tasks">
         <li data-task="vessels"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button" title="The vessels the algorithm drew with confidence"><span class="n"></span> Vessels</button></div><div class="task-body"></div></li>
@@ -39,32 +42,30 @@
       </ol>
       <span id="task-tools"><details class="menu" id="task-menu"><summary title="This item's options" aria-label="This item's options"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></g></svg></summary><div class="pop" id="task-opts"></div></details><button id="task-skip" class="link" type="button" title="The next one, leaving this one for later">Skip ›</button></span>
       <div id="task-now"><div id="task-stage"><div id="task-card"></div></div></div>
-    </section>
-
-    <section class="box foldable" id="review-box" data-opens="find" hidden>
-      <div class="sec-head"><h2>Review</h2></div>
-      <div class="col">
-        <div class="seg" id="review-mode">
-          <button type="button" data-v="all" aria-pressed="true">Everything</button>
-          <button type="button" data-v="detected" aria-pressed="false">Detected</button>
-          <button type="button" data-v="missed" aria-pressed="false">Missed</button>
-        </div>
-        <p class="note" id="review-note">The whole stack.</p>
-        <label class="row" id="reach-row" hidden>Reach beyond the vessel wall <output id="reach-o"></output><input type="range" id="reach" min="0" max="200" step="5" value="50"></label>
-        <div class="views"><button type="button" id="m-lasso" aria-pressed="false">Mark a damaged area</button></div>
-        <p class="note" id="lasso-note"></p>
-      </div>
-    </section>
+    </div>
 </template>
 <template data-slot="toolbar">
-      <div class="seg" id="model-mode" role="group" aria-label="Show">
-        <button type="button" data-v="image" aria-pressed="true" title="The stack alone">Image</button>
-        <button type="button" data-v="model" aria-pressed="false" title="The vessel model alone" disabled>Model</button>
-        <button type="button" data-v="overlay" aria-pressed="false" title="The vessel model over the stack" disabled>Overlay</button>
-        <button type="button" data-v="side" aria-pressed="false" title="The stack and the vessel model side by side, turning together" disabled>Side by side</button>
-      </div>
-      <button id="vm-depth" class="tool" type="button" aria-pressed="true" title="Colour by depth: paint the stack and the model by depth, so crossings at different depths read apart" aria-label="Colour by depth"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3" y="4" width="18" height="4" fill="#2f6fe0"/><rect x="3" y="10" width="18" height="4" fill="#2fb344"/><rect x="3" y="16" width="18" height="4" fill="#e53935"/></svg></button>
-      <label class="check tool-check" title="Draw each vessel as wide as the model says"><input type="checkbox" id="m-widths" checked> Vessel widths</label>
+      <details class="menu" id="vm-show">
+        <summary>Show</summary>
+        <div class="pop">
+          <div class="seg" id="model-mode" role="group" aria-label="Show">
+            <button type="button" data-v="image" aria-pressed="true" title="The stack alone">Image</button>
+            <button type="button" data-v="model" aria-pressed="false" title="The vessel model alone" disabled>Model</button>
+            <button type="button" data-v="overlay" aria-pressed="false" title="The vessel model over the stack" disabled>Overlay</button>
+            <button type="button" data-v="side" aria-pressed="false" title="The stack and the vessel model side by side, turning together" disabled>Side by side</button>
+          </div>
+          <label title="Draw each vessel as wide as the model says"><input type="checkbox" id="m-widths" checked> Vessel widths</label>
+          <label id="m-candidates-row" title="The faint vessels the algorithm was unsure of, faded" hidden><input type="checkbox" id="m-candidates" checked> Low-confidence vessels</label>
+          <div id="vm-review" class="col" hidden>
+            <div class="seg" id="review-mode" role="group" aria-label="Signal kept" title="The whole stack.">
+              <button type="button" data-v="all" aria-pressed="true">Everything</button>
+              <button type="button" data-v="detected" aria-pressed="false">Detected</button>
+              <button type="button" data-v="missed" aria-pressed="false">Missed</button>
+            </div>
+            <label id="reach-row" title="How far beyond the vessel wall the signal counts as the vessel's, a share of its width" hidden>Reach <input type="range" id="reach" min="0" max="200" step="5" value="50"> <output id="reach-o"></output></label>
+          </div>
+        </div>
+      </details>
 </template>
 <template data-slot="views">
     <div id="items-view" data-viewing hidden>

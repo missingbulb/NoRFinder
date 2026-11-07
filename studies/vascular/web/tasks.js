@@ -132,7 +132,7 @@ function options(it) {
 // go: the main view turns to what the task now shows
 function show(go) {
   const m = MV.current();
-  $('tasks-box').hidden = !m;
+  $('vm-tasks').hidden = !m;
   if (!m) { MV.mark(null, null); return; }
   lists = itemsOf(m);
   if (!st.task) { st.task = firstOpen(m); if (st.task === 'missed') st.area = nextArea(m, 0); else if (st.task !== 'submit') st.key = (lists[st.task].find((x) => !x.done) || lists[st.task][0])?.key ?? null; go = true; }

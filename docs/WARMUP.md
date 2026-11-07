@@ -31,25 +31,27 @@ A study is a folder with a `study.json`, and a `requirements.md` for what its pa
   of those Google accounts is signed in). It hides a study from the page, not its files from the network.
 - `viewer` — the viewer it is shown in (`image2d`, or `image3d` for z-stacks: the stack in 3D
   only, no switch to a flat view), and optionally `view`, what the 3D view opens with: `render` (`brightest` or
-  `surface`), `depthColour`, `spacing` (µm between slices when the file does not say) and
+  `surface`), `spacing` (µm between slices when the file does not say) and
   `spacingSource` (who stated it).
 - `python` — `paths` (folders, relative to the study, its modules are imported from), `entry` (the
   module the page imports), `packages` (from Pyodide's own set) and `wheels` (from PyPI, vendored
   by `dev/tools/build/build.py`).
 - `web` — `module`, an ES module exporting `mount(shell)`; optionally `panels`, an HTML file of
   `<template data-slot="…">` elements the shell puts into its slots before mounting, and `style`, its
-  stylesheet. The slots: `left` (the left bar, below the Image box), `toolbar` (the main area's
-  toolbar, at its left), `toolbar-end` (its right end), `view-top`, `views` (beside the image view),
-  `over-image` (floating over the image) and `body`; there is no right bar. A `box foldable` section folds
-  with the steps: its `data-opens` names the step (`load`, one of its `phases`, `submit`) after which it
-  opens, or `user` for one only its title opens, and `data-folds` the step after which it folds again.
+  stylesheet. The left bar is the shell's (`req/shell/left-bar/shells`): a study adds no box, and fills the
+  shell's boxes through `processing` (Processing: the algorithm's choice, settings, button and the tools correcting
+  its result), `tasks` (Ground Truth Tasks, shown while the study makes ground truth) and `summary` (Summary,
+  shown otherwise); a box it leaves empty is not shown. The page's other slots: `toolbar` (the toolbar's left, how
+  the study's results are drawn over the image: `req/shell/image/toolbar`), `toolbar-end` (its right end),
+  `tasks-end`, `view-top`, `views` (beside the image view), `over-image` (floating over the image) and `body`;
+  there is no right bar.
 - `files` — `from`, the places it opens images from (`local`, this computer, `drive`, Google Drive, or both:
   `req/shell/load/from`), what Load accepts, the text the empty view shows, and optionally `folders`, the study's Google
   Drive folders: the Drive dialog browses them alone, with no link to paste, and Data Management works on them all.
 - `permissions` — optional, the Google accounts (by email) holding each role: `data_management` sees Data
   Management. A study's panels step aside while Data Management is open.
 - `channels` — what the study says of the image's channels, by place: `name`, `colour` (`#rrggbb`),
-  `shown` at first, and optionally `about` (the (?)'s description, at most 100 words) and `black` and
+  `shown` at first, and optionally `depth` (in 3D, coloured by depth from the start: `true`, or a palette's name), `about` (the (?)'s description, at most 100 words) and `black` and
   `white` (its first points, 0–255). A channel it leaves out takes what the file says, then its place
   (red, green, blue…); the Image Viewer names none.
 - `progress` — the status line while Python installs (`install`), loads the study (`load`), opens an
