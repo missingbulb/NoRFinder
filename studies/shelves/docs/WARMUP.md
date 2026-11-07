@@ -212,7 +212,7 @@ number below is a score.
 ## Open items
 
 - The owner's photos are in [the study's Drive folder](https://drive.google.com/drive/folders/1Wt3__aNzVQConuhF8tUx4zmnMtmx-O3w),
-  private for now (missingbulb/NoRFinder#766); once it is shared by link, a `data/sources.json` and its fetch, then the first ground truth, then a grader (`proposed` against the corrected values) and the
+  private for now (missingbulb/RaunTruth#766); once it is shared by link, a `data/sources.json` and its fetch, then the first ground truth, then a grader (`proposed` against the corrected values) and the
   finder's first real iteration.
 - Hebrew word spaces in the `lines` reader.
 - R4's own breaks: the multi-shelf photos

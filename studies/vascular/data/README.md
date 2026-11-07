@@ -81,7 +81,7 @@ DAPI here is excited at 405 nm — not the 340–360 nm the lab quoted, which is
   `tifffile.imread(path)` returns shape `(30, 2, 1200, 1200)`.
 - **Channel 1 = DAPI, channel 2 = CD31** in all four, established by looking at max projections
   (ch1 scattered round nuclei, ch2 branching tubes). The stored display colours are ch1 red, ch2
-  green — do not read identity off them. In the sibling NoRFinder data the channel order *varies
+  green — do not read identity off them. In the sibling NoR study's data the channel order *varies
   between files*; with four files here it does not, but check each new file by content.
 - **These are not the figure panels.** The pipeline so far runs on RGB figure crops and segments by
   *red dominance*. A raw stack is **grayscale 16-bit per channel**: select CD31 by index, never by
