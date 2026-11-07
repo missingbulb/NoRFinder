@@ -21,7 +21,8 @@ const FILE_NAME = "rauntruth-settings.json";
 const MARGIN_MS = 60 * 1000;
 const SAVE_AFTER_MS = 400;
 // who is signed in on this device: {user: {name, email, picture}, token, until (ms), scopes (what the token may do,
-// as Google listed it), fileId, changed}, changed the keys whose settings this device changed since Drive last had them
+// as Google listed it), fileId, changed, learned}, changed the keys whose settings this device changed since Drive last
+// had them, learned {name: what the page last learned from Google for this user under it}
 export const SIGNED_IN = "nor-google-sign-in";
 // what the Storage tab calls that key
 export const SIGNED_IN_LABEL = "Who is signed in with Google, and Google's token for the hour";
@@ -209,6 +210,9 @@ export function account({ keys, menu, clientId = ((window.NOR_CONFIG && window.N
     // Google refused the token: forgotten, to be renewed on the next click
     refused() { if (me) { me.token = null; keep(); } },
     renew,
+    // what the page last learned from Google for this user under name, kept until they sign out; null for nothing
+    learned: (name) => me?.learned?.[name] ?? null,
+    learn(name, value) { if (me) { me.learned = { ...me.learned, [name]: value }; keep(); } },
     // whether the token Google gave may do scope, as far as the last one said
     may: (scope) => !!(me && (me.scopes || "").split(" ").includes(scope)),
     // asks Google, in the user's click, to add scope to the token: true once it has

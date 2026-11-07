@@ -16,11 +16,12 @@ nobody has decided: what the page does there is not a requirement yet.
 
 ## `req/shell` The shell, whichever study it runs
 
-- `req/shell/account/role` Beside the avatar, a menu picks the role the user works in; the page shows that role's own view.
+- `req/shell/account/role` Beside the study's name, a menu picks the role the user works in; the page shows that role's own view.
   <details>
 
   Set by the owner on 2026-11-03: one page adapting to every role at once is replaced by a view per role,
-  chosen on purpose. Left of the avatar, a menu names the role the user works in and lists the roles they
+  chosen on purpose. Set by the owner on 2026-11-07: the header reads "[study] as [role]", the role's menu right of the
+  study's and drawn like it. The menu names the role the user works in and lists the roles they
   hold in the study on show: **Viewer**, everyone's, and the only one for a visitor not signed in
   (`req/shell/account/sign-in`); **Ground Truth Tagger**, held by those Drive lets write to the study's submissions folder (set by the owner on 2026-11-07, `req/shell/data/roles`), listed in every stage but
   Published (`req/shell/study/stage`; set by the owner on 2026-11-04: a PreGT study can have taggers too); and **Study Manager** (named so by the owner on 2026-11-07, once Data Manager), held by those Drive lets
@@ -35,8 +36,11 @@ nobody has decided: what the page does there is not a requirement yet.
   opens the study afresh on the same image. Undecided: what a Ground Truth Tagger with an image open finds
   after going to Study Manager and back. The page opens as Viewer; the role chosen follows the user
   (`req/shell/account/sign-in`) and Settings lists it (`req/shell/account/settings`). A role not held in
-  the study on show, or no longer held, shows as Viewer, and the choice stays for where it is held. Test:
-  `web-tests/test_roles_page.py`.
+  the study on show, or no longer held, shows as Viewer, and the choice stays for where it is held. Set by the owner
+  on 2026-11-07: Google's token lasts an hour and only a click may ask for another, so the page opening after it ran
+  out, or Drive not answering, lists the roles Drive last gave that user in that study, kept until they sign out, and a
+  line under them says so; opening the menu renews the token and asks Drive again. Nothing else renews it for the
+  roles. Test: `web-tests/test_roles_page.py`.
   </details>
 
 - `req/shell/account/settings` The avatar's menu opens Settings: every setting that follows the user, to change and save.
