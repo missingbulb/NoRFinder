@@ -19,7 +19,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 
 def folder(path):
-    """A flat image, a stack marked as needing ground truth, a third image, and a subfolder with a PNG."""
+    """A flat image, a stack marked as needing ground truth, a third image, a photo, and a subfolder with a PNG."""
     os.makedirs(path / 'sub')
     y, x = np.mgrid[0:120, 0:150]
     flat = np.stack([(x * 20).astype(np.uint16), (y * 20).astype(np.uint16), ((x + y) * 10).astype(np.uint16)])
@@ -32,6 +32,7 @@ def folder(path):
     with open(path / 'b stack.tif', 'ab') as f:  # changed since its preview was made
         f.write(b'\0')
     tifffile.imwrite(path / 'e plain.tif', flat[1:2], imagej=True, metadata={'axes': 'CYX'})  # made after the previews
+    Image.fromarray(np.stack([x * 1.5, y * 2, x + y], -1).astype(np.uint8)).save(path / 'd photo.jpg')  # a kind the study opens beside TIFFs
     (path / 'b stack.ground_truth.MISSING').write_text('')
     Image.fromarray(np.zeros((20, 20, 3), np.uint8)).save(path / 'sub' / 'c.png')
 
@@ -44,7 +45,7 @@ def test_data_management(answers, tmp_path):
     run('data_mode_driver.mjs', answers[0], answers[1], str(root), str(out))
     with tifffile.TiffFile(out) as t:
         index = json.loads(t.pages[0].description)
-    assert [(e['name'], e['kind']) for e in index['images']] == [('a flat.tif', 'flat'), ('b stack.tif', 'stack'), ('e plain.tif', 'flat')]
+    assert [(e['name'], e['kind']) for e in index['images']] == [('a flat.tif', 'flat'), ('b stack.tif', 'stack'), ('d photo.jpg', 'flat'), ('e plain.tif', 'flat')]
     # the preview handed to Python opens as a three-channel image, in the Image Viewer's own reader too
     with tifffile.TiffFile(str(out) + '.preview.tif') as t:
         assert t.series[0].shape == (3, 120, 150), t.series[0].shape
