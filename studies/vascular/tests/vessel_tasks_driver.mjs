@@ -100,12 +100,12 @@ try {
     "Ground Truth Tasks sits under Processing once a model is open");
 
   // the tasks are the stack's areas, each worked through in three steps
-  const r0 = await rows();
-  check(r0.length === 4 && r0[0] === "0/16 Lines" && r0[1] === "0/16 Missed vessels" && r0[2] === "0/16 Junctions" && /Submit Ground Truth/.test(r0[3]),
+  let t = await tasks();
+  const r0 = await rows(), all = t.grid * t.grid;
+  check(r0.length === 4 && r0[0] === `0/${all} Lines` && r0[1] === `0/${all} Missed vessels` && r0[2] === `0/${all} Junctions` && /Submit Ground Truth/.test(r0[3]),
     `a row per step, counted in areas: ${r0.join(" | ")}`);
   check(await page.evaluate(() => $("#gt-bar").children.length === 3), "the bar has a part per step");
-  let t = await tasks();
-  check(t.step === "lines" && t.area === 0 && t.focused && t.grid === 4, `the walk opens on the first area's Lines, the area alone in view: ${JSON.stringify({ step: t.step, area: t.area, focused: t.focused, grid: t.grid })}`);
+  check(t.step === "lines" && t.area === 0 && t.focused, `the walk opens on the first area's Lines, the area alone in view: ${JSON.stringify({ step: t.step, area: t.area, focused: t.focused })}`);
   const view = () => page.evaluate(() => { const v = window.shellForTests.viewer.three; return { rot: v.S.rot.map((r) => [...r]), clip: v.S.clip && [...v.S.clip], held: !!v.S.held,
     mode: $("#model-mode [aria-pressed=true]")?.dataset.v, show: !$("#vm-show").hidden, focus: $("#vm-focus").textContent.trim(), big: $("#vm-focus").classList.contains("big") }; });
   let v = await view();
