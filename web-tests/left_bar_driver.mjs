@@ -143,4 +143,14 @@ await drag([barLeft + 150, barLeft + 20]);
 await check((await left()) >= 190, "dragging the gutter to the edge stops at the bar's narrowest, never collapsing it", await left());
 await drag([barLeft + 280]);
 await check(Math.abs((await left()) - 280) <= 14, "and it drags wider again", await left());
+// a drag moves the columns with the pointer, the image view beside them too: no motion lags behind it
+{
+  const g = await page.locator("#gutter-left").boundingBox(), y = g.y + 100;
+  await page.mouse.move(g.x + g.width / 2, y); await page.mouse.down();
+  await page.mouse.move(barLeft + 340, y);
+  const mid = await page.evaluate(() => ({ w: Math.round(document.querySelector("#left").getBoundingClientRect().width),
+    moving: document.getAnimations().filter((a) => a.transitionProperty === "grid-template-columns").length }));
+  await page.mouse.up();
+  await check(!mid.moving && Math.abs(mid.w - 340) <= 14, "mid-drag the bar is already where the pointer is, with nothing animating", mid);
+}
 await done(0);

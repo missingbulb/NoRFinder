@@ -162,6 +162,8 @@ aside { overflow-y: auto; scrollbar-gutter: stable; scrollbar-width: thin; paddi
 .gutter::after { content: ""; position: absolute; top: 50%; left: 50%; width: 3px; height: 36px; margin: -18px 0 0 -1.5px; border-radius: 2px; background: var(--line); opacity: 0; transition: opacity .15s; }
 .gutter:hover::after, body.resizing .gutter::after { opacity: 1; }
 body.resizing { cursor: col-resize; user-select: none; }
+/* a drag follows the pointer; the columns' motion is for the data tree opening and folding */
+body.resizing #layout { transition: none; }
 .box { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-panel); padding: 14px; }
 .box + .box { margin-top: var(--pad); }
 .box h2 { margin-bottom: 10px; }
