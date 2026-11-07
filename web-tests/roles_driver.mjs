@@ -14,14 +14,14 @@ const { ROOT, open, check, done } = await standIn({ answers, studies, rootDir })
 const OTHER = "someone@example.com";
 
 // what the page shows: the role named, the roles listed, the line under them, and each role's tools (the ground-truth
-// button, in the item view's bar, as not hidden)
+// tasks box, as shown)
 const seen = (page) => page.evaluate(() => {
   const shows = (s) => !!document.querySelector(s)?.checkVisibility();
   return {
     role: $("#role-name").textContent.trim(),
     list: [...document.querySelectorAll("#role-list .item")].map((b) => b.textContent.trim()),
     hint: $("#role-hint").hidden ? "" : $("#role-hint").textContent.trim(),
-    truth: !$("#fx-truth").hidden, counted: shows("#fx-counted"),
+    truth: shows("#tasks-box"), counted: shows("#fx-counted"),
     data: shows("#data-col"), mode: document.documentElement.dataset.mode || "", bar: !!document.querySelector("#access-bar"),
   };
 });

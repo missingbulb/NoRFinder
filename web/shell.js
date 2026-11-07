@@ -1,7 +1,7 @@
 // The page's shell: it runs the study the address names (/<id>, the default at the bare address), and knows
 // none of them; the header's switcher offers the ones the build lists and swaps one in without a reload. What it gives a study, as shell in mount(shell): loading images (from the
 // computer or the remote store), Python (the study's own, run in worker.js), the viewer the study asks for,
-// the page's state its controls are drawn from (page: get, set, watch(key, fn, {signal})), the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own), the switch to its item view (views) and the boxes' titles (boxDone(box, summary) once a box's task is done), a Markdown outline as HTML (outline(text)), notices, the user's saved settings, downloads and ground-truth
+// the page's state its controls are drawn from (page: get, set, watch(key, fn, {signal})), the status line and the busy screen, the steps' breadcrumbs (step(key, done, info) for the study's own), the switch to its item view (views), the ground-truth tasks listed in the left bar (tasks) and the boxes' titles (boxDone(box, summary) once a box's task is done), a Markdown outline as HTML (outline(text)), notices, the user's saved settings, downloads and ground-truth
 // submission; and around them the theme, the left bar, foldable boxes, Data Management (data_mode.js) with its Preprocessing (Split into parts), the resources dialog (storage, memory,
 // network and CPU) and the version history.
 //
@@ -35,6 +35,7 @@ import { imageEditor, SPLIT_PATTERN } from "./image_edit.js";
 import { replacedBy } from "./edit.js";
 import { dialogMotion } from "./dialog_motion.js";
 import { truthTagger, LOCAL_GT } from "./truth_tagger.js";
+import { truthTasks } from "./truth_tasks.js";
 import { subfolderName } from "./truth_folders.js";
 import { studyPlace } from "./study_root.js";
 
@@ -47,7 +48,7 @@ const VIEWERS = { image2d: viewer2d, image3d: (shell) => viewer3d(shell, viewers
 const DEFAULT_STUDY = "viewer";
 // the browser keys the shell saves under; their names predate studies, and a user's saved state lives in them
 const THEME = "nor-theme"; // "dark" | "light"; absent = follow the system
-const BARS = "nor-bars-v1"; // {left, collapsed}: the left bar's width in pixels, and whether it is collapsed (a right bar's, from before it went, is ignored)
+const BARS = "nor-bars-v1"; // {left}: the left bar's width in pixels (a right bar's, or whether it was collapsed, from before they went, is ignored)
 // the last remote link pasted, in any study
 const REMOTE_LINK = "nor-drive-link";
 // {study id: the last remote link pasted in that study}
@@ -484,14 +485,12 @@ const roleChooser = roleMenu($("#role-menu"), (r) => {
 });
 
 // ---------- the image and the item view ----------
-// A study with an item view gets the switch between it and the image. While the study makes ground truth its
-// cards are the tasks that make it, and the switch says how many are left; otherwise they show what was found.
-// count(left, total) from the study, null until it has any; on(fn) hears the view now shown, "image" or "items".
-// An item view marked data-viewing only shows what was found: while the study makes ground truth it is not shown,
-// and the study lists its tasks itself. One marked data-shelved is not shown in any role.
-const itemsView = () => { const v = $("#items-view"); return v && !v.hasAttribute("data-shelved") && !(makesTruth() && v.hasAttribute("data-viewing")) ? v : null; };
+// A study with an item view gets the switch between it and the image (req/shell/views/second), on once the study
+// has counted its items: count(total), null until it has any; on(fn) hears the view now shown, "image" or "items".
+// While the study makes ground truth there is none, its tasks being in the left bar. One marked data-shelved is never shown.
+const itemsView = () => { const v = $("#items-view"); return v && !v.hasAttribute("data-shelved") && !makesTruth() ? v : null; };
 const views = {
-  now: "image", left: null, total: null, heard: [],
+  now: "image", total: null, heard: [],
   show(v) {
     views.now = v; $("#tip").hidden = true;
     $("#image-view").hidden = v !== "image"; if ($("#items-view")) $("#items-view").hidden = v !== "items" || !itemsView();
@@ -499,21 +498,17 @@ const views = {
     for (const fn of views.heard) fn(v);
   },
   on(fn) { views.heard.push(fn); lifetime.signal.addEventListener("abort", () => views.heard.splice(views.heard.indexOf(fn), 1)); },
-  count(left, total) { views.left = left ?? null; views.total = total ?? null; views.draw(); },
-  // the item view is the tasks that make the ground truth: a bar heads them, how many done and the study's Submit
-  get tasks() { return makesTruth() && !!itemsView(); },
+  count(total) { views.total = total ?? null; views.draw(); },
   draw() {
-    const b = $("#switch"), tasks = makesTruth(), bar = $("#tasks-bar"), m = bar.querySelector("meter");
-    bar.hidden = !views.tasks;
-    bar.querySelector(".done").textContent = views.total === null ? "No tasks yet" : `${views.total - views.left} of ${views.total} done`;
-    m.max = views.total || 1; m.value = views.total === null ? 0 : views.total - views.left;
-    b.querySelector(".name").textContent = views.now === "items" ? "Image" : tasks ? "Tasks" : "Items";
-    b.querySelector(".count").textContent = views.now === "items" || views.total === null ? ""
-      : !tasks ? String(views.total) : views.left ? `${views.left} left` : "done";
+    const b = $("#switch");
+    b.disabled = views.total === null;
+    b.querySelector(".name").textContent = views.now === "items" ? "Image" : "Items";
+    b.querySelector(".count").textContent = views.now === "items" || views.total === null ? "" : String(views.total);
   },
   mount() {
-    $("#switch").hidden = !itemsView(); $("#switch").disabled = true;
-    views.left = views.total = null; views.show("image");
+    slow($("#switch"));
+    $("#switch").hidden = !itemsView();
+    views.total = null; views.show("image");
   },
 };
 $("#switch").onclick = () => views.show(views.now === "image" ? "items" : "image");
@@ -524,7 +519,7 @@ let steps = [], shone = [];
 const stepsWatch = new MutationObserver(() => drawSteps());
 function makeSteps() {
   steps = [{ key: "load", name: "Load image", button: loadButton() }, ...manifest.phases,
-    ...(makesTruth() ? [{ key: "submit", name: "Submit GT", button: manifest.groundTruth.button }] : [])]
+    ...(makesTruth() ? [{ key: "submit", name: "Submit GT", button: "#gt-submit" }] : [])]
     .map((p) => ({ ...p, done: false, info: "", at: null }));
   // a step's button shines only while it can be pressed
   stepsWatch.disconnect();
@@ -533,6 +528,7 @@ function makeSteps() {
     $(p.button).addEventListener("click", () => { p.pressed = true; }, { signal: lifetime.signal });
   }
   drawSteps();
+  tasks.stepped();
 }
 // a step done or not, and what was done in it (or how far it has got)
 function step(key, done, info) {
@@ -547,6 +543,7 @@ function step(key, done, info) {
   p.done = !!done;
   if (info !== undefined) p.info = info;
   drawSteps();
+  tasks.stepped();
 }
 function drawSteps() {
   const now = steps.findIndex((p) => !p.done), shown = now < 0 ? steps : steps.slice(0, now + 1);
@@ -565,7 +562,7 @@ function drawSteps() {
 function goToStep(e) {
   const c = e.target.closest(".crumb.now"), p = c && steps.find((x) => "sb-" + x.key === c.id), b = p?.button && $(p.button);
   if (!b || b.hidden) return;
-  if (b.closest("#tasks-bar, #items-view") && views.now !== "items") views.show("items");
+  if (b.closest("#items-view") && views.now !== "items") views.show("items");
   b.closest(".box.foldable")?.classList.remove("folded");
   b.scrollIntoView({ block: "nearest" });
   if (!b.disabled) b.click();
@@ -1398,7 +1395,7 @@ async function showSaved() {
 // ---------- the user: whoever opened the page on this device, and what the site keeps here ----------
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
-  [THEME]: "Theme", [ROLE]: "The role you work in", [BARS]: "Left bar width, and whether it is collapsed", [REMOTE_LINK]: `Last ${remote.label} link`, [REMOTE_LINKS]: `Last ${remote.label} link in each study`,
+  [THEME]: "Theme", [ROLE]: "The role you work in", [BARS]: "Left bar width", [REMOTE_LINK]: `Last ${remote.label} link`, [REMOTE_LINKS]: `Last ${remote.label} link in each study`,
   [THUMBS]: `Show thumbnails in the ${remote.short} dialog`, [AUTO_SAVE]: `Auto-save images from ${remote.label}`, [RECENT]: `Recent images from ${remote.label}`, [LOCAL_RECENT]: "Recent files from this computer", [LISTINGS]: `${remote.label} folders as last listed, for working offline`, [HOLDS]: `What each ${remote.short} image holds (2D or 3D)`, [THROTTLE]: `Wait after ${remote.short} downloads were throttled`, [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: SIGNED_IN_LABEL, [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [RESOURCES]: "The status bar's disk, memory, network and CPU: hidden, auto-hiding or always open", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
 };
 // What the site keeps, by what it takes to work offline (req/shell/storage/manage): a section per study, then what they share; settings
@@ -1604,6 +1601,8 @@ function saveFile(name, text, type) {
 }
 // the shell's icons, by name, as SVG markup: done, part, todo
 const icon = (name) => `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">${$(`#icons .${name}`).innerHTML}</svg>`;
+// the study's ground-truth tasks in the left bar (req/shell/ground-truth/tasks)
+const tasks = truthTasks({ $, icon, started: () => { const first = manifest?.phases[0]?.key; return !first || !!steps.find((p) => p.key === first)?.done; } });
 // Load GT tagging (req/shell/ground-truth/view): for anyone but a tagger, an image from the remote store with curated ground truth
 // shows it through the study's showTruth(doc), which draws only its final results and returns a line of its counts
 let offered = 0;
@@ -1758,14 +1757,6 @@ function retitle() {
     if (typeof want === "string") { if (t.textContent !== want || t.children.length) t.textContent = want; }
     else if (t.firstChild !== want) t.replaceChildren(want);
   });
-  // the collapsed left bar's strip (req/shell/left-bar/collapse): a mark per drawer on show, opening it
-  $("#left-marks").replaceChildren(...shown.map((b) => {
-    const h = b.querySelector(":scope > .sec-head h2"), m = document.createElement("button");
-    m.type = "button"; m.className = "step-mark"; m.textContent = h.querySelector(".step-mark").textContent;
-    m.classList.toggle("done", b.classList.contains("done")); m.classList.toggle("open", !b.classList.contains("folded"));
-    m.title = h.dataset.name; m.onclick = () => b.classList.remove("folded");
-    return m;
-  }));
 }
 // a Markdown outline drawn as HTML: paragraphs split by blank lines, "- " or "1. " items nested by their indent
 function outline(text) {
@@ -1835,42 +1826,23 @@ function foldable() {
 function showImage() { study.showImage?.(); view.minimapView(); }
 
 // ---------- the left bar and theme ----------
-// the left bar takes the width it is dragged to; a double click puts it back. Dragged past its narrowest it
-// collapses (req/shell/left-bar/collapse), and dragged out from the strip it opens again under the pointer
+// the left bar takes the width it is dragged to, never narrower than its narrowest; a double click puts it back.
+// It stays open (req/shell/left-bar/static).
 {
-  const lay = $("#layout"), saved = readJSON(BARS), g = $("#gutter-left"), bar = $("#left"), root = document.documentElement;
-  const MIN = 200, STRIP = 32, SHUT = (MIN + STRIP) / 2;
+  const lay = $("#layout"), saved = readJSON(BARS), g = $("#gutter-left"), bar = $("#left");
+  const MIN = 200;
   const set = (w) => {
     if (w == null) { lay.style.removeProperty("--lw"); return; }
     lay.style.setProperty("--lw", Math.round(Math.max(MIN, Math.min(w, innerWidth * 0.4))) + "px");
   };
   set(saved.left);
-  const collapse = (on) => { if (on) root.dataset.left = "collapsed"; else delete root.dataset.left; };
-  collapse(!!saved.collapsed);
-  const toggle = (on) => {
-    if (!!saved.collapsed === on) return;
-    saved.collapsed = on; writeJSON(BARS, saved);
-    if (!on) { bar.classList.add("sliding-in"); setTimeout(() => bar.classList.remove("sliding-in"), 400); }
-    collapse(on);
-    retitle();
-    setTimeout(() => view?.minimapView(), 400);
-  };
   g.addEventListener("pointerdown", (e) => {
     g.setPointerCapture(e.pointerId); document.body.classList.add("resizing");
-    const was = saved.left;
-    const move = (ev) => {
-      const w = ev.clientX - bar.getBoundingClientRect().left;
-      if (w < SHUT) { saved.left = was; toggle(true); }
-      else { saved.left = w; set(w); toggle(false); }
-      view?.minimapView();
-    };
+    const move = (ev) => { saved.left = Math.max(MIN, ev.clientX - bar.getBoundingClientRect().left); set(saved.left); view?.minimapView(); };
     const up = () => { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); document.body.classList.remove("resizing"); writeJSON(BARS, saved); };
     g.addEventListener("pointermove", move); g.addEventListener("pointerup", up);
   });
   g.addEventListener("dblclick", () => { delete saved.left; set(null); writeJSON(BARS, saved); view?.minimapView(); });
-  $("#left-collapse").onclick = () => toggle(true);
-  // a step mark opens its drawer first, then the click reaches the strip
-  $("#left-strip").onclick = () => toggle(false);
 }
 
 function theme() {
@@ -2118,7 +2090,6 @@ async function mountStudy(id) {
   study = (await mod.mount(shell)) || {};
   view.use(study);
   showStage();
-  if (!makesTruth() && manifest.groundTruth?.button) $(manifest.groundTruth.button).hidden = true;
   truth.draw();
   makeSteps();
   foldable();
@@ -2153,13 +2124,15 @@ function leaveStudy() {
   st.ready = false; $("#ram-gc").disabled = true;
   for (const w of Object.values(waiting)) w.splice(0).forEach((x) => x.bad(new Error("the study left")));
   busy(false); $("#notice").hidden = true; $("#tip").hidden = true;
-  $("#image-view").hidden = false; delete $("#view").dataset.view; $("#switch").hidden = true; $("#tasks-bar").hidden = true; views.now = "image";
+  $("#image-view").hidden = false; delete $("#view").dataset.view; $("#switch").hidden = true; views.now = "image";
+  tasks.leave();
 }
 
 const shell = {
   $, state: st, page, still, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, remote,
   clearable: (what, fn) => truth.clearable(what, fn), showImage, boxDone, outline,
-  views: { show: (v) => views.show(v), on: (fn) => views.on(fn), count: (l, t) => views.count(l, t), get now() { return views.now; }, get tasks() { return views.tasks; } },
+  views: { show: (v) => views.show(v), on: (fn) => views.on(fn), count: (total) => views.count(total), get now() { return views.now; } },
+  tasks,
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; }, get makesTruth() { return makesTruth(); },
 };
 const offlineCopy = offline({ $, esc, sizeText, remote, throttled, throttle, stored: () => diskBar(),

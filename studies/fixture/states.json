@@ -6,17 +6,15 @@
     ]},
     {"under": "Ground Truth Tasks", "tree": [
       {"name": "Study: count", "select": "#fx-result", "req": "req/shell/study/knows-none"},
-      {"name": "Study: postprocessing", "select": "#fx-counted", "req": "req/shell/account/role"}
+      {"name": "Study: postprocessing", "select": "#fx-counted", "req": "req/shell/account/role"},
+      {"name": "Study: the count is right", "select": "#fx-check", "control": true, "req": "req/shell/ground-truth/tasks",
+        "rule": [
+          {"when": {"counted": [false]}, "is": "hidden"}
+        ]
+      }
     ]},
     {"under": "Summary", "tree": [
       {"name": "Study: count summed up", "select": "#fx-sum", "req": "req/shell/study/knows-none"}
-    ]},
-    {"under": "Tasks bar", "tree": [
-      {"name": "Submit ground truth", "select": "#fx-truth", "control": true, "req": "req/shell/views/submit-task",
-        "rule": [
-          {"when": {"counted": [false]}, "is": "disabled", "req": "req/shell/study/knows-none"}
-        ]
-      }
     ]},
     {"under": "Main view", "after": "Image view", "tree": [
       {"name": "Item view", "select": "#items-view", "req": "req/shell/views/second",

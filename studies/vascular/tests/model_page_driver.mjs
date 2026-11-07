@@ -69,6 +69,9 @@ try {
   await page.waitForFunction(() => !$("#vm-run").disabled);
   await page.evaluate(() => { $("#notice").hidden = true; });
   check(await page.evaluate(() => $("#v3-stage #mcv") === null && $("#model-on").hidden), "a stack opens with no model");
+  // req/vascular/model/run: the Processing box runs the algorithm on the image open, as NoR's; no model file is loaded
+  check(await page.evaluate(() => !$("#model-load") && !$("#model-file") && !/model file/i.test($("#model-set").textContent + $("#model-facts").textContent)),
+    "the Processing box offers no model file to load, only Execute");
   await page.click("#vm-run");
   await page.waitForFunction(() => !$("#model-on").hidden);
   check(/vessel edges/.test(await facts()), `Execute opens the model it draws: ${(await facts()).slice(0, 80)}`);
@@ -112,7 +115,7 @@ try {
     await page.click(await inMenu('#review-mode [data-v="all"]'));
   } else console.log(`not checked in this ${ENGINE}: what Detected leaves in the 3D view, which needs the WebGL2 it lacks`);
 
-  check(await page.isHidden("#tasks-box") && await page.isHidden("#vm-truth") && await page.isHidden("#m-draw") && await page.isVisible("#summary-box #m-lasso"),
+  check(await page.isHidden("#tasks-box") && await page.isHidden("#gt-submit") && await page.isHidden("#m-draw") && await page.isVisible("#summary-box #m-lasso"),
     "outside a ground-truth stage there are no tasks, no Submit and no Draw a missed vessel, a ground-truth task; a damaged area is marked from Summary");
   // req/shell/image/toolbar: how the model shows is the toolbar's left, and the left bar holds none of it
   const where = await page.evaluate(() => ["#model-mode", "#m-widths", "#review-mode", "#reach"].map((s) => !!$(s)?.closest(".toolbar") && !$(s).closest("#left")));

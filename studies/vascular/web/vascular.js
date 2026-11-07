@@ -15,7 +15,7 @@ export function mount(shell) {
   items.init(V, () => shell.views.show("image"), shell.views.count);
   // marking a damaged area goes under the tasks while the study makes ground truth, else under what the model holds;
   // drawing a missed vessel is the Areas task's alone
-  if (truth) { tasks.init(V, steps); $("#vm-tasks").append($("#vm-marks")); }
+  if (truth) { tasks.init(V, shell.tasks, steps, submit); $("#vm-tasks").append($("#vm-marks")); }
 
   // ---------- Processing: the algorithm, how it works and how well, Execute ----------
   // each algorithm's precision and recall against the provisional labels, as the lab's grader measured them
@@ -49,21 +49,21 @@ export function mount(shell) {
   // ---------- the status bar's steps, and the Processing box's title ----------
   function steps() {
     const m = MV.current(), a = algorithms.find((x) => x.key === ran);
-    shell.step("find", !!m && (!ran || ran === $("#vm-algo").value), m ? (a ? `${a.title}: ${m.segments.length} segments` : "A model file loaded") : "");
+    shell.step("find", !!m && (!ran || ran === $("#vm-algo").value), m ? (a ? `${a.title}: ${m.segments.length} segments` : `${m.segments.length} segments`) : "");
     shell.boxDone($("#model-set"), m ? (a ? `${a.title} executed` : "Model loaded") : null);
     const open = truth && tasks.open(), left = (open || []).filter((t) => !t.ok).map((t) => t.text + ".");
     shell.step("review", !!m && (!truth || (!!open && !left.length)), left.join(" ") || "Every task is done.");
   }
-  MV.onChange((m) => { if (truth) $("#vm-truth").disabled = !m; if (!m) ran = null; steps(); });
+  MV.onChange((m) => { if (truth) shell.tasks.ready(!!m); if (!m) ran = null; steps(); });
 
   // the tagger's progress on the stack: the model's edits, kept on this device (req/shell/ground-truth/clear)
   shell.clearable("edits to the vessel model", () => MV.forget());
-  if (truth) $("#vm-truth").onclick = () => {
+  function submit() {
     const gt = MV.truth();
     if (!gt) return;
     shell.submitTruth({ doc: gt.doc, count: gt.edits, file: gt.file, items: truth ? tasks.open() : gt.items,
       empty: "Correct the model first: approve or decline a vessel, check a junction or an area, or draw a missed vessel." });
-  };
+  }
   // a stack already open when the study comes in (a switch from another study)
   if (shell.page.get("image")) MV.stackOpened();
   window.vascular = { tasks: tasks.inspect, model: MV.inspect };

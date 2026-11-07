@@ -15,7 +15,6 @@
     "fromComputer": [false, true],
     "hasSteps": [false, true],
     "itemView": [false, true],
-    "itemViewing": [false, true],
     "notice": [false, true],
     "imageFits": [true, false]
   },
@@ -32,8 +31,8 @@
   "paths": [
     {"root": "GT, signed out", "actions": ["load", "count", "items"]},
     {"root": "GT, Viewer", "actions": ["load", "tagger"]},
-    {"root": "GT, Tagger", "actions": ["load", "count", "items"]},
-    {"root": "PostGT, Tagger", "actions": ["load", "count", "items"]},
+    {"root": "GT, Tagger", "actions": ["load", "count"]},
+    {"root": "PostGT, Tagger", "actions": ["load", "count"]},
     {"root": "PreGT, signed out", "actions": ["load", "count"]},
     {"root": "PreGT, Tagger", "actions": ["load", "count", "items"]},
     {"root": "Published, Viewer", "actions": ["load", "count", "items"]},
@@ -91,20 +90,6 @@
         },
         {"name": "Left bar", "select": "#left", "req": "req/shell/left-bar/folding",
           "children": [
-            {"name": "Collapsed strip", "select": "#left-strip", "req": "req/shell/left-bar/collapse",
-              "rule": [
-                {"is": "hidden"}
-              ],
-              "children": [
-                {"name": "Expand", "select": "#left-expand", "control": true, "req": "req/shell/left-bar/collapse"},
-                {"name": "Strip's marks", "select": "#left-marks", "req": "req/shell/left-bar/collapse"}
-              ]
-            },
-            {"name": "Left bar's head", "select": "#left-head", "req": "req/shell/left-bar/collapse",
-              "children": [
-                {"name": "Collapse", "select": "#left-collapse", "control": true, "req": "req/shell/left-bar/collapse"}
-              ]
-            },
             {"name": "Image box", "select": "#image-box", "box": true, "req": "req/shell/left-bar/folding",
               "rule": [
                 {"when": {"selected": ["folder"]}, "is": "hidden", "req": "req/shell/data/folder"},
@@ -139,18 +124,17 @@
                         {"when": {"stack": [false]}, "is": "hidden"}
                       ],
                       "children": [
-                        {"name": "Slices shown", "select": "#v3-slices", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d"},
                         {"name": "First slice shown", "select": "#v3-z0", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"},
                         {"name": "Last slice shown", "select": "#v3-z1", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"},
                         {"name": "Spacing between slices", "select": "#v3-zs", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"}
                       ]
                     },
-                    {"name": "Channel's Colour by depth", "select": "#channels .v3-depth-row", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
+                    {"name": "Channel's Colour by depth", "select": "#channels .v3-tick", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
                       "rule": [
                         {"when": {"stack": [false]}, "is": "hidden"}
                       ],
                       "children": [
-                        {"name": "Colour by depth tick", "select": "#channels .v3-depth-row input", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"}
+                        {"name": "Colour by depth tick", "select": "#channels .v3-tick", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"}
                       ]
                     }
                   ]
@@ -294,6 +278,22 @@
                 {"when": {"hasSteps": [false]}, "is": "hidden", "approval": "tentative"},
                 {"when": {"makesTruth": [false]}, "is": "hidden"},
                 {"when": {"counted": [false]}, "is": "folded", "req": "req/shell/left-bar/folding"}
+              ],
+              "children": [
+                {"name": "Tasks' list", "select": "#gt-list", "req": "req/shell/ground-truth/tasks",
+                  "children": [
+                    {"name": "Tasks' bar", "select": "#gt-bar", "req": "req/shell/ground-truth/tasks"},
+                    {"name": "Tasks", "select": "#gt-tasks", "req": "req/shell/ground-truth/tasks",
+                      "children": [
+                        {"name": "Submit Ground Truth", "select": "#gt-submit", "control": true, "req": "req/shell/ground-truth/tasks",
+                          "rule": [
+                            {"when": {"counted": [false]}, "is": "disabled"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
               ]
             },
             {"name": "Summary", "select": "#summary-box", "box": true, "req": "req/shell/left-bar/shells",
@@ -312,7 +312,7 @@
             {"name": "Tasks/Items switch", "select": "#switch", "control": true, "req": "req/shell/views/second",
               "rule": [
                 {"when": {"itemView": [false]}, "is": "hidden"},
-                {"when": {"itemViewing": [true], "makesTruth": [true]}, "is": "hidden"},
+                {"when": {"makesTruth": [true]}, "is": "hidden"},
                 {"when": {"role": ["data"]}, "is": "hidden", "req": "req/shell/data/mode"},
                 {"when": {"counted": [false]}, "is": "disabled"}
               ]
@@ -362,12 +362,6 @@
             {"name": "Zoom", "select": "#zoom-label", "req": "req/shell/image/minimap",
               "rule": [
                 {"when": {"view": ["items"]}, "is": "hidden", "req": "req/shell/views/second"}
-              ]
-            },
-            {"name": "Tasks bar", "select": "#tasks-bar", "req": "req/shell/views/submit-task",
-              "rule": [
-                {"when": {"makesTruth": [false]}, "is": "hidden"},
-                {"when": {"view": ["image"]}, "is": "hidden"}
               ]
             },
             {"name": "Busy", "select": "#busy", "req": "req/shell/waiting/visible",

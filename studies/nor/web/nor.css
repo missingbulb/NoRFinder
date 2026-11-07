@@ -159,18 +159,6 @@
 #ctx .item:hover, #ctx .item:focus-visible { color: var(--accent); }
 #ctx[hidden], #card-menu[hidden] { display: none; }
 
-/* the Ground truth button's colour: how finished the user's verdicts are */
-/* the Ground truth button: a plain button with a small check, warning or error icon; the last two pulse gently */
-#dl-truth { display: inline-flex; align-items: center; gap: 6px; }
-#dl-truth .gt-ico { display: none; line-height: 0; }
-#dl-truth .gt-ico svg { display: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-#dl-truth[data-state=done] .gt-ico, #dl-truth[data-state=part] .gt-ico, #dl-truth[data-state=todo] .gt-ico { display: inline-block; }
-#dl-truth[data-state=done] .done, #dl-truth[data-state=part] .part, #dl-truth[data-state=todo] .todo { display: block; }
-#dl-truth[data-state=done] .gt-ico { color: var(--yes); }
-#dl-truth[data-state=part] .gt-ico { color: var(--gt-part); animation: gt-pulse 2s ease-in-out infinite; }
-#dl-truth[data-state=todo] .gt-ico { color: var(--no); animation: gt-pulse 2s ease-in-out infinite; }
-@keyframes gt-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(.9); } }
-@media (prefers-reduced-motion: reduce) { #dl-truth .gt-ico { animation: none !important; } }
 /* the summary mask: its borders as a pulsing dashed line; its inside tinted only when areas overlap or nest */
 .mask-btns { display: flex; gap: 6px; margin-bottom: 10px; }
 .mask-btns button { padding: 3px 10px; font-size: 12px; }
@@ -189,31 +177,8 @@
   background: var(--shade); border: 1px solid var(--line); font-weight: 600; font-size: 13px; pointer-events: none; }
 #lasso-hint[hidden] { display: none; }
 
-/* Ground Truth Tasks, in Summary's place while the study makes ground truth: a bar of a part per task, then a
-   row per task, the open one with its tools on its row and its item's card under it */
+/* the open ground-truth task's tools on its row, and its item's card under it */
 #task-now[hidden], #card-menu[hidden], #task-tools[hidden], #area-check[hidden], #show-menu [hidden] { display: none; }
-#gt-bar { display: flex; gap: 3px; height: 8px; margin-bottom: 10px; }
-#gt-bar > span { flex: 1 1 0; min-width: 6px; border-radius: 4px; --done: 0;
-  background: linear-gradient(to right, var(--yes) calc(var(--done) * 100%), var(--line) calc(var(--done) * 100%)); }
-#gt-tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-#gt-tasks > li + li { border-top: 1px solid var(--line); }
-#gt-tasks .task-head { display: flex; align-items: center; gap: 8px; min-height: 34px; font-size: 13px; }
-#gt-tasks .task-head .t { flex: 1; min-width: 0; text-align: left; border: 0; background: none; padding: 4px 0; font-size: 13px; color: var(--text); white-space: nowrap; }
-#gt-tasks .task-head .t:hover { color: var(--accent); }
-#gt-tasks .task-head .n { font-weight: 600; font-variant-numeric: tabular-nums; }
-#gt-tasks li.now .t { font-weight: 600; }
-/* a done task's check, after its name; nothing marks the others */
-#gt-tasks .tick { order: 1; display: none; color: var(--yes); font-weight: 700; }
-#gt-tasks li.done .tick { display: inline; }
-#gt-tasks .tick::after { content: "✓"; }
-#gt-tasks li.done .t { color: var(--dim); }
-#gt-tasks .task-head .t { order: 0; }
-#gt-tasks .task-head #task-tools { order: 2; }
-#gt-tasks li[data-task="submit"] .task-head { padding: 6px 0 0; }
-#gt-tasks li[data-task="submit"] #dl-truth { flex: 1; }
-#gt-tasks li:not(.now) .task-body { display: none; }
-#gt-tasks .task-body { padding: 0 0 10px; }
-#gt-tasks .task-body .hint { margin: 0 0 6px; }
 #area-ok { width: 100%; margin-top: 6px; }
 #task-tools { display: inline-flex; align-items: center; gap: 6px; }
 #task-tools .link { font-size: 12px; padding: 2px 0; white-space: nowrap; }

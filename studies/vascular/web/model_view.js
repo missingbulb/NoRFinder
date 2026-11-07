@@ -697,16 +697,11 @@ export function truth() {
     items: [{ level: 'warn', ok: !v.candidate, text: v.candidate ? `${v.candidate} low-confidence vessel${v.candidate === 1 ? '' : 's'} still to approve or decline` : 'Every low-confidence vessel has your verdict' }] };
 }
 
-export function openFile(f) {
-  if (!V?.meta) return msg('Open the stack first, then its model.', true);
-  f.text().then((t) => open(t, f.name), () => msg(`Could not read ${f.name}.`, true));
-}
-
-// Called whenever a stack opens: it opens with no model until the algorithm draws one or a file is loaded.
+// Called whenever a stack opens: it opens with no model until the algorithm draws one.
 export function stackOpened() {
   model = null; loaded = null; history = []; future = []; edits = 0; savedKey = null; task = null; area = null;
   $('model-on').hidden = true; $('vm-review').hidden = true; $('vm-marks').hidden = true; $('m-candidates-row').hidden = true; msg(''); setMode('image');
-  $('model-facts').textContent = 'No vessel model yet: Execute the algorithm, or load a model file.';
+  $('model-facts').textContent = 'No vessel model yet: Execute the algorithm.';
   if (drawing) setDrawing(false);
   if (lasso) setLasso(false);
   maskKey = null; refreshMask(true);
@@ -736,8 +731,6 @@ export function init(view, signal, makesTruth) {
   });
   cv.addEventListener('pointerleave', () => { if (hover && $('ctx').hidden) { hover = null; V.redraw(); } });
   $('model-mode').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b && !b.disabled) setMode(b.dataset.v); });
-  $('model-load').onclick = () => $('model-file').click();
-  $('model-file').onchange = (e) => { if (e.target.files[0]) openFile(e.target.files[0]); e.target.value = ''; };
   $('m-candidates').onchange = (e) => { showCandidates = e.target.checked; if (!showCandidates && isCandidate(hover)) closeMenu(); hover = null; refreshMask(); V.redraw(); };
   $('review-mode').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setReview(b.dataset.v); });
   const reachOut = () => { $('reach-o').value = `${Math.round(reach * 100)}% of its width`; };

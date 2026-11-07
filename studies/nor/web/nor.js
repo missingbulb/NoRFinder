@@ -224,7 +224,6 @@ export function mount(shell) {
     st.numbers = new Map(st.order.map((c, k) => [c.i, k + 1]));
     loadMarks();
     buildOverlay(); drawAdded(); drawMask();
-    $("#switch").disabled = false;
     refilter();
   }
 
@@ -963,17 +962,14 @@ export function mount(shell) {
     return { state: !voted || waiting ? "todo" : open || left || (TRUTH && st.areas.size < AREAS) ? "part" : "done", items };
   }
   function gtButton() {
-    const b = $("#dl-truth"); b.disabled = !st.img;
     const { state, items } = gtState(), open = items.filter((t) => t.grade && !t.ok);
-    b.dataset.state = st.img ? state : "";
-    // the tasks: a verdict on every finalist and every NoR the user added
-    const verdict = (c) => (c.added ? st.added[c.k].verdict : st.forced.get(c.i)), tasks = st.meta ? [...(st.passes || []).filter((c) => !c.added), ...addedCands()] : null;
-    shell.views.count(tasks && tasks.filter((c) => !verdict(c)).length, tasks && tasks.length);
-    b.title = (open.length ? open.map((t) => t.text + ".").join(" ") : TRUTH ? "Every task is done." : "Every finalist has your verdict.") + " Click to export or submit.";
+    // the items: every finalist and every NoR the user added
+    shell.views.count(st.meta ? (st.passes || []).filter((c) => !c.added).length + addedCands().length : null);
+    shell.tasks.ready(!!st.img, st.img ? state : undefined,
+      (open.length ? open.map((t) => t.text + ".").join(" ") : TRUTH ? "Every task is done." : "Every finalist has your verdict.") + " Click to export or submit.");
     steps();
   }
-  $("#dl-truth .gt-ico").innerHTML = ["done", "part", "todo"].map((n) => shell.icon(n).replace("<svg ", `<svg class="${n}" `)).join("");
-  $("#dl-truth").onclick = () => {
+  const submit = () => {
     const doc = truth();
     shell.submitTruth({ doc, count: doc.labels.length, file: base() + "_ground_truth.json", items: gtState().items,
       empty: "Vote on candidates with the thumbs, or right-click the image to add a NoR the finder missed." });
@@ -1129,18 +1125,9 @@ export function mount(shell) {
     // a row per task, counting what is done of it; the bar a part per task, as long as it and filled as far as done
     const count = { pass: lists.pass.length, fail: lists.fail.length, missed: AREAS };
     const did = { pass: lists.pass.filter(verdictOf).length, fail: lists.fail.filter(verdictOf).length, missed: st.areas.size };
-    for (const li of $("#gt-tasks").children) {
-      const t = li.dataset.task;
-      li.classList.toggle("done", ready && taskDone(t)); li.classList.toggle("now", ready && t === st.task);
-      const nb = li.querySelector(".n"); if (nb) nb.textContent = ready ? `${did[t]}/${count[t]}` : "";
-    }
-    for (const b of $("#gt-bar").children) {
-      const t = b.dataset.task;
-      b.style.flexGrow = ready ? count[t] : 1; b.style.setProperty("--done", ready && count[t] ? did[t] / count[t] : 0);
-      b.title = ready ? `${$("#nor-tasks").querySelector(`#gt-tasks > li[data-task="${t}"] .t`).textContent.trim()}` : "";
-    }
+    for (const t of ["pass", "fail", "missed"]) shell.tasks.count(t, ready ? did[t] : null, count[t], ready && taskDone(t));
     // the open task: its tools on its row, and its item's card under it
-    const li = ready && $(`#gt-tasks > li[data-task="${st.task}"]`), now = $("#task-now"), tools = $("#task-tools");
+    const li = shell.tasks.open(ready ? st.task : null), now = $("#task-now"), tools = $("#task-tools");
     const c = ready && st.sel != null ? candOf(st.sel) : null;
     if (li && st.task !== "submit") {
       li.querySelector(".task-head").append(tools);
@@ -1174,7 +1161,10 @@ export function mount(shell) {
   if (TRUTH) {
     $("#card-menu").open = false; $("#task-back").before($("#card-menu"));
     $("#overlay").classList.add("gt"); shell.signal.addEventListener("abort", () => $("#overlay").classList.remove("gt"));
-    for (const li of $("#gt-tasks").children) li.querySelector("button.t")?.addEventListener("click", () => { if (st.meta) goTask(li.dataset.task); });
+    shell.tasks.list([{ key: "pass", name: "Finalists" }, { key: "fail", name: "Rejected" },
+      { key: "missed", name: "Areas", title: "The image's areas, each checked for NoRs the finder missed" }],
+    { submit, pick: (t) => { if (st.meta) goTask(t); } });
+    shell.tasks.row("missed").querySelector(".task-body").append($("#nor-tasks .missed-slot"), $("#area-check"));
   }
 
   // ---------- the summary mask: areas lassoed on the image, combined by exclusive or ----------
@@ -1368,7 +1358,7 @@ export function mount(shell) {
   window.nor = { taskItems, walk, goTo, focusOn, truth, candOf, addedCands, linesOf, showView, decide, numOf, whyAll, result, summaryRows, inMask, fmt, card };
 
   // the buttons whose action can take a while on a slow computer
-  for (const id of ["#find", "#switch", "#tab-pass", "#tab-fail", "#dl-cands", "#dl-summary"]) slow($(id));
+  for (const id of ["#find", "#tab-pass", "#tab-fail", "#dl-cands", "#dl-summary"]) slow($(id));
 
   // ---------- what the shell asks of the study ----------
   return {
@@ -1388,7 +1378,7 @@ export function mount(shell) {
     opening(name) {
       st.added = loadAdded(name); st.mask = readJSON(MASK + name, []); st.areas = new Set(readJSON(AREAS_KEY + name, [])); st.task = null; st.area = null; st.cur = undefined; st.back = []; endLasso(); st.meta = null; st.lastRun = null; st.cands = []; st.order = []; st.passes = st.rejects = null; st.sel = null; st.ring = null; st.crops = new Map();
       $("#list").replaceChildren(); $("#summary").textContent = "No candidates yet.";
-      $("#switch").disabled = true; downloads(false); renderSelected(); renderTasks();
+      downloads(false); renderSelected(); renderTasks();
     },
     // a curated ground truth's final results (req/shell/ground-truth/view): each NoR it marks, ringed, numbered as in its
     // file, and none of the tasks' marks (no areas, no rejected candidates, nothing blacked out)

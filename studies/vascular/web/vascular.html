@@ -6,10 +6,8 @@
         <div id="vm-about-note" class="hint"></div>
       </details>
       <div class="row">
-        <button type="button" id="model-load" class="link" title="Open a vessel model file, one saved earlier say, in place of running the algorithm">or load a model file</button>
         <button type="button" id="vm-run" class="primary" disabled>Execute</button>
       </div>
-      <input id="model-file" type="file" accept=".json,application/json" hidden>
       <div id="model-on" class="col" hidden>
         <div class="views" id="vm-edits">
           <button type="button" id="m-undo">Undo</button>
@@ -21,7 +19,7 @@
     </div>
 </template>
 <template data-slot="summary">
-    <p class="note" id="model-facts">No vessel model yet: Execute the algorithm, or load a model file.</p>
+    <p class="note" id="model-facts">No vessel model yet: Execute the algorithm.</p>
     <div id="vm-marks" class="col" hidden>
       <div class="views"><button type="button" id="m-lasso" aria-pressed="false">Mark a damaged area</button></div>
       <p class="note" id="lasso-note"></p>
@@ -29,17 +27,9 @@
 </template>
 <template data-slot="tasks">
     <div id="vm-tasks" hidden>
-      <div id="gt-bar"><span data-task="vessels"></span><span data-task="candidates"></span><span data-task="junctions"></span><span data-task="missed"></span></div>
-      <ol id="gt-tasks">
-        <li data-task="vessels"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button" title="The vessels the algorithm drew with confidence"><span class="n"></span> Vessels</button></div><div class="task-body"></div></li>
-        <li data-task="candidates"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button" title="The faint vessels the algorithm was unsure of"><span class="n"></span> Low-confidence</button></div><div class="task-body"></div></li>
-        <li data-task="junctions"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button" title="Where three or more vessels meet: a real junction, or vessels that only cross"><span class="n"></span> Junctions</button></div><div class="task-body"></div></li>
-        <li data-task="missed"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button" title="The stack's areas, each checked for vessels the algorithm missed"><span class="n"></span> Areas</button></div>
-          <div class="task-body"><p class="hint">Draw any vessel the algorithm missed in the framed area.</p>
-            <button type="button" id="m-draw" aria-pressed="false">Draw a missed vessel</button><p class="note" id="draw-note"></p>
-            <button id="area-ok" class="primary" type="button">No missed vessels here</button></div></li>
-        <li data-task="submit"><div class="task-head"><span class="tick" aria-hidden="true"></span><button id="vm-truth" type="button" disabled>Submit Ground Truth</button></div></li>
-      </ol>
+      <div id="vm-missed"><p class="hint">Draw any vessel the algorithm missed in the framed area.</p>
+        <button type="button" id="m-draw" aria-pressed="false">Draw a missed vessel</button><p class="note" id="draw-note"></p>
+        <button id="area-ok" class="primary" type="button">No missed vessels here</button></div>
       <span id="task-tools"><details class="menu" id="task-menu"><summary title="This item's options" aria-label="This item's options"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></g></svg></summary><div class="pop" id="task-opts"></div></details><button id="task-skip" class="link" type="button" title="The next one, leaving this one for later">Skip ›</button></span>
       <div id="task-now"><div id="task-stage"><div id="task-card"></div></div></div>
     </div>
@@ -68,7 +58,7 @@
       </details>
 </template>
 <template data-slot="views">
-    <div id="items-view" data-viewing hidden>
+    <div id="items-view" hidden>
       <div class="items-bar">
         <div class="seg" id="item-kind">
           <button type="button" data-v="junctions" aria-pressed="true">Junctions <span class="count"></span></button>

@@ -56,10 +56,10 @@ await page.waitForFunction(() => document.querySelector("#remote-dlg").open);
 await page.dblclick(`#remote-list .item[data-id="${png.id}"]`);
 await page.waitForFunction((n) => st.fileName === n && !$("#fx-count").disabled, png.name);
 await page.click("#fx-count");
-await page.waitForFunction(() => !$("#fx-truth").disabled);
+await page.waitForFunction(() => !$("#gt-submit").disabled);
 const submit = async () => {
   // the button sits in the item view's bar: pressed where it is
-  await page.evaluate(() => $("#fx-truth").click());
+  await page.evaluate(() => $("#gt-submit").click());
   await page.waitForFunction(() => $("#gt-dlg").open && !$("#gt-send").disabled);
   await page.click("#gt-send");
   await page.waitForFunction(() => /Submitted/.test($("#gt-msg").textContent) || /not/.test($("#gt-msg").textContent));

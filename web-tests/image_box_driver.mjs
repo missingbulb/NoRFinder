@@ -173,9 +173,10 @@ await page.evaluate(() => shellForTests.page.set({ minimap: "hidden" }));
 await check(!(await visible("#minimap")) && (await page.getAttribute("#minimap-btn", "aria-pressed")) === "false", "the page's state hides the minimap and raises its button");
 await page.evaluate(() => shellForTests.page.set({ minimap: "open" }));
 
-// ---- the study's ground-truth button heads the tasks, not the image (req/shell/views/submit-task); no right bar ----
-const bar = await page.evaluate(() => ({ inImage: !!document.querySelector("#fx-truth").offsetParent, inBar: document.querySelector("#tasks-bar").contains(document.querySelector("#fx-truth")), right: !!document.querySelector("#right, #gutter-right") }));
-await check(!bar.inImage && bar.inBar && !bar.right, "the ground-truth button is in the tasks' bar, not over the image, and there is no right bar", bar);
+// ---- Submit Ground Truth is the last of the shell's tasks, not over the image (req/shell/ground-truth/tasks); no right bar ----
+const bar = await page.evaluate(() => ({ last: document.querySelector("#gt-tasks").lastElementChild.contains(document.querySelector("#gt-submit")),
+  inImage: document.querySelector("#view").contains(document.querySelector("#gt-submit")), right: !!document.querySelector("#right, #gutter-right") }));
+await check(bar.last && !bar.inImage && !bar.right, "Submit Ground Truth is the last task, not over the image, and there is no right bar", bar);
 
 // ---- the channel: the study's name and description, its black and white points, its checkbox ----
 const rows = () => page.$$eval("#channels .channel", (rs) => rs.map((r) => ({ name: r.querySelector("label").textContent, colour: r.dataset.colour,
@@ -275,12 +276,11 @@ await check(clear.fx === "Nothing counted yet." && !clear.overlay && clear.statu
 await check(await page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].filter((b) => b.checkVisibility()).map((b) => b.classList.contains("folded")).join()) === "false,true,true", "and the boxes on show fold as before any image");
 await check((await rows()).length === 0, "and no channel rows are left, with no image (req/shell/channels/rows)");
 
-// ---- after Unload, the next image's switch still shows the item view ----
+// ---- after Unload, the next image's tasks open again (req/shell/ground-truth/tasks) ----
 await loadImage();
 await page.click("#fx-count");
-await page.waitForFunction(() => !document.querySelector("#switch").disabled);
-await page.click("#switch");
-await page.waitForFunction(() => !document.querySelector("#switch").classList.contains("working"));
-const shownAfter = await page.evaluate(() => ({ items: !document.querySelector("#items-view").hidden, image: !document.querySelector("#image-view").hidden }));
-await check(shownAfter.items && !shownAfter.image, "after Unload, the next image's switch shows the item view", shownAfter);
+await page.waitForFunction(() => !document.querySelector("#gt-submit").disabled);
+const tasksAfter = await page.evaluate(() => ({ open: document.querySelector('#gt-tasks > li[data-task="check"]').classList.contains("now"),
+  row: document.querySelector('#gt-tasks > li[data-task="check"] .t').textContent.trim() }));
+await check(tasksAfter.open && tasksAfter.row === "0/1 Count checked", "after Unload, the next image's task opens again, nothing done", tasksAfter);
 await done(0);

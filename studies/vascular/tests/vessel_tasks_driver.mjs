@@ -53,7 +53,7 @@ const brightness = () => page.evaluate(async () => {
 });
 const tasks = () => page.evaluate(() => window.vascular.tasks());
 const doc = () => page.evaluate(() => window.vascular.model().model);
-const rows = () => page.evaluate(() => [...document.querySelectorAll("#gt-tasks > li")].map((li) => li.querySelector(".task-head .t, .task-head #vm-truth").textContent.trim()));
+const rows = () => page.evaluate(() => [...document.querySelectorAll("#gt-tasks > li")].map((li) => li.querySelector(".task-head .t, .task-head #gt-submit").textContent.trim()));
 // an area's place in the review, as the requirement orders them: rows top to bottom, each the way back from the last
 const [W, H] = [model.size_px[0] * model.um_per_px, model.size_px[1] * model.um_per_px];
 // (a curve point just outside the field is in the area at its edge)
@@ -158,7 +158,7 @@ try {
     check(cut < lit, `a checked area is cut out of the stack: brightness ${lit.toFixed(2)} → ${cut.toFixed(2)}`);
   } else console.log(`not checked in this ${ENGINE}: the area cut out of the 3D view, which needs the WebGL2 it lacks`);
 
-  await page.click("#vm-truth");
+  await page.click("#gt-submit");
   check(await page.evaluate(() => $("#gt-dlg").open && !$("#gt-export").disabled), "Submit Ground Truth, the last task, exports once there are verdicts");
   const open = await page.evaluate(() => $("#gt-dlg").textContent);
   check(/vessels still to decide/.test(open) && /99 of 100 left/.test(open), `its checklist says what of each task is open: ${open.replace(/\s+/g, " ").slice(0, 200)}`);

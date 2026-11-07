@@ -81,7 +81,6 @@ def test_a_study_names_its_stage_and_steps(path):
     assert 'stage' in m and m['stage'] in ('PreGT', 'GT', 'PostGT', 'Published', None), 'stage: PreGT, GT, PostGT, Published, or null for a tool making no ground truth'
     if m['stage'] in ('GT', 'PostGT'):
         gt = m.get('groundTruth', {})
-        assert 'button' in gt, 'a study that makes ground truth names its button'
         # req/shell/ground-truth/folders: its ground-truth folders are under its root, named there, not here
         assert 'root' in m, 'a study that makes ground truth names its Drive root'
         assert not {'submissions', 'curated', 'label'} & gt.keys(), "the root's settings file names the ground-truth folders"
@@ -107,7 +106,7 @@ class Panels(HTMLParser):
 
 # the slots inside the shell's own left-bar boxes, and the slots elsewhere on the page
 BOX_SLOTS = {'processing', 'summary', 'tasks'}
-PAGE_SLOTS = {'toolbar', 'toolbar-end', 'tasks-end', 'view-top', 'views', 'over-image', 'body'}
+PAGE_SLOTS = {'toolbar', 'toolbar-end', 'view-top', 'views', 'over-image', 'body'}
 
 
 def test_the_left_bar_is_the_shells_and_a_study_fills_its_boxes():
@@ -130,6 +129,27 @@ def test_the_left_bar_is_the_shells_and_a_study_fills_its_boxes():
         assert set(p.slots) <= BOX_SLOTS | PAGE_SLOTS, f"{m['id']} fills slots the shell has not: {set(p.slots) - BOX_SLOTS - PAGE_SLOTS}"
         assert not p.boxes, f"{m['id']} adds boxes of its own: {p.boxes}"
     assert seen >= 10, f'read only {seen} templates: the sweep is not finding them all'
+
+
+def test_the_shell_lists_the_ground_truth_tasks_and_their_submit():
+    """req/shell/ground-truth/tasks, req/shell/views/second: a study draws no task rows, progress bar or Submit Ground
+    Truth of its own, names no submit button, marks no item view as only viewing, and never turns the item view's
+    switch on or off; the shell has no Tasks view."""
+    page = open(os.path.join(WEB, 'index.html'), encoding='utf8').read()
+    assert 'id="tasks-bar"' not in page and 'tasks-end' not in page, 'the Tasks view is retired: no bar, no slot for it'
+    seen = 0
+    for path in STUDIES:
+        m, base = manifest(path), os.path.dirname(path)
+        assert 'button' not in (m.get('groundTruth') or {}), f"{m['id']}: Submit Ground Truth is the shell's"
+        if 'panels' in m['web']:
+            html = open(os.path.join(base, m['web']['panels']), encoding='utf8').read()
+            seen += 1
+            for what in ('id="gt-tasks"', 'id="gt-bar"', 'data-viewing'):
+                assert what not in html, f"{m['id']} draws {what}: the shell lists the tasks"
+            assert not re.search(r'>[^<]*Submit ground truth', html, re.I), f"{m['id']} has a Submit Ground Truth of its own"
+        for js in glob.glob(os.path.join(base, 'web', '*.js')):
+            assert not re.search(r'["\']#switch["\']', open(js, encoding='utf8').read()), f'{js}: the shell turns its switch on and off'
+    assert seen >= 4
 
 
 def test_the_shell_names_no_study():

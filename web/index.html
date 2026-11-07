@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>rauntruth.com app</title>
-<meta name="version" id="site-version" title="version 0.11107.105">
+<meta name="version" id="site-version" title="version 0.11107.106">
 <meta name="description" content="Image studies that run in your browser: find, count and measure in microscopy images, then review every result. Online or offline.">
 <link rel="icon" id="favicon" href="icon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
@@ -73,8 +73,6 @@
     </div>
   </aside>
   <aside id="left">
-    <div id="left-strip" title="Expand the left bar, with the study's steps"><button id="left-expand" type="button" aria-expanded="false" aria-controls="left" aria-label="Expand the left bar"><svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button><div id="left-marks" aria-label="The steps"></div><span class="strip-name">Steps</span></div>
-    <div id="left-head"><button id="left-collapse" type="button" aria-expanded="true" aria-controls="left" title="Collapse the left bar, to give the image its room" aria-label="Collapse the left bar"><svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button><span class="strip-name">Steps</span></div>
     <section class="box foldable" id="image-box" data-folds="load">
       <div class="sec-head"><h2 data-done-name="Loaded Image">Load Image</h2></div>
       <div id="load">
@@ -137,13 +135,17 @@
       <div class="sec-head"><h2>Ground Truth Tasks</h2></div>
       <div class="gt-access" hidden></div>
       <slot-here data-slot-for="tasks"></slot-here>
+      <div id="gt-list" hidden>
+        <div id="gt-bar"></div>
+        <ol id="gt-tasks"><li data-task="submit"><div class="task-head"><button id="gt-submit" type="button" disabled><span class="gt-ico" aria-hidden="true"></span>Submit Ground Truth</button></div></li></ol>
+      </div>
     </section>
     <section class="box foldable study-box" id="summary-box" hidden>
       <div class="sec-head"><h2>Summary</h2></div>
       <slot-here data-slot-for="summary"></slot-here>
     </section>
   </aside>
-  <div class="gutter" id="gutter-left" title="Drag to resize; drag it to the left edge to collapse the bar"></div>
+  <div class="gutter" id="gutter-left" title="Drag to resize; double-click to restore"></div>
 
   <main id="view">
     <div class="toolbar">
@@ -166,7 +168,6 @@
       </div>
       <slot-here data-slot-for="toolbar-end"></slot-here>
     </div>
-    <div id="tasks-bar" class="for-items" hidden><span class="done"></span><meter min="0" max="1" value="0"></meter><span class="grow"></span><slot-here data-slot-for="tasks-end"></slot-here></div>
     <div id="busy" hidden><div id="scan-light"></div><span class="spin big"></span><div id="busy-text"></div><div id="busy-time"></div></div>
 
     <slot-here data-slot-for="view-top"></slot-here>

@@ -33,14 +33,7 @@
 </template>
 <template data-slot="tasks">
     <div id="nor-tasks">
-      <div id="gt-bar"><span data-task="pass"></span><span data-task="fail"></span><span data-task="missed"></span></div>
-      <ol id="gt-tasks">
-        <li data-task="pass"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button"><span class="n"></span> Finalists</button></div><div class="task-body"></div></li>
-        <li data-task="fail"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button"><span class="n"></span> Rejected</button></div><div class="task-body"></div></li>
-        <li data-task="missed"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button" title="The image's areas, each checked for NoRs the finder missed"><span class="n"></span> Areas</button></div>
-          <div class="task-body"><div class="missed-slot"></div><div id="area-check"><p class="hint">Right-click where the finder missed a NoR in the framed area.</p><button id="area-ok" class="primary" type="button">No missed NoRs here</button></div></div></li>
-        <li data-task="submit"><div class="task-head"><span class="tick" aria-hidden="true"></span><button id="dl-truth" disabled><span class="gt-ico" aria-hidden="true"></span>Submit Ground Truth</button></div></li>
-      </ol>
+      <div class="missed-slot"></div><div id="area-check"><p class="hint">Right-click where the finder missed a NoR in the framed area.</p><button id="area-ok" class="primary" type="button">No missed NoRs here</button></div>
       <span id="task-tools"><button id="task-back" class="link" type="button" title="The one you were on before, to change your mind" disabled>‹ Back</button><button id="task-skip" class="link" type="button" title="The next one, leaving this one for later">Skip ›</button></span>
       <div id="task-now"><div id="task-stage"><div id="task-card"></div></div></div>
     </div>
@@ -84,7 +77,7 @@
     <div id="lasso-hint" hidden>Drag around the area to count · Esc cancels</div>
 </template>
 <template data-slot="views">
-    <div id="items-view" data-viewing data-shelved hidden>
+    <div id="items-view" data-shelved hidden>
       <div id="list"></div>
     </div>
 </template>
