@@ -1,5 +1,5 @@
 // The fixture study's page: a threshold, a Count button, the count, and the counted pixels drawn over
-// the image; the count is its ground truth, and checking it is right its one task in the item view.
+// the image; the count is its ground truth, and checking it is right its one task.
 export function mount(shell) {
   const $ = shell.$;
   let ready = false, counted = null;
@@ -7,17 +7,24 @@ export function mount(shell) {
     shell.busy(true, "Counting…");
     shell.call("count", { threshold: +$("#fx-threshold").value });
   };
-  const task = (open) => { shell.views.count(open ? 1 : 0, 1); $("#fx-task").classList.toggle("task-open", open && shell.views.tasks); };
-  $("#fx-done").onchange = () => task(!$("#fx-done").checked);
-  $("#fx-truth").onclick = () => {
+  const submit = () => {
     const name = shell.state.fileName.replace(/\.[^.]*$/, "");
     shell.submitTruth({ doc: { labels: counted ? [counted] : [] }, count: counted ? 1 : 0, file: name + "_gt.json", items: [],
       empty: "Count first." });
   };
+  // its one task, checking the count, open once there is one
+  const task = () => {
+    const done = $("#fx-done").checked;
+    shell.tasks.count("check", done ? 1 : 0, 1);
+    shell.tasks.ready(!!counted, counted ? (done ? "done" : "todo") : undefined);
+    $("#fx-check").hidden = !counted;
+    shell.tasks.open(counted && !done ? "check" : null)?.querySelector(".task-body").append($("#fx-check"));
+  };
+  const pick = (key) => { if (counted) shell.tasks.open(key).querySelector(".task-body").append($("#fx-check")); };
+  shell.tasks.list([{ key: "check", name: "Count checked", title: "Whether the count is right" }], { submit, pick });
+  $("#fx-done").onchange = task;
   // its progress on the image, the count, is kept nowhere but the page
   shell.clearable("count", () => {});
-  // the shell's own switch, slow as a study's slow action is, again each time the study mounts
-  shell.slow($("#switch"));
   return {
     // the curated ground truth's final result: the count, and no task
     showTruth(doc) {
@@ -27,15 +34,14 @@ export function mount(shell) {
     },
     ready(info) { $("#fx-threshold").value = info.threshold; ready = true; },
     opened() {
-      counted = null; $("#fx-count").disabled = !ready; $("#fx-truth").disabled = true;
-      $("#switch").disabled = true; $("#fx-done").disabled = true; $("#fx-done").checked = false; shell.views.count(null);
-      $("#fx-result").textContent = $("#fx-sum").textContent = "Nothing counted yet."; shell.viewer.layer("fx").replaceChildren();
+      counted = null; $("#fx-count").disabled = !ready; $("#fx-done").checked = false; task(); shell.views.count(null);
+      $("#fx-result").textContent = $("#fx-sum").textContent = $("#fx-item").textContent = "Nothing counted yet."; shell.viewer.layer("fx").replaceChildren();
     },
     result(action, meta, bytes) {
       shell.busy(false);
       counted = { threshold: +$("#fx-threshold").value, count: meta.count };
-      $("#fx-result").textContent = $("#fx-sum").textContent = `${meta.count} pixels above the threshold`; $("#fx-truth").disabled = false;
-      $("#switch").disabled = false; $("#fx-done").disabled = false; $("#fx-done").checked = false; task(true);
+      $("#fx-result").textContent = $("#fx-sum").textContent = $("#fx-item").textContent = `${meta.count} pixels above the threshold`;
+      $("#fx-done").checked = false; task(); shell.views.count(1);
       shell.step("count", true, `${meta.count} pixels above ${counted.threshold}`);
       shell.boxDone($("#fx-box"), `Counted at ${counted.threshold}`);
       const { W } = shell.state, g = shell.viewer.layer("fx");

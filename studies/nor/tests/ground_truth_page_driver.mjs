@@ -120,7 +120,7 @@ const middle = (page) => page.evaluate(() => {
 });
 
 // the state the Ground truth button shows: the one icon on display beside its text
-const gtColour = (page) => page.$eval("#dl-truth", (b) => {
+const gtColour = (page) => page.$eval("#gt-submit", (b) => {
   const on = [...b.querySelectorAll(".gt-ico svg")].filter((v) => getComputedStyle(v).display !== "none");
   return on.length === 1 ? on[0].getAttribute("class") : `${on.length} icons`;
 });
@@ -157,7 +157,7 @@ async function markAndVote(page) {
     const kept = st.fails, why = Object.values(kept).find((f) => f !== null), all = JSON.parse(JSON.stringify(kept));
     for (const k of Object.keys(all)) all[k] = why;
     land(all);
-    const seen = { finalists: st.passes.filter((c) => !c.added).length, button: $("#dl-truth").dataset.state,
+    const seen = { finalists: st.passes.filter((c) => !c.added).length, button: $("#gt-submit").dataset.state,
       crumbs: [...document.querySelectorAll("#sb-steps .crumb")].map((c) => c.textContent + (c.classList.contains("now") ? "*" : "")).join(" › ") };
     land(kept);
     return seen;
@@ -184,7 +184,7 @@ async function markAndVote(page) {
   await check(w1 > w0 + 1, `a dragged width end widens the NoR (${w0.toFixed(1)} to ${w1.toFixed(1)} px)`);
   // with another candidate voted on, only the added NoR keeps the button red
   await page.evaluate(() => nor.decide(st.order[0].i, "approve"));
-  const waiting = await page.$eval("#dl-truth", (b) => ({ state: b.dataset.state, why: b.title }));
+  const waiting = await page.$eval("#gt-submit", (b) => ({ state: b.dataset.state, why: b.title }));
   await page.evaluate(() => nor.decide(st.order[0].i, null));
   await check(waiting.state === "todo" && /Approve or reject the 1 NoR you added/.test(waiting.why), `an added NoR without a verdict keeps the button red: "${waiting.why}"`);
   await page.click("#task-card .verdict .up");
@@ -246,7 +246,7 @@ async function sorting(page) {
 // the popup the Ground truth button opens: its text, and the file its Export button downloads
 async function popup(page) {
   // Submit Ground Truth is the last of the tasks (req/nor/truth/tasks)
-  await page.click("#dl-truth");
+  await page.click("#gt-submit");
   await check(await page.isVisible("#gt-dlg"), "the Ground truth button opens its popup");
   // a checklist of every issue, the resolved ones crossed out: what is still open
   const items = await page.$$eval("#gt-problems li", (li) => li.map((l) => ({ ok: l.classList.contains("ok"), struck: getComputedStyle(l.querySelector("span")).textDecorationLine, text: l.textContent })));
@@ -375,7 +375,7 @@ async function mask(page) {
   await page.evaluate(() => { $("#notice").hidden = true; });
   await page.click("#find");
   await page.waitForFunction(() => st.alone && $("#busy").hidden);
-  await check(await page.isHidden("#dl-truth"), "a PreGT study has no Submit Ground Truth");
+  await check(await page.isHidden("#gt-submit"), "a PreGT study has no Submit Ground Truth");
   const csvAt = await page.evaluate(() => {
     const box = $("#summary-box").getBoundingClientRect(), sum = $("#summary").getBoundingClientRect();
     return ["#dl-cands", "#dl-summary"].map((id) => { const b = $(id).getBoundingClientRect(); return b.top >= sum.bottom && b.bottom <= box.bottom; });

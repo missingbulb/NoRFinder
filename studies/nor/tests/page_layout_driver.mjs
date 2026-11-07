@@ -99,7 +99,7 @@ for (const width of [1000, 1600]) {
     return { sel: box("#selected-box"), view: box("#image-view"), mm: box("#minimap"), crop: box("#selected .crop-wrap canvas, #selected .crop-wrap img"),
       prev: box("#sel-prev"), next: box("#sel-next"), title: document.querySelector("#selected-box h2")?.textContent || "",
       stepIn: !!document.querySelector("#selected .crop-wrap #sel-prev"), right: !!document.querySelector("#right"),
-      gt: document.querySelector("#dl-truth").textContent.trim(), gtShown: !!document.querySelector("#dl-truth").offsetParent };
+      gt: document.querySelector("#gt-submit").textContent.trim(), gtShown: !!document.querySelector("#gt-submit").offsetParent };
   });
   console.log(JSON.stringify(layout));
   if (layout.title) await fail("the selected card has a title", layout.title);

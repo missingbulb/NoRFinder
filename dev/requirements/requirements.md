@@ -473,7 +473,7 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/shell/ground-truth/submit` Submit writes the tagger's ground truth into the study's submissions folder.
   <details>
 
-  Set by the owner on 2026-11-05. The study's submit button opens a popup with the study's checklist of
+  Set by the owner on 2026-11-05. Submit Ground Truth (`req/shell/ground-truth/tasks`) opens a popup with the study's checklist of
   what is left to do, an Export file button that downloads the file, and a Submit button that writes it to
   the image's subfolder in the submissions folder (`req/shell/ground-truth/layout`), creating the
   subfolder when it lacks one. The popup says when the file landed, or why it did not, the export still
@@ -490,6 +490,26 @@ nobody has decided: what the page does there is not a requirement yet.
   the page's per-file permission and opens its picker on the submissions folder (as Data Management does,
   `req/shell/data/drive-access`); or View only, telling them to ask the study's owner for edit access. It
   is checked before any work, not first found at submit. Test: `web-tests/test_gt_drive_page.py`.
+  </details>
+
+- `req/shell/ground-truth/tasks` The shell lists the study's ground-truth tasks in Ground Truth Tasks, Submit Ground Truth last; how a task is worked through is the study's.
+  <details>
+
+  Set by the owner on 2026-11-07. The study names its tasks in order (a name, and a tooltip saying what the
+  task is) and how far each has got, done of all; the shell draws them in its Ground Truth Tasks box
+  (`req/shell/left-bar/shells`): a progress bar split into one part per task, each as wide as its task is long
+  and filled as far as it is done, then one row per task, "13/47 Finalists", with a check once it is done, and
+  last the shell's Submit Ground Truth row, which opens the submit popup (`req/shell/ground-truth/submit`) with
+  the study's ground truth. The study says when Submit can be pressed and, where it knows, whether its
+  ground truth is done, partly done or not started, which the button shows as an icon; whatever it says, Submit
+  is off until the study's first step is done (owner, 2026-11-07). A task with no total (the Bookshelf Reader's
+  missed books) shows its count alone, "1 Missed books", and its check once the study says it is done. One task at a time is
+  the open one, its name in bold: the study puts what it needs under its row and beside its name (its item,
+  Back and Skip, an area's check), and hears when the user clicks a task's name. The walk through the tasks
+  stays each study's own (owner: a change of heart on how one study does its tasks must not move the others;
+  what proves common is merged later). The Submit GT crumb (`req/shell/status-bar/breadcrumbs`) presses
+  the shell's Submit. Test: `web-tests/test_study_contract.py`, `web-tests/test_status_bar_page.py`,
+  `studies/nor/tests/test_truth_tasks_page.py`, the vascular study's vessel tasks test.
   </details>
 
 - `req/shell/ground-truth/view` Anyone can load an image's curated ground truth and see only its final results.
@@ -1198,12 +1218,12 @@ nobody has decided: what the page does there is not a requirement yet.
   Hovering a label opens a popup beside the switcher listing the four stages in order with what each means, that study's own highlighted and the
   ones before it crossed out, and what the study needs to move on to the next.
   PreGT: the study's tools work but cannot make ground truth yet, so it offers no export: its
-  ground-truth button (`groundTruth.button`) is hidden and it has no Submit GT step. GT: the same,
+  Submit Ground Truth (`req/shell/ground-truth/tasks`) is not shown and it has no Submit GT step. GT: the same,
   with the ground truth exported and submitted (`req/shell/ground-truth/submit`). PostGT: GT with batch actions on top (none
   yet). Set by the owner on 2026-11-02, Published: the study's algorithm is trusted and the page only
-  shows what it finds, so it makes no ground truth (no Submit GT, its button hidden, as in PreGT) and
+  shows what it finds, so it makes no ground truth (no Submit GT, as in PreGT) and
   drops the steps that serve making it: the study's
-  postprocessing (NoR's Filters fold in its Processing box, `req/nor/filters/live`) is not shown. A GT or PostGT study names its ground truth's label and button. The Image Viewer has no stage (`null`): as in PreGT, it makes no ground truth;
+  postprocessing (NoR's Filters fold in its Processing box, `req/nor/filters/live`) is not shown. A GT or PostGT study names its ground truth's label. The Image Viewer has no stage (`null`): as in PreGT, it makes no ground truth;
   NoR Finder is GT. Test: `web-tests/test_study_contract.py`, `web-tests/test_status_bar_page.py`.
   </details>
 
@@ -1322,36 +1342,20 @@ nobody has decided: what the page does there is not a requirement yet.
   its own. Test: `web-tests/test_viewer3d_page.py`, and the vascular study's `req/vascular/model/correct`.
   </details>
 
-- `req/shell/views/second` The second view is Tasks while a study makes ground truth, and Items otherwise; the shell owns its switch.
+- `req/shell/views/second` A study's item view shows what was found, behind the shell's Items switch; there is none while ground truth is made.
   <details>
 
   Set by the owner on 2026-11-02. A study with an item view (`#items-view` in its `views` slot) gets
-  the shell's switch at the toolbar's left, off until the study turns it on. While the study makes ground truth for the user (a Ground Truth Tagger
-  in a GT or PostGT study, `req/shell/account/role`) the item view is a list of the tasks the user does to make the ground truth, so the switch reads
-  "Tasks" and, once the study counts them, how many are left ("Tasks 3 left", "Tasks done" at none
-  left). Otherwise nothing is being made, the cards are small viewers of what
-  was found, and it reads "Items" with how many there are. In the item view it reads "Image". The
-  study counts its own (`views.count(left, total)`; NoR: the finalists and added NoRs with no
-  verdict, among all; Vascular: its junctions and vessels) and hears which view is shown
-  (`views.on(fn)`). Set by the owner on 2026-11-03: an item
-  view marked `data-viewing` only shows what was found, so while its study makes ground truth there
-  is no second view and no switch: the study lists its tasks itself (NoR: `req/nor/truth/tasks`,
-  Vascular: `req/vascular/truth/tasks`). Set by the owner on 2026-11-04: an item view marked
-  `data-shelved` gets no switch in any role, its code kept for a later use; NoR's is shelved, and
-  missingbulb/NoRFinder#740 decides whether it goes.
-  Test: `web-tests/test_status_bar_page.py`, `studies/nor/tests/test_truth_tasks_page.py`.
-  </details>
-
-- `req/shell/views/submit-task` Submit Ground Truth is the last task: it sits in the Tasks view's bar, and each card says whether its task is open.
-  <details>
-
-  Set by the owner on 2026-11-02. While the study makes ground truth and its item view is Tasks, a bar heads the Tasks view (`req/shell/views/second`): how
-  many tasks are done of all ("28 of 40 done", as words and a meter), and at its end the study's
-  Submit Ground Truth (its `tasks-end` slot); the image view has no submit button. The Submit GT
-  crumb (`req/shell/status-bar/breadcrumbs`) opens Tasks and presses it. A card whose task is still open is marked so, and the
-  cards list open tasks first unless the user chose another order (Vascular's cards open Open tasks first, an open junction being one that waits on
-  a vessel's review). Otherwise there is no bar and no card is marked. Test:
-  `web-tests/test_status_bar_page.py`, `studies/nor/tests/test_page_layout.py`.
+  the shell's switch at the toolbar's left. The cards are small viewers of what was found; the switch reads
+  "Items" with how many there are, and "Image" in the item view. The study counts them (`views.count(total)`,
+  null until it has any; Vascular: its junctions and vessels) and hears which view is shown (`views.on(fn)`).
+  Set by the owner on 2026-11-07: the shell turns the switch on once the study has counted its items and off
+  while it has not; a study never turns it on or off itself. While the study makes ground truth for the user
+  (a Ground Truth Tagger in a GT or PostGT study, `req/shell/account/role`) there is no item view and no switch:
+  the tasks are listed in the left bar (`req/shell/ground-truth/tasks`), the image in the main area. Set by the
+  owner on 2026-11-04: an item view marked `data-shelved` gets no switch in any role, its code kept for a later
+  use; NoR's is shelved, and missingbulb/NoRFinder#740 decides whether it goes.
+  Test: `web-tests/test_status_bar_page.py`, `web-tests/test_study_contract.py`.
   </details>
 
 - `req/shell/waiting/slow-computers` Kind to slow computers: a slow button is held until its action is done; low memory is warned of.
@@ -1417,7 +1421,7 @@ nobody has decided: what the page does there is not a requirement yet.
   study's stage, who is signed in, the role, the image open and whether it is a z-stack, the study's step done, the view, what Data Management
   has selected, whether the page is online, whether Edit Image is open, and what the study says of itself in its
   `study.json` and panels: whether it opens images from the computer, has steps after Load, and has an item view,
-  shelved or viewing, `req/shell/views/second`), each citing the requirement that decides it and marked tentative or undecided where the owner has
+  never shown when shelved, `req/shell/views/second`), each citing the requirement that decides it and marked tentative or undecided where the owner has
   not decided (an undecided case is shown and not checked). Its paths start from a few roots (a study's stage and a
   role) and take actions one after another, each state one more action on the one before.
   `dev/tools/build/shell_states.py` writes from it the matrix, `dev/requirements/shell-states.GENERATED.md`, one table

@@ -47,7 +47,6 @@
   },
   "groundTruth": {
     "submissions": null,
-    "curated": null,
-    "button": "#fx-truth"
+    "curated": null
   }
 }

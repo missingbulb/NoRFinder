@@ -7,15 +7,13 @@
 <template data-slot="tasks">
   <div id="fx-result" class="dim">Nothing counted yet.</div>
   <p class="hint unpublished" id="fx-counted">The count's postprocessing, gone once the study is published.</p>
+  <label id="fx-check" hidden><input type="checkbox" id="fx-done"> The count is right</label>
 </template>
 <template data-slot="summary">
   <div id="fx-sum" class="dim">Nothing counted yet.</div>
 </template>
 <template data-slot="views">
   <div id="items-view" hidden>
-    <label class="card" id="fx-task"><input type="checkbox" id="fx-done" disabled> The count is right</label>
+    <div class="card" id="fx-item"></div>
   </div>
-</template>
-<template data-slot="tasks-end">
-  <button id="fx-truth" disabled>Submit ground truth</button>
 </template>

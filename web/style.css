@@ -313,12 +313,7 @@ button.tool[aria-pressed=true] { border-color: var(--accent); box-shadow: inset 
 :root:not([data-role=tagger]) .unpublished { display: none !important; }
 #switch .count { opacity: .7; font-weight: 400; }
 #switch .count:empty { display: none; }
-#tasks-bar { display: flex; gap: 10px; align-items: center; min-height: 44px; padding: 0 var(--pad); border-bottom: 1px solid var(--line); font-size: 13px; }
-#tasks-bar[hidden] { display: none; }
-#tasks-bar meter { width: 160px; height: 8px; }
-#tasks-bar .grow { flex: 1; }
 /* a card whose task is still open */
-.task-open { border-left: 3px solid var(--accent) !important; }
 .tabs { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; }
 .menu .pop label.sort select { padding: 2px 6px; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-ctl); }
 .tabs button { border: 0; border-radius: 0; background: transparent; padding: 5px 14px; }
@@ -879,7 +874,7 @@ html:not(.offline) #welcome-offline { display: none; }
 .pic.none { background: repeating-linear-gradient(45deg, var(--line) 0 4px, transparent 4px 8px); }
 
 /* in the mode the left bar keeps the Image box and Preprocessing; the study's own panels and the steps step aside */
-:root[data-mode=data] [data-study-panel], :root[data-mode=data] .study-box, :root[data-mode=data] #sb-steps, :root[data-mode=data] #switch, :root[data-mode=data] #tasks-bar { display: none !important; }
+:root[data-mode=data] [data-study-panel], :root[data-mode=data] .study-box, :root[data-mode=data] #sb-steps, :root[data-mode=data] #switch { display: none !important; }
 :root:not([data-mode=data]) #preprocessing-box, :root:not([data-sel=folder]) #folder-box, :root[data-sel=folder] #image-box { display: none !important; }
 :root[data-mode=data] #load.gone { display: none; }
 #load.poof { animation: poof .45s ease-in forwards; pointer-events: none; }
@@ -952,3 +947,36 @@ html:not(.offline) #welcome-offline { display: none; }
 #remote-list .gt-tag { font-size: 10.5px; padding: 0 5px; border-radius: 8px; border: 1px solid currentColor; color: var(--yes); }
 #remote-list .gt-tag[data-state="pending"] { color: var(--accent); }
 #remote-list .gt-tag[data-state="rejected"] { color: var(--warn); }
+
+/* the study's ground-truth tasks (req/shell/ground-truth/tasks): a bar of a part per task, then a row per task, the
+   open one bold, a done one checked, and Submit Ground Truth last */
+#gt-list[hidden] { display: none; }
+#gt-bar { display: flex; gap: 3px; height: 8px; margin-bottom: 10px; }
+#gt-bar > span { flex: 1 1 0; min-width: 6px; border-radius: 4px; --done: 0;
+  background: linear-gradient(to right, var(--yes) calc(var(--done) * 100%), var(--line) calc(var(--done) * 100%)); }
+#gt-tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+#gt-tasks > li + li { border-top: 1px solid var(--line); }
+#gt-tasks .task-head { display: flex; align-items: center; gap: 8px; min-height: 34px; font-size: 13px; }
+#gt-tasks .task-head .t { order: 0; flex: 1; min-width: 0; text-align: left; border: 0; background: none; padding: 4px 0; font-size: 13px; color: var(--text); white-space: nowrap; }
+#gt-tasks .task-head .t:hover { color: var(--accent); }
+#gt-tasks .task-head .n { font-weight: 600; font-variant-numeric: tabular-nums; }
+#gt-tasks li.now .t { font-weight: 600; }
+#gt-tasks .tick { order: 1; display: none; color: var(--yes); font-weight: 700; }
+#gt-tasks li.done .tick { display: inline; }
+#gt-tasks .tick::after { content: "✓"; }
+#gt-tasks li.done .t { color: var(--dim); }
+#gt-tasks .task-head > :not(.t):not(.tick) { order: 2; }
+#gt-tasks li[data-task="submit"] .task-head { padding: 6px 0 0; }
+#gt-submit { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+#gt-tasks li:not(.now) .task-body { display: none; }
+#gt-tasks .task-body { padding: 0 0 10px; }
+#gt-tasks .task-body .hint { margin: 0 0 6px; }
+#gt-submit .gt-ico { display: none; line-height: 0; }
+#gt-submit .gt-ico svg { display: none; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+#gt-submit[data-state=done] .gt-ico, #gt-submit[data-state=part] .gt-ico, #gt-submit[data-state=todo] .gt-ico { display: inline-block; }
+#gt-submit[data-state=done] .gt-ico svg.done, #gt-submit[data-state=part] .gt-ico svg.part, #gt-submit[data-state=todo] .gt-ico svg.todo { display: inline; }
+#gt-submit[data-state=done] .gt-ico { color: var(--yes); }
+#gt-submit[data-state=part] .gt-ico { color: var(--gt-part); animation: gt-pulse 2s ease-in-out infinite; }
+#gt-submit[data-state=todo] .gt-ico { color: var(--no); animation: gt-pulse 2s ease-in-out infinite; }
+@keyframes gt-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(.9); } }
+@media (prefers-reduced-motion: reduce) { #gt-submit .gt-ico { animation: none !important; } }

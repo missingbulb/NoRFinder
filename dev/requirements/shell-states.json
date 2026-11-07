@@ -15,7 +15,6 @@
     "fromComputer": [false, true],
     "hasSteps": [false, true],
     "itemView": [false, true],
-    "itemViewing": [false, true],
     "notice": [false, true],
     "imageFits": [true, false]
   },
@@ -32,8 +31,8 @@
   "paths": [
     {"root": "GT, signed out", "actions": ["load", "count", "items"]},
     {"root": "GT, Viewer", "actions": ["load", "tagger"]},
-    {"root": "GT, Tagger", "actions": ["load", "count", "items"]},
-    {"root": "PostGT, Tagger", "actions": ["load", "count", "items"]},
+    {"root": "GT, Tagger", "actions": ["load", "count"]},
+    {"root": "PostGT, Tagger", "actions": ["load", "count"]},
     {"root": "PreGT, signed out", "actions": ["load", "count"]},
     {"root": "PreGT, Tagger", "actions": ["load", "count", "items"]},
     {"root": "Published, Viewer", "actions": ["load", "count", "items"]},
@@ -288,6 +287,22 @@
                 {"when": {"hasSteps": [false]}, "is": "hidden", "approval": "tentative"},
                 {"when": {"makesTruth": [false]}, "is": "hidden"},
                 {"when": {"counted": [false]}, "is": "folded", "req": "req/shell/left-bar/folding"}
+              ],
+              "children": [
+                {"name": "Tasks' list", "select": "#gt-list", "req": "req/shell/ground-truth/tasks",
+                  "children": [
+                    {"name": "Tasks' bar", "select": "#gt-bar", "req": "req/shell/ground-truth/tasks"},
+                    {"name": "Tasks", "select": "#gt-tasks", "req": "req/shell/ground-truth/tasks",
+                      "children": [
+                        {"name": "Submit Ground Truth", "select": "#gt-submit", "control": true, "req": "req/shell/ground-truth/tasks",
+                          "rule": [
+                            {"when": {"counted": [false]}, "is": "disabled"}
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
               ]
             },
             {"name": "Summary", "select": "#summary-box", "box": true, "req": "req/shell/left-bar/shells",
@@ -306,7 +321,7 @@
             {"name": "Tasks/Items switch", "select": "#switch", "control": true, "req": "req/shell/views/second",
               "rule": [
                 {"when": {"itemView": [false]}, "is": "hidden"},
-                {"when": {"itemViewing": [true], "makesTruth": [true]}, "is": "hidden"},
+                {"when": {"makesTruth": [true]}, "is": "hidden"},
                 {"when": {"role": ["data"]}, "is": "hidden", "req": "req/shell/data/mode"},
                 {"when": {"counted": [false]}, "is": "disabled"}
               ]
@@ -356,12 +371,6 @@
             {"name": "Zoom", "select": "#zoom-label", "req": "req/shell/image/minimap",
               "rule": [
                 {"when": {"view": ["items"]}, "is": "hidden", "req": "req/shell/views/second"}
-              ]
-            },
-            {"name": "Tasks bar", "select": "#tasks-bar", "req": "req/shell/views/submit-task",
-              "rule": [
-                {"when": {"makesTruth": [false]}, "is": "hidden"},
-                {"when": {"view": ["image"]}, "is": "hidden"}
               ]
             },
             {"name": "Busy", "select": "#busy", "req": "req/shell/waiting/visible",
