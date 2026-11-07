@@ -8,7 +8,8 @@
 import { PREVIEWS } from "./previews.js";
 import { makePreview, buildPreviews } from "./previews_writer.js";
 import { readTiff, fromPlanes, writeTiff } from "./split.js";
-import { CONNECTION } from "./offline.js";
+import { CONNECTION, holdOwns } from "./offline.js";
+import { asLoaded } from "./as_loaded.js";
 import { replacedBy, stemOf } from "./edit.js";
 import * as tf from "./truth_folders.js";
 import { setup as setUp, switchMode } from "./study_root.js";
@@ -53,6 +54,8 @@ export function dataMode(ctx) {
   const isTruth = (id) => id === gt.curated || id === gt.submissions;
   const offline = () => root.classList.contains("offline");
   const msg = (el, text, err) => { el.textContent = text; el.classList.toggle("err", !!err); };
+  // what a study's folders change on the page, as it loaded: put back when another study comes in
+  const asStarted = asLoaded(["#data-body", "#folder-box", "#folder-view"].map((s) => $(s)), holdOwns);
 
   // ---------- the folders and their access ----------
   // every folder under the study's own, listed with every file in it; once per study
@@ -465,6 +468,7 @@ export function dataMode(ctx) {
       if (manifest && m.id === manifest.id && account.email() === who) { manifest = m; ctx.showFolder(chosen?.kind === "folder"); return; }
       epoch++; manifest = m; who = account.email(); nodes = new Map(); loaded = null; chosen = null;
       if (on()) enter(false);
+      asStarted(); delete root.dataset.tree;
       roots = []; gt = tf.folders(null); gtNodes = [];
       $("#gt-setup").hidden = true; $("#gt-box").hidden = true;
       $("#data-tree").replaceChildren(); msg($("#data-msg"), "");

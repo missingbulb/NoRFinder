@@ -24,7 +24,7 @@ import { PREVIEWS, readPreviews } from "./previews.js";
 import { account, SIGNED_IN, SIGNED_IN_LABEL } from "./account.js";
 import { remote } from "./drive.js";
 import { settingsDialog } from "./settings_dialog.js";
-import { offline, APP_ASKED, markOffline, CONNECTION } from "./offline.js";
+import { offline, APP_ASKED, markOffline, CONNECTION, holdOwns } from "./offline.js";
 import { welcome, WELCOME } from "./welcome.js";
 import { actionLog, ACTIONS } from "./action_log.js";
 import { identify, verdict } from "./browsers.js";
@@ -38,6 +38,7 @@ import { truthTagger, LOCAL_GT } from "./truth_tagger.js";
 import { truthTasks } from "./truth_tasks.js";
 import { subfolderName } from "./truth_folders.js";
 import { studyPlace } from "./study_root.js";
+import { asLoaded } from "./as_loaded.js";
 
 const $ = (s) => document.querySelector(s);
 // what the user does here, kept on this device for a problem report (req/shell/report/action-log)
@@ -164,8 +165,18 @@ const st = { worker: null, H: 0, W: 0, um: null, umY: null, img: null, plain: nu
 // What the shell's controls are drawn from (page_state.js): image, the image open ({name, source, W, H, um, umY,
 // info, planes, channels, Z, spacing}: Z slices, spacing µm between them or null) or null; opening, the one being read ({name}) or null; and the viewer's own fields.
 const page = pageState({ image: null, opening: null });
-// what a study leaving leaves of the state: the shell's own fields
-const SHELL_STATE = new Set(Object.keys(st));
+// what a study leaving leaves of the state: the shell's own fields, each as the page loaded, but for Python's thread and
+// what it measures, which stay
+const SHELL_STATE = new Set(Object.keys(st)), ST_LOADED = { ...st }, PYTHON_STATE = ["worker", "heap", "files", "busySince", "busyTimer"];
+// what a study leaving puts back as the page loaded: the parts of the page an image or a study changes, the holds
+// offline puts on a control kept
+const asStarted = asLoaded(["#busy", "#notice", "#load", "#switch"].map((s) => $(s)), holdOwns);
+// and what is out of view read again, which putting a class back forgets
+function restoreLoaded() {
+  const out = [...document.querySelectorAll(".offscreen")];
+  asStarted();
+  for (const el of out) { inView.unobserve(el); inView.observe(el); }
+}
 let study = {}, view = null, manifest = null, base = "";
 
 // ---------- status ----------
@@ -794,7 +805,7 @@ $("#file").onchange = async (e) => {
 // link instead (req/shell/drive/dialog)
 const studyFolders = () => (remote.study(manifest).root ? [remote.study(manifest).root] : []);
 // the link the remote files dialog opened on: listing it is not pasting it
-let remoteFrom = "", remoteOpened = () => {};
+let remoteFrom = "", remoteOpened = () => {}, remoteLeft = () => {};
 function openRemote() {
   $("#image-menu").open = false;
   const pastes = !studyFolders().length;
@@ -838,7 +849,7 @@ function restudy(again = true) {
     dropImage();
     leaveStudy();
     try { await mountStudy(id); } catch (e) { return status("Error: " + (e.message || e), true); }
-    if (ready) { st.ready = true; study.ready?.(readyInfo); }
+    if (ready) { st.ready = true; st.readyInfo = readyInfo; study.ready?.(readyInfo); }
     statusBar(); status(ready ? "Ready. Load an image." : "Loading Python in the background…");
     if (image) openBytes(image.name, image.bytes, image.source);
   });
@@ -996,6 +1007,10 @@ function remoteDialog() {
   const msg = (t, err) => { const m = $("#remote-msg"); m.textContent = m.title = t; m.classList.toggle("err", !!err); };
   // keptOn: the dialog lists the images kept here, offline, in place of a remote folder
   let trail = [], chosen = null, listing = 0, keptOn = false;
+  // what browsing changes in the dialog, as the page loaded; its choices (thumbnails, auto-save) are the user's and stay
+  const asStarted = asLoaded(["#remote-path", "#remote-list", "#remote-msg", "#remote-open"].map((s) => $(s)), holdOwns);
+  // the study leaving: what the dialog was browsing goes with it
+  remoteLeft = () => { thumbs.stop(); trail = []; chosen = null; keptOn = false; listing++; asStarted(); $("#remote-dlg").classList.remove("folders"); };
   // path: the folders the image is in under the link it was opened from; sha: its SHA-256 as the listing gave
   // it (null when the store gave none), undefined when not yet asked; recent: whether it was chosen from the recents.
   // A recent image opens from its kept copy; one chosen from the remote store does only once its SHA-256 matches the store's.
@@ -2000,7 +2015,7 @@ function filterStudies() {
   mark(rows().find((a) => a.hasAttribute("aria-current")) || rows()[0]);
 }
 $("#study-menu").addEventListener("toggle", () => {
-  if (!$("#study-menu").open) { if (stagePop.matches(":popover-open")) stagePop.hidePopover(); return; }
+  if (!$("#study-menu").open) { mark(null); if (stagePop.matches(":popover-open")) stagePop.hidePopover(); return; }
   offlineCopy.available().then((ids) => { for (const a of $("#study-list").children) markOffline(a, "study", ids.has(a.dataset.id)); }, () => {});
   $("#study-search").value = ""; filterStudies(); $("#study-search").focus();
 });
@@ -2123,13 +2138,14 @@ function leaveStudy() {
   for (const n of mounted.splice(0)) n.remove();
   for (const sel of Object.values(STUDY_BOXES)) { $(sel).hidden = true; summaries.delete($(sel)); }
   css?.remove(); css = null;
-  study = {}; manifest = null; view?.use({}); view?.clear();
+  study = {}; manifest = null; view?.use({}); view?.leave();
   for (const k of Object.keys(st)) if (!SHELL_STATE.has(k)) delete st[k];
-  st.ready = false;
+  for (const k of SHELL_STATE) if (!PYTHON_STATE.includes(k)) st[k] = ST_LOADED[k];
   for (const w of Object.values(waiting)) w.splice(0).forEach((x) => x.bad(new Error("the study left")));
   busy(false); $("#notice").hidden = true; $("#tip").hidden = true;
   $("#image-view").hidden = false; delete $("#view").dataset.view; $("#switch").hidden = true; views.now = "image";
-  tasks.leave();
+  tasks.leave(); remoteLeft();
+  restoreLoaded();
 }
 
 const shell = {
