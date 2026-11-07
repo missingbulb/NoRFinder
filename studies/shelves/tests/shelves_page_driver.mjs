@@ -5,6 +5,7 @@
 // req/shelves/truth/task (one book at a time, Back, a corner dragged, a missed book drawn, Submit's export). The real
 // engines' readings are test_reading.py's. Exits 1 on a failed check, 2 when it cannot run.
 //   node studies/shelves/tests/shelves_page_driver.mjs STUDIES
+import { noisePng } from "../../../web-tests/png_fixture.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import fs from "node:fs";
@@ -35,7 +36,7 @@ postMessage({ type: "ready", info: {} });
 const size = (c) => [Math.round(Math.hypot(c[1][0] - c[0][0], c[1][1] - c[0][1])), Math.round(Math.hypot(c[3][0] - c[0][0], c[3][1] - c[0][1]))];
 onmessage = ({ data: m }) => {
   if (m.type === "study") postMessage({ type: "ready", info: {} });
-  else if (m.type === "open") { const images = new Uint8Array(3 * W * H).fill(120); postMessage({ type: "opened", meta: { W, H, um: null, um_y: null, info: [] }, images }, [images.buffer]); }
+  else if (m.type === "open") postMessage({ type: "held" });
   else if (m.type === "call" && m.action === "find") postMessage({ type: "result", action: "find", meta: { books: BOOKS }, bytes: null });
   else if (m.type === "call" && m.action === "straighten") {
     const sizes = m.args.corners.map(size), bytes = new Uint8Array(sizes.reduce((a, [w, h]) => a + w * h * 4, 0)).fill(200);
@@ -74,7 +75,7 @@ async function open(role, seed = {}) {
   page.setDefaultTimeout(10000);
   await page.goto(origin + "/web/shelves");
   await page.waitForFunction(() => window.$ && /^Ready/.test($("#status").textContent));
-  await page.setInputFiles("#file", { name: "shelf.png", mimeType: "image/png", buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47]) });
+  await page.setInputFiles("#file", { name: "shelf.png", mimeType: "image/png", buffer: noisePng(W, H) });
   await page.waitForFunction(() => !$("#bs-find").disabled);
   await page.evaluate(() => { $("#notice").hidden = true; });
   return page;
@@ -122,12 +123,20 @@ try {
   await page.click('.bs-tools [data-do="back"]');
   check((await rows())[0] === "1/3 Books" && await page.evaluate(() => $(".bs-item input").value) === "Title 240x35", "Back returns to the book before, its verdict undone", await rows());
   await page.click('.bs-verdicts [data-do="right"]');
-  // the cover's top-right corner dragged 40 px to the right: the book is straightened and read again
+  // the cover's top-right corner dragged 40 px to the right, the photo zoomed in so it could pan: the book is
+  // straightened and read again, and the photo stays where it was (req/shell/image/minimap)
+  for (let i = 0; i < 3; i++) await page.click("#zoom-in");
+  await page.evaluate(() => { const sc = $("#scroller"); sc.scrollLeft = 300 * st.zoom - sc.clientWidth / 2; sc.scrollTop = 100 * st.zoom - sc.clientHeight / 2; });
+  const scrolled = () => page.evaluate(() => [$("#scroller").scrollLeft, $("#scroller").scrollTop]);
+  const before = await scrolled();
   const knob = await page.$$eval("#overlay .bs-corner", (cs) => { const r = cs[1].getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; });
   const zoom = await page.evaluate(() => st.zoom);
   await page.mouse.move(...knob); await page.mouse.down(); await page.mouse.move(knob[0] + 40 * zoom, knob[1], { steps: 4 }); await page.mouse.up();
+  const after = await scrolled();
+  check(before[0] > 0 && after.join() === before.join(), "dragging a corner moves the corner alone, never the photo under it", { before, after });
   await page.waitForFunction(() => $(".bs-item input")?.value === "Title 220x180");
   check(true, "a corner dragged on the photo re-straightens and re-reads the book");
+  for (let i = 0; i < 3; i++) await page.click("#zoom-out");
   await page.click('.bs-verdicts [data-do="right"]');
   check((await rows())[0] === "3/3 Books" && await page.evaluate(() => $("#gt-submit").disabled), "every book reviewed, Submit waits for the missed books", await rows());
   await page.click('[data-do="draw"]');

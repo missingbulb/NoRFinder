@@ -1371,10 +1371,10 @@ export function mount(shell) {
   // the buttons whose action can take a while on a slow computer
   for (const id of ["#find", "#tab-pass", "#tab-fail", "#dl-cands", "#dl-summary"]) slow($(id));
 
-  // ---------- what the shell asks of the study ----------
-  return {
-    painter: (canvas, shown, onSize) => NorPeek.painter(canvas, shown, onSize),
-    ready(info) {
+  // the finders and each one's controls, as detection/finder_list.py lists them, so they never wait for Python
+  fetch(new URL("finders.GENERATED.json", import.meta.url)).then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+    .then((info) => {
+      if (shell.signal.aborted) return;
       const sel = $("#finder");
       st.names = info.finders;
       sel.replaceChildren(...Object.entries(info.finders).map(([k, v]) => new Option(`${info.about[k].icon} ${v}`.trim(), k)));
@@ -1385,7 +1385,23 @@ export function mount(shell) {
       sel.disabled = false;
       st.about = info.about; st.help = Object.values(info.about)[0].help;
       buildDetect(); useFilters(sel.value);
-    },
+    }, (e) => shell.status(`The finders could not be listed: ${e.message || e}`, true));
+  // the file's channels in the study's order, Nav, Caspr, DAPI (data/README.md): Caspr the one the file displays
+  // green, DAPI the other with the larger blobs, Nav the rest; none for a file not shaped so
+  function order(im) {
+    if (im.channels.length !== 3) return [];
+    const green = im.channels.map((c) => { const v = [1, 3, 5].map((i) => parseInt((c.colour || "#000000").slice(i, i + 2), 16)); return v.indexOf(Math.max(...v)) === 1 && Math.max(...v) > 0; });
+    if (green.filter(Boolean).length !== 1) return [];
+    const caspr = green.indexOf(true), others = [0, 1, 2].filter((k) => k !== caspr);
+    const n = Math.ceil(im.H / 3), area = (k) => NorPeek.blobArea(Float32Array.from(im.raw[k][0].subarray(0, im.W * n)), im.W, n);
+    const [a, b] = others.map(area), dapi = a >= b ? others[0] : others[1], nav = a >= b ? others[1] : others[0];
+    return [nav, caspr, dapi];
+  }
+
+  // ---------- what the shell asks of the study ----------
+  return {
+    painter: (canvas, shown, onSize) => NorPeek.painter(canvas, shown, onSize),
+    order,
     opening(name) {
       st.added = loadAdded(name); st.mask = readJSON(MASK + name, []); st.areas = new Set(readJSON(AREAS_KEY + name, [])); st.task = null; st.area = null; st.cur = undefined; st.back = []; endLasso(); st.meta = null; st.lastRun = null; st.cands = []; st.order = []; st.passes = st.rejects = null; st.sel = null; st.ring = null; st.crops = new Map();
       $("#list").replaceChildren(); $("#summary").textContent = "No candidates yet.";

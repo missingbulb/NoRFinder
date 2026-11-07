@@ -17,7 +17,8 @@ await check(await page.evaluate(() => [...document.querySelectorAll("#left > .bo
   "the drawers on show, a viewer's without the postprocessing, are numbered without Preprocessing");
 await page.context().close();
 
-page = await open(true);
+// the images Data Management lists are the kinds the study opens: here TIFFs, a PNG and a JPEG
+page = await open(true, { study: { files: { from: ["drive"], accept: ".png,.tif,.tiff,.jpg", empty: "Load an image." } } });
 const width = () => page.evaluate(() => Math.round($("#data-col").getBoundingClientRect().width));
 // the column at a width and its slide over; the check after it says what it found when it never gets there
 const slid = (wide) => page.waitForFunction((wide) => (wide ? $("#data-col").getBoundingClientRect().width > 200 : $("#data-col").getBoundingClientRect().width < 60)
@@ -44,8 +45,8 @@ await check(await page.evaluate(() => [...document.querySelectorAll(".tree-image
 const summary = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#folder-summary dd")].map((d) => [d.dataset.k, +d.textContent])));
 const folderMsg = () => page.textContent("#folder-msg");
 await page.click("#data-tree .tree-folder .name");
-await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell").length === 3);
-await check(JSON.stringify(await summary()) === JSON.stringify({ images: 3, previews: 1, stale: 1, truth: 0, pending: 0, missing: 1 }), "the folder's sums", await summary());
+await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell").length === 4);
+await check(JSON.stringify(await summary()) === JSON.stringify({ images: 4, previews: 1, stale: 1, truth: 0, pending: 0, missing: 1 }), "the folder's sums, its photo among its images", await summary());
 await page.click('#folder-layout button[data-layout="list"]');
 await page.waitForFunction(() => $("#folder-items").dataset.layout === "list");
 await check(true, "the list button lays the images out as a list");
@@ -58,16 +59,16 @@ FILES.splice(FILES.findIndex((f) => f.name === "rauntruth-previews.tiff"), 1);
 await page.click("#data-tree .tree-folder .name");
 await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="previews"]')?.textContent === "0");
 await page.click("#update-previews");
-await page.waitForFunction(() => /3 previews made/.test($("#folder-msg").textContent), null, { timeout: 30000 });
+await page.waitForFunction(() => /4 previews made/.test($("#folder-msg").textContent), null, { timeout: 30000 });
 await check(JSON.stringify(writes) === JSON.stringify([["create", "rauntruth-previews.tiff"]]), "Update previews creates the file", writes);
-await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="previews"]')?.textContent === "3");
-await check(JSON.stringify(await summary()) === JSON.stringify({ images: 3, previews: 3, stale: 0, truth: 0, pending: 0, missing: 1 }), "then every image has a preview", await summary());
-await page.waitForFunction(() => document.querySelectorAll("#folder-items .pic img").length === 3);
+await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="previews"]')?.textContent === "4");
+await check(JSON.stringify(await summary()) === JSON.stringify({ images: 4, previews: 4, stale: 0, truth: 0, pending: 0, missing: 1 }), "then every image has a preview, the photo's too", await summary());
+await page.waitForFunction(() => document.querySelectorAll("#folder-items .pic img").length === 4);
 await shot("3-list");
 await page.click('#folder-layout button[data-layout="grid"]');
 await page.waitForFunction(() => $("#folder-items").dataset.layout === "grid" && !document.getAnimations().some((a) => a.playState === "running"));
 await page.click("#data-tree .tree-folder .count");
-await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder .tree-image .pic img").length === 3);
+await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder .tree-image .pic img").length === 4);
 await shot("2-grid");
 await page.click("#data-tree .tree-folder .count");
 // one image changes; the page replaces its own file, making that one preview alone
@@ -75,7 +76,7 @@ FILES.find((f) => f.name === "e plain.tif").bytes = Buffer.concat([FILES.find((f
 await page.click("#data-tree .tree-folder .name");
 await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="stale"]')?.textContent === "1");
 await page.click("#update-previews");
-await page.waitForFunction(() => /1 preview made, 2 kept/.test($("#folder-msg").textContent), null, { timeout: 30000 });
+await page.waitForFunction(() => /1 preview made, 3 kept/.test($("#folder-msg").textContent), null, { timeout: 30000 });
 await check(JSON.stringify(writes.at(-1)) === JSON.stringify(["replace", "rauntruth-previews.tiff"]), "a changed image: the page's own file is replaced, the rest kept", writes);
 fs.writeFileSync(out, FILES.find((f) => f.name === "rauntruth-previews.tiff").bytes);
 
@@ -91,16 +92,16 @@ await page.waitForFunction(() => /Someone else/.test($("#folder-msg").textConten
 await check(writes.at(-1)[1] !== "b stack.ground_truth.MISSING", "a marker someone else made is left alone");
 
 await page.click("#data-tree .tree-folder .count");
-await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder .tree-image").length === 3);
-await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder .tree-image .pic img").length === 3);
+await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder .tree-image").length === 4);
+await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder .tree-image .pic img").length === 4);
 await check(true, "a folder's images unfold with small previews");
 await page.click('#data-tree .tree-image:has(.name:text-is("a flat.tif"))');
 await page.waitForFunction(() => st.fileName === "a flat.preview.tif" && !$("#load-original").hidden);
 await check(await page.evaluate(() => shellForTests.page.get("image").source.kind === "preview"), "an image chosen opens from its preview, with Load Original");
 await shot("4-preview");
-// what reached Python, for the test to open as the study would
-const got = await page.workers()[0].evaluate(() => ({ name: self.lastOpen.name, bytes: Array.from(self.lastOpen.bytes) }));
-await check(got.name === "a flat.preview.tif", "Python is handed the preview as a TIFF", got.name);
+// the file the page opened, which is what Python is handed at a Run, for the test to open as the study would
+const got = await page.evaluate(() => ({ name: st.kept.name, bytes: Array.from(new Uint8Array(st.kept.bytes)) }));
+await check(got.name === "a flat.preview.tif", "the preview opens as a TIFF, the file Python is handed", got.name);
 fs.writeFileSync(out + ".preview.tif", Buffer.from(got.bytes));
 await page.click("#load-original");
 // the name is set as the open starts, the image's source once it is done
@@ -109,7 +110,7 @@ await check(await page.evaluate(() => st.fileName === "a flat.tif" && shellForTe
 
 // offline (req/shell/offline/default): no bar asking for folders, and nothing written to Drive
 await page.click("#data-tree .tree-folder .name");
-await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell").length === 3);
+await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell").length === 4);
 // its previews drawn first: Playwright's WebKit, set offline, fails every read of a Blob's bytes, the previews' among them
 await page.waitForFunction(() => [...document.querySelectorAll("#folder-items .cell .pic")].every((p) => p.querySelector("img") || p.classList.contains("none")));
 const before = writes.length;
@@ -168,8 +169,8 @@ const kept = FILES.find((f) => f.name === "rauntruth-previews.tiff");
 kept.bytes = damage(Buffer.from(kept.bytes));
 await role(page, "Study Manager");
 await page.click("#data-tree .tree-folder .name");
-await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell .pic.none").length === 3, null, { timeout: 5000 }).catch(() => {});
-await check(await page.evaluate(() => document.querySelectorAll("#folder-items .cell .pic.none").length === 3), "a previews file that cannot be read: each image shows no preview");
+await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell .pic.none").length === 4, null, { timeout: 5000 }).catch(() => {});
+await check(await page.evaluate(() => document.querySelectorAll("#folder-items .cell .pic.none").length === 4), "a previews file that cannot be read: each image shows no preview");
 await page.click(cell("a flat.tif"));
 await page.waitForFunction(() => st.fileName === "a flat.tif", null, { timeout: 5000 }).catch(() => {});
 await check(await page.evaluate(() => st.fileName === "a flat.tif"), "and an image chosen opens itself");

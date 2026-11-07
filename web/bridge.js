@@ -1,8 +1,9 @@
 // The page's requests, answered by the study's Python (its study.json entry, imported as `study`) inside a
 // Pyodide runtime that has already imported it and json. The worker runs it; the tests drive it outside a
 // browser. It knows none of the study's actions: it opens a file with study.Session and forwards every call.
+// The page reads and shows the image itself; Python is handed the file's own bytes only for the study's algorithms.
 // Messages in: open {name, bytes}, call {action, args, echo}, close (the image open is let go).
-// Messages out: progress {text}, opened {meta, images}, result {action, meta, bytes, echo}.
+// Messages out: progress {text}, held {} (the file open in Python), result {action, meta, bytes, echo}.
 // progress: the status line for each step while it runs, {open, <action>: text}, from study.json.
 export function bridge(py, post, progress = {}) {
   const say = (text) => text && post({ type: "progress", text });
@@ -23,10 +24,8 @@ export function bridge(py, post, progress = {}) {
       py.FS.writeFile(path, new Uint8Array(m.bytes));
       py.globals.set("path", path);
       // the file is read once; kept, every image opened would stay in the worker's memory
-      let r;
-      try { r = py.runPython("S = study.Session(path); S.opened()"); } finally { py.FS.unlink(path); }
-      const { meta, bytes } = pair(r);
-      post({ type: "opened", meta, images: bytes, secs: (performance.now() - t0) / 1000 }, [bytes.buffer]);
+      try { py.runPython("S = study.Session(path)"); } finally { py.FS.unlink(path); }
+      post({ type: "held", secs: (performance.now() - t0) / 1000 });
     } else if (m.type === "call") {
       say(progress[m.action]);
       py.globals.set("action", m.action);

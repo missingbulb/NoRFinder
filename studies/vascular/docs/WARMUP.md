@@ -42,8 +42,10 @@ python3 -m pytest tests
 
 ## The page
 
-`py/vascular.py` is what the browser runs: it hands the shell's 3D viewer the stack, flattened and
-slice by slice (`req/vascular/stack-view`), and runs the extraction lab's versions on it in the page
+The page reads the stack itself and shows it in the shell's 3D viewer, flattened and slice by slice, CD31 first
+(`web/channel_order.js`) and contrasted up to the 99.9% quantile (`study.json`'s `view.upper`;
+`req/vascular/stack-view`); `py/vascular.py` is what Python runs, at the first Execute: it reads the stack's CD31 and
+runs the extraction lab's versions on it in the page
 (`req/vascular/model/run`: Processing's Execute; the page's Python imports `analysis/` and
 `analysis/extraction/` as they are, so a new version ships with no list to update; each version's `TITLE`, `ICON` and `STEPS` are its name, icon and How the algorithm works there, `web/algorithm_metrics.json` its precision and recall, and `lab.RETIRED` keeps a version off the list). The site ships no
 drawn models. The left bar is the shell's (`req/shell/left-bar/shells`): `web/vascular.html` fills its

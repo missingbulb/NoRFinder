@@ -77,5 +77,8 @@
     "straighten": "Straightening each book…"
   },
   "groundTruth": {
+  },
+  "view": {
+    "stretch": false
   }
 }

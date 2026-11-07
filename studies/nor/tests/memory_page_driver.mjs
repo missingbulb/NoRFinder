@@ -4,6 +4,7 @@
 // event listeners. Prints what it measured; exits 1 on growth, 2 when it cannot run.
 // THROTTLE=n slows its CPU n times over, as a slow test machine is.
 //   node tests/memory_page_driver.mjs ANSWERS IMAGE
+import { EARLY } from "../../../web-tests/early_messages.mjs";
 import { repoFile } from "../../../web-tests/repo_file.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
@@ -31,8 +32,7 @@ let finder;
 postMessage({ type: "ready", info: { finders: A.finders, about: A.about }, secs: 0 });
 onmessage = async ({ data: m }) => {
   if (m.type === "open") {
-    const images = await bin("images.bin");
-    postMessage({ type: "opened", meta: { H: A.H, W: A.W, um: A.um }, images, secs: 0 }, [images.buffer]);
+    postMessage({ type: "held", secs: 0 });
   } else if (m.type === "call" && m.action === "detect") {
     finder = m.args.finder; const seg = await bin("seg_" + finder + ".bin");
     postMessage({ type: "result", action: "detect", meta: A.detected[finder], bytes: seg, secs: 0 }, [seg.buffer]);
@@ -44,7 +44,7 @@ onmessage = async ({ data: m }) => {
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
-  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
+  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(EARLY + STAND_IN); }
   let f = u.startsWith("/web/answers/") ? path.join(answers, u.slice("/web/answers/".length)) : repoFile(repo, u);
   if (f.endsWith(path.sep)) f = path.join(f, "index.html");
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
@@ -68,19 +68,25 @@ await cdp.send("Performance.enable");
 if (process.env.THROTTLE) await cdp.send("Emulation.setCPUThrottlingRate", { rate: +process.env.THROTTLE });
 
 // resolves with the worker's next message of this type, or answer to this action (the page's own handler still gets it)
+// the worker's next answer to an action, Python starting with the first (req/shell/python/on-run)
 const next = (action) => page.evaluate((action) => new Promise((ok) => {
-  const h = (e) => { if (e.data.type === action || (e.data.type === "result" && e.data.action === action)) { st.worker.removeEventListener("message", h); ok(); } };
-  st.worker.addEventListener("message", h);
+  const hook = () => {
+    if (!st.worker) return requestAnimationFrame(hook);
+    const w = st.worker, h = (e) => { if (e.data.type === "result" && e.data.action === action) { w.removeEventListener("message", h); ok(); } };
+    w.addEventListener("message", h);
+  };
+  hook();
 }), action);
 const settled = () => page.waitForFunction(() => !st.inflight && !st.pending && $("#busy").hidden);
 
 let opened = 0;
 const slide = fs.readFileSync(image);
 async function open() {
-  const done = next("opened");
   // two images by turns, each the same file on Drive every time, so the image selector lists the same two
-  await openFromDrive(page, { name: `corner ${(++opened % 2) + 1}.tif`, mimeType: "image/tiff", buffer: slide });
-  await done; await settled();
+  const name = `corner ${(++opened % 2) + 1}.tif`;
+  await openFromDrive(page, { name, mimeType: "image/tiff", buffer: slide });
+  await page.waitForFunction((n) => shellForTests.page.get("image")?.name === n, name);
+  await settled();
 }
 // finding ends with the first filter pass on the new candidates
 async function find() {
@@ -168,7 +174,7 @@ const KB = 1024;
 const LIMITS = { heap: 256 * KB, buffers: 64 * KB, nodes: 0, listeners: 0 };
 
 await page.goto(origin + "/web/?study=nor");
-await page.waitForFunction(() => st.ready);
+await page.waitForFunction(() => $("#status").textContent.startsWith("Ready"));
 await open(); await find(); await tune();
 const problems = [];
 for (const [name, act] of Object.entries({ open, find, tune })) {

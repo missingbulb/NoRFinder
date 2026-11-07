@@ -8,9 +8,11 @@
 // leaving study's panels and listeners gone, back and forward too; and that the tab's icon is the study's own, or
 // the app's for a study naming none (req/shell/site/icons).
 // Then the same with the real worker (web/worker.js), Pyodide served from the copy installed beside the
-// tests, since the fixture needs none of its packages. Prints what it saw; exits 1 on a failure, 2 when it
+// tests, since the fixture needs none of its packages: Python not started until Count, then handed the file's own
+// bytes, and a channel hidden changing nothing it counts (req/shell/python/on-run, req/shell/python/file-bytes). Prints what it saw; exits 1 on a failure, 2 when it
 // cannot run.
 //   node web-tests/study_page_driver.mjs ANSWERS IMAGE.png STUDIES
+import { EARLY } from "./early_messages.mjs";
 import { repoFile } from "./repo_file.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
@@ -53,7 +55,7 @@ onmessage = ({ data: m }) => {
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".wasm": "application/wasm", ".zip": "application/zip", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
-  if (u === "/web/worker.js" && stub) { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
+  if (u === "/web/worker.js" && stub) { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(EARLY + STAND_IN); }
   // the build's list of vendored wheels, which the fixture needs none of
   if (u === "/web/vendor/wheels.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end("[]"); }
   const f = u === "/web/answers.json" ? answers : u === "/web/studies.json" ? studies : repoFile(repo, u);
@@ -84,7 +86,6 @@ try {
   console.log(JSON.stringify(seen));
   if (seen.title !== "Fixture" || seen.h1 !== "Fixture") problems.push("the page does not carry the study's title");
   if (!seen.icon.endsWith("/studies/fixture/web/icon.svg")) problems.push("the tab's icon is not the study's own: " + seen.icon);
-  if (seen.threshold !== "100") problems.push("the study's ready hook did not get its Python's answer");
   // no image is open yet, so no channel rows (req/shell/channels/rows)
   if (seen.channels.length || seen.accept !== ".png") problems.push("the page lists channels before an image, or the study's file types are not the page's");
   if (seen.other) problems.push("another study's panels are on the page");
@@ -251,6 +252,15 @@ try {
   });
   await real.route(offSite(origin, "https://cdn.jsdelivr.net/pyodide/"), (r) => r.abort());
   await real.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
+  // each worker the page starts, and the bytes each open hands it, copied before they are transferred
+  await real.addInitScript(() => {
+    window.__workers = 0; window.__held = [];
+    const Base = window.Worker;
+    window.Worker = class extends Base {
+      constructor(...a) { super(...a); window.__workers++; }
+      postMessage(m, t) { if (m?.type === "open") window.__held.push(Array.from(new Uint8Array(m.bytes))); return super.postMessage(m, t); }
+    };
+  });
   const live = await real.newPage();
   live.on("pageerror", (e) => { if (!cutShort(e)) problems.push("page error: " + e.message); });
   live.setDefaultTimeout(60000);
@@ -260,12 +270,21 @@ try {
   if (!ready.startsWith("Ready")) throw new Error("the real worker did not start: " + ready);
   await live.setInputFiles("#file", image);
   await live.waitForFunction(() => !document.querySelector("#fx-count").disabled);
+  if (await live.evaluate(() => window.__workers) !== 0) problems.push("Python started before Count");
   await live.evaluate(() => { document.querySelector("#fx-threshold").value = 100; });
   await live.click("#fx-count");
   await live.waitForFunction(() => /pixels/.test(document.querySelector("#fx-result").textContent));
   const said = await live.textContent("#fx-result");
   console.log("real worker: " + said);
   if (said !== "400 pixels above the threshold") problems.push("the real worker answered " + said);
+  const held = await live.evaluate(() => window.__held), file = [...fs.readFileSync(image)];
+  if (held.length !== 1 || held[0].length !== file.length || held[0].some((b, i) => b !== file[i])) problems.push(`Python was not handed the file as stored: ${held.map((h) => h.length)} bytes, the file ${file.length}`);
+  await live.$eval("#show-0", (b) => b.click());
+  await live.evaluate(() => { document.querySelector("#fx-result").textContent = ""; document.querySelector("#fx-count").click(); });
+  await live.waitForFunction(() => /pixels/.test(document.querySelector("#fx-result").textContent));
+  const hidden = await live.textContent("#fx-result");
+  if (hidden !== said) problems.push("with its channel hidden the real worker answered " + hidden);
+  if (await live.evaluate(() => [window.__workers, window.__held.length].join()) !== "1,1") problems.push("a second Count started Python or handed it the file again");
 } catch (e) {
   problems.push(String(e.message || e));
 }

@@ -2,7 +2,6 @@
 each opens against a stand-in Google (shell_states_driver.mjs), each element what the rules say there. A stand-in
 worker answers for each study what its own Python answers on loading and on opening the image. The pictures of the
 states go to SHELL_STATES_RENDERS when it is set, else to the test's own temporary directory."""
-import base64
 import importlib
 import importlib.util
 import json
@@ -37,15 +36,15 @@ def samples(i, d, out):
 
 
 def own_answers(answers, png, tif, stack, out):
-    """The answers, with what each study walked other than the fixture says on loading and on opening an image,
-    from its own Python as its study.json names it, and the files each loads: its own samples where its states.json
+    """The answers, with what each study walked other than the fixture says on loading, from its own Python as its
+    study.json names it, and the files each loads (the page reads them itself): its own samples where its states.json
     names them, else the PNG where the study accepts one, the TIFF where not, and the z-stack where its paths load one. Each study that takes its
     first step has the stand-in worker answer its calls from its own Python (study_calls.py)."""
     with open(answers, encoding='utf-8') as f:
         a = json.load(f)
     with open(EXPECT, encoding='utf-8') as f:
         paths = json.load(f)['paths']
-    # the fixture opens a z-stack from its Drive folder as the Image Viewer's Python does
+    # the fixture opens a z-stack from its Drive folder, as the Image Viewer does
     zfixture = any(p['study'] == 'fixture' and 'zpreview' in p['actions'] for p in paths)
     walked = sorted({p['study'] for p in paths} - {'fixture'} | ({'viewer'} if zfixture else set()))
     stacked = {p['study'] for p in paths if 'stack' in p['actions']} | ({'viewer'} if zfixture else set())
@@ -63,14 +62,8 @@ def own_answers(answers, png, tif, stack, out):
         try:
             study = importlib.import_module(py['entry'])
             a['ready'][i] = json.loads(study.ready())
-            a['studies'][i] = {'named': {}}
-            for f in files.values():
-                meta, images = study.Session(f).opened()
-                a['studies'][i]['named'][os.path.basename(f)] = {'opened': json.loads(meta), 'images': base64.b64encode(images).decode()}
         finally:
             del sys.path[:len(py['paths'])]
-    if zfixture:
-        a['studies']['fixture'] = {'named': {os.path.basename(stack): a['studies']['viewer']['named'][os.path.basename(stack)]}}
     out.write_text(json.dumps(a))
     return str(out)
 

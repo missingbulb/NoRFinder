@@ -1,2 +1,3 @@
 # the shell states generator writes these; a conflict takes either side, and the generator is run again
 *shell-states.GENERATED.* merge=ours
+studies/nor/web/finders.GENERATED.json merge=ours

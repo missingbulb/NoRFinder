@@ -9,6 +9,7 @@ import sys
 import numpy as np
 import pytest
 import tifffile
+from PIL import Image
 
 pytestmark = pytest.mark.full
 
@@ -55,6 +56,24 @@ def test_previews_keep_the_files_colours(tmp_path):
     assert lit['plain.tif'][0] > 200 and lit['plain.tif'][1] < 50
 
 
+def test_previews_cover_photos(tmp_path):
+    """A JPEG, the photo a study may open beside TIFFs and PNGs, is a flat colour preview; a file no image reader opens is left out."""
+    sys.path.insert(0, os.path.join(REPO, 'dev', 'tools', 'previews'))
+    import make_previews
+    images = tmp_path / 'images'
+    images.mkdir()
+    rgb = np.zeros((30, 50, 3), np.uint8)
+    rgb[:, :25, 0] = 250
+    Image.fromarray(rgb).save(images / 'photo.jpg')
+    (images / 'photo.ground_truth.json').write_text('{}')
+    make_previews.main(str(images))
+    with tifffile.TiffFile(images / 'rauntruth-previews.tiff') as t:
+        index = json.loads(t.pages[0].description)
+        page = t.pages[0].asarray()
+    assert [(e['name'], e['kind'], e['channels']) for e in index['images']] == [('photo.jpg', 'flat', 3)]
+    assert page.shape == (30, 50, 3) and page[15, 5, 0] > 200 and page[15, 40, 0] < 50
+
+
 @pytest.mark.skipif(not NODE, reason='node missing')
 def test_drive_previews(tmp_path):
     images = tmp_path / 'images'
@@ -66,6 +85,7 @@ def test_drive_previews(tmp_path):
     tifffile.imwrite(images / 'd new.tif', np.zeros((1, 50, 50), np.uint16), imagej=True, metadata={'axes': 'CYX'})
     with open(images / 'c changed.tif', 'ab') as f:
         f.write(b'\0')
+    Image.fromarray(np.full((40, 60, 3), 90, np.uint8)).save(images / 'e photo.jpg')
     r = subprocess.run([NODE, os.path.join(HERE, 'drive_previews_driver.mjs'), str(images)], capture_output=True, text=True, timeout=90)
     print(r.stdout, r.stderr)
     if r.returncode == 2:

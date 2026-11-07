@@ -6,6 +6,7 @@
 // titles (a done drawer folded sums up what was done, open names itself, a waiting one says its task); and
 // another image, or Unload, starting over. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/left_bar_driver.mjs ANSWERS IMAGE.png STUDIES
+import { EARLY } from "./early_messages.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -38,7 +39,7 @@ onmessage = ({ data: m }) => {
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
-  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(STAND_IN); }
+  if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(EARLY + STAND_IN); }
   if (u === "/web/vendor/wheels.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end("[]"); }
   const f = u === "/web/answers.json" ? answers : u === "/web/studies.json" ? studies : repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
@@ -115,6 +116,7 @@ await boxes(["✓ [img] " + name + "2D folded", "2 Processing open", "3 Ground T
 await rowEnd(2);
 await boxes(["✓ [img] " + name + "2D folded", "2 Processing open", "3 Ground Truth Tasks open"], "a click beside an open drawer's title leaves it open");
 await title(2);
+await page.evaluate(() => { document.querySelector("#fx-threshold").value = 100; });
 await page.click("#fx-count");
 await page.waitForFunction(() => /pixels/.test(document.querySelector("#fx-result").textContent));
 await boxes(["✓ [img] " + name + "2D folded", "✓ Counted at 100 folded", "3 Ground Truth Tasks open"],

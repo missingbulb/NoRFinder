@@ -2,7 +2,7 @@
 // the image; the count is its ground truth, and checking it is right its one task.
 export function mount(shell) {
   const $ = shell.$;
-  let ready = false, counted = null;
+  let counted = null;
   $("#fx-count").onclick = () => {
     shell.busy(true, "Counting…");
     shell.call("count", { threshold: +$("#fx-threshold").value });
@@ -32,9 +32,8 @@ export function mount(shell) {
       $("#fx-result").textContent = c ? `Ground truth: ${c.count} pixels above ${c.threshold}` : "Ground truth: nothing counted";
       return c ? `${c.count} pixels counted` : "nothing counted";
     },
-    ready(info) { $("#fx-threshold").value = info.threshold; ready = true; },
     opened() {
-      counted = null; $("#fx-count").disabled = !ready; $("#fx-done").checked = false; task(); shell.views.count(null);
+      counted = null; $("#fx-count").disabled = false; $("#fx-done").checked = false; task(); shell.views.count(null);
       $("#fx-result").textContent = $("#fx-sum").textContent = $("#fx-item").textContent = "Nothing counted yet."; shell.viewer.layer("fx").replaceChildren();
     },
     result(action, meta, bytes) {

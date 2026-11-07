@@ -1,7 +1,7 @@
 // Paints the lab's images (uncompressed three-channel ImageJ TIFFs) while their bytes arrive, so the image
-// shows before it has finished downloading and before Python has read it; Python's own drawing replaces it
-// once the image is open. While the channels arrive the image builds in grey from those already in; once
-// every byte is in, its colours wipe down over that grey (fade up from black when it came in at once), each channel in the colour of the role Python gives it (naive_nor.load): Caspr is the channel
+// shows before it has finished downloading and before the page has read it; the page's own drawing replaces it
+// once the image is open (req/shell/image/open). While the channels arrive the image builds in grey from those already in; once
+// every byte is in, its colours wipe down over that grey (fade up from black when it came in at once), each channel in the colour of the role the study gives it (nor.js's order, as naive_nor.load): Caspr is the channel
 // ImageJ displays green, DAPI the other with the larger blobs, Nav the rest. No pixel ever shows a hue its
 // final colour lacks: each is grey, black or a darker shade of that colour. Anything else is left alone: push() then returns false.
 "use strict";

@@ -213,7 +213,9 @@ try {
   await page.waitForFunction(() => st.fileName === "a flat.tif");
   // its shape remembered last: the moment, as it opens, that a stack's thumbnail is saved
   await page.waitForFunction((id) => Object.keys(JSON.parse(localStorage.getItem("nor-drive-holds") || "{}")).at(-1) === id, FILES[0].id);
-  check(!(await thumbOf(0)), "opening a flat image saves no thumbnail before it shows");
+  const shownFirst = await page.evaluate((id) => !localStorage.getItem("nor-drive-thumb:" + id) || !!st.img, FILES[0].id);
+  const thumbed = await page.waitForFunction((id) => !!localStorage.getItem("nor-drive-thumb:" + id), FILES[0].id, { timeout: 10000 }).then(() => true, () => false);
+  check(shownFirst && thumbed, "a flat image's thumbnail is saved once it shows, never before");
 } catch (e) {
   failed = true; console.error("FAILED: " + e.message);
 }

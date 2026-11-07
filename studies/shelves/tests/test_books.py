@@ -15,14 +15,18 @@ import shelves
 
 
 def photo():
-    """A shelf drawn as stripes: a dark board across the bottom, books as coloured vertical bands above it."""
+    """A shelf drawn as stripes: a dark board across the bottom, books as coloured vertical bands above it, each with a
+    title's bright marks down its middle."""
     rng = np.random.default_rng(3)
     a = np.full((240, 320, 3), 200, np.uint8)
     a[220:232] = 60
     x = 10
     while x < 300:
         w = int(rng.integers(14, 30))
-        a[60 + int(rng.integers(0, 40)):220, x:x + w - 2] = rng.integers(20, 180, 3)
+        top = 60 + int(rng.integers(0, 40))
+        a[top:220, x:x + w - 2] = rng.integers(20, 180, 3)
+        for y in range(top + 15, 205, 14):
+            a[y:y + 7, x + w // 3:x + w - 2 - w // 3] = 240
         x += w
     return a
 
@@ -31,9 +35,7 @@ def photo():
 def test_every_single_2d_format_opens_as_rgb(tmp_path, ext):
     path = tmp_path / ('shelf' + ext)
     Image.fromarray(photo()).save(path)
-    meta, planes = shelves.Session(str(path)).opened()
-    m = json.loads(meta)
-    assert (m['W'], m['H']) == (320, 240) and len(planes) == 3 * 320 * 240
+    assert shelves.Session(str(path)).rgb.shape == (240, 320, 3)
 
 
 def test_a_grey_16_bit_tiff_is_stretched_to_grey(tmp_path):
@@ -113,3 +115,80 @@ def test_a_leaning_book_is_boxed_leaning_with_it(lean):
         # the long sides, top corner to bottom corner, lean as the spines do
         for top, foot in ((c[0], c[3]), (c[1], c[2])):
             assert abs(np.degrees(np.arctan2(top[0] - foot[0], foot[1] - top[1])) - lean) < 3, c
+
+
+def own_spines():
+    """Books drawn as the owner's shelves hold them: packed against each other, each leaning its own way (a run of them
+    much alike), with its own height and its own foot, lettering down its middle; two neighbours of one colour parted
+    only by their seam; on the wall right of them nothing but a frame's two long edges. (photo, each book's corners
+    clockwise)."""
+    rng = np.random.default_rng(11)
+    H, W = 420, 640
+    a = np.full((H, W, 3), 214, np.float32)
+    a[372:392] = 150
+    yy, xx = np.mgrid[0:H, 0:W]
+    truth, taken, lean, colour = [], np.full(H, 20.0), 0.0, None
+    for k in range(10):
+        w, h = float(rng.integers(24, 40)), float(rng.integers(220, 300))
+        lean = float(np.clip(lean + rng.choice([-3, 0, 0, 3]), -9, 9))
+        t = np.deg2rad(lean)
+        foot = 372 - float(rng.integers(0, 8))
+        ax, ay, nx, ny = np.sin(t), -np.cos(t), np.cos(t), np.sin(t)
+        u0, v = (xx - 0) * nx + (yy - foot) * ny, (xx - 0) * ax + (yy - foot) * ay
+        # against the last book: as far left as it goes without covering any of it
+        rows = (v >= 0) & (v <= h) & (np.abs(u0) < 2 * W)
+        left = np.where(rows, xx - (u0 + w / 2) / nx, np.inf).min(axis=1)
+        cx = float(np.max(np.where(np.isfinite(left), taken - left, -np.inf))) + 1
+        u, v = (xx - cx) * nx + (yy - foot) * ny, (xx - cx) * ax + (yy - foot) * ay
+        body = (abs(u) <= w / 2) & (v >= 0) & (v <= h)
+        colour = colour if k == 5 else rng.integers(25, 160, 3).astype(np.float32)
+        a[body] = colour
+        # a seam: the spine's own rim, a little darker
+        a[body & (abs(u) > w / 2 - 1)] = colour * 0.6
+        for s0 in np.arange(0.2, 0.85, 0.09) * h:
+            a[(abs(u) <= w / 5) & (v >= s0) & (v <= s0 + 0.05 * h)] = 240
+        p = lambda du, dv: [cx + du * nx + dv * ax, foot + du * ny + dv * ay]
+        truth.append([p(-w / 2, h), p(w / 2, h), p(w / 2, 0), p(-w / 2, 0)])
+        taken = np.maximum(taken, np.where(body.any(axis=1), np.where(body, xx, -1).max(axis=1), -np.inf))
+    # a frame's sides on the wall: two long edges with plain wall between, a spine's outline and no book's face
+    a[110:372, 560:563] = a[110:372, 592:595] = 120
+    a += rng.normal(0, 3, a.shape)
+    return np.clip(a, 0, 255).astype(np.uint8), truth
+
+
+def seen_from_the_side(a, truth):
+    """The same shelf photographed from its left, turned toward the camera: its far end smaller, so every upright
+    converges and every top and foot slants. (photo, each book's corners clockwise)."""
+    H, W = a.shape[:2]
+    M = books.homography([[0, 0], [W, 0], [W, H], [0, H]], [[0, 0], [W * 0.95, H * 0.16], [W * 0.95, H * 0.86], [0, H]])
+    Minv = np.linalg.inv(M)
+    yy, xx = np.mgrid[0:H, 0:W].astype(float)
+    p = Minv @ np.stack([xx.ravel(), yy.ravel(), np.ones(xx.size)])
+    X, Y = p[0] / p[2], p[1] / p[2]
+    from scipy import ndimage as ndi
+    out = np.stack([ndi.map_coordinates(a[..., k].astype(float), [Y, X], order=1, cval=214).reshape(H, W) for k in range(3)], -1)
+    to = lambda q: (lambda r: [r[0] / r[2], r[1] / r[2]])(M @ [q[0], q[1], 1])
+    return np.clip(out, 0, 255).astype(np.uint8), [[to(q) for q in c] for c in truth]
+
+
+def own_boxes(a, truth):
+    """(books matched by a box close to their own corners, boxes found, boxes on the wall right of the books)"""
+    found = [np.array(b['corners']) for b in books.find(a)]
+    bare = max(max(x for x, _ in c) for c in truth)
+    unit = np.median([np.hypot(*np.subtract(c[1], c[0])) for c in truth])
+    matched = sum(bool(found) and min(np.abs(f - np.array(c)).max() for f in found) <= 0.25 * unit for c in truth)
+    return matched, len(found), sum(c[:, 0].min() > bare for c in found)
+
+
+@pytest.mark.parametrize('view', ['front', 'side'])
+def test_each_box_is_its_own_spine_and_none_is_made_up(view):
+    """req/shelves/books/find (2026-11-07): each box is the book's own spine, its top and foot its own and at their own
+    angle, packed against its neighbours and seen from the front or from the side; nothing is boxed on the wall, not
+    even between a frame's two edges, and no book is split or two boxed as one."""
+    a, truth = own_spines()
+    if view == 'side':
+        a, truth = seen_from_the_side(a, truth)
+    matched, found, on_wall = own_boxes(a, truth)
+    assert on_wall == 0, 'a box on the wall'
+    assert matched >= len(truth) - 1, (matched, len(truth))
+    assert found <= len(truth), 'a book split, or a box that is no book'
