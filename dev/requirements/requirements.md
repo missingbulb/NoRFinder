@@ -16,11 +16,12 @@ nobody has decided: what the page does there is not a requirement yet.
 
 ## `req/shell` The shell, whichever study it runs
 
-- `req/shell/account/role` Beside the avatar, a menu picks the role the user works in; the page shows that role's own view.
+- `req/shell/account/role` Beside the study's name, a menu picks the role the user works in; the page shows that role's own view.
   <details>
 
   Set by the owner on 2026-11-03: one page adapting to every role at once is replaced by a view per role,
-  chosen on purpose. Left of the avatar, a menu names the role the user works in and lists the roles they
+  chosen on purpose. Set by the owner on 2026-11-07: the header reads "[study] as [role]", the role's menu right of the
+  study's and drawn like it. The menu names the role the user works in and lists the roles they
   hold in the study on show: **Viewer**, everyone's, and the only one for a visitor not signed in
   (`req/shell/account/sign-in`); **Ground Truth Tagger**, held by those Drive lets write to the study's submissions folder (set by the owner on 2026-11-07, `req/shell/data/roles`), listed in every stage but
   Published (`req/shell/study/stage`; set by the owner on 2026-11-04: a PreGT study can have taggers too); and **Data Manager**, held by those Drive lets

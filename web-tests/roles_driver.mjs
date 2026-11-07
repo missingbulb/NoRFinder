@@ -40,6 +40,14 @@ let page = await open(false);
 let s = await seen(page);
 await check(s.role === "Viewer" && s.list.join() === "Viewer" && /sign in/i.test(s.hint), "not signed in, the menu offers Viewer alone and says what signing in adds", s);
 await check(!s.bar, "a viewer sees no asking bar", s);
+// the header reads "[study] as [role]": the role's menu right after the study's, drawn like it
+const header = await page.evaluate(() => {
+  const box = (e) => e.getBoundingClientRect(), look = (e) => { const c = getComputedStyle(e); return [c.backgroundColor, c.height, c.fontSize].join(); };
+  const study = $("#study-menu"), as = study.nextElementSibling, role = $("#role-menu");
+  return { as: as?.textContent.trim(), next: as?.nextElementSibling === role, inOrder: box(study).right <= box(as).left && box(as).right <= box(role).left,
+    name: look($("#title")) === look($("#role-name")), caret: look($("#study-menu .caret")) === look($("#role-menu .caret")) };
+});
+await check(header.as === "as" && header.next && header.inOrder && header.name && header.caret, "the header reads \"[study] as [role]\", both menus drawn alike", header);
 // the header's menus at the window's right edge open leftward, wholly inside the window
 for (const menu of ["#role-menu", "#user-menu"]) {
   await page.click(`${menu} summary`);
