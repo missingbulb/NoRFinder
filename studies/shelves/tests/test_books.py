@@ -122,7 +122,8 @@ def test_a_leaning_book_is_boxed_leaning_with_it(lean):
 def own_spines():
     """Books drawn as the owner's shelves hold them: packed against each other, each leaning its own way (a run of them
     much alike), with its own height and its own foot, lettering down its middle; two neighbours of one colour parted
-    only by their seam; the wall right of them bare. (photo, each book's corners clockwise)."""
+    only by their seam; on the wall right of them nothing but a frame's two long edges. (photo, each book's corners
+    clockwise)."""
     rng = np.random.default_rng(11)
     H, W = 420, 640
     a = np.full((H, W, 3), 214, np.float32)
@@ -151,6 +152,8 @@ def own_spines():
         p = lambda du, dv: [cx + du * nx + dv * ax, foot + du * ny + dv * ay]
         truth.append([p(-w / 2, h), p(w / 2, h), p(w / 2, 0), p(-w / 2, 0)])
         taken = np.maximum(taken, np.where(body.any(axis=1), np.where(body, xx, -1).max(axis=1), -np.inf))
+    # a frame's sides on the wall: two long edges with plain wall between, a spine's outline and no book's face
+    a[110:372, 560:563] = a[110:372, 592:595] = 120
     a += rng.normal(0, 3, a.shape)
     return np.clip(a, 0, 255).astype(np.uint8), truth
 
@@ -171,7 +174,7 @@ def seen_from_the_side(a, truth):
 
 
 def own_boxes(a, truth):
-    """(books matched by a box close to their own corners, boxes found, boxes on the bare wall)"""
+    """(books matched by a box close to their own corners, boxes found, boxes on the wall right of the books)"""
     found = [np.array(b['corners']) for b in books.find(a)]
     bare = max(max(x for x, _ in c) for c in truth)
     unit = np.median([np.hypot(*np.subtract(c[1], c[0])) for c in truth])
@@ -182,12 +185,12 @@ def own_boxes(a, truth):
 @pytest.mark.parametrize('view', ['front', 'side'])
 def test_each_box_is_its_own_spine_and_none_is_made_up(view):
     """req/shelves/books/find (2026-11-07): each box is the book's own spine, its top and foot its own and at their own
-    angle, packed against its neighbours and seen from the front or from the side; nothing is boxed on the bare wall, and
-    no book is split or two boxed as one."""
+    angle, packed against its neighbours and seen from the front or from the side; nothing is boxed on the wall, not
+    even between a frame's two edges, and no book is split or two boxed as one."""
     a, truth = own_spines()
     if view == 'side':
         a, truth = seen_from_the_side(a, truth)
     matched, found, on_wall = own_boxes(a, truth)
-    assert on_wall == 0, 'a box on the bare wall'
+    assert on_wall == 0, 'a box on the wall'
     assert matched >= len(truth) - 1, (matched, len(truth))
     assert found <= len(truth), 'a book split, or a box that is no book'
