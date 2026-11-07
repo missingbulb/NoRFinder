@@ -233,3 +233,45 @@ def test_two_books_of_one_series_are_two_boxes():
     assert on_wall == 0
     assert matched == len(truth), (matched, len(truth))
     assert found == len(truth), found
+
+
+def covers_on_a_bench():
+    """Three books lying cover-up on a bench of planks, photographed at a slant: each cover a picture with its title
+    across it, the planks long straight edges of their own. (photo, each cover's corners clockwise)."""
+    rng = np.random.default_rng(21)
+    H, W = 480, 640
+    flat = np.zeros((H, W, 3), np.float32)
+    for k, y in enumerate(range(0, H, 60)):
+        flat[y:y + 56] = (110 + 10 * (k % 2), 75, 45)
+        flat[y + 56:y + 60] = (40, 28, 18)
+    truth = []
+    for (x0, y0, w, h) in [(60, 90, 150, 220), (250, 70, 160, 230), (450, 120, 140, 200)]:
+        flat[y0:y0 + h, x0:x0 + w] = rng.integers(150, 240, 3)
+        for _ in range(6):
+            cy, cx, r = rng.integers(y0 + 20, y0 + h - 20), rng.integers(x0 + 20, x0 + w - 20), rng.integers(8, 25)
+            yy, xx = np.ogrid[:H, :W]
+            flat[((yy - cy) ** 2 + (xx - cx) ** 2 < r * r) & (yy >= y0) & (yy < y0 + h) & (xx >= x0) & (xx < x0 + w)] = rng.integers(20, 200, 3)
+        flat[y0 + 20:y0 + 40, x0 + 15:x0 + w - 15] = rng.integers(10, 80, 3)
+        truth.append([[x0, y0], [x0 + w, y0], [x0 + w, y0 + h], [x0, y0 + h]])
+    M = books.homography([[0, 0], [W, 0], [W, H], [0, H]], [[60, 40], [W - 60, 40], [W, H], [0, H]])
+    from scipy import ndimage as ndi
+    Minv = np.linalg.inv(M)
+    yy, xx = np.mgrid[0:H, 0:W].astype(float)
+    p = Minv @ np.stack([xx.ravel(), yy.ravel(), np.ones(xx.size)])
+    X, Y = p[0] / p[2], p[1] / p[2]
+    out = np.stack([ndi.map_coordinates(flat[..., k], [Y, X], order=1, cval=200).reshape(H, W) for k in range(3)], -1)
+    out += rng.normal(0, 3, out.shape)
+    to = lambda q: (lambda r: [r[0] / r[2], r[1] / r[2]])(M @ [q[0], q[1], 1])
+    return np.clip(out, 0, 255).astype(np.uint8), [[to(q) for q in c] for c in truth]
+
+
+def test_books_lying_cover_up_are_boxed_as_covers_and_the_planks_are_not():
+    """req/shelves/books/find (2026-11-07): each cover lying on a bench, seen at a slant, is one box of view cover on its
+    own four corners; the planks' long edges box nothing."""
+    a, truth = covers_on_a_bench()
+    found = books.find(a)
+    covers = [np.array(b['corners']) for b in found if b['view'] == 'cover']
+    unit = np.median([np.hypot(*np.subtract(c[1], c[0])) for c in truth])
+    matched = sum(bool(covers) and min(np.abs(f - np.array(c)).max() for f in covers) <= 0.15 * unit for c in truth)
+    assert matched == len(truth), (matched, len(truth), len(covers))
+    assert len(found) == len(truth), found
