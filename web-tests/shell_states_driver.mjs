@@ -44,6 +44,18 @@ const again = async (page, name, first) => {
   if (afresh) await page.waitForFunction(() => document.querySelector("[data-study-panel]") !== window.panelsBefore);
   await page.waitForFunction((b) => document.querySelector("#busy").hidden && (!shellForTests.page.get("image") || !b || document.querySelector(b)?.disabled !== true), first?.button);
 };
+// the folder's z-stack previewed (z), or its first image that is not
+const previewOf = async (page, z) => {
+  // the stand-in Drive is shared by every path: an earlier one may have made the previews already
+  if (!(await page.isDisabled("#update-previews"))) {
+    await page.click("#update-previews");
+    await page.waitForFunction(() => /previews? made/.test(document.querySelector("#folder-msg").textContent), null, { timeout: 30000 });
+  }
+  await page.click("#data-tree .tree-folder .count");
+  await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-image .pic img").length > 0);
+  await page.locator("#data-tree .tree-image").filter(z ? { hasText: path.basename(stack) } : { hasNotText: path.basename(stack) }).first().click();
+  await page.waitForFunction(() => shellForTests.page.get("image")?.source.kind === "preview" && !document.querySelector("#load-original").hidden);
+};
 const ACTIONS = {
   async load(page, first, files) {
     await page.setInputFiles("#file", files.image ?? image);
@@ -73,20 +85,13 @@ const ACTIONS = {
     await page.click("#data-tree .tree-folder .name");
     await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell").length > 0);
   },
-  async preview(page) {
-    // the stand-in Drive is shared by every path: an earlier one may have made the previews already
-    if (!(await page.isDisabled("#update-previews"))) {
-      await page.click("#update-previews");
-      await page.waitForFunction(() => /previews? made/.test(document.querySelector("#folder-msg").textContent), null, { timeout: 30000 });
-    }
-    await page.click("#data-tree .tree-folder .count");
-    await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-image .pic img").length > 0);
-    await page.click("#data-tree .tree-image");
-    await page.waitForFunction(() => shellForTests.page.get("image")?.source.kind === "preview" && !document.querySelector("#load-original").hidden);
-  },
+  async preview(page) { await previewOf(page, 0); },
+  // the folder's z-stack previewed
+  async zpreview(page) { await previewOf(page, 1); },
   async edit(page) {
     await page.click("#edit-open");
-    await page.waitForFunction(() => !document.querySelector("#edit-box").hidden && document.querySelector("#edit-open").disabled);
+    await page.waitForFunction(() => !document.querySelector("#edit-box").hidden && document.querySelector("#edit-open").disabled
+      && shellForTests.page.get("image")?.source.kind === "drive" && document.querySelector("#busy").hidden);
   },
   async done(page) {
     await page.click("#edit-done");

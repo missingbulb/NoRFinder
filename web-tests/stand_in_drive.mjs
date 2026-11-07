@@ -63,7 +63,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
     if (m.type === "study") { id = m.id; postMessage({ type: "ready", info: A.ready[id], heap: 0, files: 0 }); }
     else if (m.type === "open") {
       self.lastOpen = { name: m.name, bytes: new Uint8Array(m.bytes) };
-      const own = A.studies?.[id]?.named?.[m.name] ?? A.studies?.[id], images = bytes(own ? own.images : A.images);
+      const own = A.studies?.[id]?.named?.[m.name] ?? (A.studies?.[id]?.images ? A.studies[id] : null), images = bytes(own ? own.images : A.images);
       postMessage({ type: "opened", meta: own ? own.opened : A.opened, images }, [images.buffer]);
     }
     // a study ANSWERS names as live answers from its own Python, on the file it was handed last

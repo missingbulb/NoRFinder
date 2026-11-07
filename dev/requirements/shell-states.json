@@ -17,7 +17,8 @@
     "itemView": [false, true],
     "notice": [false, true],
     "imageFits": [true, false],
-    "collapsed": [false, true]
+    "collapsed": [false, true],
+    "shows3d": [false, true]
   },
   "roots": {
     "GT, signed out": {"stage": "GT", "signedIn": false, "role": "viewer"},
@@ -41,6 +42,7 @@
     {"root": "GT, Data Manager", "actions": ["folder", "preview", "original", "offline"]},
     {"root": "GT, Data Manager", "actions": ["folder", "preview", "edit", "offline", "done"]},
     {"root": "GT, Data Manager", "actions": ["folder", "offline", "online"]},
+    {"root": "GT, Data Manager", "actions": ["folder", "zpreview", "edit", "done"]},
     {"root": "GT, Tagger", "actions": ["load", "ok", "count", "unload"]},
     {"root": "GT, Tagger", "actions": ["load", "count", "viewer"]},
     {"root": "GT, Tagger", "actions": ["load", "count", "restudy"]},
@@ -140,6 +142,7 @@
                     },
                     {"name": "Depth row", "select": "#channels .v3-slices", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
                       "rule": [
+                        {"when": {"shows3d": [false]}, "is": "hidden", "req": "req/shell/viewer-3d"},
                         {"when": {"stack": [false]}, "is": "hidden"}
                       ],
                       "children": [
@@ -151,6 +154,7 @@
                     },
                     {"name": "Channel's Colour by depth", "select": "#channels .v3-depth-row", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
                       "rule": [
+                        {"when": {"shows3d": [false]}, "is": "hidden", "req": "req/shell/viewer-3d"},
                         {"when": {"stack": [false]}, "is": "hidden"}
                       ],
                       "children": [
@@ -251,6 +255,9 @@
                   ]
                 },
                 {"name": "Crop", "select": "#edit-crop-row", "req": "req/shell/data/edit",
+                  "rule": [
+                    {"when": {"stack": [true]}, "is": "hidden", "about": "a z-stack is edited in 3D, which has tools of its own"}
+                  ],
                   "children": [
                     {"name": "Draw", "select": "#edit-crop", "control": true, "req": "req/shell/data/edit"},
                     {"name": "Crop's size", "select": "#edit-crop-size", "req": "req/shell/data/edit"},
@@ -261,13 +268,17 @@
                     }
                   ]
                 },
-                {"name": "Slices", "select": "#edit-slices-sec", "req": "req/shell/data/edit", "unwalked": "Edit Image on a z-stack, and the stand-in Drive holds none",
+                {"name": "Slices", "select": "#edit-slices-sec", "req": "req/shell/data/edit",
                   "rule": [
                     {"when": {"stack": [false]}, "is": "hidden"}
                   ],
                   "children": [
                     {"name": "Slices' text", "select": "#edit-z-text", "req": "req/shell/data/edit"},
-                    {"name": "Use suggested", "select": "#edit-suggest", "control": true, "req": "req/shell/data/edit"},
+                    {"name": "Use suggested", "select": "#edit-suggest", "control": true, "req": "req/shell/data/edit",
+                      "rule": [
+                        {"is": "disabled", "approval": "tentative", "about": "the slices kept are the suggested ones already, as on the walked z-stack"}
+                      ]
+                    },
                     {"name": "Slices slider", "select": "#edit-slices", "req": "req/shell/data/edit",
                       "children": [
                         {"name": "Suggested band", "select": "#edit-band", "req": "req/shell/data/edit"},
@@ -279,6 +290,9 @@
                 },
                 {"name": "Channels kept", "select": "#edit-channels", "req": "req/shell/data/edit"},
                 {"name": "Imperfections", "select": "#edit-flaws-row", "req": "req/shell/data/edit",
+                  "rule": [
+                    {"when": {"stack": [true]}, "is": "hidden", "about": "a z-stack is edited in 3D, which has tools of its own"}
+                  ],
                   "children": [
                     {"name": "Mark", "select": "#edit-lasso", "control": true, "req": "req/shell/data/edit"},
                     {"name": "Imperfections' list", "select": "#edit-flaws", "req": "req/shell/data/edit"}
@@ -346,26 +360,27 @@
             {"name": "Ruler", "select": "#ruler-btn", "control": true, "req": "req/shell/tools/ruler",
               "rule": [
                 {"when": {"view": ["items"]}, "is": "hidden", "req": "req/shell/views/second"},
-                {"when": {"stack": [true]}, "is": "hidden", "req": "req/shell/viewer-3d"},
+                {"when": {"stack": [true], "shows3d": [true]}, "is": "hidden", "req": "req/shell/viewer-3d"},
                 {"when": {"image": ["none"]}, "is": "disabled", "req": "req/shell/image/minimap"}
               ]
             },
             {"name": "Grid", "select": "#grid-btn", "control": true, "req": "req/shell/tools/grid",
               "rule": [
                 {"when": {"view": ["items"]}, "is": "hidden", "req": "req/shell/views/second"},
-                {"when": {"stack": [true]}, "is": "hidden", "req": "req/shell/viewer-3d"},
+                {"when": {"stack": [true], "shows3d": [true]}, "is": "hidden", "req": "req/shell/viewer-3d"},
                 {"when": {"image": ["none"]}, "is": "disabled", "req": "req/shell/image/minimap"}
               ]
             },
             {"name": "Minimap button", "select": "#minimap-btn", "control": true, "req": "req/shell/image/minimap",
               "rule": [
                 {"when": {"view": ["items"]}, "is": "hidden", "req": "req/shell/views/second"},
-                {"when": {"stack": [true]}, "is": "hidden", "req": "req/shell/viewer-3d"},
+                {"when": {"stack": [true], "shows3d": [true]}, "is": "hidden", "req": "req/shell/viewer-3d"},
                 {"when": {"image": ["none"]}, "is": "disabled"}
               ]
             },
             {"name": "Reset View group", "select": "#v3-tools", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
               "rule": [
+                {"when": {"shows3d": [false]}, "is": "hidden", "req": "req/shell/viewer-3d"},
                 {"when": {"stack": [false]}, "is": "hidden"}
               ],
               "children": [
@@ -408,7 +423,7 @@
               "children": [
                 {"name": "Scroller", "select": "#scroller", "req": "req/shell/image/minimap",
                   "rule": [
-                    {"when": {"stack": [true]}, "is": "hidden", "req": "req/shell/viewer-3d"}
+                    {"when": {"stack": [true], "shows3d": [true]}, "is": "hidden", "req": "req/shell/viewer-3d"}
                   ],
                   "children": [
                     {"name": "Empty view's text", "select": "#empty", "req": "req/shell/image/minimap",
@@ -431,6 +446,7 @@
                 },
                 {"name": "3D view", "select": "#v3-stage", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
                   "rule": [
+                    {"when": {"shows3d": [false]}, "is": "hidden", "req": "req/shell/viewer-3d"},
                     {"when": {"stack": [false]}, "is": "hidden"}
                   ],
                   "children": [

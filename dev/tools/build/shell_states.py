@@ -29,7 +29,8 @@ ACTIONS = {
     # a role chosen: to or from Ground Truth Tagger, the study opens afresh on the same image (req/shell/account/role)
     'tagger': ('→ Tagger', {'role': 'tagger'}),
     'folder': ('Folder', {'selected': 'folder'}),
-    'preview': ('Preview', {'selected': 'image', 'image': 'preview', 'counted': False}),
+    'preview': ('Preview', {'selected': 'image', 'image': 'preview', 'stack': False, 'counted': False}),
+    'zpreview': ('Preview a z-stack', {'selected': 'image', 'image': 'preview', 'stack': True, 'counted': False}),
     'original': ('Load Original', {'image': 'original'}),
     # from a preview, Edit Image opens the image itself (req/shell/data/edit)
     'edit': ('Edit Image', {'editing': True, 'image': 'original'}),
@@ -95,11 +96,13 @@ def check_rules(rules, tree, roots, paths):
 
 def facts(study):
     """What the study itself says, from its study.json and its panels: whether it opens images from the computer,
-    has steps of its own after Load, and has an item view not marked shelved, never shown (req/shell/views/second)."""
+    has steps of its own after Load, has an item view not marked shelved, never shown (req/shell/views/second), and
+    shows a z-stack in 3D (req/shell/viewer-3d)."""
     d = study['study']
     view = re.search(r'<[^>]*\bid="items-view"[^>]*>', study.get('panels', ''))
     shelved = bool(view) and re.search(r'\sdata-shelved[\s>=]', view.group(0)) is not None
-    return {'fromComputer': 'local' in d['files']['from'], 'hasSteps': bool(d['phases']), 'itemView': bool(view) and not shelved}
+    return {'fromComputer': 'local' in d['files']['from'], 'hasSteps': bool(d['phases']), 'itemView': bool(view) and not shelved,
+            'shows3d': d.get('viewer') == 'image3d'}
 
 
 def walk(study, roots, paths):

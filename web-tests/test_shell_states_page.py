@@ -45,8 +45,10 @@ def own_answers(answers, png, tif, stack, out):
         a = json.load(f)
     with open(EXPECT, encoding='utf-8') as f:
         paths = json.load(f)['paths']
-    walked = sorted({p['study'] for p in paths} - {'fixture'})
-    stacked = {p['study'] for p in paths if 'stack' in p['actions']}
+    # the fixture opens a z-stack from its Drive folder as the Image Viewer's Python does
+    zfixture = any(p['study'] == 'fixture' and 'zpreview' in p['actions'] for p in paths)
+    walked = sorted({p['study'] for p in paths} - {'fixture'} | ({'viewer'} if zfixture else set()))
+    stacked = {p['study'] for p in paths if 'stack' in p['actions']} | ({'viewer'} if zfixture else set())
     a['studies'], a['files'] = {}, {'fixture': {'image': png, 'stack': stack}}
     # what they do after loading, their own Python answers as the page asks
     a['live'] = sorted({p['study'] for p in paths if 'count' in p['actions']} - {'fixture'})
@@ -67,6 +69,8 @@ def own_answers(answers, png, tif, stack, out):
                 a['studies'][i]['named'][os.path.basename(f)] = {'opened': json.loads(meta), 'images': base64.b64encode(images).decode()}
         finally:
             del sys.path[:len(py['paths'])]
+    if zfixture:
+        a['studies']['fixture'] = {'named': {os.path.basename(stack): a['studies']['viewer']['named'][os.path.basename(stack)]}}
     out.write_text(json.dumps(a))
     return str(out)
 
@@ -79,9 +83,9 @@ def test_every_state_is_what_the_rules_say(answers, png, tmp_path):
     tifffile.imwrite(root / 'one.tif', np.stack([(x * 3).astype(np.uint8), (y * 4).astype(np.uint8)]), imagej=True, metadata={'axes': 'CYX'})
     # and one the fixture opens, from its Drive folder
     shutil.copy(png, root / 'two.png')
-    # a z-stack of two channels, kept out of the Drive folder
+    # a z-stack of two channels, in the Drive folder too
     z, y, x = np.mgrid[0:6, 0:40, 0:50]
-    stack = tmp_path / 'stack.tif'
+    stack = root / 'stack.tif'
     tifffile.imwrite(stack, np.stack([(x * 5 + z * 10).astype(np.uint8), (y * 6).astype(np.uint8)], axis=1), imagej=True, metadata={'axes': 'ZCYX'})
     renders = os.environ.get('SHELL_STATES_RENDERS') or str(tmp_path / 'renders')
     run('shell_states_driver.mjs', own_answers(answers[0], png, str(root / 'one.tif'), str(stack), tmp_path / 'answers.json'), answers[1], str(root), png, str(stack), EXPECT, renders, timeout=600)

@@ -39,7 +39,7 @@
   "differ": {
     "Submit Ground Truth": {
       "rule": [
-        {"is": "disabled", "approval": "tentative", "req": "req/shelves/truth/task",
+        {"is": "disabled", "req": "req/shelves/truth/task",
           "about": "until every book found is checked and the missed ones drawn, which no path does"}
       ]
     }
