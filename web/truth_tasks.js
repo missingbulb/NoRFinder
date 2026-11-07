@@ -3,8 +3,9 @@
 // got; how a task is worked through stays the study's, which puts what it needs on the open task's row.
 "use strict";
 
-export function truthTasks({ $, icon }) {
-  let pick = null, submit = null;
+// started(): whether the study's first step is done; until it is, Submit stays off whatever the study says
+export function truthTasks({ $, icon, started }) {
+  let pick = null, submit = null, wants = false;
   const rows = () => [...$("#gt-tasks").children].filter((li) => li.dataset.task !== "submit");
   const row = (key) => rows().find((li) => li.dataset.task === key) || null;
   const part = (key) => [...$("#gt-bar").children].find((p) => p.dataset.task === key);
@@ -40,13 +41,15 @@ export function truthTasks({ $, icon }) {
       }
       api.ready(false);
     },
-    // how far a task has got: did of all, done once every one is (or as the study says); did null while not known
+    // how far a task has got: did of all, done once every one is (or as the study says); did null while not known,
+    // of null for a task with no total, which shows its count alone and is done when the study says
     count(key, did, of, done = did != null && of > 0 && did >= of) {
       const li = row(key), p = part(key);
       if (!li) return;
-      li.querySelector(".n").textContent = did == null ? "" : `${did}/${of}`;
+      li.querySelector(".n").textContent = did == null ? "" : of == null ? String(did) : `${did}/${of}`;
       li.classList.toggle("done", !!done);
-      p.style.flexGrow = did == null ? 1 : Math.max(of, 1); p.style.setProperty("--done", did != null && of ? Math.min(did / of, 1) : 0);
+      const whole = of == null ? 1 : Math.max(of, 1), part_ = of == null ? (done ? 1 : 0) : did != null && of ? Math.min(did / of, 1) : 0;
+      p.style.flexGrow = did == null ? 1 : whole; p.style.setProperty("--done", did == null ? 0 : part_);
     },
     // the open task, its name in bold: its row, for the study to put its item and tools on; null for none
     open(key) {
@@ -58,10 +61,12 @@ export function truthTasks({ $, icon }) {
     // what is left to do as its tooltip
     ready(on, state, title) {
       const b = $("#gt-submit");
-      b.disabled = !on;
+      wants = !!on; b.disabled = !wants || !started();
       if (state) b.dataset.state = state; else delete b.dataset.state;
       if (title) b.title = title; else b.removeAttribute("title");
     },
+    // the study's steps moved: Submit follows its first one
+    stepped() { $("#gt-submit").disabled = !wants || !started(); },
     // the study leaving: its tasks go
     leave() {
       pick = submit = null;

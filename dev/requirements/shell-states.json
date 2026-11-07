@@ -296,7 +296,7 @@
                       "children": [
                         {"name": "Submit Ground Truth", "select": "#gt-submit", "control": true, "req": "req/shell/ground-truth/tasks",
                           "rule": [
-                            {"when": {"counted": [false]}, "is": "disabled", "approval": "tentative"}
+                            {"when": {"counted": [false]}, "is": "disabled"}
                           ]
                         }
                       ]

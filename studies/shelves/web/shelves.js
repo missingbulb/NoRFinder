@@ -158,7 +158,7 @@ export function mount(shell) {
     const all = found(), reviewed = all.length - open().length, missed = books.filter((b) => b.source === "missed" && b.verdict !== "wrong").length;
     const reviewing = cur && (cur.source === "missed" || !cur.verdict);
     shell.tasks.count("books", reviewed, all.length, all.length > 0 && !open().length);
-    shell.tasks.count("missed", missed, missed, missedDone);
+    shell.tasks.count("missed", missed, null, missedDone);
     const now = reviewing && cur.source === "found" ? "books" : !open().length || cur?.source === "missed" ? "missed" : null;
     for (const k of ["books", "missed"]) shell.tasks.row(k).querySelector(".task-body").replaceChildren();
     shell.tasks.open(now)?.querySelector(".task-body").append(now === "books" ? item(cur) : missedTools());

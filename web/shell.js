@@ -519,6 +519,7 @@ function makeSteps() {
     $(p.button).addEventListener("click", () => { p.pressed = true; }, { signal: lifetime.signal });
   }
   drawSteps();
+  tasks.stepped();
 }
 // a step done or not, and what was done in it (or how far it has got)
 function step(key, done, info) {
@@ -533,6 +534,7 @@ function step(key, done, info) {
   p.done = !!done;
   if (info !== undefined) p.info = info;
   drawSteps();
+  tasks.stepped();
 }
 function drawSteps() {
   const now = steps.findIndex((p) => !p.done), shown = now < 0 ? steps : steps.slice(0, now + 1);
@@ -1591,7 +1593,7 @@ function saveFile(name, text, type) {
 // the shell's icons, by name, as SVG markup: done, part, todo
 const icon = (name) => `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">${$(`#icons .${name}`).innerHTML}</svg>`;
 // the study's ground-truth tasks in the left bar (req/shell/ground-truth/tasks)
-const tasks = truthTasks({ $, icon });
+const tasks = truthTasks({ $, icon, started: () => { const first = manifest?.phases[0]?.key; return !first || !!steps.find((p) => p.key === first)?.done; } });
 // Load GT tagging (req/shell/ground-truth/view): for anyone but a tagger, an image from the remote store with curated ground truth
 // shows it through the study's showTruth(doc), which draws only its final results and returns a line of its counts
 let offered = 0;

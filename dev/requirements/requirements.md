@@ -501,7 +501,9 @@ nobody has decided: what the page does there is not a requirement yet.
   and filled as far as it is done, then one row per task, "13/47 Finalists", with a check once it is done, and
   last the shell's Submit Ground Truth row, which opens the submit popup (`req/shell/ground-truth/submit`) with
   the study's ground truth. The study says when Submit can be pressed and, where it knows, whether its
-  ground truth is done, partly done or not started, which the button shows as an icon. One task at a time is
+  ground truth is done, partly done or not started, which the button shows as an icon; whatever it says, Submit
+  is off until the study's first step is done (owner, 2026-11-07). A task with no total (the Bookshelf Reader's
+  missed books) shows its count alone, "1 Missed books", and its check once the study says it is done. One task at a time is
   the open one, its name in bold: the study puts what it needs under its row and beside its name (its item,
   Back and Skip, an area's check), and hears when the user clicks a task's name. The walk through the tasks
   stays each study's own (owner: a change of heart on how one study does its tasks must not move the others;
