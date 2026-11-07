@@ -187,9 +187,12 @@ nobody has decided: what the page does there is not a requirement yet.
   quarter of the best slice's), and Use suggested sets the marks there. Channels ticks each channel kept,
   a dropped one shown empty. Imperfections lassoes a part on the image to
   leave out, drawn as if no data were there; each is listed with its share of the image
-  and can be removed, and the box's folded title sums them up ("4% imperfections"). Crop, the cut lines and Imperfections
-  draw on a flat image, so a stack, shown in 3D only (`req/shell/viewer-3d`), has none of them (owner,
-  2026-11-03: each viewer gets tools made for it). Done leaves the box
+  and can be removed, and the box's folded title sums them up ("4% imperfections"). Crop and the cut lines
+  draw on a flat image, so a stack, shown in 3D only (`req/shell/viewer-3d`), has neither (owner,
+  2026-11-03: each viewer gets tools made for it). Changed by the owner on 2026-11-07, Vascular Measurements' damaged
+  areas moving here out of its ground truth: a stack has Imperfections too. Mark turns it to straight above and holds
+  it there while armed, the lasso draws on it, and what it encloses is left out through every slice, outlined over the
+  view as it zooms and pans. Done leaves the box
   and shows the image as it was. Test: `web-tests/test_image_edit_page.py`, `web-tests/test_image_edit.py`.
   </details>
 

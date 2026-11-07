@@ -929,9 +929,11 @@ html:not(.offline) #welcome-offline { display: none; }
 #overlay .edit-cut { stroke: #fff; stroke-width: 2px; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 1px #000); }
 #overlay .edit-cut.dragging { stroke: var(--accent); stroke-width: 3px; }
 #overlay .edit-left { fill: #ddd; font-size: 14px; text-anchor: middle; dominant-baseline: central; paint-order: stroke; stroke: #000; stroke-width: 3px; }
-#overlay .edit-flaw { fill: #ff4d4d22; stroke: #ff4d4d; stroke-width: 1.5px; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+#overlay .edit-flaw, #edit-3d .edit-flaw { fill: #ff4d4d22; stroke: #ff4d4d; stroke-width: 1.5px; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
 #overlay .edit-crop { fill: none; stroke: #fff; stroke-width: 2px; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke; }
-#overlay .edit-lasso { fill: none; stroke: #ff4d4d; stroke-width: 2px; vector-effect: non-scaling-stroke; }
+#overlay .edit-lasso, #edit-3d .edit-lasso { fill: none; stroke: #ff4d4d; stroke-width: 2px; vector-effect: non-scaling-stroke; }
+/* a stack's imperfections and lasso, over the 3D view, in its pixels */
+#edit-3d { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; overflow: visible; }
 :root[data-editing] #scroller { cursor: default; }
 :root[data-edit-tool] #scroller { cursor: crosshair; }
 /* the tagger's line in a study's ground-truth box: may they write to the submissions folder (req/shell/ground-truth/tagger-access) */

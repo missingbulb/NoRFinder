@@ -563,6 +563,24 @@ export function viewer3d(shell, flat) {
       if (gl && vol) texture(CHANNELS, mask);
       redraw();
     },
+    // a pointer's place on the shown image's pixels at the stack's middle depth, [x, y]; null where the view looks along
+    // that plane. From straight above it is the pixel under the pointer, through every slice.
+    toImage(e) {
+      if (!vol) return null;
+      const r = cv.getBoundingClientRect(), iv = M.inv(camera(r.width / r.height));
+      const nx = ((e.clientX - r.left) / r.width) * 2 - 1, ny = 1 - ((e.clientY - r.top) / r.height) * 2;
+      const [a, b] = [-1, 1].map((d) => { const w = M.xf(iv, [nx, ny, d]); return w.slice(0, 3).map((v) => v / w[3]); });
+      if (Math.abs(b[2] - a[2]) < 1e-9) return null;
+      const t = -a[2] / (b[2] - a[2]), x = a[0] + t * (b[0] - a[0]), y = a[1] + t * (b[1] - a[1]);
+      return [((x / half[0] + 1) / 2) * vol.X * vol.bin, ((1 - y / half[1]) / 2) * vol.Y * vol.bin];
+    },
+    // where a pixel of the shown image at the stack's middle depth lies on the view, [x, y] from its top left; null
+    // behind the camera
+    toScreen(x, y) {
+      if (!vol) return null;
+      const r = cv.getBoundingClientRect(), v = M.xf(camera(r.width / r.height), [half[0] * ((2 * x) / (vol.X * vol.bin) - 1), half[1] * (1 - (2 * y) / (vol.Y * vol.bin)), 0]);
+      return v[3] > 0 ? [((v[0] / v[3] + 1) / 2) * r.width, ((1 - v[1] / v[3]) / 2) * r.height] : null;
+    },
     inClip: (w) => !S.clip || (w[0] >= S.clip[0] && w[0] <= S.clip[2] && w[1] >= S.clip[1] && w[1] <= S.clip[3]),
     // a small box around a world point seen from the side, looking level across the direction `along` (radians in the
     // image plane), so what lies above or below the point in depth shows beside it
