@@ -152,7 +152,7 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
   font-variant-numeric: tabular-nums; }
 
 /* three columns of panels; the gutters between them are the handles that resize the side bars */
-#layout { --lw: 320px; --tw: 0px; display: grid; grid-template-columns: var(--tw) var(--lw-now, var(--lw)) var(--pad) minmax(0, 1fr) var(--pad);
+#layout { --lw: 320px; --tw: 0px; display: grid; grid-template-columns: var(--tw) var(--lw) var(--pad) minmax(0, 1fr) var(--pad);
   transition: grid-template-columns .35s cubic-bezier(.25, .8, .25, 1);
   grid-template-rows: minmax(0, 1fr); min-height: 0; }
 /* the scrollbar's room is kept even when nothing scrolls, so folding a box never changes the bar's width */
@@ -830,33 +830,14 @@ html:not(.offline) #welcome-offline { display: none; }
 #data-col[hidden] { display: none; }
 #data-col { position: relative; padding: var(--pad) 0 var(--pad) 8px; overflow: hidden; scrollbar-gutter: auto; display: flex; flex-direction: column; min-width: 0; }
 #data-open { display: flex; align-items: center; gap: 6px; padding: 8px 4px; border-radius: var(--r-panel); white-space: nowrap; }
-:is(#data-open, #left-expand, #left-collapse) .chev { flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; transition: transform .35s; }
-#data-open[aria-expanded=true] .chev, #left-collapse .chev { transform: rotate(180deg); }
-/* its strip, and the left bar's collapsed (req/shell/left-bar/collapse): a chevron over an upright name, the whole
-   column's height, the left bar's with its steps' marks between */
-:root[data-tree=folded] #data-open, #left-strip { flex: 1; flex-direction: column; justify-content: flex-start; gap: 10px; padding: 12px 0; width: 100%; min-width: 0; box-sizing: border-box;
+#data-open .chev { flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; transition: transform .35s; }
+#data-open[aria-expanded=true] .chev { transform: rotate(180deg); }
+/* its strip: a chevron over an upright name, the whole column's height */
+:root[data-tree=folded] #data-open { flex: 1; flex-direction: column; justify-content: flex-start; gap: 10px; padding: 12px 0; width: 100%; min-width: 0; box-sizing: border-box;
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-panel); color: var(--dim); }
-:root[data-tree=folded] #data-open:hover, #left-strip:hover { color: var(--text); border-color: var(--accent); }
-:root[data-tree=folded] #data-open .strip-name, #left-strip .strip-name { writing-mode: vertical-rl; font-size: 12px; letter-spacing: .03em; }
+:root[data-tree=folded] #data-open:hover { color: var(--text); border-color: var(--accent); }
+:root[data-tree=folded] #data-open .strip-name { writing-mode: vertical-rl; font-size: 12px; letter-spacing: .03em; }
 :root:not([data-tree=folded]) #data-open { align-self: flex-start; border: 0; background: transparent; color: var(--dim); }
-#left-strip { display: none; align-items: center; cursor: pointer; }
-:root[data-left=collapsed] #left-strip { display: flex; }
-#left-expand { display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: inherit; }
-#left-marks { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-#left-marks .step-mark { padding: 0; background: transparent; cursor: pointer; }
-#left-marks .step-mark.open { border-color: var(--accent); color: var(--accent); }
-#left-marks .step-mark.done { border-color: var(--yes); background: var(--yes); color: #fff; }
-#left-marks .step-mark:hover { outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent); }
-/* the open bar's head: its chevron where the strip's is, so the one spot collapses the bar and expands it again */
-#left-head { display: flex; align-items: center; gap: 6px; height: 40px; margin: 0 0 0 -8px; color: var(--dim); }
-#left-head .strip-name { font-size: 12px; letter-spacing: .03em; }
-#left-collapse { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; color: inherit; cursor: pointer; }
-#left-collapse:hover { color: var(--text); border-color: var(--accent); }
-/* collapsed, the drawers are kept laid out out of sight, so their steps are still numbered for the strip */
-:root[data-left=collapsed] #layout { --lw-now: 32px; }
-:root[data-left=collapsed] #left { position: relative; display: flex; flex-direction: column; overflow: hidden; scrollbar-gutter: auto; padding: var(--pad) 0 var(--pad) 4px; }
-:root[data-left=collapsed] #left > :not(#left-strip) { position: absolute; top: 0; left: 0; width: 300px; visibility: hidden; pointer-events: none; }
-#left.sliding-in > :not(#left-strip) { animation: data-in .35s ease-out; }
 #data-body { display: none; min-width: 240px; flex: 1; min-height: 0; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-panel); padding: 10px 8px; margin-top: 6px; }
 :root[data-mode=data]:not([data-tree=folded]) #data-body { display: flex; animation: data-in .35s ease-out; }
 @keyframes data-in { from { opacity: 0; transform: translateX(-24px); } }

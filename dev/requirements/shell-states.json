@@ -84,20 +84,6 @@
         },
         {"name": "Left bar", "select": "#left", "req": "req/shell/left-bar/folding",
           "children": [
-            {"name": "Collapsed strip", "select": "#left-strip", "req": "req/shell/left-bar/collapse",
-              "rule": [
-                {"is": "hidden"}
-              ],
-              "children": [
-                {"name": "Expand", "select": "#left-expand", "control": true, "req": "req/shell/left-bar/collapse"},
-                {"name": "Strip's marks", "select": "#left-marks", "req": "req/shell/left-bar/collapse"}
-              ]
-            },
-            {"name": "Left bar's head", "select": "#left-head", "req": "req/shell/left-bar/collapse",
-              "children": [
-                {"name": "Collapse", "select": "#left-collapse", "control": true, "req": "req/shell/left-bar/collapse"}
-              ]
-            },
             {"name": "Image box", "select": "#image-box", "box": true, "req": "req/shell/left-bar/folding",
               "rule": [
                 {"when": {"selected": ["folder"]}, "is": "hidden", "req": "req/shell/data/folder"},

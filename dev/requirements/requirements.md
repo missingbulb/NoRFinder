@@ -611,18 +611,12 @@ nobody has decided: what the page does there is not a requirement yet.
   `web-tests/test_study_runs.py`, `web-tests/test_compressed_tiff.py`, `web-tests/test_viewer3d_page.py`.
   </details>
 
-- `req/shell/left-bar/collapse` The left bar collapses to a narrow Steps strip, giving the image its room, and expands again (remembered):
-  by a chevron in one spot, at the bar's top open or collapsed, or by dragging the gutter past the bar's narrowest and back out.
+- `req/shell/left-bar/static` The left bar stays open: nothing collapses it, and it has no chevron and no Steps label.
   <details>
 
-  Set by the owner on 2026-11-03. A small tab holding a chevron sits on the gutter between the open
-  left bar and the image, at its middle; clicking it collapses the bar to a narrow strip like the
-  Data Management strip (`req/shell/data/mode`), the same width and a small gap from it: the chevron,
-  the drawers' step marks (a number, or a check once done), and "Steps" upright. Clicking the strip
-  expands the bar again; clicking a step mark expands it with that drawer open. Collapsing and
-  expanding slide as Data Management's column does, the drawers sliding in on the way out. The bar's
-  width is kept for its return, and it cannot be dragged while collapsed. Collapsed or not stays with
-  the device, beside the width (`req/shell/left-bar/width`).
+  Set by the owner on 2026-11-07, in place of the collapsing bar of 2026-11-03: no chevron at its top, no narrow
+  Steps strip, and dragging the gutter stops at the bar's narrowest rather than collapsing it. A collapsed state
+  kept on the device from before opens the bar.
   Test: `web-tests/test_left_bar_page.py`.
   </details>
 

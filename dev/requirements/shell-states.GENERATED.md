@@ -25,11 +25,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ▸ | ▸ | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ⋯ | ⋯ | ⋯ |
@@ -180,11 +175,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ▸ | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ⋯ | ⋯ |
@@ -335,11 +325,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ▸ | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ⋯ | ⋯ |
@@ -490,11 +475,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ▸ | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ⋯ | ⋯ |
@@ -645,11 +625,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ▸ | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ⋯ | ⋯ |
@@ -800,11 +775,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ▸ | ▸ | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ⋯ | ⋯ | ⋯ |
@@ -955,11 +925,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ▸ | ▸ | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ⋯ | ⋯ | ⋯ |
@@ -1110,11 +1075,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ▸ | ▸ | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ⋯ | ⋯ | ⋯ |
@@ -1265,11 +1225,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ○ | ● | ▸ | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⊘ | ● | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ⊘ | ● | ⋯ | ⋯ |
@@ -1420,11 +1375,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ● | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ● | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ | ○ | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● | ● | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ○ | ● | ▸ | ▸ | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⊘ | ● | ⋯ | ⋯ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ⊘ | ● | ⋯ | ⋯ | ⋯ |
@@ -1575,11 +1525,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ● | ● | ● | ● |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ⊘ | ⊘ | ⊘ |
@@ -1730,11 +1675,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ⋯ |
@@ -1889,11 +1829,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ⋯ |
@@ -2048,11 +1983,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ⋯ |
@@ -2205,11 +2135,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ⋯ |
@@ -2362,11 +2287,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ⋯ |
@@ -2426,7 +2346,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Processing | ▸ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Algorithm | ⋯ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;About the algorithm | ⋯ | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Load a model | ⋯ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Run algorithm | ⋯ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The model's controls | ⋯ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Ground Truth Tasks | ○ | ○ |
@@ -2521,11 +2440,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ▸ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ⋯ |
@@ -2585,7 +2499,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Processing | ▸ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Algorithm | ⋯ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;About the algorithm | ⋯ | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Load a model | ⋯ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Run algorithm | ⋯ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The model's controls | ⋯ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Ground Truth Tasks | ▸ | ▸ |
@@ -2680,11 +2593,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ● |
@@ -2829,11 +2737,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Collapsed strip | ○ | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Expand | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Strip's marks | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Left bar's head | ● | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Collapse | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Image box | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File name and info | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Image's name | ● | ● | ● | ● |

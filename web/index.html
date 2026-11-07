@@ -72,8 +72,6 @@
     </div>
   </aside>
   <aside id="left">
-    <div id="left-strip" title="Expand the left bar, with the study's steps"><button id="left-expand" type="button" aria-expanded="false" aria-controls="left" aria-label="Expand the left bar"><svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button><div id="left-marks" aria-label="The steps"></div><span class="strip-name">Steps</span></div>
-    <div id="left-head"><button id="left-collapse" type="button" aria-expanded="true" aria-controls="left" title="Collapse the left bar, to give the image its room" aria-label="Collapse the left bar"><svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button><span class="strip-name">Steps</span></div>
     <section class="box foldable" id="image-box" data-folds="load">
       <div class="sec-head"><h2 data-done-name="Loaded Image">Load Image</h2></div>
       <div id="load">
@@ -146,7 +144,7 @@
       <slot-here data-slot-for="summary"></slot-here>
     </section>
   </aside>
-  <div class="gutter" id="gutter-left" title="Drag to resize; drag it to the left edge to collapse the bar"></div>
+  <div class="gutter" id="gutter-left" title="Drag to resize; double-click to restore"></div>
 
   <main id="view">
     <div class="toolbar">
