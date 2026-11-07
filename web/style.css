@@ -727,14 +727,20 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 #view[data-v3] #minimap, #view[data-v3] #ruler-btn, #view[data-v3] #grid-btn, #view[data-v3] #minimap-btn { display: none; }
 /* the slices' row: the channels' row with the depth's start and end on a plain track, and the spacing in the colour's place */
 .channel.v3-slices .levels::before { background: var(--line); }
-.channel.v3-slices input[type=number] { width: 48px; padding: 1px 3px; font-size: 11px; }
-/* colour by depth, a channel's own: its tick on a row under the channel's, the palette across it, and the palette
-   picker in the colour picker's place */
-.v3-depth-row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; margin-top: -3px; font-size: 12px; color: var(--dim); }
-.v3-depth-row .v3-tick { display: flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap; }
-.v3-depth-row .v3-tick input { width: 13px; height: 13px; margin: 0; }
-.v3-depth-row .v3-scale { height: 4px; margin: 0 10px; border-radius: 2px; background: var(--scale); }
-.v3-depth-row.off .v3-scale { visibility: hidden; }
+.channel.v3-slices .v3-spin { display: inline-flex; align-items: stretch; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--bg); overflow: hidden; }
+.channel.v3-slices .v3-spin:focus-within { outline: 2px solid var(--accent); outline-offset: -1px; }
+.channel.v3-slices #v3-zs { width: 52px; padding: 1px 3px; font-size: 11px; border: 0; border-radius: 0; background: none; outline: none; }
+.channel.v3-slices .v3-steps { display: flex; flex-direction: column; border-left: 1px solid var(--line); }
+.channel.v3-slices .v3-steps button { flex: 1; padding: 0 3px; border: 0; border-radius: 0; background: none; font-size: 8px; line-height: 1; color: var(--dim); cursor: pointer; }
+.channel.v3-slices .v3-steps button:hover { color: var(--text); background: var(--line); }
+/* colour by depth, a channel's own: an icon tick, stacked slices, beside the colour picker, which is a palette picker
+   while it is ticked */
+.channel .v3-pickers { display: flex; align-items: center; gap: 6px; }
+.channel input.v3-tick { appearance: none; width: 18px; height: 18px; margin: 0; border: 0; cursor: pointer;
+  background: var(--dim); -webkit-mask: var(--layers) center / 14px no-repeat; mask: var(--layers) center / 14px no-repeat;
+  --layers: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M8 1.5 14.5 5 8 8.5 1.5 5z'/%3E%3Cpath d='M1.5 8 8 11.5 14.5 8'/%3E%3Cpath d='M1.5 11 8 14.5 14.5 11'/%3E%3C/svg%3E"); }
+.channel input.v3-tick:checked { background: var(--accent); }
+.channel input.v3-tick:hover, .channel input.v3-tick:focus-visible { background: var(--text); }
 .channel .v3-palette { flex: none; width: 22px; height: 15px; padding: 0; border: 1px solid #0006; border-radius: 2px; background: var(--scale); cursor: pointer; }
 .channel .v3-palette:hover, .channel .v3-palette:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .v3-palettes { position: fixed; inset: auto; margin: 0; padding: 6px; width: 160px; flex-direction: column; gap: 2px; font-size: 13px;
