@@ -26,7 +26,10 @@ read for a title matcher; matching the titles is not part of it.
   boxes say the camera saw them is not a book's. A box is kept only once it checks out as a readable spine: its long sides lie on edges along the book's
   length, its ends on edges across it, it is convex and spine-shaped, and its inside carries a book's texture rather
   than a wall's, a board's or a gap's; a book that fails is left for the ground truth to draw in, never boxed
-  wrong. Test: `studies/shelves/tests/test_books.py`, `studies/shelves/tests/test_shelves_page.py`.
+  wrong. Set by the owner on 2026-11-07, two books of one series standing together, one colour and parted by no
+  visible edge, are two boxes: their spines repeat one design, the same marks at the same heights, and a box that
+  holds a mark and its repeat further across is two books. Test: `studies/shelves/tests/test_books.py`,
+  `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
 - `req/shelves/books/open` Load takes any single 2D photo: JPEG, PNG, WebP, BMP or a one-page TIFF.

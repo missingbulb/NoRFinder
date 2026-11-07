@@ -30,8 +30,16 @@ SEAM_STRICT, SEAM_RELAXED = (40, 1.5), (25, 1.0)
 # a line is an edge between books when it lies on one along this share of the rows nearly every book crosses, the rows
 # where the mean upright gradient is this share of its strongest's
 BOUNDARY, CORE = 0.8, 0.35
-# a gap this many times the shelf's usual spine is searched again on the relaxed pass
+# a gap this many times the shelf's usual spine is searched again on the relaxed pass, and a box this many times as
+# wide is looked at for two books of one series
 WIDE = 1.8
+# [series-seam] two books of one series: a box holding this many bright marks that recur at the same height (within this
+# share of its height), all one shift across, within this share of its width of each other, and the shift this share of
+# its width. A mark: brighter than its surroundings by this share of the box's own brightness range, no smaller than
+# this share of the box, and laid over its repeat, overlapping it this much. Calibrated on one photo's pair (17 marks
+# against at most 4 in the 50 single books of three photos)
+REPEATS, SPLIT_SLIP, SPLIT_AGREE, SPLIT_RANGE = 8, 0.04, 0.04, (0.3, 0.7)
+MARK_BRIGHT, MARK_SIZE, MARK_ALIKE = 0.25, 0.0005, 0.6
 # a book's face carries texture: a row of its strip is the book while its edges are this share of the strip's median,
 # and a plain stretch shorter than this share of the shelf between them is still the book
 FILL, GAP = 0.25, 0.15
@@ -200,8 +208,10 @@ def side_lines(e, top, bottom):
 class Line:
     """A straight edge running up the rows top..bottom: x at their middle and its lean as tan."""
 
-    def __init__(self, xm, t, mid):
+    def __init__(self, xm, t, mid, seen=True):
         self.xm, self.t, self.mid = xm, t, mid
+        # False for the edge between two books of one series, found by their repeating design and not on the photo
+        self.seen = seen
 
     def x(self, y):
         return self.xm - self.t * (np.asarray(y, float) - self.mid)
@@ -353,7 +363,8 @@ def spine(e, lines, i, j, top, bottom):
     corners = [(float(la.x(tl)), tl), (float(lb.x(tr)), tr), (float(lb.x(br)), br), (float(la.x(bl)), bl)]
     if min(top_step, foot_step) < END_STEP or min(bl - tl, br - tr) < ASPECT * width:
         return None
-    sides_on = min(on_line(e.seam, la, tl, bl), on_line(e.seam, lb, tr, br))
+    # a side between two books of one series has no edge to lie on: the other side must
+    sides_on = min([on_line(e.seam, la, tl, bl)] * la.seen + [on_line(e.seam, lb, tr, br)] * lb.seen or [0.0])
     if sides_on < SIDE_COVER or not spine_shaped(corners):
         return None
     # two books are not one: no edge between its sides runs along it as its sides do
@@ -364,20 +375,83 @@ def spine(e, lines, i, j, top, bottom):
     return dict(corners=corners, texture=texture(e, la, lb, *whole), fit=sides_on, steps=min(top_step, foot_step))
 
 
+def bright_marks(crop):
+    """The bright marks on an upright book crop (its lettering, a logo): [(y, x, mask)], each a component brighter
+    than its surroundings, not a sliver and not a band across the book."""
+    g = grey(crop).astype(np.float64)
+    h, w = g.shape
+    bg = ndi.median_filter(g, size=(max(3, h // 15), max(3, w // 3)))
+    on = g - bg > MARK_BRIGHT * max(1.0, float(np.subtract(*np.percentile(g, [99, 1]))))
+    lab, _ = ndi.label(on)
+    out = []
+    for k, sl in enumerate(ndi.find_objects(lab)):
+        m = lab[sl] == k + 1
+        if m.sum() < MARK_SIZE * h * w or m.shape[0] > 0.3 * h or m.shape[1] > 0.45 * w:
+            continue
+        out.append(((sl[0].start + sl[0].stop) / 2, (sl[1].start + sl[1].stop) / 2, m))
+    return out
+
+
+def alike(a, b):
+    """Two marks of one shape and size: their masks, laid over each other, overlap mostly."""
+    (ha, wa), (hb, wb) = a.shape, b.shape
+    if abs(ha - hb) > 0.25 * max(ha, hb) or abs(wa - wb) > 0.25 * max(wa, wb):
+        return False
+    pa, pb = np.zeros((max(ha, hb), max(wa, wb)), bool), np.zeros((max(ha, hb), max(wa, wb)), bool)
+    pa[:ha, :wa], pb[:hb, :wb] = a, b
+    return (pa & pb).sum() >= MARK_ALIKE * (pa | pb).sum()
+
+
+def series_split(crop):
+    """[series-seam] Where across a box (a share of its width) a second book of one series begins, or None: two such
+    books repeat one design, so the box holds marks that recur at the same height, all one shift further across. The
+    shift is the first book's width."""
+    h, w = crop.shape[:2]
+    marks = bright_marks(crop)
+    shifts = np.array([(xb - xa) / w for ya, xa, ma in marks for yb, xb, mb in marks
+                       if SPLIT_RANGE[0] <= (xb - xa) / w <= SPLIT_RANGE[1] and abs(yb - ya) <= SPLIT_SLIP * h and alike(ma, mb)])
+    if not len(shifts):
+        return None
+    near = lambda f: int((np.abs(shifts - f) <= SPLIT_AGREE).sum())
+    best = max(shifts, key=near)
+    return float(np.median(shifts[np.abs(shifts - best) <= SPLIT_AGREE])) if near(best) >= REPEATS else None
+
+
 def shelf_books(g, rgb):
-    """Every pair of side lines on a shelf that checks out as a spine: {(i, j): spine}, and the lines."""
+    """Every pair of neighbouring side lines on a shelf that checks out as a spine: {(i, j): spine}, and the lines. A
+    box far wider than the shelf's usual one whose marks repeat further across is two books of one series: a line goes
+    between them, and each is checked as any book is."""
     e = Edges(g, rgb)
     rows = book_rows(e)
     if not rows:
         return {}, []
     top, bottom = rows
     lines = [Line(xm, t, (top + bottom) / 2) for xm, t in side_lines(e, top, bottom)]
-    found = {}
-    for i in range(len(lines)):
-        for j in range(i + 1, min(len(lines), i + 1 + REACH)):
-            b = spine(e, lines, i, j, top, bottom)
-            if b:
-                found[i, j] = b
+
+    def all_found():
+        found = {}
+        for i in range(len(lines)):
+            for j in range(i + 1, min(len(lines), i + 1 + REACH)):
+                b = spine(e, lines, i, j, top, bottom)
+                if b:
+                    found[i, j] = b
+        return found
+
+    found = all_found()
+    widths = {k: lines[k[1]].xm - lines[k[0]].xm for k in found}
+    if widths:
+        usual = float(np.median(list(widths.values())))
+        new = []
+        for (i, j), b in found.items():
+            if widths[i, j] > WIDE * usual:
+                f = series_split(straighten(rgb, b['corners'])[..., :3])
+                if f is not None:
+                    cut = lines[i].toward(lines[j], f)
+                    cut.seen = False
+                    new.append(cut)
+        if new:
+            lines = sorted(lines + new, key=lambda l: l.xm)
+            found = all_found()
     return found, lines
 
 
