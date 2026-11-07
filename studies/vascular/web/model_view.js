@@ -42,7 +42,7 @@ const SPOT_REACH = 1.25, SPOT_MIN_PX = 60, FADED = .15;
 
 let model = null, loaded = null, history = [], future = [], edits = 0, savedKey = null;
 // mode: what the main view shows, "image" (the stack alone), "model" (the model alone), "overlay" or "side"
-let mode = 'image', hover = null, rubber = null, showCandidates = true, showWidths = true;
+let mode = 'image', hover = null, rubber = null, showWidths = true;
 let review = 'all', reach = .5, maskKey = null, maskTimer = null, drawing = null, moving = null, lasso = null;
 // makingTruth: the study makes ground truth; task: the task's item, {segments} or {node}; area: the task's area, a box in µm
 let makingTruth = false, task = null, area = null, picked = null;
@@ -102,7 +102,7 @@ function samples(i) {
 }
 const inSlab = (n) => n.z >= V.S.z0 - .5 && n.z <= V.S.z1 + .5 && V.inClip(toWorld(n));
 // declined candidates are never drawn; the rest are, unless the owner has hidden the low-confidence ones
-const visible = (s) => Mo.live(s) && (showCandidates || s.state !== 'candidate');
+const visible = (s) => Mo.live(s);
 const shown = (s) => visible(s) && (inSlab(model.nodes.get(s.a)) || inSlab(model.nodes.get(s.b)));
 const isCandidate = (h) => h?.segment != null && model.segments[h.segment]?.state === 'candidate';
 // a vessel lying mostly in a damaged area is out of the analysis, and fades
@@ -622,7 +622,7 @@ function refreshMask(now) {
   if (!V?.meta) return;
   const cut = model && cutOut(model);
   if (!model || (review === 'all' && !cut)) { maskKey = null; return V.setMask(null); }
-  const key = [model, showCandidates, reach, V.S.zs, review, !!focused];
+  const key = [model, reach, V.S.zs, review, !!focused];
   if (maskKey && key.every((v, k) => v === maskKey.key[k])) return V.setMask(maskKey.mask, maskKey.side);
   maskTimer = setTimeout(() => {
     const o = { zStepUm: V.S.zs, reachOfWidth: reach }, extra = { points: cut?.points, boxes: cut?.boxes };
@@ -712,7 +712,6 @@ function open(text, name) {
   if (V.meta && m.slices !== slices()) msg(`This model has ${m.slices} slices and the stack has ${slices()}: they are probably not the same stack.`, true);
   $('model-on').hidden = false; $('vm-review').hidden = false; $('vm-marks').hidden = false;
   maskKey = null; refreshMask(true);
-  $('m-candidates-row').hidden = !model.segments.some((s) => s.state !== 'vessel');
   setMode(mode === 'image' ? 'overlay' : mode);
   facts(); tell();
 }
@@ -734,7 +733,7 @@ export function truth() {
 export function stackOpened() {
   model = null; loaded = null; history = []; future = []; edits = 0; savedKey = null; task = null; area = null; focused = null; peeking = false;
   $('vm-show').hidden = false;
-  $('model-on').hidden = true; $('vm-review').hidden = true; $('vm-marks').hidden = true; $('m-candidates-row').hidden = true; msg(''); setMode('image');
+  $('model-on').hidden = true; $('vm-review').hidden = true; $('vm-marks').hidden = true; msg(''); setMode('image');
   $('model-facts').textContent = 'No vessel model yet: Execute the algorithm.';
   if (drawing) setDrawing(false);
   if (lasso) setLasso(false);
@@ -772,7 +771,6 @@ export function init(view, signal, makesTruth) {
   });
   cv.addEventListener('pointerleave', () => { if (hover && $('ctx').hidden) { hover = null; V.redraw(); } });
   $('model-mode').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b && !b.disabled) setMode(b.dataset.v); });
-  $('m-candidates').onchange = (e) => { showCandidates = e.target.checked; if (!showCandidates && isCandidate(hover)) closeMenu(); hover = null; refreshMask(); V.redraw(); };
   $('review-mode').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setReview(b.dataset.v); });
   const reachOut = () => { $('reach-o').value = `${Math.round(reach * 100)}% of its width`; };
   $('reach').addEventListener('input', (e) => { reach = e.target.value / 100; reachOut(); refreshMask(); });

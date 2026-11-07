@@ -98,11 +98,11 @@ owner's decisions on the stacks and the vessel model, are
   (`req/shell/viewer-3d`) the model is painted by depth in CD31's palette, as the stack is; over the stack the model stays magenta,
   a colour the depth scale never gives, so it never vanishes into the signal it marks. Vessel widths draws each
   vessel as wide as the model says. Changed by the owner on 2026-11-07, everything that sets how the model shows
-  is at the toolbar's left (`req/shell/image/toolbar`): Vessel widths, Low-confidence (the faded vessels the
-  algorithm was unsure of, offered while the model has any) and Everything, Detected and Missed, with the reach
+  is at the toolbar's left (`req/shell/image/toolbar`): Vessel widths and Everything, Detected and Missed, with the reach
   beyond the vessel wall while Detected or Missed is on (`req/vascular/model/correct`). Changed by the owner on 2026-11-07, as NoR's
   (`req/nor/show-menu`): all of them, the four views included, are in one Show menu at the toolbar's left. While an area of the
-  Ground Truth Tasks is open, a Back to image button takes the Show menu's place (`req/vascular/truth/tasks`). Test: `studies/vascular/tests/test_model_page.py`.
+  Ground Truth Tasks is open, a Back to image button takes the Show menu's place (`req/vascular/truth/tasks`). Changed by the owner on 2026-11-07, the low-confidence
+  vessels always show, faded, with no option to hide them; hiding vessels to help ground truth belongs in the Ground Truth Tasks. Test: `studies/vascular/tests/test_model_page.py`.
   </details>
 
 - `req/vascular/stack-view` A z-stack opens in 3D in the owner's approved view; 2D shows it flattened.
