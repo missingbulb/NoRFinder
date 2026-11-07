@@ -611,15 +611,6 @@ nobody has decided: what the page does there is not a requirement yet.
   `web-tests/test_study_runs.py`, `web-tests/test_compressed_tiff.py`, `web-tests/test_viewer3d_page.py`.
   </details>
 
-- `req/shell/left-bar/static` The left bar stays open: nothing collapses it, and it has no chevron and no Steps label.
-  <details>
-
-  Set by the owner on 2026-11-07, in place of the collapsing bar of 2026-11-03: no chevron at its top, no narrow
-  Steps strip, and dragging the gutter stops at the bar's narrowest rather than collapsing it. A collapsed state
-  kept on the device from before opens the bar.
-  Test: `web-tests/test_left_bar_page.py`.
-  </details>
-
 - `req/shell/left-bar/folding` The left bar's boxes stay folded until their step makes them useful, and fold again once it is done.
   <details>
 
@@ -658,6 +649,15 @@ nobody has decided: what the page does there is not a requirement yet.
   Summary shows. A box the study puts nothing in is not shown. How the study's results are drawn over the image
   is chosen in the toolbar (`req/shell/image/toolbar`), never in the left bar. Test:
   `web-tests/test_study_contract.py`, `web-tests/test_left_bar_page.py`.
+  </details>
+
+- `req/shell/left-bar/static` The left bar stays open: nothing collapses it, and it has no chevron and no Steps label.
+  <details>
+
+  Set by the owner on 2026-11-07, in place of the collapsing bar of 2026-11-03: no chevron at its top, no narrow
+  Steps strip, and dragging the gutter stops at the bar's narrowest rather than collapsing it. A collapsed state
+  kept on the device from before opens the bar.
+  Test: `web-tests/test_left_bar_page.py`.
   </details>
 
 - `req/shell/left-bar/width` The left bar drags wider or narrower (remembered; a double click restores it); there is no right bar.
