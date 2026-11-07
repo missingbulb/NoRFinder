@@ -298,11 +298,13 @@ try {
   check(await shows(c.page, () => localStorage.getItem("nor-drive-thumbs") === JSON.stringify("off")), "and Save keeps them there");
 
   const services = new Set(outside);
+  // the study's root, its listing and the user's write access on it, for the roles (req/shell/data/roles)
+  const ROOT = "fixturefolder00000001";
   const known = (u) => u === GSI || u === "https://openidconnect.googleapis.com/v1/userinfo"
-    || /^https:\/\/www\.googleapis\.com\/(upload\/)?drive\/v3\/files(\/acmefile\d+)?$/.test(u);
+    || /^https:\/\/www\.googleapis\.com\/(upload\/)?drive\/v3\/files(\/acmefile\d+|\/fixturefolder00000001)?$/.test(u);
   check(services.size >= 4 && [...services].every(known), `the page reached only Google's sign-in script, account details and the Drive API (${[...services].join(", ")})`);
-  check(seen.filter((s) => /drive\/v3\/files(\?|$)/.test(s) && s.startsWith("GET")).every((s) => /spaces=appDataFolder/.test(s)),
-    "every Drive listing it made looked only in the app's own folder");
+  check(seen.filter((s) => /drive\/v3\/files(\?|$)/.test(s) && s.startsWith("GET")).every((s) => /spaces=appDataFolder/.test(s) || new RegExp(`'${ROOT}'[+ ]in[+ ]parents`).test(decodeURIComponent(s))),
+    "every Drive listing it made looked only in the app's own folder, or the study's root for the roles");
 } catch (e) {
   failed = true; console.error("FAILED: " + (e.stack || e));
 } finally {

@@ -236,34 +236,36 @@ What a user of the page sees and can do is in the page's specs: this study's own
 [`requirements.md`](../requirements.md), the shell it runs in in
 [`dev/requirements/requirements.md`](../../../dev/requirements/requirements.md).
 
-## R9 — No finder change loses quality unless the owner accepts it
+## R9 — A finder's quality is recorded once per version, never re-checked by a test
 
-Set by the owner on 2026-09-30. Every finder the page offers is scored on every ground-truth image
-(R10) spot by spot, and
-[`studies/nor/detection/lab/quality_baseline.json`](../detection/lab/quality_baseline.json) records, per finder
-and image, which real NoRs each one finds, which not-NoR spots it passes and which missing-candidate
-marks it proposes a candidate on. A change that loses a real NoR, passes a new not-NoR or stops
-proposing a candidate at a missing mark fails the tests; a loss the owner agreed to is recorded with
-`python3 tests/test_quality.py --accept`, so the PR's diff names every spot that moved. Gains are
-written into the baseline by a local test run and locked from then on
-(`tests/test_quality.py`). Until submissions cover it, the reference slide is scored on Claude's
-labels, not the owner's (`detection/STATE.md`), so the lock is only as right as they are. How CI runs these tests is the repo's `req/checks/ci-sets` ([`dev/requirements/requirements.md`](../../../dev/requirements/requirements.md)).
+Set by the owner on 2026-09-30; changed by the owner on 2026-11-07. A finder changes only in an effort made to change
+it, never in passing in another pull request, and that effort makes it a new version. The version's quality is
+recorded once: its precision and recall with the dataset SHA they were measured on (R11), and, spot by spot,
+[`studies/nor/detection/lab/quality_baseline.json`](../detection/lab/quality_baseline.json) — which real NoRs each
+finder finds, which not-NoR spots it passes and which missing-candidate marks it proposes a candidate on — written by
+`python3 detection/ground_truth.py record`, after `score` has named every spot that moved against the version before. No
+test re-scores a finder on a real image; the tests run every finder on a drawn image
+(`tests/synthetic_nor.py`) for what the code does, not how well. Until submissions
+cover it, the reference slide is scored on Claude's labels, not the owner's (`detection/STATE.md`).
 
 ## R10 — Ground truth is read from the study's curated Drive folder, never kept in git
 
 Set by the owner on 2026-10-03; its source moved from GitHub to Drive on 2026-11-05.
 
-- **Curated on Drive, read by code.** The page's taggers submit to the study's submissions folder and a
-  Data Manager curates into its curated folder (the shell's `req/shell/ground-truth/folders`).
-  `python3 detection/ground_truth.py fetch` lists the curated folder with no key (the folder is shared
-  as "Anyone with the link"), downloads every file under it, and keeps per image the one with the
-  latest `created` (`req/shell/ground-truth/layout`). It checks each (`norfinder-ground-truth/2` or
-  later, an image from Google Drive with its SHA-256, at least one mark inside the image) and says why
-  it skips one it cannot use. **A listing that returns 50 entries stops the fetch with an error**:
-  the keyless listing returns at most 50, so a full one may be cut short, and a cut-short set
-  silently changes every score. No ground truth enters git, and nothing is submitted through GitHub.
-- **Images stay on Drive.** A ground-truth file names its image by Drive id and SHA-256; the fetch
-  downloads each image into `data/raw/` and checks it (R6). No image enters git.
+- **Curated on Drive, read when scored.** The page's taggers submit to the study's submissions folder and a
+  Data Manager curates into its curated folder, both under the study's root (the shell's
+  `req/shell/ground-truth/folders`). Set by the owner on 2026-11-07: there is no fetch step. Scoring
+  (`ground_truth.py score`, `finder_metrics.py`) lists the root with no key, takes the curated folder from
+  its settings file (`rauntruth-study.json`), else the one named `GT curated` or `GT`, and downloads an
+  image's newest curated file, by its own `created`, the first time it scores that image, then keeps it under
+  `data/raw/ground-truth/`, never git. It checks each (`norfinder-ground-truth/2` or later, an image from
+  Google Drive with its SHA-256, at least one mark inside the image) and says why it skips one it cannot
+  use. **A listing that returns 50 entries stops it with an error**: the keyless listing may stop at 50, and
+  a cut-short set silently changes every score. The tests read only what is already on disk.
+- **No study data in tests.** Set by the owner on 2026-11-07: no test downloads an image or ground truth, in CI
+  or anywhere; a test needing a NoR image draws one (`tests/synthetic_nor.py`).
+- **Images stay on Drive.** A ground-truth file names its image by Drive id and SHA-256; scoring downloads
+  each image into `data/raw/` the first time it needs it, and checks it (R6). No image enters git.
 - **A set changed is a baseline to re-record.** A changed curated set changes the dataset SHA (R11), so
   `tests/test_finder_metrics.py` fails until the metrics and the quality baseline (R9) are measured on it
   again; the finders are then improved following the pack's `improve-on-ground-truth` skill, and losses

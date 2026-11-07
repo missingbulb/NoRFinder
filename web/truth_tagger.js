@@ -3,7 +3,7 @@
 // and how to get there (req/shell/ground-truth/tagger-access), its Clear progress (req/shell/ground-truth/clear), and
 // Submit (req/shell/ground-truth/submit).
 "use strict";
-import { folders, submit, status, current } from "./truth_folders.js";
+import { folders, submit, status, current, subfolderName } from "./truth_folders.js";
 
 const SAY = {
   unset: "This study has not set up its ground-truth folders yet, so ground truth cannot be submitted.",
@@ -14,22 +14,21 @@ const SAY = {
 };
 export const LOCAL_GT = (remote) => `Ground truth cannot be sent from local files, only from ${remote.label}.`;
 
-// account: the sign-in; remote: the remote store; manifest() the
-// study on show; image() the image open, {name, sha256, source} or null; on() whether the user makes ground truth now;
+// account: the sign-in; remote: the remote store; place: the study's place in it (study_root.js studyPlace); image() the image open, {name, sha256, source} or null; on() whether the user makes ground truth now;
 // cleared() opens the image afresh once the study has forgotten its progress on it
-export function truthTagger({ account, remote, manifest, image, on, cleared }) {
+export function truthTagger({ account, remote, place, image, on, cleared }) {
   const sd = remote.writer(account);
-  const reader = { all: (id) => remote.all(id), text: async (id) => new TextDecoder().decode((await remote.file(id, "ground truth")).bytes) };
+  const reader = place.reader;
   const writer = { folder: sd.folder, create: sd.create, replace: sd.replace, mark: sd.mark };
   // the study's clear: {what, fn}; the access last read: "write" | "view" | "none" | "unset" | "unknown"; epoch: the
   // draw a late answer belongs to
   let clear = null, access = null, epoch = 0;
-  // the study's ground-truth status as last read, {key, at, map}, kept a minute
-  let known = null;
-  const where = () => folders(manifest()).submissions;
+  // the study's ground-truth folders, from its root's settings
+  const gt = async () => folders(await place.settings().catch(() => null));
+  const where = async () => (await gt()).submissions;
 
   async function read() {
-    const id = where();
+    const id = await where();
     if (!id) return "unset";
     try { return (await sd.access(id)) ?? "unknown"; } catch { return "unknown"; }
   }
@@ -44,7 +43,7 @@ export function truthTagger({ account, remote, manifest, image, on, cleared }) {
       el.innerHTML = `<span class="gt-say"></span>${approve}${wipe}`;
       el.querySelector(".gt-say").textContent = access ? SAY[access] : "Checking whether you may submit…";
       el.querySelector(".gt-approve")?.addEventListener("click", async () => {
-        if (await sd.approve([{ id: where(), name: "Ground truth submissions" }])) draw();
+        if (await sd.approve([{ id: await where(), name: "Ground truth submissions" }])) draw();
       });
       el.querySelector(".gt-clear")?.addEventListener("click", () => {
         const name = image()?.name;
@@ -66,20 +65,21 @@ export function truthTagger({ account, remote, manifest, image, on, cleared }) {
     draw, paint,
     // the study's progress on an image, which fn forgets on this device, the image then opened afresh: what names it
     clearable(what, fn) { clear = { what, fn }; paint(); },
-    leave() { clear = null; access = null; epoch++; known = null; },
+    leave() { clear = null; access = null; epoch++; },
     // Map(subfolder name -> {curated, pending, rejected}) of the study's images (req/shell/ground-truth/pending);
-    // with submissions, the pending ones too, else the curated alone. Empty while the study names no folders.
+    // with submissions, the pending ones too, else the curated alone. Empty while the study has no folders.
     async status(submissions) {
-      const f = folders(manifest());
+      const f = await gt();
       if (!f.curated) return new Map();
-      const want = submissions ? f : { submissions: f.curated, curated: f.curated, same: true }, key = JSON.stringify(want);
-      if (known && known.key === key && Date.now() - known.at < 60e3) return known.map;
-      const map = await status(reader, want);
-      known = { key, at: Date.now(), map };
-      return map;
+      return status(reader, submissions ? f : { submissions: f.curated, curated: f.curated, same: true });
     },
-    // the image's curated ground truth, {name, doc}, or null (req/shell/ground-truth/view)
-    curated(img) { const f = folders(manifest()); return f.curated ? current(reader, f.curated, img) : Promise.resolve(null); },
+    // whether the image has curated ground truth, from the curated folder's listing alone (req/shell/ground-truth/view)
+    async hasCurated(img) {
+      const f = await gt();
+      return !!f.curated && (await reader.all(f.curated)).some((x) => x.folder && x.name === subfolderName(img.name, img.sha256));
+    },
+    // the image's curated ground truth, {name, doc}, or null, its files read now (req/shell/ground-truth/view)
+    async curated(img) { const f = await gt(); return f.curated ? current(reader, f.curated, img) : null; },
     // why Submit is off for the image open, "" when it is on
     blocked() {
       const im = image();
@@ -92,7 +92,7 @@ export function truthTagger({ account, remote, manifest, image, on, cleared }) {
       const im = image(), email = account.email();
       const full = { ...doc, created: new Date().toISOString(), tagger: email,
         image: { ...(doc.image && typeof doc.image === "object" ? doc.image : {}), name: im.name, sha256: im.sha256, ...remote.cite(im.source) } };
-      await submit({ reader, writer, folder: where(), image: { name: im.name, sha256: im.sha256 }, email, doc: full });
+      await submit({ reader, writer, folder: await where(), image: { name: im.name, sha256: im.sha256 }, email, doc: full });
       return full;
     },
   };

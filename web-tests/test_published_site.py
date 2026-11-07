@@ -66,7 +66,7 @@ def test_every_file_a_study_page_fetches_is_published():
 
 def test_research_files_stay_home():
     got = published()
-    for kept in ('studies/nor/docs/requirements.md', 'studies/nor/tests/test_quality.py',
+    for kept in ('studies/nor/docs/requirements.md', 'studies/nor/tests/test_red_floor.py',
                  'studies/nor/detection/lab/ledger.md', 'studies/nor/detection/STATE.md',
                  'studies/nor/detection/browser/bench_live.mjs', 'studies/nor/data/sources.json',
                  'studies/nor/docs/WARMUP.md'):

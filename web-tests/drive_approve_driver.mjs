@@ -6,7 +6,7 @@
 import { standIn } from "./stand_in_drive.mjs";
 
 const [answers, studies, rootDir] = process.argv.slice(2);
-const { ROOT, SUB, open, role, check, done } = await standIn({ answers, studies, rootDir });
+const { ROOT, SUB, GT, open, role, check, done } = await standIn({ answers, studies, rootDir });
 const DRIVE_FILE = "https://www.googleapis.com/auth/drive.file";
 // Google's sign-in script: its token client grants what it is asked at once, recording each request
 const GSI = `window.google = { ...window.google, accounts: { oauth2: { initTokenClient(o) {
@@ -33,10 +33,10 @@ const page = await open(true, {
 });
 await role(page, "Data Manager");
 await page.waitForFunction(() => !$("#data-approve").hidden);
-await check(await page.textContent("#data-approve") === "Approve 2 folders…", "with no per-file permission, the tree offers every folder", await page.textContent("#data-approve"));
+await check(await page.textContent("#data-approve") === "Approve 4 folders…", "with no per-file permission, the tree offers every folder, the ground-truth ones too", await page.textContent("#data-approve"));
 await page.click("#data-approve");
 const asked = await page.waitForFunction(() => window.asked?.find((o) => o.scope)?.scope, null, { timeout: 5000 }).then((h) => h.jsonValue(), () => null);
 await check(!!asked && asked.split(" ").includes(DRIVE_FILE), "Approve folders… asks Google for the per-file permission", asked);
 const shown = await page.waitForFunction(() => window.shown, null, { timeout: 5000 }).then((h) => h.jsonValue(), () => null);
-await check(shown === [ROOT, SUB].join(","), "then Google's picker shows just the study's folders", shown);
+await check(shown === [ROOT, SUB, GT.curated, GT.submissions].join(","), "then Google's picker shows just the study's folders", shown);
 await done(0);

@@ -31,7 +31,7 @@ whose `NoRFinder/` subfolder is the one source here.
 | `owner-scans` | 55 single-plane images (2026-09-25) in three field-position subfolders — `Left Up- Edited` (19), `Down Middle- Edited` (18), `Up Middle- Edited` (18) — over six slides × up to four slices each, `4AP` condition. Names carry the owner's own notes (`_not so good`, `_opt2`, `_option2`): several fields have more than one edited version. 454 MB. | **Pinned** 2026-09-25, 55 files, listing checked against Drive's own folder view. The folder was still being filled while it was pinned: re-run `--pin` after an upload. |
 
 Ground truth submitted from the NoR Finder page names its image by Google Drive id and SHA-256
-instead of an entry here; `python3 detection/ground_truth.py fetch` downloads those images into
+instead of an entry here; scoring (`python3 detection/ground_truth.py score`) downloads those images, the first time, into
 `data/raw/ground-truth/`, checked the same way (requirements R10).
 
 ## Why Drive, and not git
@@ -92,7 +92,7 @@ camera. It names no vendor or software.
   3% after a σ=2 px blur) picked it correctly in 54 of 55 files; it failed on
   `Up Middle- Edited/Slide3 … Slice3_up_middle2.tif`, where a bright tissue edge in the Caspr
   channel outscored the nuclei. `naive_nor.load` therefore compares only the two non-green
-  channels, which gets that file right too (`tests/test_load_channels.py`).
+  channels, which gets that file right too.
 - **Caspr is the green-displayed channel in all 55 files; Nav1.6 is the remaining non-DAPI
   channel** — deduced from the node's geometry, not from the colours. A node is a Nav1.6 spot
   *between* two Caspr spots, so the Caspr channel is the one whose spots bracket the other's. Test

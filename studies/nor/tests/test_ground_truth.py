@@ -100,31 +100,45 @@ def test_only_drive_images_with_marks_are_accepted():
 
 
 class Curated:
-    """A stand-in for the keyless Drive listing: a folder's files by path, each image's subfolder with its taggers'
-    files in it, and their bytes by id."""
-    def __init__(self, tree):
-        self.files = {f'id{k}': (path, body) for k, (path, body) in enumerate(sorted(tree.items()))}
+    """A stand-in for the keyless Drive listing: each folder's files by path under it (its subfolders' files too, as
+    gdown lists them), and their bytes by id; downloaded counts each file fetched."""
+    def __init__(self, folders):
+        self.folders, self.bodies, self.downloaded = {}, {}, []
+        for folder, tree in folders.items():
+            self.folders[folder] = []
+            for path, body in sorted(tree.items()):
+                fid = f'id{len(self.bodies)}'
+                self.bodies[fid] = body
+                self.folders[folder].append((path, fid))
 
     def list_folder(self, drive_id):
-        return [(path, fid) for fid, (path, _) in self.files.items()]
+        return list(self.folders.get(drive_id, []))
 
     def download(self, drive_id, out):
+        self.downloaded.append(drive_id)
         os.makedirs(os.path.dirname(out), exist_ok=True)
         with open(out, 'w') as f:
-            f.write(self.files[drive_id][1])
+            f.write(self.bodies[drive_id])
 
 
 def doc(created, labels, who='jane@acme.example', sha=SHA):
     return json.dumps(dict(submission(labels, sha=sha), created=created, tagger=who))
 
 
+SUB = 'acme__' + SHA[:8]
+TREE = {f'{SUB}/gt_jane@acme.example.json': doc('2026-11-05T10:00:00Z', [MISSING]),
+        f'{SUB}/gt_bob@acme.example.json': doc('2026-11-05T12:00:00Z', [MISSING, {'x': 60, 'y': 60, 'label': 0}], who='bob@acme.example'),
+        f'{SUB}/notes.txt': 'not ground truth',
+        'other__cdcdcdcd/gt_jane@acme.example.json': doc('2026-11-05T09:00:00Z', [], sha='cd' * 32)}
+
+
+def under(prefix, tree):
+    return {f'{prefix}/{p}': b for p, b in tree.items()}
+
+
 def test_the_lab_takes_each_images_newest_curated_file(tmp_path):
-    sub = 'acme__' + SHA[:8]
-    tree = {f'{sub}/gt_jane@acme.example.json': doc('2026-11-05T10:00:00Z', [MISSING]),
-            f'{sub}/gt_bob@acme.example.json': doc('2026-11-05T12:00:00Z', [MISSING, {'x': 60, 'y': 60, 'label': 0}], who='bob@acme.example'),
-            f'{sub}/notes.txt': 'not ground truth',
-            'other__cdcdcdcd/gt_jane@acme.example.json': doc('2026-11-05T09:00:00Z', [], sha='cd' * 32)}
-    got = ground_truth.collect(Curated(tree), 'CURATED', dirpath=str(tmp_path))
+    # no settings file in the root: the curated folder found by its name
+    got = ground_truth.collect(Curated({'ROOT': {'Data/a.tif': '', **under('GT curated', TREE)}}), 'ROOT', dirpath=str(tmp_path))
     assert [(e['image'], e['tagger'], e['labels']) for e in got['files']] == [('acme.tif', 'bob@acme.example', 2)]
     # an image whose only file cannot be used is left out, saying why
     why = got['refused']
@@ -136,17 +150,39 @@ def test_the_lab_takes_each_images_newest_curated_file(tmp_path):
     assert img['files'][0]['gt_sha256'] == hashlib.sha256(kept).hexdigest()
 
 
-def test_a_listing_of_50_entries_stops_the_fetch(tmp_path):
+def test_the_roots_settings_file_names_the_curated_folder(tmp_path):
+    # its curated folder named by id, wherever it is; a folder merely named GT curated is passed over
+    store = Curated({'ROOT': {'rauntruth-study.json': json.dumps({'format': 'rauntruth-study/1', 'curated': 'CUR'}),
+                              **under('GT curated', {'x__00000000/gt_a@acme.example.json': doc('2026-11-05T10:00:00Z', [MISSING], sha='0' * 64)})},
+                     'CUR': TREE})
+    got = ground_truth.collect(store, 'ROOT', dirpath=str(tmp_path))
+    assert [e['tagger'] for e in got['files']] == ['bob@acme.example']
+
+
+def test_a_file_scored_once_is_not_downloaded_again(tmp_path):
+    store = Curated({'ROOT': under('GT', TREE)})
+    ground_truth.collect(store, 'ROOT', dirpath=str(tmp_path))
+    first = len(store.downloaded)
+    ground_truth.collect(store, 'ROOT', dirpath=str(tmp_path))
+    assert first == 3 and len(store.downloaded) == first
+
+
+def test_a_root_with_no_ground_truth_scores_on_the_labs_labels(tmp_path):
+    got = ground_truth.collect(Curated({'ROOT': {'Data/a.tif': ''}}), 'ROOT', dirpath=str(tmp_path))
+    assert got == {'files': [], 'refused': {}}
+
+
+def test_a_listing_of_50_entries_stops_the_lab(tmp_path):
     # the keyless listing may stop at 50: a set cut short would change every score with nothing saying so
     tree = {f'img{k:02d}__{k:08x}/gt_jane@acme.example.json': doc('2026-11-05T10:00:00Z', [MISSING], sha=f'{k:064x}') for k in range(50)}
     try:
-        ground_truth.collect(Curated(tree), 'CURATED', dirpath=str(tmp_path))
+        ground_truth.collect(Curated({'ROOT': under('GT curated', tree)}), 'ROOT', dirpath=str(tmp_path))
     except ground_truth.ListingFull as e:
         assert '50' in str(e)
     else:
-        raise AssertionError('50 entries did not stop the fetch')
+        raise AssertionError('50 entries did not stop the lab')
     one_less = dict(sorted(tree.items())[:49])
-    assert len(ground_truth.collect(Curated(one_less), 'CURATED', dirpath=str(tmp_path))['files']) == 49
+    assert len(ground_truth.collect(Curated({'ROOT': under('GT curated', one_less)}), 'ROOT', dirpath=str(tmp_path))['files']) == 49
 
 
 def test_the_dataset_sha_names_the_images_and_their_ground_truth():

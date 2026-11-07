@@ -10,7 +10,7 @@ on the NoR study. The base is the default finder that `studies/nor/detection/STA
    ```
 
    ```
-   python3 studies/nor/detection/ground_truth.py fetch
+   python3 studies/nor/detection/ground_truth.py score
    ```
 
    ```
