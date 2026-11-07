@@ -3,7 +3,7 @@
 // second one level across it, the second a blob. Checks req/shell/viewer-3d: a stack opens on the 3D view, which draws it; the
 // channel rows drive it (hiding a channel or raising its black point darkens it); the toolbar's right holds Look from's
 // four buttons in a row beside Zoom, and the image box a row for the slices shown and their spacing and, per channel, Colour by depth; Side turns the view; a sideways scroll turns the picture about the line of sight; a drag turns on past
-// looking straight across; the Panning label toggles panning, shift holds it on, and it is stored nowhere; the depth slab hides slices; the spacing says where it came from; no 2D/3D switch
+// looking straight across; the Panning label, at the bottom left, toggles panning, shift holds it on, and it is stored nowhere; the depth slab hides slices; the spacing's tooltip says where it came from; no 2D/3D switch
 // anywhere, and Edit Image on a stack offers no flat-image drawing tools. And req/shell/image-viewer: the Image Viewer
 // opens a stack in 3D and a flat image (a .png here) in 2D, and keeps its Image box open once either has loaded.
 // Exits 1 on a failed check, 2 when it cannot run.
@@ -87,6 +87,8 @@ const picture = () => page.evaluate(async () => {
   const axis = 0.5 * Math.atan2(2 * (sxy / lit - mx * my), sxx / lit - mx * mx - (syy / lit - my * my));
   return { r: r / n, g: gr / n, b: b / n, lit, sum: (r + gr + b) / n, axis };
 });
+// a view chosen from the reset button's arrow, which then names it and puts the view there
+const look = async (v) => { await page.click("#v3-look-menu summary"); await page.click(`#v3-look [data-look="${v}"]`); };
 const show = (k, on) => page.evaluate(([k, on]) => { const b = document.querySelector("#show-" + k); b.checked = on; b.dispatchEvent(new Event("change", { bubbles: true })); }, [k, on]);
 const level = async (k, which, v) => page.evaluate(([k, which, v]) => {
   const s = document.querySelectorAll("#channels .channel")[k].querySelector("." + which); s.value = v; s.dispatchEvent(new Event("input", { bubbles: true }));
@@ -102,17 +104,17 @@ try {
     await page.waitForFunction(() => !$("#v3-stage").hidden);
     check(!(await page.$("#v3-switch, #v3-2d")) && await page.isHidden("#stage"), "a stack opens on the 3D view only, with no 2D/3D switch to flatten it");
     const tools = await page.evaluate(() => {
-      const looks = [...document.querySelectorAll(".toolbar #v3-look button[data-look]")], zoom = $("#zoom-out").parentElement;
-      const shown = looks.filter((b) => b.offsetParent !== null), z = zoom.getBoundingClientRect(), g = $("#v3-look")?.getBoundingClientRect();
+      const looks = [...document.querySelectorAll(".toolbar #v3-look [data-look]")], zoom = $("#zoom-out").parentElement;
+      const z = zoom.getBoundingClientRect(), g = $("#v3-look")?.getBoundingClientRect();
       return {
-        looks: shown.map((b) => b.textContent).join(), popup: !!document.querySelector("#v3-look-btn, #v3-look-pop"),
+        looks: looks.map((b) => b.textContent).join(), reset: $("#v3-reset")?.textContent, closed: looks.every((b) => !b.checkVisibility()),
         beside: !!g && g.right <= z.left && z.left - g.right < 24 && Math.abs((g.top + g.bottom) / 2 - (z.top + z.bottom) / 2) < 4,
         gone: ["#v3-render-btn", "#v3-depth", "#vm-depth", "#v3-slices-btn"].filter((s) => document.querySelector(s)),
         zoom: ["#zoom-in", "#zoom-out", "#zoom-label"].every((s) => $(s).offsetParent !== null),
       };
     });
-    check(tools.looks === "Top,Tilted,Side,Front" && !tools.popup && tools.beside && !(await page.$("#v3-stage #v3-tools")),
-      `Look from's Top, Tilted, Side and Front are buttons in a row in the toolbar, beside Zoom: ${JSON.stringify(tools)}`);
+    check(tools.reset === "Top View" && tools.looks === "Top,Tilted,Side,Front" && tools.closed && tools.beside && !(await page.$("#v3-stage #v3-tools")),
+      `beside Zoom a Top View button, its arrow offering Top, Tilted, Side and Front: ${JSON.stringify(tools)}`);
     check(!tools.gone.length, `the toolbar has no Render, Colour by depth or Slices tool: ${tools.gone}`);
     check(tools.zoom && await page.isHidden("#ruler-btn"), "Zoom stays in 3D, the other 2D tools step aside");
     const z0 = await page.textContent("#zoom-label");
@@ -172,23 +174,29 @@ try {
     await level(0, "black", 0);
 
     const top = await picture();
-    await page.click('#v3-look [data-look="side"]');
+    await look("side");
+    const sideRot = await page.evaluate(() => JSON.stringify(window.shellForTests.viewer.three.S.rot));
+    check(await page.textContent("#v3-reset") === "Side View", "choosing Side names the reset button after it");
+    const gl0 = await page.locator("#v3-gl").boundingBox(), at = [gl0.x + gl0.width / 2, gl0.y + gl0.height / 2];
+    await page.mouse.move(...at); await page.mouse.down(); await page.mouse.move(at[0] + 50, at[1] + 30, { steps: 5 }); await page.mouse.up();
+    await page.click("#v3-reset");
+    check(await page.evaluate(() => JSON.stringify(window.shellForTests.viewer.three.S.rot)) === sideRot, "after a drag, Side View puts the view back to the side");
     const side = await picture();
     check(Math.abs(side.lit - top.lit) > top.lit * 0.2, `Side turns the view: ${top.lit} → ${side.lit} lit pixels`);
-    await page.click('#v3-look [data-look="top"]');
+    await look("top");
 
     const box = await page.locator("#v3-gl").boundingBox(), mid = [box.x + box.width / 2, box.y + box.height / 2];
     await page.mouse.move(...mid); await page.mouse.wheel(300, 0);
     const rolled = await picture(), turned = Math.abs(Math.atan2(Math.sin(2 * (rolled.axis - top.axis)), Math.cos(2 * (rolled.axis - top.axis))) / 2);
     check(turned > 0.4 && Math.abs(rolled.lit - top.lit) < top.lit * 0.1,
       `a sideways scroll turns the picture about the line of sight: its long axis turns ${turned.toFixed(2)} rad, ${top.lit} → ${rolled.lit} lit pixels`);
-    await page.click('#v3-look [data-look="top"]');
+    await look("top");
     await page.mouse.move(...mid); await page.mouse.down();
     await page.mouse.move(mid[0], mid[1] + Math.PI / 0.008, { steps: 20 }); await page.mouse.up();
     const under = await picture();
     check(Math.abs(under.lit - top.lit) < top.lit * 0.15,
       `dragging down by half a turn turns on past looking straight across, to the stack from beneath: ${top.lit} → ${under.lit} lit pixels`);
-    await page.click('#v3-look [data-look="top"]');
+    await look("top");
 
     // the Panning label: always at the bottom of the view, blue outlined while on, grey while off; a click toggles it,
     // shift holds it on until let go, back to what the label holds; and nothing of it is stored
@@ -197,8 +205,8 @@ try {
     const before = await stored();
     const label = () => page.evaluate(() => {
       const b = $("#v3-pan"), v = $("#v3-stage").getBoundingClientRect(), r = b?.getBoundingClientRect();
-      return b && { text: b.textContent.trim(), on: b.getAttribute("aria-pressed") === "true", border: getComputedStyle(b).borderTopColor,
-        shown: b.checkVisibility(), bottom: r.bottom <= v.bottom && v.bottom - r.bottom < 24 };
+      return b && { text: b.textContent.trim(), on: b.getAttribute("aria-pressed") === "true", fill: getComputedStyle(b).backgroundColor, tip: b.title,
+        shown: b.checkVisibility(), corner: r.bottom <= v.bottom && v.bottom - r.bottom < 24 && r.left >= v.left && r.left - v.left < 24 };
     });
     const drag = async () => {
       const at = () => page.evaluate(() => { const S = window.shellForTests.viewer.three.S; return JSON.stringify([S.rot, S.pivot]); });
@@ -208,12 +216,13 @@ try {
       return { turned: JSON.stringify(rot0) !== JSON.stringify(rot1), panned: JSON.stringify(piv0) !== JSON.stringify(piv1) };
     };
     const off = await label();
-    check(off && off.text === "Panning" && off.shown && off.bottom && !off.on, `a Panning label shows at the bottom of the 3D view, off: ${JSON.stringify(off)}`);
+    check(off && off.text === "Panning" && off.shown && off.corner && !off.on && /press shift to pan/i.test(off.tip),
+      `a Panning label shows at the 3D view's bottom left, off, its tooltip saying to press Shift: ${JSON.stringify(off)}`);
     const d0 = await drag();
     check(d0.turned && !d0.panned, `with panning off a drag turns the view: ${JSON.stringify(d0)}`);
     await page.click("#v3-pan");
     const on = await label();
-    check(on.on && on.border !== off.border && /^rgb\(\s*\d+,\s*\d+,\s*2\d\d/.test(on.border), `clicking the label turns panning on, outlined in blue: ${off.border} → ${on.border}`);
+    check(on.on && on.fill !== off.fill && /^rgba?\(\s*\d{1,2},\s*\d+,\s*2\d\d(,\s*1)?\)$/.test(on.fill), `clicking the label turns panning on, filled blue: ${off.fill} → ${on.fill}`);
     const d1 = await drag();
     check(d1.panned && !d1.turned, `with panning on a drag pans: ${JSON.stringify(d1)}`);
     await page.keyboard.down("Shift"); await page.keyboard.up("Shift");
@@ -227,24 +236,15 @@ try {
     const let_ = await label(), d3 = await drag();
     check(!let_.on && d3.turned && !d3.panned, `letting go of shift returns panning to off: ${JSON.stringify({ on: let_.on, ...d3 })}`);
     const after = await stored(); check(after === before, `the panning state is stored nowhere: ${before} → ${after}`);
-    await page.click('#v3-look [data-look="top"]');
+    await look("top");
 
     await page.evaluate(() => { const s = $("#v3-z1"); s.value = 0; s.dispatchEvent(new Event("input", { bubbles: true })); });
     const slab = await picture();
     check(slab.sum < top.sum * 0.6, `showing only the first slice hides the rest: brightness ${top.sum.toFixed(1)} → ${slab.sum.toFixed(1)}`);
 
-    const note = await page.textContent("#v3-note");
-    check(/owner/i.test(note), `the spacing says who stated it: "${note}"`);
-    // the note keeps clear of the Panning label, in a narrower window too
-    for (const width of [1400, 1000]) {
-      await page.setViewportSize({ width, height: 900 });
-      const clash = await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => {
-        const p = $("#v3-pan").getBoundingClientRect();
-        done([...$("#v3-note").getClientRects()].some((r) => r.left < p.right && p.left < r.right && r.top < p.bottom && p.top < r.bottom));
-      })));
-      check(!clash, `at ${width}px the spacing's note stays clear of the Panning label`);
-    }
-    await page.setViewportSize({ width: 1400, height: 900 });
+    // req/shell/viewer-3d: who stated the spacing is the spacing's tooltip, and no text sits over the 3D view
+    const said = await page.evaluate(() => ({ tip: $("#v3-zs").title, over: [...$("#v3-stage").querySelectorAll("p")].filter((e) => e.checkVisibility() && e.textContent.trim()).map((e) => e.textContent) }));
+    check(/owner/i.test(said.tip) && !said.over.length, `the spacing's tooltip says who stated it, and no text is over the view: ${JSON.stringify(said)}`);
 
     // Data Management wants a signed-in Drive; its Edit Image box is only kept out of sight outside it
     await page.evaluate(() => { document.documentElement.dataset.mode = "data"; $("#edit-open").click(); });

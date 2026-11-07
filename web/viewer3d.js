@@ -196,8 +196,12 @@ export function viewer3d(shell, flat) {
   // ---------- the page's parts: Look from's buttons in the toolbar beside Zoom, the slices' row and Colour by depth
   // under the channels' rows, the stage in the 2D one's place ----------
   const tools = html("div", { id: "v3-tools", className: "group", hidden: true });
-  tools.innerHTML = `<div id="v3-look" class="tabs" role="group" aria-label="Look from">${Object.keys(LOOKS).map((k) =>
-    `<button type="button" data-look="${k}" title="Look from the ${k === "tilted" ? "top, tilted" : k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join("")}</div>`;
+  // Reset View: a split button named after the view chosen, putting the view back to it; its arrow chooses the view
+  const named = (k) => k[0].toUpperCase() + k.slice(1);
+  tools.innerHTML = `<div id="v3-look" class="split-btn" role="group" aria-label="Reset view">
+    <button id="v3-reset" type="button" title="Put the view back to the one chosen"></button>
+    <details class="menu" id="v3-look-menu"><summary title="Choose the view to reset to" aria-label="Choose the view to reset to"></summary>
+      <div class="pop right">${Object.keys(LOOKS).map((k) => `<button type="button" class="item" data-look="${k}">${named(k)}</button>`).join("")}</div></details></div>`;
   const bar = $("#view .toolbar"), zoom = $("#zoom-out").parentElement;
   bar.insertBefore(tools, zoom.parentElement === bar ? zoom : bar.firstChild);
   // the slices shown, from the first to the last, as a channel's row holds its points, and in the colour picker's
@@ -240,9 +244,9 @@ export function viewer3d(shell, flat) {
   }
   const depthRows = () => { flat.rowsWith(mode3d ? depthRow : null); redraw(); };
   const stage = html("div", { id: "v3-stage", hidden: true });
-  const cv = html("canvas", { id: "v3-gl" }), hudCv = html("canvas", { id: "v3-hud" }), note = html("p", { id: "v3-note" });
+  const cv = html("canvas", { id: "v3-gl" }), hudCv = html("canvas", { id: "v3-hud" });
   // whether a plain drag pans rather than turns: the label's state, and shift held over it; kept only while the page is open
-  const panBtn = html("button", { id: "v3-pan", type: "button", textContent: "Panning" });
+  const panBtn = html("button", { id: "v3-pan", type: "button", textContent: "Panning", title: "Press Shift to pan, or click to keep panning on" });
   let panOn = false, shiftHeld = false;
   const panning = () => panOn || shiftHeld;
   const showPan = () => panBtn.setAttribute("aria-pressed", String(panning()));
@@ -252,7 +256,7 @@ export function viewer3d(shell, flat) {
   addEventListener("keyup", (e) => { if (e.key === "Shift") heldShift(false); });
   addEventListener("blur", () => heldShift(false));
   showPan();
-  stage.append(cv, hudCv, note, panBtn);
+  stage.append(cv, hudCv, panBtn);
   $("#scroller").after(stage);
 
   // ---------- GL ----------
@@ -451,14 +455,20 @@ export function viewer3d(shell, flat) {
   ui("v3-z1").oninput = (e) => { S.z1 = Math.max(+e.target.value, S.z0); tell(e.target); sync(); };
   ui("v3-zs").oninput = (e) => { if (+e.target.value > 0) { S.zs = +e.target.value; spacingNote("you"); sync(); spacingHeard.forEach((fn) => fn()); } };
   slicesRow.querySelector(".levels").ondblclick = () => { if (vol) { S.z0 = 0; S.z1 = vol.Z - 1; sync(); } };
-  ui("v3-look").onclick = (e) => {
+  let chosenLook = "top";
+  const resetView = () => { Object.assign(S, { rot: facing(...LOOKS[chosenLook]), pivot: [0, 0, 0], clip: null, dist: Math.max(S.dist, 2) }); redraw(); };
+  const nameReset = () => { ui("v3-reset").textContent = `${named(chosenLook)} View`; };
+  nameReset();
+  ui("v3-reset").onclick = resetView;
+  ui("v3-look").querySelector(".pop").onclick = (e) => {
     const b = e.target.closest("[data-look]"); if (!b) return;
-    Object.assign(S, { rot: facing(...LOOKS[b.dataset.look]), pivot: [0, 0, 0], clip: null, dist: Math.max(S.dist, 2) }); redraw();
+    chosenLook = b.dataset.look; nameReset(); ui("v3-look-menu").open = false; resetView();
   };
-  // who stated the spacing between slices, S.zsFrom: "file", "you", the one the study names, or null for a guess
+  // who stated the spacing between slices, S.zsFrom: "file", "you", the one the study names, or null for a guess; the
+  // spacing's tooltip says so
   function spacingNote(from) {
     S.zsFrom = from;
-    note.textContent = from === "file" ? `${S.zs} µm between slices, as the file records.`
+    ui("v3-zs").title = from === "file" ? `${S.zs} µm between slices, as the file records.`
       : from === "you" ? `${S.zs} µm between slices, as you set it.`
       : from ? `${S.zs} µm between slices, as ${from} stated; the file does not record it.`
       : `${S.zs} µm between slices is a guess: the file does not record it. Judge shapes, not depth in µm.`;

@@ -99,8 +99,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ● | ● | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● | ● | ○ |
@@ -119,7 +120,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ○ | ○ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ○ | ○ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ | ⊘ | ⊘ |
@@ -251,8 +251,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● | ● |
@@ -271,7 +272,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ | ⊘ |
@@ -403,8 +403,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ● | ● | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● | ● | ○ |
@@ -423,7 +424,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ○ | ○ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ○ | ○ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ | ⊘ | ⊘ |
@@ -555,8 +555,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ● | ● | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● | ● | ○ |
@@ -575,7 +576,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ○ | ○ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ○ | ○ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ | ⊘ | ⊘ |
@@ -707,8 +707,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● | ● |
@@ -727,7 +728,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ | ⊘ |
@@ -859,8 +859,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ● | ● | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● | ● | ○ |
@@ -879,7 +880,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ○ | ○ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ○ | ○ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ | ⊘ | ⊘ |
@@ -1011,8 +1011,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ● | ● | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ● | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● | ● | ○ |
@@ -1031,7 +1032,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ○ | ○ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ○ | ○ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ | ⊘ | ⊘ |
@@ -1163,8 +1163,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● | ● | ● |
@@ -1183,7 +1184,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ | ⊘ | ⊘ |
@@ -1315,8 +1315,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ◐ | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ◐ | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ◐ | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ | ○ | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ◐ | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ◐ | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● | ● | ● | ● |
@@ -1335,7 +1336,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ⊘ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ⊘ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
@@ -1467,8 +1467,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ◐ | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ◐ | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ◐ | ● | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ | ○ | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ | ○ | ○ | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ◐ | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ◐ | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● | ● | ● | ● | ● |
@@ -1487,7 +1488,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ⊘ | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ⊘ | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
@@ -1619,8 +1619,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ◐ | ◐ | ◐ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ◐ | ◐ | ◐ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ◐ | ◐ | ◐ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ◐ | ◐ | ◐ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ◐ | ◐ | ◐ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● | ● | ● |
@@ -1639,7 +1640,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ | ⊘ | ⊘ |
@@ -1774,8 +1774,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● |
@@ -1794,7 +1795,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ |
@@ -1930,8 +1930,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● |
@@ -1950,7 +1951,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ |
@@ -2088,8 +2088,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● |
@@ -2107,7 +2108,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ |
@@ -2244,8 +2244,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● |
@@ -2263,7 +2264,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ |
@@ -2400,8 +2400,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● |
@@ -2419,7 +2420,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ |
@@ -2556,8 +2556,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● |
@@ -2575,7 +2576,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ |
@@ -2703,8 +2703,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● |
@@ -2722,7 +2723,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ |
@@ -2849,8 +2849,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ● | ○ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ● | ○ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ● | ○ | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Look from | ○ | ○ | ● | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Look from Top, Tilted, Side and Front | ⊘ | ⊘ | ● | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Reset View group | ○ | ○ | ● | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View | ⊘ | ⊘ | ● | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset View's arrow | ⊘ | ⊘ | ● | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom out | ◐ | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom in | ◐ | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Zoom | ● | ● | ● | ● |
@@ -2868,7 +2869,6 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D view | ○ | ○ | ● | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3D picture | ⊘ | ⊘ | ● | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Drawn over the 3D view | ⊘ | ⊘ | ● | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Slice spacing's note | ⊘ | ⊘ | ● | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Panning | ⊘ | ⊘ | ● | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Minimap | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Hide the minimap | ⊘ | ⊘ | ⊘ | ⊘ |

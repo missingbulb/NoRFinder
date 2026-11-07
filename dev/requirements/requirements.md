@@ -1292,12 +1292,14 @@ nobody has decided: what the page does there is not a requirement yet.
   as the microscope does. Dragging turns it about the screen's two axes, on past looking straight
   across, a sideways scroll spins it about the line of sight (owner, 2026-11-03), the wheel zooms,
   shift-drag pans, and Top, Tilted,
-  Side and Front put the view back. A Panning label at the bottom of the 3D view always shows, outlined in
-  blue while panning is on and grey while off; clicking it turns panning on or off, so that a plain drag
+  Side and Front put the view back. A Panning label at the bottom left of the 3D view always shows, filled
+  blue while panning is on and outlined grey while off, its tooltip saying to press Shift to pan (owner,
+  2026-11-07); clicking it turns panning on or off, so that a plain drag
   pans instead of turning. Holding shift turns it on until shift is let go, which returns it to the state
   the label holds. That state lives only while the page is open: it is never stored or restored (owner,
-  2026-11-05). The toolbar's right holds Look from, its Top, Tilted, Side and Front
-  buttons in a row beside Zoom (owner, 2026-11-07), and the 2D view's Zoom, which zooms the 3D view (owner,
+  2026-11-05). The toolbar's right holds, beside Zoom, a split button named after the
+  view chosen ("Top View" at first) that puts the view back to it, its arrow choosing Top, Tilted, Side or Front
+  and going there (owner, 2026-11-07), and the 2D view's Zoom, which zooms the 3D view (owner,
   2026-11-04); the 2D view's other tools step aside. Brightest shows the brightest point along each
   ray, Surface a lit surface where the signal crosses a level, and colour by depth paints by the
   depth of that point so crossings at different depths read apart: the study's `view` sets the render
@@ -1310,7 +1312,7 @@ nobody has decided: what the page does there is not a requirement yet.
   palette, so they read apart; a study's `channels` may tick it from the start (`depth`: true, or a palette's name).
   A study drawing over the stack reads the depth colours of the first shown channel coloured by depth. The slice
   spacing comes from the file, else from the study (`view.spacing`, saying who stated it), else
-  1 µm, called a guess. Every shown channel is drawn in its colour between the black and white
+  1 µm, called a guess, which the spacing's tooltip says; no text over the 3D view says it (owner, 2026-11-07). Every shown channel is drawn in its colour between the black and white
   points of its row, which redraw the 3D view as they move. The study's `view` sets the render and the
   spacing it opens with. A study draws over the 3D view, over the stack or beside it
   in the same camera, picks and drags there, and can keep only the stack inside or outside a mask of

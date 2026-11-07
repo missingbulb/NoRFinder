@@ -725,9 +725,6 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 #v3-gl { cursor: grab; touch-action: none; }
 #v3-hud { pointer-events: none; }
 #v3-tools[hidden] { display: none; }
-#v3-look { display: flex; }
-#v3-look button { padding: 4px 9px; font-size: 13px; }
-#v3-note { position: absolute; left: 8px; right: calc(50% + 48px); bottom: 6px; margin: 0; color: rgba(225, 232, 238, .75); font-size: 12px; pointer-events: none; }
 #view[data-v3] #minimap, #view[data-v3] #ruler-btn, #view[data-v3] #grid-btn, #view[data-v3] #minimap-btn { display: none; }
 /* the slices' row: the channels' row with the depth's start and end on a plain track, and the spacing in the colour's place */
 .channel.v3-slices .levels::before { background: var(--line); }
@@ -751,11 +748,16 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 #v3-stage.split #v3-gl, #v3-stage.split #v3-hud { width: 50%; }
 #v3-stage .v3-side { position: absolute; top: 0; left: 50%; width: 50%; height: 100%; border-left: 1px solid #333; }
 #v3-stage:not(.split) .v3-side { left: 0; width: 100%; border-left: 0; }
-#v3-note { z-index: 2; }
-/* the Panning label: always there at the bottom of the view, blue outlined while panning is on, grey while off */
-#v3-pan { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); z-index: 2; padding: 2px 10px; font-size: 12px;
+/* the Panning label: always there at the bottom left of the view, filled blue while panning is on, grey outlined while off */
+#v3-pan { position: absolute; left: 8px; bottom: 6px; z-index: 2; padding: 2px 10px; font-size: 12px;
   color: var(--dim); background: #000a; border: 1px solid #6b7078; border-radius: var(--r-chip); cursor: pointer; }
-#v3-pan[aria-pressed="true"] { color: #e1e8ee; border-color: var(--blue); }
+#v3-pan[aria-pressed="true"] { color: #fff; background: var(--blue); border-color: var(--blue); }
+/* Reset View: the button and its arrow joined */
+#v3-look { display: inline-flex; }
+#v3-reset { border-top-right-radius: 0; border-bottom-right-radius: 0; padding: 5px 12px; white-space: nowrap; }
+#v3-look-menu summary { border-left: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; padding: 5px 8px; height: 100%; display: flex; align-items: center; }
+#v3-look-menu summary::after { content: "▾"; }
+#v3-look-menu .pop { min-width: 120px; gap: 2px; }
 /* the split dialog: the image with its parts at the left, what each part keeps at the right */
 .split-field { display: flex; gap: 10px; align-items: center; }
 .split-label { min-width: 72px; color: var(--dim); font-size: 12px; }
