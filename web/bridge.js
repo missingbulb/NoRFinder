@@ -36,20 +36,6 @@ export function bridge(py, post, progress = {}) {
       post({ type: "result", action: m.action, meta, bytes, echo: m.echo, secs: (performance.now() - t0) / 1000 }, bytes ? [bytes.buffer] : []);
     } else if (m.type === "close") {
       py.runPython("globals().pop('S', None)");
-    } else if (m.type === "memory") {
-      // what Python holds after a collection: bytes in use by malloc, and live objects the collector
-      // tracks; heap is the WebAssembly memory, which only ever grows to the high-water mark
-      if (!py.globals.has("memory_use")) py.runPython(`
-import ctypes, gc
-class MallInfo(ctypes.Structure):
-    _fields_ = [(n, ctypes.c_size_t) for n in 'arena ordblks smblks hblks hblkhd usmblks fsmblks uordblks fordblks keepcost'.split()]
-libc = ctypes.CDLL(None); libc.mallinfo.restype = MallInfo
-def memory_use():
-    gc.collect()
-    return json.dumps([libc.mallinfo().uordblks, len(gc.get_objects())])
-`);
-      const [used, objects] = JSON.parse(py.runPython("memory_use()"));
-      post({ type: "memory", used, objects, heap: py._module.HEAPU8.byteLength });
     }
   };
 }

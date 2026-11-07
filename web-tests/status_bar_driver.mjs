@@ -50,7 +50,6 @@ onmessage = ({ data: m }) => {
   if (m.type === "study") postMessage({ type: "ready", info: A.ready[m.id], ...mem() });
   else if (m.type === "open") { const images = bytes(A.images); postMessage({ type: "opened", meta: A.opened, images, ...mem() }, [images.buffer]); }
   else if (m.type === "call") { work(${WORK}); const b = bytes(A.mask); postMessage({ type: "result", action: m.action, meta: A.count, bytes: b, echo: m.echo, ...mem() }, [b.buffer]); }
-  else if (m.type === "memory") postMessage({ type: "memory", used: ${25 * MB}, objects: 1000, ...mem() });
 };`;
 let stage = null; // the fixture's stage as served; null: as committed
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
@@ -309,15 +308,14 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await loadImage(page);
   await steps(page, ["Load image", "Count*"], ["#fx-count", "#sb-count"]);
 
-  // the memory opens its tab of the one dialog, with Run GC and no essay on Python's memory
+  // the memory opens its tab of the one dialog, with no Run GC and no essay on Python's memory
   await page.click("#sb-memory");
   await tabIs(page, "memory");
   const rows = await page.evaluate(() => [...document.querySelectorAll("#ram-list .entry .name")].map((n) => n.textContent));
   await check(["Python", "Python's files", "The image"].every((n) => rows.includes(n)), "the Memory tab lists what holds it", rows);
   await check(!/reserved for its next use/.test(await page.textContent("#usage-dlg")), "with no explanation of Python's memory");
-  await page.click("#ram-gc");
-  await page.waitForFunction(() => /in use/.test(document.querySelector("#ram-msg").textContent));
-  await check(/25 MB in use of \d+ MB/.test(await page.textContent("#ram-msg")), "Run GC says what Python holds in use against its reserve", await page.textContent("#ram-msg"));
+  const gc = await page.evaluate(() => [...document.querySelectorAll("#usage-dlg button")].filter((x) => /GC|garbage/i.test(x.textContent)).length);
+  await check(gc === 0, "and no Run GC button", gc);
   if (shots) await page.screenshot({ path: path.join(shots, "4-memory.png") });
   // the tabs look alike: the total, then rows of a name, what it is and a size, in the same type
   const look = (tab) => page.evaluate((t) => {

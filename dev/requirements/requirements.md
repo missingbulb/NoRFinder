@@ -1096,15 +1096,15 @@ nobody has decided: what the page does there is not a requirement yet.
   `web-tests/test_status_bar_page.py`.
   </details>
 
-- `req/shell/status-bar/memory` The memory, a memory-chip icon and "253 MB", opens what holds it and a Run GC button.
+- `req/shell/status-bar/memory` The memory, a memory-chip icon and "253 MB", opens what holds it.
   <details>
 
   The memory the tab holds: Python's, its files, the page's (Chrome and Edge say it) and an estimate
   for the compiled code and the browser, which a page cannot read; amber past a quarter of the
   computer's total where the browser says it. Clicking it opens the Memory tab (`req/shell/resources-dialog`) listing each
   of those, and within the page's share the image and the study's results, and the computer's
-  total. Its Run GC button has Python collect its garbage and says what Python then holds in use
-  against what it has reserved; the tab carries no essay on how Python's memory grows. Test:
+  total. It carries no button to have Python collect its garbage (a Run GC button removed by the owner on
+  2026-11-07), and no essay on how Python's memory grows. Test:
   `web-tests/test_status_bar_page.py`.
   </details>
 

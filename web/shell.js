@@ -218,8 +218,7 @@ function entry(name, what, size, within) {
   row.querySelector(".name").textContent = name; row.querySelector(".what").textContent = what; row.querySelector(".size").textContent = size;
   return row;
 }
-$("#sb-memory").onclick = () => { $("#ram-msg").textContent = ""; usage("memory"); };
-$("#ram-gc").onclick = () => working($("#ram-gc"), () => { const told = until("memory"); st.worker.postMessage({ type: "memory" }); return told; });
+$("#sb-memory").onclick = () => usage("memory");
 
 // the disk: what the site keeps on this device, as Manage storage counts it
 async function diskBar() {
@@ -670,7 +669,6 @@ function handle(m) {
   } else if (m.type === "ready") {
     st.ready = true; st.readyInfo = m.info; $("#spin").classList.remove("on");
     study.ready?.(m.info); statusBar(); diskBar();
-    $("#ram-gc").disabled = false;
     status("Ready. Load an image.");
     if (st.queued) { const q = st.queued; st.queued = null; send(q.name, q.bytes); }
   } else if (m.type === "opened") {
@@ -690,8 +688,6 @@ function handle(m) {
     if (remote.owns(st.source) && st.pictured !== st.source.id) saveThumb(st.source.id, st.fileName);
   } else if (m.type === "result") {
     study.result?.(m.action, m.meta, m.bytes, m.echo);
-  } else if (m.type === "memory") {
-    $("#ram-msg").textContent = `Python: ${mbOf(m.used)} MB in use of ${mbOf(m.heap)} MB reserved.`;
   }
 }
 
@@ -823,7 +819,7 @@ function restudy(again = true) {
     dropImage();
     leaveStudy();
     try { await mountStudy(id); } catch (e) { return status("Error: " + (e.message || e), true); }
-    if (ready) { st.ready = true; $("#ram-gc").disabled = false; study.ready?.(readyInfo); }
+    if (ready) { st.ready = true; study.ready?.(readyInfo); }
     statusBar(); status(ready ? "Ready. Load an image." : "Loading Python in the background…");
     if (image) openBytes(image.name, image.bytes, image.source);
   });
@@ -2107,7 +2103,7 @@ function leaveStudy() {
   css?.remove(); css = null;
   study = {}; manifest = null; view?.use({}); view?.clear();
   for (const k of Object.keys(st)) if (!SHELL_STATE.has(k)) delete st[k];
-  st.ready = false; $("#ram-gc").disabled = true;
+  st.ready = false;
   for (const w of Object.values(waiting)) w.splice(0).forEach((x) => x.bad(new Error("the study left")));
   busy(false); $("#notice").hidden = true; $("#tip").hidden = true;
   $("#image-view").hidden = false; delete $("#view").dataset.view; $("#switch").hidden = true; views.now = "image";
