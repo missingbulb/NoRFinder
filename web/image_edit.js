@@ -5,6 +5,8 @@
 "use strict";
 import { whole, layout, derive, suggestSlices, maskOf, maskShare, stemOf } from "./edit.js";
 import { readTiff, fromPlanes, evenCuts, gridParts, partName, patternProblem, splitImage, zip } from "./split.js";
+import { asLoaded } from "./as_loaded.js";
+import { holdOwns } from "./offline.js";
 
 // the user's file-name pattern for a split's parts, kept for the next visit (its name from before Edit Image)
 export const SPLIT_PATTERN = "nor-split-pattern";
@@ -20,6 +22,8 @@ const GRAB = 7;
 export function imageEditor(ctx) {
   const { $, page } = ctx;
   const root = document.documentElement, box = $("#edit-box");
+  // the box as the page loaded, put back when an edit ends
+  const asStarted = asLoaded([box], holdOwns);
   const svgEl = (tag, attrs) => { const n = document.createElementNS("http://www.w3.org/2000/svg", tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
   // base: the image as opened, put back by Done; e: the edit; polygons: the imperfections, in the image's pixels;
   // tool: "crop" or "lasso" while one is armed; signal: each slice's, for the slider's band
@@ -229,7 +233,7 @@ export function imageEditor(ctx) {
     base = null; tool = null; drag = null;
     delete root.dataset.editing; root.removeAttribute("data-edit-tool");
     ctx.viewer().layer("edit").replaceChildren();
-    box.hidden = true; ctx.boxDone(box, null); ctx.relabel();
+    asStarted(); box.hidden = true; ctx.boxDone(box, null); ctx.relabel();
     page.set({ image: was });
   }
   $("#edit-open").onclick = () => open();

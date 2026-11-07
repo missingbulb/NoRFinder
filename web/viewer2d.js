@@ -8,6 +8,7 @@
 // drag, landed on it, pick(null) when it landed on nothing; open(it) when a double click did; step(dir) on a sideways swipe; capturesPointer() while the study's own tool (a
 // lasso, say) takes the pointer; zoomed() after every zoom.
 import { resolve, ramp } from "./channels.js";
+import { asLoaded } from "./as_loaded.js";
 
 // the user's grid: {colour, um, px}, its colour and the distance between its lines in µm and in pixels
 export const GRID = "nor-grid";
@@ -34,6 +35,8 @@ export function hoverPop(btn, pop, fill) {
 
 export function viewer(shell) {
   const { $, state: st, page } = shell;
+  // what an image changes on the page, as it loaded: put back when none is open
+  const asBuilt = asLoaded(["#stage", "#minimap .mm-body", "#zoom-label"].map((s) => $(s)));
   let hooks = {}, declared = [], chans = [];
   const make = (tag, attrs) => { const n = document.createElementNS("http://www.w3.org/2000/svg", tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
   const html = (tag, props) => Object.assign(document.createElement(tag), props);
@@ -116,6 +119,7 @@ export function viewer(shell) {
   function blank() {
     st.peek?.stop?.();
     st.img = null; st.plain = null; st.peeked = false; st.W = st.H = 0;
+    asBuilt();
     ruler.reset(); clear();
     const c = $("#base"); c.width = c.height = 0;
     $("#empty").hidden = false; $("#stage").hidden = true;
@@ -396,11 +400,13 @@ export function viewer(shell) {
 
   return {
     use(h) { hooks = h || {}; }, channels: setChannels,
+    // the study leaving, its image gone first: what it drew on the page goes too
+    leave: blank,
     // the rows as they stand, [{on, colour, black, white}] in plane order, and a listener for every redraw of them
     levels: () => chans, onDrawn: (fn) => drawnHeard.push(fn),
     // another viewer's rows under the channels' rows, none to take them away, and the zoom buttons taken over by it
     // (fn(factor)) or given back (null)
-    rowsAfter(els) { added = els; rows(); }, rowsWith(fn) { withRow = fn; rows(); }, zoomWith(fn) { zoomer = fn; if (!fn) $("#zoom-label").textContent = Math.round(st.zoom * 100) + "%"; },
+    rowsAfter(els) { added = els; rows(); }, rowsWith(fn) { withRow = fn; rows(); }, zoomWith(fn) { zoomer = fn; if (!fn && st.img) $("#zoom-label").textContent = Math.round(st.zoom * 100) + "%"; },
     draw, setZoom, fit, focus, toImage, layer, channelList: () => chans.map(({ name, colour }) => ({ name, colour })), minimapView: () => minimap.place(), preview, clear, shown, picture,
     get overlay() { return $("#overlay"); }, get scroller() { return $("#scroller"); },
   };

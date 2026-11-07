@@ -10,6 +10,7 @@
 // The stack reaches it as the page's image: its flattened planes (C of W × H), then, for a stack (Z > 1), every
 // slice of every channel, channel by channel.
 "use strict";
+import { asLoaded } from "./as_loaded.js";
 
 const MAX_SIDE = 640; // the GPU's budget: a ray samples every voxel it crosses, so a wider volume is binned to this
 const CHANNELS = 4;   // the most channels the 3D view adds together
@@ -204,7 +205,6 @@ export function viewer3d(shell, flat) {
     <details class="menu" id="v3-look-menu"><summary title="Choose the view to reset to" aria-label="Choose the view to reset to"></summary>
       <div class="pop right">${Object.keys(LOOKS).map((k) => `<button type="button" class="item" data-look="${k}">${named(k)}</button>`).join("")}</div></details></div>`;
   const bar = $("#view .toolbar"), zoom = $("#zoom-out").parentElement;
-  bar.insertBefore(tools, zoom.parentElement === bar ? zoom : bar.firstChild);
   // the slices shown, from the first to the last, as a channel's row holds its points, and in the colour picker's
   // place the spacing between slices, read with its unit and stepped by
   // the keys and its arrows
@@ -220,7 +220,6 @@ export function viewer3d(shell, flat) {
   const palettes = html("div", { className: "v3-palettes", popover: "auto" });
   palettes.setAttribute("aria-label", "Depth palettes");
   palettes.innerHTML = Object.entries(PALETTES).map(([k, p]) => `<button type="button" data-palette="${k}"><span class="v3-swatch" style="--scale: ${gradient(k)}"></span>${p.name}</button>`).join("");
-  document.body.append(palettes);
   let choosing = null; // the channel whose palette the popup chooses
   palettes.onclick = (e) => { const b = e.target.closest("[data-palette]"); if (!b || !choosing) return; choosing.depth = b.dataset.palette; palettes.hidePopover(); depthRows(); };
   // a palette no other channel coloured by depth has, so two of them read apart
@@ -260,7 +259,6 @@ export function viewer3d(shell, flat) {
   addEventListener("blur", () => heldShift(false));
   showPan();
   stage.append(cv, hudCv, panBtn);
-  $("#scroller").after(stage);
 
   // ---------- GL ----------
   function initGL() {
@@ -488,6 +486,18 @@ export function viewer3d(shell, flat) {
       : from ? `${S.zs} µm between slices, as ${from} stated; the file does not record it.`
       : `${S.zs} µm between slices is a guess: the file does not record it. Judge shapes, not depth in µm.`;
   }
+  // the 3D parts on the page while this is the study's viewer, each as it was built when it comes back; none while not
+  const asBuilt = asLoaded([tools, stage, palettes]);
+  function placed(on) {
+    if (!on) { for (const el of [tools, stage, palettes]) el.remove(); return; }
+    asBuilt(); panOn = false; chosenLook = "top";
+    if (tools.isConnected) return;
+    bar.insertBefore(tools, zoom.parentElement === bar ? zoom : bar.firstChild);
+    $("#scroller").after(stage);
+    document.body.append(palettes);
+  }
+  placed(true);
+
   function show3d(on) {
     mode3d = on && !!vol;
     stage.hidden = !mode3d; tools.hidden = !mode3d; $("#scroller").hidden = mode3d;
@@ -610,7 +620,7 @@ export function viewer3d(shell, flat) {
     ...flat,
     three,
     // the shell says whether this is the viewer of the study on the page; the 3D parts go when it is not
-    active(on) { active = on; take(on ? page.get("image") : null); },
+    active(on) { active = on; placed(on); take(on ? page.get("image") : null); },
     get overlay() { return flat.overlay; }, get scroller() { return flat.scroller; },
   };
 }
