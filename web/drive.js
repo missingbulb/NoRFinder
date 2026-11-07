@@ -170,6 +170,16 @@ export const remote = (() => {
     }
   }
 
+  // whether the signed-in user may add files to folder id, as Drive answers their token: true, false, or null when
+  // nobody is signed in or Drive does not say (req/shell/data/roles)
+  async function canWrite(id) {
+    if (!signedIn()) return null;
+    const r = await get(`${API}/${encodeURIComponent(id)}?fields=capabilities(canAddChildren)&supportsAllDrives=true`);
+    if (r.status === 404 || r.status === 403) return false;
+    if (!r.ok) return null;
+    return !!(await r.json()).capabilities?.canAddChildren;
+  }
+
   // a file's or a folder's name
   async function name(id) {
     need();
@@ -254,6 +264,11 @@ export const remote = (() => {
       async mark(id, properties) {
         await google(`${API}/${encodeURIComponent(id)}?supportsAllDrives=true`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ properties }) });
       },
+      // a folder the page made, shared with anyone with its link to view (req/shell/ground-truth/setup)
+      async share(id) {
+        await google(`${API}/${encodeURIComponent(id)}/permissions?supportsAllDrives=true`, { method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ type: "anyone", role: "reader" }) });
+      },
       // a file the page made, to Drive's bin
       async trash(id) {
         await google(`${API}/${encodeURIComponent(id)}?supportsAllDrives=true`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ trashed: true }) });
@@ -261,13 +276,12 @@ export const remote = (() => {
     };
   }
 
-  // the parts of a study's study.json that name Drive: whether its images open from the store, the folder ids its
-  // files.folders links name, and the path of its ready-made thumbnails (driveThumbs) or null
-  const study = (m) => ({
-    opens: !!m?.files?.from?.includes(KIND),
-    folders: [...new Set((m?.files?.folders || []).map(parse).filter((r) => r?.kind === "folder").map((r) => r.id))],
-    thumbs: m?.driveThumbs || null,
-  });
+  // the parts of a study's study.json that name Drive: whether its images open from the store, its root folder's id
+  // (null for none), and the path of its ready-made thumbnails (driveThumbs) or null
+  const study = (m) => {
+    const r = m?.root ? parse(m.root) : null;
+    return { opens: !!m?.files?.from?.includes(KIND), root: r?.kind === "folder" ? r.id : null, thumbs: m?.driveThumbs || null };
+  };
 
   return {
     // what the page calls the store, in full and short
@@ -285,7 +299,7 @@ export const remote = (() => {
       throttling: THROTTLING,
       throttled: THROTTLING + ". Try again in 15 minutes.",
     },
-    use: (s) => { signIn = s; }, signedIn, parse, file, head, checksum, list, all, name, writer, study,
+    use: (s) => { signIn = s; }, signedIn, parse, file, head, checksum, list, all, name, canWrite, writer, study,
     ready: !!key, received: () => received, speed: () => ({ ...timed }),
     // an image from the store, as a source records it; whether a source is one
     source: (id, more = {}) => ({ kind: KIND, id, ...more }),

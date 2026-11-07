@@ -55,16 +55,14 @@ def test_a_study_names_files_that_exist(path):
         assert c.get('depth') is None or c['depth'] is True or (isinstance(c['depth'], str) and c['depth']), c
         black, white = c.get('black', 0), c.get('white', 255)
         assert 0 <= black < white <= 255, c
-    # req/shell/data/roles: its Drive folders, each a folder link, and who holds each role, by email
-    assert 'drive' not in m['files'], 'a study names its Drive folders in files.folders'
+    # req/shell/data/roles: its Drive root, a folder link, and nothing under it or about who holds a role
+    assert 'drive' not in m['files'] and 'folders' not in m['files'], 'a study names its Drive root alone, in root'
+    assert 'permissions' not in m, "who holds a role is Drive's sharing of the study's folders"
+    if 'root' in m:
+        assert re.search(r'/folders/[\w-]{10,}', m['root']), m['root']
     # req/shell/load/from: where it opens images from, which the shell has no default for
     places = m['files'].get('from')
     assert isinstance(places, list) and places and set(places) <= {'local', 'drive'}, 'files.from lists where the study opens images from: local, drive or both'
-    for link in m['files'].get('folders', []):
-        assert re.search(r'/folders/[\w-]{10,}', link), link
-    for role, who in m.get('permissions', {}).items():
-        assert role == 'data_management', role
-        assert who and all(re.fullmatch(r'[^@\s]+@[^@\s]+\.[^@\s]+', e) for e in who), (role, who)
     if 'driveThumbs' in m:
         assert os.path.isdir(os.path.join(base, m['driveThumbs']))
     # req/shell/site/icons: its own tab icon and link-preview poster, published with its page part
@@ -83,11 +81,9 @@ def test_a_study_names_its_stage_and_steps(path):
     assert 'stage' in m and m['stage'] in ('PreGT', 'GT', 'PostGT', 'Published', None), 'stage: PreGT, GT, PostGT, Published, or null for a tool making no ground truth'
     if m['stage'] in ('GT', 'PostGT'):
         gt = m.get('groundTruth', {})
-        # req/shell/ground-truth/folders: its submissions and curated folders, each a folder link, or null until made
-        assert gt.keys() >= {'submissions', 'curated'}, 'a study that makes ground truth names its submissions and curated folders'
-        for k in ('submissions', 'curated'):
-            assert gt[k] is None or re.search(r'/folders/[\w-]{10,}', gt[k]), (k, gt[k])
-        assert 'label' not in gt, 'ground truth goes to Drive, not to a labelled GitHub issue'
+        # req/shell/ground-truth/folders: its ground-truth folders are under its root, named there, not here
+        assert 'root' in m, 'a study that makes ground truth names its Drive root'
+        assert not {'submissions', 'curated', 'label'} & gt.keys(), "the root's settings file names the ground-truth folders"
     assert isinstance(m.get('phases'), list), 'phases: the study\'s own steps, [] for none'
     keys = [p['key'] for p in m['phases']]
     assert len(set(keys)) == len(keys) and not {'load', 'submit'} & set(keys), 'a step\'s key is its own, and not one of the shell\'s'

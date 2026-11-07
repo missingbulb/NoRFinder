@@ -152,7 +152,7 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
   font-variant-numeric: tabular-nums; }
 
 /* three columns of panels; the gutters between them are the handles that resize the side bars */
-#layout { --lw: 320px; --tw: 0px; display: grid; grid-template-columns: var(--tw) var(--lw-now, var(--lw)) var(--pad) minmax(0, 1fr) var(--pad);
+#layout { --lw: 320px; --tw: 0px; display: grid; grid-template-columns: var(--tw) var(--lw) var(--pad) minmax(0, 1fr) var(--pad);
   transition: grid-template-columns .35s cubic-bezier(.25, .8, .25, 1);
   grid-template-rows: minmax(0, 1fr); min-height: 0; }
 /* the scrollbar's room is kept even when nothing scrolls, so folding a box never changes the bar's width */
@@ -192,6 +192,8 @@ body.resizing { cursor: col-resize; user-select: none; }
 .channel input[type=checkbox] { flex: none; width: 15px; height: 15px; margin: 0; cursor: pointer; }
 /* the colour picker: a swatch a little wider than tall in a thick frame, lit from the top left like a picture's; its colour, at
    the centre, a little lighter towards the top left and darker towards the bottom right */
+/* each row's last control at the box's right edge, so the slider before it takes the room */
+.channel > :last-child { justify-self: end; }
 .channel input[type=color] { flex: none; width: 22px; height: 15px; padding: 0; border: 3px solid; border-radius: 2px; cursor: pointer; background: none;
   border-color: color-mix(in srgb, var(--dim) 55%, #fff) color-mix(in srgb, var(--dim) 65%, #000) color-mix(in srgb, var(--dim) 65%, #000) color-mix(in srgb, var(--dim) 55%, #fff); }
 .channel input[type=color]:hover, .channel input[type=color]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -727,15 +729,24 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 #view[data-v3] #minimap, #view[data-v3] #ruler-btn, #view[data-v3] #grid-btn, #view[data-v3] #minimap-btn { display: none; }
 /* the slices' row: the channels' row with the depth's start and end on a plain track, and the spacing in the colour's place */
 .channel.v3-slices .levels::before { background: var(--line); }
-.channel.v3-slices input[type=number] { width: 48px; padding: 1px 3px; font-size: 11px; }
-/* colour by depth, a channel's own: its tick on a row under the channel's, the palette across it, and the palette
-   picker in the colour picker's place */
-.v3-depth-row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; margin-top: -3px; font-size: 12px; color: var(--dim); }
-.v3-depth-row .v3-tick { display: flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap; }
-.v3-depth-row .v3-tick input { width: 13px; height: 13px; margin: 0; }
-.v3-depth-row .v3-scale { height: 4px; margin: 0 10px; border-radius: 2px; background: var(--scale); }
-.v3-depth-row.off .v3-scale { visibility: hidden; }
-.channel .v3-palette { flex: none; width: 22px; height: 15px; padding: 0; border: 1px solid #0006; border-radius: 2px; background: var(--scale); cursor: pointer; }
+.channel.v3-slices .v3-spin { display: inline-flex; align-items: stretch; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--bg); overflow: hidden; }
+.channel.v3-slices .v3-spin:focus-within { outline: 2px solid var(--accent); outline-offset: -1px; }
+.channel.v3-slices #v3-zs { width: 52px; padding: 1px 3px; font-size: 11px; border: 0; border-radius: 0; background: none; outline: none; }
+.channel.v3-slices .v3-steps { display: flex; flex-direction: column; border-left: 1px solid var(--line); }
+.channel.v3-slices .v3-steps button { flex: 1; padding: 0 3px; border: 0; border-radius: 0; background: none; font-size: 8px; line-height: 1; color: var(--dim); cursor: pointer; }
+.channel.v3-slices .v3-steps button:hover { color: var(--text); background: var(--line); }
+/* colour by depth, a channel's own: an icon tick, stacked slices, beside the colour picker, which is a palette picker
+   while it is ticked */
+.channel .v3-pickers { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.channel input.v3-tick { appearance: none; width: 18px; height: 18px; margin: 0; border: 0; cursor: pointer;
+  background: var(--dim); -webkit-mask: var(--layers) center / 14px no-repeat; mask: var(--layers) center / 14px no-repeat;
+  --layers: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M8 1.5 14.5 5 8 8.5 1.5 5z'/%3E%3Cpath d='M1.5 8 8 11.5 14.5 8'/%3E%3Cpath d='M1.5 11 8 14.5 14.5 11'/%3E%3C/svg%3E"); }
+.channel input.v3-tick:checked { background: var(--accent); }
+.channel input.v3-tick:hover, .channel input.v3-tick:focus-visible { background: var(--text); }
+/* framed as the colour picker is, the palette in the swatch's place */
+.channel .v3-palette { flex: none; width: 22px; height: 15px; padding: 0; border: 3px solid; border-radius: 2px; cursor: pointer;
+  border-color: color-mix(in srgb, var(--dim) 55%, #fff) color-mix(in srgb, var(--dim) 65%, #000) color-mix(in srgb, var(--dim) 65%, #000) color-mix(in srgb, var(--dim) 55%, #fff);
+  background: linear-gradient(135deg, #ffffff59, #fff0 50%, #0000 50%, #00000059), var(--scale); box-shadow: inset 0 0 0 1px #0006; }
 .channel .v3-palette:hover, .channel .v3-palette:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .v3-palettes { position: fixed; inset: auto; margin: 0; padding: 6px; width: 160px; flex-direction: column; gap: 2px; font-size: 13px;
   background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px #0004; }
@@ -824,33 +835,14 @@ html:not(.offline) #welcome-offline { display: none; }
 #data-col[hidden] { display: none; }
 #data-col { position: relative; padding: var(--pad) 0 var(--pad) 8px; overflow: hidden; scrollbar-gutter: auto; display: flex; flex-direction: column; min-width: 0; }
 #data-open { display: flex; align-items: center; gap: 6px; padding: 8px 4px; border-radius: var(--r-panel); white-space: nowrap; }
-:is(#data-open, #left-expand, #left-collapse) .chev { flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; transition: transform .35s; }
-#data-open[aria-expanded=true] .chev, #left-collapse .chev { transform: rotate(180deg); }
-/* its strip, and the left bar's collapsed (req/shell/left-bar/collapse): a chevron over an upright name, the whole
-   column's height, the left bar's with its steps' marks between */
-:root[data-tree=folded] #data-open, #left-strip { flex: 1; flex-direction: column; justify-content: flex-start; gap: 10px; padding: 12px 0; width: 100%; min-width: 0; box-sizing: border-box;
+#data-open .chev { flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; transition: transform .35s; }
+#data-open[aria-expanded=true] .chev { transform: rotate(180deg); }
+/* its strip: a chevron over an upright name, the whole column's height */
+:root[data-tree=folded] #data-open { flex: 1; flex-direction: column; justify-content: flex-start; gap: 10px; padding: 12px 0; width: 100%; min-width: 0; box-sizing: border-box;
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-panel); color: var(--dim); }
-:root[data-tree=folded] #data-open:hover, #left-strip:hover { color: var(--text); border-color: var(--accent); }
-:root[data-tree=folded] #data-open .strip-name, #left-strip .strip-name { writing-mode: vertical-rl; font-size: 12px; letter-spacing: .03em; }
+:root[data-tree=folded] #data-open:hover { color: var(--text); border-color: var(--accent); }
+:root[data-tree=folded] #data-open .strip-name { writing-mode: vertical-rl; font-size: 12px; letter-spacing: .03em; }
 :root:not([data-tree=folded]) #data-open { align-self: flex-start; border: 0; background: transparent; color: var(--dim); }
-#left-strip { display: none; align-items: center; cursor: pointer; }
-:root[data-left=collapsed] #left-strip { display: flex; }
-#left-expand { display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: inherit; }
-#left-marks { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-#left-marks .step-mark { padding: 0; background: transparent; cursor: pointer; }
-#left-marks .step-mark.open { border-color: var(--accent); color: var(--accent); }
-#left-marks .step-mark.done { border-color: var(--yes); background: var(--yes); color: #fff; }
-#left-marks .step-mark:hover { outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent); }
-/* the open bar's head: its chevron where the strip's is, so the one spot collapses the bar and expands it again */
-#left-head { display: flex; align-items: center; gap: 6px; height: 40px; margin: 0 0 0 -8px; color: var(--dim); }
-#left-head .strip-name { font-size: 12px; letter-spacing: .03em; }
-#left-collapse { display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 1px solid transparent; border-radius: var(--r-ctl); background: transparent; color: inherit; cursor: pointer; }
-#left-collapse:hover { color: var(--text); border-color: var(--accent); }
-/* collapsed, the drawers are kept laid out out of sight, so their steps are still numbered for the strip */
-:root[data-left=collapsed] #layout { --lw-now: 32px; }
-:root[data-left=collapsed] #left { position: relative; display: flex; flex-direction: column; overflow: hidden; scrollbar-gutter: auto; padding: var(--pad) 0 var(--pad) 4px; }
-:root[data-left=collapsed] #left > :not(#left-strip) { position: absolute; top: 0; left: 0; width: 300px; visibility: hidden; pointer-events: none; }
-#left.sliding-in > :not(#left-strip) { animation: data-in .35s ease-out; }
 #data-body { display: none; min-width: 240px; flex: 1; min-height: 0; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-panel); padding: 10px 8px; margin-top: 6px; }
 :root[data-mode=data]:not([data-tree=folded]) #data-body { display: flex; animation: data-in .35s ease-out; }
 @keyframes data-in { from { opacity: 0; transform: translateX(-24px); } }

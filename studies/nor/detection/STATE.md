@@ -9,7 +9,7 @@ _Last updated 2026-10-06._
 
 ## Setup
 1. `python3 -m pip install -r requirements.txt`
-2. `python3 studies/nor/detection/ground_truth.py fetch`: fetches the reference slide
+2. `python3 studies/nor/detection/ground_truth.py score`: downloads, the first time, the reference slide
    (`Slide5_4AP_NoR.sld - Slice1_up_left2.tif`) and every image submitted ground truth was marked on
    into `data/raw/`, which is never committed.
 3. `cd studies/nor/detection && python3 nor_lab.py cmp tl rf`. The first run builds `.cache/` (image plus blue
@@ -30,10 +30,10 @@ _Last updated 2026-10-06._
 - **Curated ground truth** (R10, moved to Drive 2026-11-05): people mark candidates (thumbs up/down)
   and missed NoRs on the page and submit them to the study's submissions folder on Drive; a Data
   Manager accepts them into its curated folder (`study.json` `groundTruth`, both `null` until the
-  owner makes them). `ground_truth.py fetch` takes each image's newest curated file into
+  owner makes them). scoring takes each image's newest curated file, the first time, into
   `data/raw/ground-truth/truth/`, never git, and stops when a folder lists 50 entries. Curated files
-  outrank the Claude labels wherever both mark a spot, and `ground_truth.py score` / the quality lock
-  score every finder on every image. None has arrived yet.
+  outrank the Claude labels wherever both mark a spot, and `ground_truth.py score` scores every finder on every
+  image. None has arrived yet.
 - **Precision and recall per finder and filter preset** (R11, 2026-10-06):
   `../web/finder_metrics.json`, written by `finder_metrics.py` (and by every baseline rewrite), naming
   the data it was measured on: each image's and ground-truth file's SHA-256 and the dataset SHA. Quote
@@ -55,10 +55,10 @@ _Last updated 2026-10-06._
   pink (pass) or blue (fail) 1-px outline around each segment at 3×, a reason letter, numbers
   running top to bottom, white measuring lines, and a legend and list panel. The zoom is always
   x 900-2100, y 1200-2400. Don't change it unless Ariel asks; propose changes for approval.
-- **Quality is locked (R9, 2026-09-30).** `studies/nor/tests/test_quality.py` fails when a finder loses a
-  labelled real NoR or passes a new not-NoR; CI runs it with every test on each PR. A loss goes
-  in only with Ariel's agreement (`python3 studies/nor/tests/test_quality.py --accept`); a local test run
-  records gains in `lab/quality_baseline.json`, which the PR must carry.
+- **Quality is recorded per version (R9, changed 2026-11-07).** A finder changes only in an effort made to
+  change it, as a new version; that effort records its spot-by-spot results in `lab/quality_baseline.json` and its
+  precision and recall with the dataset SHA (R11), by `ground_truth.py record`, once `score` has named every spot
+  that moved. No test re-scores a finder on a real image: the tests run on a drawn one (`tests/synthetic_nor.py`).
 - **Keep or drop every change by data:** `nor_lab.py ablate BASE VARIANT...`. Log every attempt,
   failures included, in `lab/ledger.md`.
 - **Performance pass** at the end of long algorithmic tasks, never on quick fixes where Ariel is

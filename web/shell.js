@@ -37,6 +37,7 @@ import { dialogMotion } from "./dialog_motion.js";
 import { truthTagger, LOCAL_GT } from "./truth_tagger.js";
 import { truthTasks } from "./truth_tasks.js";
 import { subfolderName } from "./truth_folders.js";
+import { studyPlace } from "./study_root.js";
 
 const $ = (s) => document.querySelector(s);
 // what the user does here, kept on this device for a problem report (req/shell/report/action-log)
@@ -47,7 +48,7 @@ const VIEWERS = { image2d: viewer2d, image3d: (shell) => viewer3d(shell, viewers
 const DEFAULT_STUDY = "viewer";
 // the browser keys the shell saves under; their names predate studies, and a user's saved state lives in them
 const THEME = "nor-theme"; // "dark" | "light"; absent = follow the system
-const BARS = "nor-bars-v1"; // {left, collapsed}: the left bar's width in pixels, and whether it is collapsed (a right bar's, from before it went, is ignored)
+const BARS = "nor-bars-v1"; // {left}: the left bar's width in pixels (a right bar's, or whether it was collapsed, from before they went, is ignored)
 // the last remote link pasted, in any study
 const REMOTE_LINK = "nor-drive-link";
 // {study id: the last remote link pasted in that study}
@@ -105,7 +106,10 @@ const signIn = account({
   menu: $("#user-menu"),
   applied: () => reapply(),
   // after the page's own start, which this may run during
-  changed: () => queueMicrotask(() => { data.signedIn(); showRole(); drawStudies(); remoteHint(); }),
+  changed: () => queueMicrotask(async () => {
+    data.signedIn(); if (manifest) storeRoles = await readRoles();
+    showRole(); drawStudies(); remoteHint();
+  }),
 });
 // signed in, the remote store is read as the user (req/shell/drive/credentials)
 remote.use(signIn);
@@ -121,7 +125,12 @@ $("#remote-autosave-l").title = `Keep each image opened from ${remote.short} on 
 $("#save-remote").textContent = `Save to ${remote.label}`;
 
 // the tagger's side of the study's ground-truth folders: the line in its ground-truth box, Clear progress and Submit
-const truth = truthTagger({ account: signIn, remote, manifest: () => manifest,
+// the study on show's root in the remote store: its settings, the folders Load browses, the roles the store gives
+const place = studyPlace(remote, () => manifest);
+// what the store lets the signed-in user write in the study on show (req/shell/data/roles), read as the study comes in
+let storeRoles = { manager: false, tagger: false };
+const readRoles = () => place.roles().catch((e) => { console.warn("roles not read:", e); return { manager: false, tagger: false }; });
+const truth = truthTagger({ account: signIn, remote, place,
   image: () => (st.img ? { name: st.fileName, sha256: st.sha, source: st.source } : null), on: () => !!manifest && makesTruth(),
   cleared: () => restudy(true) });
 
@@ -447,7 +456,7 @@ const makesTruth = () => stageTruth() && role === "tagger";
 
 // ---------- the role the user works in (req/shell/account/role) ----------
 let role = "viewer";
-const rolesHeld = () => held({ signedIn: signIn.signedIn(), tagging: takesTaggers(), manager: data.manager });
+const rolesHeld = () => held({ signedIn: signIn.signedIn(), tagging: takesTaggers() && storeRoles.tagger, manager: storeRoles.manager && remote.ready });
 const keptRole = () => { try { return localStorage.getItem(ROLE); } catch { return null; } };
 // the role shown, as the study comes in: before its steps are drawn from it
 function takeRole() {
@@ -767,7 +776,7 @@ $("#file").onchange = async (e) => {
 };
 // the study's own remote folders, which its dialog browses alone; a study naming none (the Image Viewer) takes a pasted
 // link instead (req/shell/drive/dialog)
-const studyFolders = () => remote.study(manifest).folders;
+const studyFolders = () => (remote.study(manifest).root ? [remote.study(manifest).root] : []);
 // the link the remote files dialog opened on: listing it is not pasting it
 let remoteFrom = "", remoteOpened = () => {};
 function openRemote() {
@@ -1234,7 +1243,7 @@ function remoteDialog() {
   // offline, a folder link opens on the folder as last listed, and anything else on the images kept here
   const open = async () => {
     // a study's own folders: straight into the one, else a list of them
-    const roots = studyFolders();
+    const roots = studyFolders().length ? await place.dataFolders() : [];
     if (roots.length) {
       if (offlineCopy.offline() && !roots.some((id) => keptListing(id))) return showKept();
       keptOn = false; $("#remote-list").replaceChildren(); choose(null); msg("");
@@ -1386,7 +1395,7 @@ async function showSaved() {
 // ---------- the user: whoever opened the page on this device, and what the site keeps here ----------
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
-  [THEME]: "Theme", [ROLE]: "The role you work in", [BARS]: "Left bar width, and whether it is collapsed", [REMOTE_LINK]: `Last ${remote.label} link`, [REMOTE_LINKS]: `Last ${remote.label} link in each study`,
+  [THEME]: "Theme", [ROLE]: "The role you work in", [BARS]: "Left bar width", [REMOTE_LINK]: `Last ${remote.label} link`, [REMOTE_LINKS]: `Last ${remote.label} link in each study`,
   [THUMBS]: `Show thumbnails in the ${remote.short} dialog`, [AUTO_SAVE]: `Auto-save images from ${remote.label}`, [RECENT]: `Recent images from ${remote.label}`, [LOCAL_RECENT]: "Recent files from this computer", [LISTINGS]: `${remote.label} folders as last listed, for working offline`, [HOLDS]: `What each ${remote.short} image holds (2D or 3D)`, [THROTTLE]: `Wait after ${remote.short} downloads were throttled`, [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: SIGNED_IN_LABEL, [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [RESOURCES]: "The status bar's disk, memory, network and CPU: hidden, auto-hiding or always open", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
 };
 // What the site keeps, by what it takes to work offline (req/shell/storage/manage): a section per study, then what they share; settings
@@ -1401,7 +1410,7 @@ async function inventory() {
   const drop = (...keys) => keys.forEach((k) => { try { localStorage.removeItem(k); } catch { /* nothing kept */ } });
   const studies = await offlineCopy.studyFiles().catch((e) => { console.warn("the studies could not be read:", e); return []; });
   const live = await offlineCopy.available().catch(() => new Set());
-  const sections = studies.map((s) => ({ id: "study:" + s.id, study: s.id, title: s.title, mark: live.has(s.id), folders: !!s.manifest.files.folders?.length, entries: [] }));
+  const sections = studies.map((s) => ({ id: "study:" + s.id, study: s.id, title: s.title, mark: live.has(s.id), folders: !!s.manifest.root, entries: [] }));
   const shared = { id: "shared", title: "Shared by every study", about: SHARED_ABOUT, entries: [] };
   // a study's own, else the study on show's: kept before images were told apart by study
   const sectionOf = (id) => sections.find((x) => x.study === id) || sections.find((x) => x.study === manifest?.id) || shared;
@@ -1602,10 +1611,18 @@ async function offerTruth() {
   box.hidden = true; b.hidden = false; say.hidden = true; $("#gt-offer").hidden = false;
   if (role === "tagger" || !study.showTruth || !remote.owns(st.source) || !st.sha) return;
   let got;
-  try { got = await truth.curated({ name: st.fileName, sha256: st.sha }); } catch (e) { console.warn("curated ground truth not read:", e); return; }
-  if (mine !== offered || !got) return;
+  const img = { name: st.fileName, sha256: st.sha };
+  let has;
+  try { has = await truth.hasCurated(img); } catch (e) { console.warn("curated ground truth not listed:", e); return; }
+  if (mine !== offered || !has) return;
   box.hidden = false;
-  b.onclick = () => {
+  b.onclick = async () => {
+    b.disabled = true;
+    let got;
+    try { got = await truth.curated(img); } catch (e) { say.hidden = false; say.textContent = `The ground truth could not be read: ${e.message || e}`; b.disabled = false; return; }
+    b.disabled = false;
+    if (mine !== offered) return;
+    if (!got) { say.hidden = false; say.textContent = "Its curated ground truth holds no file the page can read."; return; }
     const d = got.doc, when = d.created ? new Date(d.created).toLocaleString() : "an unknown time";
     const counts = study.showTruth(d);
     b.hidden = true; $("#gt-offer").hidden = true; say.hidden = false;
@@ -1740,14 +1757,6 @@ function retitle() {
     if (typeof want === "string") { if (t.textContent !== want || t.children.length) t.textContent = want; }
     else if (t.firstChild !== want) t.replaceChildren(want);
   });
-  // the collapsed left bar's strip (req/shell/left-bar/collapse): a mark per drawer on show, opening it
-  $("#left-marks").replaceChildren(...shown.map((b) => {
-    const h = b.querySelector(":scope > .sec-head h2"), m = document.createElement("button");
-    m.type = "button"; m.className = "step-mark"; m.textContent = h.querySelector(".step-mark").textContent;
-    m.classList.toggle("done", b.classList.contains("done")); m.classList.toggle("open", !b.classList.contains("folded"));
-    m.title = h.dataset.name; m.onclick = () => b.classList.remove("folded");
-    return m;
-  }));
 }
 // a Markdown outline drawn as HTML: paragraphs split by blank lines, "- " or "1. " items nested by their indent
 function outline(text) {
@@ -1817,42 +1826,23 @@ function foldable() {
 function showImage() { study.showImage?.(); view.minimapView(); }
 
 // ---------- the left bar and theme ----------
-// the left bar takes the width it is dragged to; a double click puts it back. Dragged past its narrowest it
-// collapses (req/shell/left-bar/collapse), and dragged out from the strip it opens again under the pointer
+// the left bar takes the width it is dragged to, never narrower than its narrowest; a double click puts it back.
+// It stays open (req/shell/left-bar/static).
 {
-  const lay = $("#layout"), saved = readJSON(BARS), g = $("#gutter-left"), bar = $("#left"), root = document.documentElement;
-  const MIN = 200, STRIP = 32, SHUT = (MIN + STRIP) / 2;
+  const lay = $("#layout"), saved = readJSON(BARS), g = $("#gutter-left"), bar = $("#left");
+  const MIN = 200;
   const set = (w) => {
     if (w == null) { lay.style.removeProperty("--lw"); return; }
     lay.style.setProperty("--lw", Math.round(Math.max(MIN, Math.min(w, innerWidth * 0.4))) + "px");
   };
   set(saved.left);
-  const collapse = (on) => { if (on) root.dataset.left = "collapsed"; else delete root.dataset.left; };
-  collapse(!!saved.collapsed);
-  const toggle = (on) => {
-    if (!!saved.collapsed === on) return;
-    saved.collapsed = on; writeJSON(BARS, saved);
-    if (!on) { bar.classList.add("sliding-in"); setTimeout(() => bar.classList.remove("sliding-in"), 400); }
-    collapse(on);
-    retitle();
-    setTimeout(() => view?.minimapView(), 400);
-  };
   g.addEventListener("pointerdown", (e) => {
     g.setPointerCapture(e.pointerId); document.body.classList.add("resizing");
-    const was = saved.left;
-    const move = (ev) => {
-      const w = ev.clientX - bar.getBoundingClientRect().left;
-      if (w < SHUT) { saved.left = was; toggle(true); }
-      else { saved.left = w; set(w); toggle(false); }
-      view?.minimapView();
-    };
+    const move = (ev) => { saved.left = Math.max(MIN, ev.clientX - bar.getBoundingClientRect().left); set(saved.left); view?.minimapView(); };
     const up = () => { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); document.body.classList.remove("resizing"); writeJSON(BARS, saved); };
     g.addEventListener("pointermove", move); g.addEventListener("pointerup", up);
   });
   g.addEventListener("dblclick", () => { delete saved.left; set(null); writeJSON(BARS, saved); view?.minimapView(); });
-  $("#left-collapse").onclick = () => toggle(true);
-  // a step mark opens its drawer first, then the click reaches the strip
-  $("#left-strip").onclick = () => toggle(false);
 }
 
 function theme() {
@@ -2075,6 +2065,7 @@ async function mountStudy(id) {
     return notice("That study is shown only to the accounts it names. Signed in with one of them, the switcher offers it.");
   }
   data.mount(manifest);
+  storeRoles = await readRoles();
   takeRole();
   document.title = manifest.title; $("#title").textContent = manifest.title; $("#title-icon").replaceChildren(...studyIcon(id, manifest.icon)); markCurrent();
   log.add(`Opened the study “${manifest.title}”`);
@@ -2148,7 +2139,7 @@ const offlineCopy = offline({ $, esc, sizeText, remote, throttled, throttle, sto
   kept: async (id) => !!(await caches.open(IMAGES).then((c) => c.match(imageUrl(id)), () => null)), keep: saveImage });
 // Data Management (req/shell/data/mode): what it borrows from the shell
 const data = dataMode({
-  $, esc, sizeText, still, status, remote, account: signIn, working, sha256, savedImage, folderPreviews, throttle,
+  $, esc, sizeText, still, status, remote, account: signIn, place, working, sha256, savedImage, folderPreviews, throttle,
   // the folder's images in the main area, or the image
   showFolder(on) {
     $("#folder-view").hidden = !on; $("#image-view").hidden = on || views.now !== "image";

@@ -6,13 +6,7 @@
         "children": [
           {"name": "Algorithm", "select": "#vm-algo", "control": true, "req": "req/vascular/model/run"},
           {"name": "About the algorithm", "select": "#vm-about", "req": "req/vascular/model/run"},
-          {"name": "Load a model", "select": "#model-load", "control": true, "req": "req/vascular/model/view"},
           {"name": "Run algorithm", "select": "#vm-run", "control": true, "req": "req/vascular/model/run"},
-          {"name": "Model file", "select": "#model-file", "control": true, "req": "req/vascular/model/view", "steady": "the input behind Load a model, never shown itself",
-            "rule": [
-              {"is": "hidden"}
-            ]
-          },
           {"name": "The model's controls", "select": "#model-on", "req": "req/vascular/model/correct", "unwalked": "shown once Execute is done, when Processing has folded",
             "rule": [
               {"when": {"counted": [false]}, "is": "hidden"}

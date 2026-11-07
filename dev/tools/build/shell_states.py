@@ -46,12 +46,10 @@ ACTIONS = {
     'restudy': ('Away and back', {'image': 'none', 'stack': False, 'counted': False, 'view': 'image'}),
     'ok': ('OK', {'notice': False}),
     'zoom': ('Zoom in', {'imageFits': False}),
-    'collapse': ('Collapse', {'collapsed': True}),
-    'expand': ('Expand', {'collapsed': False}),
 }
 ROLES = ('tagger', 'viewer', 'data')
 START = {'image': 'none', 'counted': False, 'view': 'image', 'selected': 'nothing', 'online': True, 'editing': False, 'stack': False,
-         'notice': False, 'imageFits': True, 'collapsed': False}
+         'notice': False, 'imageFits': True}
 STATES = ('shown', 'disabled', 'held', 'folded', 'hidden')
 # what the page shows of an element, as the browser reads it: on (shown, usable, a box open), off (shown, disabled),
 # held (shown, saying it needs the internet, req/shell/offline/default), folded (a box shown folded), gone (not

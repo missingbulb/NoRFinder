@@ -3,7 +3,7 @@
 // Drive, its recent files from the computer reopened through the browser's reference to them (a stand-in file picker
 // handing over a file of the browser's own private storage), and its Drive dialog takes a pasted link; the fixture,
 // NoR Finder and Vascular Measurements open from Google Drive alone, with no way to the computer, their dialog
-// browsing the study's own folders with no link to paste (req/shell/drive/dialog). Then req/shell/load/selector on the
+// browsing the study's own root with no link to paste (req/shell/drive/dialog). Then req/shell/load/selector on the
 // fixture: the Image box's top line, a selector of the images opened lately, newest first, each with how long ago,
 // the first selected; Drive's button at the line's right, and Unload between them once an image is open. Then
 // req/shell/drive/offline-listing: the Drive dialog keeps each folder
@@ -33,7 +33,7 @@ try { pw = require("playwright"); } catch {
 const [answers, studies, shots] = process.argv.slice(2);
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-const ROOT = "linefolder0000000001", SUB = "linesubfolder0000001", OTHER = "lineotherfolder00001";
+const ROOT = "linefolder0000000001", SUB = "linesubfolder0000001";
 const FOLDER = `https://drive.google.com/drive/folders/${ROOT}`;
 const PNG = noisePng();
 const sha = (b) => createHash("sha256").update(b).digest("hex");
@@ -68,16 +68,15 @@ const server = http.createServer((q, r) => {
   if (u === "/web/worker.js") return send("text/javascript", STAND_IN);
   if (u === "/web/config.js") return send("text/javascript", CONFIG);
   if (u === "/web/vendor/wheels.json") return send("application/json", "[]");
-  // the fixture's Drive folders, as the test sets them
+  // the fixture's Drive root
   if (u === "/studies/fixture/study.json") {
     const m = JSON.parse(fs.readFileSync(path.join(repo, u), "utf8"));
-    return send("application/json", JSON.stringify({ ...m, files: { ...m.files, folders: folders.map((id) => `https://drive.google.com/drive/folders/${id}`) } }));
+    return send("application/json", JSON.stringify({ ...m, root: `https://drive.google.com/drive/folders/${ROOT}` }));
   }
   const f = u === "/web/answers.json" ? answers : u === "/web/studies.json" ? studies : repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
-let folders = [ROOT];
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
@@ -95,7 +94,7 @@ await ctx.route("https://www.googleapis.com/**", async (route) => {
     if (/'lineotherfolder00001' in parents/.test(u.searchParams.get("q"))) return json({ files: [] });
     return json({ files: [{ id: SUB, name: "Sub", mimeType: "application/vnd.google-apps.folder" }, ...FILES.map(meta)] });
   }
-  if (id === ROOT || id === OTHER) return json({ id, name: id === ROOT ? "Slides" : "Other slides", mimeType: "application/vnd.google-apps.folder" });
+  if (id === ROOT) return json({ id, name: "Slides", mimeType: "application/vnd.google-apps.folder" });
   const f = FILES.find((x) => x.id === id);
   if (!f) return route.fulfill({ status: 404, headers: cors, body: "" });
   if (u.searchParams.get("alt") === "media") { calls.push("download"); return route.fulfill({ status: 200, headers: cors, contentType: "image/png", body: f.bytes }); }
@@ -188,22 +187,8 @@ try {
   await page.click("#load-remote");
   await page.waitForFunction(() => $("#remote-dlg").open && document.querySelectorAll("#remote-list .item").length === 4);
   check(!(await shown("#remote-link")) && !(await shown("#remote-go")), "a study's Drive dialog has no link to paste");
-  check(/Slides/.test(await page.textContent("#remote-path")), "and opens straight into the one folder the study names", await page.textContent("#remote-path"));
+  check(/Slides/.test(await page.textContent("#remote-path")), "and opens straight into the study's root, which names no data folder", await page.textContent("#remote-path"));
   await page.click("#remote-dlg button[value=close]");
-  folders = [ROOT, OTHER];
-  await page.reload(); await mounted("Fixture");
-  await page.click("#load-remote");
-  // each folder's name, as Drive gives it
-  await page.waitForFunction(() => $("#remote-dlg").open && [...document.querySelectorAll("#remote-list .item.folder .name")].map((n) => n.textContent).join() === "Slides,Other slides")
-    .catch(() => {});
-  let roots = await listed();
-  check(roots.map((x) => x.name).join() === "Slides,Other slides", "naming two, it lists them by name to choose from", roots.map((x) => x.name));
-  await page.dblclick("#remote-list .item:nth-child(1)");
-  await page.waitForFunction(() => document.querySelectorAll("#remote-list .item").length === 4);
-  check(true, "and opens the one chosen");
-  await page.click("#remote-dlg button[value=close]");
-  folders = [ROOT];
-  await page.reload(); await mounted("Fixture");
 
   // ---- req/shell/load/selector ----
   await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));

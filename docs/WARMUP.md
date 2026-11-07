@@ -46,19 +46,20 @@ A study is a folder with a `study.json`, and a `requirements.md` for what its pa
   `tasks-end`, `view-top`, `views` (beside the image view), `over-image` (floating over the image) and `body`;
   there is no right bar.
 - `files` — `from`, the places it opens images from (`local`, this computer, `drive`, Google Drive, or both:
-  `req/shell/load/from`), what Load accepts, the text the empty view shows, and optionally `folders`, the study's Google
-  Drive folders: the Drive dialog browses them alone, with no link to paste, and Data Management works on them all.
-- `permissions` — optional, the Google accounts (by email) holding each role: `data_management` sees Data
-  Management. A study's panels step aside while Data Management is open.
+  `req/shell/load/from`), what Load accepts, and the text the empty view shows.
+- `root` — optional, the link of the study's Google Drive root folder, the only folder the repo names. The settings file
+  in it, `rauntruth-study.json`, names its data and ground-truth folders by id, else they are found by name (`Data`,
+  `GT curated`, `GT submissions`, `GT`; `web/study_root.js`). The Drive dialog browses the data folder alone, with no
+  link to paste. Who holds a role is Drive's sharing: writing to the root makes a Data Manager, to submissions a Ground
+  Truth Tagger. A study's panels step aside while Data Management is open.
 - `channels` — what the study says of the image's channels, by place: `name`, `colour` (`#rrggbb`),
   `shown` at first, and optionally `depth` (in 3D, coloured by depth from the start: `true`, or a palette's name), `about` (the (?)'s description, at most 100 words) and `black` and
   `white` (its first points, 0–255). A channel it leaves out takes what the file says, then its place
   (red, green, blue…); the Image Viewer names none.
 - `progress` — the status line while Python installs (`install`), loads the study (`load`), opens an
   image (`open`) and runs each action (by its name).
-- `groundTruth` — for a GT or PostGT study: its `button`, and its `submissions` and `curated` Google Drive
-  folders (links, `null` until made; the same folder twice for submission without review). Who may write is
-  Drive's sharing of them. The layout and the reader's rule are `web/truth_folders.js`'s.
+- `groundTruth` — for a GT or PostGT study: its `button`. Its folders are made by Data Management's Set up ground
+  truth, under the root; the layout and the reader's rule are `web/truth_folders.js`'s.
 - `driveThumbs` — optional, the folder of ready-made thumbnails for the Google Drive dialog.
 
 The shell's controls draw from one page state (`web/page_state.js`: the image open, the minimap) and

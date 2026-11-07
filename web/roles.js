@@ -2,20 +2,12 @@
 // the menu beside the avatar that names it and lists the rest. Each role is its own view; the shell draws it.
 "use strict";
 
-// the roles a study's permissions may give
-export const ROLES = ["data_management", "ground_truth_writer"];
-// the roles the study's permissions give email
-export function rolesOf(manifest, email) {
-  const e = (email || "").toLowerCase(), held = manifest?.permissions || {};
-  return new Set(ROLES.filter((r) => (held[r] || []).some((x) => x.toLowerCase() === e)));
-}
-
 // the browser key the role chosen is kept under, as its name: "viewer" | "tagger" | "data"; absent = "viewer"
 export const ROLE = "nor-role";
 export const ROLE_NAMES = { viewer: "Viewer", tagger: "Ground Truth Tagger", data: "Data Manager" };
 
 // the roles held, in the menu's order: signedIn, whether anyone is; tagging, whether the study takes Ground Truth
-// Taggers; manager, whether its permissions name the user its data manager
+// Taggers and the store lets the user write to its submissions; manager, whether it lets them write to its root
 export function held({ signedIn, tagging, manager }) {
   return ["viewer", ...(signedIn && tagging ? ["tagger"] : []), ...(signedIn && manager ? ["data"] : [])];
 }

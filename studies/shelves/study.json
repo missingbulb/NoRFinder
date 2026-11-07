@@ -41,15 +41,13 @@
     "panels": "web/shelves.html",
     "style": "web/shelves.css"
   },
+  "root": "https://drive.google.com/drive/folders/10IrHmFgIdTlhwcZM0gGlfmw4TCM6_gwj",
   "files": {
     "from": [
       "drive"
     ],
     "accept": ".jpg,.jpeg,.png,.webp,.tif,.tiff,.bmp",
-    "empty": "Load a photo of bookshelves (JPEG, PNG, WebP or TIFF), then press Find books.",
-    "folders": [
-      "https://drive.google.com/drive/folders/1Wt3__aNzVQConuhF8tUx4zmnMtmx-O3w"
-    ]
+    "empty": "Load a photo of bookshelves (JPEG, PNG, WebP or TIFF), then press Find books."
   },
   "channels": [
     {
@@ -78,13 +76,6 @@
     "find": "Finding the books…",
     "straighten": "Straightening each book…"
   },
-  "permissions": {
-    "data_management": [
-      "arielra@gmail.com"
-    ]
-  },
   "groundTruth": {
-    "submissions": null,
-    "curated": null
   }
 }

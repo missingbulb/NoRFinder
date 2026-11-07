@@ -67,7 +67,7 @@ A fusion is a version. Register it in the lab, then ablate it against the better
 cd studies/nor/detection && python3 nor_lab.py ablate <better parent> <fusion>
 ```
 
-It must pass the study's quality lock before the page offers it. When it lands within noise of the
+It is a new version of the study's algorithm: record its quality before the page offers it. When it lands within noise of the
 best or better, run the mutation sweep with it as base
 ([mutating-an-algorithm](../mutating-an-algorithm/SKILL.md)).
 

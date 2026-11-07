@@ -145,14 +145,6 @@ const ACTIONS = {
     for (let k = 0; k < 12 && !(await page.isVisible("#minimap")); k++) await page.click("#zoom-in");
     await page.waitForFunction(() => document.querySelector("#minimap").checkVisibility());
   },
-  async collapse(page) {
-    await page.click("#left-collapse");
-    await page.waitForFunction(() => document.querySelector("#left-strip").checkVisibility());
-  },
-  async expand(page) {
-    await page.click("#left-expand");
-    await page.waitForFunction(() => !document.querySelector("#left-strip").checkVisibility());
-  },
   async original(page) {
     await page.click("#load-original");
     await page.waitForFunction(() => shellForTests.page.get("image")?.source.kind === "drive");

@@ -24,10 +24,6 @@ already applies, so never re-weigh them by hand.
 ## 1. See what moved
 
 ```
-python3 studies/nor/detection/ground_truth.py fetch
-```
-
-```
 python3 studies/nor/detection/ground_truth.py score tl rf fill walk blobs tl_post
 ```
 
@@ -68,7 +64,7 @@ survive held-out labels. Re-tune one shared set, and only once the ground truth 
 python3 -m pytest web-tests studies dev/tools/trick_pool
 ```
 
-The quality lock is `studies/nor/tests/test_quality.py`. Never run its `--accept` to clear a loss:
-that is the owner's. A gain is recorded by the local test run. Commit the baseline it rewrote and
+A finder changed here is a new version (R9): `ground_truth.py score` names every spot that moved, and
+`ground_truth.py record` writes its results. A loss is the owner's to accept, never yours. Commit the baseline it rewrote and
 `studies/nor/web/finder_metrics.json` (R11) with it, and update `STATE.md`. Never change the review
 render's style, and keep a speed-up's output bit-identical.

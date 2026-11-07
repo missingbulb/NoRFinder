@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>rauntruth.com app</title>
-<meta name="version" id="site-version" title="version 0.11107.106">
+<meta name="version" id="site-version" title="version 0.11107.107">
 <meta name="description" content="Image studies that run in your browser: find, count and measure in microscopy images, then review every result. Online or offline.">
 <link rel="icon" id="favicon" href="icon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
@@ -68,12 +68,11 @@
     <div id="data-body">
       <div class="data-head"><h2>Folders</h2><button id="data-approve" type="button" class="link" data-needs-network hidden></button></div>
       <div id="data-tree" role="tree" aria-label="The study's folders" data-log-as="a folder or image in the Data Management tree"></div>
+      <button id="gt-setup" type="button" data-needs-network hidden>Set up ground truth…</button>
       <p id="data-msg" class="hint" role="status"></p>
     </div>
   </aside>
   <aside id="left">
-    <div id="left-strip" title="Expand the left bar, with the study's steps"><button id="left-expand" type="button" aria-expanded="false" aria-controls="left" aria-label="Expand the left bar"><svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button><div id="left-marks" aria-label="The steps"></div><span class="strip-name">Steps</span></div>
-    <div id="left-head"><button id="left-collapse" type="button" aria-expanded="true" aria-controls="left" title="Collapse the left bar, to give the image its room" aria-label="Collapse the left bar"><svg class="chev" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button><span class="strip-name">Steps</span></div>
     <section class="box foldable" id="image-box" data-folds="load">
       <div class="sec-head"><h2 data-done-name="Loaded Image">Load Image</h2></div>
       <div id="load">
@@ -146,7 +145,7 @@
       <slot-here data-slot-for="summary"></slot-here>
     </section>
   </aside>
-  <div class="gutter" id="gutter-left" title="Drag to resize; drag it to the left edge to collapse the bar"></div>
+  <div class="gutter" id="gutter-left" title="Drag to resize; double-click to restore"></div>
 
   <main id="view">
     <div class="toolbar">
@@ -244,6 +243,12 @@
   <div class="dlg-row end">
     <span class="grow"></span><button id="gt-export" class="primary" type="button">Export file</button><button id="gt-send" type="button" data-needs-network>Submit</button><button id="gt-close" type="button">Close</button>
   </div>
+</dialog>
+<dialog id="setup-dlg" aria-labelledby="setup-title">
+  <h2 id="setup-title">Set up ground truth</h2>
+  <p class="hint">Do taggers' submissions need a data manager's review before they count?</p>
+  <p id="setup-msg" class="hint" role="status"></p>
+  <div class="dlg-row end"><span class="grow"></span><button type="button" data-review="yes" class="primary">Yes: two folders</button><button type="button" data-review="no">No: one folder</button><button id="setup-cancel" type="button">Cancel</button></div>
 </dialog>
 <dialog id="curate-dlg" aria-labelledby="curate-title">
   <h2>Ground truth for <span id="curate-title"></span></h2>

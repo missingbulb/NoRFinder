@@ -2,7 +2,7 @@
 // its flattened planes (viewer2d.js), whose interface it keeps; that flat view shows only where WebGL2 is missing.
 // Each shown channel is drawn in its colour between its row's black and white points, so the rows drive it, and a row
 // of the 3D view's own under them shows part of the depth and sets the spacing between slices. Each channel may be
-// coloured by depth instead of in its colour: a tick under its row, and its colour picker then a palette picker
+// coloured by depth instead of in its colour: an icon tick on its row, and its colour picker then a palette picker
 // (the channel's `depth`, a palette's key; a study's channels may set it, true taking a palette no other channel has).
 // The study's `view` in study.json sets what the 3D view opens with: render ("brightest" | "surface") and the
 // spacing between slices when the file does not say, with who stated it (spacingSource).
@@ -205,14 +205,17 @@ export function viewer3d(shell, flat) {
   const bar = $("#view .toolbar"), zoom = $("#zoom-out").parentElement;
   bar.insertBefore(tools, zoom.parentElement === bar ? zoom : bar.firstChild);
   // the slices shown, from the first to the last, as a channel's row holds its points, and in the colour picker's
-  // place the spacing between slices
+  // place the spacing between slices, read with its unit and stepped by
+  // the keys and its arrows
+  const ZS = { min: 0.05, max: 50, step: 0.05 }, umText = (v) => `${+v.toFixed(2)} µm`;
   const slicesRow = html("div", { className: "channel v3-slices" });
   slicesRow.innerHTML = `<span></span><span class="ch-name"><label>Slices</label><span class="help" tabindex="0" data-help="The part of the stack's depth shown, from its first slice to its last, and the spacing between slices in µm."
-    >?</span><span id="v3-slices" class="from-file"></span></span>
+    >?</span></span>
     <div class="levels" title="The first and the last slice shown"><input type="range" class="black" id="v3-z0" min="0" step="1" aria-label="First slice shown"><input type="range" class="white" id="v3-z1" min="0" step="1" aria-label="Last slice shown"><span class="bubble" hidden></span></div>
-    <input id="v3-zs" type="number" min="0.05" max="50" step="0.05" title="Spacing between slices, µm" aria-label="Spacing between slices, µm">`;
-  // colour by depth, each channel's own: a tick under its row and, ticked, a palette picker in its colour picker's
-  // place; the palettes in one popup the picker opens
+    <span class="v3-spin"><input id="v3-zs" type="text" inputmode="decimal" role="spinbutton" aria-valuemin="${ZS.min}" aria-valuemax="${ZS.max}" title="Spacing between slices, µm" aria-label="Spacing between slices, µm"
+    ><span class="v3-steps"><button type="button" id="v3-zs-up" tabindex="-1" aria-label="More spacing">▴</button><button type="button" id="v3-zs-down" tabindex="-1" aria-label="Less spacing">▾</button></span></span>`;
+  // colour by depth, each channel's own: an icon tick beside its colour picker and, ticked, a palette picker in the
+  // colour picker's place; the palettes in one popup the picker opens
   const palettes = html("div", { className: "v3-palettes", popover: "auto" });
   palettes.setAttribute("aria-label", "Depth palettes");
   palettes.innerHTML = Object.entries(PALETTES).map(([k, p]) => `<button type="button" data-palette="${k}"><span class="v3-swatch" style="--scale: ${gradient(k)}"></span>${p.name}</button>`).join("");
@@ -224,23 +227,22 @@ export function viewer3d(shell, flat) {
     return Object.keys(PALETTES).find((p) => !used.includes(p)) || Object.keys(PALETTES)[k % Object.keys(PALETTES).length]; };
   function depthRow(c, k, { pick }) {
     if (c.depth && !PALETTES[c.depth]) c.depth = freePalette(k);
-    const sub = html("div", { className: "v3-depth-row" + (c.depth ? "" : " off") });
-    sub.innerHTML = `<span></span><label class="v3-tick" title="Paint ${c.name} by the depth of each point, from the first slice shown to the last, so crossings at different depths read apart"><input type="checkbox" id="depth-${k}"> Colour by depth</label><span class="v3-scale"></span><span></span>`;
-    const tick = sub.querySelector("input");
-    tick.checked = !!c.depth;
+    const tick = html("input", { type: "checkbox", id: `depth-${k}`, className: "v3-tick", title: "Colour by depth", checked: !!c.depth });
+    tick.setAttribute("aria-label", `${c.name}: colour by depth`);
     tick.onchange = () => { c.depth = tick.checked ? freePalette(k) : null; depthRows(); };
+    let picker = pick;
     if (c.depth) {
-      sub.querySelector(".v3-scale").style.setProperty("--scale", gradient(c.depth));
-      const b = html("button", { type: "button", className: "v3-palette", title: `${c.name} by depth in ${PALETTES[c.depth].name}: choose its palette` });
-      b.dataset.palette = c.depth; b.style.setProperty("--scale", gradient(c.depth)); b.setAttribute("aria-label", `${c.name} depth palette`);
-      b.onclick = () => {
+      picker = html("button", { type: "button", className: "v3-palette", title: `${c.name} by depth in ${PALETTES[c.depth].name}: choose its palette` });
+      picker.dataset.palette = c.depth; picker.style.setProperty("--scale", gradient(c.depth)); picker.setAttribute("aria-label", `${c.name} depth palette`);
+      picker.onclick = () => {
         // a palette another channel coloured by depth has is not offered, so the two read apart
         const others = flat.levels().filter((x) => x !== c && PALETTES[x.depth]).map((x) => x.depth);
         for (const o of palettes.querySelectorAll("[data-palette]")) o.disabled = others.includes(o.dataset.palette);
-        choosing = c; const r = b.getBoundingClientRect(); palettes.style.left = `${Math.max(8, r.right - 160)}px`; palettes.style.top = `${r.bottom + 4}px`; palettes.showPopover(); };
-      pick.replaceWith(b);
+        choosing = c; const r = picker.getBoundingClientRect(); palettes.style.left = `${Math.max(8, r.right - 160)}px`; palettes.style.top = `${r.bottom + 4}px`; palettes.showPopover(); };
     }
-    return [sub];
+    const end = html("span", { className: "v3-pickers" });
+    pick.replaceWith(end); end.append(tick, picker);
+    return [];
   }
   const depthRows = () => { flat.rowsWith(mode3d ? depthRow : null); redraw(); };
   const stage = html("div", { id: "v3-stage", hidden: true });
@@ -440,8 +442,7 @@ export function viewer3d(shell, flat) {
   // zoom as the 2D view's: a share of the whole stack in view
   const zoomText = () => { if (mode3d) $("#zoom-label").textContent = Math.round((FIT_DIST / S.dist) * 100) + "%"; };
   function sync() {
-    ui("v3-z0").value = S.z0; ui("v3-z1").value = S.z1; ui("v3-zs").value = S.zs;
-    ui("v3-slices").textContent = `${S.z0 + 1}–${S.z1 + 1} of ${vol ? vol.Z : 0}`;
+    ui("v3-z0").value = S.z0; ui("v3-z1").value = S.z1; ui("v3-zs").value = umText(S.zs); ui("v3-zs").setAttribute("aria-valuenow", S.zs);
     if (vol) geometry();
     redraw();
   }
@@ -453,7 +454,18 @@ export function viewer3d(shell, flat) {
   }
   ui("v3-z0").oninput = (e) => { S.z0 = Math.min(+e.target.value, S.z1); tell(e.target); sync(); };
   ui("v3-z1").oninput = (e) => { S.z1 = Math.max(+e.target.value, S.z0); tell(e.target); sync(); };
-  ui("v3-zs").oninput = (e) => { if (+e.target.value > 0) { S.zs = +e.target.value; spacingNote("you"); sync(); spacingHeard.forEach((fn) => fn()); } };
+  const spacing = (v) => {
+    v = Math.min(Math.max(+v.toFixed(2), ZS.min), ZS.max);
+    if (!(v > 0) || v === S.zs) return sync();
+    S.zs = v; spacingNote("you"); sync(); spacingHeard.forEach((fn) => fn());
+  };
+  ui("v3-zs").onchange = (e) => spacing(parseFloat(e.target.value) || S.zs);
+  ui("v3-zs").onkeydown = (e) => {
+    const by = { ArrowUp: 1, ArrowDown: -1 }[e.key];
+    if (by) { e.preventDefault(); spacing(S.zs + by * ZS.step); } else if (e.key === "Enter") spacing(parseFloat(e.target.value) || S.zs);
+  };
+  ui("v3-zs-up").onclick = () => spacing(S.zs + ZS.step);
+  ui("v3-zs-down").onclick = () => spacing(S.zs - ZS.step);
   slicesRow.querySelector(".levels").ondblclick = () => { if (vol) { S.z0 = 0; S.z1 = vol.Z - 1; sync(); } };
   let chosenLook = "top";
   const resetView = () => { Object.assign(S, { rot: facing(...LOOKS[chosenLook]), pivot: [0, 0, 0], clip: null, dist: Math.max(S.dist, 2) }); redraw(); };

@@ -25,26 +25,20 @@ pytestmark = pytest.mark.full
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'detection'))
 import interactive
+from synthetic_nor import nor_image
 
-TIF = os.path.join(HERE, '..', 'data', 'raw', 'Left Up- Edited', 'Slide5_4AP_NoR.sld - Slice1_up_left2.tif')
-# a 200-pixel square of the slide that holds candidates, passing and failing, for every finder
-Y, X, SIDE = 400, 725, 200
+# a drawn 200-pixel image that holds candidates, passing and failing, for every finder
+SIDE = 200
 NODE = shutil.which('node')
 KB = 1024
 
-needs_slide = pytest.mark.skipif(not os.path.exists(TIF), reason='reference slide missing (detection/fetch_data.py)')
 needs_node = pytest.mark.skipif(not NODE, reason='node missing')
 
 
 @pytest.fixture(scope='module')
 def crop(tmp_path_factory):
-    """The corner as its own ImageJ TIFF, channels, colours and scale as the slide has them."""
-    with tifffile.TiffFile(TIF) as t:
-        a, luts, res = t.asarray(), t.imagej_metadata['LUTs'], t.pages[0].tags['XResolution'].value
-    path = str(tmp_path_factory.mktemp('crop') / 'corner.tif')
-    tifffile.imwrite(path, a[:, Y:Y + SIDE, X:X + SIDE], imagej=True, metadata={'axes': 'CYX', 'LUTs': luts},
-                     resolution=(res[0] / res[1],) * 2)
-    return path
+    """A drawn NoR image as its own ImageJ TIFF, channels, colours and scale as the slides have them."""
+    return nor_image(str(tmp_path_factory.mktemp('crop') / 'corner.tif'), side=SIDE, n=20)
 
 
 class _MallInfo2(ctypes.Structure):
@@ -72,7 +66,6 @@ def run(driver, *args):
     assert r.returncode == 0, r.stdout + r.stderr
 
 
-@needs_slide
 @pytest.mark.skipif(not sys.platform.startswith('linux'), reason='reads glibc malloc statistics')
 def test_session_holds_no_more_after_repeats(crop):
     offs = {f: [k['key'] for k in interactive.describe(f)['filters']] for f in interactive.FINDERS}
@@ -123,7 +116,6 @@ def page_answers(crop, tmp_path_factory):
 
 
 @pytest.mark.chromium_only
-@needs_slide
 @needs_node
 def test_page_holds_no_more_after_repeats(crop, page_answers):
     run('memory_page_driver.mjs', page_answers, crop)

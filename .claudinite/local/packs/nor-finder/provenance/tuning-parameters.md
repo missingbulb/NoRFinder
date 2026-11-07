@@ -16,3 +16,15 @@
   the code found missing invocations, rules owned twice and hand-offs the family lacked; applied.
 - **Actor:** @missingbulb (owner), who asked for the review.
 - **Model:** claude-opus-5-5
+
+## 2026-11-07 · reworded · no quality lock: a new version's quality is recorded once (#815)
+- **Reason:** the owner retired the test that re-scored finders on the real slide; quality is
+  recorded per version.
+- **Actor:** @missingbulb (owner).
+- **Landed:** #815
+
+## 2026-11-07 · trigger-changed · the description drops the quality lock (#815)
+- **Reason:** the lock is retired; quality is recorded per version.
+- **Actor:** @missingbulb (owner).
+- **Mechanism:** the same skill, its description without the lock.
+- **Landed:** #815

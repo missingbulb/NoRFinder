@@ -1,17 +1,17 @@
 // Data Management (req/shell/data/mode, req/shell/data/drive-access, req/shell/data/folder,
-// req/shell/data/update-previews, req/shell/data/preview-images): the Data Manager role's view, for a signed-in user a
-// study's permissions name: the study's remote folders as a tree in a column left of the left bar, its chevron folding
+// req/shell/data/update-previews, req/shell/data/preview-images, req/shell/ground-truth/setup): the Data Manager role's
+// view, for a signed-in user the store lets write to the study's root: its data folder as a tree in a column left of the left bar, its chevron folding
 // it; a folder chosen fills the main area with its images and the left bar with their sums, and its actions; an image
 // chosen opens from its preview. The tree's head asks for the folders' access, and it writes only
 // files it creates.
 "use strict";
-import { rolesOf } from "./roles.js";
 import { PREVIEWS } from "./previews.js";
 import { makePreview, buildPreviews } from "./previews_writer.js";
 import { readTiff, fromPlanes, writeTiff } from "./split.js";
 import { CONNECTION } from "./offline.js";
 import { replacedBy, stemOf } from "./edit.js";
 import * as tf from "./truth_folders.js";
+import { setup as setUp } from "./study_root.js";
 
 const IMAGE = /\.(tiff?|png)$/i;
 const MAX_FOLDERS = 200;
@@ -38,17 +38,19 @@ export function previewTiff(e, pages) {
 
 // ctx: what the shell lends it, named below where it is used
 export function dataMode(ctx) {
-  const { $, esc, remote, account, sizeText } = ctx;
+  const { $, esc, remote, account, place, sizeText } = ctx;
   const sd = remote.writer(account);
   // the study's ground-truth folders (req/shell/ground-truth/folders), read with no sign-in and written by the user
-  const reader = { all: (id) => remote.all(id), text: async (id) => new TextDecoder().decode((await remote.file(id, "ground truth")).bytes) };
-  const writer = { folder: sd.folder, create: sd.create, replace: sd.replace, mark: sd.mark };
+  const reader = place.reader;
+  const writer = { folder: sd.folder, create: sd.create, replace: sd.replace, mark: sd.mark, share: sd.share };
   // gt: {submissions, curated, same}; gtNodes: those folders with their access, outside the tree
   let gt = { submissions: null, curated: null, same: false }, gtNodes = [];
   const root = document.documentElement;
   // the study's folders, by id: {id, name, parent, files, folders (ids), access, el}; roots their ids
-  let nodes = new Map(), roots = [], roles = new Set(), manifest = null, who = null, epoch = 0, loaded = null, chosen = null, layout = "grid";
+  let nodes = new Map(), roots = [], manifest = null, who = null, epoch = 0, loaded = null, chosen = null, layout = "grid";
   const on = () => root.dataset.mode === "data";
+  // the study's ground-truth folders are not its data: the tree leaves them out
+  const isTruth = (id) => id === gt.curated || id === gt.submissions;
   const offline = () => root.classList.contains("offline");
   const msg = (el, text, err) => { el.textContent = text; el.classList.toggle("err", !!err); };
 
@@ -60,6 +62,14 @@ export function dataMode(ctx) {
     msg($("#data-msg"), "");
     const of = epoch;
     return (loaded = (async () => {
+      // the root's settings name the data folder and the ground-truth folders
+      const s = await place.settings({ fresh: true }).catch((e) => { msg($("#data-msg"), e.message || String(e), true); return null; });
+      if (of !== epoch) return;
+      const top = place.root();
+      roots = top ? [s?.data || top] : [];
+      gt = tf.folders(s);
+      gtNodes = [...new Set([gt.curated, gt.submissions].filter(Boolean))].map((id) => ({ id, name: "Ground truth", access: null }));
+      drawSetup(s);
       const queue = roots.map((id) => ({ id, parent: null, name: null }));
       while (queue.length && nodes.size < MAX_FOLDERS) {
         const at = queue.shift();
@@ -68,9 +78,9 @@ export function dataMode(ctx) {
         try { all = await remote.all(at.id); } catch (e) { if (of !== epoch) return; all = []; at.error = e.message || String(e); }
         if (of !== epoch) return;
         const node = { id: at.id, name: at.name || "Study folder", parent: at.parent, error: at.error || null, files: all.filter((f) => !f.folder),
-          folders: all.filter((f) => f.folder).map((f) => f.id), access: null, el: null };
+          folders: all.filter((f) => f.folder && !isTruth(f.id)).map((f) => f.id), access: null, el: null };
         nodes.set(at.id, node);
-        for (const f of all) if (f.folder) queue.push({ id: f.id, parent: at.id, name: f.name });
+        for (const f of all) if (f.folder && !isTruth(f.id)) queue.push({ id: f.id, parent: at.id, name: f.name });
       }
       // a study folder's own name, which its listing does not give
       await Promise.all(roots.map(async (id) => {
@@ -97,6 +107,32 @@ export function dataMode(ctx) {
     } catch (e) { msg($("#data-msg"), e.message || String(e), true); }
   }
   $("#data-approve").onclick = approve;
+
+  // ---------- Set up ground truth (req/shell/ground-truth/setup) ----------
+  function drawSetup(s) {
+    const b = $("#gt-setup"), gtStudy = manifest && (manifest.stage === "GT" || manifest.stage === "PostGT");
+    b.hidden = !gtStudy || !place.root();
+    b.textContent = s?.set ? "Set up ground truth again…" : "Set up ground truth…";
+    b.title = s?.set ? (s.same ? "One folder for submissions and curated ground truth" : "Submissions reviewed into a curated folder") : "Make the study's ground-truth folders in its root";
+  }
+  $("#gt-setup").onclick = () => $("#setup-dlg").showModal();
+  $("#setup-cancel").onclick = () => $("#setup-dlg").close();
+  for (const b of document.querySelectorAll("#setup-dlg [data-review]")) b.onclick = async () => {
+    const review = b.dataset.review === "yes", say = (text, err) => msg($("#setup-msg"), text, err);
+    const top = place.root();
+    for (const x of document.querySelectorAll("#setup-dlg button")) x.disabled = true;
+    try {
+      if ((await sd.access(top)) !== "write") {
+        say("Approve the study's root for this site…");
+        if (!(await sd.approve([{ id: top, name: "Study root" }])) || (await sd.access(top)) !== "write") throw new Error("This site may not write to the study's root for you.");
+      }
+      say("Making the ground-truth folders…");
+      await setUp({ reader, writer, root: top, review, by: account.email() });
+      say(review ? "Set up: GT curated and GT submissions, and the settings file." : "Set up: one GT folder, and the settings file.");
+      nodes = new Map(); loaded = null; chosen = null; await load();
+    } catch (e) { say(e.message || String(e), true); }
+    for (const x of document.querySelectorAll("#setup-dlg button")) x.disabled = false;
+  };
 
   // ---------- the tree ----------
   // a folder's images, but those an edit replaced (req/shell/data/edit-save)
@@ -277,7 +313,7 @@ export function dataMode(ctx) {
           const reason = prompt("Why is it rejected? The tagger sees this.", "");
           if (reason === null) return;
           ok.disabled = no.disabled = true; say("Rejecting…");
-          try { await tf.reject({ writer, file: s, reason }); say("Rejected."); await relist(n); }
+          try { await tf.reject({ reader, writer, folders: gt, image, file: s, reason }); say("Rejected."); await relist(n); }
           catch (e) { say(e.message || String(e), true); no.disabled = false; }
         };
         return li;
@@ -379,16 +415,12 @@ export function dataMode(ctx) {
       if (manifest && m.id === manifest.id && account.email() === who) { manifest = m; ctx.showFolder(chosen?.kind === "folder"); return; }
       epoch++; manifest = m; who = account.email(); nodes = new Map(); loaded = null; chosen = null;
       if (on()) enter(false);
-      roles = account.signedIn() ? rolesOf(m, account.email()) : new Set();
-      roots = remote.study(m).folders;
-      gt = tf.folders(m);
-      gtNodes = gt.curated ? [{ id: gt.curated, name: "Curated ground truth", access: null }, ...(gt.same ? [] : [{ id: gt.submissions, name: "Ground truth submissions", access: null }])] : [];
+      roots = []; gt = tf.folders(null); gtNodes = [];
+      $("#gt-setup").hidden = true;
       $("#data-tree").replaceChildren(); msg($("#data-msg"), "");
     },
     // whoever is signed in may have changed: the study's roles again, if so
     signedIn() { if (manifest && account.email() !== who) this.mount(manifest); },
-    // whether the user may work as the study's data manager: named in its permissions, the study having folders
-    get manager() { return roles.has("data_management") && roots.length > 0 && remote.ready; },
     // the Data Manager role chosen, or left (req/shell/account/role)
     role(open) { $("#data-col").hidden = !open; enter(open); },
     get on() { return on(); },

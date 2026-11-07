@@ -7,7 +7,6 @@
 "use strict";
 
 const FILE = /^gt_.+\.json$/;
-const folderId = (link) => (typeof link === "string" && (link.match(/\/folders\/([\w-]{10,})/) || [])[1]) || null;
 const stem = (name) => name.replace(/\.[^.]*$/, "");
 const time = (s) => { const t = Date.parse(s); return Number.isNaN(t) ? null : t; };
 
@@ -16,9 +15,10 @@ export const subfolderName = (name, sha) => `${stem(name)}__${sha.slice(0, 8)}`;
 // the tagger's file in it
 export const taggerFile = (email) => `gt_${email.toLowerCase()}.json`;
 
-// {submissions, curated, same} as folder ids, each null while the study names none
-export function folders(manifest) {
-  const g = manifest?.groundTruth || {}, submissions = folderId(g.submissions), curated = folderId(g.curated);
+// {submissions, curated, same} as folder ids, each null while the study has none, from its root's settings
+// (study_root.js read) or null
+export function folders(settings) {
+  const submissions = settings?.submissions || null, curated = settings?.curated || null;
   return { submissions, curated, same: !!submissions && submissions === curated };
 }
 
@@ -47,26 +47,19 @@ export async function current(reader, folder, image) {
   return best && { id: best.id, name: best.name, doc: best.doc };
 }
 
-// Map(subfolder name -> {curated, pending, rejected}) over every image either folder holds ground truth for; pending
-// a submission not rejected newer than the image's curated file, or with none; rejected every submission rejected and
-// nothing curated. Times here are the store's, for a listing reads no file.
+// Map(subfolder name -> {curated, pending, rejected}) over every image either folder holds ground truth for, from the
+// two folders' listings alone (req/shell/ground-truth/pending): curated, the curated folder holds its subfolder;
+// pending, its submissions subfolder was stamped submitted after its last acceptance and rejection; rejected, its last
+// submission was rejected and nothing is curated
 export async function status({ all }, { submissions, curated, same }) {
-  const newest = async (folder) => {
-    const out = new Map();
-    for (const sub of (await all(folder)).filter((f) => f.folder)) {
-      const gts = (await all(sub.id)).filter((f) => !f.folder && FILE.test(f.name)).map(entry);
-      if (!gts.length) continue;
-      const live = gts.filter((g) => !g.rejected).map((g) => time(g.modified) ?? 0);
-      out.set(sub.name, { live: live.length ? Math.max(...live) : null });
-    }
-    return out;
-  };
-  const cur = await newest(curated), out = new Map();
-  for (const [name, c] of cur) out.set(name, { curated: c.live !== null, pending: false, rejected: false });
+  const cur = new Set((await all(curated)).filter((f) => f.folder).map((f) => f.name)), out = new Map();
+  for (const name of cur) out.set(name, { curated: true, pending: false, rejected: false });
   if (same) return out;
-  for (const [name, s] of await newest(submissions)) {
-    const c = cur.get(name), isCurated = !!c && c.live !== null;
-    out.set(name, { curated: isCurated, pending: s.live !== null && (!isCurated || s.live > c.live), rejected: s.live === null && !isCurated });
+  for (const sub of (await all(submissions)).filter((f) => f.folder)) {
+    const p = sub.properties || {}, put = time(p.submitted);
+    if (put === null) continue;
+    const isCurated = cur.has(sub.name), last = Math.max(time(p.accepted) ?? -Infinity, time(p.rejected) ?? -Infinity);
+    out.set(sub.name, { curated: isCurated, pending: put > last, rejected: !isCurated && (time(p.rejected) ?? -Infinity) >= put });
   }
   return out;
 }
@@ -81,9 +74,16 @@ async function put(reader, writer, sub, name, text) {
   return there ? writer.replace(there.id, blob, { keepForever: true }) : writer.create(sub, name, blob);
 }
 
-// the tagger's ground truth doc written into the submissions folder
-export async function submit({ reader, writer, folder, image, email, doc }) {
-  return put(reader, writer, await ensure(reader, writer, folder, image), taggerFile(email), JSON.stringify(doc, null, 1));
+// the tagger's ground truth doc written into the submissions folder, its image's subfolder stamped submitted at at
+export async function submit({ reader, writer, folder, image, email, doc, at = new Date() }) {
+  const sub = await ensure(reader, writer, folder, image), done = await put(reader, writer, sub, taggerFile(email), JSON.stringify(doc, null, 1));
+  await writer.mark(sub, { submitted: at.toISOString() });
+  return done;
+}
+// the image's submissions subfolder stamped with what a data manager did, at at
+async function stamp(reader, writer, submissions, image, what, at) {
+  const sub = await subfolder(reader, submissions, image);
+  if (sub) await writer.mark(sub.id, { [what]: at.toISOString() });
 }
 
 async function sha256(text) {
@@ -92,13 +92,16 @@ async function sha256(text) {
 }
 // a submission (file, as files() lists it) copied into the curated folder under its own name, recording which
 // submission it was and who accepted it when
-export async function accept({ reader, writer, folders: { curated }, image, file, by, at = new Date() }) {
+export async function accept({ reader, writer, folders: { curated, submissions }, image, file, by, at = new Date() }) {
   const text = await reader.text(file.id), doc = JSON.parse(text);
   doc.accepted = { by, at: at.toISOString(), from_sha256: await sha256(text), from_id: file.id };
-  return put(reader, writer, await ensure(reader, writer, curated, image), file.name, JSON.stringify(doc, null, 1));
+  const done = await put(reader, writer, await ensure(reader, writer, curated, image), file.name, JSON.stringify(doc, null, 1));
+  await stamp(reader, writer, submissions, image, "accepted", at);
+  return done;
 }
 
-// a submission marked rejected, with the reason its tagger sees
-export function reject({ writer, file, reason = "" }) {
-  return writer.mark(file.id, { rejected: "yes", reason });
+// a submission marked rejected, with the reason its tagger sees, its image's subfolder stamped rejected at at
+export async function reject({ reader, writer, folders: { submissions }, image, file, reason = "", at = new Date() }) {
+  await writer.mark(file.id, { rejected: "yes", reason });
+  await stamp(reader, writer, submissions, image, "rejected", at);
 }

@@ -1,6 +1,6 @@
 ---
 name: tuning-parameters
-description: Tuning an existing algorithm version's parameters against ground truth without overfitting - held-out ground truth, one-at-a-time sweeps, flat-optimum preference, the lab's keep rule and the quality lock. Use after a new version first runs, after a refit on new ground truth, or when asked to tune or calibrate a version.
+description: Tuning an existing algorithm version's parameters against ground truth without overfitting - held-out ground truth, one-at-a-time sweeps, flat-optimum preference and the lab's keep rule. Use after a new version first runs, after a refit on new ground truth, or when asked to tune or calibrate a version.
 metadata:
   body: workflow
   usage:
@@ -55,8 +55,8 @@ tuning is no longer held out.
 ## 4. Keep or drop
 
 Compare the tuned values with the current ones by the lab's keep rule, on the **held-out** part.
-A kept value must also pass the study's quality lock. A value that loses a real item the lock
-holds is the owner's call, never a tuning step. Land the change as a switch, the old values one
+Kept values make a new version of the algorithm, whose quality is recorded once. A value that loses a real
+item the version before found is the owner's call, never a tuning step. Land the change as a switch, the old values one
 setting away.
 
 ## 5. Record
