@@ -23,17 +23,17 @@ nobody has decided: what the page does there is not a requirement yet.
   chosen on purpose. Left of the avatar, a menu names the role the user works in and lists the roles they
   hold in the study on show: **Viewer**, everyone's, and the only one for a visitor not signed in
   (`req/shell/account/sign-in`); **Ground Truth Tagger**, held by those Drive lets write to the study's submissions folder (set by the owner on 2026-11-07, `req/shell/data/roles`), listed in every stage but
-  Published (`req/shell/study/stage`; set by the owner on 2026-11-04: a PreGT study can have taggers too); and **Data Manager**, held by those Drive lets
+  Published (`req/shell/study/stage`; set by the owner on 2026-11-04: a PreGT study can have taggers too); and **Study Manager** (named so by the owner on 2026-11-07, once Data Manager), held by those Drive lets
   write to the study's root (`req/shell/data/roles`). Where it
   lists Viewer alone, a line says what signing in adds. Choosing a role changes the page to its view at
   once. Viewer sees the study as a Published one shows it: its tools and what they find, nothing that
   makes ground truth (no Submit GT step, the ground-truth button hidden, the item view its Items, the
   study's postprocessing not shown). Ground Truth Tagger sees the page that makes ground truth, and in a PreGT
   study the postprocessing with nothing to export yet. Tentative: Ground Truth Tagger is listed in a PreGT
-  study with no ground truth to make at all (the Image Viewer), where it shows what Viewer shows. Data
+  study with no ground truth to make at all (the Image Viewer), where it shows what Viewer shows. Study
   Manager sees Data Management (`req/shell/data/mode`). Moving between Viewer and Ground Truth Tagger
   opens the study afresh on the same image. Undecided: what a Ground Truth Tagger with an image open finds
-  after going to Data Manager and back. The page opens as Viewer; the role chosen follows the user
+  after going to Study Manager and back. The page opens as Viewer; the role chosen follows the user
   (`req/shell/account/sign-in`) and Settings lists it (`req/shell/account/settings`). A role not held in
   the study on show, or no longer held, shows as Viewer, and the choice stays for where it is held. Test:
   `web-tests/test_roles_page.py`.
@@ -154,10 +154,10 @@ nobody has decided: what the page does there is not a requirement yet.
   `web-tests/test_image_box_page.py`, `studies/viewer/tests/test_viewer.py`.
   </details>
 
-- `req/shell/data/drive-access` A data manager is offered, in the folder tree, to let the site into the study's folders, just those, and sees which it may write.
+- `req/shell/data/drive-access` A study manager is offered, in the folder tree, to let the site into the study's folders, just those, and sees which it may write.
   <details>
 
-  Set by the owner on 2026-11-02. In the Data Manager role (`req/shell/account/role`), the tree's head
+  Set by the owner on 2026-11-02. In the Study Manager role (`req/shell/account/role`), the tree's head
   offers to approve the folders the site lacks access to, and its click asks for Google's
   per-file permission (`drive.file`) and then Google's own picker showing just the study's folders and
   their subfolders, to approve all or some. The page then knows, for each folder: not approved for this
@@ -217,10 +217,10 @@ nobody has decided: what the page does there is not a requirement yet.
   `web-tests/test_shell_states_page.py`.
   </details>
 
-- `req/shell/data/mode` Data Management: the Data Manager role's view, a column of the study's folders left of the left bar, open until folded.
+- `req/shell/data/mode` Data Management: the Study Manager role's view, a column of the study's folders left of the left bar, open until folded.
   <details>
 
-  Set by the owner on 2026-11-02, changed on 2026-11-03: Data Management is the Data Manager role's view
+  Set by the owner on 2026-11-02, changed on 2026-11-03: Data Management is the Study Manager role's view
   (`req/shell/account/role`), entered by choosing that role and left by choosing another; nobody in any
   other role sees any of it. In it the tree of the study's folders sits left of the left bar, open; its
   chevron folds it to a narrow strip and opens it again. The tree shows every folder and subfolder, open,
@@ -230,7 +230,7 @@ nobody has decided: what the page does there is not a requirement yet.
   and the steps; Load vanishes in a puff, Unload in its line with it: choosing another image or folder
   replaces the one open (set by the owner on 2026-11-04). The steps hidden are the status bar's breadcrumbs, with the item
   view's switch and its tasks' bar (set by the owner on 2026-11-04). Set by the owner on
-  2026-11-04, and on 2026-11-05 how it meets working offline (#768): offline, Data Manager is listed in the role
+  2026-11-04, and on 2026-11-05 how it meets working offline (#768): offline, Study Manager is listed in the role
   menu but says it needs the internet, and choosing it does nothing (`req/shell/offline/default`). Going offline
   inside Data Management keeps what is open: the column and the folder's box say they need the internet and do
   nothing until the network is back, and what reaches Drive (Save to Google Drive, Approve, Update previews, Needs
@@ -245,7 +245,7 @@ nobody has decided: what the page does there is not a requirement yet.
   in the study's viewer, a stack in 3D, quick and the same for everyone; the Image box's Load, or its
   top line (`req/shell/load/selector`), gives way to Load Original, which opens the image itself from the copy kept on this device when it has one,
   else from Drive. A preview that cannot be read (a damaged previews file) shows as no preview, and the image,
-  chosen, opens itself instead. A data manager can mark an image as needing ground truth: the page creates an
+  chosen, opens itself instead. A study manager can mark an image as needing ground truth: the page creates an
   empty `<name>.ground_truth.MISSING` beside it, and unmarking trashes only a marker the page made.
   Whoever makes the ground truth adds its file and drops the marker. Test:
   `web-tests/test_data_mode_page.py`, `web-tests/test_previews_writer.py`.
@@ -258,7 +258,7 @@ nobody has decided: what the page does there is not a requirement yet.
   Google Drive root folder, shared as "Anyone with the link" to view: the only folder the repo names. The
   folders under it are named by the root's settings file (`req/shell/ground-truth/setup`), and until it has
   one, by name: `Data`, its images, and `GT curated`, `GT submissions` or a single `GT`. Signed in, opening a
-  GT or PostGT study asks Drive, with the user's token, whether they may write to the root (Data Manager) and
+  GT or PostGT study asks Drive, with the user's token, whether they may write to the root (Study Manager) and
   to the submissions folder (Ground Truth Tagger); a role is offered only where Drive says so. Nobody is
   listed in the repo, and what anyone can change is still what Drive lets them. Tests:
   `web-tests/test_study_contract.py`, `web-tests/test_study_root.py`, `web-tests/test_gt_drive_page.py`.
@@ -425,7 +425,7 @@ nobody has decided: what the page does there is not a requirement yet.
   Test: `web-tests/test_gt_drive_page.py`.
   </details>
 
-- `req/shell/ground-truth/curate` A Data Manager accepts or rejects each pending submission into the curated folder.
+- `req/shell/ground-truth/curate` A Study Manager accepts or rejects each pending submission into the curated folder.
   <details>
 
   Set by the owner on 2026-11-05. In Data Management, an image with pending ground truth
@@ -442,7 +442,7 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Set by the owner on 2026-11-05; under the study's root since 2026-11-07. Taggers write to submissions;
-  only Data Managers write to curated; viewers, the file dialog and the study's lab read curated. Ground
+  only Study Managers write to curated; viewers, the file dialog and the study's lab read curated. Ground
   truth is never sent to GitHub. When one folder serves as both, every submission is curated as it lands and
   nothing is pending. Who may write is what Drive's sharing of each folder allows. Tentative: Data Management
   tells a study with one folder for both that whatever a tagger submits is used at once. Tests:
@@ -461,12 +461,12 @@ nobody has decided: what the page does there is not a requirement yet.
   computer the Ground Truth Tasks box says so. Test: `web-tests/test_gt_drive_page.py`.
   </details>
 
-- `req/shell/ground-truth/pending` Taggers and Data Managers see which images have ground truth, and which have it pending, in two listings.
+- `req/shell/ground-truth/pending` Taggers and Study Managers see which images have ground truth, and which have it pending, in two listings.
   <details>
 
   Set by the owner on 2026-11-05; its calls set by the owner on 2026-11-07. The Drive dialog and Data
   Management mark an image as having ground truth when the curated folder holds its subfolder: one listing
-  of curated, no file in it read. To a Ground Truth Tagger and a Data Manager they also mark it pending, or
+  of curated, no file in it read. To a Ground Truth Tagger and a Study Manager they also mark it pending, or
   rejected, from one listing of submissions: each image subfolder there carries, as public properties, when
   its newest submission landed and when it was last accepted or rejected, which Submit, Accept and Reject
   stamp on it. Pending: submitted after the last acceptance and the last rejection. Nothing is cached. Data
@@ -478,13 +478,17 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/shell/ground-truth/setup` Set up ground truth, in Data Management, makes the study's ground-truth folders and the root's settings file.
   <details>
 
-  Set by the owner on 2026-11-07. For a Data Manager of a GT or PostGT study, Data Management offers Set up
+  Set by the owner on 2026-11-07. For a Study Manager of a GT or PostGT study, Data Management offers Set up
   ground truth. It asks whether submissions need review: yes makes `GT curated` and `GT submissions` in the
   root, no makes one `GT` for both. It shares the curated folder with anyone with the link to view, then
   writes `rauntruth-study.json` in the root naming the data folder and the ground-truth folders by id, who
   set it up and when. It asks first for the page's per-file permission and Google's picker on the root, if
   not granted. Run again, it makes only what is missing and rewrites the file; it never makes a second
-  folder of a name. Google's own words show when it refuses. Tests: `web-tests/test_study_root.py`,
+  folder of a name. Google's own words show when it refuses. Changed by the owner on 2026-11-07: it sits
+  at the top of Data Management's column, highlighted while the root has no ground-truth folders; choosing
+  an answer closes the dialog once the folders are made; once the settings file names the folders it is no
+  longer offered. Undecided: switching a set-up study between reviewed and unreviewed, its spec awaiting
+  the owner's approval. Tests: `web-tests/test_study_root.py`,
   `web-tests/test_gt_drive_page.py`.
   </details>
 
@@ -498,6 +502,16 @@ nobody has decided: what the page does there is not a requirement yet.
   there to keep a copy. Submit is off, saying why, for an image opened from the computer and for a tagger
   Drive does not let write there (`req/shell/ground-truth/tagger-access`).
   Tests: `studies/nor/tests/test_ground_truth_page.py`, `web-tests/test_gt_drive_page.py`.
+  </details>
+
+- `req/shell/ground-truth/summary` A Ground Truth box in Data Management says how the study takes ground truth and how many images have it.
+  <details>
+
+  Set by the owner on 2026-11-07. In a GT or PostGT study whose root has ground-truth folders, a Ground Truth box sits
+  above the folder tree in Data Management. It says whether submissions are reviewed into GT curated or
+  land in one GT folder, and counts, from the folders' listings alone (`req/shell/ground-truth/pending`),
+  the images with ground truth, those pending review and those rejected. It reads again whenever a folder
+  is chosen or a submission accepted or rejected. Test: `web-tests/test_gt_drive_page.py`.
   </details>
 
 - `req/shell/ground-truth/tagger-access` The Ground Truth Tasks box shows whether the tagger may write to the submissions folder, and how to get there.

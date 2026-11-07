@@ -26,7 +26,7 @@ const size = () => page.evaluate(() => { const im = shellForTests.page.get("imag
 const cuts = () => page.evaluate(() => [...document.querySelectorAll("#overlay .edit-cut")].map((l) => `${l.dataset.cut}=${l.getAttribute(l.dataset.cut[0] === "x" ? "x1" : "y1")}`).join());
 const name = path.basename(image);
 
-await role(page, "Data Manager");
+await role(page, "Study Manager");
 await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder").length >= 1);
 await page.click("#data-tree .tree-folder .name");
 await page.click(`#folder-items .cell:has(.name:text-is("${name}"))`);

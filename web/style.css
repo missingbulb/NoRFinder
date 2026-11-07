@@ -825,7 +825,7 @@ html.offline #sb-online .off { display: block; }
 #welcome-dlg .welcome-choices button { padding: 8px 12px; }
 html:not(.offline) #welcome-offline { display: none; }
 
-/* ---------- Data Management (req/shell/data/mode): the tree's column, left of the left bar, for data managers only ---------- */
+/* ---------- Data Management (req/shell/data/mode): the tree's column, left of the left bar, for study managers only ---------- */
 #data-col { grid-column: 1; } #left { grid-column: 2; } #gutter-left { grid-column: 3; } #view { grid-column: 4; }
 :root[data-mode=data] #layout { --tw: 300px; }
 :root[data-mode=data][data-tree=folded] #layout { --tw: 36px; }
@@ -844,6 +844,11 @@ html:not(.offline) #welcome-offline { display: none; }
 :root[data-mode=data]:not([data-tree=folded]) #data-body { display: flex; animation: data-in .35s ease-out; }
 @keyframes data-in { from { opacity: 0; transform: translateX(-24px); } }
 .data-head { display: flex; align-items: baseline; gap: 8px; padding: 0 4px 8px; } .data-head h2 { font-size: 14px; margin: 0; flex: 1; }
+/* the setup at the bar's top, nudged while the study has no ground-truth folders; the Ground Truth box under it */
+#gt-setup { margin: 0 2px 8px; }
+#gt-setup.nudge { border-color: var(--warn); color: var(--text); background: color-mix(in srgb, var(--warn) 18%, transparent); font-weight: 600; }
+#gt-box { border: 1px solid var(--line); border-radius: var(--r-chip); padding: 6px 8px; margin: 0 2px 10px; font-size: 12.5px; }
+#gt-box h2 { font-size: 14px; margin: 0 0 4px; } #gt-box p { margin: 2px 0; }
 #data-tree { overflow: auto; flex: 1; min-height: 0; font-size: 13px; }
 .tree-folder .row { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .tree-folder .name { display: flex; align-items: center; gap: 5px; flex: 1; min-width: 0; border: 0; background: transparent; padding: 3px 4px; text-align: left; border-radius: var(--r-chip); }
@@ -925,7 +930,7 @@ html:not(.offline) #welcome-offline { display: none; }
 .gt-access[data-access="none"], .gt-access[data-access="view"], .gt-access[data-access="unset"], .gt-access[data-access="unknown"] { border-left-color: var(--warn); color: var(--text); }
 .gt-access .gt-say { flex: 1 1 100%; }
 .gt-access .gt-clear { margin-left: auto; }
-/* a pending submission, and the Data Manager's review of an image's submissions (req/shell/ground-truth/curate) */
+/* a pending submission, and the Study Manager's review of an image's submissions (req/shell/ground-truth/curate) */
 #folder-items .tag.pending { color: var(--accent); }
 .curate-list { list-style: none; margin: 8px 0; padding: 0; min-width: 360px; }
 .curate-list li { display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }

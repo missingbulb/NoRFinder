@@ -1,5 +1,5 @@
 // A study's ground truth in the remote store (req/shell/ground-truth/folders, req/shell/ground-truth/layout): a submissions
-// folder taggers write to and a curated folder only Data Managers write to, the same folder twice for free submission.
+// folder taggers write to and a curated folder only Study Managers write to, the same folder twice for free submission.
 // Both hold one subfolder per image and one file per tagger in it. Reading goes through `reader` (the public folders,
 // no sign-in: all(folder) as [{id, name, folder, modified, properties}], text(id)); writing through `writer` (the
 // signed-in user's: folder(parent, name), create(parent, name, blob), replace(id, blob, {keepForever}),
@@ -80,7 +80,7 @@ export async function submit({ reader, writer, folder, image, email, doc, at = n
   await writer.mark(sub, { submitted: at.toISOString() });
   return done;
 }
-// the image's submissions subfolder stamped with what a data manager did, at at
+// the image's submissions subfolder stamped with what a study manager did, at at
 async function stamp(reader, writer, submissions, image, what, at) {
   const sub = await subfolder(reader, submissions, image);
   if (sub) await writer.mark(sub.id, { [what]: at.toISOString() });

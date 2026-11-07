@@ -1094,7 +1094,7 @@ function remoteDialog() {
     }
     if (!off) markTruth(items, asked);
   };
-  // which images have ground truth, and to a tagger or data manager which have it pending (req/shell/ground-truth/pending)
+  // which images have ground truth, and to a tagger or study manager which have it pending (req/shell/ground-truth/pending)
   const markTruth = async (items, asked) => {
     let map;
     try { map = await truth.status(role === "tagger" || role === "data"); } catch (e) { console.warn("ground truth status not read:", e); return; }

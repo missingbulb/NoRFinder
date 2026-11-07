@@ -56,7 +56,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {}, 
   const viewOnly = new Set();
   // the folders Drive's sharing lets the user write to, though the site was never approved for them
   const shared = new Set(gt ? [GT.curated, GT.submissions] : []);
-  // who Drive's sharing lets write to ROOT, which makes them its data manager (req/shell/data/roles)
+  // who Drive's sharing lets write to ROOT, which makes them its study manager (req/shell/data/roles)
   const writers = new Set([EMAIL]);
   // the folders the page shared with anyone with the link
   const sharedOut = [];
@@ -219,7 +219,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {}, 
   const SIGNED_IN = { user: { name: "Tester", email: EMAIL, picture: null }, token: "stand-in-token", until: Date.now() + 3600e3,
     scopes: "openid email profile https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file" };
   // scopes: what the signed-in user's token may do, in place of SIGNED_IN's; email: who is signed in, in place of the
-  // study's data manager; seed: browser keys kept before the page opens; id: the study opened, the fixture unless
+  // study's study manager; seed: browser keys kept before the page opens; id: the study opened, the fixture unless
   // named; study: what its study.json says otherwise for this page (its stage, say); prepare(ctx): routes of a
   // driver's own, taking precedence over these
   async function open(signedIn, { scopes, email, seed = {}, id = "fixture", study, prepare } = {}) {

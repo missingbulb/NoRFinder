@@ -1,5 +1,5 @@
 // Drives the tree's Approve folders… (web/data_mode.js, web/drive.js) in headless Chromium, against the stand-in Google of
-// stand_in_drive.mjs serving ROOT, for a data manager whose token lasts but was never given Drive's per-file
+// stand_in_drive.mjs serving ROOT, for a study manager whose token lasts but was never given Drive's per-file
 // permission: the click asks Google for it, then shows Google's picker on the study's folders. Checks
 // req/shell/data/drive-access. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/drive_approve_driver.mjs ANSWERS STUDIES ROOT
@@ -31,7 +31,7 @@ const page = await open(true, {
     await ctx.route("https://apis.google.com/js/api.js", js(PICKER));
   },
 });
-await role(page, "Data Manager");
+await role(page, "Study Manager");
 await page.waitForFunction(() => !$("#data-approve").hidden);
 await check(await page.textContent("#data-approve") === "Approve 4 folders…", "with no per-file permission, the tree offers every folder, the ground-truth ones too", await page.textContent("#data-approve"));
 await page.click("#data-approve");

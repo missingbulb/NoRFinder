@@ -4,7 +4,8 @@
 // Tagger offered only where the store lets the user write to submissions), req/shell/ground-truth/tagger-access,
 // req/shell/ground-truth/submit and req/shell/ground-truth/layout (Submit writes the tagger's file into the image's
 // subfolder, and submitting again replaces it keeping the old version), req/shell/ground-truth/clear,
-// req/shell/ground-truth/pending, req/shell/ground-truth/curate and req/shell/ground-truth/view. Exits 1 on a failed
+// req/shell/ground-truth/pending, req/shell/ground-truth/curate, req/shell/ground-truth/summary (the Ground Truth box)
+// and req/shell/ground-truth/view. Exits 1 on a failed
 // check, 2 when it cannot run.
 //   node web-tests/gt_drive_driver.mjs ANSWERS STUDIES ROOT
 import { createHash } from "node:crypto";
@@ -18,25 +19,30 @@ const line = (page) => page.waitForFunction(() => { const t = document.querySele
 const asTagger = async (page) => { await role(page, "Ground Truth Tagger"); return line(page); };
 const offered = (page) => page.evaluate(() => [...document.querySelectorAll("#role-list .item")].map((b) => b.textContent));
 
-// not set up: nobody is offered Ground Truth Tagger, and the data manager is offered Set up ground truth
+// not set up: nobody is offered Ground Truth Tagger, and the study manager is offered Set up ground truth
 let page = await open(true);
 await check(!(await offered(page)).includes("Ground Truth Tagger"), "with no submissions folder, Ground Truth Tagger is not offered", await offered(page));
-await role(page, "Data Manager");
+await role(page, "Study Manager");
 await page.waitForSelector("#gt-setup:not([hidden])");
-await check((await page.textContent("#gt-setup")).trim() === "Set up ground truth…", "a data manager is offered Set up ground truth", await page.textContent("#gt-setup"));
+const top = await page.evaluate(() => ({ first: document.querySelector("#data-body").firstElementChild?.id, nudged: $("#gt-setup").classList.contains("nudge"), text: $("#gt-setup").textContent.trim() }));
+await check(top.text === "Set up ground truth…" && top.first === "gt-setup" && top.nudged, "a study manager is offered Set up ground truth at the top of the bar, highlighted while the folders are missing", top);
+await check(await page.isHidden("#gt-box"), "with no ground-truth folders, there is no Ground Truth box");
 await page.click("#gt-setup");
 await page.click('#setup-dlg button[data-review="yes"]');
-await page.waitForFunction(() => /^Set up|refused|may not/.test(document.querySelector("#setup-msg").textContent));
+await page.waitForFunction(() => !$("#setup-dlg").open || $("#setup-msg").classList.contains("err"), null, { timeout: 15000 });
+await check(!(await page.evaluate(() => $("#setup-dlg").open)), "choosing an option sets it up and closes the dialog", await page.textContent("#setup-msg"));
 const CUR = id("GT curated"), SUBS = id("GT submissions");
 const settings = FILES.find((f) => f.parent === ROOT && f.name === "rauntruth-study.json");
 const doc = settings && JSON.parse(settings.bytes.toString());
 await check(!!CUR && !!SUBS && doc?.curated === CUR && doc?.submissions === SUBS && doc.review === true && doc.set_by === "tester@example.com",
   "Set up with review makes GT curated and GT submissions in the root and names them in its settings file", { msg: await page.textContent("#setup-msg"), doc });
 await check(JSON.stringify(sharedOut) === JSON.stringify([["GT curated", { type: "anyone", role: "reader" }]]), "and shares the curated folder with anyone with the link to view", sharedOut);
-await page.click("#setup-cancel");
 const tree = await page.evaluate(() => [...document.querySelectorAll("#data-tree .tree-folder .name")].map((n) => n.textContent));
 await check(!tree.some((n) => /^GT/.test(n)), "the tree leaves the ground-truth folders out of the data", tree);
-await check(/again/.test(await page.textContent("#gt-setup")), "set up, it offers to set up again", await page.textContent("#gt-setup"));
+await check(await page.isHidden("#gt-setup"), "set up, nothing offers to set it up again");
+await page.waitForFunction(() => /No image/.test($("#gt-box").textContent));
+const box = await page.evaluate(() => ({ text: $("#gt-box").textContent, above: !!($("#gt-box").compareDocumentPosition($("#data-tree")) & Node.DOCUMENT_POSITION_FOLLOWING) }));
+await check(box.above && /review/i.test(box.text), "a Ground Truth box above the folders says submissions are reviewed and that no image has ground truth yet", box);
 await page.context().close();
 
 // a user the store lets only view the submissions folder is not offered Ground Truth Tagger
@@ -100,8 +106,10 @@ const dialogTag = async () => {
 let tag = await dialogTag();
 await check(tag === "GT pending", "to the tagger, the Drive dialog marks the submitted image GT pending", tag);
 
-// req/shell/ground-truth/curate: the data manager sees it pending, reviews it and accepts it into the curated folder
-await role(page, "Data Manager");
+// req/shell/ground-truth/curate: the study manager sees it pending, reviews it and accepts it into the curated folder
+await role(page, "Study Manager");
+await page.waitForFunction(() => /1 image.*pending/.test($("#gt-box").textContent), null, { timeout: 5000 }).catch(() => {});
+await check(/1 image.*pending/.test(await page.textContent("#gt-box")), "the Ground Truth box counts the submission pending", await page.textContent("#gt-box"));
 await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder").length >= 1);
 await page.click("#data-tree .tree-folder .name");
 const cell = `#folder-items .cell[data-id="${png.id}"]`;
@@ -124,6 +132,8 @@ await page.waitForFunction(() => +document.querySelector('#folder-summary dd[dat
 s = await sums();
 await check(s.truth === 1 && s.pending === 0 && !(await page.$(cell + " .review-gt")), "accepted, the image has ground truth and nothing pending", s);
 await check(await page.isDisabled(cell + " .mark-gt"), "an image with ground truth needs no marker");
+await page.waitForFunction(() => /1 image has ground truth/.test($("#gt-box").textContent), null, { timeout: 5000 }).catch(() => {});
+await check(/1 image has ground truth/.test(await page.textContent("#gt-box")), "accepted, the Ground Truth box counts it", await page.textContent("#gt-box"));
 await page.context().close();
 
 // req/shell/ground-truth/view: a viewer, not signed in, loads the image and its curated ground truth, with no algorithm run

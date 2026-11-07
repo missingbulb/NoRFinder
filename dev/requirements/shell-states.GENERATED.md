@@ -21,8 +21,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● |
@@ -175,8 +179,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● |
@@ -329,8 +337,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● |
@@ -483,8 +495,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● |
@@ -637,8 +653,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● |
@@ -791,8 +811,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● |
@@ -945,8 +969,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● |
@@ -1099,8 +1127,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● |
@@ -1236,7 +1268,7 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Notice's text | ⊘ | ● | ● | ● |
 | &nbsp;&nbsp;OK | ⊘ | ● | ● | ● |
 
-## Fixture · GT, Data Manager: Folder · Preview · Load Original · Offline
+## Fixture · GT, Study Manager: Folder · Preview · Load Original · Offline
 
 | Element | Start | Folder | Preview | Load Original | Offline |
 |---|---|---|---|---|---|
@@ -1253,8 +1285,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ● | ● | ● | ● | ⊖ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ● | ● | ● | ● | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ○* | ○* | ○* | ○* | ○* |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ● | ● | ● | ● | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ● | ● | ● | ● | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ● | ● | ● | ● | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ● | ● | ● | ● | ⊖ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ● | ● | ● | ● | ⊖* |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● | ● |
@@ -1390,7 +1426,7 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Notice's text | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;OK | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 
-## Fixture · GT, Data Manager: Folder · Preview · Edit Image · Offline · Done
+## Fixture · GT, Study Manager: Folder · Preview · Edit Image · Offline · Done
 
 | Element | Start | Folder | Preview | Edit Image | Offline | Done |
 |---|---|---|---|---|---|---|
@@ -1407,8 +1443,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ● | ● | ● | ● | ⊖ | ⊖ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ● | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ● | ● | ● | ● | ● | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ○* | ○* | ○* | ○* | ○* | ○* |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ● | ● | ● | ● | ● | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ● | ● | ● | ● | ● | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ● | ● | ● | ● | ● | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ● | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ● | ● | ● | ● | ⊖ | ⊖ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ● | ● | ● | ● | ⊖* | ⊖* |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ● | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ● | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● | ● | ● |
@@ -1544,7 +1584,7 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Notice's text | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;OK | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 
-## Fixture · GT, Data Manager: Folder · Offline · Online
+## Fixture · GT, Study Manager: Folder · Offline · Online
 
 | Element | Start | Folder | Offline | Online |
 |---|---|---|---|---|
@@ -1561,8 +1601,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ● | ● | ⊖ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ● | ● | ● | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ○* | ○* | ○* | ○* |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ● | ● | ● | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ● | ● | ● | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ● | ● | ● | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ● | ● | ⊖ | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ● | ● | ⊖* | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ● | ● | ● | ● |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● |
@@ -1698,7 +1742,7 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Notice's text | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;OK | ⊘ | ⊘ | ⊘ | ⊘ |
 
-## Fixture · GT, Data Manager: Folder · Preview a z-stack · Edit Image · Done
+## Fixture · GT, Study Manager: Folder · Preview a z-stack · Edit Image · Done
 
 | Element | Start | Folder | Preview a z-stack | Edit Image | Done |
 |---|---|---|---|---|---|
@@ -1715,8 +1759,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ● | ● | ● | ● | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ○* | ○* | ○* | ○* | ○* |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ● | ● | ● | ● | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ● | ● | ● | ● | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ● | ● | ● | ● | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ● | ● | ● | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ● | ● | ● | ● | ● |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● | ● |
@@ -1852,7 +1900,7 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Notice's text | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;OK | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 
-## Fixture · PreGT, Data Manager: Folder
+## Fixture · PreGT, Study Manager: Folder
 
 | Element | Start | Folder |
 |---|---|---|
@@ -1869,8 +1917,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ○* | ○* |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ○* | ○* |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ● | ● |
 | &nbsp;&nbsp;Left bar | ● | ● |
@@ -2023,8 +2075,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● | ● |
@@ -2177,8 +2233,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● |
@@ -2331,8 +2391,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● |
@@ -2485,8 +2549,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● |
@@ -2622,9 +2690,9 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Notice's text | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;OK | ⊘ | ⊘ | ⊘ |
 
-## Fixture · GT, Data Manager: → Viewer · Load · → Data Manager
+## Fixture · GT, Study Manager: → Viewer · Load · → Study Manager
 
-| Element | Start | → Viewer | Load | → Data Manager |
+| Element | Start | → Viewer | Load | → Study Manager |
 |---|---|---|---|---|
 | Header | ● | ● | ● | ● |
 | &nbsp;&nbsp;Logo | ● | ● | ● | ● |
@@ -2639,8 +2707,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ● | ○ | ○ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ● | ⊘ | ⊘ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ● | ⊘ | ⊘ | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ○* | ⊘ | ⊘ | ○* |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ● | ⊘ | ⊘ | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ● | ⊘ | ⊘ | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ● | ⊘ | ⊘ | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ● | ⊘ | ⊘ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ● | ⊘ | ⊘ | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ● | ⊘ | ⊘ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ● | ⊘ | ⊘ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ● | ⊘ | ⊘ | ● |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● |
@@ -2793,8 +2865,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● |
@@ -2947,8 +3023,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● |
@@ -3126,8 +3206,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● |
@@ -3305,8 +3389,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● |
@@ -3459,8 +3547,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● |
@@ -3613,8 +3705,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● | ● | ● |
@@ -3800,8 +3896,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● |
@@ -3987,8 +4087,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● |
@@ -4131,8 +4235,12 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Data Management column | ○ | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Fold the folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Folders | ⊘ | ⊘ | ⊘ | ⊘ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set up ground truth | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground Truth box's title | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;How the study takes ground truth | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Ground truth counts | ⊘ | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Approve folders | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Folder tree | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tree's message | ⊘ | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;Left bar | ● | ● | ● | ● |

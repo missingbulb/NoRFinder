@@ -122,7 +122,7 @@ const ACTIONS = {
   },
   async viewer(page, first) { await again(page, "Viewer", first); },
   async data(page, first) {
-    await again(page, "Data Manager", first);
+    await again(page, "Study Manager", first);
     await page.waitForFunction(() => document.querySelector("#data-col").checkVisibility());
   },
   // to the Image Viewer and Back, the study opening afresh
