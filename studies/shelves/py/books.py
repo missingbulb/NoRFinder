@@ -67,14 +67,20 @@ SNAP = 0.04
 END_TURN = 12
 # [barcode] a shelf is several books packed together: one whose spines number fewer than this is no shelf
 SHELF_BOOKS = 3
+# [barcode] books standing packed look like a barcode: a band whose edges between books stand apart by at most this share
+# of its height (the owner's shelves: 0.09-0.15; three covers drawn on a bench: 0.24; the owner's covers, walls
+# above books and strips under boards: 0.49 and up) is a
+# shelf, whether or not its spines were boxed, and no cover is looked for in it
+BARCODE_GAP = 0.2
+# and a band is looked at only when at least this share of the photo's height
+BAND_LEAST = 0.1
 # [cover-shape] covers: straight edge segments at least this share of the photo long, at most this many lines; a cover's
 # two pairs of sides within this many degrees of parallel and at least this many degrees apart; its area this share of
 # the photo, its long sides at most this many times its short; each side on edges along this share of it, with a colour
 # change across it of this share of the brightness range, and its edge running on past a corner when this much of the
-# way past it lies on edges; upright seams through 60% of its height at most this many per pixel of its width (a shelf
-# of spines boxed whole: 0.093, the covers on the owner's photos: 0.030 at most - thinly supported)
+# way past it lies on edges
 SEGMENT, COVER_LINES, COVER_PARALLEL, COVER_CROSS = 0.05, 70, 20, 40
-COVER_AREA, COVER_ASPECT, COVER_ON, COVER_CONTRAST, COVER_SIDE, COVER_SEAMS = (0.01, 0.6), 2.6, 0.7, 0.12, 0.6, 0.06
+COVER_AREA, COVER_ASPECT, COVER_ON, COVER_CONTRAST, COVER_SIDE = (0.01, 0.6), 2.6, 0.7, 0.12, 0.6
 # [camera-uniform] the perspective is read from at least this many boxes; a box whose ends turn more than this many
 # degrees otherwise than it has them turn there is dropped
 SURE_MIN, PERSPECTIVE_TOL = 4, 15
@@ -428,13 +434,14 @@ def series_split(crop):
 
 
 def shelf_books(g, rgb):
-    """Every pair of neighbouring side lines on a shelf that checks out as a spine: {(i, j): spine}, and the lines. A
+    """Every pair of neighbouring side lines on a shelf that checks out as a spine: {(i, j): spine}, the lines, and the
+    rows the books stand in (None when there are none). A
     box far wider than the shelf's usual one whose marks repeat further across is two books of one series: a line goes
     between them, and each is checked as any book is."""
     e = Edges(g, rgb)
     rows = book_rows(e)
     if not rows:
-        return {}, []
+        return {}, [], None
     top, bottom = rows
     lines = [Line(xm, t, (top + bottom) / 2) for xm, t in side_lines(e, top, bottom)]
 
@@ -462,7 +469,7 @@ def shelf_books(g, rgb):
         if new:
             lines = sorted(lines + new, key=lambda l: l.xm)
             found = all_found()
-    return found, lines
+    return found, lines, rows
 
 
 def most_books(found, n):
@@ -515,24 +522,25 @@ def agrees(c, fits):
 
 
 def straight_lines(e, keep):
-    """(angles, distances) of the straight lines at any angle, as x cos a + y sin a = d: one per straight edge segment at
-    least SEGMENT of the photo long, found among edge pixels of one direction at a time (so lettering's pixels are not
-    linked across a cover), near duplicates merged, the longest first; only where keep is True."""
-    from skimage.transform import probabilistic_hough_line
+    """(angles, distances) of the straight lines at any angle, as x cos a + y sin a = d: lines with at least SEGMENT of
+    the photo's long side of edge pixels on them, found among edge pixels of one direction at a time (so lettering's
+    pixels are not linked across a cover), near duplicates merged, the strongest first; only where keep is True."""
+    from skimage.transform import hough_line, hough_line_peaks
     L = max(e.h, e.w)
     gx, gy = ndi.sobel(e.gray, 1), ndi.sobel(e.gray, 0)
     way = (np.degrees(np.arctan2(gy, gx)) + 90) % 180
     on = e.all & keep
-    segs = []
+    found = []
     for c0 in range(0, 180, 15):
         band = on & (np.abs((way - c0 + 90) % 180 - 90) <= 12)
-        th = (np.deg2rad(np.arange(c0 - 12, c0 + 12.5, 0.5) - 90) + np.pi / 2) % np.pi - np.pi / 2
-        segs += probabilistic_hough_line(band, threshold=10, line_length=int(SEGMENT * L), line_gap=3, theta=np.sort(th), rng=0)
-    segs.sort(key=lambda q: -np.hypot(q[1][0] - q[0][0], q[1][1] - q[0][1]))
+        th = np.sort((np.deg2rad(np.arange(c0 - 12, c0 + 12.5, 0.5) - 90) + np.pi / 2) % np.pi - np.pi / 2)
+        H, A, D = hough_line(band, theta=th)
+        votes, ang, dist = hough_line_peaks(H, A, D, min_distance=3, min_angle=2, threshold=SEGMENT * L, num_peaks=COVER_LINES)
+        found += zip(votes, ang, dist)
+    found.sort(key=lambda f: -int(f[0]))
     out = []
-    for (x0, y0), (x1, y1) in segs:
-        a = (np.arctan2(x1 - x0, -(y1 - y0)) + np.pi / 2) % np.pi - np.pi / 2
-        d = x0 * np.cos(a) + y0 * np.sin(a)
+    for _, a, d in found:
+        a, d = ((a + np.pi / 2) % np.pi - np.pi / 2, d if -np.pi / 2 <= a < np.pi / 2 else -d)
         if any(np.degrees(abs((a - b + np.pi / 2) % np.pi - np.pi / 2)) < 2 and abs(d - c) < 0.01 * L for b, c in out):
             continue
         out.append((a, d))
@@ -545,8 +553,7 @@ def covers(e, keep):
     """[cover-shape] The covers lying in a photo, outside its shelves, each four corners: every quadrilateral two pairs of
     near-parallel straight lines make, kept when it is a cover's size and shape, each side lies on edges with a colour
     change across it, at most one side's edge runs on past its corners (a cover's edges end at its corners, a
-    plank's or a ledge's do not), and few upright seams run through it (a picture), not one beside the next (a shelf's
-    barcode of spines); the smallest first, and none holding one already kept."""
+    plank's or a ledge's do not); the smallest first, and none holding one already kept."""
     from matplotlib.path import Path
     h, w = e.h, e.w
     ang, dist = straight_lines(e, keep)
@@ -588,16 +595,25 @@ def covers(e, keep):
     for i in good[np.argsort(area[good])]:
         if any(Path(q).contains_point(c[i].mean(0)) or Path(c[i]).contains_point(q.mean(0)) for q in kept):
             continue
-        # [barcode] a shelf of spines is upright seams side by side, each through most of its height; a cover's picture
-        # has a few at most
-        x0, x1 = (int(v) for v in np.percentile(c[i][:, 0], [0, 100]) + np.array([0.1, -0.1]) * np.ptp(c[i][:, 0]))
-        y0, y1 = (int(v) for v in np.percentile(c[i][:, 1], [0, 100]) + np.array([0.1, -0.1]) * np.ptp(c[i][:, 1]))
-        if x1 > x0 and y1 > y0:
-            _, seams_through = ndi.label(e.seam[y0:y1, x0:x1].mean(axis=0) >= 0.6)
-            if seams_through >= COVER_SEAMS * (x1 - x0):
-                continue
         kept.append(c[i])
     return kept
+
+
+def barcode_bands(g, small, top, bottom, shelf):
+    """[barcode] Marks on shelf the bands of rows top..bottom where books stand packed: the rows the books stand in,
+    when their edges between books stand apart by at most BARCODE_GAP of the band's height; then the same in the rows
+    left above and below, since two shelves can come as one."""
+    if bottom - top < BAND_LEAST * g.shape[0]:
+        return
+    e = Edges(g[top:bottom], small[top:bottom])
+    rows = book_rows(e)
+    if not rows or rows[1] - rows[0] < BAND_LEAST * g.shape[0]:
+        return
+    xs = sorted(x for x, _ in side_lines(e, *rows))
+    if len(xs) > 2 and np.median(np.diff(xs)) <= BARCODE_GAP * (rows[1] - rows[0]):
+        shelf[top + rows[0]:top + rows[1], int(xs[0]):int(np.ceil(xs[-1])) + 1] = True
+    barcode_bands(g, small, top, top + rows[0], shelf)
+    barcode_bands(g, small, top + rows[1], bottom, shelf)
 
 
 def clockwise(c):
@@ -620,6 +636,11 @@ def find(rgb):
     m = int(MARGIN * g.shape[0])
     per_shelf = [(max(0, top - m), *shelf_books(g[max(0, top - m):bottom + m], small[max(0, top - m):bottom + m]))
                  for top, bottom in shelves(g)]
+    h, w = g.shape
+    shelf = np.zeros((h, w), bool)
+    for top, bottom in shelves(g):
+        barcode_bands(g, small, max(0, top - m), min(h, bottom + m), shelf)
+    per_shelf = [(top, found, lines) for top, found, lines, _ in per_shelf]
     textures = [b['texture'] for _, found, _ in per_shelf for b in found.values()]
     spines = []
     if textures:
@@ -639,14 +660,12 @@ def find(rgb):
                 continue
             for k in chosen:
                 spines.append([(x, y + top) for x, y in found[k]['corners']])
-    # [barcode] covers are looked for outside the shelves the spines make
-    h, w = g.shape
+    # [barcode] covers are looked for outside the shelves: the barcode bands, and the spines boxed
     yy, xx = np.mgrid[0:h, 0:w]
     grid = np.stack([xx.ravel(), yy.ravel()], 1)
-    shelf = np.zeros(h * w, bool)
     for c in spines:
-        shelf |= Path(np.asarray(c)).contains_points(grid)
-    shelf = ndi.binary_dilation(shelf.reshape(h, w), iterations=max(2, int(0.01 * max(h, w))))
+        shelf |= Path(np.asarray(c)).contains_points(grid).reshape(h, w)
+    shelf = ndi.binary_dilation(shelf, iterations=max(2, int(0.01 * max(h, w))))
     found = covers(Edges(g, small), ~shelf)
     scale = lambda c: [[round(min(max(x, 0), w) / s, 1), round(min(max(y, 0), h) / s, 1)] for x, y in c]
     return ([dict(corners=scale(c), view='spine') for c in spines]

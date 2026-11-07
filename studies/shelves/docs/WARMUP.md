@@ -29,7 +29,8 @@ tests/                test_books.py (fast), test_reading.py and test_shelves_pag
    whose marks repeat further across is two books of one series (`books.series_split`); the photo's perspective, read
    from the surest boxes, drops a box whose ends turn otherwise (`books.perspective`); a shelf of fewer than three
    spines is no shelf. Then the covers lying outside the shelves (`books.covers`): quadrilaterals of straight edges
-   whose sides end at their corners and through which few upright seams run.
+   whose sides end at their corners, searched outside every band whose edges between books stand barcode-close
+   (`books.barcode_bands`).
 2. **Straighten** (`books.straighten`, Python): the four corners pulled through a homography into an upright
    rectangle, as wide as the box's top and bottom edges on average and as tall as its sides.
 3. **Read** (`reading.js`, JavaScript): the crop at each turn its shape allows (a tall crop turned a quarter either
@@ -79,23 +80,25 @@ The two photos once called "multi-shelf" (`12msl6`, `1Rx9mp`) are books lying co
 owner chose a cover finder, and to split each photo first by its barcode: books on a shelf look like a barcode after
 edge detection.
 
-- **What changed (`books.covers`, `books.find`):** the spines are found first, and a shelf yielding fewer than three
-  (`SHELF_BOOKS`) is no shelf. Covers are looked for outside the spines' boxes: straight edge segments at any angle,
-  each found among edge pixels of one direction (so lettering does not link across a cover), make every
+- **Barcode (`books.barcode_bands`):** in each band where books could stand, the spine finder's edges between books
+  are measured: books standing packed put them a small share of the band's height apart (the owner's shelves:
+  0.09-0.15), covers and walls far more (0.49 and up; three covers drawn on a bench: 0.24). A band at most 0.2 is a
+  shelf, whether or not its spines were boxed, and the rows left above and below it are looked at the same way, since
+  the shelf finder can merge two shelves. Also, a shelf yielding fewer than three spines boxes none (`SHELF_BOOKS`).
+- **Covers (`books.covers`), outside the shelves and the spines' boxes:** straight lines at any angle, each found by a
+  Hough transform among the edge pixels of one direction (so lettering does not link across a cover), make every
   quadrilateral two near-parallel pairs give; one is a cover when it has a cover's size and shape, each side lies on
-  edges with a colour change across it, at most one side's edge runs on past its corners, and few upright seams run
-  through it (`COVER_SEAMS`: a shelf of spines boxed whole has 0.093 per pixel of width, the covers 0.030 at most).
-  The smallest first, none holding one already kept; corners clockwise from the top left (`books.clockwise`).
-- **Barcode, as measured:** a pixel map of dense, one-way edges glows on every shelf, but no fixed threshold on it
-  separates shelves from covers (the dark Herbert shelf scores below a sunny ledge), and as a mask it ate covers' own
-  edges. The spine finder's verified boxes mark the shelves better, and a box's count of upright seams through it is
-  the barcode test that works.
-- **On the photos, by eye:** ledge (`12msl6`) 1 cover, exact; bench (`1Rx9mp`) 3: the grey and the red covers right, the
-  third reaching from a small yellow cover onto the grey book beside it (wrong). Every shelf photo: no cover, the
-  spines unchanged. Most covers on both photos are still missed: touching, overlapping and sun-washed edges.
-- **Tried and rejected:** one Hough over all edge pixels (lettering's lines crowd out the covers' sides); the largest
-  quadrilateral first (it took in two covers and the bench between); the orientation agreement of the edges inside a
-  box (0.36 for the whole shelf, as for real covers).
+  edges with a colour change across it, and at most one side's edge runs on past its corners. The smallest first,
+  none holding one already kept; corners clockwise from the top left (`books.clockwise`).
+- **On the photos, by eye:** ledge (`12msl6`) 4 boxes: the chef, cutlery and Marley covers right, the purple one half
+  boxed; bench (`1Rx9mp`) 3: the grey and red covers right, the lamp cover half its width. Every shelf photo: no cover,
+  the spines unchanged. Several covers on both photos are still missed: touching, overlapping and sun-washed edges.
+- **Tried and rejected:** the probabilistic Hough transform (its result changed with its random draw: 4 of 12 seeds
+  misplaced a drawn cover, and CI's draw differed from the container's); one Hough over all edge pixels (lettering's
+  lines crowd out a cover's sides); the largest quadrilateral first (it took in two covers and the bench between); a
+  pixel map of dense, one-way edges as a mask (no fixed threshold separates a dark shelf from a sunny ledge, and it
+  ate covers' own edges); the orientation agreement of the edges inside a box, and its count of upright seams (with
+  the deterministic lines, a half-boxed cover scored as high as a box over spines).
 
 ### R4 — two books of one series, parted by their repeating design (2026-11-07)
 
@@ -230,8 +233,9 @@ number below is a score.
   Fails on a squat book, on a spine with no lettering at all (left for the ground truth), and on a steep side view.
 - `[series-seam]` Two books of one series repeat one design, at the same heights (`books.series_split`). Fails on a series
   whose spines differ in design, or on two copies of one book (two boxes: right) — calibrated on one pair.
-- `[barcode]` A shelf is several spines packed together, upright seams side by side (`books.SHELF_BOOKS`, `COVER_SEAMS`).
-  Fails on a shelf of two books, and on a cover whose picture is vertical stripes - calibrated on one shelf box.
+- `[barcode]` Books standing packed put their edges between books close together for their height (`books.BARCODE_GAP`,
+  `SHELF_BOOKS`). Fails on a shelf of very wide books, and on covers standing side by side - calibrated on the owner's
+  ten photos.
 - `[cover-shape]` A cover is a quadrilateral of one cover's size whose edges end at its corners (`books.covers`). Fails on
   covers that touch or overlap, whose sides run on into the next one's.
 - `[camera-uniform]` One camera took the photo, so every book's ends turn as one perspective says (`books.perspective`).
@@ -245,6 +249,6 @@ number below is a score.
   private for now (missingbulb/NoRFinder#766); once it is shared by link, a `data/sources.json` and its fetch, then the first ground truth, then a grader (`proposed` against the corrected values) and the
   finder's first real iteration.
 - Hebrew word spaces in the `lines` reader.
-- R5's own breaks: most covers on the ledge and the bench missed, one bench box reaching onto a neighbour; pale spines on a pale wall; a perspective trusted on a real photo; piles of books lying flat.
+- R5's own breaks: several covers on the ledge and the bench missed, two half boxed; pale spines on a pale wall; a perspective trusted on a real photo; piles of books lying flat.
 - A study pack (`shelves-study`) for its improving-on-ground-truth skill and its ground-truth intake, once there is
   ground truth to take in.
