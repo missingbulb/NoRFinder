@@ -71,6 +71,7 @@
         <h2 id="gt-box-title">Ground Truth</h2>
         <p id="gt-mode" class="hint"></p>
         <p id="gt-counts" role="status"></p>
+        <button id="gt-switch" type="button" class="link" data-needs-network></button>
       </section>
       <div class="data-head"><h2>Folders</h2><button id="data-approve" type="button" class="link" data-needs-network hidden></button></div>
       <div id="data-tree" role="tree" aria-label="The study's folders" data-log-as="a folder or image in the Data Management tree"></div>
@@ -254,6 +255,12 @@
   <p class="hint">Do taggers' submissions need a study manager's review before they count?</p>
   <p id="setup-msg" class="hint" role="status"></p>
   <div class="dlg-row end"><span class="grow"></span><button type="button" data-review="yes" class="primary">Yes: two folders</button><button type="button" data-review="no">No: one folder</button><button id="setup-cancel" type="button">Cancel</button></div>
+</dialog>
+<dialog id="switch-dlg" aria-labelledby="switch-title">
+  <h2 id="switch-title"></h2>
+  <p id="switch-text" class="hint"></p>
+  <p id="switch-msg" class="hint" role="status"></p>
+  <div class="dlg-row end"><span class="grow"></span><button id="switch-go" type="button" class="primary">Switch</button><button id="switch-cancel" type="button">Cancel</button></div>
 </dialog>
 <dialog id="curate-dlg" aria-labelledby="curate-title">
   <h2>Ground truth for <span id="curate-title"></span></h2>

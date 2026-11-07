@@ -11,7 +11,7 @@ import { readTiff, fromPlanes, writeTiff } from "./split.js";
 import { CONNECTION } from "./offline.js";
 import { replacedBy, stemOf } from "./edit.js";
 import * as tf from "./truth_folders.js";
-import { setup as setUp } from "./study_root.js";
+import { setup as setUp, switchMode } from "./study_root.js";
 
 const IMAGE = /\.(tiff?|png)$/i;
 const MAX_FOLDERS = 200;
@@ -142,14 +142,44 @@ export function dataMode(ctx) {
     const box = $("#gt-box");
     box.hidden = !gt.curated || !gtStudy();
     if (box.hidden) return;
-    $("#gt-mode").textContent = gt.same ? "One folder, GT: whatever a tagger submits counts at once."
+    $("#gt-mode").textContent = gt.same ? "One folder: whatever a tagger submits counts at once."
       : "Reviewed: taggers submit to GT submissions, and a study manager accepts each into GT curated.";
-    if (!gts) { $("#gt-counts").textContent = "Reading…"; return; }
+    const sw = $("#gt-switch");
+    sw.textContent = gt.same ? "Switch to reviewed…" : "Switch to unreviewed…";
+    if (!gts) { $("#gt-counts").textContent = "Reading…"; sw.disabled = true; return; }
     const all = [...gts.values()], n = (p) => all.filter(p).length, images = (k) => `${k} image${k === 1 ? "" : "s"}`;
     const has = n((g) => g.curated), pending = n((g) => g.pending), rejected = n((g) => g.rejected);
+    // going unreviewed waits for every pending submission to be accepted or rejected
+    sw.disabled = !gt.same && pending > 0;
+    sw.title = sw.disabled ? `${pending} submission${pending === 1 ? " is" : "s are"} pending review: accept or reject ${pending === 1 ? "it" : "them"} first`
+      : gt.same ? "Have a study manager review each submission into GT curated" : "Let whatever a tagger submits count at once";
     $("#gt-counts").textContent = [has ? `${images(has)} ${has === 1 ? "has" : "have"} ground truth.` : "No image has ground truth yet.",
       pending ? `${images(pending)} pending review.` : "", rejected ? `${images(rejected)} rejected.` : ""].filter(Boolean).join(" ");
   }
+
+  // ---------- switching between reviewed and unreviewed (req/shell/ground-truth/switch) ----------
+  $("#gt-switch").onclick = () => {
+    const review = gt.same;
+    $("#switch-title").textContent = review ? "Switch to reviewed ground truth" : "Switch to unreviewed ground truth";
+    $("#switch-text").textContent = review
+      ? "No file is moved, copied or deleted. The GT folder becomes GT curated: everything submitted so far counts as accepted. A new GT submissions folder is made for taggers to submit to. In Google Drive, give taggers edit access to GT submissions and take their edit access off GT curated."
+      : "No file is moved, copied or deleted. GT curated becomes the one folder: everything accepted stays the study's ground truth, and whatever a tagger submits counts at once. GT submissions, its rejected files included, stays as it is and is no longer used. In Google Drive, give taggers edit access to GT curated.";
+    $("#switch-go").dataset.review = review ? "yes" : "no";
+    msg($("#switch-msg"), ""); $("#switch-dlg").showModal();
+  };
+  $("#switch-cancel").onclick = () => $("#switch-dlg").close();
+  $("#switch-go").onclick = async () => {
+    const review = $("#switch-go").dataset.review === "yes", top = place.root(), btns = document.querySelectorAll("#switch-dlg button");
+    for (const x of btns) x.disabled = true;
+    try {
+      msg($("#switch-msg"), "Switching…");
+      await switchMode({ reader, writer, root: top, review, by: account.email() });
+      $("#switch-dlg").close();
+      msg($("#data-msg"), review ? "Switched to reviewed ground truth." : "Switched to unreviewed ground truth.");
+      nodes = new Map(); loaded = null; chosen = null; await load();
+    } catch (e) { msg($("#switch-msg"), e.message || String(e), true); }
+    for (const x of btns) x.disabled = false;
+  };
 
   // ---------- the tree ----------
   // a folder's images, but those an edit replaced (req/shell/data/edit-save)

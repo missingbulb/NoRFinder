@@ -94,7 +94,12 @@
                   "children": [
                     {"name": "Ground Truth box's title", "select": "#gt-box-title", "req": "req/shell/ground-truth/summary"},
                     {"name": "How the study takes ground truth", "select": "#gt-mode", "req": "req/shell/ground-truth/summary"},
-                    {"name": "Ground truth counts", "select": "#gt-counts", "req": "req/shell/ground-truth/summary"}
+                    {"name": "Ground truth counts", "select": "#gt-counts", "req": "req/shell/ground-truth/summary"},
+                    {"name": "Switch reviewed or unreviewed", "select": "#gt-switch", "control": true, "req": "req/shell/ground-truth/switch",
+                      "rule": [
+                        {"when": {"online": [false]}, "is": "held", "req": "req/shell/offline/default", "approval": "tentative"}
+                      ]
+                    }
                   ]
                 },
                 {"name": "Approve folders", "select": "#data-approve", "control": true, "req": "req/shell/data/drive-access",

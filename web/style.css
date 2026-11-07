@@ -535,11 +535,11 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 @media (prefers-reduced-motion: reduce) { #busy.scan #scan-light { animation-duration: 8s; } }
 
 /* the remote files dialog */
-#remote-dlg, #memory-dlg, #history-dlg, #usage-dlg, #save-dlg, #settings-dlg, #offline-dlg, #welcome-dlg { width: min(640px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
+#remote-dlg, #setup-dlg, #switch-dlg, #memory-dlg, #history-dlg, #usage-dlg, #save-dlg, #settings-dlg, #offline-dlg, #welcome-dlg { width: min(640px, calc(100vw - 32px)); padding: 18px; color: var(--text); background: var(--panel);
   border: 1px solid var(--line); border-radius: var(--r-panel); box-shadow: 0 12px 40px #0006; }
-#remote-dlg::backdrop, #memory-dlg::backdrop, #history-dlg::backdrop, #usage-dlg::backdrop, #save-dlg::backdrop, #settings-dlg::backdrop, #offline-dlg::backdrop, #welcome-dlg::backdrop { background: #0007; }
+#remote-dlg::backdrop, #setup-dlg::backdrop, #switch-dlg::backdrop, #memory-dlg::backdrop, #history-dlg::backdrop, #usage-dlg::backdrop, #save-dlg::backdrop, #settings-dlg::backdrop, #offline-dlg::backdrop, #welcome-dlg::backdrop { background: #0007; }
 .dlg-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
-.dlg-row.end { justify-content: space-between; }
+.dlg-row.end { justify-content: space-between; } .dlg-row .grow { flex: 1; }
 #remote-link { flex: 1; min-width: 0; }
 /* every part keeps its size whatever the folder holds, so the dialog stays still while browsing */
 #remote-path { margin-top: 10px; font-size: 13px; height: 1.5em; line-height: 1.5em; white-space: nowrap; overflow-x: auto; overflow-y: hidden; }
@@ -636,6 +636,7 @@ kbd { font: 12px ui-monospace, monospace; padding: 1px 5px; border: 1px solid va
 
 /* the version history popup, and the bubble that points at the version after an update */
 #history-dlg { width: min(560px, calc(100vw - 32px)); }
+#setup-dlg, #switch-dlg { width: min(480px, calc(100vw - 32px)); } #setup-dlg h2, #switch-dlg h2 { margin: 0 0 10px; }
 #history-dlg h2 { margin: 0 0 10px; }
 #usage-dlg h2 { margin: 0 0 10px; }
 /* Settings: a row per setting, its name at the left and its control at the right */

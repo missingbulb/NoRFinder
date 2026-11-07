@@ -487,8 +487,8 @@ nobody has decided: what the page does there is not a requirement yet.
   folder of a name. Google's own words show when it refuses. Changed by the owner on 2026-11-07: it sits
   at the top of Data Management's column, highlighted while the root has no ground-truth folders; choosing
   an answer closes the dialog once the folders are made; once the settings file names the folders it is no
-  longer offered. Undecided: switching a set-up study between reviewed and unreviewed, its spec awaiting
-  the owner's approval. Tests: `web-tests/test_study_root.py`,
+  longer offered; switching between reviewed and unreviewed is the Ground Truth box's
+  (`req/shell/ground-truth/switch`). Tests: `web-tests/test_study_root.py`,
   `web-tests/test_gt_drive_page.py`.
   </details>
 
@@ -512,6 +512,22 @@ nobody has decided: what the page does there is not a requirement yet.
   land in one GT folder, and counts, from the folders' listings alone (`req/shell/ground-truth/pending`),
   the images with ground truth, those pending review and those rejected. It reads again whenever a folder
   is chosen or a submission accepted or rejected. Test: `web-tests/test_gt_drive_page.py`.
+  </details>
+
+- `req/shell/ground-truth/switch` The Ground Truth box switches a set-up study between reviewed and unreviewed, moving no file.
+  <details>
+
+  Set by the owner on 2026-11-07. The Ground Truth box (`req/shell/ground-truth/summary`) offers Switch to
+  unreviewed… or Switch to reviewed…, and a confirmation says what follows before anything runs. Neither
+  moves, copies or deletes a file. Reviewed to unreviewed waits while any submission is pending review,
+  saying how many; then GT curated serves as the one folder, so everything accepted stays the study's
+  ground truth, and GT submissions, its rejected files included, is left as it is and no longer used; the
+  confirmation says taggers need edit access to GT curated, which only Drive's sharing gives. Unreviewed
+  to reviewed makes the one GT folder the curated one, so everything submitted so far counts as accepted,
+  and makes GT submissions (or finds it by name: never a second folder of a name); the confirmation says
+  to give taggers edit access to it and take theirs off GT curated. The settings file keeps who set it up
+  and records the mode before, who switched and when. Tests: `web-tests/test_study_root.py`,
+  `web-tests/test_gt_drive_page.py`.
   </details>
 
 - `req/shell/ground-truth/tagger-access` The Ground Truth Tasks box shows whether the tagger may write to the submissions folder, and how to get there.

@@ -4,8 +4,8 @@
 // Tagger offered only where the store lets the user write to submissions), req/shell/ground-truth/tagger-access,
 // req/shell/ground-truth/submit and req/shell/ground-truth/layout (Submit writes the tagger's file into the image's
 // subfolder, and submitting again replaces it keeping the old version), req/shell/ground-truth/clear,
-// req/shell/ground-truth/pending, req/shell/ground-truth/curate, req/shell/ground-truth/summary (the Ground Truth box)
-// and req/shell/ground-truth/view. Exits 1 on a failed
+// req/shell/ground-truth/pending, req/shell/ground-truth/curate, req/shell/ground-truth/summary (the Ground Truth box),
+// req/shell/ground-truth/switch and req/shell/ground-truth/view. Exits 1 on a failed
 // check, 2 when it cannot run.
 //   node web-tests/gt_drive_driver.mjs ANSWERS STUDIES ROOT
 import { createHash } from "node:crypto";
@@ -110,6 +110,8 @@ await check(tag === "GT pending", "to the tagger, the Drive dialog marks the sub
 await role(page, "Study Manager");
 await page.waitForFunction(() => /1 image.*pending/.test($("#gt-box").textContent), null, { timeout: 5000 }).catch(() => {});
 await check(/1 image.*pending/.test(await page.textContent("#gt-box")), "the Ground Truth box counts the submission pending", await page.textContent("#gt-box"));
+const sw = await page.evaluate(() => ({ text: $("#gt-switch").textContent.trim(), off: $("#gt-switch").disabled, why: $("#gt-switch").title }));
+await check(sw.text === "Switch to unreviewed…" && sw.off && /1 submission/.test(sw.why), "while a submission is pending, switching to unreviewed waits, saying how many", sw);
 await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder").length >= 1);
 await page.click("#data-tree .tree-folder .name");
 const cell = `#folder-items .cell[data-id="${png.id}"]`;
@@ -134,6 +136,21 @@ await check(s.truth === 1 && s.pending === 0 && !(await page.$(cell + " .review-
 await check(await page.isDisabled(cell + " .mark-gt"), "an image with ground truth needs no marker");
 await page.waitForFunction(() => /1 image has ground truth/.test($("#gt-box").textContent), null, { timeout: 5000 }).catch(() => {});
 await check(/1 image has ground truth/.test(await page.textContent("#gt-box")), "accepted, the Ground Truth box counts it", await page.textContent("#gt-box"));
+
+// req/shell/ground-truth/switch: nothing pending, the study switches to unreviewed, nothing moved or deleted
+await page.waitForFunction(() => !$("#gt-switch").disabled);
+const before = FILES.length;
+await page.click("#gt-switch");
+await page.waitForFunction(() => $("#switch-dlg").open);
+const told = await page.textContent("#switch-text");
+await check(/edit access/.test(told) && /GT curated/.test(told) && /no file/i.test(told), "the confirmation says no file moves and that taggers need edit access to GT curated", told);
+await page.click("#switch-go");
+await page.waitForFunction(() => !$("#switch-dlg").open || $("#switch-msg").classList.contains("err"), null, { timeout: 15000 });
+const switched = JSON.parse(FILES.find((f) => f.parent === ROOT && f.name === "rauntruth-study.json").bytes.toString());
+await check(switched.curated === CUR && switched.submissions === CUR && switched.review === false && switched.switched?.from?.submissions === SUBS && switched.switched?.by === "tester@example.com" && FILES.length === before && FILES.some((f) => f.id === SUBS),
+  "switched, GT curated serves as both, GT submissions stays, and the settings file records the mode before and who switched", { switched, msg: await page.textContent("#switch-msg") });
+await page.waitForFunction(() => /One folder/.test($("#gt-mode").textContent) && /1 image has ground truth/.test($("#gt-counts").textContent), null, { timeout: 5000 }).catch(() => {});
+await check(/One folder/.test(await page.textContent("#gt-mode")) && /1 image has ground truth/.test(await page.textContent("#gt-counts")), "the Ground Truth box now says one folder, its ground truth still counted", await page.textContent("#gt-box"));
 await page.context().close();
 
 // req/shell/ground-truth/view: a viewer, not signed in, loads the image and its curated ground truth, with no algorithm run
