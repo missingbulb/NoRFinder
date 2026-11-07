@@ -44,8 +44,8 @@ def expected(rules, studies=None):
 
 
 def test_each_state_is_one_more_action_and_each_element_shows_as_its_rules_and_its_parents_say():
-    states, matrix, unused = expected(PAGE)
-    assert not unused
+    states, matrix, gaps = expected(PAGE)
+    assert 'cases no state reaches' not in gaps
     # no image: the box folded, the button inside it with it
     assert states[0]['Box'] == 'folded' and states[0]['Button'] == 'gone'
     # loaded: the box open, the button off until counted, then on
@@ -61,8 +61,59 @@ def test_each_state_is_one_more_action_and_each_element_shows_as_its_rules_and_i
 def test_a_case_no_state_reaches_is_reported():
     rules = copy.deepcopy(PAGE)
     rules['paths'][0]['actions'] = ['load']
-    _, _, unused = expected(rules)
-    assert unused == ['Box, case 2', 'Panel, case 1', 'Panel, case 2']
+    _, _, gaps = expected(rules)
+    assert gaps['cases no state reaches'] == ['Box, case 2', 'Button, its default', 'Panel, case 1', 'Panel, case 2']
+
+
+def test_a_case_decided_only_behind_a_hidden_or_folded_parent_is_reported_unless_marked_unwalked():
+    """The browser reads such an element as gone whatever its case says, so the case checks nothing."""
+    rules = copy.deepcopy(PAGE)
+    # the button off only while the box is folded, before anything is loaded
+    rules['tree'][0]['children'][0]['rule'] = [{'when': {'image': ['none']}, 'is': 'disabled'}]
+    _, _, gaps = expected(rules)
+    assert gaps['cases decided only where a parent hides the element, and not marked unwalked'] == ['Button, case 1']
+    rules['tree'][0]['children'][0]['rule'][0]['unwalked'] = 'the box is folded until then'
+    _, _, gaps = expected(rules)
+    assert 'cases decided only where a parent hides the element, and not marked unwalked' not in gaps
+    # what an element marked unwalked holds goes unwalked with it; a mark a state shows wrong is reported
+    rules['tree'][0]['children'][0]['rule'][0].pop('unwalked')
+    rules['tree'][0]['unwalked'] = 'never opened'
+    _, _, gaps = expected(rules)
+    assert 'cases decided only where a parent hides the element, and not marked unwalked' not in gaps
+    assert gaps['cases marked unwalked that a state shows'] == ['Button, its default']
+
+
+def test_an_element_every_state_shows_the_same_is_reported_unless_marked_steady():
+    """A page that always shows it so passes whatever its rules say elsewhere."""
+    _, _, gaps = expected(PAGE)
+    assert gaps['elements every state shows the same, and not marked steady'] == ['Panel']
+    rules = copy.deepcopy(PAGE)
+    rules['tree'][1]['steady'] = 'always shown'
+    _, _, gaps = expected(rules)
+    assert 'elements every state shows the same, and not marked steady' not in gaps
+    # and a steady mark on one that changes is reported too
+    rules['tree'][0]['steady'] = 'always shown'
+    _, _, gaps = expected(rules)
+    assert gaps['elements marked steady that states show differently'] == ['Box']
+
+
+def test_an_action_no_path_takes_and_a_value_no_state_has_are_reported():
+    _, _, gaps = expected(PAGE)
+    assert 'load' not in gaps['actions no path takes'] and 'stack' in gaps['actions no path takes']
+    assert 'values of the vars no state has' not in gaps
+    rules = copy.deepcopy(PAGE)
+    rules['vars']['view'] = ['image', 'items']
+    _, _, gaps = expected(rules)
+    assert gaps['values of the vars no state has'] == ['view "items"']
+
+
+def test_a_study_restates_a_shell_element_where_it_differs():
+    studies = {'acme': {**ACME, 'differ': {'Panel': {'rule': [{'is': 'hidden'}], 'steady': 'never shown in this study'}}}}
+    expect, _, gaps = shell_states.build(copy.deepcopy(PAGE), studies)
+    assert {s['expect']['Panel'] for s in expect['paths'][0]['states']} == {'gone'}
+    assert 'Panel' not in gaps.get('elements every state shows the same, and not marked steady', [])
+    with pytest.raises(AssertionError, match='differs in its rule alone'):
+        shell_states.build(copy.deepcopy(PAGE), {'acme': {**ACME, 'differ': {'Panel': {'select': '#other'}}}})
 
 
 @pytest.mark.parametrize('break_it, says', [
@@ -87,26 +138,33 @@ def test_the_generated_files_are_up_to_date():
 
 
 class Ids(HTMLParser):
-    """The ids of a page's body, and which of them sit in what a dialog, popup, menu, template or icon holds: those
-    show only once opened, and are not the state's."""
+    """The ids of a page's body, and which of them sit in what a dialog, popup, menu, disclosure, template or icon
+    holds: those show only once opened, and are not the state's. A study's panels are the templates of its slots,
+    whose content the shell puts on the page: theirs are the state's."""
     VOID = {'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr'}
 
     def __init__(self):
         super().__init__()
-        self.stack, self.state, self.opened, self.tags = [], [], [], set()
+        self.stack, self.tags_open, self.state, self.opened, self.tags = [], [], [], [], set()
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         self.tags.add(tag)
-        inside = tag in ('head', 'dialog', 'template', 'svg') or 'popover' in a or 'pop' in (a.get('class') or '').split()
+        slot = tag == 'template' and 'data-slot' in a
+        # what a disclosure holds beside its summary shows once it is opened
+        disclosed = bool(self.tags_open) and self.tags_open[-1] == 'details' and tag != 'summary'
+        inside = not slot and (tag in ('head', 'dialog', 'template', 'svg') or 'popover' in a
+                               or 'pop' in (a.get('class') or '').split() or disclosed)
         if 'id' in a:
             (self.opened if inside or any(self.stack) else self.state).append(a['id'])
         if tag not in self.VOID:
             self.stack.append(inside)
+            self.tags_open.append(tag)
 
     def handle_endtag(self, tag):
         if tag not in self.VOID and self.stack:
             self.stack.pop()
+            self.tags_open.pop()
 
 
 def page_ids(*files):
@@ -162,6 +220,59 @@ def test_every_shell_element_is_in_the_tree():
     left = [i for i in p.state if i not in held]
     assert len(p.state) > 100
     assert not left, f'not in dev/requirements/shell-states.json: {left}'
+
+
+def test_every_element_of_a_studys_panels_is_in_its_tree():
+    """An element a study's panels gain is given its place in the tree, grafted from its states.json, in the same
+    change."""
+    trees, studies = study_trees()
+    left, seen = {}, 0
+    for i, els in trees.items():
+        panels = studies[i]['study']['web'].get('panels')
+        if not panels:
+            continue
+        p = page_ids(f'studies/{i}/{panels}')
+        held = {lead(e['select']) for e, _ in els}
+        seen += len(p.state)
+        if [x for x in p.state if x not in held]:
+            left[i] = [x for x in p.state if x not in held]
+    assert seen > 80, f'{seen} ids in the studies\' panels: the sweep is not reading them'
+    assert not left, f'not in the studies\' states.json: {left}'
+
+
+class Tags(HTMLParser):
+    """Each id's tag and classes."""
+    def __init__(self):
+        super().__init__()
+        self.of = {}
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        if 'id' in a:
+            self.of[a['id']] = (tag, (a.get('class') or '').split())
+
+
+def test_the_tree_says_which_elements_are_boxes_and_controls_as_the_page_does():
+    """The walk reads an element folded only if the tree calls it a box, and disabled only if a control: one the
+    page makes a box or a control, and the tree does not, would read as shown whatever it is."""
+    trees, studies = study_trees()
+    wrong, checked = [], 0
+    for i, els in trees.items():
+        p = Tags()
+        panels = studies[i]['study']['web'].get('panels')
+        for f in ['web/index.html'] + ([f'studies/{i}/{panels}'] if panels else []):
+            with open(os.path.join(ROOT, f), encoding='utf-8') as h:
+                p.feed(h.read())
+        for e, _ in els:
+            m = re.fullmatch(r'#([\w-]+)', e['select'])
+            if not m or m.group(1) not in p.of:
+                continue
+            tag, classes = p.of[m.group(1)]
+            checked += 1
+            if ('box' in classes) != e['box'] or (tag in ('button', 'input', 'select', 'textarea')) != e['control']:
+                wrong.append(f"{i}: {e['name']}")
+    assert checked > 400
+    assert not wrong, f'box or control as the page does not say: {wrong}'
 
 
 def test_the_shell_tree_holds_only_the_shells_page():

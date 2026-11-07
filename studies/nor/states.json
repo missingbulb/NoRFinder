@@ -1,53 +1,138 @@
 {
-  "about": "The NoR Finder's own elements in the shell's states (req/checks/shell-states, req/checks/spec-layout): each graft puts its tree under the shell's element `under`, after its child `after` or first, in the tree of dev/requirements/shell-states.json, whose rules they follow; its roots and paths open this study. `counted` is its first step, Run algorithm, done.",
+  "about": "The NoR Finder's own elements in the shell's states (req/checks/shell-states, req/checks/spec-layout): each graft puts its tree under the shell's element `under`, after its child `after` or first, in the tree of dev/requirements/shell-states.json, whose rules they follow; its roots and paths open this study. `samples` names the module writing the image or z-stack its paths load; `differ` says where a shell element shows otherwise in this study. `counted` is its first step, Run algorithm, done.",
   "grafts": [
     {"under": "Processing", "tree": [
-      {"name": "Algorithm", "select": "#finder", "control": true, "req": "req/nor/find/finders"},
-      {"name": "About the algorithm", "select": "#about-box", "req": "req/nor/find/finders"},
-      {"name": "Settings", "select": "#settings-box", "req": "req/nor/find/settings"},
-      {"name": "Run algorithm", "select": "#find", "control": true, "req": "req/nor/find/one-slow-step"}
+      {"name": "The finder", "select": "#finder-box", "req": "req/nor/find/finders",
+        "children": [
+          {"name": "Algorithm", "select": "#finder", "control": true, "req": "req/nor/find/finders"},
+          {"name": "About the algorithm", "select": "#about-box", "req": "req/nor/find/finders"},
+          {"name": "Settings", "select": "#settings-box", "req": "req/nor/find/settings"},
+          {"name": "Filters", "select": "#filters-fold", "req": "req/nor/filters/live",
+            "rule": [
+              {"when": {"role": ["viewer", "data"]}, "is": "hidden", "req": "req/shell/account/role", "about": "the study's postprocessing, for its taggers"}
+            ]
+          },
+          {"name": "Run algorithm", "select": "#find", "control": true, "req": "req/nor/find/one-slow-step"}
+        ]
+      }
     ]},
-    {"under": "Main view", "after": "Tasks/Items switch", "tree": [
-      {"name": "Show menu", "select": "#show-menu", "req": "req/nor/show-menu"},
-      {"name": "Passed and failed tabs", "select": "#tab-pass", "control": true, "req": "req/nor/candidates/decide",
-        "rule": [
-          {"when": {"view": ["image"]}, "is": "hidden", "req": "req/shell/views/second"}
+    {"under": "Summary", "tree": [
+      {"name": "The NoR summary", "select": "#nor-summary", "req": "req/nor/summary/density",
+        "children": [
+          {"name": "Add mask", "select": "#mask-add", "control": true, "req": "req/nor/summary/mask"},
+          {"name": "Clear mask", "select": "#mask-clear", "control": true, "req": "req/nor/summary/mask", "steady": "shows only once a mask is drawn",
+            "rule": [
+              {"is": "hidden"}
+            ]
+          },
+          {"name": "Summary's text", "select": "#summary", "req": "req/nor/summary/density"},
+          {"name": "Download Candidates", "select": "#dl-cands", "control": true, "req": "req/nor/downloads"},
+          {"name": "Download Summary", "select": "#dl-summary", "control": true, "req": "req/nor/downloads"}
+        ]
+      }
+    ]},
+    {"under": "Ground Truth Tasks", "tree": [
+      {"name": "The NoR tasks", "select": "#nor-tasks", "req": "req/nor/truth/tasks"},
+      {"name": "Missed NoRs check", "select": "#area-check", "req": "req/nor/truth/order",
+        "children": [
+          {"name": "No missed NoRs here", "select": "#area-ok", "control": true, "req": "req/nor/truth/order"}
         ]
       },
-      {"name": "Card menu", "select": "#card-menu", "req": "req/nor/cards/views",
+      {"name": "Task tools", "select": "#task-tools", "req": "req/nor/truth/order",
+        "children": [
+          {"name": "Back", "select": "#task-back", "control": true, "req": "req/nor/truth/order",
+            "rule": [
+              {"is": "disabled", "about": "at the first task, the only one a path reaches"}
+            ]
+          },
+          {"name": "Skip", "select": "#task-skip", "control": true, "req": "req/nor/truth/order"}
+        ]
+      },
+      {"name": "The task now", "select": "#task-now", "req": "req/nor/truth/tasks", "unwalked": "shows a candidate to decide, and the finders find none on the walked image",
         "rule": [
-          {"when": {"view": ["image"]}, "is": "hidden", "req": "req/shell/views/second"}
+          {"is": "hidden", "approval": "tentative"}
+        ],
+        "children": [
+          {"name": "The task's stage", "select": "#task-stage", "req": "req/nor/truth/tasks",
+            "children": [
+              {"name": "The task's card", "select": "#task-card", "req": "req/nor/truth/tasks"}
+            ]
+          }
+        ]
+      }
+    ]},
+    {"under": "Main view", "after": "Tasks/Items switch", "tree": [
+      {"name": "Show menu", "select": "#show-menu", "req": "req/nor/show-menu", "steady": "always shown"},
+      {"name": "Finalists tab", "select": "#tab-pass", "control": true, "req": "req/nor/candidates/decide", "unwalked": "the item view is shelved",
+        "rule": [
+          {"is": "hidden", "req": "req/shell/views/second", "about": "its item view is shelved"}
+        ],
+        "children": [
+          {"name": "Finalists' count", "select": "#n-pass", "req": "req/nor/candidates/decide"}
+        ]
+      },
+      {"name": "Rejected tab", "select": "#tab-fail", "control": true, "req": "req/nor/candidates/decide", "unwalked": "the item view is shelved",
+        "rule": [
+          {"is": "hidden", "req": "req/shell/views/second", "about": "its item view is shelved"}
+        ],
+        "children": [
+          {"name": "Rejected count", "select": "#n-fail", "req": "req/nor/candidates/decide"}
+        ]
+      },
+      {"name": "Card menu", "select": "#card-menu", "req": "req/nor/cards/views", "unwalked": "the item view is shelved",
+        "rule": [
+          {"is": "hidden", "req": "req/shell/views/second", "about": "its item view is shelved"}
         ]
       }
     ]},
     {"under": "Main view", "after": "Busy", "tree": [
-      {"name": "Lasso hint", "select": "#lasso-hint", "req": "req/nor/summary/mask",
+      {"name": "Lasso hint", "select": "#lasso-hint", "req": "req/nor/summary/mask", "steady": "shows only while a mask is drawn",
         "rule": [
           {"is": "hidden"}
         ]
       }
     ]},
     {"under": "Image view", "after": "Minimap", "tree": [
-      {"name": "Selected item", "select": "#selected-box", "req": "req/nor/candidates/decide",
+      {"name": "Selected item", "select": "#selected-box", "req": "req/nor/candidates/decide", "unwalked": "shows only once a candidate is picked",
         "rule": [
           {"is": "hidden"}
+        ],
+        "children": [
+          {"name": "Candidate stepper", "select": "#sel-step", "req": "req/nor/candidates/decide",
+            "children": [
+              {"name": "Previous candidate", "select": "#sel-prev", "control": true, "req": "req/nor/candidates/decide"},
+              {"name": "Next candidate", "select": "#sel-next", "control": true, "req": "req/nor/candidates/decide"}
+            ]
+          },
+          {"name": "The candidate", "select": "#selected", "req": "req/nor/candidates/decide"}
         ]
       }
     ]},
     {"under": "Main view", "after": "Image view", "tree": [
-      {"name": "Item view", "select": "#items-view", "req": "req/shell/views/second",
+      {"name": "Item view", "select": "#items-view", "req": "req/shell/views/second", "unwalked": "shelved",
         "rule": [
-          {"when": {"view": ["image"]}, "is": "hidden"}
+          {"is": "hidden", "about": "shelved"}
+        ],
+        "children": [
+          {"name": "Cards", "select": "#list", "req": "req/nor/cards/views"}
         ]
       }
     ]}
   ],
+  "samples": "tests/state_samples.py",
+  "differ": {
+    "Submit GT crumb": {"steady": "its Review step is still to do on every path",
+      "rule": [
+        {"is": "hidden", "approval": "tentative", "req": "req/shell/status-bar/breadcrumbs"}
+      ]
+    }
+  },
   "roots": {
     "GT, signed out": {"stage": "GT", "signedIn": false, "role": "viewer"},
     "GT, Tagger": {"stage": "GT", "signedIn": true, "role": "tagger"}
   },
   "paths": [
-    {"root": "GT, signed out", "actions": ["load"]},
-    {"root": "GT, Tagger", "actions": ["load"]}
+    {"root": "GT, signed out", "actions": ["load", "count"]},
+    {"root": "GT, Tagger", "actions": ["load", "count"]}
   ]
 }

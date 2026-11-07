@@ -4,10 +4,11 @@
 // the signed-in user's token approved for ROOT alone, and for the folders and files the page itself makes; the
 // fixture study given ROOT as its root; a stand-in worker answering ANSWERS
 // (tests/test_study_runs.py), which keeps the last file it was handed as self.lastOpen, and opens a study's image as
-// ANSWERS' studies[id] says where it says so, a file its named[file's name] names as that says. Exits 2 when it cannot run.
+// ANSWERS' studies[id] says where it says so, a file its named[file's name] names as that says, and answers the calls
+// of a study ANSWERS' live names from that study's own Python (study_calls.py). Exits 2 when it cannot run.
 import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
-import { execSync } from "node:child_process";
+import { execSync, spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
@@ -73,20 +74,47 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {}, 
   const bytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
   let id = new URL(self.location.href).searchParams.get("study");
   postMessage({ type: "ready", info: A.ready[id], heap: 0, files: 0 });
-  onmessage = ({ data: m }) => {
+  onmessage = async ({ data: m }) => {
     if (m.type === "study") { id = m.id; postMessage({ type: "ready", info: A.ready[id], heap: 0, files: 0 }); }
     else if (m.type === "open") {
       self.lastOpen = { name: m.name, bytes: new Uint8Array(m.bytes) };
-      const own = A.studies?.[id]?.named?.[m.name] ?? A.studies?.[id], images = bytes(own ? own.images : A.images);
+      const own = A.studies?.[id]?.named?.[m.name] ?? (A.studies?.[id]?.images ? A.studies[id] : null), images = bytes(own ? own.images : A.images);
       postMessage({ type: "opened", meta: own ? own.opened : A.opened, images }, [images.buffer]);
+    }
+    // a study ANSWERS names as live answers from its own Python, on the file it was handed last
+    else if (m.type === "call" && A.live?.includes(id)) {
+      let s = ""; for (let k = 0; k < self.lastOpen.bytes.length; k += 32768) s += String.fromCharCode(...self.lastOpen.bytes.subarray(k, k + 32768));
+      const r = await (await fetch("/py", { method: "POST", body: JSON.stringify({ id, name: self.lastOpen.name, bytes: btoa(s), action: m.action, args: m.args }) })).json();
+      if (r.error) throw new Error(r.error);
+      const b = r.bytes == null ? null : bytes(r.bytes);
+      postMessage({ type: "result", action: m.action, meta: r.meta, bytes: b, echo: m.echo }, b ? [b.buffer] : []);
     }
     else if (m.type === "call") { const b = bytes(A.mask); postMessage({ type: "result", action: m.action, meta: A.count, bytes: b, echo: m.echo }, [b.buffer]); }
   };`;
   const CONFIG = `window.NOR_CONFIG = { google: { apiKey: "stand-in", clientId: "123456-stand.apps.googleusercontent.com" } };`;
   const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
+  // the studies' own Python, for the live studies' calls: one request a line, answered in turn
+  let py = null;
+  const waiting = [];
+  const ask = (body) => new Promise((ok) => {
+    if (!py) {
+      py = spawn("python3", [path.join(repo, "web-tests", "study_calls.py")], { stdio: ["pipe", "pipe", "inherit"] });
+      let buf = "";
+      py.stdout.on("data", (d) => { buf += d; for (let n; (n = buf.indexOf("\n")) >= 0; buf = buf.slice(n + 1)) waiting.shift()(buf.slice(0, n)); });
+    }
+    waiting.push(ok); py.stdin.write(body.replace(/\n/g, " ") + "\n");
+  });
+  // how many of the live studies' calls are on their way: to Python, or back to the page
+  let calls = 0;
   const server = http.createServer((q, r) => {
     const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
     const send = (type, body) => { r.writeHead(200, { "content-type": type }); r.end(body); };
+    if (u === "/py" && q.method === "POST") {
+      const chunks = [];
+      calls++;
+      q.on("data", (c) => chunks.push(c)).on("end", async () => { send("application/json", await ask(Buffer.concat(chunks).toString())); setTimeout(() => calls--, 200); });
+      return;
+    }
     if (u === "/web/worker.js") return send("text/javascript", STAND_IN);
     if (u === "/web/config.js") return send("text/javascript", CONFIG);
     if (u === "/web/vendor/wheels.json") return send("application/json", "[]");
@@ -102,7 +130,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {}, 
   const origin = `http://127.0.0.1:${server.address().port}`;
 
   const browser = await pw[ENGINE].launch(LAUNCH);
-  const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
+  const done = async (code) => { await browser.close(); server.close(); py?.kill(); process.exit(code); };
   const check = async (ok, what, seen) => { if (!ok) { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); } console.log("ok: " + what); };
   // a page or a check gone wrong ends the run
 
@@ -224,5 +252,5 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {}, 
     await page.waitForFunction((n) => document.querySelector("#role-name").textContent.trim() === n, name);
   }
 
-  return { ROOT, FILES, SUB, GT, writers, writes, keptForever, approved, viewOnly, shared, sharedOut, open, role, check, done, origin };
+  return { ROOT, FILES, SUB, GT, writers, writes, keptForever, approved, viewOnly, shared, sharedOut, open, role, check, done, origin, calls: () => calls };
 }
