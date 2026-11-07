@@ -34,6 +34,9 @@
       "tifffile==2026.3.3"
     ]
   },
+  "generated": {
+    "web/algorithms.GENERATED.json": "analysis/extraction/menu.py"
+  },
   "web": {
     "module": "web/vascular.js",
     "panels": "web/vascular.html",
@@ -63,7 +66,7 @@
   ],
   "progress": {
     "install": "Installing numpy, scipy, scikit-image…",
-    "load": "Loading the stack reader and the extraction versions…",
+    "load": "Loading the stack reader…",
     "open": "Reading the stack…",
     "extract": "Drawing the vessel model (the slow part: a minute or more)…"
   },

@@ -1,5 +1,5 @@
 // The vascular page's test surface: a local server for the site, with a stand-in for the study's Python worker
-// that offers two algorithms (their names, icons and steps as the study's Python gives them), opens any file as a drawn stack as many slices deep as the given model, and answers
+// that offers two algorithms (their names, icons and steps as the build lists them), opens any file as a drawn stack as many slices deep as the given model, and answers
 // Execute with that model, the arguments it was asked with in its "asked" field. The study is served in the
 // stage asked for.
 import { repoFile } from "../../../web-tests/repo_file.mjs";
@@ -21,13 +21,13 @@ const flat = new Uint8Array(n);
 for (let z = 0; z < Z; z++) for (let i = 0; i < n; i++) flat[i] = Math.max(flat[i], vol[z * n + i]);
 const meta = { W, H, Z, spacing: null, um: ${model.um_per_px} * ${model.size_px[0]} / W, um_y: ${model.um_per_px} * ${model.size_px[1]} / H,
   info: [["Slices", String(Z)]], channels: [{ name: "CD31", colour: "#ff0000" }] };
-const MODEL = ${JSON.stringify(model)}, info = { algorithms: ${JSON.stringify(ALGORITHMS)} };
+const MODEL = ${JSON.stringify(model)}, info = {}, ALGORITHMS = ${JSON.stringify(ALGORITHMS)};
 postMessage({ type: "ready", info });
 onmessage = ({ data: m }) => {
   if (m.type === "study") postMessage({ type: "ready", info });
   else if (m.type === "open") { const images = new Uint8Array(flat.length + vol.length); images.set(flat); images.set(vol, flat.length); postMessage({ type: "opened", meta, images }, [images.buffer]); }
   else if (m.type === "call" && m.action === "extract")
-    setTimeout(() => postMessage({ type: "result", action: "extract", meta: { ...MODEL, algorithm: info.algorithms.find((a) => a.key === m.args.algorithm).name, asked: m.args }, bytes: null }), 50);
+    setTimeout(() => postMessage({ type: "result", action: "extract", meta: { ...MODEL, algorithm: ALGORITHMS.find((a) => a.key === m.args.algorithm).name, asked: m.args }, bytes: null }), 50);
 };`;
 
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
@@ -36,6 +36,7 @@ export async function serve(repo, studies, model, stage) {
   const server = http.createServer((q, r) => {
     const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
     if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(standIn(model)); }
+    if (u === "/studies/vascular/web/algorithms.GENERATED.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end(JSON.stringify(ALGORITHMS)); }
     if (u === "/web/vendor/wheels.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end("[]"); }
     if (u === "/studies/vascular/study.json") {
       r.writeHead(200, { "content-type": "application/json" });

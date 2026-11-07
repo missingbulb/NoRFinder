@@ -21,6 +21,9 @@ export function mount(shell) {
   // each algorithm's precision and recall against the provisional labels, as the lab's grader measured them
   const quality = fetch(new URL("algorithm_metrics.json", import.meta.url)).then((r) => (r.ok ? r.json() : null)).catch(() => null)
     .then((q) => (shell.signal.aborted ? new Promise(() => {}) : q));
+  // the lab's versions on offer, as the build lists them, so the list never waits for the study's Python
+  const offered = fetch(new URL("algorithms.GENERATED.json", import.meta.url)).then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+    .then((list) => (shell.signal.aborted ? new Promise(() => {}) : list), (e) => { shell.status(`The algorithms could not be listed: ${e.message || e}`, true); return []; });
   const two = (x) => x.toFixed(2).replace(/^0/, "");
   const pr = (r) => `P\u00a0${two(r.precision)}\u00a0·\u00a0R\u00a0${two(r.recall)}`; // one unbroken pair
   const chosen = () => algorithms.find((a) => a.key === $("#vm-algo").value);
@@ -68,18 +71,19 @@ export function mount(shell) {
   if (shell.page.get("image")) MV.stackOpened();
   window.vascular = { tasks: tasks.inspect, model: MV.inspect };
 
+  offered.then((list) => {
+    algorithms = list;
+    const sel = $("#vm-algo");
+    sel.replaceChildren(...algorithms.map((a) => new Option(`${a.icon} ${a.title}`.trim(), a.key)));
+    sel.disabled = !algorithms.length;
+    quality.then((q) => {
+      if (q) sel.title = "Precision (P) and recall (R) of each algorithm against a model's verdicts, not the owner's";
+      for (const o of sel.options) if (q && q.versions[o.value]) o.textContent += ` (${pr(q.versions[o.value])})`;
+    });
+    about(); canRun();
+  });
+
   return {
-    ready(info) {
-      algorithms = info.algorithms || [];
-      const sel = $("#vm-algo");
-      sel.replaceChildren(...algorithms.map((a) => new Option(`${a.icon} ${a.title}`.trim(), a.key)));
-      sel.disabled = !algorithms.length;
-      quality.then((q) => {
-        if (q) sel.title = "Precision (P) and recall (R) of each algorithm against a model's verdicts, not the owner's";
-        for (const o of sel.options) if (q && q.versions[o.value]) o.textContent += ` (${pr(q.versions[o.value])})`;
-      });
-      about(); canRun();
-    },
     opening() { ran = null; MV.stackOpened(); canRun(); },
     opened() { canRun(); shell.status("Stack loaded. Press Execute to draw its vessel model."); },
     result(action, meta) {

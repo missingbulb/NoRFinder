@@ -14,21 +14,10 @@ CD31 = {'name': 'CD31', 'colour': '#ff0000'}
 DAPI = {'name': 'DAPI', 'colour': '#0000ff'}
 
 
-def algorithms():
-    """The lab's versions the page offers, the lab's default first, then the newest first, the retired left out: each
-    its key, its name in the model it draws, its title, its icon, and its steps as a Markdown outline."""
-    import importlib
-    import lab
-    keys = [lab.DEFAULT] + sorted((k for k in lab.VERSIONS if k != lab.DEFAULT and k not in lab.RETIRED), reverse=True)
-    out = []
-    for k in keys:
-        mod = importlib.import_module(lab.VERSIONS[k])
-        out.append({'key': k, 'name': mod.NAME, 'title': mod.TITLE, 'icon': mod.ICON, 'about': mod.STEPS})
-    return out
-
-
 def ready():
-    return json.dumps({'algorithms': algorithms()})
+    """Nothing for the page: the versions it offers ship beside it (analysis/extraction/menu.py), and the lab, with
+    scipy, loads at the first extraction."""
+    return '{}'
 
 
 def window(c):

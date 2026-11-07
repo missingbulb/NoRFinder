@@ -869,8 +869,12 @@ nobody has decided: what the page does there is not a requirement yet.
 
   The user picks an image meanwhile, which opens as soon as Python is ready. Its packages download
   while Python itself starts, and the status bar names each stage (downloading, with the megabytes
-  so far; installing; loading the study, in the study's own words; ready). Until an image is loaded,
-  Load shines, and the study's boxes are folded (`req/shell/left-bar/folding`).
+  so far; installing; loading the study, in the study's own words; ready). Python already on this
+  device is never said to download: the status bar says Starting Python, then reading the packages
+  (owner, 2026-11-07). Python's importer asks the site only for a module the study's folders hold on the
+  release (its offline list), never for a name they lack, as scipy's and scikit-image's optional imports
+  are. Until an image is loaded, Load shines, and the study's boxes are folded
+  (`req/shell/left-bar/folding`). Test: `web-tests/test_python_files.py`.
   </details>
 
 - `req/shell/python/one-call` Python is reached through one generic call.
@@ -1026,7 +1030,8 @@ nobody has decided: what the page does there is not a requirement yet.
   The published site is the shell's page and, from each study, only what its standard layout says
   the page loads: `study.json`, the study's page part under `web/` (never its Python), and the
   modules directly in the folders its Python is imported from (`python.paths`), which is all the
-  page's importer can reach. A study's docs, data, tests and lab notes stay in the repo, and nothing
+  page's importer can reach, and the files its `generated` names under `web/`, each the output of one of
+  its scripts the build runs. A study's docs, data, tests and lab notes stay in the repo, and nothing
   in a study says how, where or whether it is published. The build (`dev/tools/build/build.py`)
   assembles the set under `dev/build/site/`, the tree the release uploads. Test:
   `web-tests/test_published_site.py`.
