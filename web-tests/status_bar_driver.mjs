@@ -50,7 +50,6 @@ onmessage = ({ data: m }) => {
   if (m.type === "study") postMessage({ type: "ready", info: A.ready[m.id], ...mem() });
   else if (m.type === "open") { const images = bytes(A.images); postMessage({ type: "opened", meta: A.opened, images, ...mem() }, [images.buffer]); }
   else if (m.type === "call") { work(${WORK}); const b = bytes(A.mask); postMessage({ type: "result", action: m.action, meta: A.count, bytes: b, echo: m.echo, ...mem() }, [b.buffer]); }
-  else if (m.type === "memory") postMessage({ type: "memory", used: ${25 * MB}, objects: 1000, ...mem() });
 };`;
 let stage = null; // the fixture's stage as served; null: as committed
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
@@ -309,15 +308,14 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await loadImage(page);
   await steps(page, ["Load image", "Count*"], ["#fx-count", "#sb-count"]);
 
-  // the memory opens its tab of the one dialog, with Run GC and no essay on Python's memory
+  // the memory opens its tab of the one dialog, with no Run GC and no essay on Python's memory
   await page.click("#sb-memory");
   await tabIs(page, "memory");
   const rows = await page.evaluate(() => [...document.querySelectorAll("#ram-list .entry .name")].map((n) => n.textContent));
   await check(["Python", "Python's files", "The image"].every((n) => rows.includes(n)), "the Memory tab lists what holds it", rows);
   await check(!/reserved for its next use/.test(await page.textContent("#usage-dlg")), "with no explanation of Python's memory");
-  await page.click("#ram-gc");
-  await page.waitForFunction(() => /in use/.test(document.querySelector("#ram-msg").textContent));
-  await check(/25 MB in use of \d+ MB/.test(await page.textContent("#ram-msg")), "Run GC says what Python holds in use against its reserve", await page.textContent("#ram-msg"));
+  const gc = await page.evaluate(() => [...document.querySelectorAll("#usage-dlg button")].filter((x) => /GC|garbage/i.test(x.textContent)).length);
+  await check(gc === 0, "and no Run GC button", gc);
   if (shots) await page.screenshot({ path: path.join(shots, "4-memory.png") });
   // the tabs look alike: the total, then rows of a name, what it is and a size, in the same type
   const look = (tab) => page.evaluate((t) => {
@@ -372,6 +370,8 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   // the CPU tab's Animations checkbox, checked at first, turns every animation off but the spinners'
   await page.click("#sb-cpu"); await tabIs(page, "cpu");
   await check(await page.isChecked("#motion"), "the CPU tab's Animations checkbox is checked at first");
+  const said = await page.evaluate(() => document.querySelector("#motion").closest("[role=tabpanel] > *").textContent.trim());
+  await check(said === "Animations", "with no explanation beside it", said);
   await page.uncheck("#motion"); await page.keyboard.press("Escape");
   await check(await page.evaluate(() => JSON.parse(localStorage.getItem("nor-motion"))) === false, "unchecked, it is kept for the next visit");
   const still = await page.evaluate(() => {
@@ -455,8 +455,8 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await page.click("#sb-res-icon");
   await page.waitForFunction(() => document.querySelector("#usage-dlg").open);
   if (shots) await page.screenshot({ path: path.join(shots, "12-resources-setting.png") });
-  const mode = await page.evaluate(() => ({ value: document.querySelector("#res-mode")?.value, options: [...document.querySelectorAll("#res-mode option")].map((o) => o.value) }));
-  await check(mode.value === "auto" && mode.options.join() === "hidden,auto,open", "clicking the icon opens the resources dialog, whose setting for the block offers hidden, auto-hiding and always open, auto-hiding chosen", mode);
+  const mode = await page.evaluate(() => { const b = document.querySelector("#res-mode"); return { type: b?.type, checked: b?.checked, label: b?.closest("label")?.textContent.trim(), selects: document.querySelectorAll("#usage-dlg .res-mode select").length }; });
+  await check(mode.type === "checkbox" && mode.checked && mode.label === "Autohide" && !mode.selects, "clicking the icon opens the resources dialog, whose one setting for the block is an Autohide checkbox, checked", mode);
   await page.keyboard.press("Escape"); await page.mouse.move(700, 300);
   await isOpen(false, "closed, the block is folded again");
 
@@ -495,22 +495,27 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await page.evaluate(() => { document.documentElement.dataset.motion = "on"; });
 
   // always open: as before; kept for the next visit
-  await page.click("#sb-res-icon"); await page.selectOption("#res-mode", "open"); await page.keyboard.press("Escape"); await page.mouse.move(700, 300);
-  await isOpen(true, "always open, the four show");
+  await page.click("#sb-res-icon"); await page.uncheck("#res-mode"); await page.keyboard.press("Escape"); await page.mouse.move(700, 300);
+  await isOpen(true, "Autohide unchecked, the four show always");
   await check((await block()).icon > 10, "beside their icon");
   await check(await page.evaluate(() => JSON.parse(localStorage.getItem("nor-resources"))) === "open", "the choice is kept for the next visit");
-  // hidden always: only the icon, which hovering and the network going do not unfold
-  await page.click("#sb-disk"); await page.selectOption("#res-mode", "hidden"); await page.keyboard.press("Escape");
-  await isOpen(false, "hidden always, only the icon shows");
-  await check((await block()).icon > 10, "the icon showing");
-  await page.hover("#sb-res-icon");
-  await isOpen(false, "and hovering it does not unfold the four");
-  await page.mouse.move(700, 300);
+  await page.click("#sb-disk"); await page.check("#res-mode"); await page.keyboard.press("Escape"); await page.mouse.move(700, 300);
+  await isOpen(false, "checked again, they fold");
+  await check(await page.evaluate(() => JSON.parse(localStorage.getItem("nor-resources"))) === "auto", "and auto-hiding is kept");
   await ctx.setOffline(true);
-  await isOpen(false, "nor does going offline", 2500);
+  await isOpen(false, "going offline does not unfold them", 2500);
   await check(!(await page.$("#sb-res-icon .no-net")), "the icon carries no offline mark: the online icon says so");
   await shot(page, "11-resources-hidden-offline");
   await ctx.setOffline(false);
+  await ctx.close();
+}
+// a Hidden always kept from before the setting became one checkbox reads as auto-hiding
+{
+  const { ctx, page } = await open("fixture", "hidden");
+  await page.hover("#sb-res-icon");
+  await page.waitForFunction(() => document.querySelector("#sb-res-items").getBoundingClientRect().width > 50);
+  await page.click("#sb-res-icon");
+  await check(await page.isChecked("#res-mode"), "a kept Hidden always unfolds on hover and shows Autohide checked");
   await ctx.close();
 }
 

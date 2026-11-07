@@ -436,7 +436,6 @@ html[data-motion=off] :is(#sb-res-items, #statusbar #sb-res-icon) { transition: 
 #usage-dlg .tab-head { display: flex; flex-wrap: wrap-reverse; align-items: center; gap: 0 12px; }
 #usage-dlg .tab-head .tab-row { flex: 1; }
 #usage-dlg .res-mode { font-size: 12px; color: var(--dim); white-space: nowrap; }
-#usage-dlg .res-mode select { font: inherit; }
 #sb-now { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 0 1 auto; overflow: hidden; }
 #sb-now #status { overflow: hidden; text-overflow: ellipsis; }
 /* too little room: what the page is doing and the four give way; the steps and the right-hand items stay whole */
@@ -692,7 +691,6 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 #usage-dlg .total { margin: 0 0 6px; }
 #usage-dlg .motion { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
 #usage-dlg .motion label { display: flex; align-items: center; gap: 6px; font-weight: 600; }
-#usage-dlg .motion .hint { margin: 2px 0 0 24px; }
 #usage-dlg:not([data-tab=storage]) [data-for=storage], #usage-dlg:not([data-tab=memory]) [data-for=memory] { display: none; }
 .rows { max-height: min(62vh, 560px); overflow-y: auto; padding-right: 6px; }
 #storage-list .group { border-top: 1px solid var(--line); padding: 6px 0; }

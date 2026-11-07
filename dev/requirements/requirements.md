@@ -925,7 +925,8 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/shell/resources-dialog/animations` An Animations checkbox in the resources dialog's CPU tab turns every animation on the page off.
   <details>
 
-  Set by the owner on 2026-10-31. Checked at first, it is kept as the user's setting: the next visit
+  Set by the owner on 2026-10-31. It is the checkbox alone, with no text explaining it (set by the owner on
+  2026-11-07). Checked at first, it is kept as the user's setting: the next visit
   opens with it as it was left, and signed in it follows the user (`req/shell/account/sign-in`). Unchecked, nothing on the
   page moves to draw the eye: the minimap and the drawers change at once, the photocopier's light
   does not sweep the image, no button shines or glows (one that would looks plain, with no light or
@@ -1096,15 +1097,15 @@ nobody has decided: what the page does there is not a requirement yet.
   `web-tests/test_status_bar_page.py`.
   </details>
 
-- `req/shell/status-bar/memory` The memory, a memory-chip icon and "253 MB", opens what holds it and a Run GC button.
+- `req/shell/status-bar/memory` The memory, a memory-chip icon and "253 MB", opens what holds it.
   <details>
 
   The memory the tab holds: Python's, its files, the page's (Chrome and Edge say it) and an estimate
   for the compiled code and the browser, which a page cannot read; amber past a quarter of the
   computer's total where the browser says it. Clicking it opens the Memory tab (`req/shell/resources-dialog`) listing each
   of those, and within the page's share the image and the study's results, and the computer's
-  total. Its Run GC button has Python collect its garbage and says what Python then holds in use
-  against what it has reserved; the tab carries no essay on how Python's memory grows. Test:
+  total. It carries no button to have Python collect its garbage (a Run GC button removed by the owner on
+  2026-11-07), and no essay on how Python's memory grows. Test:
   `web-tests/test_status_bar_page.py`.
   </details>
 
@@ -1135,16 +1136,16 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Set by the owner on 2026-11-03. The four sit in one block with a gauge icon at its right, next to the
-  online icon (`req/shell/status-bar/online`). A setting in the resources dialog, above its tabs on every tab, chooses how the block shows:
-  Auto-hiding, the default, Hidden always, or Always open, as the status bar was before. Auto-hiding,
+  online icon (`req/shell/status-bar/online`). An Autohide checkbox in the resources dialog, above its tabs on every tab, chooses how the block shows:
+  checked, the default, it auto-hides; unchecked, it is always open, as the status bar was before (set by the owner on
+  2026-11-07, in the place of a choice that also offered Hidden always; a kept Hidden always reads as auto-hiding). Auto-hiding,
   the page opens with the four folded away and the icon alone showing; hovering the block unfolds the
   four as they look always open, opening beside the icon, which stays where it is (changed by the owner on
   2026-11-07), and leaving folds them again, both ways
   animated (at once with animations off, `req/shell/resources-dialog/animations`, or reduced motion asked for). It unfolds by
   itself, and stays unfolded, while the CPU has been over 50% of one core for more than
   5 seconds, the network has been downloading over 250 KB/s for more than 5
-  seconds, or the tab holds over 1 GB, and folds 8 seconds after the last of these ends. Hidden
-  always, only the icon shows, and neither hovering nor any of these unfolds it. Going offline does not unfold it
+  seconds, or the tab holds over 1 GB, and folds 8 seconds after the last of these ends. Going offline does not unfold it
   (set by the owner on 2026-11-04): the online icon (`req/shell/status-bar/online`) says so. Always open, the four show beside the icon. Clicking the icon opens the
   resources dialog (`req/shell/resources-dialog`) on the tab last shown, Storage at first. The choice is kept as the user's setting and,
   signed in, follows the user (`req/shell/account/sign-in`). Test: `web-tests/test_status_bar_page.py`.
