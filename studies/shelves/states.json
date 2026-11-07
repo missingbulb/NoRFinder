@@ -1,41 +1,55 @@
 {
-  "about": "The Bookshelf Reader's own elements in the shell's states (req/checks/shell-states, req/checks/spec-layout): each graft puts its tree under the shell's element `under`, after its child `after` or first, in the tree of dev/requirements/shell-states.json, whose rules they follow; its roots and paths open this study. `counted` is its first step, Find books, done.",
+  "about": "The Bookshelf Reader's own elements in the shell's states (req/checks/shell-states, req/checks/spec-layout): each graft puts its tree under the shell's element `under`, after its child `after` or first, in the tree of dev/requirements/shell-states.json, whose rules they follow; its roots and paths open this study. `samples` names the module writing the image or z-stack its paths load; `standIn` the module standing in for what its page reaches off the site; `differ` says where a shell element shows otherwise in this study. `counted` is its first step, Find books, done.",
   "grafts": [
     {"under": "Processing", "tree": [
-      {"name": "Reader", "select": "#bs-reader", "control": true, "req": "req/shelves/read/readers"},
-      {"name": "Find books", "select": "#bs-find", "control": true, "req": "req/shelves/books/find"},
-      {"name": "Read titles", "select": "#bs-read", "control": true, "req": "req/shelves/read/readers",
-        "rule": [
-          {"when": {"counted": [false]}, "is": "disabled"}
+      {"name": "Finding and reading", "select": "#bs-box", "req": "req/shelves/books/find",
+        "children": [
+          {"name": "Reader", "select": "#bs-reader", "control": true, "req": "req/shelves/read/readers"},
+          {"name": "Find books", "select": "#bs-find", "control": true, "req": "req/shelves/books/find"},
+          {"name": "Read titles", "select": "#bs-read", "control": true, "req": "req/shelves/read/readers", "unwalked": "enabled once Find books is done, when Processing has folded",
+            "rule": [
+              {"when": {"counted": [false]}, "is": "disabled"}
+            ]
+          },
+          {"name": "Books found", "select": "#bs-found", "req": "req/shelves/books/find"}
         ]
-      },
-      {"name": "Books found", "select": "#bs-found", "req": "req/shelves/books/find"}
+      }
     ]},
     {"under": "Ground Truth Tasks", "tree": [
       {"name": "What the tasks are", "select": "#bs-tasks", "req": "req/shelves/truth/task"}
     ]},
     {"under": "Summary", "tree": [
-      {"name": "Titles' list", "select": "#bs-list", "req": "req/shelves/read/readers"},
-      {"name": "Download for the matcher", "select": "#bs-export", "control": true, "req": "req/shelves/matcher/export",
-        "rule": [
-          {"when": {"counted": [false]}, "is": "disabled"}
+      {"name": "Titles", "select": "#bs-titles", "req": "req/shelves/read/readers",
+        "children": [
+          {"name": "Titles' list", "select": "#bs-list", "req": "req/shelves/read/readers"},
+          {"name": "Download for the matcher", "select": "#bs-export", "control": true, "req": "req/shelves/matcher/export"}
         ]
       }
     ]},
     {"under": "Image view", "after": "Minimap", "tree": [
-      {"name": "Drawing hint", "select": "#bs-draw-hint", "req": "req/shelves/truth/task",
+      {"name": "Drawing hint", "select": "#bs-draw-hint", "req": "req/shelves/truth/task", "steady": "shows only while a book is drawn",
         "rule": [
           {"is": "hidden"}
         ]
       }
     ]}
   ],
+  "samples": "tests/state_samples.py",
+  "standIn": "tests/reader_stand_in.mjs",
+  "differ": {
+    "Submit Ground Truth": {
+      "rule": [
+        {"is": "disabled", "approval": "tentative", "req": "req/shelves/truth/task",
+          "about": "until every book found is checked and the missed ones drawn, which no path does"}
+      ]
+    }
+  },
   "roots": {
     "GT, Viewer": {"stage": "GT", "signedIn": true, "role": "viewer"},
     "GT, Tagger": {"stage": "GT", "signedIn": true, "role": "tagger"}
   },
   "paths": [
-    {"root": "GT, Viewer", "actions": ["load"]},
-    {"root": "GT, Tagger", "actions": ["load"]}
+    {"root": "GT, Viewer", "actions": ["load", "count"]},
+    {"root": "GT, Tagger", "actions": ["load", "count"]}
   ]
 }

@@ -1415,23 +1415,36 @@ nobody has decided: what the page does there is not a requirement yet.
   working, which the owner does not review; its tentative and undecided cases are questions for the owner.
   `dev/requirements/shell-states.json` lists the shell's elements as a tree, each
   under the one holding it; each study with a `studies/<id>/states.json` grafts its own elements in there, under the
-  shell's elements holding them, and may add roots and paths of its own (`req/checks/spec-layout`). The shell's paths
+  shell's elements holding them, may say where a shell element differs there (its rule), and may add roots and paths
+  of its own (`req/checks/spec-layout`), with the sample image or z-stack its paths load and what stands in for what
+  its page reaches off the site. The shell's paths
   open the study the file names, the fixture; a study's own paths open it, on the shell's tree with its own elements
   alone grafted in. Each element gives only what differs from its parent: cases over the state (the
   study's stage, who is signed in, the role, the image open and whether it is a z-stack, the study's step done, the view, what Data Management
-  has selected, whether the page is online, whether Edit Image is open, and what the study says of itself in its
+  has selected, whether the page is online, whether Edit Image is open, whether the image fits the view, whether the
+  left bar is collapsed, whether a notice shows, and what the study says of itself in its
   `study.json` and panels: whether it opens images from the computer, has steps after Load, and has an item view,
   never shown when shelved, `req/shell/views/second`), each citing the requirement that decides it and marked tentative or undecided where the owner has
   not decided (an undecided case is shown and not checked). Its paths start from a few roots (a study's stage and a
-  role) and take actions one after another, each state one more action on the one before.
+  role) and take actions one after another, each state one more action on the one before: loading an image, a
+  z-stack or a file from the study's Drive folder, Unload, the study's first step, the view switched, a role chosen
+  (to or from Ground Truth Tagger the study opens afresh), another study and Back, the notice's OK, zooming in until
+  the image no longer fits, the left bar collapsed and expanded, Data Management's folder, preview and Edit Image, and
+  the network lost and back.
   `dev/tools/build/shell_states.py` writes from it the matrix, `dev/requirements/shell-states.GENERATED.md`, one table
-  per path, and the browser test's expectations; a case no state reaches fails it. In the fast set the
+  per path, and the browser test's expectations. It fails on what the walk would leave unchecked: a case no state
+  reaches; a case decided only where a parent hides or folds the element, which the browser reads as gone whatever
+  the case says, unless the element or the case is marked unwalked with why no path shows it (what an unwalked
+  element holds goes with it); an element every state shows the same, unless marked steady with why; such a mark a
+  state contradicts; an action no path takes; and a value of a var no state has. In the fast set the
   generated files must be up to date, every element in each study's tree must be on the shell's page or that
   study's panels (one the page makes as it runs, such as the 3D view's controls, by the nearest element holding it
-  that the page does not make), and every element of the shell's page, but what a dialog, popup or menu holds, must be in the
-  shell's tree. In the full set one page per path takes the actions on its study, the study's stage set for it,
+  that the page does not make), every element of the shell's page and of each study's panels, but what a dialog,
+  popup, menu or disclosure holds, must be in the shell's tree or that study's, and the tree must call an element a
+  box or a control where the page does. In the full set one page per path takes the actions on its study, the study's stage set for it,
   against a stand-in Google and a stand-in Python answering what the study's own Python answers on loading and on
-  opening the image, or the z-stack a path loads, signed in as an account the study is shown to, and at every state reads each element as shown,
+  opening the image, or the z-stack a path loads, and the study's own Python answering its calls once it takes its
+  first step, signed in as an account the study is shown to, and at every state, the study's calls answered, reads each element as shown,
   disabled, held offline, folded or gone; every difference is listed before it fails. Test: `web-tests/test_shell_states.py`,
   `web-tests/test_shell_states_page.py`.
   </details>

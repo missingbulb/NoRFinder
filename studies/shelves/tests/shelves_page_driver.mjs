@@ -14,6 +14,7 @@ import { repoFile } from "../../../web-tests/repo_file.mjs";
 import { offSite } from "../../../web-tests/off_site.mjs";
 import { ENGINE, LAUNCH } from "../../../web-tests/engine.mjs";
 import { asTagger } from "../../../web-tests/tagger.mjs";
+import { prepare, seed } from "./reader_stand_in.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -41,13 +42,6 @@ onmessage = ({ data: m }) => {
     postMessage({ type: "result", action: "straighten", meta: { sizes }, bytes }, [bytes.buffer]);
   }
 };`;
-// reads the BMP's own width and height: "Title <w>x<h>", 90% sure across, 20% sure up or down
-const TESSERACT = `export default { createWorker: async () => ({
-  setParameters: async () => {},
-  recognize: async (b) => { const v = new DataView(b.buffer, b.byteOffset); const w = v.getInt32(18, true), h = v.getInt32(22, true);
-    return { data: { text: "Title " + w + "x" + h + "\\n", confidence: w > h ? 90 : 20 } }; },
-  terminate: async () => {},
-}) };`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
@@ -70,7 +64,7 @@ async function open(role, seed = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
   await asTagger(ctx);
   await ctx.route(offSite(origin), (r) => r.abort());
-  await ctx.route("https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.esm.min.js", (r) => r.fulfill({ contentType: "text/javascript", body: TESSERACT }));
+  await prepare(ctx);
   await ctx.addInitScript(([role, seed]) => {
     delete Navigator.prototype.serviceWorker; localStorage.setItem("nor-role", role);
     for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v);
@@ -87,7 +81,7 @@ async function open(role, seed = {}) {
 }
 const saved = async (page, click) => { const [d] = await Promise.all([page.waitForEvent("download"), page.click(click)]); return { name: d.suggestedFilename(), doc: JSON.parse(fs.readFileSync(await d.path(), "utf8")) }; };
 const books = (page) => page.$$eval('#overlay g[data-layer="bs"] g.bs-book', (gs) => gs.map((g) => g.getAttribute("class")));
-const KEPT = { "shelves-reader": JSON.stringify("tesseract") };
+const KEPT = seed;
 
 try {
   // a viewer: the books found and read, and the file for the matcher
