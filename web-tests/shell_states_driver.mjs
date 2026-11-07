@@ -1,13 +1,15 @@
 // Walks the shell's states (req/checks/shell-states) in a browser, against the stand-in Google of stand_in_drive.mjs
 // serving ROOT: each path of EXPECT (shell-states.GENERATED.json) opens its study as its root says, takes its
 // actions one after another, and at every state reads each element as shown, disabled, folded or gone, against what
-// the rules expect. Every difference is reported, then the run fails. Optional RENDERS: a directory for a picture of
+// the rules expect; after its last state, it goes to another study and back, each page then compared with a fresh
+// load of its address (req/shell/study/switch-in-place). Every difference is reported, then the run fails. Optional RENDERS: a directory for a picture of
 // every state, arrows pointing at the elements that changed there, and an index.html of them all (req/checks/shell-states/renders).
 // STACK is the z-stack a path loads with its stack action; ANSWERS' files[study] may name a study's own image and stack. Exits 1 on a difference, 2 when it cannot run.
 //   node web-tests/shell_states_driver.mjs ANSWERS STUDIES ROOT IMAGE STACK EXPECT [RENDERS]
 import fs from "node:fs";
 import path from "node:path";
 import { standIn } from "./stand_in_drive.mjs";
+import { snapshot, differ } from "./page_snapshot.mjs";
 
 const [answers, studies, rootDir, image, stack, expectFile, renders] = process.argv.slice(2);
 const { FILES, open, role, check, done, calls } = await standIn({ answers, studies, rootDir });
@@ -186,6 +188,39 @@ const arrows = (page, marks) => page.evaluate(([marks, ARROW, WRONG]) => {
 }, [marks, ARROW, WRONG]);
 const unarrow = (page) => page.evaluate(() => document.querySelector("#state-arrows")?.remove());
 
+// Away to another study and back, from the path's last state (req/shell/study/switch-in-place): each study then is
+// the page a fresh load of its address shows, in the same browser, its storage kept. Back online first: offline, the
+// switch waits for the network.
+const awayAndBack = async (page, p) => {
+  const where = `${p.study} · ${p.root} → ${p.actions.join(", ")}`;
+  if (await page.evaluate(() => document.documentElement.classList.contains("offline"))) await ACTIONS.online(page);
+  await settled(page);
+  const home = page.url(), other = p.study === "viewer" ? "nor" : "viewer";
+  await page.evaluate(() => { window.panelsBefore = document.querySelector("[data-study-panel]"); });
+  await page.click("#study-menu summary");
+  await page.click(`#study-list a[data-id="${other}"]`);
+  await page.waitForFunction(() => document.querySelector("[data-study-panel]") !== window.panelsBefore);
+  await ready(page); await settled(page);
+  const there = await snapshot(page), away = page.url();
+  await page.goBack();
+  await page.waitForFunction((h) => location.href === h, home);
+  await ready(page); await settled(page);
+  const back = await snapshot(page);
+  // the fresh loads start from the storage the switched page left, not the path's seed
+  const kept = await page.evaluate(() => ({ ...localStorage }));
+  await page.close();
+  await page.context().addInitScript((kept) => { localStorage.clear(); for (const [k, v] of Object.entries(kept)) localStorage.setItem(k, v); }, kept);
+  for (const [url, switched, label] of [[away, there, `away at ${other}`], [home, back, "back"]]) {
+    const fresh = await page.context().newPage();
+    fresh.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
+    fresh.setDefaultTimeout(10000);
+    await fresh.goto(url);
+    await ready(fresh); await settled(fresh);
+    for (const d of differ(switched, await snapshot(fresh))) differences.push(`${where}, ${label}, not as a fresh load: ${d}`);
+    await fresh.close();
+  }
+};
+
 const differences = [];
 const index = [];
 if (renders) fs.mkdirSync(renders, { recursive: true });
@@ -241,6 +276,7 @@ for (const [k, p] of paths.entries()) {
     before = now;
   }
   index.push({ root: `${p.study} · ${p.root}`, shots });
+  await awayAndBack(page, p);
   await page.context().close();
 }
 

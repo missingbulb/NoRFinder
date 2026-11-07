@@ -1283,7 +1283,7 @@ nobody has decided: what the page does there is not a requirement yet.
   NoR Finder is GT. Test: `web-tests/test_study_contract.py`, `web-tests/test_status_bar_page.py`.
   </details>
 
-- `req/shell/study/switch-in-place` Switching study happens in place: no reload, and the new study starts with no image open.
+- `req/shell/study/switch-in-place` Switching study happens in place: no reload, and the new study starts as a fresh load of its address shows it.
   <details>
 
   Choosing a study in the switcher, or going back and forward between studies, changes the address
@@ -1292,7 +1292,14 @@ nobody has decided: what the page does there is not a requirement yet.
   steps, its results, Python's copy of it), so the new study starts as one just opened. The study that leaves
   takes its panels, its stylesheet, its drawing and its listeners with it (each listener it adds
   outside its own panels carries `shell.signal`), and an answer its Python was still working on is
-  dropped. Test: `web-tests/test_study_runs.py`.
+  dropped. Set by the owner on 2026-11-07, in place of a reload: the page then is what loading the new
+  study's address afresh shows, element by element (each one's attributes, text, form values, scroll and open
+  popups) and in the shell's own state, nothing of the study before left anywhere: not the zoom, the 3D view's
+  parts, a folder Data Management had open, an edit, the remote files dialog's listing, or a ground-truth line.
+  What the browser keeps carries over as a reload would keep it (who is signed in, the role, the theme, the
+  user's choices, the images kept here), and so do the tab's own measures in the status bar. Test:
+  `web-tests/test_study_runs.py`; and `web-tests/test_shell_states_page.py`, where every path of the shell's
+  states ends by going to another study and back, each compared with a fresh load of its address.
   </details>
 
 - `req/shell/study/viewer-choice` The viewer is the study's choice.
@@ -1505,7 +1512,11 @@ nobody has decided: what the page does there is not a requirement yet.
   against a stand-in Google and a stand-in Python answering what the study's own Python answers on loading and on
   opening the image, or the z-stack a path loads, and the study's own Python answering its calls once it takes its
   first step, signed in as an account the study is shown to, and at every state, the study's calls answered, reads each element as shown,
-  disabled, held offline, folded or gone; every difference is listed before it fails. Test: `web-tests/test_shell_states.py`,
+  disabled, held offline, folded or gone. After its last state, back online first, each path goes to another
+  study and back (`req/shell/study/switch-in-place`), and the page in each must be what a fresh load of that address
+  shows in the same browser: the whole page read element by element and the shell's own state, leaving out what
+  changes between two readings of the same page (the status bar's measures of the tab, the browser's mark on what is
+  scrolled out of view, an attribute left empty, the order of a class list); every difference is listed before it fails. Test: `web-tests/test_shell_states.py`,
   `web-tests/test_shell_states_page.py`.
   </details>
 
