@@ -22,8 +22,16 @@ MARGIN = 0.08
 SIGMA = 2.0
 # an edge piece shorter than this share of the shelf is lettering or grain, not a spine's side
 PIECE = 0.04
-# how many edges along a spine may lie between its two sides: its lettering's, when one was taken for a side
-REACH = 6
+# a book lies between two neighbouring edges between books: none lies between its sides
+REACH = 1
+# the edges between books, after Osef's spine segmentation (yoavberliner/Osef, 2026-09-25): an unblurred upright
+# gradient over this, and this many times the across one, on a strict pass and on a relaxed one inside a wide gap
+SEAM_STRICT, SEAM_RELAXED = (40, 1.5), (25, 1.0)
+# a line is an edge between books when it lies on one along this share of the rows nearly every book crosses, the rows
+# where the mean upright gradient is this share of its strongest's
+BOUNDARY, CORE = 0.8, 0.35
+# a gap this many times the shelf's usual spine is searched again on the relaxed pass
+WIDE = 1.8
 # a book's face carries texture: a row of its strip is the book while its edges are this share of the strip's median,
 # and a plain stretch shorter than this share of the shelf between them is still the book
 FILL, GAP = 0.25, 0.15
@@ -47,6 +55,8 @@ TEXTURE = 0.5
 LENGTH, MIN_WIDTH = 0.5, 0.008
 # how far, as a share of the shelf's height, a book's end is looked for around where its texture stops
 SNAP = 0.04
+# and how far, in degrees, from square to its sides it is looked for at: the camera's angle on it
+END_TURN = 12
 # [camera-uniform] the perspective is read from at least this many boxes; a box whose ends turn more than this many
 # degrees otherwise than it has them turn there is dropped
 SURE_MIN, PERSPECTIVE_TOL = 3, 15
@@ -101,6 +111,8 @@ class Edges:
         self.grad = ndi.gaussian_gradient_magnitude(g, SIGMA)
         self.h, self.w = g.shape
         self.rgb = rgb
+        self.gray = grey(rgb)
+        self.seam = seams(self.gray, True)
         self.spread = float(np.subtract(*np.percentile(g, [95, 5]))) or 1.0
 
 
@@ -119,14 +131,70 @@ def book_rows(e):
     return int(ys[0]), int(ys[-1]) + 1
 
 
+def seams(gray, strict):
+    """Where a near-upright edge is, from the unblurred gradient, a pixel of slack either side: the dark seam between
+    two black spines of one series is a pixel or two wide, and a blur takes it away."""
+    gx, gy = np.abs(ndi.sobel(gray, 1)), np.abs(ndi.sobel(gray, 0))
+    least, dominance = SEAM_STRICT if strict else SEAM_RELAXED
+    on = (gx > least) & (gx > dominance * gy)
+    return ndi.maximum_filter1d(on, 3, axis=1)
+
+
+def core_rows(gray):
+    """(top, bottom): the rows nearly every book crosses, where the mean upright gradient is CORE of its strongest's."""
+    r = np.abs(ndi.sobel(gray, 1)).mean(axis=1)
+    on = np.flatnonzero(r >= CORE * r.max()) if r.max() > 0 else []
+    return (int(on[0]), int(on[-1]) + 1) if len(on) else None
+
+
 def side_lines(e, top, bottom):
-    """[(x at the rows' middle, lean as tan)] of the straight edges running up the rows, left to right."""
-    from skimage.transform import hough_line, hough_line_peaks
-    h = bottom - top
-    H, angles, dists = hough_line(e.up[top:bottom], theta=np.deg2rad(np.arange(-LEAN, LEAN + LEAN_STEP / 2, LEAN_STEP)))
-    _, ang, dist = hough_line_peaks(H, angles, dists, min_distance=3, min_angle=2, threshold=0.2 * h, num_peaks=300)
-    # skimage's line is x cos(a) + y sin(a) = d: at row y, x = (d - y sin a) / cos a
-    return sorted(((d - (h / 2) * np.sin(a)) / np.cos(a), float(np.tan(a))) for d, a in zip(dist, ang))
+    """[(x at the rows' middle, lean as tan)] of the edges between books, left to right: lines that lie on a seam
+    along BOUNDARY of the rows nearly every book crosses, at leans up to LEAN, kept strongest first and none crossing
+    one already kept or close to it along its length, since two books' edges never cross; a gap far wider than the
+    shelf's usual spine is searched again with a lower bar, for the one weak edge, a pale book against a pale wall. A
+    spine's lettering runs along part of its length, a gap between two books along all of it."""
+    core = core_rows(e.gray[top:bottom])
+    if not core:
+        return []
+    c0, c1 = top + core[0], top + core[1]
+    yc, mid = (c0 + c1) / 2, (top + bottom) / 2
+    ys = np.arange(c0, c1)
+    tans = np.tan(np.deg2rad(np.arange(-LEAN, LEAN + LEAN_STEP / 2, LEAN_STEP)))
+    gap = MIN_WIDTH * 2 * e.w
+
+    def scan(x0s, strict):
+        on = seams(e.gray, strict)
+        found = []
+        for x0 in x0s:
+            xs = np.round(x0 + (ys[None] - yc) * tans[:, None]).astype(int)
+            ok = (xs >= 0) & (xs < e.w)
+            cover = np.where(ok, on[ys[None], np.clip(xs, 0, e.w - 1)], False).mean(axis=1)
+            k = int(np.argmax(cover))
+            if cover[k] >= BOUNDARY:
+                found.append((float(cover[k]), float(x0), float(tans[k])))
+        return found
+
+    def keep(found, kept):
+        at = lambda x, t, y: x + (y - yc) * t
+        kept = list(kept)
+        for f in sorted(found, reverse=True):
+            _, x, t = f
+            # two books leaning apart touch at one end and leave a wedge at the other: a line is crowding only when it
+            # is close to a kept one at both ends
+            if all((abs(at(x, t, c0) - at(kx, kt, c0)) >= gap or abs(at(x, t, c1) - at(kx, kt, c1)) >= gap)
+                   and np.sign(at(x, t, c0) - at(kx, kt, c0)) == np.sign(at(x, t, c1) - at(kx, kt, c1)) for _, kx, kt in kept):
+                kept.append(f)
+        return sorted(kept, key=lambda f: f[1])
+
+    kept = keep(scan(range(1, e.w - 1), True), [])
+    spans = np.diff([x for _, x, _ in kept])
+    if len(spans):
+        usual = float(np.median(spans))
+        for (_, xa, _), (_, xb, _) in zip(list(kept), list(kept)[1:]):
+            if xb - xa > WIDE * usual:
+                kept = keep(scan(range(int(xa + gap), int(xb - gap)), False), kept)
+    # in this module's terms: x at the rows' middle, and the lean as x falling going down
+    return [(x + (mid - yc) * t, -t) for _, x, t in kept]
 
 
 class Line:
@@ -175,13 +243,14 @@ def extent(e, la, lb, top, bottom):
 def end_edge(e, la, lb, y, out, win, limit, tilt, colour):
     """((y at la, y at lb), step): a book's end, from row y where its texture stops. Of the lines across its strip,
     from three windows inside that row (a board under a book carries texture of its own) to limit rows beyond it (out:
-    -1 up, +1 down), each at a tilt of its own up to tilt rows across, it is the first, going outward, where the strip's
+    -1 up, +1 down), each square to its sides give or take tilt rows across, it is the first, going outward, where the strip's
     colour changes by STEP_NEAR of the most it changes there and past which hardly any of the strip is the book's own
     colour: the board's and the wall's edges lie beyond the book's end, and past a row of its lettering most of the strip
     is still the book's. step is that change as a share of the shelf's brightness range."""
     u = np.linspace(0.15, 0.85, 12)
     shifts = np.arange(-3 * win, limit + 1)
-    tilts = np.arange(-tilt, tilt + 1, 2)
+    # square to the book's sides, give or take tilt: a leaning book's top leans with it
+    tilts = (la.t + lb.t) / 2 * (lb.xm - la.xm) + np.arange(-tilt, tilt + 1, 2)
     xl, xr = float(la.x(y)), float(lb.x(y))
     xs = xl + u * (xr - xl)
     # rows: [shift, tilt, sample]
@@ -269,10 +338,10 @@ def spine(e, lines, i, j, top, bottom):
     whole = extent(e, la.toward(lb, INSET), lb.toward(la, INSET), top, bottom)
     if not whole or whole[1] - whole[0] < LENGTH * h:
         return None
-    # the book's top and foot need not be level: each is where it ends, at the tilt that end runs, up to what a spine
-    # turned LEAN from upright gives across its width
+    # the book's top and foot need not be level: each is where it ends, square to its sides give or take what a camera
+    # looking at it END_TURN off square gives across its width
     win, limit = max(2, int(SNAP * h)), max(3, int(REACH_OUT * h))
-    tilt = win + int(np.ceil(width * np.tan(np.deg2rad(LEAN))))
+    tilt = 2 + int(np.ceil(width * np.tan(np.deg2rad(END_TURN))))
     colour = book_colour(e, la, lb, *whole)
     (tl, tr), top_step = end_edge(e, la, lb, whole[0], -1, win, limit, tilt, colour)
     (bl, br), foot_step = end_edge(e, la, lb, whole[1] - 1, 1, win, limit, tilt, colour)
@@ -280,12 +349,12 @@ def spine(e, lines, i, j, top, bottom):
     corners = [(float(la.x(tl)), tl), (float(lb.x(tr)), tr), (float(lb.x(br)), br), (float(la.x(bl)), bl)]
     if min(top_step, foot_step) < END_STEP or min(bl - tl, br - tr) < ASPECT * width:
         return None
-    sides_on = min(on_line(e.up_near, la, tl, bl), on_line(e.up_near, lb, tr, br))
+    sides_on = min(on_line(e.seam, la, tl, bl), on_line(e.seam, lb, tr, br))
     if sides_on < SIDE_COVER or not spine_shaped(corners):
         return None
     # two books are not one: no edge between its sides runs along it as its sides do
     y0, y1 = min(tl, tr), max(bl, br)
-    if any(on_line(e.up_near, lines[k], y0, y1) >= max(SIDE_COVER, INSIDE * sides_on) for k in range(i + 1, j)
+    if any(on_line(e.seam, lines[k], y0, y1) >= max(SIDE_COVER, INSIDE * sides_on) for k in range(i + 1, j)
            if lines[k].xm - la.xm > INSET * width and lb.xm - lines[k].xm > INSET * width):
         return None
     return dict(corners=corners, texture=texture(e, la, lb, *whole), fit=sides_on, steps=min(top_step, foot_step))
