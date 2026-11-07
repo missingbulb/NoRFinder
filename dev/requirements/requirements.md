@@ -429,8 +429,8 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Set by the owner on 2026-11-05. A tagger's progress on an image (votes, added items, masks, the areas
-  checked) is kept in the browser, so they can come back to it. Clear progress, in the Ground Truth Tasks
-  box, asks first, naming what goes ("your votes, added items and checked areas on <image>"), then forgets
+  checked) is kept in the browser, so they can come back to it. Clear progress, at the Ground Truth Tasks
+  box's end beside Submit Ground Truth (owner, 2026-11-07), asks first, naming what goes ("your votes, added items and checked areas on <image>"), then forgets
   only the open image's progress: other images keep theirs, and anything already submitted stays in Drive.
   Test: `web-tests/test_gt_drive_page.py`.
   </details>
@@ -543,11 +543,26 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/shell/ground-truth/tagger-access` The Ground Truth Tasks box shows whether the tagger may write to the submissions folder, and how to get there.
   <details>
 
-  Set by the owner on 2026-11-05. At the top of the Ground Truth Tasks box, a line says where submissions
-  go and whether this tagger may write there: Writable; Not approved, with a button that asks Google for
+  Set by the owner on 2026-11-05. At the top of the Ground Truth Tasks box, a line says whether this tagger
+  may write to the submissions folder when they may not: Not approved, with a button that asks Google for
   the page's per-file permission and opens its picker on the submissions folder (as Data Management does,
   `req/shell/data/drive-access`); or View only, telling them to ask the study's owner for edit access. It
-  is checked before any work, not first found at submit. Test: `web-tests/test_gt_drive_page.py`.
+  is checked before any work, not first found at submit. Changed by the owner on 2026-11-07: a tagger who may
+  write is told nothing, the line taking no room. Test: `web-tests/test_gt_drive_page.py`.
+  </details>
+
+- `req/shell/ground-truth/tagging` Ground truth tagging starts when the tagger presses Start GT tagging, and ends with Stop tagging.
+  <details>
+
+  Set by the owner on 2026-11-07. Opening an image, or the study's algorithm drawing what it found, leaves the
+  page on the image as it is viewed: no task open, nothing framed, ringed or cut out, the view where the person
+  left it. The Ground Truth Tasks box counts each task all the while, and Start GT tagging, at its top, begins
+  the walk at its next item not done (clicking a task's name starts it at that task); the button then reads Stop
+  tagging, which closes the open task and gives the image back to viewing. What tagging alone shows, the current
+  item's ring, the area's frame and what is cut out of the image, is shown only while tagging, and the Show menu's
+  rows for them are off out of it. Tagging stops when another image opens or
+  the study leaves. Test: `web-tests/test_gt_drive_page.py`, `studies/nor/tests/test_truth_tasks_page.py`,
+  `studies/vascular/tests/test_vessel_tasks_page.py`, `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
 - `req/shell/ground-truth/tasks` The shell lists the study's ground-truth tasks in Ground Truth Tasks, Submit Ground Truth last; how a task is worked through is the study's.
@@ -558,7 +573,8 @@ nobody has decided: what the page does there is not a requirement yet.
   (`req/shell/left-bar/shells`): a progress bar split into one part per task, each as wide as its task is long
   and filled as far as it is done, then one row per task, "13/47 Finalists", with a check once it is done, and
   last the shell's Submit Ground Truth row, which opens the submit popup (`req/shell/ground-truth/submit`) with
-  the study's ground truth. The study says when Submit can be pressed and, where it knows, whether its
+  the study's ground truth, Clear progress beside it (`req/shell/ground-truth/clear`). A task is open only while
+  the tagger tags (`req/shell/ground-truth/tagging`). The study says when Submit can be pressed and, where it knows, whether its
   ground truth is done, partly done or not started, which the button shows as an icon; whatever it says, Submit
   is off until the study's first step is done (owner, 2026-11-07). A task with no total (the Bookshelf Reader's
   missed books) shows its count alone, "1 Missed books", and its check once the study says it is done. One task at a time is

@@ -40,7 +40,8 @@ owner's decisions on the stacks and the vessel model, are
   file loaded, shows as the toolbar says (`req/vascular/model/view`): white tubes in a view of its
   own that turns with the stack's, or magenta over the stack. On the model: drag a point to move it,
   right-click a segment or a point to delete it, add or remove a bend or split a junction into
-  vessels that cross, right-drag from one piece to another to connect them, and click a faded
+  vessels that cross, right-drag from one piece to another to connect them, drag a vessel's tip onto another
+  vessel or point to attach it there, for a connection the algorithm missed (owner, 2026-11-07), and click a faded
   low-confidence vessel to approve or decline it. The toolbar's Everything, Detected and Missed keep the
   whole stack, only the signal within reach of the model's vessels, or only what lies away from them, within a
   reach that is a share of each vessel's own width (`req/vascular/model/view`); Mark a damaged area, under
@@ -117,12 +118,14 @@ owner's decisions on the stacks and the vessel model, are
   Test: `studies/vascular/tests/test_stack_page.py`.
   </details>
 
-- `req/vascular/truth/marks` An area done in every step is cut out of the stack, blacked out through every slice.
+- `req/vascular/truth/marks` While tagging, an area done in every step is cut out of the stack, blacked out through every slice.
   <details>
 
   Changed by the owner on 2026-11-07: an area whose Lines, Missed vessels and Junctions are all done is blacked
   out of the 3D stack in the whole-image view, so what is left to review stands out and the work shows as it is done.
-  Inside an area nothing is cut out, since every step there needs the signal it judges. The current area is framed
+  Inside an area nothing is cut out, since every step there needs the signal it judges. It is a progress mark for
+  tagging, not for viewing (owner, 2026-11-07): the Show menu's Cut out what is done switches it, and out of tagging
+  (`req/shell/ground-truth/tagging`) nothing is cut out and the row is off. The current area is framed
   on the whole image, and the current junction is drawn white over a dark rim, which reads over any signal. Test:
   `studies/vascular/tests/test_vessel_tasks_page.py`.
   </details>
@@ -144,13 +147,17 @@ owner's decisions on the stacks and the vessel model, are
   Set by the owner on 2026-11-07, replacing the vessel-by-vessel tasks of 2026-11-04. The tasks are the stack's
   areas (`req/vascular/truth/order`), and each area is worked through in three steps, one row each in the left bar
   under Processing once a model is open: "3/16 Lines", "2/16 Missed vessels", "1/16 Junctions", a check once done,
-  a bar split into a part per task, and Submit Ground Truth last. The open step's row holds the area's place, a
+  a bar split into a part per task, and Submit Ground Truth last. Execute leaves the stack in view as it was; the walk
+  opens on its first step not done only once Start GT tagging is pressed (`req/shell/ground-truth/tagging`), and Stop
+  tagging gives the whole stack back, as the Show menu sets it. The open step's row holds the area's place, a
   map of the areas to pick one from, the choice of how many areas, and the step's own controls, with Skip on its row.
   While a step is open the main view shows that area alone.
 
-  - **Lines**, from straight above: the stack flattened, the model's lines over it with a handle on every point,
-    and the view does not turn or pan. Dragging a handle moves its point across the picture, never in depth; the
-    right-click menu deletes, adds a bend or connects as anywhere. A low-confidence line, faint, is kept by clicking
+  - **Lines**, opening from straight above: the stack flattened, the model's lines over it with a handle on every
+    point. The area turns and pans in 3D as anywhere (owner, 2026-11-07, replacing a view held still). Dragging a
+    handle from straight above moves its point across the picture, never in depth; turned, across the screen at its
+    depth; a tip dropped on another vessel attaches there (`req/vascular/model/correct`). The right-click menu
+    deletes, adds a bend or connects as anywhere. A low-confidence line, faint, is kept by clicking
     it. "Lines are right" approves the area: every confident vessel whose middle lies in it is accepted, every
     low-confidence one not kept is declined.
   - **Missed vessels**, from straight above as Lines: Draw a missed vessel adds one there

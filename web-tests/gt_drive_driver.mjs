@@ -15,7 +15,8 @@ const [answers, studies, rootDir] = process.argv.slice(2);
 const drive = await standIn({ answers, studies, rootDir, gt: false });
 const { ROOT, FILES, writes, keptForever, viewOnly, sharedOut, open, role, check, done } = drive;
 const id = (name) => FILES.find((f) => f.folder && f.name === name)?.id;
-const line = (page) => page.waitForFunction(() => { const t = document.querySelector("#left .gt-access")?.textContent.trim(); return t && !/Checking/.test(t) && t; }).then((h) => h.jsonValue());
+// the access line once read: what it says, and whether it takes any room
+const line = (page) => page.waitForFunction(() => { const e = document.querySelector("#left .gt-access"); return e?.dataset.access ? { access: e.dataset.access, text: e.textContent.trim(), room: e.getClientRects().length > 0 && e.offsetHeight > 0 } : null; }).then((h) => h.jsonValue());
 const asTagger = async (page) => { await role(page, "Ground Truth Tagger"); return line(page); };
 const offered = (page) => page.evaluate(() => [...document.querySelectorAll("#role-list .item")].map((b) => b.textContent));
 
@@ -55,7 +56,7 @@ viewOnly.delete(SUBS);
 // writable: open the image from the study's folder, count, submit
 page = await open(true);
 let said = await asTagger(page);
-await check(/Writable/.test(said), "writable: the line says so", said);
+await check(said.access === "write" && !said.text && !said.room, "writable: the line says nothing and takes no room", said);
 const png = FILES.find((f) => /\.png$/.test(f.name));
 await page.click("#load-remote");
 await page.waitForFunction(() => document.querySelector("#remote-dlg").open);
@@ -63,6 +64,21 @@ await page.dblclick(`#remote-list .item[data-id="${png.id}"]`);
 await page.waitForFunction((n) => st.fileName === n && !$("#fx-count").disabled, png.name);
 await page.click("#fx-count");
 await page.waitForFunction(() => !$("#gt-submit").disabled);
+// req/shell/ground-truth/tagging: counted, no task opens until Start GT tagging; Stop tagging closes it; a task's name starts it there
+const tagging = () => page.evaluate(() => ({ open: document.querySelector("#gt-tasks > li.now")?.dataset.task || null, check: !!document.querySelector("#gt-tasks li.now #fx-check"),
+  start: $("#gt-start").offsetParent ? $("#gt-start").textContent.trim() : null, first: $("#gt-list").firstElementChild === $("#gt-start") }));
+let tg = await tagging();
+await check(!tg.open && !tg.check && tg.start === "Start GT tagging" && tg.first, "counted, no task is open, and Start GT tagging heads the tasks", tg);
+await page.click("#gt-start");
+tg = await tagging();
+await check(tg.open === "check" && tg.check && tg.start === "Stop tagging", "Start GT tagging opens the study's task, the button now Stop tagging", tg);
+await page.click("#gt-start");
+tg = await tagging();
+await check(!tg.open && !tg.check && tg.start === "Start GT tagging", "Stop tagging closes it", tg);
+await page.click('#gt-tasks > li[data-task="check"] .task-head .t');
+tg = await tagging();
+await check(tg.open === "check" && tg.start === "Stop tagging", "clicking a task's name starts tagging at that task", tg);
+await page.click("#gt-start");
 const submit = async () => {
   // the button sits in the item view's bar: pressed where it is
   await page.evaluate(() => $("#gt-submit").click());
@@ -90,7 +106,9 @@ await check(/Submitted/.test(msg) && writes.filter(([w, n]) => w === "folder" &&
 // Clear progress: asks first, naming the image, then forgets the study's progress on it
 let asked = null;
 page.once("dialog", (d) => { asked = d.message(); d.accept(); });
-await page.click("#left .gt-access .gt-clear");
+await check(await page.evaluate(() => !!document.querySelector('#gt-tasks > li[data-task="submit"] .gt-clear') && !document.querySelector("#left .gt-access .gt-clear")),
+  "Clear progress sits beside Submit Ground Truth, at the box's end");
+await page.click('#gt-tasks > li[data-task="submit"] .gt-clear');
 await page.waitForFunction(() => /Nothing counted/.test($("#fx-result")?.textContent) && st.fileName && !$("#fx-count").disabled);
 await check(asked && asked.includes(png.name), "Clear progress asks first, naming the image", asked);
 

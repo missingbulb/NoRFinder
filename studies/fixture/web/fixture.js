@@ -12,7 +12,7 @@ export function mount(shell) {
     shell.submitTruth({ doc: { labels: counted ? [counted] : [] }, count: counted ? 1 : 0, file: name + "_gt.json", items: [],
       empty: "Count first." });
   };
-  // its one task, checking the count, open once there is one
+  // its one task, checking the count, open once there is one and the tagger tags
   const task = () => {
     const done = $("#fx-done").checked;
     shell.tasks.count("check", done ? 1 : 0, 1);
@@ -21,7 +21,7 @@ export function mount(shell) {
     shell.tasks.open(counted && !done ? "check" : null)?.querySelector(".task-body").append($("#fx-check"));
   };
   const pick = (key) => { if (counted) shell.tasks.open(key).querySelector(".task-body").append($("#fx-check")); };
-  shell.tasks.list([{ key: "check", name: "Count checked", title: "Whether the count is right" }], { submit, pick });
+  shell.tasks.list([{ key: "check", name: "Count checked", title: "Whether the count is right" }], { submit, pick, tagging: task });
   $("#fx-done").onchange = task;
   // its progress on the image, the count, is kept nowhere but the page
   shell.clearable("count", () => {});

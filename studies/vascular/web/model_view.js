@@ -1,13 +1,14 @@
 // The vessel model over the stack, beside it or on its own, in the stack's own camera, and the owner's
-// corrections to it: drag a point to move it, right-click a segment or a point to delete it or split a
-// junction, right-drag from one piece to another to connect them, click a faded low-confidence vessel to
+// corrections to it: drag a point to move it, and a tip onto another vessel to attach it there, right-click a segment
+// or a point to delete it or split a junction, right-drag from one piece to another to connect them, click a faded
+// low-confidence vessel to
 // approve or decline it, lasso an area of damaged sample to leave it out of the analysis. The corrected
 // model goes to the shell's Submit Ground Truth as JSON.
 //
 // The review narrows the stack to what the model accounts for: Detected keeps only the signal around
 // the model's vessels, to check and measure them; Missed keeps only the signal away from them, to find
-// vessels the extractor did not draw, which can then be drawn in a click at a time. While the study makes
-// ground truth, what the owner has decided is cut out of the stack, and the current task's item and area
+// vessels the extractor did not draw, which can then be drawn in a click at a time. While the owner tags ground
+// truth, what they have decided is cut out of the stack, as the Show menu says, and the current task's item and area
 // are marked on the view.
 import * as Mo from './model.js';
 import { coverage } from './coverage.js';
@@ -44,10 +45,11 @@ let model = null, loaded = null, history = [], future = [], edits = 0, savedKey 
 // mode: what the main view shows, "image" (the stack alone), "model" (the model alone), "overlay" or "side"
 let mode = 'image', hover = null, rubber = null, showWidths = true;
 let review = 'all', reach = .5, maskKey = null, maskTimer = null, drawing = null, moving = null, lasso = null;
-// makingTruth: the study makes ground truth; task: the task's item, {segments} or {node}; area: the task's area, a box in µm
-let makingTruth = false, task = null, area = null, picked = null;
-// focused: the main view shows one area of the ground-truth tasks alone, {box, depth}: from straight above, the view held
-// and every point a handle, or in 3D (depth), turning freely with no handles; null for the whole stack. outside: the
+// makingTruth: the study makes ground truth; tagOn: the owner tags it now; cutOn: what is done is cut out while they
+// do; task: the task's item, {segments} or {node}; area: the task's area, a box in µm
+let makingTruth = false, tagOn = false, cutOn = true, task = null, area = null, picked = null;
+// focused: the main view shows one area of the ground-truth tasks alone, {box, depth}: opening from straight above with
+// every point a handle, or in 3D (depth) with no handles, turning freely either way; null for the whole stack. outside: the
 // mode chosen for the whole stack, back once the area is left; peeking: Ctrl held, the model alone
 let focused = null, outside = 'overlay', peeking = false;
 const store = {
@@ -314,21 +316,23 @@ function marks(c) {
   }
 }
 
-// what is under the pointer: {node: id} or {segment: i, t} (t along the segment, from its first point)
-function pick(e, segmentsOnly = false) {
+// what is under the pointer: {node: id} or {segment: i, t} (t along the segment, from its first point); never the
+// point except, nor a segment ending on it
+function pick(e, segmentsOnly = false, except = null) {
   if (!view) return null;
   const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
   let best = null, bd = PICK_POINT_PX;
   const on = Mo.degrees(model, visible);
   if (!segmentsOnly && pickable()) for (const [id, p] of view.pts) {
-    if (!on.get(id) || !inSlab(model.nodes.get(id))) continue;
+    if (id === except || !on.get(id) || !inSlab(model.nodes.get(id))) continue;
     const d = Math.hypot(p[0] - x, p[1] - y);
     if (d < bd) { bd = d; best = { node: id }; }
   }
   if (best) return best;
   bd = PICK_SEGMENT_PX;
   for (const [i, line] of view.curves) {
-    if (!shown(model.segments[i])) continue;
+    const s = model.segments[i];
+    if (!shown(s) || (except != null && (s.a === except || s.b === except))) continue;
     for (let k = 0; k < line.length - 1; k++) {
       const a = line[k], b = line[k + 1], dx = b[0] - a[0], dy = b[1] - a[1], L = dx * dx + dy * dy || 1;
       const u = Math.min(Math.max(((x - a[0]) * dx + (y - a[1]) * dy) / L, 0), 1);
@@ -392,9 +396,9 @@ function grab(e) {
   }
   const h = pick(e);
   if (e.button === 0 && !e.shiftKey && !V.panning && h?.node != null && !drawing && handles()) {
-    const base = model, id = h.node, ndcZ = view.pts.get(id)[3];
+    const base = model, id = h.node, ndcZ = view.pts.get(id)[3], tip = Mo.neighbours(base, id).length === 1;
     let moved = false;
-    const done = () => { moving = null; V.S.spot = null; };
+    const done = () => { moving = null; V.S.spot = null; if (tip) hover = null; };
     return {
       move(ev) {
         const r = cv.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
@@ -403,13 +407,23 @@ function grab(e) {
         moving = id; V.S.spot = { x: x / view.W, y: y / view.H, r: Math.max(SPOT_MIN_PX, SPOT_REACH * far) / view.H };
         const w = V.M.xf(V.M.inv(view.vp), [nx, ny, ndcZ]);
         const to = fromWorld([w[0] / w[3], w[1] / w[3], w[2] / w[3]]);
-        // from straight above a point moves across the picture, never in depth
-        if (focused) to.z = base.nodes.get(id).z;
+        // in an area seen from straight above a point moves across the picture, never in depth
+        if (focused && Math.abs(V.S.rot[2][2]) > 0.999) to.z = base.nodes.get(id).z;
         const next = Mo.moveNode(base, id, to);
         if (!moved) { moved = true; history.push(base); future = []; edits++; }
-        model = next; V.redraw();
+        model = next;
+        // a tip over another vessel shows where it would attach
+        if (tip) hover = pick(ev, false, id);
+        V.redraw();
       },
-      up(ev) { done(); if (moved) changed(); else clicked(ev); V.redraw(); },
+      up(ev) {
+        // a tip let go over another vessel attaches there
+        const onto = moved && tip ? pick(ev, false, id) : null;
+        done();
+        if (onto) { const joined = Mo.attach(base, id, onto); if (joined !== base) model = joined; }
+        if (moved) changed(); else clicked(ev);
+        V.redraw();
+      },
       cancel() { done(); if (moved) changed(); V.redraw(); },
     };
   }
@@ -559,8 +573,8 @@ export function reveal(p) {
   if (v[3] > 0 && Math.abs(x - .5) < .35 && Math.abs(y - .5) < .35) return;
   V.S.pivot = toWorld(p); V.S.clip = null; V.redraw();
 }
-// One area of the ground-truth tasks alone in the main view, a box in µm: from straight above (depth false), the view
-// held, the lines over the stack with a handle on every point; or in 3D, turning freely, the stack alone. Holding Ctrl
+// One area of the ground-truth tasks alone in the main view, a box in µm: opening from straight above (depth false), the
+// lines over the stack with a handle on every point; or in 3D, the stack alone; turning freely either way. Holding Ctrl
 // shows the model alone. null shows the whole stack again, in the mode chosen for it.
 export function focusArea(b, depth) {
   if (!model || !V) return;
@@ -577,6 +591,11 @@ export function focusArea(b, depth) {
   frameFocus(); setMode(focusMode()); refreshMask(true);
 }
 export const focusedArea = () => focused;
+// the owner tags ground truth now or not: only while they do is what is done cut out, and the Show menu's row for it on
+export function tagging(on) {
+  tagOn = !!on; $('m-cut').disabled = !tagOn;
+  refreshMask(true);
+}
 const focusMode = () => (peeking ? 'model' : focused.depth ? 'image' : 'overlay');
 // the area filling the view, the rest of the stack cut away: from straight above, or tilted to show its depth
 const TILT = [-0.5, -0.6], FILL = 1.05;
@@ -584,7 +603,7 @@ function frameFocus() {
   const b = focused.box, z = (model.slices - 1) / 2, lo = toWorld({ x: b.x0, y: b.y1, z }), hi = toWorld({ x: b.x1, y: b.y0, z });
   const h = Math.max(hi[0] - lo[0], hi[1] - lo[1]) / 2;
   Object.assign(V.S, { rot: focused.depth ? V.facing(...TILT) : V.facing(0, 0), clip: [lo[0], lo[1], hi[0], hi[1]],
-    pivot: [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, 0], dist: Math.max(.15, V.FIT_DIST * h * FILL), held: !focused.depth });
+    pivot: [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, 0], dist: Math.max(.15, V.FIT_DIST * h * FILL), held: false });
   V.redraw();
 }
 function peek(on) {
@@ -605,10 +624,10 @@ function setReview(r) {
   $('reach-row').hidden = r === 'all';
   refreshMask(true);
 }
-// What the owner has decided, cut out of the stack while the study makes ground truth: the vessels with a
-// verdict, the junctions found right and the areas checked for missed vessels; null while nothing is.
+// What the owner has decided, cut out of the whole stack while they tag ground truth and the Show menu says so: each
+// area done; null while nothing is.
 function cutOut(m) {
-  if (!makingTruth || focused) return null;
+  if (!makingTruth || !tagOn || !cutOn || focused) return null;
   const boxes = (m.reviewed_regions || []).filter((g) => g.x?.length === 2 && g.y?.length === 2 && (!g.step || g.step === DONE_STEP))
     .map((g) => ({ x0: g.x[0], x1: g.x[1], y0: g.y[0], y1: g.y[1] }));
   return boxes.length ? { points: [], boxes } : null;
@@ -622,7 +641,7 @@ function refreshMask(now) {
   if (!V?.meta) return;
   const cut = model && cutOut(model);
   if (!model || (review === 'all' && !cut)) { maskKey = null; return V.setMask(null); }
-  const key = [model, reach, V.S.zs, review, !!focused];
+  const key = [model, reach, V.S.zs, review, !!focused, tagOn, cutOn];
   if (maskKey && key.every((v, k) => v === maskKey.key[k])) return V.setMask(maskKey.mask, maskKey.side);
   maskTimer = setTimeout(() => {
     const o = { zStepUm: V.S.zs, reachOfWidth: reach }, extra = { points: cut?.points, boxes: cut?.boxes };
@@ -756,7 +775,9 @@ export const inspect = () => ({ model: model && Mo.toJSON(model), points: view &
 // view: the shell's 3D view; signal ends the listeners outside the study's own panels when the study leaves;
 // makesTruth: the study makes ground truth, so what is decided is cut out of the stack
 export function init(view, signal, makesTruth) {
-  V = view; makingTruth = !!makesTruth;
+  V = view; makingTruth = !!makesTruth; tagOn = false; cutOn = true;
+  $('m-cut-row').hidden = !makingTruth; $('m-cut').checked = true; $('m-cut').disabled = true;
+  $('m-cut').onchange = (e) => { cutOn = e.target.checked; refreshMask(true); };
   model = null; loaded = null; history = []; future = []; edits = 0; savedKey = null; mode = 'image'; task = null; area = null; picked = null;
   focused = null; outside = 'overlay'; peeking = false;
   cv = document.createElement('canvas'); cv.id = 'mcv';

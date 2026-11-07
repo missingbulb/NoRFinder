@@ -143,8 +143,9 @@
       <div class="gt-access" hidden></div>
       <slot-here data-slot-for="tasks"></slot-here>
       <div id="gt-list" hidden>
+        <button id="gt-start" type="button" class="primary" title="Work through the tasks, one item at a time">Start GT tagging</button>
         <div id="gt-bar"></div>
-        <ol id="gt-tasks"><li data-task="submit"><div class="task-head"><button id="gt-submit" type="button" disabled><span class="gt-ico" aria-hidden="true"></span>Submit Ground Truth</button></div></li></ol>
+        <ol id="gt-tasks"><li data-task="submit"><div class="task-head"><button id="gt-submit" type="button" disabled><span class="gt-ico" aria-hidden="true"></span>Submit Ground Truth</button><span class="gt-clear-slot"></span></div></li></ol>
       </div>
     </section>
     <section class="box foldable study-box" id="summary-box" hidden>

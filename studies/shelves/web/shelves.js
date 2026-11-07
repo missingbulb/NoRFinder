@@ -43,9 +43,12 @@ export function mount(shell) {
   let books = [], cur = null, back = [], crops = new Map(), drawing = null, dragging = null, missedDone = false, opened = false;
   let ocr = null;
   const truth = () => shell.makesTruth;
+  // the tagger tags now: a book is open, framed and its corners dragged only then (req/shell/ground-truth/tagging)
+  const tagging = () => truth() && shell.tasks.tagging();
   // its tasks in the shell's list: each book found checked, then the missed ones drawn in
   if (truth()) shell.tasks.list([{ key: "books", name: "Books", title: "The books the finder found, each checked" },
-    { key: "missed", name: "Missed books", title: "The books the finder missed, drawn in" }], { submit, pick: (k) => { if (k === "books") next(null); } });
+    { key: "missed", name: "Missed books", title: "The books the finder missed, drawn in" }], { submit, pick: (k) => { if (k === "books") next(null); },
+    tagging: (on) => { if (on && cur === null) next(); else { if (on) focus(cur); draw(); } } });
   const ocrNow = () => (ocr ||= reader(engines()));
 
   const choice = $("#bs-reader");
@@ -90,7 +93,7 @@ export function mount(shell) {
     await readSome(books.filter((b) => b.verdict !== "wrong"));
     shell.step("read", true, `${books.filter((b) => b.text).length} of ${books.length} titles read with ${READERS[choice.value]}`);
     shell.status("Titles read.");
-    if (truth() && cur === null) next();
+    if (tagging() && cur === null) next();
     draw();
   }
 
@@ -100,11 +103,11 @@ export function mount(shell) {
   function draw() {
     const g = layer(), pts = (b) => b.corners.map((p) => p.join(",")).join(" ");
     g.replaceChildren(...books.filter((b) => b.verdict !== "wrong").map((b) => {
-      const k = el("g", { class: `bs-book ${b.view}${b === cur ? " current" : ""}${b.verdict ? " done" : ""}` });
+      const k = el("g", { class: `bs-book ${b.view}${b === cur && (tagging() || !truth()) ? " current" : ""}${b.verdict ? " done" : ""}` });
       k.append(el("polygon", { class: "under", points: pts(b) }), el("polygon", { class: "over", points: pts(b) }));
       return k;
     }));
-    if (cur && truth()) g.append(...cur.corners.map((p, i) => el("circle", { class: "bs-corner", cx: p[0], cy: p[1], r: 6 / st.zoom, "data-corner": i })));
+    if (cur && tagging()) g.append(...cur.corners.map((p, i) => el("circle", { class: "bs-corner", cx: p[0], cy: p[1], r: 6 / st.zoom, "data-corner": i })));
     if (drawing?.pts.length) g.append(el("polyline", { class: "bs-book current", points: drawing.pts.map((p) => p.join(",")).join(" "), fill: "none", stroke: "#ffd400" }));
     list(); tasks();
   }
@@ -272,7 +275,7 @@ export function mount(shell) {
     error() { shell.busy(false); },
     capturesPointer: () => !!drawing || dragging !== null,
     pickAt(e) { const p = at(e); return books.find((b) => b.verdict !== "wrong" && inside(p, b.corners)) || null; },
-    pick(b) { if (!b || drawing) return; if (truth() && b.source === "found" && b.verdict) return; cur = b; draw(); },
+    pick(b) { if (!b || drawing) return; if (truth() && (!tagging() || (b.source === "found" && b.verdict))) return; cur = b; draw(); },
     zoomed: () => draw(),
   };
 }

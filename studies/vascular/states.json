@@ -28,6 +28,10 @@
     {"under": "Ground Truth Tasks", "tree": [
       {"name": "The tasks", "select": "#vm-tasks", "req": "req/vascular/truth/tasks"},
       {"name": "Task tools", "select": "#task-tools", "req": "req/vascular/truth/order",
+        "unwalked": "shows only while tagging, which no path starts (req/shell/ground-truth/tagging)",
+        "rule": [
+          {"is": "hidden", "approval": "tentative"}
+        ],
         "children": [
           {"name": "This junction's options", "select": "#task-menu", "req": "req/vascular/truth/tasks", "steady": "shows only in an area's Junctions step, which no path reaches",
             "rule": [
@@ -38,6 +42,10 @@
         ]
       },
       {"name": "The area now", "select": "#task-now", "req": "req/vascular/truth/tasks",
+        "unwalked": "shows only while tagging, which no path starts (req/shell/ground-truth/tagging)",
+        "rule": [
+          {"is": "hidden", "approval": "tentative"}
+        ],
         "children": [
           {"name": "Area's place", "select": "#area-name", "req": "req/vascular/truth/order"},
           {"name": "How many areas", "select": "#area-grid", "control": true, "req": "req/vascular/truth/order"},
@@ -93,15 +101,15 @@
     {"under": "Main view", "after": "Tasks/Items switch", "tree": [
       {"name": "Back to image", "select": "#vm-focus", "control": true, "req": "req/vascular/truth/tasks",
         "about": "Back to image while an area is open, Back to task on the whole stack",
+        "unwalked": "shows only while tagging, which no path starts (req/shell/ground-truth/tagging)",
         "rule": [
           {"when": {"counted": [false]}, "is": "hidden"},
-          {"when": {"makesTruth": [false]}, "is": "hidden", "about": "the tasks are only for those who make ground truth"}
+          {"when": {"makesTruth": [false]}, "is": "hidden", "about": "the tasks are only for those who make ground truth"},
+          {"is": "hidden", "approval": "tentative", "about": "no path starts tagging"}
         ]
       },
       {"name": "Show menu", "select": "#vm-show", "req": "req/vascular/model/view",
-        "rule": [
-          {"when": {"counted": [true], "makesTruth": [true]}, "is": "hidden", "approval": "tentative", "about": "an area is open once the model is drawn, and Back to image takes its place"}
-        ]
+        "steady": "out of tagging, which no path starts, it is always above the stack; Back to image takes its place only while an area is open"
       }
     ]},
     {"under": "Main view", "after": "Image view", "tree": [

@@ -1,7 +1,8 @@
 // The Ground Truth Tasks, in the left bar while the study makes ground truth: the stack's areas, each worked through
-// in three steps, its Lines from straight above, its Missed vessels, then its Junctions in 3D, then Submit. While a
-// step is open the main view shows its area alone (model_view.js); Back to image shows the whole stack and Back to
-// task the area again. Every verdict is an edit of the model, so it is undone, saved and submitted with the rest.
+// in three steps, its Lines from straight above, its Missed vessels, then its Junctions in 3D, then Submit. A step is
+// open only while the owner tags, from Start GT tagging to Stop tagging; then the main view shows its area alone
+// (model_view.js), Back to image the whole stack and Back to task the area again. Every verdict is an edit of the
+// model, so it is undone, saved and submitted with the rest.
 import * as Mo from './model.js';
 import * as MV from './model_view.js';
 import { build, junctionPicture } from './items.js';
@@ -170,16 +171,26 @@ function options(j) {
   $('task-menu').hidden = !out.length;
 }
 
+// tagging started: the walk's first step not done, from the one it was on; stopped: the whole stack as viewed
+function tagged(on) {
+  const m = MV.current();
+  MV.tagging(on);
+  if (!m) return;
+  if (on) {
+    const to = nextOpen(m, st.area ?? 0, Math.max(0, STEPS.indexOf(st.step))) || nextOpen(m, 0);
+    st.area = to?.area ?? null; st.step = to?.step ?? 'submit'; st.junction = null; st.focused = true;
+  }
+  show(true);
+}
 // moved: the main view turns to what the task now shows
 function show(moved) {
-  const m = MV.current();
-  $('vm-tasks').hidden = !m; $('vm-focus').hidden = !m;
+  const m = MV.current(), on = T.tagging();
+  $('vm-tasks').hidden = !m; $('vm-focus').hidden = !m || !on;
   T.list(m ? ROWS : null);
   if (!m) { MV.mark(null, null); MV.focusArea(null); return; }
   items = itemsOf(m);
-  if (!st.step) { const to = nextOpen(m, 0); st.area = to?.area ?? null; st.step = to?.step ?? 'submit'; moved = true; }
   for (const r of ROWS) T.count(r.key, stepsDone(m, r.key), count());
-  const open = st.step !== 'submit' && st.area != null;
+  const open = on && st.step !== 'submit' && st.area != null;
   const li = T.open(open ? st.step : 'submit'), tools = $('task-tools'), now = $('task-now');
   if (open) { li.querySelector('.task-head').append(tools); li.querySelector('.task-body').append(now); }
   tools.hidden = now.hidden = !open;
@@ -205,6 +216,7 @@ function show(moved) {
   if (was && fresh && was.dataset.key !== fresh.dataset.key && st.dir) slideIn(was, fresh, st.dir);
   st.dir = 0;
   const box = open ? areaBox(m, st.area) : null;
+  if (!on) { MV.mark(null, null); if (MV.focusedArea()) MV.focusArea(null); heard(); return; }
   MV.mark(j ? { node: j.id } : null, box);
   // the area alone in the main view, or the whole stack once it is left
   const focus = st.focused && box, f = MV.focusedArea();
@@ -239,7 +251,7 @@ export function open() {
 // view: the shell's 3D view; tasks: the shell's list of them; changed() hears every redraw of the tasks; submit() sends them
 export function init(view, tasks, changed, submit) {
   V = view; T = tasks; n = GRID;
-  T.list(ROWS, { pick: pickStep, submit });
+  T.list(ROWS, { pick: pickStep, submit, tagging: tagged });
   T.list(null); st = fresh(); items = null; heard = changed || (() => {});
   $('area-grid').replaceChildren(...GRIDS.map((k) => new Option(k === 1 ? 'The whole field' : `${k} × ${k} areas`, String(k))));
   $('area-grid').onchange = (e) => setGrid(+e.target.value);

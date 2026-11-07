@@ -111,6 +111,8 @@ try {
   const rows = () => page.$$eval("#gt-tasks > li .t", (h) => h.map((x) => x.textContent.trim()));
   check((await rows()).join() === "0/3 Books,0 Missed books" && await page.evaluate(() => $("#summary-box").hidden && !$("#tasks-box").hidden),
     "Ground Truth Tasks lists Books and Missed books, and Summary is not shown", await rows());
+  check(await page.evaluate(() => !document.querySelector(".bs-item") && !document.querySelector("#gt-tasks > li.now")), "no book is open until Start GT tagging (req/shell/ground-truth/tagging)");
+  await page.click("#gt-start");
   check(await page.evaluate(() => $(".bs-item input").value) === "Title 260x40" && await page.$$eval(".bs-item canvas", (c) => c[0].width) === 260,
     "the first book shows upright with what the reader read, to correct");
   await page.click('.bs-views [data-view="cover"]');
