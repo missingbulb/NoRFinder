@@ -308,7 +308,7 @@ nobody has decided: what the page does there is not a requirement yet.
   to the user's Drive (`drive.readonly`) along with the rest (`req/shell/account/sign-in`); a token from before
   that, lacking it, is renewed on the next click on a Drive control. `drive.readonly` is a restricted scope: until
   Google verifies the site, Google shows an "unverified app" screen on signing in and lets in at most 100 new users
-  (missingbulb/NoRFinder#803). Test: `web-tests/test_drive_credentials_page.py`.
+  (missingbulb/RaunTruth#803). Test: `web-tests/test_drive_credentials_page.py`.
   </details>
 
 - `req/shell/drive/dialog` Google Drive: a study browses its own folders, the Image Viewer takes a pasted link; open on Open, double click or Enter.
@@ -1476,7 +1476,7 @@ nobody has decided: what the page does there is not a requirement yet.
   (a Ground Truth Tagger in a GT or PostGT study, `req/shell/account/role`) there is no item view and no switch:
   the tasks are listed in the left bar (`req/shell/ground-truth/tasks`), the image in the main area. Set by the
   owner on 2026-11-04: an item view marked `data-shelved` gets no switch in any role, its code kept for a later
-  use; NoR's is shelved, and missingbulb/NoRFinder#740 decides whether it goes.
+  use; NoR's is shelved, and missingbulb/RaunTruth#740 decides whether it goes.
   Test: `web-tests/test_status_bar_page.py`, `web-tests/test_study_contract.py`.
   </details>
 
