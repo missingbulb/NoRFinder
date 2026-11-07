@@ -435,11 +435,23 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await check(/max-width|width|all/.test(look.property) && look.ms >= 150, "folding and unfolding is animated", look);
   await page.hover("#sb-res-icon");
   await isOpen(true, "hovering the icon unfolds the four as they look always open");
-  await check((await block()).icon === 0, "the icon going away as they come");
+  await check((await block()).icon > 10 && await page.evaluate(() => document.querySelector("#sb-res-items").getBoundingClientRect().right <= document.querySelector("#sb-res-icon").getBoundingClientRect().left),
+    "the icon staying, the four opening beside it", await block());
   const unfolded = await bars(page);
   await check(unfolded.length && unfolded.every((x) => x[2] === x[3]), "unfolded, no bar between the four, one between the CPU and the online icon and between all else", unfolded);
   const after = await fixed();
-  await check(after.slice(1).every((x, k) => x === before[k + 1]), "unfolding moves neither the online icon, the report icon nor the version", { before, after });
+  await check(after.every((x, k) => x === before[k]), "unfolding moves neither the icon, the online icon, the report icon nor the version", { before, after });
+  // too little room: what the page is doing and the four give way; the steps and the icons and version stay whole
+  await page.setViewportSize({ width: 620, height: 900 });
+  await page.evaluate(() => { document.querySelector("#status").textContent = "Loading the study's Python packages, a long message that cannot fit"; });
+  await page.waitForFunction(() => ["#sb-res-items", "#sb-res-icon"].every((id) => !document.querySelector(id).getAnimations().length));
+  const squeezed = await page.evaluate(() => {
+    const bar = document.querySelector("#statusbar").getBoundingClientRect(), whole = (e) => { const r = e.getBoundingClientRect(); return r.width >= e.scrollWidth - 1 && r.left >= bar.left && r.right <= bar.right; };
+    return { steps: [...document.querySelectorAll("#sb-steps .crumb")].every(whole), right: ["#sb-res-icon", "#sb-online", "#sb-report", "#sb-version"].filter((id) => !whole(document.querySelector(id))),
+      status: document.querySelector("#sb-now").getBoundingClientRect().width < document.querySelector("#status").scrollWidth };
+  });
+  await check(squeezed.steps && !squeezed.right.length && squeezed.status, "with too little room the status gives way, the steps and the right-hand items stay whole", squeezed);
+  await page.setViewportSize({ width: 1400, height: 900 });
   await shot(page, "10-resources-hovered");
   await page.mouse.move(700, 300);
   await isOpen(false, "and they fold again once the pointer leaves");
@@ -489,7 +501,7 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   // always open: as before; kept for the next visit
   await page.click("#sb-res-icon"); await page.selectOption("#res-mode", "open"); await page.keyboard.press("Escape"); await page.mouse.move(700, 300);
   await isOpen(true, "always open, the four show");
-  await check((await block()).icon === 0, "with no icon");
+  await check((await block()).icon > 10, "beside their icon");
   await check(await page.evaluate(() => JSON.parse(localStorage.getItem("nor-resources"))) === "open", "the choice is kept for the next visit");
   // hidden always: only the icon, which hovering and the network going do not unfold
   await page.click("#sb-disk"); await page.selectOption("#res-mode", "hidden"); await page.keyboard.press("Escape");

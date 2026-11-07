@@ -1012,7 +1012,9 @@ nobody has decided: what the page does there is not a requirement yet.
   version (stamped by each release; `req/shell/version-history`, `req/shell/site/out-of-date`), the CPU (`req/shell/status-bar/cpu`), the network (`req/shell/status-bar/network`), the
   memory (`req/shell/status-bar/memory`) and the disk (`req/shell/status-bar/disk`); between the version and those four, the report icon (`req/shell/report/bug`), a bug, or a warning sign in a browser the page does not support,
   and then the online icon (`req/shell/status-bar/online`). The four are folded into one icon unless set
-  always open (`req/shell/status-bar/resources`), and unfolding them moves neither the online icon, the report icon nor the version. Each of the four before the version is a small grey icon
+  always open (`req/shell/status-bar/resources`), and unfolding them moves neither their icon, the online icon, the report icon nor the version. With too
+  little room, what the page is doing now and the four give way, cut short, while the steps at the left and the
+  icons and version at the right stay whole (owner, 2026-11-07). Each of the four before the version is a small grey icon
   and its number, with no word naming it; all five are plain, with no box, alike. A mild vertical
   bar separates each item from the next, the resources icon included, folded or not, but the four, which sit
   together with none between them. Nothing in the status bar turns the pointer into a
@@ -1103,13 +1105,14 @@ nobody has decided: what the page does there is not a requirement yet.
   online icon (`req/shell/status-bar/online`). A setting in the resources dialog, above its tabs on every tab, chooses how the block shows:
   Auto-hiding, the default, Hidden always, or Always open, as the status bar was before. Auto-hiding,
   the page opens with the four folded away and the icon alone showing; hovering the block unfolds the
-  four as they look always open, the icon going away as they come (set by the owner on 2026-11-03), and leaving folds them again, the icon coming back, both ways
+  four as they look always open, opening beside the icon, which stays where it is (changed by the owner on
+  2026-11-07), and leaving folds them again, both ways
   animated (at once with animations off, `req/shell/resources-dialog/animations`, or reduced motion asked for). It unfolds by
   itself, and stays unfolded, while the CPU has been over 50% of one core for more than
   5 seconds, the network has been downloading over 250 KB/s for more than 5
   seconds, or the tab holds over 1 GB, and folds 8 seconds after the last of these ends. Hidden
   always, only the icon shows, and neither hovering nor any of these unfolds it. Going offline does not unfold it
-  (set by the owner on 2026-11-04): the online icon (`req/shell/status-bar/online`) says so. Always open, the icon does not show. Clicking the icon opens the
+  (set by the owner on 2026-11-04): the online icon (`req/shell/status-bar/online`) says so. Always open, the four show beside the icon. Clicking the icon opens the
   resources dialog (`req/shell/resources-dialog`) on the tab last shown, Storage at first. The choice is kept as the user's setting and,
   signed in, follows the user (`req/shell/account/sign-in`). Test: `web-tests/test_status_bar_page.py`.
   </details>
