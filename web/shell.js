@@ -932,7 +932,7 @@ function showRecent() {
   const list = recentAll(), box = $("#recent"), open = page.get("image")?.source;
   const on = remote.owns(open) && list.some((r) => r.id === open.id) ? open.id : list[0]?.id;
   box.replaceChildren(...list.map((r) => {
-    const b = document.createElement("button"), where = r.local ? "This computer" : [remote.label, ...(r.path || [])].join(" / ");
+    const b = document.createElement("button"), where = r.local ? "This computer" : ["Data", ...(r.path || [])].join(" / ");
     b.type = "button"; b.className = "item recent"; b.title = `${where} / ${r.name}`; b.dataset.id = r.id; if (r.local) b.dataset.local = "";
     b.setAttribute("role", "option"); b.setAttribute("aria-selected", String(r.id === on));
     const logo = r.local ? "computer-logo" : remote.logo.id;
