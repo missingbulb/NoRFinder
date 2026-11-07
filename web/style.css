@@ -192,6 +192,8 @@ body.resizing { cursor: col-resize; user-select: none; }
 .channel input[type=checkbox] { flex: none; width: 15px; height: 15px; margin: 0; cursor: pointer; }
 /* the colour picker: a swatch a little wider than tall in a thick frame, lit from the top left like a picture's; its colour, at
    the centre, a little lighter towards the top left and darker towards the bottom right */
+/* each row's last control at the box's right edge, so the slider before it takes the room */
+.channel > :last-child { justify-self: end; }
 .channel input[type=color] { flex: none; width: 22px; height: 15px; padding: 0; border: 3px solid; border-radius: 2px; cursor: pointer; background: none;
   border-color: color-mix(in srgb, var(--dim) 55%, #fff) color-mix(in srgb, var(--dim) 65%, #000) color-mix(in srgb, var(--dim) 65%, #000) color-mix(in srgb, var(--dim) 55%, #fff); }
 .channel input[type=color]:hover, .channel input[type=color]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -735,13 +737,16 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 .channel.v3-slices .v3-steps button:hover { color: var(--text); background: var(--line); }
 /* colour by depth, a channel's own: an icon tick, stacked slices, beside the colour picker, which is a palette picker
    while it is ticked */
-.channel .v3-pickers { display: flex; align-items: center; gap: 6px; }
+.channel .v3-pickers { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
 .channel input.v3-tick { appearance: none; width: 18px; height: 18px; margin: 0; border: 0; cursor: pointer;
   background: var(--dim); -webkit-mask: var(--layers) center / 14px no-repeat; mask: var(--layers) center / 14px no-repeat;
   --layers: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M8 1.5 14.5 5 8 8.5 1.5 5z'/%3E%3Cpath d='M1.5 8 8 11.5 14.5 8'/%3E%3Cpath d='M1.5 11 8 14.5 14.5 11'/%3E%3C/svg%3E"); }
 .channel input.v3-tick:checked { background: var(--accent); }
 .channel input.v3-tick:hover, .channel input.v3-tick:focus-visible { background: var(--text); }
-.channel .v3-palette { flex: none; width: 22px; height: 15px; padding: 0; border: 1px solid #0006; border-radius: 2px; background: var(--scale); cursor: pointer; }
+/* framed as the colour picker is, the palette in the swatch's place */
+.channel .v3-palette { flex: none; width: 22px; height: 15px; padding: 0; border: 3px solid; border-radius: 2px; cursor: pointer;
+  border-color: color-mix(in srgb, var(--dim) 55%, #fff) color-mix(in srgb, var(--dim) 65%, #000) color-mix(in srgb, var(--dim) 65%, #000) color-mix(in srgb, var(--dim) 55%, #fff);
+  background: linear-gradient(135deg, #ffffff59, #fff0 50%, #0000 50%, #00000059), var(--scale); box-shadow: inset 0 0 0 1px #0006; }
 .channel .v3-palette:hover, .channel .v3-palette:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .v3-palettes { position: fixed; inset: auto; margin: 0; padding: 6px; width: 160px; flex-direction: column; gap: 2px; font-size: 13px;
   background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px #0004; }

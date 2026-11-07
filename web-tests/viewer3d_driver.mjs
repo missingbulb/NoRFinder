@@ -136,6 +136,17 @@ try {
     }));
     const dep0 = await depthRows();
     check(dep0.every((d) => !d.under && !d.label), `each channel's depth tick is on its own row, an icon with no words, no row under it: ${JSON.stringify(dep0)}`);
+    // req/shell/viewer-3d: each row's picker sits at its right edge, its slider filling the room before it; the slices'
+    // row carries no count beside its name; a palette picker is framed as the colour picker is
+    const lay = await page.evaluate(() => {
+      const box = $("#channels").getBoundingClientRect().right, rows = [...document.querySelectorAll("#channels > .channel")];
+      const pal = $("#channels .v3-palette"), col = $("#channels input[type=color]");
+      return { ends: rows.map((r) => Math.round(box - r.querySelector(".v3-palette, input[type=color], .v3-spin").getBoundingClientRect().right)),
+        count: /\bof\b/.test($("#channels .v3-slices .ch-name").textContent),
+        frame: [pal && getComputedStyle(pal).borderTopWidth, col && getComputedStyle(col).borderTopWidth] };
+    });
+    check(lay.ends.every((e) => Math.abs(e) <= 1) && !lay.count && lay.frame[0] === lay.frame[1],
+      `pickers anchored right, no slice count, the palette framed as the colour picker: ${JSON.stringify(lay)}`);
     check(dep0.length === 2 && dep0[0].tick === true && !["colour", null].includes(dep0[0].picker) && dep0[1].tick === false && dep0[1].picker === "colour",
       `CD31 opens coloured by depth, its colour picker a palette picker, and DAPI in its colour, each with its own tick: ${JSON.stringify(dep0)}`);
     await page.check("#depth-1");

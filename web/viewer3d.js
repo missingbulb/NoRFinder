@@ -210,7 +210,7 @@ export function viewer3d(shell, flat) {
   const ZS = { min: 0.05, max: 50, step: 0.05 }, umText = (v) => `${+v.toFixed(2)} µm`;
   const slicesRow = html("div", { className: "channel v3-slices" });
   slicesRow.innerHTML = `<span></span><span class="ch-name"><label>Slices</label><span class="help" tabindex="0" data-help="The part of the stack's depth shown, from its first slice to its last, and the spacing between slices in µm."
-    >?</span><span id="v3-slices" class="from-file"></span></span>
+    >?</span></span>
     <div class="levels" title="The first and the last slice shown"><input type="range" class="black" id="v3-z0" min="0" step="1" aria-label="First slice shown"><input type="range" class="white" id="v3-z1" min="0" step="1" aria-label="Last slice shown"><span class="bubble" hidden></span></div>
     <span class="v3-spin"><input id="v3-zs" type="text" inputmode="decimal" role="spinbutton" aria-valuemin="${ZS.min}" aria-valuemax="${ZS.max}" title="Spacing between slices, µm" aria-label="Spacing between slices, µm"
     ><span class="v3-steps"><button type="button" id="v3-zs-up" tabindex="-1" aria-label="More spacing">▴</button><button type="button" id="v3-zs-down" tabindex="-1" aria-label="Less spacing">▾</button></span></span>`;
@@ -443,7 +443,6 @@ export function viewer3d(shell, flat) {
   const zoomText = () => { if (mode3d) $("#zoom-label").textContent = Math.round((FIT_DIST / S.dist) * 100) + "%"; };
   function sync() {
     ui("v3-z0").value = S.z0; ui("v3-z1").value = S.z1; ui("v3-zs").value = umText(S.zs); ui("v3-zs").setAttribute("aria-valuenow", S.zs);
-    ui("v3-slices").textContent = `${S.z0 + 1}–${S.z1 + 1} of ${vol ? vol.Z : 0}`;
     if (vol) geometry();
     redraw();
   }

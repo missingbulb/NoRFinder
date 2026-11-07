@@ -1323,7 +1323,9 @@ nobody has decided: what the page does there is not a requirement yet.
   it opens with. The depth is a row of the image box under the
   channels' rows, as a channel's row holds its points (owner, 2026-11-04): its first and last slice
   shown on one slider, and in the colour picker's place the spacing between slices, a box that reads with
-  its unit ("1 µm") and steps up and down by its arrows and the arrow keys (owner, 2026-11-07). Colour by depth is each
+  its unit ("1 µm") and steps up and down by its arrows and the arrow keys (owner, 2026-11-07). No count of the
+  slices shown sits beside its name, and each row's picker sits at the box's right edge, its slider filling the room
+  before it; a palette picker is framed as the colour picker is (owner, 2026-11-07). Colour by depth is each
   channel's own (owner, 2026-11-07): a small icon tick on each channel's own row beside its colour picker, no words
   and no palette bar beside it (owner, 2026-11-07), and while it is ticked the
   row's colour picker becomes a palette picker, since the channel is then drawn in a range of colours by the depth
