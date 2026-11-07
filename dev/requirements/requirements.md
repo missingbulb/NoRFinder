@@ -919,7 +919,9 @@ nobody has decided: what the page does there is not a requirement yet.
   Set by the owner on 2026-10-31. The disk, memory, network and CPU in the status bar each open
   the same dialog, titled Resource Usage, on their own tab, and its tabs switch between them. Every tab is laid out the
   same way: a line with the total, then rows of a name, what it is in grey beneath, and a size at
-  the right, then a row of the tab's own buttons and Close. Test: `web-tests/test_status_bar_page.py`.
+  the right, then a row of the tab's own buttons and Close. Switching tabs leaves the dialog as it is, the same width
+  and height, a tab longer than it scrolling within it (set by the owner on 2026-11-07). Test:
+  `web-tests/test_status_bar_page.py`.
   </details>
 
 - `req/shell/resources-dialog/animations` An Animations checkbox in the resources dialog's CPU tab turns every animation on the page off.

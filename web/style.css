@@ -637,6 +637,10 @@ kbd { font: 12px ui-monospace, monospace; padding: 1px 5px; border: 1px solid va
 #history-dlg { width: min(560px, calc(100vw - 32px)); }
 #history-dlg h2 { margin: 0 0 10px; }
 #usage-dlg h2 { margin: 0 0 10px; }
+/* one size whatever the tab: a longer tab scrolls within it (req/shell/resources-dialog) */
+#usage-dlg { height: min(560px, calc(100vh - 32px)); box-sizing: border-box; }
+#usage-dlg > form { display: flex; flex-direction: column; height: 100%; }
+#usage-dlg [role=tabpanel] { flex: 1; min-height: 0; overflow: auto; }
 /* Settings: a row per setting, its name at the left and its control at the right */
 #settings-dlg h2 { margin: 0 0 4px; }
 #settings-list { display: flex; flex-direction: column; gap: 10px; max-height: 60vh; overflow: auto; margin: 10px 0; }

@@ -324,6 +324,13 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
       what: cs(p.querySelector(".entry .what"))?.fontSize };
   }, tab);
   const memLook = await look("memory");
+  // switching tabs leaves the dialog as it is: each tab, as it shows, the same box
+  const boxes = [];
+  for (const t of ["storage", "network", "cpu", "memory"]) {
+    await page.click(`#usage-dlg [role=tab][data-tab=${t}]`);
+    for (let k = 0; k < 3; k++) { boxes.push(await page.evaluate(() => { const r = document.querySelector("#usage-dlg").getBoundingClientRect(); return [r.left, r.top, r.width, r.height].map(Math.round).join(); })); await page.waitForTimeout(150); } // waits on purpose: samples the box over the tab's first redraws
+  }
+  await check(new Set(boxes).size === 1, "switching tabs leaves the dialog the same size and place", [...new Set(boxes)]);
   // the network tab, by its tab: the page's files, Python and Google Drive, adding up to the status bar's
   await page.click("#usage-dlg [role=tab][data-tab=network]");
   await tabIs(page, "network");
