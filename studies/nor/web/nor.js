@@ -24,6 +24,9 @@ export function mount(shell) {
   const AREAS_KEY = "nor-areas-v1:"; // + file name: [area], the image's areas the user checked for missed NoRs
   // while the study makes ground truth its tasks are in the left bar, one candidate at a time, and the image is the only view
   const TRUTH = shell.makesTruth;
+  // the tagger tags now: the walk's item is ringed, its area framed and what is done cut out only then
+  // (req/shell/ground-truth/tagging)
+  const tagging = () => TRUTH && shell.tasks.tagging();
   // the image cut into GRID × GRID areas, each task's candidates taken area by area so the review fills one area after another
   const GRID = 10;
   // an added NoR counts as found when a candidate lies within this distance of its middle: about half a
@@ -309,7 +312,7 @@ export function mount(shell) {
   function addAdded(x, y) {
     st.added.push({ lines: typicalLines(Math.round(x * 10) / 10, Math.round(y * 10) / 10), verdict: null });
     st.sel = "u" + st.added.length;
-    addedChanged(); if (TRUTH && st.meta) goTo("c:" + st.sel);
+    addedChanged(); if (tagging() && st.meta) goTo("c:" + st.sel);
   }
   function removeAdded(k) {
     const was = st.sel; st.added.splice(k, 1);
@@ -820,7 +823,7 @@ export function mount(shell) {
   }
   function placeRing() {
     if (!st.ring) return;
-    const c = candOf(st.sel);
+    const c = TRUTH && !tagging() ? null : candOf(st.sel);
     st.ring.style.display = c ? "" : "none";
     if (!c) return;
     const [a, b, cc, d] = c.bb;
@@ -830,7 +833,7 @@ export function mount(shell) {
   // the next candidate by number among those on show
   // (in the item views: among the cards on show)
   function step(dir) {
-    if (TRUTH) return dir > 0 ? $("#task-skip").click() : $("#task-back").click();
+    if (TRUTH) return tagging() && (dir > 0 ? $("#task-skip").click() : $("#task-back").click());
     const list = st.view === "items" ? listed()
       : [...addedCands(), ...st.order].filter((c) => (result(c.i) === null ? st.show.pass : st.show.fails));
     if (!list.length) return;
@@ -1069,7 +1072,7 @@ export function mount(shell) {
   // small there
   function frameArea(go) {
     const svg = $("#overlay"); let f = svg.querySelector(".area-frame");
-    const on = TRUTH && st.area != null && !!st.W;
+    const on = tagging() && st.area != null && !!st.W;
     if (!on) { if (f) f.style.display = "none"; return; }
     if (!f) { f = el("rect", { class: "area-frame" }); svg.append(f); }
     const [x, y, w, h] = areaRect(st.area);
@@ -1094,6 +1097,7 @@ export function mount(shell) {
     if (!TRUTH || !st.W) return;
     const svg = $("#overlay");
     let g = svg.querySelector(".reveal-marks");
+    svg.classList.toggle("tagging", tagging());
     if (!g) {
       g = el("g", { class: "reveal-marks" });
       const defs = el("defs"), clip = el("clipPath", { id: "gt-reveal" }); defs.append(clip);
@@ -1163,7 +1167,14 @@ export function mount(shell) {
     $("#overlay").classList.add("gt"); shell.signal.addEventListener("abort", () => $("#overlay").classList.remove("gt"));
     shell.tasks.list([{ key: "pass", name: "Finalists" }, { key: "fail", name: "Rejected" },
       { key: "missed", name: "Areas", title: "The image's areas, each checked for NoRs the finder missed" }],
-    { submit, pick: (t) => { if (st.meta) goTask(t); } });
+    { submit, pick: (t) => { if (st.meta) goTask(t); }, tagging: (on) => {
+      for (const id of ["#show-gt-cut", "#show-gt-frame"]) $(id).disabled = !on;
+      if (!st.meta || !st.passes) return;
+      // started, the walk opens where it is, its area framed and brought into view; stopped, the image is as viewed
+      renderTasks(); placeRing(); frameArea(on && st.area != null);
+      if (on && st.sel != null && candOf(st.sel)) bringIntoView(candOf(st.sel));
+    } });
+    for (const id of ["#show-gt-cut", "#show-gt-frame"]) $(id).disabled = true;
     shell.tasks.row("missed").querySelector(".task-body").append($("#nor-tasks .missed-slot"), $("#area-check"));
   }
 
@@ -1439,8 +1450,8 @@ export function mount(shell) {
     idle: updateFind,
     showImage: () => showView("image"),
     pickAt: candAt,
-    pick: (c) => (TRUTH ? c && takeUp(c) : select(c && st.sel !== c.i ? c.i : null)),
-    open: (c) => (TRUTH ? takeUp(c) : (select(c.i), showView("items"))),
+    pick: (c) => (TRUTH ? c && tagging() && takeUp(c) : select(c && st.sel !== c.i ? c.i : null)),
+    open: (c) => (TRUTH ? tagging() && takeUp(c) : (select(c.i), showView("items"))),
     step,
     capturesPointer: () => !!st.lasso,
     zoomed: placeRing,

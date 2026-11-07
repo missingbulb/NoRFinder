@@ -1,11 +1,12 @@
 // The study's ground-truth tasks in the shell's Ground Truth Tasks box (req/shell/ground-truth/tasks): a bar of one
 // part per task, a row per task, and Submit Ground Truth last. The study says what its tasks are and how far each has
-// got; how a task is worked through stays the study's, which puts what it needs on the open task's row.
+// got; how a task is worked through stays the study's, which puts what it needs on the open task's row. A task is open
+// only while the tagger tags, from Start GT tagging to Stop tagging (req/shell/ground-truth/tagging).
 "use strict";
 
 // started(): whether the study's first step is done; until it is, Submit stays off whatever the study says
 export function truthTasks({ $, icon, started }) {
-  let pick = null, submit = null, wants = false;
+  let pick = null, submit = null, heard = null, wants = false, on = false;
   const rows = () => [...$("#gt-tasks").children].filter((li) => li.dataset.task !== "submit");
   const row = (key) => rows().find((li) => li.dataset.task === key) || null;
   const part = (key) => [...$("#gt-bar").children].find((p) => p.dataset.task === key);
@@ -13,16 +14,27 @@ export function truthTasks({ $, icon, started }) {
   ico.innerHTML = ["done", "part", "todo"].map((n) => icon(n).replace("<svg ", `<svg class="${n}" `)).join("");
 
   $("#gt-submit").onclick = () => submit?.();
+  $("#gt-start").onclick = () => api.tagging(!on);
   $("#gt-tasks").addEventListener("click", (e) => {
     const t = e.target.closest("button.t"), li = t?.closest("li");
-    if (li && li.parentElement === $("#gt-tasks")) pick?.(li.dataset.task);
+    if (!li || li.parentElement !== $("#gt-tasks")) return;
+    if (!on) api.tagging(true);
+    pick?.(li.dataset.task);
   });
+  function tagged(now) {
+    $("#gt-start").textContent = now ? "Stop tagging" : "Start GT tagging";
+    $("#gt-start").title = now ? "Back to viewing the image" : "Work through the tasks, one item at a time";
+    $("#gt-start").classList.toggle("primary", !now);
+    if (!now) for (const li of rows()) li.classList.remove("now");
+  }
 
   const api = {
-    // tasks: [{key, name, title}] in the order they are done, or null to show none for now; on: {pick(key), submit()}.
-    // The same tasks again keep their rows, and what the study put on them.
-    list(tasks, on = {}) {
-      pick = on.pick || pick; submit = on.submit || submit;
+    // tasks: [{key, name, title}] in the order they are done, or null to show none for now; hooks: {pick(key), submit(),
+    // tagging(on)}, tagging heard each time tagging starts or stops. The same tasks again keep their rows, and what the
+    // study put on them.
+    list(tasks, hooks = {}) {
+      pick = hooks.pick || pick; submit = hooks.submit || submit; heard = hooks.tagging || heard;
+      if (!tasks) api.tagging(false);
       $("#gt-list").hidden = !tasks;
       if (!tasks || rows().map((li) => li.dataset.task).join() === tasks.map((t) => t.key).join()) return;
       for (const li of rows()) li.remove();
@@ -51,10 +63,20 @@ export function truthTasks({ $, icon, started }) {
       const whole = of == null ? 1 : Math.max(of, 1), part_ = of == null ? (done ? 1 : 0) : did != null && of ? Math.min(did / of, 1) : 0;
       p.style.flexGrow = did == null ? 1 : whole; p.style.setProperty("--done", did == null ? 0 : part_);
     },
-    // the open task, its name in bold: its row, for the study to put its item and tools on; null for none
+    // the open task, its name in bold: its row, for the study to put its item and tools on; null for none, and
+    // always null while the tagger is not tagging
     open(key) {
+      if (!on) key = null;
       for (const li of rows()) li.classList.toggle("now", li.dataset.task === key);
-      return row(key);
+      return key == null ? null : row(key);
+    },
+    // whether the tagger tags now; with a value, tagging started or stopped, the study told when it changes
+    tagging(now) {
+      if (now === undefined) return on;
+      now = !!now;
+      if (now === on) return on;
+      on = now; tagged(on); heard?.(on);
+      return on;
     },
     row,
     // whether Submit can be pressed, whether the ground truth is done, partly done or not started where known, and
@@ -69,7 +91,8 @@ export function truthTasks({ $, icon, started }) {
     stepped() { $("#gt-submit").disabled = !wants || !started(); },
     // the study leaving: its tasks go
     leave() {
-      pick = submit = null;
+      api.tagging(false);
+      pick = submit = heard = null;
       for (const li of rows()) li.remove();
       $("#gt-bar").replaceChildren(); $("#gt-list").hidden = true; api.ready(false);
     },

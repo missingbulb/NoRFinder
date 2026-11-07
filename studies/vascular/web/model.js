@@ -303,6 +303,23 @@ export function splitJunction(m, id, zScale = 1) {
 // Two parts of one vessel joined. Each end is {node: id} or {segment: i, t}, a point on a segment.
 export const connect = (m, from, to) => join(m, from, to)[0];
 
+// A vessel's tip dropped on another vessel, for a connection the extractor missed: the tip's one segment ends there
+// instead, on a point of it ({node: id}) or on a new point of its line ({segment: i, t}), and the tip goes. Unchanged
+// when id is no tip, or the place is the tip itself, its own segment, its neighbour or a point it already reaches.
+export function attach(m, id, to) {
+  const own = m.segments.flatMap((s, i) => (live(s) && (s.a === id || s.b === id) ? [i] : []));
+  if (own.length !== 1) return m;
+  const i = own[0], s = m.segments[i], nb = s.a === id ? s.b : s.a;
+  if (to.node != null ? to.node === id || to.node === nb || !m.nodes.has(to.node) : !m.segments[to.segment]) return m;
+  let o = clone(m), at = to.node;
+  if (at == null) [o, at] = splitSegment(o, to.segment, to.t);
+  if (between(o, nb, at)) return m;
+  const k = o.segments.findIndex((x) => live(x) && (x.a === id || x.b === id)), x = o.segments[k];
+  o.segments[k] = { ...x, ...(x.a === id ? { a: at } : { b: at }) };
+  prune(o);
+  return o;
+}
+
 // A vessel the extractor missed, drawn a segment at a time: from one end to the next, where an end
 // may also be {point: {x, y, z}}, a new point in the open. Returns [model, id of the point drawn to],
 // or the model unchanged and null when the two ends are one point or already joined.

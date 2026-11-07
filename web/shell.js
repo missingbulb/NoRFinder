@@ -809,6 +809,7 @@ async function openBytes(name, bytes, source) {
   drawSteps(); boxes().forEach((b) => summaries.delete(b)); retitle();
   // the file as it came, for Python at a Run (a copy is handed over then), Edit Image and the problem report
   const kept = st.kept = { name, source, bytes };
+  tasks.tagging(false);
   study.opening?.(name, source);
   st.sha = await sha256(bytes);
   page.set({ opening: { name } }); statusBar();

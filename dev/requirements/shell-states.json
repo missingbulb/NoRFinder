@@ -319,6 +319,7 @@
               "children": [
                 {"name": "Tasks' list", "select": "#gt-list", "req": "req/shell/ground-truth/tasks",
                   "children": [
+                    {"name": "Start GT tagging", "select": "#gt-start", "control": true, "req": "req/shell/ground-truth/tagging"},
                     {"name": "Tasks' bar", "select": "#gt-bar", "req": "req/shell/ground-truth/tasks"},
                     {"name": "Tasks", "select": "#gt-tasks", "req": "req/shell/ground-truth/tasks",
                       "children": [

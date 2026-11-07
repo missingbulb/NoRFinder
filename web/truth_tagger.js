@@ -1,7 +1,7 @@
 // The Ground Truth Tagger's side of the study's ground-truth folders (truth_folders.js): the line in the study's
-// ground-truth box (every `.gt-access` its panels hold) saying whether the tagger may write to the submissions folder
-// and how to get there (req/shell/ground-truth/tagger-access), its Clear progress (req/shell/ground-truth/clear), and
-// Submit (req/shell/ground-truth/submit).
+// ground-truth box (every `.gt-access` its panels hold) saying when the tagger may not write to the submissions folder
+// and how to get there (req/shell/ground-truth/tagger-access), Clear progress beside Submit (every `.gt-clear-slot`,
+// req/shell/ground-truth/clear), and Submit (req/shell/ground-truth/submit).
 "use strict";
 import { folders, submit, status, current, subfolderName } from "./truth_folders.js";
 import { asLoaded } from "./as_loaded.js";
@@ -10,7 +10,6 @@ const SAY = {
   unset: "This study has not set up its ground-truth folders yet, so ground truth cannot be submitted.",
   none: "Not approved: this site may not write to the study's submissions folder for you yet.",
   view: "View only: the store lets you only view the study's submissions folder. Ask its owner for edit access.",
-  write: "Writable: Submit sends your ground truth to the study's submissions folder.",
   unknown: "Your sign-in ran out. Sign in again to submit.",
 };
 export const LOCAL_GT = (remote) => `Ground truth cannot be sent from local files, only from ${remote.label}.`;
@@ -25,7 +24,7 @@ export function truthTagger({ account, remote, place, image, on, cleared }) {
   // draw a late answer belongs to
   let clear = null, access = null, epoch = 0;
   // the access lines as the page loaded, put back when the study leaves
-  const asStarted = asLoaded([...document.querySelectorAll("#left .gt-access")]);
+  const asStarted = asLoaded([...document.querySelectorAll("#left .gt-access, #left .gt-clear-slot")]);
   // the study's ground-truth folders, from its root's settings
   const gt = async () => folders(await place.settings().catch(() => null));
   const where = async () => (await gt()).submissions;
@@ -38,16 +37,20 @@ export function truthTagger({ account, remote, place, image, on, cleared }) {
   function paint() {
     const im = image();
     for (const el of document.querySelectorAll("#left .gt-access")) {
-      el.hidden = !on();
-      if (el.hidden) continue;
-      const approve = access === "none" ? `<button type="button" class="gt-approve" data-needs-network>Approve…</button>` : "";
-      const wipe = clear && im ? `<button type="button" class="gt-clear link" title="Forget your ${clear.what} on this image, on this device">Clear progress</button>` : "";
       el.dataset.access = access || "";
-      el.innerHTML = `<span class="gt-say"></span>${approve}${wipe}`;
-      el.querySelector(".gt-say").textContent = access ? SAY[access] : "Checking whether you may submit…";
+      // a tagger who may write, or whose access is still being read, is told nothing
+      el.hidden = !on() || !SAY[access];
+      if (el.hidden) { el.replaceChildren(); continue; }
+      const approve = access === "none" ? `<button type="button" class="gt-approve" data-needs-network>Approve…</button>` : "";
+      el.innerHTML = `<span class="gt-say"></span>${approve}`;
+      el.querySelector(".gt-say").textContent = SAY[access];
       el.querySelector(".gt-approve")?.addEventListener("click", async () => {
         if (await sd.approve([{ id: await where(), name: "Ground truth submissions" }])) draw();
       });
+    }
+    for (const el of document.querySelectorAll("#left .gt-clear-slot")) {
+      el.hidden = !on() || !clear || !im;
+      el.innerHTML = el.hidden ? "" : `<button type="button" class="gt-clear link" title="Forget your ${clear.what} on this image, on this device">Clear progress</button>`;
       el.querySelector(".gt-clear")?.addEventListener("click", () => {
         const name = image()?.name;
         if (!clear || !name || !confirm(`Clear your ${clear.what} on ${name}? This forgets your progress on this image on this device; anything you submitted stays in ${remote.label}.`)) return;

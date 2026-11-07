@@ -271,11 +271,12 @@ await check(clear.fx === "Nothing counted yet." && !clear.overlay && clear.statu
 await check(await page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].filter((b) => b.checkVisibility()).map((b) => b.classList.contains("folded")).join()) === "false,true,true", "and the boxes on show fold as before any image");
 await check((await rows()).length === 0, "and no channel rows are left, with no image (req/shell/channels/rows)");
 
-// ---- after Unload, the next image's tasks open again (req/shell/ground-truth/tasks) ----
+// ---- after Unload, the next image's tasks open again once tagging starts (req/shell/ground-truth/tasks, req/shell/ground-truth/tagging) ----
 await loadImage();
 await page.click("#fx-count");
 await page.waitForFunction(() => !document.querySelector("#gt-submit").disabled);
+await page.click("#gt-start");
 const tasksAfter = await page.evaluate(() => ({ open: document.querySelector('#gt-tasks > li[data-task="check"]').classList.contains("now"),
   row: document.querySelector('#gt-tasks > li[data-task="check"] .t').textContent.trim() }));
-await check(tasksAfter.open && tasksAfter.row === "0/1 Count checked", "after Unload, the next image's task opens again, nothing done", tasksAfter);
+await check(tasksAfter.open && tasksAfter.row === "0/1 Count checked", "after Unload, the next image's task opens again once tagging starts, nothing done", tasksAfter);
 await done(0);
