@@ -310,7 +310,7 @@ export function attach(m, id, to) {
   const own = m.segments.flatMap((s, i) => (live(s) && (s.a === id || s.b === id) ? [i] : []));
   if (own.length !== 1) return m;
   const i = own[0], s = m.segments[i], nb = s.a === id ? s.b : s.a;
-  if (to.node != null ? to.node === id || to.node === nb || !m.nodes.has(to.node) : to.segment === i || !m.segments[to.segment]) return m;
+  if (to.node != null ? to.node === id || to.node === nb || !m.nodes.has(to.node) : !m.segments[to.segment]) return m;
   let o = clone(m), at = to.node;
   if (at == null) [o, at] = splitSegment(o, to.segment, to.t);
   if (between(o, nb, at)) return m;
