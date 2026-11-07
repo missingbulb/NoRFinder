@@ -65,6 +65,16 @@ LENGTH, MIN_WIDTH = 0.5, 0.008
 SNAP = 0.04
 # and how far, in degrees, from square to its sides it is looked for at: the camera's angle on it
 END_TURN = 12
+# [barcode] a shelf is several books packed together: one whose spines number fewer than this is no shelf
+SHELF_BOOKS = 3
+# [cover-shape] covers: straight edge segments at least this share of the photo long, at most this many lines; a cover's
+# two pairs of sides within this many degrees of parallel and at least this many degrees apart; its area this share of
+# the photo, its long sides at most this many times its short; each side on edges along this share of it, with a colour
+# change across it of this share of the brightness range, and its edge running on past a corner when this much of the
+# way past it lies on edges; upright seams through 60% of its height at most this many per pixel of its width (a shelf
+# of spines boxed whole: 0.093, the covers on the owner's photos: 0.030 at most - thinly supported)
+SEGMENT, COVER_LINES, COVER_PARALLEL, COVER_CROSS = 0.05, 70, 20, 40
+COVER_AREA, COVER_ASPECT, COVER_ON, COVER_CONTRAST, COVER_SIDE, COVER_SEAMS = (0.01, 0.6), 2.6, 0.7, 0.12, 0.6, 0.06
 # [camera-uniform] the perspective is read from at least this many boxes; a box whose ends turn more than this many
 # degrees otherwise than it has them turn there is dropped
 SURE_MIN, PERSPECTIVE_TOL = 4, 15
@@ -504,8 +514,104 @@ def agrees(c, fits):
     return all(abs(slant(c, end) - p @ fits[end]) <= PERSPECTIVE_TOL for end in (0, 1))
 
 
+def straight_lines(e, keep):
+    """(angles, distances) of the straight lines at any angle, as x cos a + y sin a = d: one per straight edge segment at
+    least SEGMENT of the photo long, found among edge pixels of one direction at a time (so lettering's pixels are not
+    linked across a cover), near duplicates merged, the longest first; only where keep is True."""
+    from skimage.transform import probabilistic_hough_line
+    L = max(e.h, e.w)
+    gx, gy = ndi.sobel(e.gray, 1), ndi.sobel(e.gray, 0)
+    way = (np.degrees(np.arctan2(gy, gx)) + 90) % 180
+    on = e.all & keep
+    segs = []
+    for c0 in range(0, 180, 15):
+        band = on & (np.abs((way - c0 + 90) % 180 - 90) <= 12)
+        th = (np.deg2rad(np.arange(c0 - 12, c0 + 12.5, 0.5) - 90) + np.pi / 2) % np.pi - np.pi / 2
+        segs += probabilistic_hough_line(band, threshold=10, line_length=int(SEGMENT * L), line_gap=3, theta=np.sort(th), rng=0)
+    segs.sort(key=lambda q: -np.hypot(q[1][0] - q[0][0], q[1][1] - q[0][1]))
+    out = []
+    for (x0, y0), (x1, y1) in segs:
+        a = (np.arctan2(x1 - x0, -(y1 - y0)) + np.pi / 2) % np.pi - np.pi / 2
+        d = x0 * np.cos(a) + y0 * np.sin(a)
+        if any(np.degrees(abs((a - b + np.pi / 2) % np.pi - np.pi / 2)) < 2 and abs(d - c) < 0.01 * L for b, c in out):
+            continue
+        out.append((a, d))
+        if len(out) >= COVER_LINES:
+            break
+    return np.array([o[0] for o in out]), np.array([o[1] for o in out])
+
+
+def covers(e, keep):
+    """[cover-shape] The covers lying in a photo, outside its shelves, each four corners: every quadrilateral two pairs of
+    near-parallel straight lines make, kept when it is a cover's size and shape, each side lies on edges with a colour
+    change across it, at most one side's edge runs on past its corners (a cover's edges end at its corners, a
+    plank's or a ledge's do not), and few upright seams run through it (a picture), not one beside the next (a shelf's
+    barcode of spines); the smallest first, and none holding one already kept."""
+    from matplotlib.path import Path
+    h, w = e.h, e.w
+    ang, dist = straight_lines(e, keep)
+    n = len(ang)
+    if n < 4:
+        return []
+    turn = lambda a, b: np.degrees(np.abs((a - b + np.pi / 2) % np.pi - np.pi / 2))
+    pairs = [(i, j) for i in range(n) for j in range(i + 1, n) if turn(ang[i], ang[j]) <= COVER_PARALLEL and abs(dist[i] - dist[j]) >= 0.05 * min(h, w)]
+    quads = [p + q for k, p in enumerate(pairs) for q in pairs[k + 1:] if turn(ang[p[0]], ang[q[0]]) >= COVER_CROSS and not set(p) & set(q)]
+    if not quads:
+        return []
+    A, D = ang[np.array(quads)], dist[np.array(quads)]
+
+    def meet(i, j):
+        det = np.cos(A[:, i]) * np.sin(A[:, j]) - np.sin(A[:, i]) * np.cos(A[:, j])
+        return np.stack([(D[:, i] * np.sin(A[:, j]) - D[:, j] * np.sin(A[:, i])) / det,
+                         (np.cos(A[:, i]) * D[:, j] - np.cos(A[:, j]) * D[:, i]) / det], -1)
+    c = np.stack([meet(0, 2), meet(0, 3), meet(1, 3), meet(1, 2)], 1)
+    c = c[np.all((c[..., 0] > -2) & (c[..., 0] < w + 2) & (c[..., 1] > -2) & (c[..., 1] < h + 2), axis=1)]
+    side = np.roll(c, -1, axis=1) - c
+    L = np.hypot(side[..., 0], side[..., 1])
+    area = 0.5 * np.abs(np.sum(c[..., 0] * np.roll(c[..., 1], -1, 1) - np.roll(c[..., 0], -1, 1) * c[..., 1], axis=1))
+    long_, short = np.maximum(L[:, 0] + L[:, 2], L[:, 1] + L[:, 3]), np.minimum(L[:, 0] + L[:, 2], L[:, 1] + L[:, 3])
+    ok = (area >= COVER_AREA[0] * h * w) & (area <= COVER_AREA[1] * h * w) & (long_ <= COVER_ASPECT * np.maximum(short, 1e-6))
+    c, side, L, area = c[ok], side[ok], L[ok], area[ok]
+    if not len(c):
+        return []
+    at = lambda q: (np.clip(np.round(q[..., 1]).astype(int), 0, h - 1), np.clip(np.round(q[..., 0]).astype(int), 0, w - 1))
+    pts = c[:, :, None, :] + np.linspace(0.08, 0.92, 40)[None, None, :, None] * side[:, :, None, :]
+    on = e.near[at(pts)].mean(axis=2)
+    normal = np.stack([-side[..., 1], side[..., 0]], -1) / np.maximum(L[..., None], 1e-6)
+    inward = np.sign(np.sum((c.mean(axis=1)[:, None, None, :] - pts) * normal[:, :, None, :], axis=-1, keepdims=True))
+    k = max(3, int(0.01 * max(h, w)))
+    across = np.median(np.linalg.norm(e.rgb[at(pts + inward * k * normal[:, :, None, :])] - e.rgb[at(pts - inward * k * normal[:, :, None, :])], axis=-1), axis=2) / e.spread
+    beyond = np.linspace(0.02, 0.07, 8)[None, None, :, None] * side[:, :, None, :]
+    runs = (e.near[at(c[:, :, None, :] - beyond)].mean(axis=2) >= COVER_SIDE) | (e.near[at(np.roll(c, -1, axis=1)[:, :, None, :] + beyond)].mean(axis=2) >= COVER_SIDE)
+    good = np.flatnonzero(np.all(on >= COVER_ON, axis=1) & np.all(across >= COVER_CONTRAST, axis=1) & (runs.sum(axis=1) <= 1))
+    kept = []
+    for i in good[np.argsort(area[good])]:
+        if any(Path(q).contains_point(c[i].mean(0)) or Path(c[i]).contains_point(q.mean(0)) for q in kept):
+            continue
+        # [barcode] a shelf of spines is upright seams side by side, each through most of its height; a cover's picture
+        # has a few at most
+        x0, x1 = (int(v) for v in np.percentile(c[i][:, 0], [0, 100]) + np.array([0.1, -0.1]) * np.ptp(c[i][:, 0]))
+        y0, y1 = (int(v) for v in np.percentile(c[i][:, 1], [0, 100]) + np.array([0.1, -0.1]) * np.ptp(c[i][:, 1]))
+        if x1 > x0 and y1 > y0:
+            _, seams_through = ndi.label(e.seam[y0:y1, x0:x1].mean(axis=0) >= 0.6)
+            if seams_through >= COVER_SEAMS * (x1 - x0):
+                continue
+        kept.append(c[i])
+    return kept
+
+
+def clockwise(c):
+    """Four corners clockwise in the image (y down), from the one nearest the photo's top left."""
+    c = np.asarray(c, float)
+    mid = c.mean(0)
+    c = c[np.argsort(np.arctan2(c[:, 1] - mid[1], c[:, 0] - mid[0]))]
+    return np.roll(c, -int(np.argmin(c.sum(axis=1))), axis=0)
+
+
 def find(rgb):
-    """The books in an RGB photo, [{corners, view}], in reading order: shelf by shelf from the top, left to right."""
+    """The books in an RGB photo, [{corners, view}]: the spines shelf by shelf from the top, left to right, then the
+    covers lying outside the shelves."""
+    from matplotlib.path import Path
     H, W = rgb.shape[:2]
     s = min(1.0, WORK / max(H, W))
     small = np.stack([ndi.zoom(rgb[..., k].astype(np.float32), s, order=1) if s < 1 else rgb[..., k].astype(np.float32) for k in range(3)], -1)
@@ -515,23 +621,36 @@ def find(rgb):
     per_shelf = [(max(0, top - m), *shelf_books(g[max(0, top - m):bottom + m], small[max(0, top - m):bottom + m]))
                  for top, bottom in shelves(g)]
     textures = [b['texture'] for _, found, _ in per_shelf for b in found.values()]
-    if not textures:
-        return []
-    least = TEXTURE * float(np.median(textures))
-    per_shelf = [(top, {k: b for k, b in found.items() if b['texture'] >= least}, lines) for top, found, lines in per_shelf]
-    at = lambda top, c: [(x, y + top) for x, y in c]
-    # [camera-uniform] one camera took the whole photo: the books first chosen, the surest of them, say how it looked at
-    # the shelves, and a box whose ends turn otherwise is not a book's
-    first = [(at(top, found[k]['corners']), found[k]) for top, found, lines in per_shelf for k in most_books(found, len(lines))]
-    fits = perspective(first)
-    if fits is not None and np.mean([agrees(c, fits) for c, _ in first]) >= PERSPECTIVE_TRUST:
-        per_shelf = [(top, {k: b for k, b in found.items() if agrees(at(top, b['corners']), fits)}, lines) for top, found, lines in per_shelf]
-    out = []
-    for top, found, lines in per_shelf:
-        for k in most_books(found, len(lines)):
-            c = [[min(max(x, 0), g.shape[1]) / s, min(max(y + top, 0), g.shape[0]) / s] for x, y in found[k]['corners']]
-            out.append(dict(corners=[[round(x, 1), round(y, 1)] for x, y in c], view='spine'))
-    return out
+    spines = []
+    if textures:
+        least = TEXTURE * float(np.median(textures))
+        per_shelf = [(top, {k: b for k, b in found.items() if b['texture'] >= least}, lines) for top, found, lines in per_shelf]
+        at = lambda top, c: [(x, y + top) for x, y in c]
+        # [camera-uniform] one camera took the whole photo: the books first chosen, the surest of them, say how it looked
+        # at the shelves, and a box whose ends turn otherwise is not a book's
+        first = [(at(top, found[k]['corners']), found[k]) for top, found, lines in per_shelf for k in most_books(found, len(lines))]
+        fits = perspective(first)
+        if fits is not None and np.mean([agrees(c, fits) for c, _ in first]) >= PERSPECTIVE_TRUST:
+            per_shelf = [(top, {k: b for k, b in found.items() if agrees(at(top, b['corners']), fits)}, lines) for top, found, lines in per_shelf]
+        for top, found, lines in per_shelf:
+            chosen = most_books(found, len(lines))
+            # [barcode] books on a shelf stand packed, several together: a lone strip or two is a gap between other things
+            if len(chosen) < SHELF_BOOKS:
+                continue
+            for k in chosen:
+                spines.append([(x, y + top) for x, y in found[k]['corners']])
+    # [barcode] covers are looked for outside the shelves the spines make
+    h, w = g.shape
+    yy, xx = np.mgrid[0:h, 0:w]
+    grid = np.stack([xx.ravel(), yy.ravel()], 1)
+    shelf = np.zeros(h * w, bool)
+    for c in spines:
+        shelf |= Path(np.asarray(c)).contains_points(grid)
+    shelf = ndi.binary_dilation(shelf.reshape(h, w), iterations=max(2, int(0.01 * max(h, w))))
+    found = covers(Edges(g, small), ~shelf)
+    scale = lambda c: [[round(min(max(x, 0), w) / s, 1), round(min(max(y, 0), h) / s, 1)] for x, y in c]
+    return ([dict(corners=scale(c), view='spine') for c in spines]
+            + [dict(corners=scale(clockwise(c)), view='cover') for c in found if not shelf[int(np.clip(np.mean(c, 0)[1], 0, h - 1)), int(np.clip(np.mean(c, 0)[0], 0, w - 1))]])
 
 
 def homography(src, dst):

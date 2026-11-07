@@ -20,14 +20,16 @@ tests/                test_books.py (fast), test_reading.py and test_shelves_pag
 
 ## The pipeline
 
-1. **Find** (`books.find`, Python, R3, req/shelves/books/find): shelves are rows a horizontal edge crosses at least half
+1. **Find** (`books.find`, Python, R5, req/shelves/books/find): shelves are rows a horizontal edge crosses at least half
    the photo on, each looked at with a margin. Within a shelf, the edges between books are lines found as Osef does
    (unblurred Sobel, 80% of the rows every book crosses, strongest first, none crossing, wide gaps searched again),
    at leans up to 30°. Between two neighbouring lines, the book's top and foot are its own: where its texture stops,
    then the first colour change across its strip, square to its sides give or take 12°, past which hardly any of the
-   strip is the book's colour. A box is kept only once it checks out as a readable spine (`books.spine`); a wide box whose marks repeat further across is two
-   books of one series (`books.series_split`). The photo's perspective, read from the surest boxes, drops a box whose ends turn otherwise (`books.perspective`). Every book
-   is a spine: R3 tells no cover apart.
+   strip is the book's colour. A box is kept only once it checks out as a readable spine (`books.spine`); a wide box
+   whose marks repeat further across is two books of one series (`books.series_split`); the photo's perspective, read
+   from the surest boxes, drops a box whose ends turn otherwise (`books.perspective`); a shelf of fewer than three
+   spines is no shelf. Then the covers lying outside the shelves (`books.covers`): quadrilaterals of straight edges
+   whose sides end at their corners and through which few upright seams run.
 2. **Straighten** (`books.straighten`, Python): the four corners pulled through a homography into an upright
    rectangle, as wide as the box's top and bottom edges on average and as tall as its sides.
 3. **Read** (`reading.js`, JavaScript): the crop at each turn its shape allows (a tall crop turned a quarter either
@@ -70,6 +72,30 @@ finder and the reader proposed beside the corrected values, so one file scores b
 each reader (text). No grader is written yet: it waits for the first ground truth.
 
 ## Iterations
+
+### R5 — covers lying cover-up, searched outside the shelves (2026-11-07)
+
+The two photos once called "multi-shelf" (`12msl6`, `1Rx9mp`) are books lying cover-up on a ledge and on a bench; the
+owner chose a cover finder, and to split each photo first by its barcode: books on a shelf look like a barcode after
+edge detection.
+
+- **What changed (`books.covers`, `books.find`):** the spines are found first, and a shelf yielding fewer than three
+  (`SHELF_BOOKS`) is no shelf. Covers are looked for outside the spines' boxes: straight edge segments at any angle,
+  each found among edge pixels of one direction (so lettering does not link across a cover), make every
+  quadrilateral two near-parallel pairs give; one is a cover when it has a cover's size and shape, each side lies on
+  edges with a colour change across it, at most one side's edge runs on past its corners, and few upright seams run
+  through it (`COVER_SEAMS`: a shelf of spines boxed whole has 0.093 per pixel of width, the covers 0.030 at most).
+  The smallest first, none holding one already kept; corners clockwise from the top left (`books.clockwise`).
+- **Barcode, as measured:** a pixel map of dense, one-way edges glows on every shelf, but no fixed threshold on it
+  separates shelves from covers (the dark Herbert shelf scores below a sunny ledge), and as a mask it ate covers' own
+  edges. The spine finder's verified boxes mark the shelves better, and a box's count of upright seams through it is
+  the barcode test that works.
+- **On the photos, by eye:** ledge (`12msl6`) 1 cover, exact; bench (`1Rx9mp`) 3: the grey and the red covers right, the
+  third reaching from a small yellow cover onto the grey book beside it (wrong). Every shelf photo: no cover, the
+  spines unchanged. Most covers on both photos are still missed: touching, overlapping and sun-washed edges.
+- **Tried and rejected:** one Hough over all edge pixels (lettering's lines crowd out the covers' sides); the largest
+  quadrilateral first (it took in two covers and the bench between); the orientation agreement of the edges inside a
+  box (0.36 for the whole shelf, as for real covers).
 
 ### R4 — two books of one series, parted by their repeating design (2026-11-07)
 
@@ -204,6 +230,10 @@ number below is a score.
   Fails on a squat book, on a spine with no lettering at all (left for the ground truth), and on a steep side view.
 - `[series-seam]` Two books of one series repeat one design, at the same heights (`books.series_split`). Fails on a series
   whose spines differ in design, or on two copies of one book (two boxes: right) — calibrated on one pair.
+- `[barcode]` A shelf is several spines packed together, upright seams side by side (`books.SHELF_BOOKS`, `COVER_SEAMS`).
+  Fails on a shelf of two books, and on a cover whose picture is vertical stripes - calibrated on one shelf box.
+- `[cover-shape]` A cover is a quadrilateral of one cover's size whose edges end at its corners (`books.covers`). Fails on
+  covers that touch or overlap, whose sides run on into the next one's.
 - `[camera-uniform]` One camera took the photo, so every book's ends turn as one perspective says (`books.perspective`).
   Fails on a stitched panorama; thinly supported: never trusted yet on a real photo.
 - `[work-size]` The finder works at a long side of 900 px (`books.WORK`): scale-dependent, the first constant to
@@ -215,7 +245,6 @@ number below is a score.
   private for now (missingbulb/NoRFinder#766); once it is shared by link, a `data/sources.json` and its fetch, then the first ground truth, then a grader (`proposed` against the corrected values) and the
   finder's first real iteration.
 - Hebrew word spaces in the `lines` reader.
-- R4's own breaks: the multi-shelf photos
-  `12msl6`, `1Rx9mp` give no box; pale spines on a pale wall; a perspective trusted on a real photo; covers and piles.
+- R5's own breaks: most covers on the ledge and the bench missed, one bench box reaching onto a neighbour; pale spines on a pale wall; a perspective trusted on a real photo; piles of books lying flat.
 - A study pack (`shelves-study`) for its improving-on-ground-truth skill and its ground-truth intake, once there is
   ground truth to take in.
