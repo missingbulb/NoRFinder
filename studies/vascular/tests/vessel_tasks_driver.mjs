@@ -2,9 +2,10 @@
 // (stand_in.mjs) whose Execute answers with a model fixture. Checks req/vascular/model/run: Processing lists the
 // algorithms with their icons, precision and recall, the default first, says how the chosen one works and how well, and Execute runs it with the spacing shown, opening
 // its model; req/vascular/truth/tasks and req/vascular/truth/order: a row per step counted in areas, how many areas
-// chosen, Lines from above with the view held and its handles kept in depth, Missed vessels, Junctions in 3D with an
+// chosen, req/shell/ground-truth/tagging: nothing opens until Start GT tagging, Stop tagging gives the stack back; Lines
+// from above with the view held and its handles kept in depth, Missed vessels, Junctions in 3D with an
 // artifact dropped, Ctrl showing the model alone, Back to image and Back to task; req/vascular/truth/marks: an area done
-// in every step blacked out of the stack; req/vascular/model/ground-truth: Submit
+// in every step blacked out of the stack while tagging, under the Show menu's Cut out what is done; req/vascular/model/ground-truth: Submit
 // last, its export carrying every verdict. Exits 1 on a failed check, 2 when it cannot run.
 //   node studies/vascular/tests/vessel_tasks_driver.mjs STUDIES
 import { createRequire } from "node:module";
@@ -99,16 +100,24 @@ try {
   check(await page.evaluate(() => !!($("#model-set").compareDocumentPosition($("#tasks-box")) & Node.DOCUMENT_POSITION_FOLLOWING) && !$("#tasks-box").hidden && !$("#vm-tasks").hidden),
     "Ground Truth Tasks sits under Processing once a model is open");
 
+  const view = () => page.evaluate(() => { const v = window.shellForTests.viewer.three; return { rot: v.S.rot.map((r) => [...r]), clip: v.S.clip && [...v.S.clip], held: !!v.S.held,
+    mode: $("#model-mode [aria-pressed=true]")?.dataset.v, show: !$("#vm-show").hidden, focus: $("#vm-focus").hidden ? null : $("#vm-focus").textContent.trim(), big: $("#vm-focus").classList.contains("big"),
+    cut: { on: $("#m-cut").checked, off: $("#m-cut").disabled }, start: $("#gt-start").offsetParent ? $("#gt-start").textContent.trim() : null, open: document.querySelector("#gt-tasks > li.now")?.dataset.task || null }; });
+  // req/shell/ground-truth/tagging: Execute leaves the stack in view; nothing opens until Start GT tagging
+  let t = await tasks(), v = await view();
+  check(!t.focused && !v.clip && v.show && !v.focus && !v.open && v.mode === "overlay", `drawn, the whole stack stays in view as the Show menu sets it, no task open: ${JSON.stringify({ focused: t.focused, clip: v.clip, show: v.show, focus: v.focus, open: v.open })}`);
+  check(v.start === "Start GT tagging" && v.cut.off, `Start GT tagging heads the tasks, and Cut out what is done is off out of tagging: ${JSON.stringify(v)}`);
+  await page.click("#gt-start");
+
   // the tasks are the stack's areas, each worked through in three steps
-  let t = await tasks();
+  t = await tasks();
   const r0 = await rows(), all = t.grid * t.grid;
   check(r0.length === 4 && r0[0] === `0/${all} Lines` && r0[1] === `0/${all} Missed vessels` && r0[2] === `0/${all} Junctions` && /Submit Ground Truth/.test(r0[3]),
     `a row per step, counted in areas: ${r0.join(" | ")}`);
   check(await page.evaluate(() => $("#gt-bar").children.length === 3), "the bar has a part per step");
-  check(t.step === "lines" && t.area === 0 && t.focused, `the walk opens on the first area's Lines, the area alone in view: ${JSON.stringify({ step: t.step, area: t.area, focused: t.focused })}`);
-  const view = () => page.evaluate(() => { const v = window.shellForTests.viewer.three; return { rot: v.S.rot.map((r) => [...r]), clip: v.S.clip && [...v.S.clip], held: !!v.S.held,
-    mode: $("#model-mode [aria-pressed=true]")?.dataset.v, show: !$("#vm-show").hidden, focus: $("#vm-focus").textContent.trim(), big: $("#vm-focus").classList.contains("big") }; });
-  let v = await view();
+  check(t.step === "lines" && t.area === 0 && t.focused, `Start GT tagging opens the walk on the first area's Lines, the area alone in view: ${JSON.stringify({ step: t.step, area: t.area, focused: t.focused })}`);
+  v = await view();
+  check(v.start === "Stop tagging" && v.open === "lines", `the button now reads Stop tagging, the Lines row open: ${v.start}`);
   check(v.focus === "Back to image" && v.big && !v.show, `in an area, a big Back to image button takes the Show menu's place: "${v.focus}", Show ${v.show ? "shown" : "hidden"}`);
   check(v.rot[2][2] > 0.99 && v.held && v.mode === "overlay" && !!v.clip, `Lines shows the area alone, from straight above, the lines over the stack, the view held: ${JSON.stringify({ z: v.rot[2][2], held: v.held, mode: v.mode, clip: v.clip })}`);
 
@@ -127,7 +136,8 @@ try {
   // dragging a handle moves its point across the picture, never in depth
   let m = await doc();
   const pts = await page.evaluate(() => window.vascular.model().points);
-  const inArea = (n) => n.x > 0 && n.x < W / 2 && n.y > 0 && n.y < H / 2;
+  // inside the current area, the top-left quarter, at least margin µm from its edges
+  const inArea = (n, margin = 0) => n.x > margin && n.x < W / 2 - margin && n.y > margin && n.y < H / 2 - margin;
   const node = m.nodes.find((n) => pts[n.id] && n.x > W * 0.1 && n.x < W * 0.4 && n.y > H * 0.1 && n.y < H * 0.4);
   const [px, py] = pts[node.id];
   await page.mouse.move(cx + px, cy + py); await page.mouse.down(); await page.mouse.move(cx + px + 25, cy + py + 15, { steps: 5 }); await page.mouse.up();
@@ -135,6 +145,7 @@ try {
   const moved = m.nodes.find((n) => n.id === node.id);
   check(moved && (moved.x !== node.x || moved.y !== node.y) && moved.z === node.z, `a handle drags its point across the picture and keeps its depth: (${node.x.toFixed(1)}, ${node.y.toFixed(1)}, ${node.z}) → (${moved?.x.toFixed(1)}, ${moved?.y.toFixed(1)}, ${moved?.z})`);
   check(JSON.stringify((await view()).rot) === JSON.stringify(rot0), "... and the view stays as it was");
+
 
   // Lines are right: the area's confident vessels accepted, its low-confidence ones declined
   await page.click("#lines-ok");
@@ -230,10 +241,29 @@ try {
     const lit = await brightness();
     await page.keyboard.press("Control+y");
     check(cut < lit, `an area done in every step is cut out of the stack: brightness ${lit.toFixed(2)} → ${cut.toFixed(2)}`);
+    await page.click("#vm-show summary"); await page.click("#m-cut"); await page.click("#vm-show summary");
+    const whole = await brightness();
+    check(Math.abs(whole - lit) < 1e-6, `the Show menu's Cut out what is done off: the stack whole: brightness ${whole.toFixed(2)}`);
+    await page.click("#vm-show summary"); await page.click("#m-cut"); await page.click("#vm-show summary");
+    check(Math.abs((await brightness()) - cut) < 1e-6, "and on again, cut out again");
   } else console.log(`not checked in this ${ENGINE}: the area cut out of the 3D view, which needs the WebGL2 it lacks`);
   await page.click("#vm-focus");
   v = await view(); t = await tasks();
   check(t.focused && !!v.clip && v.focus === "Back to image" && t.area === 1 && t.step === "lines", "Back to task returns to the area and its step");
+
+  // Stop tagging: the whole stack, no task open, nothing cut out, the Show menu's row off
+  await page.click("#gt-start");
+  v = await view(); t = await tasks();
+  check(!t.focused && !v.clip && v.show && !v.focus && !v.open && v.cut.off && v.start === "Start GT tagging", `Stop tagging gives the whole stack back, no task open, Cut out what is done off: ${JSON.stringify(v)}`);
+  if (gl) {
+    await page.keyboard.press("Control+z");
+    const lit = await brightness();
+    await page.keyboard.press("Control+y");
+    check(Math.abs((await brightness()) - lit) < 1e-6, "out of tagging nothing is cut out of the stack");
+  }
+  await page.click("#gt-start");
+  t = await tasks();
+  check(t.focused && t.area === 1 && t.step === "lines", "Start GT tagging again returns to the walk's next step not done");
 
   await page.click("#gt-submit");
   check(await page.evaluate(() => $("#gt-dlg").open && !$("#gt-export").disabled), "Submit Ground Truth, the last task, exports once there are verdicts");

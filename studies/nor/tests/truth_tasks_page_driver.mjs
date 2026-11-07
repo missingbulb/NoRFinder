@@ -137,8 +137,29 @@ const now = () => page.evaluate(() => ({ cur: st.cur, task: st.task, sel: st.sel
   rows: [...document.querySelectorAll("#gt-tasks > li")].map((l) => l.querySelector(".task-head").textContent.replace(/\s+/g, " ").trim()),
   open: document.querySelector("#gt-tasks > li.now")?.dataset.task, back: !$("#task-back").disabled,
   bar: [...document.querySelectorAll("#gt-bar > span")].map((b) => ({ grow: +getComputedStyle(b).flexGrow, fill: +b.style.getPropertyValue("--done") })) }));
+const rectOf = (a) => { const r = Math.floor(a / 10), k = r % 2 ? 9 - (a % 10) : a % 10; return [k * IW / 10, r * IH / 10, IW / 10, IH / 10]; };
+const same = (p, q) => !!p && !!q && p.every((v, k) => Math.abs(v - q[k]) < 1e-6);
+// req/shell/ground-truth/tagging: found, the image stays as it is viewed until Start GT tagging is pressed
+const ring = () => page.$eval("#overlay .ring", (r) => ({ shown: r.style.display !== "none" && getComputedStyle(r).display !== "none", stroke: getComputedStyle(r).stroke })).catch(() => ({ shown: false }));
+const frame = () => page.evaluate(() => { const f = document.querySelector("#overlay .area-frame"); return f && f.style.display !== "none" && getComputedStyle(f).display !== "none" ? ["x", "y", "width", "height"].map((k) => +f.getAttribute(k)) : null; });
+const cutShown = () => page.evaluate(() => { const g = document.querySelector("#overlay .reveal-marks"); return !!g && getComputedStyle(g).display !== "none"; });
+const tagRows = () => page.evaluate(() => ["show-gt-cut", "show-gt-frame"].map((id) => $("#" + id).disabled));
+const startSays = () => page.evaluate(() => { const b = $("#gt-start"); return b && b.offsetParent ? b.textContent.trim() : null; });
 let s = await now();
-await check(s.cur === W[0].key && !s.back, "the tasks open on the walk's first item, with nothing to go back to", s);
+await check(!s.open && !s.card && !(await ring()).shown && !(await frame()) && !(await cutShown()), "found, no task is open: nothing ringed, framed or cut out", s);
+await check(await startSays() === "Start GT tagging" && (await tagRows()).every(Boolean), "Start GT tagging heads the box, and the Show menu's Cut out and Frame rows are off", [await startSays(), await tagRows()]);
+await check(s.rows[0].startsWith(`0/${P} Finalists`), "the rows count the tasks before tagging starts", s.rows);
+await page.click("#gt-start");
+s = await now();
+await check(s.cur === W[0].key && !s.back && s.open === W[0].t && (W[0].cy == null || (await ring()).shown) && same(await frame(), rectOf(W[0].a)),
+  "Start GT tagging opens the walk's first item in its framed area (ringed when it is a candidate), with nothing to go back to", s);
+await check(await startSays() === "Stop tagging" && !(await tagRows()).some(Boolean), "the button now reads Stop tagging, and the Show menu's rows are on", [await startSays(), await tagRows()]);
+await page.click("#gt-start");
+s = await now();
+await check(!s.open && !s.card && !(await ring()).shown && !(await frame()), "Stop tagging closes the task: nothing ringed or framed", s);
+await page.click("#gt-start");
+s = await now();
+await check(s.cur === W[0].key && s.open === W[0].t, "Start again opens the walk where it was", s);
 // one row per task, each counting once, never saying "review"
 await check(s.rows[0].startsWith(`0/${P} Finalists`) && s.rows[1].startsWith(`0/${F} Rejected`) && s.rows[2].startsWith("0/100 Areas") && /Submit Ground Truth/.test(s.rows[3])
   && !s.rows.some((r) => /review/i.test(r)) && await page.$$eval("#tasks-box", (b) => !/\d+ of \d+/.test(b[0].textContent)), "one row per task: 0/N Finalists, 0/N Rejected, 0/100 Areas, Submit", s.rows);
@@ -179,11 +200,8 @@ const mark = (i) => page.evaluate((i) => {
 const second = W.filter((x) => x.t === "pass")[1];
 let m = await mark(+second.key.slice(2));
 await check(/\btodo\b/.test(m.cls) && m.opacity <= 0.4 && !m.cut && m.num === "none" && m.stroke === "rgb(255, 255, 255)", "a candidate waiting is a faint white outline, no number", m);
-const ring = await page.$eval("#overlay .ring", (r) => ({ shown: r.style.display !== "none", stroke: getComputedStyle(r).stroke }));
-await check(ring.shown && ring.stroke === "rgb(255, 212, 0)", "the current candidate has a yellow ring", ring);
-const frame = () => page.evaluate(() => { const f = document.querySelector("#overlay .area-frame"); return f && f.style.display !== "none" && getComputedStyle(f).display !== "none" ? ["x", "y", "width", "height"].map((k) => +f.getAttribute(k)) : null; });
-const rectOf = (a) => { const r = Math.floor(a / 10), k = r % 2 ? 9 - (a % 10) : a % 10; return [k * IW / 10, r * IH / 10, IW / 10, IH / 10]; };
-const same = (p, q) => !!p && !!q && p.every((v, k) => Math.abs(v - q[k]) < 1e-6);
+const rung = await ring();
+await check(rung.shown && rung.stroke === "rgb(255, 212, 0)", "the current candidate has a yellow ring", rung);
 // the view come to rest where it was sent: the image's point x, y at its centre, or as near as the image's edge lets it
 // the framed area wholly in view, and the scroll unmoved since the last frame: a right click then opens a menu no
 // scroll will close
@@ -333,6 +351,7 @@ await page.close();
 // ---- the picture's link failing: black, never the browser's broken-picture icon ----
 picture = false;
 page = await open();
+await page.click("#gt-start");
 await page.evaluate(() => nor.decide(st.order[0].i, "approve"));
 await page.pictureFailed;
 await page.evaluate(() => new Promise((ok) => requestAnimationFrame(ok)));

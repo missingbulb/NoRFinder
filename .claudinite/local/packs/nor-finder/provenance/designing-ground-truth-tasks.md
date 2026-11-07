@@ -32,3 +32,9 @@
 ## 2026-11-05 · reworded · the NoR reference build's requirements moved to studies/nor/requirements.md
 - **Reason:** the path it named no longer holds req/nor (req/checks/spec-layout).
 - **Actor:** @missingbulb (owner).
+
+## 2026-11-07 · reworded · tagging starts and stops by hand
+- **Reason:** jumping into the first task as the algorithm finished was wonky; entering tagging is
+  explicit, for every study.
+- **Actor:** @missingbulb (owner).
+- **Model:** Claude Opus 5.5

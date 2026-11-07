@@ -18,6 +18,11 @@ reference build: `req/nor/truth/tasks`, `req/nor/truth/order` and `req/nor/truth
 
 ## What the page is while ground truth is made
 
+- **Tagging starts and stops by hand.** Opening an image or running the algorithm leaves the image
+  as it is viewed: no task open, no ring, frame or cut-out, the view not moved. The shell's Start
+  GT tagging opens the walk and Stop tagging closes it (`req/shell/ground-truth/tagging`); the
+  study hears both through its tasks' `tagging` hook and asks `tasks.tagging()`, and the Show
+  menu's rows for what tagging alone draws are off out of it.
 - **Statistics are for viewing, not for making ground truth.** Hide the study's summary,
   histograms and CSVs in a GT stage; they stay in PreGT and Published. A ground-truth tasks box
   takes the summary's place in the left bar.

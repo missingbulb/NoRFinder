@@ -164,6 +164,18 @@ async function markAndVote(page) {
   });
   await check(none.finalists === 0 && none.button === "todo" && none.crumbs === "Load image › Run algorithm › Review all items*",
     `every finalist filtered out and none voted on: the button stays red and Review all items stays the step to do: ${JSON.stringify(none)}`);
+  // the walk opens once tagging starts (req/shell/ground-truth/tagging), framing its first area; the view is put back
+  // as it was, the whole image, once it rests, since a scroll closes the menu a right click opens
+  const rest = () => page.waitForFunction(() => {
+    const sc = $("#scroller"), at = [sc.scrollLeft, sc.scrollTop, st.zoom].join();
+    window.still = window.lastAt === at ? (window.still || 0) + 1 : 0; window.lastAt = at;
+    return window.still >= 5;
+  }, null, { polling: "raf" });
+  const was = await page.evaluate(() => ({ zoom: st.zoom, x: $("#scroller").scrollLeft, y: $("#scroller").scrollTop }));
+  await page.click("#gt-start");
+  await rest();
+  await page.evaluate((w) => { shellForTests.viewer.setZoom(w.zoom); $("#scroller").scrollTo({ left: w.x, top: w.y, behavior: "instant" }); }, was);
+  await rest();
   const m = await middle(page);
   await page.mouse.click(m.sx, m.sy, { button: "right" });
   await check(await page.isVisible("#ctx") && (await page.textContent("#ctx button")) === "Add a NoR Here", "a right click on the image offers Add a NoR Here");

@@ -6,8 +6,8 @@
 //
 // The review narrows the stack to what the model accounts for: Detected keeps only the signal around
 // the model's vessels, to check and measure them; Missed keeps only the signal away from them, to find
-// vessels the extractor did not draw, which can then be drawn in a click at a time. While the study makes
-// ground truth, what the owner has decided is cut out of the stack, and the current task's item and area
+// vessels the extractor did not draw, which can then be drawn in a click at a time. While the owner tags ground
+// truth, what they have decided is cut out of the stack, as the Show menu says, and the current task's item and area
 // are marked on the view.
 import * as Mo from './model.js';
 import { coverage } from './coverage.js';
@@ -44,8 +44,9 @@ let model = null, loaded = null, history = [], future = [], edits = 0, savedKey 
 // mode: what the main view shows, "image" (the stack alone), "model" (the model alone), "overlay" or "side"
 let mode = 'image', hover = null, rubber = null, showCandidates = true, showWidths = true;
 let review = 'all', reach = .5, maskKey = null, maskTimer = null, drawing = null, moving = null, lasso = null;
-// makingTruth: the study makes ground truth; task: the task's item, {segments} or {node}; area: the task's area, a box in µm
-let makingTruth = false, task = null, area = null, picked = null;
+// makingTruth: the study makes ground truth; tagOn: the owner tags it now; cutOn: what is done is cut out while they
+// do; task: the task's item, {segments} or {node}; area: the task's area, a box in µm
+let makingTruth = false, tagOn = false, cutOn = true, task = null, area = null, picked = null;
 // focused: the main view shows one area of the ground-truth tasks alone, {box, depth}: from straight above, the view held
 // and every point a handle, or in 3D (depth), turning freely with no handles; null for the whole stack. outside: the
 // mode chosen for the whole stack, back once the area is left; peeking: Ctrl held, the model alone
@@ -577,6 +578,11 @@ export function focusArea(b, depth) {
   frameFocus(); setMode(focusMode()); refreshMask(true);
 }
 export const focusedArea = () => focused;
+// the owner tags ground truth now or not: only while they do is what is done cut out, and the Show menu's row for it on
+export function tagging(on) {
+  tagOn = !!on; $('m-cut').disabled = !tagOn;
+  refreshMask(true);
+}
 const focusMode = () => (peeking ? 'model' : focused.depth ? 'image' : 'overlay');
 // the area filling the view, the rest of the stack cut away: from straight above, or tilted to show its depth
 const TILT = [-0.5, -0.6], FILL = 1.05;
@@ -605,10 +611,10 @@ function setReview(r) {
   $('reach-row').hidden = r === 'all';
   refreshMask(true);
 }
-// What the owner has decided, cut out of the stack while the study makes ground truth: the vessels with a
-// verdict, the junctions found right and the areas checked for missed vessels; null while nothing is.
+// What the owner has decided, cut out of the whole stack while they tag ground truth and the Show menu says so: each
+// area done; null while nothing is.
 function cutOut(m) {
-  if (!makingTruth || focused) return null;
+  if (!makingTruth || !tagOn || !cutOn || focused) return null;
   const boxes = (m.reviewed_regions || []).filter((g) => g.x?.length === 2 && g.y?.length === 2 && (!g.step || g.step === DONE_STEP))
     .map((g) => ({ x0: g.x[0], x1: g.x[1], y0: g.y[0], y1: g.y[1] }));
   return boxes.length ? { points: [], boxes } : null;
@@ -622,7 +628,7 @@ function refreshMask(now) {
   if (!V?.meta) return;
   const cut = model && cutOut(model);
   if (!model || (review === 'all' && !cut)) { maskKey = null; return V.setMask(null); }
-  const key = [model, showCandidates, reach, V.S.zs, review, !!focused];
+  const key = [model, showCandidates, reach, V.S.zs, review, !!focused, tagOn, cutOn];
   if (maskKey && key.every((v, k) => v === maskKey.key[k])) return V.setMask(maskKey.mask, maskKey.side);
   maskTimer = setTimeout(() => {
     const o = { zStepUm: V.S.zs, reachOfWidth: reach }, extra = { points: cut?.points, boxes: cut?.boxes };
@@ -757,7 +763,9 @@ export const inspect = () => ({ model: model && Mo.toJSON(model), points: view &
 // view: the shell's 3D view; signal ends the listeners outside the study's own panels when the study leaves;
 // makesTruth: the study makes ground truth, so what is decided is cut out of the stack
 export function init(view, signal, makesTruth) {
-  V = view; makingTruth = !!makesTruth;
+  V = view; makingTruth = !!makesTruth; tagOn = false; cutOn = true;
+  $('m-cut-row').hidden = !makingTruth; $('m-cut').checked = true; $('m-cut').disabled = true;
+  $('m-cut').onchange = (e) => { cutOn = e.target.checked; refreshMask(true); };
   model = null; loaded = null; history = []; future = []; edits = 0; savedKey = null; mode = 'image'; task = null; area = null; picked = null;
   focused = null; outside = 'overlay'; peeking = false;
   cv = document.createElement('canvas'); cv.id = 'mcv';

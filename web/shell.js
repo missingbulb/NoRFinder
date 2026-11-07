@@ -775,6 +775,7 @@ async function openBytes(name, bytes, source) {
   drawSteps(); boxes().forEach((b) => summaries.delete(b)); retitle();
   // a copy, for Edit Image and the problem report: the bytes themselves go to Python
   st.kept = { name, source, bytes: bytes.slice(0) };
+  tasks.tagging(false);
   study.opening?.(name, source);
   st.sha = await sha256(bytes);
   page.set({ opening: { name } }); statusBar();

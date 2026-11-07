@@ -34,11 +34,19 @@
     {"under": "Ground Truth Tasks", "tree": [
       {"name": "The NoR tasks", "select": "#nor-tasks", "req": "req/nor/truth/tasks"},
       {"name": "Missed NoRs check", "select": "#area-check", "req": "req/nor/truth/order",
+        "unwalked": "shows only while tagging, which no path starts (req/shell/ground-truth/tagging)",
+        "rule": [
+          {"is": "hidden", "approval": "tentative"}
+        ],
         "children": [
           {"name": "No missed NoRs here", "select": "#area-ok", "control": true, "req": "req/nor/truth/order"}
         ]
       },
       {"name": "Task tools", "select": "#task-tools", "req": "req/nor/truth/order",
+        "unwalked": "shows only while tagging, which no path starts (req/shell/ground-truth/tagging)",
+        "rule": [
+          {"is": "hidden", "approval": "tentative"}
+        ],
         "children": [
           {"name": "Back", "select": "#task-back", "control": true, "req": "req/nor/truth/order",
             "rule": [

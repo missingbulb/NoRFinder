@@ -117,12 +117,14 @@ owner's decisions on the stacks and the vessel model, are
   Test: `studies/vascular/tests/test_stack_page.py`.
   </details>
 
-- `req/vascular/truth/marks` An area done in every step is cut out of the stack, blacked out through every slice.
+- `req/vascular/truth/marks` While tagging, an area done in every step is cut out of the stack, blacked out through every slice.
   <details>
 
   Changed by the owner on 2026-11-07: an area whose Lines, Missed vessels and Junctions are all done is blacked
   out of the 3D stack in the whole-image view, so what is left to review stands out and the work shows as it is done.
-  Inside an area nothing is cut out, since every step there needs the signal it judges. The current area is framed
+  Inside an area nothing is cut out, since every step there needs the signal it judges. It is a progress mark for
+  tagging, not for viewing (owner, 2026-11-07): the Show menu's Cut out what is done switches it, and out of tagging
+  (`req/shell/ground-truth/tagging`) nothing is cut out and the row is off. The current area is framed
   on the whole image, and the current junction is drawn white over a dark rim, which reads over any signal. Test:
   `studies/vascular/tests/test_vessel_tasks_page.py`.
   </details>
@@ -144,7 +146,9 @@ owner's decisions on the stacks and the vessel model, are
   Set by the owner on 2026-11-07, replacing the vessel-by-vessel tasks of 2026-11-04. The tasks are the stack's
   areas (`req/vascular/truth/order`), and each area is worked through in three steps, one row each in the left bar
   under Processing once a model is open: "3/16 Lines", "2/16 Missed vessels", "1/16 Junctions", a check once done,
-  a bar split into a part per task, and Submit Ground Truth last. The open step's row holds the area's place, a
+  a bar split into a part per task, and Submit Ground Truth last. Execute leaves the stack in view as it was; the walk
+  opens on its first step not done only once Start GT tagging is pressed (`req/shell/ground-truth/tagging`), and Stop
+  tagging gives the whole stack back, as the Show menu sets it. The open step's row holds the area's place, a
   map of the areas to pick one from, the choice of how many areas, and the step's own controls, with Skip on its row.
   While a step is open the main view shows that area alone.
 

@@ -279,7 +279,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   around its pixels, two pixels wider each way) is removed from the image. The area being worked on
   (`req/nor/truth/order`) is framed in yellow. Changed by the owner on 2026-11-04: once an area is
   done, every candidate in it decided and it checked for missed NoRs, the whole area is removed.
-  The Show menu switches each of these markings (`req/nor/show-menu`).
+  The Show menu switches each of these markings (`req/nor/show-menu`). The ring, the frame and what is removed
+  show only while tagging (`req/shell/ground-truth/tagging`; owner, 2026-11-07), the image otherwise whole.
   Where the image is removed, a picture shows instead, one picture behind the whole image, so the
   review uncovers more and more of it: the study's `groundTruth.reveal`, a link to a picture on
   the web that the browser fetches from there (NoR: a golden retriever; changed by the owner on
@@ -301,8 +302,9 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
 - `req/nor/truth/tasks` Ground Truth Tasks lists the tasks, one row each; the open one shows one item at a time.
   <details>
 
-  Set by the owner on 2026-11-03. In Summary's place while the study makes ground truth, opening
-  once the candidates are found. A bar split into one part per task, each as wide as the task is
+  Set by the owner on 2026-11-03. In Summary's place while the study makes ground truth, counting
+  once the candidates are found; the walk opens only once Start GT tagging is pressed, and Stop tagging
+  closes it, the image left as it is viewed (`req/shell/ground-truth/tagging`). A bar split into one part per task, each as wide as the task is
   long and filled as far as it is done, heads one row per task, each counting only once and never
   repeating that it is a review: "13/47 Finalists", "0/68 Rejected", "0/100 Areas" (the areas
   checked for NoRs the finder missed), and Submit Ground Truth (`req/nor/downloads`); a done task

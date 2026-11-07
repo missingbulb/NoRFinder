@@ -278,7 +278,7 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   // the tasks in the shell's list (req/shell/ground-truth/tasks): a row each, a bar part each, Submit last
   const list = async () => page.evaluate(() => {
     const rows = [...document.querySelectorAll("#gt-tasks > li")], part = document.querySelector('#gt-bar > span[data-task="check"]'), s = document.querySelector("#gt-submit");
-    return { rows: rows.map((li) => li.querySelector(".t")?.textContent.trim() || li.textContent.trim()), last: rows.at(-1).contains(s),
+    return { rows: rows.map((li) => (li.querySelector(".t") || li.querySelector("#gt-submit")).textContent.trim()), last: rows.at(-1).contains(s),
       open: rows[0].classList.contains("now"), done: rows[0].classList.contains("done"), tick: getComputedStyle(rows[0].querySelector(".tick")).display !== "none",
       body: !!document.querySelector("#fx-done").offsetParent && rows[0].querySelector(".task-body").contains(document.querySelector("#fx-done")),
       filled: +part.style.getPropertyValue("--done"), submit: !s.disabled, state: s.dataset.state || "" };
@@ -286,7 +286,10 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   const l0 = await list();
   await check(l0.rows.join() === "0/1 Count checked,Submit Ground Truth" && l0.last && l0.submit && l0.state === "todo",
     "the study's task is a row, 0 of 1 done, and Submit Ground Truth, on, is the last", l0);
-  await check(l0.open && l0.body && !l0.done && !l0.tick && l0.filled === 0, "the open task holds what the study puts under it, its bar part empty", l0);
+  await check(!l0.open, "no task is open until Start GT tagging (req/shell/ground-truth/tagging)", l0);
+  await page.click("#gt-start");
+  const lt = await list();
+  await check(lt.open && lt.body && !lt.done && !lt.tick && lt.filled === 0, "the open task holds what the study puts under it, its bar part empty", lt);
   await page.check("#fx-done");
   const l1 = await list();
   await check(l1.rows[0] === "1/1 Count checked" && l1.done && l1.tick && !l1.open && l1.filled === 1 && l1.state === "done",
