@@ -313,7 +313,7 @@ export function dataMode(ctx) {
           const reason = prompt("Why is it rejected? The tagger sees this.", "");
           if (reason === null) return;
           ok.disabled = no.disabled = true; say("Rejecting…");
-          try { await tf.reject({ writer, file: s, reason }); say("Rejected."); await relist(n); }
+          try { await tf.reject({ reader, writer, folders: gt, image, file: s, reason }); say("Rejected."); await relist(n); }
           catch (e) { say(e.message || String(e), true); no.disabled = false; }
         };
         return li;

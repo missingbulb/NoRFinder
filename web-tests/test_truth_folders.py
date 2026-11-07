@@ -39,8 +39,10 @@ def test_a_study_names_two_folders_or_one_twice(out):
 def test_submitting_again_replaces_only_the_taggers_own_file_and_keeps_the_old_version(out):
     s = out['submit']
     assert s['subfolders'] == 1
-    assert s['writes'] == [['folder', 'slide3_s2__a1b2c3d4'], ['create', 'gt_jane@lab.org.json'],
-                           ['replace', 'gt_jane@lab.org.json', True], ['create', 'gt_bob@lab.org.json']]
+    # each submission also stamps the image's subfolder with when it landed (req/shell/ground-truth/pending)
+    stamp = ['mark', 'slide3_s2__a1b2c3d4']
+    assert s['writes'] == [['folder', 'slide3_s2__a1b2c3d4'], ['create', 'gt_jane@lab.org.json'], stamp,
+                           ['replace', 'gt_jane@lab.org.json', True], stamp, ['create', 'gt_bob@lab.org.json'], stamp]
     assert s['current'] == {'tagger': 'bob@lab.org', 'labels': 3, 'file': 'gt_bob@lab.org.json'}
 
 
@@ -49,13 +51,17 @@ def test_a_reader_takes_the_newest_created_that_is_not_rejected(out):
     assert out['reader'] == {'tagger': 'mid@x.org', 'none': None}
 
 
-def test_pending_is_a_submission_newer_than_the_curated_one(out):
+def test_pending_is_a_submission_newer_than_its_last_acceptance_or_rejection(out):
     p = out['pending']
+    # read from the two folders' listings alone: no image subfolder listed, no file read
+    assert p['listed'] == ['C', 'S']
     assert p['a'] == {'curated': False, 'pending': True, 'rejected': False}
-    # curated after the submission (accepted): not pending
+    # accepted after it was submitted: not pending
     assert p['b'] == {'curated': True, 'pending': False, 'rejected': False}
     assert p['c'] == {'curated': False, 'pending': False, 'rejected': True}
-    # one folder named twice: what lands is curated, nothing pending
+    # submitted again after the acceptance: pending again
+    assert p['bAgain'] == {'curated': True, 'pending': True, 'rejected': False}
+    # one folder for both: what lands is curated, nothing pending
     assert p['sameA'] == {'curated': True, 'pending': False, 'rejected': False}
     assert p['missing'] is None
 

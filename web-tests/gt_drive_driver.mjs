@@ -78,7 +78,7 @@ const gtDoc = JSON.parse(file.bytes.toString());
 await check(gtDoc.tagger === "tester@example.com" && !Number.isNaN(Date.parse(gtDoc.created)) && gtDoc.image.sha256 === createHash("sha256").update(png.bytes).digest("hex") && gtDoc.labels.length === 1,
   "the file names its tagger, when it was made and the image's SHA-256, and holds the study's marks", gtDoc);
 msg = await submit();
-await check(/Submitted/.test(msg) && writes.filter(([w, n]) => w === "folder" && n === sub).length === 1 && writes.at(-1)[0] === "replace" && keptForever.includes(file.name),
+await check(/Submitted/.test(msg) && writes.filter(([w, n]) => w === "folder" && n === sub).length === 1 && JSON.stringify(writes.slice(-2)) === JSON.stringify([["replace", file.name], ["mark", sub]]) && keptForever.includes(file.name),
   "submitting again replaces the tagger's own file, keeping the old version", writes);
 
 // Clear progress: asks first, naming the image, then forgets the study's progress on it
