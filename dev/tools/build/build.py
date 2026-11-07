@@ -10,7 +10,7 @@ so does a local preview:
 It also fetches the third-party wheels the studies install into Pyodide (packages Pyodide does not
 ship, each study's python.wheels) into web/vendor/, so the page never depends on PyPI at run time;
 writes the version history the page shows (version_history.py) and the studies its header offers
-(studies.json); publishes the page again as app/<id>.html for each of them, which Cloudflare serves at
+(studies.json); writes the files each study's generated names, from its own scripts; publishes the page again as app/<id>.html for each of them, which Cloudflare serves at
 /app/<id>, carrying the study's own icon and poster (req/shell/site/icons); lists the studies on the landing
 page (req/shell/site/landing); writes sitemap.xml and robots.txt (req/shell/site/crawlers); and writes the deployment's
 settings into the published web/config.js from the repository variables: GOOGLE_API_KEY turns on
@@ -101,6 +101,24 @@ def study_ships(rel, python_dirs):
     return rel.endswith('.py') and os.path.dirname(rel) in python_dirs
 
 
+def generated(root):
+    """{published repo-relative path: (the study's folder, its script)} for the files each study's generated names,
+    which its scripts write rather than the repo holds."""
+    out = {}
+    for manifest in sorted(glob.glob(os.path.join(root, 'studies', '*', 'study.json'))):
+        base = os.path.dirname(manifest)
+        for rel, script in json.load(open(manifest)).get('generated', {}).items():
+            if not rel.startswith('web/'):
+                raise ValueError(f'{manifest}: a generated file is part of the page, under web/, not {rel}')
+            out[os.path.relpath(os.path.join(base, rel), root).replace(os.sep, '/')] = (base, script)
+    return out
+
+
+def generate(base, script):
+    """What a study's script writes on its stdout, run from the study's folder."""
+    return subprocess.run([sys.executable, script], cwd=base, capture_output=True, text=True, check=True).stdout
+
+
 def tracked(root):
     return [p for p in subprocess.run(['git', '-C', root, 'ls-files', '-z'], capture_output=True, check=True, text=True).stdout.split('\0') if p]
 
@@ -119,6 +137,7 @@ def published(root):
                 dirs[sid] = {d.strip('/') for d in json.load(open(manifest))['python']['paths']} if os.path.isfile(manifest) else None
             if dirs[sid] is not None and study_ships('/'.join(parts[2:]), dirs[sid]):
                 yield rel
+    yield from generated(root)
 
 
 def assemble(root, out, env):
@@ -129,11 +148,15 @@ def assemble(root, out, env):
         for f in fs:
             if os.path.relpath(os.path.join(d, f), out) not in kept:
                 os.remove(os.path.join(d, f))
-    files = list(published(root))
+    files, made = list(published(root)), generated(root)
     for rel in files:
         dst = os.path.join(out, served(rel))
         os.makedirs(os.path.dirname(dst), exist_ok=True)
-        shutil.copy2(os.path.join(root, rel), dst)
+        if rel in made:
+            with open(dst, 'w') as f:
+                f.write(generate(*made[rel]))
+        else:
+            shutil.copy2(os.path.join(root, rel), dst)
     app = os.path.join(out, APP)
     for name in GENERATED:
         src = os.path.join(root, 'web', name)
