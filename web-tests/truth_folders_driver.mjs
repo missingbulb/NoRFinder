@@ -37,9 +37,9 @@ const IMG = { name: "slide3_s2.tif", sha256: "a1b2c3d4" + "0".repeat(56) };
 
 out.names = { sub: tf.subfolderName(IMG.name, IMG.sha256), file: tf.taggerFile("Jane@Lab.org") };
 out.folders = {
-  two: tf.folders({ groundTruth: { submissions: "https://drive.google.com/drive/folders/SUBMISSIONS0001", curated: "https://drive.google.com/drive/folders/CURATED0000001" } }),
-  one: tf.folders({ groundTruth: { submissions: "https://drive.google.com/drive/folders/SAMEFOLDER0001", curated: "https://drive.google.com/drive/folders/SAMEFOLDER0001" } }),
-  none: tf.folders({ groundTruth: { submissions: null, curated: null } }),
+  two: tf.folders({ submissions: "SUBMISSIONS0001", curated: "CURATED0000001" }),
+  one: tf.folders({ submissions: "SAMEFOLDER0001", curated: "SAMEFOLDER0001" }),
+  none: tf.folders(null),
 };
 
 // submitting: the subfolder made once, the tagger's own file replaced, keeping the old version

@@ -25,12 +25,10 @@
     "panels": "web/fixture.html",
     "style": "web/fixture.css"
   },
+  "root": "https://drive.google.com/drive/folders/fixturefolder00000001",
   "files": {
     "from": ["drive"],
     "accept": ".png",
-    "folders": [
-      "https://drive.google.com/drive/folders/fixturefolder00000001"
-    ],
     "empty": "Load a greyscale PNG, then press Count."
   },
   "channels": [
@@ -46,8 +44,6 @@
     "count": "Counting…"
   },
   "groundTruth": {
-    "submissions": null,
-    "curated": null,
     "button": "#fx-truth"
   }
 }

@@ -304,9 +304,9 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/shell/drive/dialog` Google Drive: a study browses its own folders, the Image Viewer takes a pasted link; open on Open, double click or Enter.
   <details>
 
-  Set by the owner on 2026-11-04: a study naming Drive folders (its `files.folders`) offers no link to paste; its
-  dialog opens on its folders, straight into the one when it names one, else on a list of them by name, and browses
-  only within them. A study naming none, the Image Viewer, takes the pasted link of an image or a folder: one shared as
+  Set by the owner on 2026-11-04: a study naming a Drive root (its `root`, `req/shell/data/roles`) offers no link to
+  paste; its dialog opens straight into the data folder its root names, else the root itself, and browses only within
+  it. A study naming none, the Image Viewer, takes the pasted link of an image or a folder: one shared as
   "Anyone with the link", or, signed in, any the user's account can see (`req/shell/drive/credentials`). An image's link loads it at once; a folder lists its subfolders and the images the study opens (the kinds its `files.accept` names), to pick from, each image
   with its size, a small colour thumbnail and, for one opened before in the study, how long since, as the image
   selector says it (`req/shell/load/selector`); set by the owner on 2026-11-04, in place of the date it was added to

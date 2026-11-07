@@ -77,6 +77,12 @@
                     {"when": {"online": [false]}, "is": "held", "req": "req/shell/offline/default"}
                   ]
                 },
+                {"name": "Set up ground truth", "select": "#gt-setup", "control": true, "req": "req/shell/ground-truth/setup",
+                  "rule": [
+                    {"when": {"stage": [null, "PreGT", "Published"]}, "is": "hidden", "approval": "tentative"},
+                    {"when": {"online": [false]}, "is": "held", "req": "req/shell/offline/default", "approval": "tentative"}
+                  ]
+                },
                 {"name": "Folder tree", "select": "#data-tree", "req": "req/shell/data/mode"},
                 {"name": "Tree's message", "select": "#data-msg", "req": "req/shell/data/mode"}
               ]

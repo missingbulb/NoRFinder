@@ -11,6 +11,7 @@
 // once something is kept.
 import { CORE, packagesOf } from "./python_files.js";
 import { PREVIEWS } from "./previews.js";
+import { studyPlace } from "./study_root.js";
 
 // the event each part of the page follows the network by, fired on window as it goes or comes back:
 // detail {online}
@@ -197,11 +198,13 @@ export function offline({ $, esc, sizeText, remote, kept, keep, throttled, throt
   // the images in a study's own remote folder and the folders under it: [{id, name, size, path, study, kept}], or
   // a sentence saying why there are none
   async function imagesOf(s) {
-    const refs = remote.study(s.manifest).folders.map((id) => ({ id }));
-    if (!refs.length) return `This study has no ${remote.label} folder of its own.`;
+    const top = remote.study(s.manifest).root;
+    if (!top) return `This study has no ${remote.label} folder of its own.`;
     if (!remote.ready) return `Its ${remote.label} folder ${remote.words.noKey}.`;
     if (isOffline()) return `Its ${remote.label} folder can be read once you are online.`;
     if (throttled()) return `${remote.words.throttling}; try again in a while.`;
+    // its images are in the data folder its root's settings name, else in the root itself
+    const refs = [{ id: (await studyPlace(remote, () => s.manifest).dataFolders())[0] }];
     const found = [];
     for (const queue = refs.map((r) => ({ id: r.id, path: [] })), seen = new Set(); queue.length && seen.size < MAX_FOLDERS && found.length < MAX_FILES; ) {
       const at = queue.shift();

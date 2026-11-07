@@ -39,13 +39,11 @@
     "panels": "web/vascular.html",
     "style": "web/vascular.css"
   },
+  "root": "https://drive.google.com/drive/folders/1vxDqz4_PjQEZirXMtSsPAc-pyCuEsc2J",
   "files": {
     "from": ["drive"],
     "accept": ".tif,.tiff",
-    "empty": "Load a confocal z-stack (a multi-page TIFF of CD31, or CD31 and DAPI) to turn it in 3D.",
-    "folders": [
-      "https://drive.google.com/drive/folders/1AH4EVGT-ECPZvhHiHMwUzrMLLtljs1Pd"
-    ]
+    "empty": "Load a confocal z-stack (a multi-page TIFF of CD31, or CD31 and DAPI) to turn it in 3D."
   },
   "channels": [
     {
@@ -74,14 +72,7 @@
     "spacing": 1.0,
     "spacingSource": "the owner (2026-10-29)"
   },
-  "permissions": {
-    "data_management": [
-      "arielra@gmail.com"
-    ]
-  },
   "groundTruth": {
-    "submissions": null,
-    "curated": null,
     "button": "#vm-truth"
   }
 }

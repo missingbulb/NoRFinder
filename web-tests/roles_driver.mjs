@@ -10,7 +10,7 @@ import { motion } from "./page_motions.mjs";
 
 const [answers, studies, rootDir, image, shots] = process.argv.slice(2);
 const shot = (page, name) => shots && page.screenshot({ path: path.join(shots, name + ".png") });
-const { open, check, done } = await standIn({ answers, studies, rootDir });
+const { ROOT, open, check, done } = await standIn({ answers, studies, rootDir });
 const OTHER = "someone@example.com";
 
 // what the page shows: the role named, the roles listed, the line under them, and each role's tools (the ground-truth
@@ -74,7 +74,8 @@ await check(!s.truth && !s.counted, "back as Viewer, the ground-truth tools go",
 await page.context().close();
 
 // the same study as PreGT: Ground Truth Tagger is offered, and can be chosen there
-const preGT = { ...JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "studies", "fixture", "study.json"), "utf8")), stage: "PreGT" };
+const preGT = { ...JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "studies", "fixture", "study.json"), "utf8")), stage: "PreGT",
+  root: `https://drive.google.com/drive/folders/${ROOT}` };
 page = await open(true, { email: OTHER, prepare: async (ctx) => { await ctx.route("**/studies/fixture/study.json", (r) => r.fulfill({ json: preGT })); await standInDrive(ctx); } });
 await page.waitForFunction(() => document.documentElement.dataset.stage === "PreGT");
 s = await seen(page);

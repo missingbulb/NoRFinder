@@ -7,7 +7,6 @@
 "use strict";
 
 const FILE = /^gt_.+\.json$/;
-const folderId = (link) => (typeof link === "string" && (link.match(/\/folders\/([\w-]{10,})/) || [])[1]) || null;
 const stem = (name) => name.replace(/\.[^.]*$/, "");
 const time = (s) => { const t = Date.parse(s); return Number.isNaN(t) ? null : t; };
 
@@ -16,9 +15,10 @@ export const subfolderName = (name, sha) => `${stem(name)}__${sha.slice(0, 8)}`;
 // the tagger's file in it
 export const taggerFile = (email) => `gt_${email.toLowerCase()}.json`;
 
-// {submissions, curated, same} as folder ids, each null while the study names none
-export function folders(manifest) {
-  const g = manifest?.groundTruth || {}, submissions = folderId(g.submissions), curated = folderId(g.curated);
+// {submissions, curated, same} as folder ids, each null while the study has none, from its root's settings
+// (study_root.js read) or null
+export function folders(settings) {
+  const submissions = settings?.submissions || null, curated = settings?.curated || null;
   return { submissions, curated, same: !!submissions && submissions === curated };
 }
 

@@ -47,7 +47,7 @@ const server = http.createServer((q, r) => {
   if (u === "/studies/nor/study.json") {
     const manifest = JSON.parse(fs.readFileSync(path.join(repo, u), "utf8"));
     r.writeHead(200, { "content-type": "application/json" });
-    return r.end(JSON.stringify({ ...manifest, driveThumbs: "ready-thumbs/", files: { ...manifest.files, folders: [`https://drive.google.com/drive/folders/${ROOT}`] } }));
+    return r.end(JSON.stringify({ ...manifest, driveThumbs: "ready-thumbs/", root: `https://drive.google.com/drive/folders/${ROOT}` }));
   }
   const ready = u.startsWith("/studies/nor/ready-thumbs/");
   if (ready && u.endsWith(".jpg")) thumbsServed++;

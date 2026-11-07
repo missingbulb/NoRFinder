@@ -39,13 +39,11 @@
     "panels": "web/nor.html",
     "style": "web/nor.css"
   },
+  "root": "https://drive.google.com/drive/folders/1DQ-FPkXqVj24D2ieszpuCtBGN8r4dJHy",
   "files": {
     "from": ["drive"],
     "accept": ".tif,.tiff,.png",
-    "empty": "Load a three-channel ImageJ TIFF (Caspr green, Nav red, DAPI) or an RGB PNG, then press Find Candidates.",
-    "folders": [
-      "https://drive.google.com/drive/folders/1WulrO8Qeqx-Qcxi1TQ7DcaVJNqYq2Bxl"
-    ]
+    "empty": "Load a three-channel ImageJ TIFF (Caspr green, Nav red, DAPI) or an RGB PNG, then press Find Candidates."
   },
   "channels": [
     {
@@ -73,14 +71,7 @@
     "open": "Reading the image and building the blue mask…",
     "detect": "Finding candidates (the slow part)…"
   },
-  "permissions": {
-    "data_management": [
-      "arielra@gmail.com"
-    ]
-  },
   "groundTruth": {
-    "submissions": null,
-    "curated": null,
     "button": "#dl-truth",
     "reveal": "https://urbananimal.co.in/wp-content/uploads/2025/04/image-6.jpg.webp"
   }
