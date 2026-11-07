@@ -4,6 +4,7 @@
 // Submit (req/shell/ground-truth/submit).
 "use strict";
 import { folders, submit, status, current, subfolderName } from "./truth_folders.js";
+import { asLoaded } from "./as_loaded.js";
 
 const SAY = {
   unset: "This study has not set up its ground-truth folders yet, so ground truth cannot be submitted.",
@@ -23,6 +24,8 @@ export function truthTagger({ account, remote, place, image, on, cleared }) {
   // the study's clear: {what, fn}; the access last read: "write" | "view" | "none" | "unset" | "unknown"; epoch: the
   // draw a late answer belongs to
   let clear = null, access = null, epoch = 0;
+  // the access lines as the page loaded, put back when the study leaves
+  const asStarted = asLoaded([...document.querySelectorAll("#left .gt-access")]);
   // the study's ground-truth folders, from its root's settings
   const gt = async () => folders(await place.settings().catch(() => null));
   const where = async () => (await gt()).submissions;
@@ -65,7 +68,7 @@ export function truthTagger({ account, remote, place, image, on, cleared }) {
     draw, paint,
     // the study's progress on an image, which fn forgets on this device, the image then opened afresh: what names it
     clearable(what, fn) { clear = { what, fn }; paint(); },
-    leave() { clear = null; access = null; epoch++; },
+    leave() { clear = null; access = null; epoch++; asStarted(); },
     // Map(subfolder name -> {curated, pending, rejected}) of the study's images (req/shell/ground-truth/pending);
     // with submissions, the pending ones too, else the curated alone. Empty while the study has no folders.
     async status(submissions) {

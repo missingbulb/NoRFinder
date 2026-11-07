@@ -212,7 +212,9 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Set by the owner on 2026-11-02. Choosing a folder in the tree fills the main area with its images,
-  a grid of previews or a list, a button switching them with a slide. The left bar's Selected Folder
+  a grid of previews or a list, a button switching them with a slide. A folder's images, in the tree and the
+  folder view, are the kinds the study opens, those its `files.accept` names (set by the owner on 2026-11-07:
+  the Bookshelf Reader's JPEG photos among them). The left bar's Selected Folder
   box replaces the Image box and counts its images, how many have a preview, how many previews are
   out of date (the image's SHA-256 differs from the preview's), how many have ground truth beside
   them (`<name>.ground_truth.*`, `<name>` the image's name without its extension) and how many are
@@ -275,7 +277,8 @@ nobody has decided: what the page does there is not a requirement yet.
   Set by the owner on 2026-11-02. Under the folder's summary, Update previews is on while an image
   lacks a preview or has an out-of-date one. It downloads only those images, makes their previews in
   the browser as `dev/tools/previews/make_previews.py` does (`req/shell/drive/previews`; a flat image at
-  most 256 px a side, a stack at most 96 px and 24 slices), keeps every still-valid preview as it was,
+  most 256 px a side, a photo that is not a TIFF (a PNG, JPEG, WebP or BMP) a flat colour image, a stack at most
+  96 px and 24 slices), keeps every still-valid preview as it was,
   and writes `rauntruth-previews.tiff`: a new file, or the page's own one replaced. A previews file the
   page did not make is left alone, and the page says to delete it in Drive to let the page manage it;
   deleting the page's own makes it start over. Test: `web-tests/test_data_mode_page.py`,
@@ -322,14 +325,16 @@ nobody has decided: what the page does there is not a requirement yet.
   compare with: `req/shell/drive/offline-listing`); the dialog keeps one
   size while the user moves between folders. A click only selects a row; Open (or a double click,
   or Enter) opens it: an image loads, a folder lists its contents. Thumbnails are never read from
-  Drive, which answers a burst of reads by refusing the browser for a while, the next image
-  included. A study may ship ready-made thumbnails (its `driveThumbs`), fetched for the rows in view
+  Drive's files, which answers a burst of reads by refusing the browser for a while, the next image
+  included. Set by the owner on 2026-11-07: an image no previews file covers (`req/shell/drive/previews`)
+  shows Drive's own small picture of it, linked from the folder's listing, unless it is a TIFF, which Drive
+  draws grey when it has several channels and which may be a 3D stack (`web-tests/test_drive_previews_page.py`). A study may ship ready-made thumbnails (its `driveThumbs`), fetched for the rows in view
   and the next 10 below them, more as the user scrolls; a row scrolled past before its turn is not
   fetched. Each thumbnail lands in its own row whatever order they arrive in, and a folder's listing
   is shown only while it is still the folder asked for. One fetched stays for the page's life:
   closing the dialog stops the rest, and reopening it shows those at once and fetches what the rows
   in view still lack. Test: `web-tests/test_drive_thumbs_page.py`. An image opened from Drive saves its own in the browser (the latest 100), shown from then
-  on without a download; a PNG shows Drive's own. All are in the colours the page gives the
+  on without a download. All but Drive's own are in the colours the page gives the
   channels. Show thumbnails in Settings (on at first, `req/shell/account/settings`) turns the downloads off; set by the
   owner on 2026-11-07, the dialog itself holds no such checkbox. The status bar's message says, while they load ("Thumbnails 3 of 10 ·
   1.2 MB"), how many have arrived and their size; once they are in, the message says again what it said
@@ -377,7 +382,7 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   A Drive folder may hold `rauntruth-previews.tiff`, made by `dev/tools/previews/make_previews.py`
-  on a computer that has the folder's images and uploaded beside them: a multi-page TIFF, its pages
+  on a computer that has the folder's images (its TIFFs, and the photos Pillow opens) and uploaded beside them: a multi-page TIFF, its pages
   deflate-compressed, whose first page's description is a JSON index naming each image, its SHA-256
   and its pages. A flat image has one colour page; a stack has a mini-volume, one 8-bit page per
   slice and channel. The dialog never lists the file; when a folder has one it downloads it at
@@ -615,7 +620,9 @@ nobody has decided: what the page does there is not a requirement yet.
   motion for a user who asks the system for reduced motion); hovering over the button opens a popup choosing how
   see-through it is at rest, opaque at first and always opaque under the pointer. Whether it shows and its opacity are kept as the user's settings for the
   next visit. Dragging moves the image, wherever it starts, a label or the ruler's length included:
-  no drag selects or drags the page's text (set by the owner on 2026-10-31). Scrolling up and down zooms around the pointer in small steps;
+  no drag selects or drags the page's text (set by the owner on 2026-10-31). Only a glyph of a study's
+  drawing that the user drags (a book's corner, say) moves alone, the image staying still under it, in
+  every study and viewer (set by the owner on 2026-11-07; `studies/shelves/tests/test_shelves_page.py`). Scrolling up and down zooms around the pointer in small steps;
   scrolling sideways steps to the study's previous or next item (for NoR, the candidate). The main
   area's toolbar holds the zoom at its right, and its tools wait for an image; a preview opened in Data
   Management (`req/shell/data/preview-images`) is one (set by the owner on 2026-11-04). Test:
@@ -1315,7 +1322,7 @@ nobody has decided: what the page does there is not a requirement yet.
   NoR Finder is GT. Test: `web-tests/test_study_contract.py`, `web-tests/test_status_bar_page.py`.
   </details>
 
-- `req/shell/study/switch-in-place` Switching study happens in place: no reload, and the new study starts with no image open.
+- `req/shell/study/switch-in-place` Switching study happens in place: no reload, and the new study starts as a fresh load of its address shows it.
   <details>
 
   Choosing a study in the switcher, or going back and forward between studies, changes the address
@@ -1324,7 +1331,14 @@ nobody has decided: what the page does there is not a requirement yet.
   steps, its results, Python's copy of it), so the new study starts as one just opened. The study that leaves
   takes its panels, its stylesheet, its drawing and its listeners with it (each listener it adds
   outside its own panels carries `shell.signal`), and an answer its Python was still working on is
-  dropped. Test: `web-tests/test_study_runs.py`.
+  dropped. Set by the owner on 2026-11-07, in place of a reload: the page then is what loading the new
+  study's address afresh shows, element by element (each one's attributes, text, form values, scroll and open
+  popups) and in the shell's own state, nothing of the study before left anywhere: not the zoom, the 3D view's
+  parts, a folder Data Management had open, an edit, the remote files dialog's listing, or a ground-truth line.
+  What the browser keeps carries over as a reload would keep it (who is signed in, the role, the theme, the
+  user's choices, the images kept here), and so do the tab's own measures in the status bar. Test:
+  `web-tests/test_study_runs.py`; and `web-tests/test_shell_states_page.py`, where every path of the shell's
+  states ends by going to another study and back, each compared with a fresh load of its address.
   </details>
 
 - `req/shell/study/viewer-choice` The viewer is the study's choice.
@@ -1537,7 +1551,11 @@ nobody has decided: what the page does there is not a requirement yet.
   against a stand-in Google and a stand-in Python answering what the study's own Python answers on loading and on
   opening the image, or the z-stack a path loads, and the study's own Python answering its calls once it takes its
   first step, signed in as an account the study is shown to, and at every state, the study's calls answered, reads each element as shown,
-  disabled, held offline, folded or gone; every difference is listed before it fails. Test: `web-tests/test_shell_states.py`,
+  disabled, held offline, folded or gone. After its last state, back online first, each path goes to another
+  study and back (`req/shell/study/switch-in-place`), and the page in each must be what a fresh load of that address
+  shows in the same browser: the whole page read element by element and the shell's own state, leaving out what
+  changes between two readings of the same page (the status bar's measures of the tab, the browser's mark on what is
+  scrolled out of view, an attribute left empty, the order of a class list); every difference is listed before it fails. Test: `web-tests/test_shell_states.py`,
   `web-tests/test_shell_states_page.py`.
   </details>
 

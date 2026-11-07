@@ -8,6 +8,7 @@
 // marked as its own, and changes or trashes only the files so marked. Reading keeps nothing: a file goes to the study
 // like one loaded from the computer.
 "use strict";
+import { accepts } from "./accepts.js";
 
 const GOOGLE = (window.NOR_CONFIG && window.NOR_CONFIG.google) || {};
 // what a study's image from Drive is, as its source records it on this device and in the documents it writes
@@ -137,19 +138,19 @@ export const remote = (() => {
 
   // [{id, name, folder, size, created, preview, sha}] in a folder: its subfolders and the files whose extension accept
   // names, a study's files.accept (".tif,.tiff,.png"); size in bytes (null for a folder), created a Date, preview the link of Drive's own small
-  // picture of the file or null (Drive draws a multi-channel TIFF grey, so it serves only a PNG), sha its
-  // SHA-256 or null when Drive gives none
+  // picture of the file or null, served for every image but a TIFF (Drive draws a multi-channel TIFF grey, and a TIFF
+  // may be a stack, which the page pictures in 3D), sha its SHA-256 or null when Drive gives none
   async function list(id, accept) {
     need();
-    const opens = new Set(accept.split(",").map((e) => e.trim().toLowerCase()));
+    const opens = accepts(accept);
     const q = encodeURIComponent(`'${id}' in parents and trashed = false`);
     const r = await get(`${API}?q=${q}&fields=files(id,name,mimeType,size,createdTime,thumbnailLink,sha256Checksum)&pageSize=1000&orderBy=folder,name`);
     if (!r.ok) throw refused(r, "folder");
     return (await r.json()).files
       .map((f) => ({ id: f.id, name: f.name, folder: f.mimeType === "application/vnd.google-apps.folder",
         size: f.size == null ? null : +f.size, created: f.createdTime ? new Date(f.createdTime) : null,
-        preview: f.thumbnailLink && /\.png$/i.test(f.name) ? f.thumbnailLink : null, sha: f.sha256Checksum || null }))
-      .filter((f) => f.folder || opens.has((f.name.match(/\.[^.]+$/) || [""])[0].toLowerCase()));
+        preview: f.thumbnailLink && !/\.tiff?$/i.test(f.name) ? f.thumbnailLink : null, sha: f.sha256Checksum || null }))
+      .filter((f) => f.folder || opens(f.name));
   }
 
   // [{id, name, folder, size, sha, modified, properties}] every file and folder in a folder, whatever its kind,

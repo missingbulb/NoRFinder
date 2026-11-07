@@ -3,7 +3,8 @@
 // Drive gives it. Checks req/shell/drive/previews: the file is not listed and is downloaded once; the images it covers show their
 // preview and what they hold with no read of their own, a stack turning while the pointer is over its row; one
 // it lacks, or one changed since it was made, is read as without it; a reload reads the kept copy, and a new
-// file on Drive is downloaded again; Manage storage counts it with its study's thumbnails.
+// file on Drive is downloaded again; Manage storage counts it with its study's thumbnails. Drive's own small picture
+// (req/shell/drive/dialog) shows for an image the file lacks unless it is a TIFF, which may be a stack.
 // Optional SHOTS: a directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/drive_previews_driver.mjs IMAGES [SHOTS]
 import { createRequire } from "node:module";
@@ -26,7 +27,7 @@ try { pw = require("playwright"); } catch {
 const [images, shots] = process.argv.slice(2);
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-const ROOT = "previewfolder0000001", PREVIEWS = "rauntruth-previews.tiff";
+const ROOT = "previewfolder0000001", PREVIEWS = "rauntruth-previews.tiff", DRIVE_THUMB = "https://lh3.googleusercontent.com/drive-thumb/";
 const sha = (b) => createHash("sha256").update(b).digest("hex");
 const FILES = fs.readdirSync(images).sort().map((name, k) => ({ id: "previewfile" + String(k).padStart(9, "0"), name, bytes: fs.readFileSync(path.join(images, name)) }));
 const file = (name) => FILES.find((f) => f.name === name);
@@ -52,7 +53,8 @@ const reads = [];
 let inflight = 0;
 await ctx.route("https://www.googleapis.com/**", async (route) => {
   const u = new URL(route.request().url()), id = u.pathname.match(/\/files\/?(.*)$/)[1], fields = u.searchParams.get("fields") || "";
-  const meta = (f) => ({ id: f.id, name: f.name, mimeType: "image/tiff", size: String(f.bytes.length), createdTime: "2026-10-01T10:00:00Z", ...(fields.includes("sha256Checksum") ? { sha256Checksum: sha(f.bytes) } : {}) });
+  const meta = (f) => ({ id: f.id, name: f.name, mimeType: "image/tiff", size: String(f.bytes.length), createdTime: "2026-10-01T10:00:00Z", ...(fields.includes("sha256Checksum") ? { sha256Checksum: sha(f.bytes) } : {}),
+    ...(fields.includes("thumbnailLink") ? { thumbnailLink: `${DRIVE_THUMB}${f.id}` } : {}) });
   if (!id) return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ files: FILES.map(meta) }) });
   const f = FILES.find((g) => g.id === id);
   if (u.searchParams.get("alt") !== "media") return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify(meta(f)) });
@@ -64,6 +66,16 @@ await ctx.route("https://www.googleapis.com/**", async (route) => {
   } finally { inflight--; }
 });
 await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
+// Drive's own small pictures, by file name: the image the study opens beside TIFFs and PNGs is a JPEG here
+const driveThumbs = [];
+await ctx.route(DRIVE_THUMB + "*", (route) => {
+  driveThumbs.push(FILES.find((f) => route.request().url().endsWith(f.id)).name);
+  return route.fulfill({ status: 200, headers: cors, contentType: "image/png", path: path.join(repo, "web", "poster.png") });
+});
+await ctx.route("**/studies/viewer/study.json", async (route) => {
+  const own = await (await route.fetch()).json();
+  return route.fulfill({ json: { ...own, files: { ...own.files, accept: own.files.accept + ",.jpg" } } });
+});
 await ctx.addInitScript((link) => {
   delete Navigator.prototype.serviceWorker;
   if (sessionStorage.getItem("primed")) return;
@@ -76,14 +88,14 @@ page.setDefaultTimeout(10000);
 
 // the page's handlers for what was just done have all run: a read it would start has started
 const frames = () => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
-// every row says what it holds, the page says its thumbnails are in (the status bar's "Thumbnails n of m" gone), and no
+// every TIFF row says what it holds, the page says its thumbnails are in (the status bar's "Thumbnails n of m" gone), and no
 // read is on the way once the page has run its handlers; 10 s at most, the
 // checks after it saying what is missing
 const quiet = async () => {
   const end = Date.now() + 10000;
   for (;;) {
     await page.waitForFunction(() => !/^Thumbnails /.test($("#status").textContent)
-      && [...document.querySelectorAll("#remote-list .item")].every((b) => b.querySelector(".shape").textContent),
+      && [...document.querySelectorAll("#remote-list .item")].every((b) => !/\.tiff?$/i.test(b.querySelector(".name").textContent) || b.querySelector(".shape").textContent),
       null, { timeout: Math.max(1, end - Date.now()) }).catch(() => {});
     await frames();
     if (!inflight || Date.now() >= end) break;
@@ -115,6 +127,8 @@ try {
     `so does a stack: ${JSON.stringify(row(all, "b stack.tif"))}, reads ${readsOf("b stack.tif")}`);
   check(readsOf("c changed.tif") === "piece" && readsOf("d new.tif") === "piece",
     `an image changed since the file was made, and one it lacks, are read as without it: ${readsOf("c changed.tif")} / ${readsOf("d new.tif")}`);
+  check(row(all, "e photo.jpg").pic && JSON.stringify(driveThumbs) === JSON.stringify(["e photo.jpg"]),
+    `an image the file lacks shows Drive's own small picture, but a TIFF, which may be a stack: ${JSON.stringify(row(all, "e photo.jpg"))}, Drive's pictures of ${driveThumbs}`);
   const colour = await page.evaluate(() => {
     const i = [...document.querySelectorAll("#remote-list .item")].find((b) => b.querySelector(".name").textContent === "a flat.tif").querySelector(".pic img");
     const c = document.createElement("canvas"); c.width = i.naturalWidth; c.height = i.naturalHeight;

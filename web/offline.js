@@ -41,6 +41,10 @@ export function markOffline(el, what, on) {
 // a ticked study's remote folder is read this deep and this far at most
 const MAX_FOLDERS = 200, MAX_FILES = 2000;
 
+// an attribute offline's hold on a control owns while it lasts, for what puts the page back to leave as it is
+const HOLD = new Set(["title", "aria-disabled", "data-online-title"]);
+export const holdOwns = (el, name) => el.dataset.onlineTitle !== undefined && HOLD.has(name);
+
 export function offline({ $, esc, sizeText, remote, kept, keptIn, keep, throttled, throttle, stored }) {
   // ---------- offline by default ----------
   const NEEDS = "[data-needs-network]", WHY = "Needs the internet: you are offline.", AGAIN_MS = 30000, AGAIN_OFF_MS = 5000;

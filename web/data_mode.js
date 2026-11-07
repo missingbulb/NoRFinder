@@ -8,12 +8,13 @@
 import { PREVIEWS } from "./previews.js";
 import { makePreview, buildPreviews } from "./previews_writer.js";
 import { readTiff, fromPlanes, writeTiff } from "./split.js";
-import { CONNECTION } from "./offline.js";
+import { CONNECTION, holdOwns } from "./offline.js";
+import { asLoaded } from "./as_loaded.js";
+import { accepts } from "./accepts.js";
 import { replacedBy, stemOf } from "./edit.js";
 import * as tf from "./truth_folders.js";
 import { setup as setUp, switchMode } from "./study_root.js";
 
-const IMAGE = /\.(tiff?|png)$/i;
 const MAX_FOLDERS = 200;
 // what each access means beside a folder
 const ACCESS = {
@@ -53,6 +54,8 @@ export function dataMode(ctx) {
   const isTruth = (id) => id === gt.curated || id === gt.submissions;
   const offline = () => root.classList.contains("offline");
   const msg = (el, text, err) => { el.textContent = text; el.classList.toggle("err", !!err); };
+  // what a study's folders change on the page, as it loaded: put back when another study comes in
+  const asStarted = asLoaded(["#data-body", "#folder-box", "#folder-view"].map((s) => $(s)), holdOwns);
 
   // ---------- the folders and their access ----------
   // every folder under the study's own, listed with every file in it; once per study
@@ -162,8 +165,8 @@ export function dataMode(ctx) {
     const review = gt.same;
     $("#switch-title").textContent = review ? "Switch to reviewed ground truth" : "Switch to unreviewed ground truth";
     $("#switch-text").textContent = review
-      ? "No file is moved, copied or deleted. The GT folder becomes GT curated: everything submitted so far counts as accepted. A new GT submissions folder is made for taggers to submit to. In Google Drive, give taggers edit access to GT submissions and take their edit access off GT curated."
-      : "No file is moved, copied or deleted. GT curated becomes the one folder: everything accepted stays the study's ground truth, and whatever a tagger submits counts at once. GT submissions, its rejected files included, stays as it is and is no longer used. In Google Drive, give taggers edit access to GT curated.";
+      ? `No file is moved, copied or deleted. The GT folder becomes GT curated: everything submitted so far counts as accepted. A new GT submissions folder is made for taggers to submit to. In ${remote.label}, give taggers edit access to GT submissions and take their edit access off GT curated.`
+      : `No file is moved, copied or deleted. GT curated becomes the one folder: everything accepted stays the study's ground truth, and whatever a tagger submits counts at once. GT submissions, its rejected files included, stays as it is and is no longer used. In ${remote.label}, give taggers edit access to GT curated.`;
     $("#switch-go").dataset.review = review ? "yes" : "no";
     msg($("#switch-msg"), ""); $("#switch-dlg").showModal();
   };
@@ -182,10 +185,11 @@ export function dataMode(ctx) {
   };
 
   // ---------- the tree ----------
-  // a folder's images, but those an edit replaced (req/shell/data/edit-save)
+  // a folder's images, the kinds the study opens, but those an edit replaced (req/shell/data/edit-save)
   const imagesOf = (n) => {
     const edited = replacedBy([...n.files, ...n.folders.map((id) => ({ name: nodes.get(id)?.name, folder: true }))]);
-    return n.files.filter((f) => IMAGE.test(f.name) && f.name !== PREVIEWS && !edited(f));
+    const opens = accepts(manifest.files.accept);
+    return n.files.filter((f) => opens(f.name) && f.name !== PREVIEWS && !edited(f));
   };
   function drawTree() {
     if (!on()) return;
@@ -375,7 +379,7 @@ export function dataMode(ctx) {
 
   // the image's planes as a reader gives them
   async function sourceOf(name, bytes) {
-    if (!/\.png$/i.test(name)) return readTiff(new Uint8Array(bytes));
+    if (/\.tiff?$/i.test(name)) return readTiff(new Uint8Array(bytes));
     const bmp = await createImageBitmap(new Blob([bytes])), c = new OffscreenCanvas(bmp.width, bmp.height), g = c.getContext("2d");
     g.drawImage(bmp, 0, 0);
     const d = g.getImageData(0, 0, bmp.width, bmp.height).data, n = bmp.width * bmp.height, planes = [0, 1, 2].map(() => new Uint8Array(n));
@@ -465,6 +469,7 @@ export function dataMode(ctx) {
       if (manifest && m.id === manifest.id && account.email() === who) { manifest = m; ctx.showFolder(chosen?.kind === "folder"); return; }
       epoch++; manifest = m; who = account.email(); nodes = new Map(); loaded = null; chosen = null;
       if (on()) enter(false);
+      asStarted(); delete root.dataset.tree;
       roots = []; gt = tf.folders(null); gtNodes = [];
       $("#gt-setup").hidden = true; $("#gt-box").hidden = true;
       $("#data-tree").replaceChildren(); msg($("#data-msg"), "");
