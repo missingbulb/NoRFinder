@@ -83,7 +83,6 @@ def test_a_study_names_its_stage_and_steps(path):
     assert 'stage' in m and m['stage'] in ('PreGT', 'GT', 'PostGT', 'Published', None), 'stage: PreGT, GT, PostGT, Published, or null for a tool making no ground truth'
     if m['stage'] in ('GT', 'PostGT'):
         gt = m.get('groundTruth', {})
-        assert 'button' in gt, 'a study that makes ground truth names its button'
         # req/shell/ground-truth/folders: its submissions and curated folders, each a folder link, or null until made
         assert gt.keys() >= {'submissions', 'curated'}, 'a study that makes ground truth names its submissions and curated folders'
         for k in ('submissions', 'curated'):

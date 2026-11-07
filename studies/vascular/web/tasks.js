@@ -10,10 +10,16 @@ const $ = (id) => document.getElementById(id);
 // the stack's field cut into GRID × GRID areas, a fraction of it whatever its size; each task's items come area by area
 const GRID = 10, AREAS = GRID * GRID;
 const TASKS = ['vessels', 'candidates', 'junctions', 'missed', 'submit'];
+const ROWS = [
+  { key: 'vessels', name: 'Vessels', title: 'The vessels the algorithm drew with confidence' },
+  { key: 'candidates', name: 'Low-confidence', title: 'The faint vessels the algorithm was unsure of' },
+  { key: 'junctions', name: 'Junctions', title: 'Where three or more vessels meet: a real junction, or vessels that only cross' },
+  { key: 'missed', name: 'Areas', title: "The stack's areas, each checked for vessels the algorithm missed" },
+];
 // a task's picture, as wide as the box, and no narrower than this
 const MIN_PX = 160;
 
-let V = null, st = { task: null, key: null, area: null, dir: 0 }, lists = null, heard = () => {};
+let V = null, T = null, st = { task: null, key: null, area: null, dir: 0 }, lists = null, heard = () => {};
 
 // ---------- the areas, in the order they are reviewed ----------
 // rows of areas top to bottom, each the way back from the last, so the next area always borders the one before
@@ -133,6 +139,7 @@ function options(it) {
 function show(go) {
   const m = MV.current();
   $('vm-tasks').hidden = !m;
+  T.list(m ? ROWS : null);
   if (!m) { MV.mark(null, null); return; }
   lists = itemsOf(m);
   if (!st.task) { st.task = firstOpen(m); if (st.task === 'missed') st.area = nextArea(m, 0); else if (st.task !== 'submit') st.key = (lists[st.task].find((x) => !x.done) || lists[st.task][0])?.key ?? null; go = true; }
@@ -141,18 +148,9 @@ function show(go) {
   const count = { vessels: lists.vessels.length, candidates: lists.candidates.length, junctions: lists.junctions.length, missed: AREAS };
   const did = { vessels: lists.vessels.filter((x) => x.done).length, candidates: lists.candidates.filter((x) => x.done).length,
     junctions: lists.junctions.filter((x) => x.done).length, missed: areasDone(m) };
-  for (const li of $('gt-tasks').children) {
-    const t = li.dataset.task;
-    li.classList.toggle('done', taskDone(t, m)); li.classList.toggle('now', t === st.task);
-    const n = li.querySelector('.n'); if (n) n.textContent = `${did[t]}/${count[t]}`;
-  }
-  for (const b of $('gt-bar').children) {
-    const t = b.dataset.task;
-    b.style.flexGrow = Math.max(count[t], 1); b.style.setProperty('--done', count[t] ? did[t] / count[t] : 0);
-    b.title = $('gt-tasks').querySelector(`li[data-task="${t}"] .t`).textContent.trim();
-  }
+  for (const r of ROWS) T.count(r.key, did[r.key], count[r.key], taskDone(r.key, m));
   // the open task: its tools on its row, its item under it
-  const li = $('gt-tasks').querySelector(`li[data-task="${st.task}"]`), it = current(), tools = $('task-tools'), now = $('task-now');
+  const li = T.open(st.task), it = current(), tools = $('task-tools'), now = $('task-now');
   if (li && st.task !== 'submit') { li.querySelector('.task-head').append(tools); if (st.task !== 'missed') li.querySelector('.task-body').append(now); }
   tools.hidden = !li || st.task === 'submit';
   $('task-skip').disabled = st.task !== 'missed' && (lists[st.task]?.length || 0) < 2;
@@ -191,9 +189,12 @@ export function open() {
     { level: 'warn', grade: true, ok: !areas, text: areas ? `Check every area for missed vessels: ${areas} of ${AREAS} left` : 'Every area is checked for missed vessels' }];
 }
 
-// view: the shell's 3D view; changed() hears every redraw of the tasks
-export function init(view, changed) {
-  V = view; st = { task: null, key: null, area: null, dir: 0 }; lists = null; heard = changed || (() => {});
+// view: the shell's 3D view; tasks: the shell's list of them; changed() hears every redraw of the tasks; submit() sends them
+export function init(view, tasks, changed, submit) {
+  V = view; T = tasks;
+  T.list(ROWS, { pick: goTask, submit });
+  T.row('missed').querySelector('.task-body').append($('vm-missed'));
+  T.list(null); st = { task: null, key: null, area: null, dir: 0 }; lists = null; heard = changed || (() => {});
   MV.onChange((m) => { if (!m) { st = { task: null, key: null, area: null, dir: 0 }; lists = null; } show(false); });
   // an item picked on the view becomes the current one, in its task
   MV.onPick((h) => {
@@ -204,7 +205,6 @@ export function init(view, changed) {
     }
     return false;
   });
-  for (const li of $('gt-tasks').children) li.querySelector('button.t')?.addEventListener('click', () => goTask(li.dataset.task));
   $('task-skip').onclick = skip;
   $('area-ok').onclick = areaChecked;
 }

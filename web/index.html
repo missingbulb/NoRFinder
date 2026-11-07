@@ -136,6 +136,10 @@
       <div class="sec-head"><h2>Ground Truth Tasks</h2></div>
       <div class="gt-access" hidden></div>
       <slot-here data-slot-for="tasks"></slot-here>
+      <div id="gt-list" hidden>
+        <div id="gt-bar"></div>
+        <ol id="gt-tasks"><li data-task="submit"><div class="task-head"><button id="gt-submit" type="button" disabled><span class="gt-ico" aria-hidden="true"></span>Submit Ground Truth</button></div></li></ol>
+      </div>
     </section>
     <section class="box foldable study-box" id="summary-box" hidden>
       <div class="sec-head"><h2>Summary</h2></div>
@@ -165,7 +169,6 @@
       </div>
       <slot-here data-slot-for="toolbar-end"></slot-here>
     </div>
-    <div id="tasks-bar" class="for-items" hidden><span class="done"></span><meter min="0" max="1" value="0"></meter><span class="grow"></span><slot-here data-slot-for="tasks-end"></slot-here></div>
     <div id="busy" hidden><div id="scan-light"></div><span class="spin big"></span><div id="busy-text"></div><div id="busy-time"></div></div>
 
     <slot-here data-slot-for="view-top"></slot-here>

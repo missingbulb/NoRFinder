@@ -12,13 +12,7 @@
       {"name": "Books found", "select": "#bs-found", "req": "req/shelves/books/find"}
     ]},
     {"under": "Ground Truth Tasks", "tree": [
-      {"name": "Tasks' progress", "select": "#bs-progress", "req": "req/shelves/truth/task"},
-      {"name": "Tasks", "select": "#bs-task-list", "req": "req/shelves/truth/task"},
-      {"name": "Submit ground truth", "select": "#bs-truth", "control": true, "req": "req/shelves/truth/task",
-        "rule": [
-          {"when": {"counted": [false]}, "is": "disabled", "req": "req/shell/study/knows-none"}
-        ]
-      }
+      {"name": "What the tasks are", "select": "#bs-tasks", "req": "req/shelves/truth/task"}
     ]},
     {"under": "Summary", "tree": [
       {"name": "Titles' list", "select": "#bs-list", "req": "req/shelves/read/readers"},

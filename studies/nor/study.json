@@ -81,7 +81,6 @@
   "groundTruth": {
     "submissions": null,
     "curated": null,
-    "button": "#dl-truth",
     "reveal": "https://urbananimal.co.in/wp-content/uploads/2025/04/image-6.jpg.webp"
   }
 }

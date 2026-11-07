@@ -35,30 +35,11 @@
 #vm-show #reach { width: 110px; }
 #vm-show #reach-o { min-width: 9ch; font-size: 12px; color: var(--dim); }
 
-/* Ground Truth Tasks, under Processing: a bar of a part per task, then a row per task, the open one with its
-   tools on its row and its item under it (as NoR's) */
+/* the open ground-truth task's tools on its row, and its item under it */
 #model-on[hidden], #vm-tasks[hidden], #vm-marks[hidden], #task-now[hidden], #task-menu[hidden], #task-tools[hidden] { display: none; }
-#gt-bar { display: flex; gap: 3px; height: 8px; margin-bottom: 10px; }
-#gt-bar > span { flex: 1 1 0; min-width: 6px; border-radius: 4px; --done: 0;
-  background: linear-gradient(to right, var(--yes) calc(var(--done) * 100%), var(--line) calc(var(--done) * 100%)); }
-#gt-tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-#gt-tasks > li + li { border-top: 1px solid var(--line); }
-#gt-tasks .task-head { display: flex; align-items: center; gap: 8px; min-height: 34px; font-size: 13px; }
-#gt-tasks .task-head .t { order: 0; flex: 1; min-width: 0; text-align: left; border: 0; background: none; padding: 4px 0; font-size: 13px; color: var(--text); white-space: nowrap; }
-#gt-tasks .task-head .t:hover { color: var(--accent); }
-#gt-tasks .task-head .n { font-weight: 600; font-variant-numeric: tabular-nums; }
-#gt-tasks li.now .t { font-weight: 600; }
-#gt-tasks .tick { order: 1; display: none; color: var(--yes); font-weight: 700; }
-#gt-tasks li.done .tick { display: inline; }
-#gt-tasks .tick::after { content: "✓"; }
-#gt-tasks li.done .t { color: var(--dim); }
-#gt-tasks .task-head #task-tools { order: 2; }
-#gt-tasks li[data-task="submit"] .task-head { padding: 6px 0 0; }
-#gt-tasks li[data-task="submit"] #vm-truth { flex: 1; }
-#gt-tasks li:not(.now) .task-body { display: none; }
-#gt-tasks .task-body { padding: 0 0 10px; display: flex; flex-direction: column; gap: 6px; }
-#gt-tasks .task-body .hint, #gt-tasks .task-body .note { margin: 0; }
-#gt-tasks .task-body .note:empty { display: none; }
+#vm-missed { display: flex; flex-direction: column; gap: 6px; }
+#vm-missed .hint, #vm-missed .note { margin: 0; }
+#vm-missed .note:empty { display: none; }
 #m-draw[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
 #area-ok { width: 100%; }
 #task-tools { display: inline-flex; align-items: center; gap: 6px; }

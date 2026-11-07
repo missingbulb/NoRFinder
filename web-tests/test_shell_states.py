@@ -182,10 +182,9 @@ def test_the_shell_tree_holds_only_the_shells_page():
 
 
 @pytest.mark.parametrize('study, panels, says', [
-    ({'files': {'from': ['local', 'drive']}, 'phases': []}, '', {'fromComputer': True, 'hasSteps': False, 'itemView': False, 'itemViewing': False}),
-    ({'files': {'from': ['drive']}, 'phases': [{}]}, '<div id="items-view" hidden>', {'fromComputer': False, 'hasSteps': True, 'itemView': True, 'itemViewing': False}),
-    ({'files': {'from': ['drive']}, 'phases': [{}]}, '<div id="items-view" data-viewing hidden>', {'itemView': True, 'itemViewing': True}),
-    ({'files': {'from': ['drive']}, 'phases': [{}]}, '<div id="items-view" data-viewing data-shelved hidden>', {'itemView': False, 'itemViewing': True}),
+    ({'files': {'from': ['local', 'drive']}, 'phases': []}, '', {'fromComputer': True, 'hasSteps': False, 'itemView': False}),
+    ({'files': {'from': ['drive']}, 'phases': [{}]}, '<div id="items-view" hidden>', {'fromComputer': False, 'hasSteps': True, 'itemView': True}),
+    ({'files': {'from': ['drive']}, 'phases': [{}]}, '<div id="items-view" data-shelved hidden>', {'itemView': False}),
     ({'files': {'from': ['drive']}, 'phases': [{}]}, '<div id="items-view-more" data-shelved></div><div id="items-view">', {'itemView': True}),
 ])
 def test_what_a_study_says_of_itself_is_read_from_its_descriptor_and_panels(study, panels, says):

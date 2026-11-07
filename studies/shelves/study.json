@@ -85,7 +85,6 @@
   },
   "groundTruth": {
     "submissions": null,
-    "curated": null,
-    "button": "#bs-truth"
+    "curated": null
   }
 }

@@ -14,12 +14,12 @@ const { FILES, writes, keptForever, approved, viewOnly, open, role, check, done 
 const id = (name) => FILES.find((f) => f.folder && f.name === name).id;
 const SUBS = id("submissions"), CUR = id("curated");
 const link = (x) => `https://drive.google.com/drive/folders/${x}`;
-const study = { groundTruth: { submissions: link(SUBS), curated: link(CUR), button: "#fx-truth" } };
+const study = { groundTruth: { submissions: link(SUBS), curated: link(CUR) } };
 const line = (page) => page.waitForFunction(() => { const t = document.querySelector("#left .gt-access")?.textContent.trim(); return t && !/Checking/.test(t) && t; }).then((h) => h.jsonValue());
 const asTagger = async (page) => { await role(page, "Ground Truth Tagger"); return line(page); };
 
 // a study that has not named its folders yet
-let page = await open(true, { study: { groundTruth: { submissions: null, curated: null, button: "#fx-truth" } } });
+let page = await open(true, { study: { groundTruth: { submissions: null, curated: null } } });
 let said = await asTagger(page);
 await check(/not set up/i.test(said), "a study with no ground-truth folders says so in the box", said);
 await page.context().close();
@@ -52,10 +52,10 @@ await page.waitForFunction(() => document.querySelector("#remote-dlg").open);
 await page.dblclick(`#remote-list .item[data-id="${png.id}"]`);
 await page.waitForFunction((n) => st.fileName === n && !$("#fx-count").disabled, png.name);
 await page.click("#fx-count");
-await page.waitForFunction(() => !$("#fx-truth").disabled);
+await page.waitForFunction(() => !$("#gt-submit").disabled);
 const submit = async () => {
   // the button sits in the item view's bar: pressed where it is
-  await page.evaluate(() => $("#fx-truth").click());
+  await page.evaluate(() => $("#gt-submit").click());
   await page.waitForFunction(() => $("#gt-dlg").open && !$("#gt-send").disabled);
   await page.click("#gt-send");
   await page.waitForFunction(() => /Submitted/.test($("#gt-msg").textContent) || /not/.test($("#gt-msg").textContent));

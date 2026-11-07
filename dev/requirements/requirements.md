@@ -473,7 +473,7 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/shell/ground-truth/submit` Submit writes the tagger's ground truth into the study's submissions folder.
   <details>
 
-  Set by the owner on 2026-11-05. The study's submit button opens a popup with the study's checklist of
+  Set by the owner on 2026-11-05. Submit Ground Truth (`req/shell/ground-truth/tasks`) opens a popup with the study's checklist of
   what is left to do, an Export file button that downloads the file, and a Submit button that writes it to
   the image's subfolder in the submissions folder (`req/shell/ground-truth/layout`), creating the
   subfolder when it lacks one. The popup says when the file landed, or why it did not, the export still
@@ -490,6 +490,24 @@ nobody has decided: what the page does there is not a requirement yet.
   the page's per-file permission and opens its picker on the submissions folder (as Data Management does,
   `req/shell/data/drive-access`); or View only, telling them to ask the study's owner for edit access. It
   is checked before any work, not first found at submit. Test: `web-tests/test_gt_drive_page.py`.
+  </details>
+
+- `req/shell/ground-truth/tasks` The shell lists the study's ground-truth tasks in Ground Truth Tasks, Submit Ground Truth last; how a task is worked through is the study's.
+  <details>
+
+  Set by the owner on 2026-11-07. The study names its tasks in order (a name, and a tooltip saying what the
+  task is) and how far each has got, done of all; the shell draws them in its Ground Truth Tasks box
+  (`req/shell/left-bar/shells`): a progress bar split into one part per task, each as wide as its task is long
+  and filled as far as it is done, then one row per task, "13/47 Finalists", with a check once it is done, and
+  last the shell's Submit Ground Truth row, which opens the submit popup (`req/shell/ground-truth/submit`) with
+  the study's ground truth. The study says when Submit can be pressed and, where it knows, whether its
+  ground truth is done, partly done or not started, which the button shows as an icon. One task at a time is
+  the open one, its name in bold: the study puts what it needs under its row and beside its name (its item,
+  Back and Skip, an area's check), and hears when the user clicks a task's name. The walk through the tasks
+  stays each study's own (owner: a change of heart on how one study does its tasks must not move the others;
+  what proves common is merged later). The Submit GT crumb (`req/shell/status-bar/breadcrumbs`) presses
+  the shell's Submit. Test: `web-tests/test_study_contract.py`, `web-tests/test_status_bar_page.py`,
+  `studies/nor/tests/test_truth_tasks_page.py`, the vascular study's vessel tasks test.
   </details>
 
 - `req/shell/ground-truth/view` Anyone can load an image's curated ground truth and see only its final results.
@@ -1198,12 +1216,12 @@ nobody has decided: what the page does there is not a requirement yet.
   Hovering a label opens a popup beside the switcher listing the four stages in order with what each means, that study's own highlighted and the
   ones before it crossed out, and what the study needs to move on to the next.
   PreGT: the study's tools work but cannot make ground truth yet, so it offers no export: its
-  ground-truth button (`groundTruth.button`) is hidden and it has no Submit GT step. GT: the same,
+  Submit Ground Truth (`req/shell/ground-truth/tasks`) is not shown and it has no Submit GT step. GT: the same,
   with the ground truth exported and submitted (`req/shell/ground-truth/submit`). PostGT: GT with batch actions on top (none
   yet). Set by the owner on 2026-11-02, Published: the study's algorithm is trusted and the page only
-  shows what it finds, so it makes no ground truth (no Submit GT, its button hidden, as in PreGT) and
+  shows what it finds, so it makes no ground truth (no Submit GT, as in PreGT) and
   drops the steps that serve making it: the study's
-  postprocessing (NoR's Filters fold in its Processing box, `req/nor/filters/live`) is not shown. A GT or PostGT study names its ground truth's label and button. The Image Viewer has no stage (`null`): as in PreGT, it makes no ground truth;
+  postprocessing (NoR's Filters fold in its Processing box, `req/nor/filters/live`) is not shown. A GT or PostGT study names its ground truth's label. The Image Viewer has no stage (`null`): as in PreGT, it makes no ground truth;
   NoR Finder is GT. Test: `web-tests/test_study_contract.py`, `web-tests/test_status_bar_page.py`.
   </details>
 
@@ -1338,24 +1356,6 @@ nobody has decided: what the page does there is not a requirement yet.
   Test: `web-tests/test_status_bar_page.py`, `web-tests/test_study_contract.py`.
   </details>
 
-- `req/shell/ground-truth/tasks` The shell lists the study's ground-truth tasks in Ground Truth Tasks, Submit Ground Truth last; how a task is worked through is the study's.
-  <details>
-
-  Set by the owner on 2026-11-07. The study names its tasks in order (a name, and a tooltip saying what the
-  task is) and how far each has got, done of all; the shell draws them in its Ground Truth Tasks box
-  (`req/shell/left-bar/shells`): a progress bar split into one part per task, each as wide as its task is long
-  and filled as far as it is done, then one row per task, "13/47 Finalists", with a check once it is done, and
-  last the shell's Submit Ground Truth row, which opens the submit popup (`req/shell/ground-truth/submit`) with
-  the study's ground truth. The study says when Submit can be pressed and, where it knows, whether its
-  ground truth is done, partly done or not started, which the button shows as an icon. One task at a time is
-  the open one, its name in bold: the study puts what it needs under its row and beside its name (its item,
-  Back and Skip, an area's check), and hears when the user clicks a task's name. The walk through the tasks
-  stays each study's own (owner: a change of heart on how one study does its tasks must not move the others;
-  what proves common is merged later). The Submit GT crumb (`req/shell/status-bar/breadcrumbs`) presses
-  the shell's Submit. Test: `web-tests/test_study_contract.py`, `web-tests/test_status_bar_page.py`,
-  `studies/nor/tests/test_truth_tasks_page.py`, the vascular study's vessel tasks test.
-  </details>
-
 - `req/shell/waiting/slow-computers` Kind to slow computers: a slow button is held until its action is done; low memory is warned of.
   <details>
 
@@ -1419,7 +1419,7 @@ nobody has decided: what the page does there is not a requirement yet.
   study's stage, who is signed in, the role, the image open and whether it is a z-stack, the study's step done, the view, what Data Management
   has selected, whether the page is online, whether Edit Image is open, and what the study says of itself in its
   `study.json` and panels: whether it opens images from the computer, has steps after Load, and has an item view,
-  shelved or viewing, `req/shell/views/second`), each citing the requirement that decides it and marked tentative or undecided where the owner has
+  never shown when shelved, `req/shell/views/second`), each citing the requirement that decides it and marked tentative or undecided where the owner has
   not decided (an undecided case is shown and not checked). Its paths start from a few roots (a study's stage and a
   role) and take actions one after another, each state one more action on the one before.
   `dev/tools/build/shell_states.py` writes from it the matrix, `dev/requirements/shell-states.GENERATED.md`, one table

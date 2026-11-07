@@ -221,8 +221,7 @@ function render() {
     b.setAttribute('aria-pressed', String(b.dataset.v === kind));
     b.querySelector('.count').textContent = counts[b.dataset.v];
   }
-  count(m ? counts.junctions + counts.vessels : null, m ? counts.junctions + counts.vessels : null);
-  $('switch').disabled = !m;
+  count(m ? counts.junctions + counts.vessels : null);
   for (const o of $('item-sort').options) o.hidden = !o.dataset.for.includes(kind);
   if (!$('item-sort').selectedOptions[0] || $('item-sort').selectedOptions[0].hidden) { sort = 'file'; $('item-sort').value = 'file'; }
   for (const o of $('item-filter').options) o.hidden = !o.dataset.for.includes(kind);

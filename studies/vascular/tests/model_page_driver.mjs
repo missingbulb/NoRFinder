@@ -112,7 +112,7 @@ try {
     await page.click(await inMenu('#review-mode [data-v="all"]'));
   } else console.log(`not checked in this ${ENGINE}: what Detected leaves in the 3D view, which needs the WebGL2 it lacks`);
 
-  check(await page.isHidden("#tasks-box") && await page.isHidden("#vm-truth") && await page.isHidden("#m-draw") && await page.isVisible("#summary-box #m-lasso"),
+  check(await page.isHidden("#tasks-box") && await page.isHidden("#gt-submit") && await page.isHidden("#m-draw") && await page.isVisible("#summary-box #m-lasso"),
     "outside a ground-truth stage there are no tasks, no Submit and no Draw a missed vessel, a ground-truth task; a damaged area is marked from Summary");
   // req/shell/image/toolbar: how the model shows is the toolbar's left, and the left bar holds none of it
   const where = await page.evaluate(() => ["#model-mode", "#m-widths", "#review-mode", "#reach"].map((s) => !!$(s)?.closest(".toolbar") && !$(s).closest("#left")));

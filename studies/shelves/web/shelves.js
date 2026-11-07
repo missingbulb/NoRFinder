@@ -43,6 +43,9 @@ export function mount(shell) {
   let books = [], cur = null, back = [], crops = new Map(), drawing = null, dragging = null, missedDone = false, opened = false;
   let ocr = null;
   const truth = () => shell.makesTruth;
+  // its tasks in the shell's list: each book found checked, then the missed ones drawn in
+  if (truth()) shell.tasks.list([{ key: "books", name: "Books", title: "The books the finder found, each checked" },
+    { key: "missed", name: "Missed books", title: "The books the finder missed, drawn in" }], { submit, pick: (k) => { if (k === "books") next(null); } });
   const ocrNow = () => (ocr ||= reader(engines()));
 
   const choice = $("#bs-reader");
@@ -153,16 +156,13 @@ export function mount(shell) {
   function tasks() {
     if (!truth()) return;
     const all = found(), reviewed = all.length - open().length, missed = books.filter((b) => b.source === "missed" && b.verdict !== "wrong").length;
-    const parts = [[reviewed, all.length || 1], [missedDone ? 1 : 0, 1]];
-    $("#bs-progress").replaceChildren(...parts.map(([d, n]) => {
-      const s = document.createElement("span"); s.style.flex = String(n); s.innerHTML = `<i style="width:${(100 * d) / n}%"></i>`; return s;
-    }));
-    const row = (name, done, body) => { const li = document.createElement("li"); li.className = done ? "done" : ""; li.innerHTML = `<div class="bs-task-head"></div>`; li.firstChild.textContent = name; if (body) li.append(body); return li; };
     const reviewing = cur && (cur.source === "missed" || !cur.verdict);
-    $("#bs-task-list").replaceChildren(
-      row(`${reviewed}/${all.length} Books`, all.length > 0 && !open().length, reviewing && cur.source === "found" ? item(cur) : null),
-      row(`${missed} Missed books`, missedDone, !open().length || cur?.source === "missed" ? missedTools() : null));
-    $("#bs-truth").disabled = !(all.length && !open().length && missedDone && !(cur && cur.source === "missed" && !cur.verdict));
+    shell.tasks.count("books", reviewed, all.length, all.length > 0 && !open().length);
+    shell.tasks.count("missed", missed, missed, missedDone);
+    const now = reviewing && cur.source === "found" ? "books" : !open().length || cur?.source === "missed" ? "missed" : null;
+    for (const k of ["books", "missed"]) shell.tasks.row(k).querySelector(".task-body").replaceChildren();
+    shell.tasks.open(now)?.querySelector(".task-body").append(now === "books" ? item(cur) : missedTools());
+    shell.tasks.ready(!!(all.length && !open().length && missedDone && !(cur && cur.source === "missed" && !cur.verdict)));
   }
   // the book on show: its straightened picture, its view, its text and the verdict
   function item(b) {
@@ -206,7 +206,7 @@ export function mount(shell) {
     books.push(b); cur = b; draw();
     await readSome([b]); b.proposed = null; draw();
   }
-  $("#bs-truth").onclick = () => {
+  function submit() {
     const name = st.fileName.replace(/\.[^.]*$/, ""), kept = books.filter((b) => b.verdict === "right");
     const doc = { image: st.fileName, W: st.W, H: st.H, reader: choice.value,
       books: books.filter((b) => b.verdict).map((b) => ({ source: b.source, verdict: b.verdict, corners: b.corners, view: b.view, text: b.text ?? "",
@@ -215,7 +215,7 @@ export function mount(shell) {
       { ok: true, text: `${books.filter((b) => b.source === "missed" && b.verdict === "right").length} missed books drawn in` },
       ...(kept.some((b) => !b.text) ? [{ ok: false, level: "warning", text: `${kept.filter((b) => !b.text).length} books with no title typed` }] : [])];
     shell.submitTruth({ doc, count: kept.length, file: name + "_books_gt.json", items, empty: "No book marked right yet." });
-  };
+  }
   // the tagger's progress on the photo is kept nowhere but the page (req/shell/ground-truth/clear)
   shell.clearable("book marks", () => {});
 
