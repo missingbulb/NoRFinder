@@ -89,14 +89,14 @@ try {
   await page.click(await inMenu('#model-mode [data-v="model"]'));
   const alone = await drawn();
   check(!(await shown()).split && alone.lit > 500, `Model shows the model alone, over the whole view: ${alone.lit} lit pixels`);
-  // the viewer's Colour by depth, in the image box (req/shell/viewer-3d), paints the model as it paints the stack
+  // CD31's Colour by depth, its tick in the image box (req/shell/viewer-3d), paints the model as it paints the stack
   if (await page.evaluate(() => $("#image-box").classList.contains("folded"))) { await page.click("#image-box"); await page.waitForFunction(() => !$("#image-box").classList.contains("folded")); }
-  const depth = await page.getAttribute("#image-box #v3-depth", "aria-pressed");
-  await page.click("#image-box #v3-depth");
-  const flip = await drawn(), [byDepth, plain] = depth === "true" ? [alone, flip] : [flip, alone];
+  const depth = await page.isChecked("#depth-0");
+  await page.setChecked("#depth-0", !depth);
+  const flip = await drawn(), [byDepth, plain] = depth ? [alone, flip] : [flip, alone];
   check(byDepth.coloured > plain.coloured * 4 + 100, `Colour by depth paints the model in depth colours: ${plain.coloured} → ${byDepth.coloured} coloured pixels`);
-  check(await page.evaluate(() => window.shellForTests.viewer.three.S.depth) === (depth === "true" ? 0 : 1), "and the stack too");
-  await page.click("#image-box #v3-depth");
+  check(await page.evaluate(() => !!window.shellForTests.viewer.three.depthPalette()) === !depth, "and the stack too");
+  await page.setChecked("#depth-0", depth);
   await page.uncheck(await inMenu("#m-widths"));
   const thin = await drawn();
   check(thin.lit < alone.lit * 0.7, `Vessel widths off draws the vessels as lines: ${alone.lit} → ${thin.lit} lit pixels`);

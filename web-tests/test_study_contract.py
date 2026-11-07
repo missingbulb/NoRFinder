@@ -51,6 +51,8 @@ def test_a_study_names_files_that_exist(path):
         assert re.fullmatch(r'#[0-9a-fA-F]{6}', c.get('colour', '')), c
         assert isinstance(c.get('shown'), bool), c
         assert len(c.get('about', '').split()) <= 100, f"{c['name']}: about runs past 100 words"
+        # coloured by depth in 3D from the start: true (a palette no other channel has) or a palette's name
+        assert c.get('depth') is None or c['depth'] is True or (isinstance(c['depth'], str) and c['depth']), c
         black, white = c.get('black', 0), c.get('white', 255)
         assert 0 <= black < white <= 255, c
     # req/shell/data/roles: its Drive folders, each a folder link, and who holds each role, by email

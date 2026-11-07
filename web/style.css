@@ -732,11 +732,22 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 /* the slices' row: the channels' row with the depth's start and end on a plain track, and the spacing in the colour's place */
 .channel.v3-slices .levels::before { background: var(--line); }
 .channel.v3-slices input[type=number] { width: 48px; padding: 1px 3px; font-size: 11px; }
-/* colour by depth: the depth scale across the row, and its swatch in the colour picker's place */
-.channel.v3-depth-row .v3-scale { height: 4px; margin: 0 10px; border-radius: 2px; background: var(--scale); }
-.channel.v3-depth-row #v3-depth { width: 22px; height: 15px; padding: 0; border: 3px solid var(--line); border-radius: 2px; background: var(--scale); cursor: pointer; }
-.channel.v3-depth-row #v3-depth[aria-pressed="true"] { border-color: var(--accent); }
-.channel.v3-depth-row.off .v3-scale, .channel.v3-depth-row.off #v3-depth { opacity: .35; }
+/* colour by depth, a channel's own: its tick on a row under the channel's, the palette across it, and the palette
+   picker in the colour picker's place */
+.v3-depth-row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; margin-top: -3px; font-size: 12px; color: var(--dim); }
+.v3-depth-row .v3-tick { display: flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap; }
+.v3-depth-row .v3-tick input { width: 13px; height: 13px; margin: 0; }
+.v3-depth-row .v3-scale { height: 4px; margin: 0 10px; border-radius: 2px; background: var(--scale); }
+.v3-depth-row.off .v3-scale { visibility: hidden; }
+.channel .v3-palette { flex: none; width: 22px; height: 15px; padding: 0; border: 1px solid #0006; border-radius: 2px; background: var(--scale); cursor: pointer; }
+.channel .v3-palette:hover, .channel .v3-palette:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.v3-palettes { position: fixed; inset: auto; margin: 0; padding: 6px; width: 160px; flex-direction: column; gap: 2px; font-size: 13px;
+  background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px #0004; }
+.v3-palettes:popover-open { display: flex; }
+.v3-palettes button { display: flex; align-items: center; gap: 8px; border: 0; background: none; padding: 4px 6px; text-align: left; }
+.v3-palettes button:not(:disabled):hover { background: var(--line); }
+.v3-palettes button:disabled { opacity: .4; }
+.v3-palettes .v3-swatch { width: 40px; height: 10px; border-radius: 2px; background: var(--scale); }
 #v3-stage.split #v3-gl, #v3-stage.split #v3-hud { width: 50%; }
 #v3-stage .v3-side { position: absolute; top: 0; left: 50%; width: 50%; height: 100%; border-left: 1px solid #333; }
 #v3-stage:not(.split) .v3-side { left: 0; width: 100%; border-left: 0; }

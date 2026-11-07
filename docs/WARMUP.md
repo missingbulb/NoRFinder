@@ -31,7 +31,7 @@ A study is a folder with a `study.json`, and a `requirements.md` for what its pa
   of those Google accounts is signed in). It hides a study from the page, not its files from the network.
 - `viewer` — the viewer it is shown in (`image2d`, or `image3d` for z-stacks: the stack in 3D
   only, no switch to a flat view), and optionally `view`, what the 3D view opens with: `render` (`brightest` or
-  `surface`), `depthColour`, `spacing` (µm between slices when the file does not say) and
+  `surface`), `spacing` (µm between slices when the file does not say) and
   `spacingSource` (who stated it).
 - `python` — `paths` (folders, relative to the study, its modules are imported from), `entry` (the
   module the page imports), `packages` (from Pyodide's own set) and `wheels` (from PyPI, vendored
@@ -51,7 +51,7 @@ A study is a folder with a `study.json`, and a `requirements.md` for what its pa
 - `permissions` — optional, the Google accounts (by email) holding each role: `data_management` sees Data
   Management. A study's panels step aside while Data Management is open.
 - `channels` — what the study says of the image's channels, by place: `name`, `colour` (`#rrggbb`),
-  `shown` at first, and optionally `about` (the (?)'s description, at most 100 words) and `black` and
+  `shown` at first, and optionally `depth` (in 3D, coloured by depth from the start: `true`, or a palette's name), `about` (the (?)'s description, at most 100 words) and `black` and
   `white` (its first points, 0–255). A channel it leaves out takes what the file says, then its place
   (red, green, blue…); the Image Viewer names none.
 - `progress` — the status line while Python installs (`install`), loads the study (`load`), opens an

@@ -2,7 +2,7 @@
 // stand-in worker that opens a drawn stack: two channels, the first a bright tube climbing through depth and a
 // second one level across it, the second a blob. Checks req/shell/viewer-3d: a stack opens on the 3D view, which draws it; the
 // channel rows drive it (hiding a channel or raising its black point darkens it); the toolbar's right holds Look from's
-// four buttons in a row beside Zoom, and the image box a row for the slices shown and their spacing and Colour by depth; Side turns the view; a sideways scroll turns the picture about the line of sight; a drag turns on past
+// four buttons in a row beside Zoom, and the image box a row for the slices shown and their spacing and, per channel, Colour by depth; Side turns the view; a sideways scroll turns the picture about the line of sight; a drag turns on past
 // looking straight across; the Panning label toggles panning, shift holds it on, and it is stored nowhere; the depth slab hides slices; the spacing says where it came from; no 2D/3D switch
 // anywhere, and Edit Image on a stack offers no flat-image drawing tools. And req/shell/image-viewer: the Image Viewer
 // opens a stack in 3D and a flat image (a .png here) in 2D, and keeps its Image box open once either has loaded.
@@ -107,7 +107,7 @@ try {
       return {
         looks: shown.map((b) => b.textContent).join(), popup: !!document.querySelector("#v3-look-btn, #v3-look-pop"),
         beside: !!g && g.right <= z.left && z.left - g.right < 24 && Math.abs((g.top + g.bottom) / 2 - (z.top + z.bottom) / 2) < 4,
-        gone: ["#v3-render-btn", ".toolbar #v3-depth", "#vm-depth", "#v3-slices-btn"].filter((s) => document.querySelector(s)),
+        gone: ["#v3-render-btn", "#v3-depth", "#vm-depth", "#v3-slices-btn"].filter((s) => document.querySelector(s)),
         zoom: ["#zoom-in", "#zoom-out", "#zoom-label"].every((s) => $(s).offsetParent !== null),
       };
     });
@@ -123,18 +123,39 @@ try {
     await page.click("#zoom-out");
     const slicesRow = await page.evaluate(() => { const r = $("#channels .v3-slices"); return r && !!r.querySelector("#v3-z0") && !!r.querySelector("#v3-z1") && !!r.querySelector("#v3-zs"); });
     check(slicesRow, "the slices shown and their spacing are a row in the image box, under the channels' rows");
-    // req/shell/viewer-3d: Colour by depth is the viewer's, in the image box as a channel's colour is
-    const depthAt = () => page.evaluate(() => ({ on: window.shellForTests.viewer.three.S.depth, pressed: $("#image-box #v3-depth")?.getAttribute("aria-pressed") }));
-    const dep0 = await depthAt();
-    check(!!dep0.pressed && dep0.pressed === String(!!dep0.on), `Colour by depth is in the image box, showing the view's state: ${JSON.stringify(dep0)}`);
+    // req/shell/viewer-3d: Colour by depth is each channel's, a tick under its row; ticked, its colour picker is a
+    // palette picker, and two channels by depth take two palettes. The study ticks CD31's from the start.
     if (await page.evaluate(() => $("#image-box").classList.contains("folded"))) { await page.click("#image-box"); await page.waitForFunction(() => !$("#image-box").classList.contains("folded")); }
-    const plain = await picture();
-    await page.click("#image-box #v3-depth");
-    const dep1 = await depthAt(), painted = await picture();
-    check(dep1.on === (dep0.on ? 0 : 1) && dep1.pressed === String(!!dep1.on) && (Math.abs(painted.r - plain.r) > 1 || Math.abs(painted.g - plain.g) > 1 || Math.abs(painted.b - plain.b) > 1),
-      `clicking it turns colour by depth ${dep0.on ? "off" : "on"} and repaints the stack: ${JSON.stringify([dep0, dep1, plain, painted])}`);
-    await page.click("#image-box #v3-depth");
-    const rows = await page.evaluate(() => [...document.querySelectorAll("#channels .channel:not(.v3-slices, .v3-depth-row)")].map((r) => r.querySelector("label").textContent));
+    const depthRows = () => page.evaluate(() => [...document.querySelectorAll("#channels > .channel:not(.v3-slices)")].map((r) => {
+      const sub = r.nextElementSibling?.matches(".v3-depth-row") ? r.nextElementSibling : null, pal = r.querySelector(".v3-palette");
+      return { name: r.querySelector("label").textContent, tick: sub ? sub.querySelector("input[type=checkbox]").checked : null,
+        picker: pal ? pal.dataset.palette : r.querySelector("input[type=color]") ? "colour" : null };
+    }));
+    const dep0 = await depthRows();
+    check(dep0.length === 2 && dep0[0].tick === true && !["colour", null].includes(dep0[0].picker) && dep0[1].tick === false && dep0[1].picker === "colour",
+      `CD31 opens coloured by depth, its colour picker a palette picker, and DAPI in its colour, each with its own tick: ${JSON.stringify(dep0)}`);
+    await page.check("#depth-1");
+    const dep1 = await depthRows();
+    check(dep1[1].tick && !["colour", null, dep1[0].picker].includes(dep1[1].picker), `ticking DAPI gives it a palette of its own, not CD31's: ${JSON.stringify(dep1)}`);
+    const painted = await picture();
+    await page.uncheck("#depth-0");
+    const plain = await picture(), dep2 = await depthRows();
+    check(dep2[0].picker === "colour" && (Math.abs(painted.r - plain.r) > 1 || Math.abs(painted.g - plain.g) > 1 || Math.abs(painted.b - plain.b) > 1),
+      `unticking CD31 draws it in its colour again, its picker a colour picker: ${JSON.stringify([dep2, painted, plain])}`);
+    await page.check("#depth-0");
+    const palWas = (await depthRows())[0].picker, pic0 = await picture();
+    await page.click("#channels .channel .v3-palette");
+    const offer = await page.evaluate(() => [...document.querySelectorAll(".v3-palettes [data-palette]")].map((b) => ({ p: b.dataset.palette, off: b.disabled })));
+    const taken = (await depthRows())[1].picker;
+    check(offer.find((o) => o.p === taken)?.off && offer.filter((o) => o.off).length === 1, `CD31's picker offers every palette but DAPI's, ${taken}: ${JSON.stringify(offer)}`);
+    const palNew = offer.find((o) => !o.off && o.p !== palWas).p;
+    await page.click(`.v3-palettes [data-palette="${palNew}"]`);
+    const pic1 = await picture(), palNow = (await depthRows())[0].picker;
+    check(palNow === palNew && (Math.abs(pic1.r - pic0.r) > 0.3 || Math.abs(pic1.g - pic0.g) > 0.3 || Math.abs(pic1.b - pic0.b) > 0.3),
+      `the palette picker chooses CD31's palette and repaints it: ${palWas} → ${palNow}, ${JSON.stringify([pic0, pic1])}`);
+    await page.click("#channels .channel .v3-palette"); await page.click(`.v3-palettes [data-palette="${palWas}"]`);
+    await page.uncheck("#depth-1");
+    const rows = await page.evaluate(() => [...document.querySelectorAll("#channels > .channel:not(.v3-slices)")].map((r) => r.querySelector("label").textContent));
     check(rows.join() === "CD31,DAPI", `the channel rows are the stack's: ${rows}`);
     await level(0, "black", 0);
     const all = await picture();

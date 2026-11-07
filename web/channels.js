@@ -19,6 +19,7 @@ export function resolve(studyChannels, fileChannels, n) {
       name, colour, about: s.about || "",
       fileName: f.name && f.name !== name ? f.name : null,
       shown: s.shown ?? true, black: s.black ?? 0, white: s.white ?? 255,
+      depth: s.depth || null,
     };
   });
 }

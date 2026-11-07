@@ -91,8 +91,8 @@ owner's decisions on the stacks and the vessel model, are
 
   Set by the owner on 2026-11-04. The toolbar chooses what the main view shows: Image (the stack
   alone), Model (the model alone), Overlay (the model over the stack, in magenta) and Side by side
-  (the stack and the model each in a half, turning together). The viewer's Colour by depth
-  (`req/shell/viewer-3d`) paints the model by depth as it paints the stack; over the stack the model stays magenta,
+  (the stack and the model each in a half, turning together). While CD31 is coloured by depth
+  (`req/shell/viewer-3d`) the model is painted by depth in CD31's palette, as the stack is; over the stack the model stays magenta,
   a colour the depth scale never gives, so it never vanishes into the signal it marks. Vessel widths draws each
   vessel as wide as the model says. Changed by the owner on 2026-11-07, everything that sets how the model shows
   is at the toolbar's left (`req/shell/image/toolbar`): Vessel widths, Low-confidence (the faded vessels the

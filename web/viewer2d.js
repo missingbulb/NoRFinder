@@ -43,11 +43,13 @@ export function viewer(shell) {
   // One row per channel of the image on show, or per channel the study names before one: what the study says
   // of it, else what the file says, else its place (channels.js). Each row's checkbox shows or hides it, its
   // slider holds its black and white points and its colour picker recolours it; a double click on the slider
-  // puts the points back. They start over with every image. Rows another viewer puts under them (rowsAfter) follow.
-  let added = [];
+  // puts the points back. They start over with every image. Rows another viewer puts under them (rowsAfter) follow,
+  // and another viewer may add to each channel's row (rowsWith: given the channel, its place, its row, its colour
+  // picker and a redraw, it returns the rows to put under that one).
+  let added = [], withRow = null;
   // none before an image shows (req/shell/channels/rows)
   function rows() {
-    $("#channels").replaceChildren(...(st.img || st.peeked ? chans : []).map((c, k) => {
+    $("#channels").replaceChildren(...(st.img || st.peeked ? chans : []).flatMap((c, k) => {
       const row = html("div", { className: "channel" + (c.on ? "" : " off") });
       row.dataset.colour = c.colour; row.style.setProperty("--ch", c.colour);
       const box = html("input", { type: "checkbox", id: "show-" + k, checked: c.on });
@@ -76,7 +78,7 @@ export function viewer(shell) {
       white.oninput = () => { c.white = Math.max(+white.value, c.black + 1); white.value = c.white; tell(white); later(); };
       levels.ondblclick = () => { c.black = black.value = c.base.black; c.white = white.value = c.base.white; redraw(); };
       row.append(box, name, levels, pick);
-      return row;
+      return [row, ...(withRow?.(c, k, { row, pick, redraw }) || [])];
     }), ...added);
   }
   // the channels for n planes and what the file says of them, each with the points it starts from
@@ -398,7 +400,7 @@ export function viewer(shell) {
     levels: () => chans, onDrawn: (fn) => drawnHeard.push(fn),
     // another viewer's rows under the channels' rows, none to take them away, and the zoom buttons taken over by it
     // (fn(factor)) or given back (null)
-    rowsAfter(els) { added = els; rows(); }, zoomWith(fn) { zoomer = fn; if (!fn) $("#zoom-label").textContent = Math.round(st.zoom * 100) + "%"; },
+    rowsAfter(els) { added = els; rows(); }, rowsWith(fn) { withRow = fn; rows(); }, zoomWith(fn) { zoomer = fn; if (!fn) $("#zoom-label").textContent = Math.round(st.zoom * 100) + "%"; },
     draw, setZoom, fit, focus, toImage, layer, channelList: () => chans.map(({ name, colour }) => ({ name, colour })), minimapView: () => minimap.place(), preview, clear, shown, picture,
     get overlay() { return $("#overlay"); }, get scroller() { return $("#scroller"); },
   };

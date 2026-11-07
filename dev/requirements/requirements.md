@@ -1300,16 +1300,19 @@ nobody has decided: what the page does there is not a requirement yet.
   buttons in a row beside Zoom (owner, 2026-11-07), and the 2D view's Zoom, which zooms the 3D view (owner,
   2026-11-04); the 2D view's other tools step aside. Brightest shows the brightest point along each
   ray, Surface a lit surface where the signal crosses a level, and colour by depth paints by the
-  depth of that point so crossings at different depths read apart: the study's `view` sets which
+  depth of that point so crossings at different depths read apart: the study's `view` sets the render
   it opens with. The depth is a row of the image box under the
   channels' rows, as a channel's row holds its points (owner, 2026-11-04): its first and last slice
-  shown on one slider, and in the colour picker's place the spacing between slices. Under it, Colour by depth is
-  the viewer's, chosen in the image box as a channel's colour is (owner, 2026-11-07); a study drawing over the
-  stack reads it. The slice
+  shown on one slider, and in the colour picker's place the spacing between slices. Colour by depth is each
+  channel's own (owner, 2026-11-07): a Colour by depth tick under each channel's row, and while it is ticked the
+  row's colour picker becomes a palette picker, since the channel is then drawn in a range of colours by the depth
+  of each point, not in one colour by its brightness alone. Two channels coloured by depth each take a different
+  palette, so they read apart; a study's `channels` may tick it from the start (`depth`: true, or a palette's name).
+  A study drawing over the stack reads the depth colours of the first shown channel coloured by depth. The slice
   spacing comes from the file, else from the study (`view.spacing`, saying who stated it), else
   1 µm, called a guess. Every shown channel is drawn in its colour between the black and white
-  points of its row, which redraw the 3D view as they move. The study's `view` sets the render, colour
-  by depth and the spacing it opens with. A study draws over the 3D view, over the stack or beside it
+  points of its row, which redraw the 3D view as they move. The study's `view` sets the render and the
+  spacing it opens with. A study draws over the 3D view, over the stack or beside it
   in the same camera, picks and drags there, and can keep only the stack inside or outside a mask of
   its own. Test: `web-tests/test_viewer3d_page.py`, and the vascular study's `req/vascular/model/correct`.
   </details>
