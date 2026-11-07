@@ -119,8 +119,19 @@ async function measure() {
   // the page's frames done first: the item view draws its cards in them as they come near, which a slow machine
   // can still be doing when the work itself has settled
   await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(ok, 100)))));
+  // An attribute is a node of its own once something reads it as one, as Playwright does with every attribute of an
+  // element it writes into an action's log, and the page adds attributes as it goes (a class the first time an
+  // animation is seen off screen): each one in the document is read here, made a node whoever read it before, and
+  // left out of the count, which is then the same whichever elements Playwright described and whatever state the
+  // page's attributes are in.
+  const attributes = () => page.evaluate(() => {
+    let n = 0;
+    for (const e of document.querySelectorAll("*")) { for (let i = 0; i < e.attributes.length; i++) void e.attributes[i]; n += e.attributes.length; }
+    return n;
+  });
   for (let tries = 0; ; tries++) {
     await page.evaluate(() => { for (const v of document.querySelectorAll("#statusbar .sb-item .v")) v.textContent = v.textContent; });
+    const attrs = await attributes();
     // A node and its listeners leave the counts only when a collection's sweep reaches them, which on a slow
     // machine can trail the collection: collected again until two readings agree, garbage still unswept keeps
     // falling and a node something holds stays.
@@ -131,8 +142,8 @@ async function measure() {
     const h = await cdp.send("Runtime.getHeapUsage");
     // one that changed without rolling, "12%" to "2%", is still its characters a node each
     const rolled = await page.evaluate(() => [...document.querySelectorAll("#statusbar .sb-item .v")].some((v) => v.children.length || v.childNodes.length > 1));
-    if (rolled && tries < 10) continue;
-    return { heap: h.usedSize, buffers: h.backingStorageSize, nodes: perf.Nodes, listeners: perf.JSEventListeners, sweeps, where: await where() };
+    if ((rolled || (await attributes()) !== attrs) && tries < 10) continue;
+    return { heap: h.usedSize, buffers: h.backingStorageSize, nodes: perf.Nodes - attrs, listeners: perf.JSEventListeners, sweeps, where: await where() };
   }
 }
 // the page's counts after a collection; twice, as DOM nodes freed by the first are swept only after it
