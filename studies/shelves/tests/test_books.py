@@ -113,3 +113,48 @@ def test_a_leaning_book_is_boxed_leaning_with_it(lean):
         # the long sides, top corner to bottom corner, lean as the spines do
         for top, foot in ((c[0], c[3]), (c[1], c[2])):
             assert abs(np.degrees(np.arctan2(top[0] - foot[0], foot[1] - top[1])) - lean) < 3, c
+
+
+def own_spines():
+    """Books drawn as the owner's shelves hold them: each leans its own way, has its own height and stands its own foot,
+    with lettering down its middle; the wall right of them is bare. (photo, each book's corners clockwise)."""
+    rng = np.random.default_rng(11)
+    H, W = 420, 640
+    a = np.full((H, W, 3), 214, np.float32)
+    a[372:392] = 150
+    yy, xx = np.mgrid[0:H, 0:W]
+    truth, x = [], 30.0
+    for k in range(8):
+        w, h, lean = float(rng.integers(26, 42)), float(rng.integers(220, 300)), float(rng.choice([-7, -4, 0, 3, 6]))
+        t = np.deg2rad(lean)
+        foot = 372 - float(rng.integers(0, 10))
+        ax, ay, nx, ny = np.sin(t), -np.cos(t), np.cos(t), np.sin(t)
+        # packed: the book's leftmost point 3 px right of the last one's rightmost
+        cx = x - min(du * nx + dv * ax for du in (-w / 2, w / 2) for dv in (0, h))
+        u, v = (xx - cx) * nx + (yy - foot) * ny, (xx - cx) * ax + (yy - foot) * ay
+        a[(abs(u) <= w / 2) & (v >= 0) & (v <= h)] = rng.integers(25, 160, 3)
+        # lettering: short bright marks down the spine's middle, a few rows apart
+        for s in np.arange(0.2, 0.85, 0.09) * h:
+            a[(abs(u) <= w / 5) & (v >= s) & (v <= s + 0.05 * h)] = 240
+        p = lambda du, dv: [cx + du * nx + dv * ax, foot + du * ny + dv * ay]
+        c = [p(-w / 2, h), p(w / 2, h), p(w / 2, 0), p(-w / 2, 0)]
+        truth.append(c)
+        x = max(q[0] for q in c) + 3
+    a += rng.normal(0, 3, a.shape)
+    return np.clip(a, 0, 255).astype(np.uint8), truth
+
+
+def test_each_box_is_its_own_spine_and_none_is_made_up():
+    """req/shelves/books/find (2026-11-07): each box is the book's own spine, its top and foot its own and at their own
+    angle; nothing is boxed on the bare wall, and no book's lettering splits it."""
+    a, truth = own_spines()
+    found = [np.array(b['corners']) for b in books.find(a)]
+    bare = max(max(x for x, _ in c) for c in truth)
+    assert not [c for c in found if c[:, 0].min() > bare], 'a box on the bare wall'
+    unit = np.median([np.hypot(*np.subtract(c[1], c[0])) for c in truth])
+    matched = 0
+    for c in truth:
+        d = [np.abs(f - np.array(c)).max() for f in found]
+        matched += bool(d) and min(d) <= 0.25 * unit
+    assert matched >= len(truth) - 1, (matched, len(truth))
+    assert len(found) <= len(truth), 'a book split, or a box that is no book'
