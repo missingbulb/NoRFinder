@@ -114,7 +114,7 @@ try {
   await page.click("#bs-find");
   await page.waitForFunction(() => $("#status").textContent.startsWith("Titles read"));
   const rows = () => page.$$eval("#gt-tasks > li .t", (h) => h.map((x) => x.textContent.trim()));
-  check((await rows()).join() === "0/3 Books,0/0 Missed books" && await page.evaluate(() => $("#summary-box").hidden && !$("#tasks-box").hidden),
+  check((await rows()).join() === "0/3 Books,0 Missed books" && await page.evaluate(() => $("#summary-box").hidden && !$("#tasks-box").hidden),
     "Ground Truth Tasks lists Books and Missed books, and Summary is not shown", await rows());
   check(await page.evaluate(() => $(".bs-item input").value) === "Title 260x40" && await page.$$eval(".bs-item canvas", (c) => c[0].width) === 260,
     "the first book shows upright with what the reader read, to correct");
@@ -143,7 +143,7 @@ try {
   check(true, "Draw a book takes four corners on the photo, and the book drawn is read for review");
   await page.click('.bs-verdicts [data-do="right"]');
   await page.click('[data-do="none"]');
-  check((await rows()).join() === "3/3 Books,1/1 Missed books" && !(await page.evaluate(() => $("#gt-submit").disabled)), "None missed ends the task, and Submit opens", await rows());
+  check((await rows()).join() === "3/3 Books,1 Missed books" && !(await page.evaluate(() => $("#gt-submit").disabled)), "None missed ends the task, and Submit opens", await rows());
   await page.click("#gt-submit");
   const gt = await saved(page, "#gt-export");
   const [b1, b2, b3, b4] = gt.doc.books;

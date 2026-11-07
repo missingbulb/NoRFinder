@@ -89,6 +89,8 @@ async function open() {
   await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false);
   await openFromDrive(page, image);
   await page.waitForFunction(() => !document.querySelector("#find").disabled);
+  // req/shell/ground-truth/tasks: Submit is off until the study's first step is done
+  await check(await page.evaluate(() => $("#gt-submit").disabled), "an image open but nothing run yet: Submit Ground Truth is off");
   await page.click("#find");
   await page.waitForFunction(() => st.alone && $("#busy").hidden);
   await page.evaluate(() => { $("#notice").hidden = true; });
@@ -99,7 +101,7 @@ const shown = (page, sel) => page.evaluate((s) => { const e = document.querySele
 // ---- a GT study: the tasks in the left bar, the image alone in the main area ----
 let page = await open();
 await check(await shown(page, "#tasks-box") && !(await shown(page, "#summary-box")), "Ground Truth Tasks is in the left bar, in Summary's place");
-await check(!(await shown(page, "#switch")) && !(await shown(page, "#tasks-bar")), "no view switch, no tasks bar over the image");
+await check(!(await shown(page, "#switch")), "no view switch over the image");
 const tasks = await page.$$eval("#gt-tasks > li", (li) => li.map((l) => l.dataset.task));
 await check(JSON.stringify(tasks) === JSON.stringify(["pass", "fail", "missed", "submit"]), "the tasks in order: the finalists, the rejected, the missed NoRs, Submit", tasks);
 await check(await page.$eval("#gt-submit", (b) => !!b.closest('#gt-tasks > li[data-task="submit"]')), "Submit Ground Truth is the last task");
