@@ -4,8 +4,7 @@
 // network is the browser saying so, or the site not answering, asked all session long: a plane's Wi-Fi with no
 // internet beyond it leaves the browser saying it is online.
 // Making a study available offline (req/shell/offline/per-study), from the Storage tab: a popup of what the study's Python and the images
-// in its remote folder take, beside the room left and the time at this session's speeds, then the download;
-// and Install as an app, at the top of the tab.
+// in its remote folder take, then the download; and Install as an app, at the top of the tab.
 // deps: $, esc, sizeText; remote, the remote store; kept(id), whether an image is kept on this device;
 // keptIn(), the ids of the studies an image is kept in; keep(id, name, bytes, {path, study}), keeping one; throttled() and throttle(), the store's wait (req/shell/drive/throttle); stored(),
 // once something is kept.
@@ -170,37 +169,6 @@ export function offline({ $, esc, sizeText, remote, kept, keptIn, keep, throttle
     return { urls: out, bytes: n.reduce((a, b) => a + (b || 0), 0), unknown: n.some((b) => b == null) };
   }
 
-  // This session's download speeds, bytes per second by source, or null: Python's as the service worker measured
-  // its downloads from the CDN, the remote store's as it measured its own; else the browser's estimate of
-  // the connection, flagged as one.
-  async function speeds() {
-    const sw = navigator.serviceWorker && (await navigator.serviceWorker.ready.catch(() => null))?.active;
-    let hosts = {};
-    if (sw) {
-      hosts = await Promise.race([new Promise((ok) => {
-        const on = (e) => { if (e.data?.type !== "speeds") return; navigator.serviceWorker.removeEventListener("message", on); ok(e.data.hosts || {}); };
-        navigator.serviceWorker.addEventListener("message", on);
-        sw.postMessage({ type: "speeds" });
-      }), new Promise((ok) => setTimeout(() => ok({}), 1000))]);
-    }
-    const rate = (m) => (m && m.bytes > 0 && m.ms > 0 ? (m.bytes / m.ms) * 1000 : null);
-    const guess = navigator.connection?.downlink ? { rate: navigator.connection.downlink * 125000, guessed: true } : null;
-    const of = (m) => (rate(m) ? { rate: rate(m) } : guess);
-    return { python: of(hosts[new URL(CORE[0]).host]), remote: of(remote.speed?.()) };
-  }
-  const duration = (s) => (s < 60 ? `${Math.max(1, Math.round(s))} s` : s < 3600 ? `${Math.floor(s / 60)} min ${Math.round(s % 60)} s` : `${Math.floor(s / 3600)} h ${Math.round((s % 3600) / 60)} min`);
-  // "200 MB of Python at 15 MB/s + 1 GB from the remote store at 25 MB/s, about 1 min 20 s"
-  function timeText(parts) {
-    const said = [], known = [];
-    for (const p of parts.filter((x) => x.bytes)) {
-      if (!p.speed) { said.push(`${sizeText(p.bytes)} ${p.what}, at a speed not measured yet`); continue; }
-      said.push(`${sizeText(p.bytes)} ${p.what} at ${p.speed.guessed ? "about " : ""}${sizeText(p.speed.rate)}/s${p.speed.guessed ? " (the browser's estimate)" : ""}`);
-      known.push(p.bytes / p.speed.rate);
-    }
-    if (!said.length) return "";
-    return "Time: " + said.join(" + ") + (known.length ? `, about ${duration(known.reduce((a, b) => a + b, 0))}${known.length < said.length ? " and more" : ""}.` : ".");
-  }
-
   // the images in a study's own remote folder and the folders under it: [{id, name, size, path, study, kept}], or
   // a sentence saying why there are none
   async function imagesOf(s) {
@@ -232,9 +200,9 @@ export function offline({ $, esc, sizeText, remote, kept, keptIn, keep, throttle
     const dlg = $("#offline-dlg"), msg = (t) => { $("#offline-msg").textContent = t; };
     const s = (await studyFiles()).find((x) => x.id === id);
     if (!s) return;
-    $("#offline-title").textContent = `Make ${s.title} available offline`;
-    for (const el of ["#offline-python", "#offline-total", "#offline-free", "#offline-time", "#offline-warn"]) $(el).textContent = "";
+    for (const el of ["#offline-python", "#offline-warn"]) $(el).textContent = "";
     $("#offline-files").textContent = `Reading its ${remote.label} folder…`; msg(""); $("#offline-go").disabled = true; $("#offline-go").hidden = false;
+    $("#offline-go").textContent = "Download Now";
     $("#offline-close").onclick = () => dlg.close();
     dlg.onclose = () => { ctl?.abort(); showing = null; done?.(); };
     if (!dlg.open) dlg.showModal();
@@ -248,8 +216,7 @@ export function offline({ $, esc, sizeText, remote, kept, keptIn, keep, throttle
     if (typeof images === "string") $("#offline-files").innerHTML = `<p class="hint">${esc(images)}</p>`;
     else {
       const fresh = images.filter((f) => !f.kept);
-      $("#offline-files").innerHTML = `<p class="hint">Its images on ${remote.label}${fresh.length < images.length ? `, ${images.length - fresh.length} of them already on this device` : ""}:</p>` +
-        (fresh.length ? `<label class="all-row"><input type="checkbox" class="all" checked> All ${fresh.length}</label>` : "") + `<div class="files"></div>`;
+      $("#offline-files").innerHTML = (fresh.length ? `<label class="all-row"><input type="checkbox" class="all" checked> All ${fresh.length} images on ${remote.label}</label>` : "") + `<div class="files"></div>`;
       $("#offline-files .files").replaceChildren(...images.map((f) => {
         const l = document.createElement("label"); l.className = "file-row";
         l.innerHTML = `<input type="checkbox" class="file"><span class="name">${esc(f.name)}</span><span class="where">${esc(["Folder", ...f.path].join(" / "))}</span><span class="size">${f.size == null ? "" : sizeText(f.size)}</span>`;
@@ -263,20 +230,18 @@ export function offline({ $, esc, sizeText, remote, kept, keptIn, keep, throttle
     }
     await recount(s, typeof images === "string" ? [] : images);
   }
-  // what the choice downloads, beside the room left, and how long it takes; Download is refused a choice larger
-  // than the room left
+  // what the choice downloads, on Download; Download is refused a choice larger than the room left
   async function recount(s, images) {
     const asked = ++run;
     const python = await missing([...CORE, ...s.python]);
     const ticked = new Set([...$("#offline-files").querySelectorAll("input.file:checked:not(:disabled)")].map((b) => b.dataset.id));
     const chosen = images.filter((f) => ticked.has(f.id)), imageBytes = chosen.reduce((a, f) => a + (f.size || 0), 0);
-    const [speed, free] = await Promise.all([speeds(), navigator.storage?.estimate?.().then((e) => e.quota - e.usage, () => null) ?? null]);
+    const free = await (navigator.storage?.estimate?.().then((e) => e.quota - e.usage, () => null) ?? null);
     if (asked !== run) return;
     const bytes = python.bytes + imageBytes;
-    $("#offline-python").textContent = python.urls.length ? `Its Python: ${sizeText(python.bytes)}${python.unknown ? " or more" : ""} from jsDelivr.` : "Its Python is already on this device.";
-    $("#offline-free").textContent = free == null ? "This browser does not say how much more the site may keep." : `This browser lets the site keep about ${sizeText(free)} more.`;
-    $("#offline-total").textContent = bytes ? `This downloads ${sizeText(bytes)}${chosen.length ? `: its Python and ${chosen.length === 1 ? "1 image" : chosen.length + " images"}` : ""}.` : "Everything is already on this device.";
-    $("#offline-time").textContent = timeText([{ what: "of Python", bytes: python.bytes, speed: speed.python }, { what: `from ${remote.label}`, bytes: imageBytes, speed: speed.remote }]);
+    $("#offline-python").textContent = python.urls.length ? `${sizeText(python.bytes)}${python.unknown ? " or more" : ""}` : "On this device";
+    markOffline($("#offline-python"), "study", !python.urls.length);
+    $("#offline-go").textContent = bytes ? `Download ${sizeText(bytes)} Now` : "Download Now";
     const tooMuch = free != null && bytes > free;
     $("#offline-warn").hidden = !tooMuch;
     $("#offline-warn").textContent = tooMuch ? `That is more than this browser lets the site keep (${sizeText(free)}). Untick some images.` : "";

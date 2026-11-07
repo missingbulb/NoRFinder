@@ -272,15 +272,12 @@
   <div class="dlg-row end"><span id="save-msg" class="hint" role="status"></span><span class="grow"></span><button id="save-download" type="button">Download</button><button id="save-remote" class="primary" type="button" data-needs-network></button><button id="save-close" type="button">Close</button></div>
 </dialog>
 <dialog id="offline-dlg" aria-labelledby="offline-title">
-  <h2 id="offline-title">Make available offline</h2>
-  <p class="hint" id="offline-python"></p>
+  <h2 id="offline-title">Prepare for Offline</h2>
+  <label class="file-row python"><input type="checkbox" checked disabled><span class="name">Python</span><span class="where">jsDelivr</span><span class="size" id="offline-python"></span></label>
   <div id="offline-files"></div>
-  <p id="offline-total"></p>
-  <p class="hint" id="offline-free"></p>
-  <p class="hint" id="offline-time"></p>
   <p id="offline-warn" role="alert" hidden></p>
   <progress id="offline-progress" hidden></progress>
-  <div class="dlg-row end"><span id="offline-msg" class="hint" role="status"></span><span class="grow"></span><button type="button" id="offline-stop" hidden>Stop</button><button type="button" id="offline-go" class="primary" disabled>Download</button><button type="button" id="offline-close">Close</button></div>
+  <div class="dlg-row end"><span id="offline-msg" class="hint" role="status"></span><span class="grow"></span><button type="button" id="offline-stop" hidden>Stop</button><button type="button" id="offline-close">Close</button><button type="button" id="offline-go" class="primary" disabled>Download Now</button></div>
 </dialog>
 <dialog id="settings-dlg" aria-labelledby="settings-title">
   <form method="dialog">
@@ -308,7 +305,7 @@
   <form method="dialog">
     <h2 id="usage-title">Resource Usage</h2>
     <div class="tab-head"><div class="tab-row" role="tablist"><button type="button" role="tab" data-tab="storage">Storage</button><button type="button" role="tab" data-tab="memory">Memory</button><button type="button" role="tab" data-tab="network">Network</button><button type="button" role="tab" data-tab="cpu">CPU</button></div><label class="res-mode"><input type="checkbox" id="res-mode"> Autohide</label></div>
-    <section role="tabpanel" data-tab="storage" hidden><div class="install-row"><span class="hint" id="offline-app-text"></span><button type="button" class="link" id="offline-install">Install as an app</button></div><p class="hint total" id="storage-total"></p><div id="storage-list" class="rows" data-log-as="an entry in the Storage tab"></div></section>
+    <section role="tabpanel" data-tab="storage" hidden><div class="offline-settings"><h3>Offline Settings</h3><div class="install-row"><span class="hint" id="offline-app-text"></span><button type="button" class="link" id="offline-install">Install as an app</button></div></div><p class="hint total" id="storage-total"></p><div id="storage-list" class="rows" data-log-as="an entry in the Storage tab"></div></section>
     <section role="tabpanel" data-tab="memory" hidden><p class="hint total" id="ram-total"></p><div id="ram-list" class="rows"></div></section>
     <section role="tabpanel" data-tab="network" hidden><p class="hint total" id="net-total"></p><div id="net-list" class="rows"></div></section>
     <section role="tabpanel" data-tab="cpu" hidden><p class="hint total" id="cpu-total"></p><div id="cpu-list" class="rows"></div><div class="motion"><label><input id="motion" type="checkbox"> Animations</label></div></section>

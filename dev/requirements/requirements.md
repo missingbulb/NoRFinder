@@ -768,7 +768,7 @@ nobody has decided: what the page does there is not a requirement yet.
   `offline.json` with each file's SHA-256, each checked against that list and refetched only when it
   changed. With no network the page then opens at its own address and at every study's, from that
   copy. A study whose Python is already on this device runs; one whose Python is not says so: it
-  needs the internet once, or Make available offline (`req/shell/offline/per-study`). It says so plainly, not as an error
+  needs the internet once, or Make Available Offline (`req/shell/offline/per-study`). It says so plainly, not as an error
   and with no traceback, the spinner stopping, the network dropping as the study's own modules load too (set by the owner on 2026-11-03). An image kept on this device (`req/shell/drive/kept-images`,
   `req/shell/offline/per-study`) opens: offline, the Google Drive dialog shows its folders as last listed (`req/shell/drive/offline-listing`),
   or, with none kept, the images kept here.
@@ -780,7 +780,7 @@ nobody has decided: what the page does there is not a requirement yet.
   sign-in page answering in the site's place counts as no network. What the page is doing follows it, set by the
   owner on 2026-11-03: a study whose Python could not load loads it once the network is back, with no reload;
   an open Google Drive dialog greys what cannot open once it goes and reads its folder again once it is back, and
-  an image it could not download says the internet cannot be reached; an open Make available offline reads the
+  an image it could not download says the internet cannot be reached; an open Prepare for Offline popup reads the
   study's folder and counts again, and offers Download again after a run the network cut short, what it kept
   staying kept; a signed-in user's settings sync, the version is checked and the site's copy brought up to date.
   What needs the network says so in
@@ -812,19 +812,19 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Set by the owner on 2026-11-02, nothing in it happening until the user asks. The Storage tab
-  (`req/shell/storage/manage`) opens with **Install as an app**: only on the user's click does the page offer the
+  (`req/shell/storage/manage`) opens with an **Offline Settings** block holding **Install as an app** (set by the owner on
+  2026-11-07): only on the user's click does the page offer the
   browser's install, an icon that opens the site in its own window, offline too; until then the
   page names no app manifest, so the browser offers none unprompted. Where the browser has no install
   button of its own to call, the tab says where that browser's own menu has it. Each study's section
-  that is not all on this device has **Make available offline**, which opens a popup of what that
-  takes: its Python still missing, Python itself counted when it is, from jsDelivr; and, for a study
-  with a Google Drive folder of its own (`files.drive`), every image reachable from it, its
-  subfolders included, each with its folder and size, ticked, to untick one by one or all at once.
-  The popup adds up what the choice downloads, beside how much more the browser lets the site keep,
-  and estimates how long it takes, source by source (`1 GB from Google Drive at 25 MB/s + 200 MB of
-  Python at 15 MB/s, about 1 min 20 s`), at the speeds this session measured from each source; with
-  none measured yet, at the browser's own estimate of the connection, saying so, or it says it
-  cannot tell. A choice larger than the room left is refused, saying so. Download asks the browser
+  that is not available offline (`req/shell/offline/mark`), and each with a Google Drive folder of its own (`files.drive`),
+  has **Make Available Offline**, which opens the **Prepare for Offline** popup, a list of what that takes: first its
+  Python, a row ticked and greyed, since the study cannot run without it, with the size still missing (Python itself
+  counted when it is) or saying it is already on this device; then every image reachable from its Google Drive folder,
+  its subfolders included, each with its folder and size, ticked, to untick one by one or all at once. Below the list
+  the popup carries no text of its own (set by the owner on 2026-11-07); its button at the right says what the choice
+  downloads, **Download 320 MB Now**. A choice larger than how much more the browser lets the site keep is refused,
+  saying so. Download asks the browser
   to keep the site's storage until the user deletes it, downloads with its progress shown and can be
   stopped, and ends saying what is now on this device and whether the browser agreed to keep it.
   When Google throttles the downloads (`req/shell/drive/throttle`) it stops and says so. Test: `web-tests/test_offline_page.py`.
@@ -1184,10 +1184,10 @@ nobody has decided: what the page does there is not a requirement yet.
   pages and code, part of the site's copy; the images kept from Google Drive in it, by name; one
   record for all their thumbnails and its Drive folders' previews; and, for the study on show, the
   selections per image, by image name. An image, a thumbnail or a preview kept before images were
-  told apart by study, and opened in none of them since, is listed with the study on show. Then
-  **Shared by every study**: the site itself, Python itself, the packages two studies or more use,
+  told apart by study, and opened in none of them since, is listed with the study on show. The study sections sit under a
+  **Studies** heading; then, under a **Shared** heading, the **Shared** section (set by the owner on 2026-11-07): the site itself, Python itself, the packages two studies or more use,
   and, as one record, code no study uses now. Each entry can be deleted, but a study's pages, kept
-  whole with the site; each section's Delete all deletes all it can, and a study's is the study's
+  whole with the site; each section's **Clear cache** (set by the owner on 2026-11-07, in the place of a Delete all) deletes all it can, and a study's is the study's
   whole purge, leaving what other studies use. Settings are not listed here: they are kept, shown
   and cleared in Settings (`req/shell/account/settings`); the total says what they take, and counts too what is stored
   under the site that neither the shell nor the study names. The shell names its own keys; the study names its keys through its `stored` hook, so the

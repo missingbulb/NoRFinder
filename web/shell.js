@@ -1037,7 +1037,7 @@ function remoteDialog() {
       }
     } catch (e) { console.warn("cannot read the images kept here:", e); }
     kept.sort((a, b) => (b.study === manifest.id) - (a.study === manifest.id) || a.name.localeCompare(b.name));
-    msg(kept.length ? "" : "No image is kept here: Make available offline, in Manage storage, keeps a study's.");
+    msg(kept.length ? "" : "No image is kept here: Make Available Offline, in Manage storage, keeps a study's.");
     for (const f of kept) {
       const b = document.createElement("button"); b.type = "button"; b.className = "item"; b.setAttribute("aria-selected", "false");
       const meta = [sizeText(f.size), [remote.label, ...f.path].join(" / ")].join(" · ");
@@ -1394,7 +1394,7 @@ async function inventory() {
   const studies = await offlineCopy.studyFiles().catch((e) => { console.warn("the studies could not be read:", e); return []; });
   const live = await offlineCopy.available().catch(() => new Set());
   const sections = studies.map((s) => ({ id: "study:" + s.id, study: s.id, title: s.title, mark: live.has(s.id), folders: !!s.manifest.root, entries: [] }));
-  const shared = { id: "shared", title: "Shared by every study", about: SHARED_ABOUT, entries: [] };
+  const shared = { id: "shared", title: "Shared", about: SHARED_ABOUT, entries: [] };
   // a study's own, else the study on show's: kept before images were told apart by study
   const sectionOf = (id) => sections.find((x) => x.study === id) || sections.find((x) => x.study === manifest?.id) || shared;
   // each section's thumbnails and its folders' previews, one record
@@ -1491,20 +1491,21 @@ async function storageTab(fresh) {
     storageTab(false);
   };
   let total = settings + overhead;
-  list.replaceChildren(...sections.map((x) => {
+  const heading = (text) => Object.assign(document.createElement("h3"), { className: "storage-head", textContent: text });
+  list.replaceChildren(...sections.flatMap((x, k) => {
     const items = x.entries, size = items.reduce((a, e) => a + e.size, 0), gone = items.filter((e) => e.del);
     total += size;
     const box = document.createElement("details"); box.className = "group"; box.dataset.group = x.id; box.open = open.has(x.id);
     box.innerHTML = `<summary><span class="title">${esc(x.title)}</span><span class="count">${items.length ? `${items.length} · ${sizeText(size)}` : x.study ? "Nothing of its own" : "Nothing kept"}</span></summary>`;
     if (x.mark) markOffline(box.querySelector(".title"), "study", true);
-    // a study not all here offers to make it so; one that is, to keep its remote images too
+    // a study not available offline offers to make it so; one with a remote folder, to keep more of its images
     if (x.study && (!x.mark || x.folders)) {
-      const make = Object.assign(document.createElement("button"), { type: "button", className: x.mark ? "link get-images" : "link make-offline", textContent: x.mark ? `Its ${remote.short} images…` : "Make available offline" });
+      const make = Object.assign(document.createElement("button"), { type: "button", className: "link make-offline", textContent: "Make Available Offline" });
       make.onclick = (e) => { e.preventDefault(); offlineCopy.makeAvailable(x.study, () => storageTab(false)); };
       box.firstChild.append(make);
     }
     if (gone.length) {
-      const clear = Object.assign(document.createElement("button"), { type: "button", className: "link clear", textContent: "Delete all" });
+      const clear = Object.assign(document.createElement("button"), { type: "button", className: "link clear", textContent: "Clear cache" });
       const ask = x.study ? `Delete everything kept for ${x.title} on this device? What other studies use stays, and so do its pages, kept with the site.`
         : `Delete all ${gone.length} of "${x.title}" from this device?`;
       clear.onclick = (e) => { e.preventDefault(); act(gone, ask); };
@@ -1522,7 +1523,8 @@ async function storageTab(fresh) {
       if (e.del) row.querySelector(".del").onclick = () => act([e], e.ask && `Delete everything kept for ${e.name}?`);
       box.append(row);
     }
-    return box;
+    if (!x.study) return [heading("Shared"), box];
+    return k === 0 ? [heading("Studies"), box] : [box];
   }));
   const est = await navigator.storage?.estimate?.().catch(() => null);
   showDisk(total);

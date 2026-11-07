@@ -698,7 +698,10 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 #usage-dlg:not([data-tab=storage]) [data-for=storage], #usage-dlg:not([data-tab=memory]) [data-for=memory] { display: none; }
 .rows { max-height: min(62vh, 560px); overflow-y: auto; padding-right: 6px; }
 #storage-list .group { border-top: 1px solid var(--line); padding: 6px 0; }
-#storage-list .group:first-child { border-top: 0; }
+#storage-list .storage-head + .group { border-top: 0; }
+#usage-dlg h3 { margin: 12px 0 2px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--dim); }
+#usage-dlg .offline-settings { margin-bottom: 8px; }
+#usage-dlg .offline-settings h3 { margin-top: 0; }
 #storage-list .group > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; font-weight: 600; padding: 4px 0; }
 #storage-list .group > summary::-webkit-details-marker { display: none; }
 #storage-list .group > summary::before { content: ""; flex: none; width: 0; height: 0; border-style: solid; border-width: 5px 0 5px 7px;
