@@ -3,7 +3,7 @@
 // algorithms with their icons, precision and recall, the default first, says how the chosen one works and how well, and Execute runs it with the spacing shown, opening
 // its model; req/vascular/truth/tasks and req/vascular/truth/order: a row per step counted in areas, how many areas
 // chosen, req/shell/ground-truth/tagging: nothing opens until Start GT tagging, Stop tagging gives the stack back; Lines
-// from above with the view held and its handles kept in depth, Missed vessels, Junctions in 3D with an
+// opening from above, turning in 3D, its handles kept in depth from above and a tip dropped on a vessel attached there, Missed vessels, Junctions in 3D with an
 // artifact dropped, Ctrl showing the model alone, Back to image and Back to task; req/vascular/truth/marks: an area done
 // in every step blacked out of the stack while tagging, under the Show menu's Cut out what is done; req/vascular/model/ground-truth: Submit
 // last, its export carrying every verdict. Exits 1 on a failed check, 2 when it cannot run.
@@ -119,7 +119,7 @@ try {
   v = await view();
   check(v.start === "Stop tagging" && v.open === "lines", `the button now reads Stop tagging, the Lines row open: ${v.start}`);
   check(v.focus === "Back to image" && v.big && !v.show, `in an area, a big Back to image button takes the Show menu's place: "${v.focus}", Show ${v.show ? "shown" : "hidden"}`);
-  check(v.rot[2][2] > 0.99 && v.held && v.mode === "overlay" && !!v.clip, `Lines shows the area alone, from straight above, the lines over the stack, the view held: ${JSON.stringify({ z: v.rot[2][2], held: v.held, mode: v.mode, clip: v.clip })}`);
+  check(v.rot[2][2] > 0.99 && !v.held && v.mode === "overlay" && !!v.clip, `Lines shows the area alone, from straight above, the lines over the stack, free to turn: ${JSON.stringify({ z: v.rot[2][2], held: v.held, mode: v.mode, clip: v.clip })}`);
 
   // how many areas is the person's to choose
   await page.selectOption("#area-grid", "2");
@@ -129,11 +129,8 @@ try {
 
   const mcv = () => page.evaluate(() => { const r = $("#mcv").getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; });
   const [cx, cy, cw, ch] = await mcv();
-  // a drag where no point is does not turn the area
   const rot0 = (await view()).rot;
-  await page.mouse.move(cx + 5, cy + ch - 5); await page.mouse.down(); await page.mouse.move(cx + 80, cy + ch - 60, { steps: 6 }); await page.mouse.up();
-  check(JSON.stringify((await view()).rot) === JSON.stringify(rot0), "in Lines a drag does not turn the view");
-  // dragging a handle moves its point across the picture, never in depth
+  // dragging a handle from straight above moves its point across the picture, never in depth
   let m = await doc();
   const pts = await page.evaluate(() => window.vascular.model().points);
   // inside the current area, the top-left quarter, at least margin µm from its edges
@@ -146,6 +143,35 @@ try {
   check(moved && (moved.x !== node.x || moved.y !== node.y) && moved.z === node.z, `a handle drags its point across the picture and keeps its depth: (${node.x.toFixed(1)}, ${node.y.toFixed(1)}, ${node.z}) → (${moved?.x.toFixed(1)}, ${moved?.y.toFixed(1)}, ${moved?.z})`);
   check(JSON.stringify((await view()).rot) === JSON.stringify(rot0), "... and the view stays as it was");
 
+  // a vessel's tip dragged onto another vessel's point is attached there, for a connection the algorithm missed
+  {
+    const d = await doc(), { points, at, kinds } = await page.evaluate(() => window.vascular.model());
+    const degree = new Map();
+    for (const e of d.edges) if (e.state !== "rejected") for (const id of [e.a, e.b]) degree.set(id, (degree.get(id) || 0) + 1);
+    const onScreen = (p) => p && p[0] > 20 && p[0] < cw - 20 && p[1] > 20 && p[1] < ch - 20;
+    const near = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
+    let pair = null;
+    for (const e of d.edges) {
+      if (e.state === "rejected" || pair) continue;
+      for (const [tip, from] of [[e.a, e.b], [e.b, e.a]]) {
+        if (degree.get(tip) !== 1 || !onScreen(points[tip]) || !inArea(at[tip], 10) || pair) continue;
+        const own = [at[from], ...e.via];
+        const to = Object.keys(at).find((k) => /^(vessel|accepted)-curve$/.test(kinds[k]) && onScreen(points[k]) && inArea(at[k], 10) && !own.some((p) => near(p, at[k]) < 1e-6)
+          && near(at[k], at[tip]) > 8 && Math.hypot(points[k][0] - points[tip][0], points[k][1] - points[tip][1]) < 200);
+        if (to) pair = [tip, +to];
+      }
+    }
+    if (pair) {
+      const [tip, to] = pair, [tx, ty] = points[tip], [qx, qy] = points[to];
+      await page.mouse.move(cx + tx, cy + ty); await page.mouse.down(); await page.mouse.move(cx + qx, cy + qy, { steps: 8 }); await page.mouse.up();
+      const after = await page.evaluate(() => window.vascular.model());
+      check(!after.at[tip] && /-end$/.test(after.kinds[to] || ""), `a tip dropped on another vessel's point attaches there, the point now a junction: tip ${tip} → point ${to} (${after.kinds[to]})`);
+    } else check(false, "a vessel's tip in the area, near another vessel's point, to attach");
+  }
+
+  // the area turns in 3D in Lines too
+  await page.mouse.move(cx + 5, cy + ch - 5); await page.mouse.down(); await page.mouse.move(cx + 80, cy + ch - 60, { steps: 6 }); await page.mouse.up();
+  check(JSON.stringify((await view()).rot) !== JSON.stringify(rot0), "in Lines a drag where no point is turns the area");
 
   // Lines are right: the area's confident vessels accepted, its low-confidence ones declined
   await page.click("#lines-ok");

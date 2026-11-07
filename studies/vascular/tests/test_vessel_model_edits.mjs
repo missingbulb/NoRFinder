@@ -73,6 +73,30 @@ const tests = {
     assert.deepEqual(pairs(o), ['1-2', '2-3', '3-4']);
     assert.equal(Mo.connect(o, { node: 2 }, { node: 3 }), o);
   },
+  'a tip dropped on another vessel\'s point attaches there: its segment ends on that point, the tip gone'() {
+    // a vessel 1-2 whose tip 2 stops short of the vessel 3-4-5
+    const m = Mo.parse(base([[1, 0, 0, 0], [2, 8, 0, 1], [3, 10, -10, 0], [4, 10, 0, 0], [5, 10, 10, 0]], [[1, 2, 'vessel', .9], [3, 4], [4, 5]]));
+    const o = Mo.attach(m, 2, { node: 4 });
+    assert.equal(o.nodes.has(2), false);
+    assert.deepEqual(pairs(o), ['1-4', '3-4', '4-5']);
+    assert.equal(o.segments.find((s) => Math.min(s.a, s.b) === 1).confidence, .9);
+    assert.equal(Mo.degrees(o, () => true).get(4), 3);
+  },
+  'a tip dropped on another vessel\'s line attaches at a new point there'() {
+    const m = Mo.parse(base([[1, 0, 0, 0], [2, 8, 0, 0], [3, 10, -10, 0], [5, 10, 10, 0]], [[1, 2], [3, 5]]));
+    const o = Mo.attach(m, 2, { segment: 1, t: .5 });
+    assert.equal(o.nodes.has(2), false);
+    const mid = [...o.nodes.values()].find((n) => ![1, 3, 5].includes(n.id));
+    assert.deepEqual([round(mid.x), round(mid.y)], [10, 0]);
+    assert.deepEqual(Mo.neighbours(o, mid.id).sort((a, b) => a - b), [1, 3, 5]);
+  },
+  'only a tip attaches, and never onto its own vessel'() {
+    const m = Mo.parse(base([[1, 0, 0, 0], [2, 8, 0, 0], [3, 16, 0, 0], [4, 30, 0, 0]], [[1, 2], [2, 3], [3, 4]]));
+    assert.equal(Mo.attach(m, 2, { node: 4 }), m);
+    assert.equal(Mo.attach(m, 1, { node: 2 }), m);
+    assert.equal(Mo.attach(m, 1, { segment: 0, t: .5 }), m);
+    assert.equal(Mo.attach(m, 1, { node: 1 }), m);
+  },
   'connecting onto the middle of segments places a point on each'() {
     const m = Mo.parse(base([[1, 0, 0, 0], [2, 10, 0, 2], [3, 0, 20, 0], [4, 10, 20, 0]], [[1, 2], [3, 4]]));
     const o = Mo.connect(m, { segment: 0, t: .5 }, { segment: 1, t: .25 });
@@ -248,4 +272,4 @@ const tests = {
 
 let n = 0;
 for (const [name, fn] of Object.entries(tests)) { fn(); n++; console.log('ok', name); }
-assert.equal(n, 28);
+assert.equal(n, 31);
