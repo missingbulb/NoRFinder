@@ -39,6 +39,17 @@ const py = await loadPyodide();
 py.FS.mkdirTree("/py");
 py.FS.writeFile("/py/interactive.py", STAND_IN);
 py.runPython("import sys; sys.path.insert(0, '/py'); import interactive as study, json");
+// what Python holds after a collection: bytes in use by malloc, and live objects the collector tracks
+py.runPython(`
+import ctypes, gc
+class MallInfo(ctypes.Structure):
+    _fields_ = [(n, ctypes.c_size_t) for n in 'arena ordblks smblks hblks hblkhd usmblks fsmblks uordblks fordblks keepcost'.split()]
+libc = ctypes.CDLL(None); libc.mallinfo.restype = MallInfo
+def memory_use():
+    gc.collect()
+    return json.dumps({'used': libc.mallinfo().uordblks, 'objects': len(gc.get_objects())})
+`);
+const memory = () => JSON.parse(py.runPython("memory_use()"));
 
 let out = [];
 const answer = bridge(py, (m) => out.push(m));
@@ -48,12 +59,12 @@ function round() {
   ask({ type: "open", name: `image ${++opened}.tif`, bytes: new ArrayBuffer(1 << 20) });
   ask({ type: "call", action: "detect", args: { finder: "tl", overrides: {} } });
   ask({ type: "call", action: "refilter", args: { spec: { values: {}, off: [] } }, echo: opened });
-  return ask({ type: "memory" });
+  return memory();
 }
 
 const WARM = 2, ROUNDS = 5, MB = 1024 * 1024;
 for (let k = 0; k < WARM; k++) round();
-const base = ask({ type: "memory" });
+const base = memory();
 let m;
 for (let k = 0; k < ROUNDS; k++) m = round();
 const files = py.FS.readdir("/tmp").filter((f) => f !== "." && f !== "..");
