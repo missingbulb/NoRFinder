@@ -54,11 +54,12 @@ export function truthTasks({ $, icon, started }) {
       api.ready(false);
     },
     // how far a task has got: did of all, done once every one is (or as the study says); did null while not known,
-    // of null for a task with no total, which shows its count alone and is done when the study says
-    count(key, did, of, done = did != null && of > 0 && did >= of) {
+    // of null for a task with no total, which shows its count alone and is done when the study says; shown, when given,
+    // what the row says in the count's place, "" for nothing, the bar's part still did of all
+    count(key, did, of, done = did != null && of > 0 && did >= of, shown) {
       const li = row(key), p = part(key);
       if (!li) return;
-      li.querySelector(".n").textContent = did == null ? "" : of == null ? String(did) : `${did}/${of}`;
+      li.querySelector(".n").textContent = shown ?? (did == null ? "" : of == null ? String(did) : `${did}/${of}`);
       li.classList.toggle("done", !!done);
       const whole = of == null ? 1 : Math.max(of, 1), part_ = of == null ? (done ? 1 : 0) : did != null && of ? Math.min(did / of, 1) : 0;
       p.style.flexGrow = did == null ? 1 : whole; p.style.setProperty("--done", did == null ? 0 : part_);

@@ -24,6 +24,8 @@
 @media (prefers-color-scheme: light) { :root:not([data-theme]) { --ink-amt: 45%; } }
 .lt, .filter .badge { color: color-mix(in srgb, var(--c), #000 var(--ink-amt)); }
 :root { --pad: 12px; --r-panel: 12px; --r-ctl: 8px; --r-chip: 6px; }
+/* the minimap's width, which a study's own floating map over the image takes too */
+:root { --mm-width: 200px; }
 * { box-sizing: border-box; }
 /* the browser's own [hidden] rule reaches HTML elements only */
 svg[hidden] { display: none; }
@@ -358,7 +360,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 /* the minimap: hovering over the image's top left corner, framed in white to stand apart from any image;
    opaque at first, and under the pointer whatever opacity the user chose for it at rest */
 #image-view { position: relative; }
-#minimap { position: absolute; top: 12px; left: 12px; z-index: 5; width: 200px; border: 2px solid #fff; border-radius: var(--r-ctl);
+#minimap { position: absolute; top: 12px; left: 12px; z-index: 5; width: var(--mm-width); border: 2px solid #fff; border-radius: var(--r-ctl);
   background: var(--panel); box-shadow: 0 4px 14px #0008; overflow: hidden; opacity: var(--mm-opacity, 1); transition: opacity .15s; }
 #minimap:hover, #minimap:focus-within { opacity: 1; }
 #minimap[hidden] { display: none; }
