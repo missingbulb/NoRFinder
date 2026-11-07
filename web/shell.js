@@ -39,7 +39,7 @@ import { truthTasks } from "./truth_tasks.js";
 import { subfolderName } from "./truth_folders.js";
 import { studyPlace } from "./study_root.js";
 import { openImage, inOrder } from "./image_open.js";
-import { CORE, PYODIDE, packagesOf } from "./python_files.js";
+import { CORE, PYODIDE, NOT_HERE, packagesOf } from "./python_files.js";
 
 const $ = (s) => document.querySelector(s);
 // what the user does here, kept on this device for a problem report (req/shell/report/action-log)
@@ -161,7 +161,7 @@ const sizeText = (n) => (!n ? "0 KB" : n < 1048576 ? `${Math.max(1, Math.round(n
 const esc = (t) => String(t).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 // the page's state: the shell's fields below, and whatever the study keeps beside them
-const st = { worker: null, H: 0, W: 0, um: null, umY: null, img: null, plain: null, zoom: 2, fileName: "", sha: "", source: null, heap: null, files: 0,
+const st = { worker: null, H: 0, W: 0, um: null, umY: null, img: null, plain: null, zoom: 2, fileName: "", sha: "", source: null, heap: 0, files: 0,
   ready: false, readyInfo: null, held: null, kept: null, busySince: 0, busyTimer: null, peeked: false, peek: null };
 // What the shell's controls are drawn from (page_state.js): image, the image open ({name, source, W, H, um, umY,
 // info, planes, channels, Z, spacing}: Z slices, spacing µm between them or null) or null; opening, the one being read ({name}) or null; and the viewer's own fields.
@@ -641,7 +641,7 @@ async function start() {
     } catch (e) { console.warn("no cache for third-party files:", e); }
     offlineCopy.keepSite().then(diskBar, (e) => console.warn("no copy of the site for offline:", e));
   }
-  status("Ready. Load an image.");
+  status("Ready. Load an image."); statusBar(); diskBar();
   keepPython();
   if (navigator.deviceMemory <= LOW_GB) memoryTip();
 }
@@ -658,11 +658,17 @@ async function keepPython() {
       if (manifest?.id !== id || st.worker) return;
       if (!(await caches.match(u))) await (await fetch(u, { priority: "low" })).arrayBuffer();
     }
-  } catch (e) { console.warn("Python's files are not kept yet:", e); }
+    if (st.notHere) { st.notHere = false; status("Ready. Load an image."); }
+  } catch (e) {
+    // with no network, the study says it cannot run here yet; the network back, its files are kept then
+    if (manifest?.id === id && !st.worker && offlineCopy.offline()) { st.notHere = true; status(NOT_HERE); }
+    else console.warn("Python's files are not kept yet:", e);
+  }
 }
 // Python's thread, on the study the address names, in place of any before it
 function pythonWorker() {
   st.worker?.terminate();
+  st.heap = null; // Python's memory, unknown until it says (Python not started holds none)
   st.worker = new Worker("worker.js?study=" + encodeURIComponent(studyOf(location)), { type: "module" });
   st.worker.onmessage = (e) => onWorker(e.data);
   st.worker.onerror = (e) => onWorker({ type: "error", text: e.message || "Python stopped." });
@@ -2065,6 +2071,7 @@ addEventListener("popstate", () => swap());
 addEventListener(CONNECTION, (e) => {
   if (!e.detail.online) return;
   offlineCopy.keepSite().then(diskBar, () => {});
+  if (!st.worker) keepPython();
   if (!st.failed || st.ready || !st.worker || !manifest) return;
   st.failed = false; status("Loading Python in the background…"); $("#spin").classList.add("on");
   pythonWorker();

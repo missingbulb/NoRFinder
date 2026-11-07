@@ -935,7 +935,9 @@ nobody has decided: what the page does there is not a requirement yet.
   are kept on this device in the background, when they are not there yet, and nothing runs; the first Run starts
   Python from them, and the status bar names each stage (downloading, with the megabytes so far, only for what
   is not on this device; starting Python; reading and installing the packages; loading the study, in the study's
-  own words; then the algorithm's own progress). Later runs reuse the running Python. Python's importer asks the
+  own words; then the algorithm's own progress). Later runs reuse the running Python. With no network and the
+  files not all here, the status line says the study's Python is not on this device, plainly and not as an error,
+  before any Run; once the network is back they are kept, with no reload. Python's importer asks the
   site only for a module the study's folders hold on the release (its offline list), never for a name they
   lack, as scipy's and scikit-image's optional imports are. Test: `web-tests/test_python_files.py`,
   `web-tests/test_study_runs.py`.
