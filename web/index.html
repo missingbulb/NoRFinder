@@ -307,7 +307,7 @@
 <dialog id="usage-dlg" aria-labelledby="usage-title">
   <form method="dialog">
     <h2 id="usage-title">Resource Usage</h2>
-    <div class="tab-head"><div class="tab-row" role="tablist"><button type="button" role="tab" data-tab="storage">Storage</button><button type="button" role="tab" data-tab="memory">Memory</button><button type="button" role="tab" data-tab="network">Network</button><button type="button" role="tab" data-tab="cpu">CPU</button></div><label class="res-mode">In the status bar <select id="res-mode"><option value="hidden">Hidden always</option><option value="auto">Auto-hiding</option><option value="open">Always open</option></select></label></div>
+    <div class="tab-head"><div class="tab-row" role="tablist"><button type="button" role="tab" data-tab="storage">Storage</button><button type="button" role="tab" data-tab="memory">Memory</button><button type="button" role="tab" data-tab="network">Network</button><button type="button" role="tab" data-tab="cpu">CPU</button></div><label class="res-mode"><input type="checkbox" id="res-mode"> Autohide</label></div>
     <section role="tabpanel" data-tab="storage" hidden><div class="install-row"><span class="hint" id="offline-app-text"></span><button type="button" class="link" id="offline-install">Install as an app</button></div><p class="hint total" id="storage-total"></p><div id="storage-list" class="rows" data-log-as="an entry in the Storage tab"></div></section>
     <section role="tabpanel" data-tab="memory" hidden><p class="hint total" id="ram-total"></p><div id="ram-list" class="rows"></div></section>
     <section role="tabpanel" data-tab="network" hidden><p class="hint total" id="net-total"></p><div id="net-list" class="rows"></div></section>

@@ -436,7 +436,6 @@ html[data-motion=off] :is(#sb-res-items, #statusbar #sb-res-icon) { transition: 
 #usage-dlg .tab-head { display: flex; flex-wrap: wrap-reverse; align-items: center; gap: 0 12px; }
 #usage-dlg .tab-head .tab-row { flex: 1; }
 #usage-dlg .res-mode { font-size: 12px; color: var(--dim); white-space: nowrap; }
-#usage-dlg .res-mode select { font: inherit; }
 #sb-now { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 0 1 auto; overflow: hidden; }
 #sb-now #status { overflow: hidden; text-overflow: ellipsis; }
 /* too little room: what the page is doing and the four give way; the steps and the right-hand items stay whole */

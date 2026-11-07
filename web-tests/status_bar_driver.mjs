@@ -455,8 +455,8 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await page.click("#sb-res-icon");
   await page.waitForFunction(() => document.querySelector("#usage-dlg").open);
   if (shots) await page.screenshot({ path: path.join(shots, "12-resources-setting.png") });
-  const mode = await page.evaluate(() => ({ value: document.querySelector("#res-mode")?.value, options: [...document.querySelectorAll("#res-mode option")].map((o) => o.value) }));
-  await check(mode.value === "auto" && mode.options.join() === "hidden,auto,open", "clicking the icon opens the resources dialog, whose setting for the block offers hidden, auto-hiding and always open, auto-hiding chosen", mode);
+  const mode = await page.evaluate(() => { const b = document.querySelector("#res-mode"); return { type: b?.type, checked: b?.checked, label: b?.closest("label")?.textContent.trim(), selects: document.querySelectorAll("#usage-dlg .res-mode select").length }; });
+  await check(mode.type === "checkbox" && mode.checked && mode.label === "Autohide" && !mode.selects, "clicking the icon opens the resources dialog, whose one setting for the block is an Autohide checkbox, checked", mode);
   await page.keyboard.press("Escape"); await page.mouse.move(700, 300);
   await isOpen(false, "closed, the block is folded again");
 
@@ -495,22 +495,27 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await page.evaluate(() => { document.documentElement.dataset.motion = "on"; });
 
   // always open: as before; kept for the next visit
-  await page.click("#sb-res-icon"); await page.selectOption("#res-mode", "open"); await page.keyboard.press("Escape"); await page.mouse.move(700, 300);
-  await isOpen(true, "always open, the four show");
+  await page.click("#sb-res-icon"); await page.uncheck("#res-mode"); await page.keyboard.press("Escape"); await page.mouse.move(700, 300);
+  await isOpen(true, "Autohide unchecked, the four show always");
   await check((await block()).icon > 10, "beside their icon");
   await check(await page.evaluate(() => JSON.parse(localStorage.getItem("nor-resources"))) === "open", "the choice is kept for the next visit");
-  // hidden always: only the icon, which hovering and the network going do not unfold
-  await page.click("#sb-disk"); await page.selectOption("#res-mode", "hidden"); await page.keyboard.press("Escape");
-  await isOpen(false, "hidden always, only the icon shows");
-  await check((await block()).icon > 10, "the icon showing");
-  await page.hover("#sb-res-icon");
-  await isOpen(false, "and hovering it does not unfold the four");
-  await page.mouse.move(700, 300);
+  await page.click("#sb-disk"); await page.check("#res-mode"); await page.keyboard.press("Escape"); await page.mouse.move(700, 300);
+  await isOpen(false, "checked again, they fold");
+  await check(await page.evaluate(() => JSON.parse(localStorage.getItem("nor-resources"))) === "auto", "and auto-hiding is kept");
   await ctx.setOffline(true);
-  await isOpen(false, "nor does going offline", 2500);
+  await isOpen(false, "going offline does not unfold them", 2500);
   await check(!(await page.$("#sb-res-icon .no-net")), "the icon carries no offline mark: the online icon says so");
   await shot(page, "11-resources-hidden-offline");
   await ctx.setOffline(false);
+  await ctx.close();
+}
+// a Hidden always kept from before the setting became one checkbox reads as auto-hiding
+{
+  const { ctx, page } = await open("fixture", "hidden");
+  await page.hover("#sb-res-icon");
+  await page.waitForFunction(() => document.querySelector("#sb-res-items").getBoundingClientRect().width > 50);
+  await page.click("#sb-res-icon");
+  await check(await page.isChecked("#res-mode"), "a kept Hidden always unfolds on hover and shows Autohide checked");
   await ctx.close();
 }
 
