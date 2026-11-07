@@ -7,7 +7,7 @@ import zlib
 
 
 def ready():
-    return json.dumps(dict(threshold=128))
+    return json.dumps({})
 
 
 def read_png(data):
@@ -41,9 +41,6 @@ class Session:
     def __init__(self, path):
         with open(path, 'rb') as f:
             self.W, self.H, self.px = read_png(f.read())
-
-    def opened(self):
-        return json.dumps(dict(H=self.H, W=self.W, um=None, um_y=None, info=[['Pixels', f'{self.W} × {self.H}']])), self.px
 
     def call(self, action, args):
         if action == 'count':

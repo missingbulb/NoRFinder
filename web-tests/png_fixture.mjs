@@ -24,3 +24,12 @@ export function noisePng(W = 200, H = 200, seed = 1) {
   return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", head),
     chunk("IDAT", zlib.deflateSync(raw)), chunk("IEND", Buffer.alloc(0))]);
 }
+
+// an 8-bit grey PNG, its pixel at (x, y) value(x, y)
+export function greyPng(W, H, value) {
+  const raw = Buffer.alloc(H * (1 + W));
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) raw[y * (1 + W) + 1 + x] = value(x, y);
+  const head = Buffer.alloc(13);
+  head.writeUInt32BE(W, 0); head.writeUInt32BE(H, 4); head[8] = 8; head[9] = 0;
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", head), chunk("IDAT", zlib.deflateSync(raw)), chunk("IEND", Buffer.alloc(0))]);
+}

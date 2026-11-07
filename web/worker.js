@@ -4,7 +4,7 @@
 // Messages out while a study loads: progress {text}, ready {info}, error {text}; the rest are the bridge's.
 // A module worker: its imports are fetched with CORS, so the service worker can cache them.
 import { bridge } from "./bridge.js";
-import { CORE, PYODIDE, packagesOf, studyModules } from "./python_files.js";
+import { CORE, PYODIDE, NOT_HERE, packagesOf, studyModules } from "./python_files.js";
 import { tiffCodecs } from "./tiff_codecs.js";
 
 const say = (text) => post({ type: "progress", text });
@@ -23,6 +23,9 @@ const kept = (urls) => Promise.all(urls.map((u) => caches.match(u))).then((hits)
 // the modules the study before it imported from its own folders forgotten, so a name two studies share
 // imports the new one's.
 async function loadStudy(id) {
+  try { unloaded = null; await loading(id); } catch (e) { unloaded = e; throw e; }
+}
+async function loading(id) {
   const t0 = performance.now();
   if (!/^[\w-]+$/.test(id || "")) throw new Error(`no study "${id}"`);
   const studyBase = new URL(`../studies/${id}/`, self.location.href).href;
@@ -95,7 +98,6 @@ study = importlib.import_module(entry)
 
 // a download the network did not answer (a fetch or an import fails with a TypeError then, an answer that is
 // an error comes as an Error): what the page cannot run until it is back (req/shell/offline/default)
-const NOT_HERE = "This study's Python is not on this device, and the internet cannot be reached. Open the study once online, or use Make Available Offline in Manage storage.";
 // once one fails, the others still arriving say nothing over its error
 const offline = (p) => p.catch((e) => { stage = null; throw navigator.onLine && !(e instanceof TypeError) ? e : new Error(NOT_HERE); });
 // the study's own modules, fetched as they are imported: a request the network did not answer fails the import
@@ -143,8 +145,11 @@ function working(fn) {
   try { return fn(); } finally { busy.ms += Date.now() - busy.since; busy.since = null; post({ type: "busy" }); }
 }
 let answer;
+// the study's loading, once it fails: what each request after it answers, so none runs on a study half there
+let unloaded = null;
 async function handle(m) {
   if (m.type === "study") return loadStudy(m.id);
+  if (unloaded) throw unloaded;
   answer ||= bridge(py, post, manifest.progress);
   working(() => answer(m));
 }

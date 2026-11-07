@@ -151,7 +151,8 @@ nobody has decided: what the page does there is not a requirement yet.
   (0–255) shows in a small bubble above it, gone once it is let go. A double click on the slider puts
   the points back. The channels are added together, each in its colour. A channel's name, colour,
   description, whether it shows at first and its first points come from the study's `channels` for the
-  channel at that place, else from what the file says (the study's Python), else from its place: red,
+  channel at that place, the study's rule having put the file's channels in its order
+  (`req/shell/image/open`), else from what the file says, else from its place: red,
   green and blue, then more colours, a lone channel grey; a channel the file colours but does not name
   is named for its colour. The rows start over with every image, and before any image there are none (set by
   the owner on 2026-11-04). Test:
@@ -600,7 +601,7 @@ nobody has decided: what the page does there is not a requirement yet.
 
   Folded at first: the field in µm and px, the pixel size, the bit depth, the ImageJ series, the
   microscope and date when the file names them (the lab's ImageJ exports never do, and the box says
-  so), and the software that saved it (`studies/nor/tests/test_file_info.py`).
+  so), and the software that saved it (`web-tests/test_file_info.py`).
   </details>
 
 - `req/shell/image/minimap` A minimap hovers over the image, showing the part in view; drag, zoom and step by mouse.
@@ -628,6 +629,25 @@ nobody has decided: what the page does there is not a requirement yet.
   `web-tests/test_image_box_page.py`.
   </details>
 
+- `req/shell/image/open` The page reads and shows the image itself, the same way in every study; no study's code and no Python stands between a file and its view.
+  <details>
+
+  Set by the owner on 2026-11-07. The shell reads a TIFF (ImageJ hyperstacks, OME-TIFFs in one file and plain
+  TIFFs; uncompressed, LZW, Deflate or PackBits) and any image the browser decodes (PNG, JPEG), and opens it in
+  the study's viewer: its channels in the file's own order, each under the name the file gives it and in the
+  colour the file displays it in, a z-stack flattened (each pixel the brightest of every slice) and slice by
+  slice. Each channel's contrast is set once over the whole stack, never per slice, so signal that fades with
+  depth still looks faded: between its 0.5% quantile and its 99.8% one, or the upper quantile the study's
+  `view.upper` sets. What a study's `study.json` says of a channel (its name, description, whether it shows, its
+  black point, its colour, coloured by depth) is only where that channel's row starts, every one of them the
+  user's to change (`req/shell/channels/rows`). A file's display colours do not say which channel is which
+  (Vascular's originals show DAPI red, NoR's come in three arrangements), so a study may give a rule, in its page
+  part, that puts the file's channels in its own channels' order by what each holds, for these first settings
+  alone; a study with none takes the file's order (owner, 2026-11-07). A study whose `view.stretch` is false
+  shows an 8-bit image as stored, a photo as the camera took it. A file the shell cannot read says why in the
+  status line. Test: `web-tests/test_image_open.py`.
+  </details>
+
 - `req/shell/image/progressive` An image shows while it downloads.
   <details>
 
@@ -636,8 +656,8 @@ nobody has decided: what the page does there is not a requirement yet.
   time below. Once every byte is in, its colours wipe down over the grey; a file from the computer,
   or one already kept, fades up from black into its colours instead, quickly. No pixel ever shows a
   colour its final one lacks: each is grey, black, or a darker shade of the colour it ends in, and
-  the colours it ends in are the brightness Python draws, so Python's own drawing, which replaces it
-  once the image is read, changes nothing visible. Any other image shows the byte count.
+  the colours it ends in are the brightness the page draws once the image is read (`req/shell/image/open`), so
+  that drawing, which replaces it, changes nothing visible. Any other image shows the byte count.
   </details>
 
 - `req/shell/image/proportions` No image is ever drawn out of its proportions.
@@ -738,7 +758,7 @@ nobody has decided: what the page does there is not a requirement yet.
   after. Load sits at the foot, not in the box's title, so the title keeps its place whether the box is folded or
   open. Once an image is open, Unload stands beside Load and clears the page back to before any image:
   no image, no minimap, the steps starting over at Load image, the boxes folded as at first, and the
-  study starting over too, its panels as they were before any image; Python lets the image go. Test:
+  study starting over too, its panels as they were before any image; Python, if it has started, lets the image go. Test:
   `web-tests/test_image_box_page.py`.
   </details>
 
@@ -905,17 +925,29 @@ nobody has decided: what the page does there is not a requirement yet.
   BigTIFF, and a part over 4 GB. Test: `web-tests/test_split.py`, `web-tests/test_image_edit.py`.
   </details>
 
-- `req/shell/python/background-load` No waiting to start: Python loads in the background from the moment the page opens.
+- `req/shell/python/file-bytes` A study's algorithms run on the image file as it is stored, never on what the viewer shows.
   <details>
 
-  The user picks an image meanwhile, which opens as soon as Python is ready. Its packages download
-  while Python itself starts, and the status bar names each stage (downloading, with the megabytes
-  so far; installing; loading the study, in the study's own words; ready). Python already on this
-  device is never said to download: the status bar says Starting Python, then reading the packages
-  (owner, 2026-11-07). Python's importer asks the site only for a module the study's folders hold on the
-  release (its offline list), never for a name they lack, as scipy's and scikit-image's optional imports
-  are. Until an image is loaded, Load shines, and the study's boxes are folded
-  (`req/shell/left-bar/folding`). Test: `web-tests/test_python_files.py`.
+  Set by the owner on 2026-11-07. The study's Python opens the file's own bytes, exactly as they came from this
+  computer, Google Drive or the device's copy, and every algorithm reads only what it reads from them. Nothing the
+  viewer does (its contrast, the channels shown, the black and white points, the 3D view) reaches Python, so the
+  same file gives the same result however it is viewed. Test: `web-tests/test_study_runs.py`.
+  </details>
+
+- `req/shell/python/on-run` Python starts only when the user runs an algorithm.
+  <details>
+
+  Set by the owner on 2026-11-07, replacing Python's start at the page's opening: nothing in viewing an image
+  needs Python (`req/shell/image/open`). While the page is open, the files Python and the study's packages need
+  are kept on this device in the background, when they are not there yet, and nothing runs; the first Run starts
+  Python from them, and the status bar names each stage (downloading, with the megabytes so far, only for what
+  is not on this device; starting Python; reading and installing the packages; loading the study, in the study's
+  own words; then the algorithm's own progress). Later runs reuse the running Python. With no network and the
+  files not all here, the status line says the study's Python is not on this device, plainly and not as an error,
+  before any Run; once the network is back they are kept, with no reload. Python's importer asks the
+  site only for a module the study's folders hold on the release (its offline list), never for a name they
+  lack, as scipy's and scikit-image's optional imports are. Test: `web-tests/test_python_files.py`,
+  `web-tests/test_study_runs.py`.
   </details>
 
 - `req/shell/python/one-call` Python is reached through one generic call.
@@ -1377,9 +1409,9 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/shell/viewer-3d` A study whose viewer is `image3d` shows a z-stack in 3D, turning it by mouse; its channel rows drive it.
   <details>
 
-  Set by the owner on 2026-10-31, moving the 3D MicroViewer into the shell. The study's Python
-  returns a stack as its flattened planes, which the 2D view shows unchanged, followed by every
-  slice of every channel (`Z` in its meta). A stack is shown in 3D only, with no switch to a flat view
+  Set by the owner on 2026-10-31, moving the 3D MicroViewer into the shell. The page reads a stack as its
+  flattened planes, which the 2D view shows unchanged, and every slice of every channel
+  (`req/shell/image/open`). A stack is shown in 3D only, with no switch to a flat view
   (owner, 2026-11-03: a 2D image makes no sense in 3D, nor a 3D one in 2D); only where the browser lacks
   WebGL2 does the flattened stack show instead. The 3D view casts rays through the stack in the browser (WebGL2), looking straight down
   as the microscope does. Dragging turns it about the screen's two axes, on past looking straight
@@ -1449,7 +1481,7 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/shell/waiting/visible` Visible waiting: a spinner and the elapsed time, and a sweeping light while the study works.
   <details>
 
-  While an image waits for Python, the page shows a spinner and the elapsed time; while a study's
+  While an image is read, the page shows a spinner and the elapsed time; while a study's
   action runs (for NoR, a finder), a photocopier's light sweeps back and forth over the image, with
   what it is doing and the elapsed time below.
   </details>

@@ -3,9 +3,9 @@
 // to the site's key and the signed-in user's token alike;
 // the signed-in user's token approved for ROOT alone, and for the folders and files the page itself makes; the
 // fixture study given ROOT as its root; a stand-in worker answering ANSWERS
-// (tests/test_study_runs.py), which keeps the last file it was handed as self.lastOpen, and opens a study's image as
-// ANSWERS' studies[id] says where it says so, a file its named[file's name] names as that says, and answers the calls
-// of a study ANSWERS' live names from that study's own Python (study_calls.py). Exits 2 when it cannot run.
+// (tests/test_study_runs.py), which keeps the last file it was handed as self.lastOpen (the page reads and shows
+// images itself), and answers the calls of a study ANSWERS' live names from that study's own Python (study_calls.py). Exits 2 when it cannot run.
+import { EARLY } from "./early_messages.mjs";
 import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
 import { execSync, spawn } from "node:child_process";
@@ -78,8 +78,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {}, 
     if (m.type === "study") { id = m.id; postMessage({ type: "ready", info: A.ready[id], heap: 0, files: 0 }); }
     else if (m.type === "open") {
       self.lastOpen = { name: m.name, bytes: new Uint8Array(m.bytes) };
-      const own = A.studies?.[id]?.named?.[m.name] ?? (A.studies?.[id]?.images ? A.studies[id] : null), images = bytes(own ? own.images : A.images);
-      postMessage({ type: "opened", meta: own ? own.opened : A.opened, images }, [images.buffer]);
+      postMessage({ type: "held" });
     }
     // a study ANSWERS names as live answers from its own Python, on the file it was handed last
     else if (m.type === "call" && A.live?.includes(id)) {
@@ -115,7 +114,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {}, 
       q.on("data", (c) => chunks.push(c)).on("end", async () => { send("application/json", await ask(Buffer.concat(chunks).toString())); setTimeout(() => calls--, 200); });
       return;
     }
-    if (u === "/web/worker.js") return send("text/javascript", STAND_IN);
+    if (u === "/web/worker.js") return send("text/javascript", EARLY + STAND_IN);
     if (u === "/web/config.js") return send("text/javascript", CONFIG);
     if (u === "/web/vendor/wheels.json") return send("application/json", "[]");
     if (u === "/studies/fixture/study.json") return send("application/json", JSON.stringify(fixture));

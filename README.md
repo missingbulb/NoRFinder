@@ -29,8 +29,8 @@ All of it runs in your browser: images are analysed on your own machine, never u
 server. The image analysis is the
 study's own Python code (`studies/nor/detection/`), run under Pyodide (CPython compiled to WebAssembly)
 with numpy, scipy and scikit-image, inside a Web Worker so the page stays responsive. A small
-bridge passes the image in and the candidates and filter results back out. The JavaScript does
-everything that isn't image analysis: drawing the image and its overlays, the item views, the
+bridge passes the image's file in and the candidates and filter results back out; Python starts only when an
+algorithm runs. The JavaScript does everything that isn't image analysis: reading and drawing the image and its overlays, the item views, the
 measurement editors, the summary statistics, the CSVs, the Drive browser and your saved settings.
 The site is plain static files served by Cloudflare, with no server and no build framework. Signing in
 with Google is optional: Google signs you in, in its own window, and gives the page a token for about an
@@ -45,7 +45,7 @@ it to save in their study's Drive folder. It counts
 visits with Cloudflare Web Analytics, which sets no cookies, stores nothing on your device and does
 not follow you across sites; it receives the page's address, the page that
 linked to it and your browser's details, never your images or results. Python and
-its packages, about 50 MB, download on the first visit and are cached for 30 days. A study that reads printed text also downloads the engines and models that read it from jsDelivr, the first time it reads, and reads on your machine too. Images opened
+its packages, about 50 MB, download in the background on the first visit and are cached for 30 days. A study that reads printed text also downloads the engines and models that read it from jsDelivr, the first time it reads, and reads on your machine too. Images opened
 from Google Drive are kept in your browser too, so they open again without a download, unless you
 turn off Auto-save images in Settings, and so is what each Drive folder you browsed holds, so the Drive dialog opens
 without the internet; in Chrome and Edge the Image Viewer also keeps the browser's reference to each file you

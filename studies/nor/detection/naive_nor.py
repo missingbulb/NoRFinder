@@ -39,46 +39,6 @@ def um_per_px(page, tag='XResolution'):
     return 1 / res.value[0] * res.value[1] if res and res.value[0] else None
 
 
-def pixel_height(path):
-    """The pixel's height in µm, which may differ from its width; None when the file does not say."""
-    if not path.lower().endswith(('.tif', '.tiff')):
-        return None
-    import tifffile
-    with tifffile.TiffFile(path) as t:
-        return um_per_px(t.pages[0], 'YResolution')
-
-
-def file_info(path):
-    """What the file says about the image, as [label, text] rows for the page; a fact the file lacks has no row.
-    The lab's TIFFs are ImageJ exports: they carry the scale and the series name, never the microscope."""
-    rows = []
-    if not path.lower().endswith(('.tif', '.tiff')):
-        with Image.open(path) as f:
-            return [['Field', f'{f.width} × {f.height} px'], ['Depth', f'8-bit {f.mode}']]
-    import tifffile
-    with tifffile.TiffFile(path) as t:
-        p, ij = t.pages[0], t.imagej_metadata or {}
-        H, W = p.shape[-2:]
-        x, y = um_per_px(p), um_per_px(p, 'YResolution')
-        tag = lambda name: str(p.tags[name].value).strip() if name in p.tags else ''
-        rows.append(['Field', f'{W * x:.1f} × {H * y:.1f} µm ({W} × {H} px)' if x and y else f'{W} × {H} px'])
-        if x and y:
-            rows.append(['Pixel', f'{x:.4f} µm' if x == y else f'{x:.4f} × {y:.4f} µm'])
-        rows.append(['Depth', f'{p.bitspersample}-bit'])
-        series = {l.split(' - ', 1)[1] for l in ij.get('Labels') or [] if ' - ' in l}
-        if len(series) == 1:
-            rows.append(['Series', series.pop()])
-        scope = ' '.join(v for v in (tag('Make'), tag('Model')) if v)
-        if scope:
-            rows.append(['Microscope', scope])
-        if tag('DateTime'):
-            rows.append(['Date', tag('DateTime')])
-        saved = tag('Software') or (f"ImageJ {ij['ImageJ']}" if ij.get('ImageJ') else '')
-        if saved:
-            rows.append(['Saved by', saved])
-    return rows
-
-
 def blob_area(c):
     """Mean area of the brightest 3% after a sigma-2 blur, in connected pieces: large for nuclei."""
     b = ndi.gaussian_filter(c, 2); m = b > np.quantile(b, .97)

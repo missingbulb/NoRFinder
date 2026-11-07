@@ -1,4 +1,4 @@
-"""req/shell/python/background-load: Python's importer asks the site only for a module the study's folders hold on the
+"""req/shell/python/on-run: Python's importer asks the site only for a module the study's folders hold on the
 release, as its offline list names them (studyModules, web/python_files.js), run under Node."""
 import json
 import os

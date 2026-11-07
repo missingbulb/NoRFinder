@@ -5,6 +5,7 @@
 // req/shelves/truth/task (one book at a time, Back, a corner dragged, a missed book drawn, Submit's export). The real
 // engines' readings are test_reading.py's. Exits 1 on a failed check, 2 when it cannot run.
 //   node studies/shelves/tests/shelves_page_driver.mjs STUDIES
+import { noisePng } from "../../../web-tests/png_fixture.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import fs from "node:fs";
@@ -35,7 +36,7 @@ postMessage({ type: "ready", info: {} });
 const size = (c) => [Math.round(Math.hypot(c[1][0] - c[0][0], c[1][1] - c[0][1])), Math.round(Math.hypot(c[3][0] - c[0][0], c[3][1] - c[0][1]))];
 onmessage = ({ data: m }) => {
   if (m.type === "study") postMessage({ type: "ready", info: {} });
-  else if (m.type === "open") { const images = new Uint8Array(3 * W * H).fill(120); postMessage({ type: "opened", meta: { W, H, um: null, um_y: null, info: [] }, images }, [images.buffer]); }
+  else if (m.type === "open") postMessage({ type: "held" });
   else if (m.type === "call" && m.action === "find") postMessage({ type: "result", action: "find", meta: { books: BOOKS }, bytes: null });
   else if (m.type === "call" && m.action === "straighten") {
     const sizes = m.args.corners.map(size), bytes = new Uint8Array(sizes.reduce((a, [w, h]) => a + w * h * 4, 0)).fill(200);
@@ -74,7 +75,7 @@ async function open(role, seed = {}) {
   page.setDefaultTimeout(10000);
   await page.goto(origin + "/web/shelves");
   await page.waitForFunction(() => window.$ && /^Ready/.test($("#status").textContent));
-  await page.setInputFiles("#file", { name: "shelf.png", mimeType: "image/png", buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47]) });
+  await page.setInputFiles("#file", { name: "shelf.png", mimeType: "image/png", buffer: noisePng(W, H) });
   await page.waitForFunction(() => !$("#bs-find").disabled);
   await page.evaluate(() => { $("#notice").hidden = true; });
   return page;

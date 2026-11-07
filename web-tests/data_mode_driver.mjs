@@ -99,9 +99,9 @@ await page.click('#data-tree .tree-image:has(.name:text-is("a flat.tif"))');
 await page.waitForFunction(() => st.fileName === "a flat.preview.tif" && !$("#load-original").hidden);
 await check(await page.evaluate(() => shellForTests.page.get("image").source.kind === "preview"), "an image chosen opens from its preview, with Load Original");
 await shot("4-preview");
-// what reached Python, for the test to open as the study would
-const got = await page.workers()[0].evaluate(() => ({ name: self.lastOpen.name, bytes: Array.from(self.lastOpen.bytes) }));
-await check(got.name === "a flat.preview.tif", "Python is handed the preview as a TIFF", got.name);
+// the file the page opened, which is what Python is handed at a Run, for the test to open as the study would
+const got = await page.evaluate(() => ({ name: st.kept.name, bytes: Array.from(new Uint8Array(st.kept.bytes)) }));
+await check(got.name === "a flat.preview.tif", "the preview opens as a TIFF, the file Python is handed", got.name);
 fs.writeFileSync(out + ".preview.tif", Buffer.from(got.bytes));
 await page.click("#load-original");
 // the name is set as the open starts, the image's source once it is done

@@ -84,7 +84,9 @@ const SEED = {
 // use and one only NoR Finder does, as it is served here; the build's vendored wheels, none here
 const { PYODIDE, CORE } = await import(path.join(repo, "web", "python_files.js"));
 const LOCK = { packages: Object.fromEntries(["numpy", "scipy", "scikit-image", "lazy-loader", "packaging", "pillow", OWN_PACKAGE].map((n) => [n, { file_name: `${n}-1-py3-none-any.whl`, sha256: "" }])) };
-const SHARED = ["numpy", "pillow"].map((n) => PYODIDE + LOCK.packages[n].file_name), OWN = PYODIDE + LOCK.packages[OWN_PACKAGE].file_name;
+// numpy, which Vascular Measurements uses too; pillow, which NoR Finder alone does among the studies listed
+const SHARED = ["numpy"].map((n) => PYODIDE + LOCK.packages[n].file_name), OWN = PYODIDE + LOCK.packages[OWN_PACKAGE].file_name;
+const PILLOW = PYODIDE + LOCK.packages.pillow.file_name;
 // the studies the build lists, as it lists them
 const LISTED = JSON.stringify(fs.readdirSync(path.join(repo, "studies")).filter((d) => fs.existsSync(path.join(repo, "studies", d, "study.json")))
   .map((d) => JSON.parse(fs.readFileSync(path.join(repo, "studies", d, "study.json")))).filter((m) => m.visibility === "listed")
@@ -126,8 +128,8 @@ const shot = async (name, sel) => { if (shots) await page.locator(sel).screensho
 try {
   await page.goto(origin + "/web/index.html?study=nor");
   await page.waitForFunction(() => $("#title").textContent);
-  // what the service worker keeps, as it keeps it: the body, stamped with when it was kept: Python itself, two
-  // packages every study uses and one only NoR Finder does; and two images kept from Drive, one in NoR Finder
+  // what the service worker keeps, as it keeps it: the body, stamped with when it was kept: Python itself, a
+  // package two studies use and two only NoR Finder does; and two images kept from Drive, one in NoR Finder
   await page.evaluate(async ({ core, shared, own }) => {
     const c = await caches.open("third-party-v1"), at = { "x-nor-cached-at": String(Date.now()) };
     for (const u of [...core, ...shared]) await c.put(u, new Response(new Uint8Array(1024), { headers: at }));
@@ -135,7 +137,7 @@ try {
     const im = await caches.open("nor-images-v1"), url = (id) => new URL("drive-image/" + id, location.href).href;
     await im.put(url("ID1"), new Response(new Uint8Array(2048), { headers: { "x-nor-name": "slide%201.tif", "x-nor-study": "nor" } }));
     await im.put(url("ID9"), new Response(new Uint8Array(2048), { headers: { "x-nor-name": "old.tif" } }));
-  }, { core: CORE, shared: SHARED, own: OWN });
+  }, { core: CORE, shared: [...SHARED, PILLOW], own: OWN });
 
   // req/shell/offline/mark: a study whose Python is all here is marked in the switcher, green, a state rather than a
   // prompt: a tiny tooltip and no question-mark pointer, what it means in full said to assistive tech
@@ -181,14 +183,14 @@ try {
   check(clears.length && clears.every((t) => t === "Clear cache"), `each section's button to clear it says Clear cache: ${clears}`);
   const titles = await page.$$eval("#storage-list .group > summary", (ss) => ss.map((s) => ({ text: s.textContent, mark: !!s.querySelector(".offline-mark") })));
   check(titles[0].mark && !titles[1].mark && /Image Viewer/.test(titles[0].text) && /NoR Finder/.test(titles[1].text), `a study's title says whether it is available offline: ${JSON.stringify(titles)}`);
-  check(names("study:nor", "python").join() === OWN_PACKAGE && /300 KB/.test(g["study:nor"].find((e) => e.kind === "python").size), `a study's own Python packages, by package: ${JSON.stringify(g["study:nor"])}`);
+  check(names("study:nor", "python").join() === `${OWN_PACKAGE},pillow` && /300 KB/.test(g["study:nor"].find((e) => e.kind === "python").size), `a study's own Python packages, by package: ${JSON.stringify(g["study:nor"])}`);
   check(names("study:nor", "image").sort().join() === "old.tif,slide 1.tif", `the images kept in a study, by name, one kept before studies were told apart with the study on show: ${names("study:nor", "image")}`);
   const pics = g["study:nor"].filter((e) => e.kind === "thumb");
   check(pics.length === 1 && /2 images/.test(pics[0].what), `the study's thumbnails, one record for all: ${JSON.stringify(pics)}`);
   check(names("study:nor", "selections").sort().join() === "other.tif,slide 1.tif", `the study on show's selections, by image: ${names("study:nor", "selections")}`);
   const slide = g["study:nor"].find((e) => e.kind === "selections" && e.name === "slide 1.tif");
   check(slide && /keep/i.test(slide.what) && /mask/i.test(slide.what), `an image's row says what is kept for it: "${slide && slide.what}"`);
-  check(names("shared").sort().join() === "Python itself,numpy,pillow", `what two studies or more use is shared: ${names("shared")}`);
+  check(names("shared").sort().join() === "Python itself,numpy", `what two studies or more use is shared: ${names("shared")}`);
   const all = Object.values(g).flat();
   check(!all.some((e) => ["Theme", "Last Google Drive link", "Filter settings"].includes(e.name)), "no setting is listed: Settings keeps them");
   check(!all.some((e) => e.name === "acme-key"), "what nobody names is not listed");
@@ -218,7 +220,7 @@ try {
     selections: Object.keys(localStorage).filter((x) => x.startsWith("nor-edits-v1:")).length, other: localStorage.getItem("acme-key") }), { own: OWN, shared: SHARED });
   check(!left.own && !left.image && !left.selections && left.shared && left.other === "x", `a study's Clear cache deletes its own packages, images and selections, and keeps the shared and what nobody names: ${JSON.stringify(left)}`);
   g = await groups();
-  check(names("shared").length === 3, "and leaves the shared section alone");
+  check(names("shared").length === 2, "and leaves the shared section alone", names("shared"));
   await page.click("#usage-dlg button[value=close]");
 
   // req/shell/account/settings: the settings kept on this device only are listed in Settings, each to clear

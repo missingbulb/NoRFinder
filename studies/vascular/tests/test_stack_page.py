@@ -1,15 +1,23 @@
-"""The vascular study's Python entry (py/vascular.py) returns a z-stack for the shell's 3D viewer: each channel
-flattened (the brightest value over every slice), then every slice, CD31 first, each channel scaled by one window
-over the whole stack (req/vascular/stack-view, req/shell/viewer-3d)."""
+"""The page reads a vascular z-stack for the shell's 3D viewer as the study asks (web/image_open.js with the study's
+view and its channel order, web/channel_order.js, under Node): each channel flattened (the brightest value over
+every slice), then every slice, CD31 first, each channel scaled by one window over the whole stack
+(req/vascular/stack-view, req/shell/viewer-3d, req/shell/image/open)."""
 import json
 import os
+import pathlib
 import sys
 
 import numpy as np
+import pytest
 import tifffile
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'py'))
-import vascular
+pytestmark = pytest.mark.full
+
+STUDY = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+sys.path.insert(0, os.path.join(STUDY, '..', '..', 'web-tests'))
+from image_open import open_image
+
+MANIFEST = json.load(open(os.path.join(STUDY, 'study.json')))
 
 
 def stack_file(path, a, axes, **extra):
@@ -18,12 +26,10 @@ def stack_file(path, a, axes, **extra):
 
 
 def opened(path):
-    meta, data = vascular.Session(path).opened()
-    meta = json.loads(meta)
-    C, Z, H, W = len(meta['channels']), meta['Z'], meta['H'], meta['W']
-    raw = np.frombuffer(data, np.uint8)
-    assert raw.size == C * H * W * (1 + Z), 'the flat planes, then every slice of every channel'
-    return meta, raw[:C * H * W].reshape(C, H, W), raw[C * H * W:].reshape(C, Z, H, W)
+    """The meta, the flat planes and the slices, each channel under the name the study gives the one at its place."""
+    meta, flat, vol = open_image(pathlib.Path(path).parent, path, view=MANIFEST['view'], order=os.path.join(STUDY, 'web', 'channel_order.js'))
+    meta['channels'] = [{**c, 'name': s['name']} for c, s in zip(meta['channels'], MANIFEST['channels'])]
+    return meta, flat, vol
 
 
 def test_a_two_channel_original_comes_cd31_first_flattened_then_slice_by_slice(tmp_path):

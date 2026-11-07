@@ -30,9 +30,10 @@ A study is a folder with a `study.json`, and a `requirements.md` for what its pa
   `"unlisted"` (only by its address; the fixture) or `{"accounts": [email, …]}` (the switcher offers it only while one
   of those Google accounts is signed in). It hides a study from the page, not its files from the network.
 - `viewer` — the viewer it is shown in (`image2d`, or `image3d` for z-stacks: the stack in 3D
-  only, no switch to a flat view), and optionally `view`, what the 3D view opens with: `render` (`brightest` or
-  `surface`), `spacing` (µm between slices when the file does not say) and
-  `spacingSource` (who stated it).
+  only, no switch to a flat view), and optionally `view`, how an image opens: `upper` (the quantile each
+  channel's contrast tops out at, 0.998 when it says none), `stretch` (`false` to show an 8-bit image as stored, a
+  photo), and for the 3D view `render` (`brightest` or `surface`), `spacing` (µm between slices when the file does
+  not say) and `spacingSource` (who stated it).
 - `python` — `paths` (folders, relative to the study, its modules are imported from), `entry` (the
   module the page imports), `packages` (from Pyodide's own set) and `wheels` (from PyPI, vendored
   by `dev/tools/build/build.py`).
@@ -52,12 +53,14 @@ A study is a folder with a `study.json`, and a `requirements.md` for what its pa
   `GT curated`, `GT submissions`, `GT`; `web/study_root.js`). The Drive dialog browses the data folder alone, with no
   link to paste. Who holds a role is Drive's sharing: writing to the root makes a Study Manager, to submissions a Ground
   Truth Tagger. A study's panels step aside while Data Management is open.
-- `channels` — what the study says of the image's channels, by place: `name`, `colour` (`#rrggbb`),
+- `channels` — what the study says of the image's channels, by place, as starting points the user changes: `name`, `colour` (`#rrggbb`),
   `shown` at first, and optionally `depth` (in 3D, coloured by depth from the start: `true`, or a palette's name), `about` (the (?)'s description, at most 100 words) and `black` and
   `white` (its first points, 0–255). A channel it leaves out takes what the file says, then its place
   (red, green, blue…); the Image Viewer names none.
-- `progress` — the status line while Python installs (`install`), loads the study (`load`), opens an
-  image (`open`) and runs each action (by its name).
+- `progress` — the status line while Python installs (`install`), loads the study (`load`), takes the
+  image's file (`open`) and runs each action (by its name).
+- `generated` — optional, files under `web/` the site's build writes from the study's own scripts (output path:
+  script), for what the page needs before any Python (Vascular's algorithm list).
 - `groundTruth` — for a GT or PostGT study: its `button`. Its folders are made by Data Management's Set up ground
   truth, under the root; the layout and the reader's rule are `web/truth_folders.js`'s.
 - `driveThumbs` — optional, the folder of ready-made thumbnails for the Google Drive dialog.
@@ -65,12 +68,15 @@ A study is a folder with a `study.json`, and a `requirements.md` for what its pa
 The shell's controls draw from one page state (`web/page_state.js`: the image open, the minimap) and
 change only it, never each other; a study reaches it as `shell.page`.
 
-Its Python entry module offers `ready()` (JSON, what the page needs before any image) and
-`Session(path)` with `opened()` (JSON meta — `W`, `H`, `um` and `um_y` (the pixel's width and
-height in µm, each null when the file does not say), `info`, and optionally `channels`, what the file
-says of each channel, `[{name, colour}]` — and the viewer's image bytes, one 8-bit plane per channel:
-as many as `channels` lists, else as the study's `channels`; for a stack in `image3d`, `Z` in the meta and every slice of every channel after those planes, channel by channel, and `spacing`, µm between slices or null; any bytes after them the study's own) and `call(action, args)` (JSON result and optional bytes). The shell forwards
-every call and knows none of their meanings; Unload has it let the open image go. `mount(shell)` returns the study's hooks; the list, and
+The shell reads and shows every image itself (`web/image_open.js`, `req/shell/image/open`): TIFFs and what the
+browser decodes, each channel under the file's name and colour, a stack flattened and slice by slice; a study's
+module may return `order(im)`, the file's channel for each of its own channels, where display colours do not say
+which is which (Vascular's `web/channel_order.js`, NoR's role rule). Python starts only at the first `call`
+(`req/shell/python/on-run`), its files kept on the device in the background meanwhile, and is handed the image's file
+as stored (`req/shell/python/file-bytes`). Its entry module offers `ready()` (JSON, what Python tells the page once
+loaded; what the page needs before any Python ships beside the page part instead), `Session(path)`, which reads
+what its algorithms need from the file, and `call(action, args)` (JSON result and optional bytes). The shell
+forwards every call and knows none of their meanings; Unload has it let the open image go. `mount(shell)` returns the study's hooks; the list, and
 what `shell` offers, heads `web/shell.js`, and the viewer's own heads `web/viewer2d.js`; a study draws over the 3D
 view through `shell.viewer.three` (its camera, the stack's place in it and its hooks, listed where `web/viewer3d.js` builds it). The header's
 switcher swaps studies in place, in the same page and the same Python, so a study must be able to

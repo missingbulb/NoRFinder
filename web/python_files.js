@@ -1,6 +1,9 @@
 // What a study's Python downloads: Python itself, from Pyodide's CDN, and the packages its study.json names, from
 // Pyodide's own set and the wheels the build vendors. The worker downloads them; making a study available offline keeps them.
 export const PYODIDE = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/";
+// what the page says when a study's Python is needed and not all on this device with no network to fetch it
+// (req/shell/offline/default)
+export const NOT_HERE = "This study's Python is not on this device, and the internet cannot be reached. Open the study once online, or use Make Available Offline in Manage storage.";
 // Python itself: what loadPyodide fetches before any package
 export const CORE = ["pyodide.mjs", "pyodide.asm.mjs", "pyodide.asm.wasm", "python_stdlib.zip", "pyodide-lock.json"].map((f) => PYODIDE + f);
 

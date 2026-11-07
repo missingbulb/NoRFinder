@@ -77,7 +77,7 @@ def test_it_keeps_the_previews_still_valid(tmp_path):
 
 @pytest.mark.skipif(not NODE, reason='node missing')
 def test_a_stacks_preview_opens_in_3d(tmp_path):
-    """req/shell/data/preview-images: the TIFF Data Management hands Python for a stack's preview opens in Vascular Measurements' own reader
+    """req/shell/data/preview-images: the TIFF Data Management writes for a stack's preview opens in the page's own reader
     as a stack: its mini-volume's slices and channels, the slice spacing scaled to them."""
     images, tiffs = tmp_path / 'images', tmp_path / 'tiffs'
     images.mkdir()
@@ -86,9 +86,7 @@ def test_a_stacks_preview_opens_in_3d(tmp_path):
     stack[:, 0, 100:200, 50:90] = 3000
     tifffile.imwrite(images / 'z.tif', stack, imagej=True, metadata={'axes': 'ZCYX', 'spacing': 0.5})
     write(images, tmp_path / 'p.tiff', tiffs=tiffs)
-    sys.path.insert(0, os.path.join(REPO, 'studies', 'vascular', 'py'))
-    import vascular
-    meta, _ = vascular.Session(str(tiffs / 'z.preview.tif')).opened()
-    meta = json.loads(meta)
+    from image_open import open_image
+    meta, _, _ = open_image(tmp_path, str(tiffs / 'z.preview.tif'))
     assert (meta['Z'], meta['W'], meta['H']) == (24, 83, 96), meta
     assert meta['spacing'] == pytest.approx(0.5 * 40 / 24), meta

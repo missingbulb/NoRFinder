@@ -6,12 +6,12 @@
 // refuses a choice larger than the room left, and downloads the study's Python and images, nothing from Drive
 // before Download; the page names no app manifest until Install as an app is clicked, and then the browser finds
 // the site installable.
-// A first visit whose network drops as the study's modules load says so plainly.
+// A first visit whose network drops as the study's modules load, at its first Run, says so plainly.
 // Then req/shell/offline/default, with the network gone (the browser offline and the server refusing): the page opens at its address
 // and the Python already on this device runs; the status bar's online icon shows offline; what needs the network is held; a
-// prepared study runs, and the Drive dialog lists the images kept here and opens one; a study whose Python is not
-// here says so, and once the network is back loads its Python and reads its folder in an open Make available
-// offline, with no reload; and the network going and coming back mid-session, the browser saying online all
+// prepared study opens, and the Drive dialog lists the images kept here and opens one; a study whose Python is not
+// here says so before any Run, and once the network is back keeps its Python and reads its folder in an open Make
+// available offline, with no reload (req/shell/python/on-run); and the network going and coming back mid-session, the browser saying online all
 // along, shows, an open Drive dialog greying what is not kept, and coming back shows within seconds though a release landed
 // meanwhile is still being copied.
 // TIFF: a small z-stack the vascular study can open. Optional SHOTS: a directory for screenshots.
@@ -26,6 +26,7 @@ import path from "node:path";
 import { ENGINE, LAUNCH } from "./engine.mjs";
 import { pressDrive, pickRecent } from "./drive_open.mjs";
 import { until } from "./page_until.mjs";
+import { greyPng } from "./png_fixture.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -99,7 +100,15 @@ const page = ctx.pages()[0] || await ctx.newPage();
 page.on("pageerror", (e) => console.log("pageerror:", e.message));
 page.on("console", (m) => { if (m.type() === "error" || m.type() === "warning") console.log(`console ${m.type()}:`, m.text()); });
 page.on("worker", (w) => w.on("console", (m) => { if (m.type() === "error" || m.type() === "warning") console.log(`worker ${m.type()}:`, m.text()); }));
-const ready = (timeout = 180000) => page.waitForFunction(() => window.st?.ready, null, { timeout });
+// the fixture's image, two bright squares, and a Count on it, which starts the study's Python (req/shell/python/on-run)
+const SQUARES = greyPng(80, 60, (x, y) => ((x >= 10 && x < 20 && y >= 10 && y < 20) || (x >= 50 && x < 70 && y >= 30 && y < 45) ? 220 : 0));
+async function count(p, timeout = 180000) {
+  await p.waitForFunction(() => window.$ && /^Ready/.test($("#status").textContent), null, { timeout: 60000 });
+  await p.setInputFiles("#file", { name: "squares.png", mimeType: "image/png", buffer: SQUARES });
+  await p.waitForFunction(() => !$("#fx-count").disabled, null, { timeout: 60000 });
+  await p.evaluate(() => { $("#fx-result").textContent = ""; $("#fx-count").click(); });
+}
+const counted = (timeout = 180000) => page.waitForFunction(() => /pixels/.test($("#fx-result").textContent), null, { timeout });
 const statusText = () => page.textContent("#status");
 
 try {
@@ -109,19 +118,20 @@ try {
     const fresh = await pw[ENGINE].launch(LAUNCH), first = await fresh.newPage();
     pyDown = true;
     await first.goto(origin + "/app/fixture");
+    await count(first);
     // the status and the spinner read at the one moment the failure is told: the site still answering, the page
     // soon takes the network as back and tries the Python again, which is its own, later state
     const seen = await first.waitForFunction(() => {
       const s = document.querySelector("#status");
       return /not on this device|Error/.test(s.textContent) && { said: s.textContent, red: s.classList.contains("err"), spin: document.querySelector("#spin").classList.contains("on") };
     }, null, { timeout: 180000 }).then((h) => h.jsonValue(), () => ({ said: "", red: false, spin: true }));
-    check(/not on this device/i.test(seen.said) && !/Traceback|Error/.test(seen.said) && !seen.red, "the network dropping while the study's modules load says so plainly, not as an error: " + seen.said.slice(0, 200));
+    check(/not on this device/i.test(seen.said) && !/Traceback|Error/.test(seen.said) && !seen.red, "the network dropping while the study's modules load says so plainly, not as an error: " + seen.said.slice(-300));
     check(!seen.spin, "and the spinner stops: nothing is loading any more");
     await fresh.close(); pyDown = false;
   }
 
   await page.goto(origin + "/app/fixture");
-  await ready();
+  await count(page); await counted();
   check(true, "the fixture study's Python runs online");
   check(!(await page.$("link[rel=manifest]")), "the page names no app manifest before the user asks for the app (req/shell/offline/per-study)");
 
@@ -220,7 +230,7 @@ try {
   await page.goto(origin + "/app/fixture");
   await page.waitForFunction(() => document.querySelector("#title")?.textContent, null, { timeout: 10000 }).catch(() => {});
   check(!!(await page.textContent("#title")), "offline, the page opens at its address: " + (await page.textContent("#title")));
-  await ready(60000);
+  await count(page); await counted(60000);
   check(true, "offline, the Python already on this device runs");
   check(await page.isVisible("#sb-online .off"), "the status bar's online icon shows offline");
   check(/offline/i.test(await page.getAttribute("#sb-net", "title")), "its tooltip says the page is offline: " + (await page.getAttribute("#sb-net", "title")));
@@ -238,8 +248,8 @@ try {
   await shot(page, "offline-page");
 
   await page.goto(origin + "/app/vascular");
-  await ready(60000);
-  check(true, "offline, the prepared study runs");
+  await page.waitForFunction(() => window.$ && /^Ready/.test($("#status").textContent), null, { timeout: 60000 });
+  check(true, "offline, the prepared study opens");
   await pressDrive(page);
   await page.waitForFunction(() => document.querySelectorAll("#remote-list .item").length >= 2, null, { timeout: 10000 }).catch(() => {});
   const kept = await page.$$eval("#remote-list .item .name", (ns) => ns.map((n) => n.textContent));
@@ -252,7 +262,7 @@ try {
   await page.goto(origin + "/app/nor");
   await page.waitForFunction(() => /not on this device/i.test(document.querySelector("#status").textContent), null, { timeout: 60000 }).catch(() => {});
   check(/not on this device/i.test(await statusText()) && !/Error/.test(await statusText()) && !(await page.$eval("#status", (e) => e.classList.contains("err"))),
-    "offline, a study whose Python is not here says so, not as an error: " + (await statusText()));
+    "offline, a study whose Python is not here says so before any Run, not as an error: " + (await statusText()));
   // its Make Available Offline, opened offline: nothing to read yet, Download held
   await page.click("#user-menu summary");
   await page.click("#manage-storage");
@@ -270,8 +280,8 @@ try {
     "back online, the open Prepare for Offline popup reads the study's folder and counts again: " + (await page.textContent("#offline-files")) + " " + (await page.textContent("#offline-python")));
   await page.click("#offline-close");
   await page.keyboard.press("Escape");
-  await ready(240000).catch(() => {});
-  check(await page.evaluate(() => !!window.st?.ready), "back online, the study whose Python was not here loads it, with no reload: " + (await statusText()));
+  await page.waitForFunction(() => /^Ready/.test($("#status").textContent), null, { timeout: 240000 }).catch(() => {});
+  check(/^Ready/.test(await statusText()), "back online, the study whose Python was not here keeps it, with no reload: " + (await statusText()));
   // the browser here still says it is online, as on a plane's Wi-Fi: the page notices the site answering again
   await page.waitForSelector("#sb-online .off", { state: "hidden", timeout: 40000 }).catch(() => {});
   check(!(await page.isVisible("#sb-online .off")), "back online, the online icon shows online again");
