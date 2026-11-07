@@ -22,9 +22,9 @@ nobody has decided: what the page does there is not a requirement yet.
   Set by the owner on 2026-11-03: one page adapting to every role at once is replaced by a view per role,
   chosen on purpose. Left of the avatar, a menu names the role the user works in and lists the roles they
   hold in the study on show: **Viewer**, everyone's, and the only one for a visitor not signed in
-  (`req/shell/account/sign-in`); **Ground Truth Tagger**, anyone's who is signed in, listed in every stage but
-  Published (`req/shell/study/stage`; set by the owner on 2026-11-04: a PreGT study can have taggers too); and **Data Manager**, held by those the
-  study's permissions name (`req/shell/data/roles`), listed where the study has Drive folders. Where it
+  (`req/shell/account/sign-in`); **Ground Truth Tagger**, held by those Drive lets write to the study's submissions folder (set by the owner on 2026-11-07, `req/shell/data/roles`), listed in every stage but
+  Published (`req/shell/study/stage`; set by the owner on 2026-11-04: a PreGT study can have taggers too); and **Data Manager**, held by those Drive lets
+  write to the study's root (`req/shell/data/roles`). Where it
   lists Viewer alone, a line says what signing in adds. Choosing a role changes the page to its view at
   once. Viewer sees the study as a Published one shows it: its tools and what they find, nothing that
   makes ground truth (no Submit GT step, the ground-truth button hidden, the item view its Items, the
@@ -47,7 +47,9 @@ nobody has decided: what the page does there is not a requirement yet.
   the theme (follow the system, dark or light); the role the user works in (`req/shell/account/role`); Show thumbnails in the Drive
   dialog; whether the low-memory popup shows; the last Google Drive link, and the last one in each
   study; the tips closed, each with a tick to clear to see it again; the recent images from Google
-  Drive, each with a tick to clear to drop it; Animations; and the version seen last. A line says where they are
+  Drive, each with a tick to clear to drop it; Animations; and the version seen last. Set by the owner on 2026-11-07,
+  it also holds Auto-save images from Google Drive (`req/shell/drive/kept-images`), which stays with the device and is
+  saved there. A line says where they are
   kept: in the user's Google Drive when signed in, else on this device only. Below them, set by the
   owner on 2026-11-02, **Kept on this device only**: every other setting the page keeps here, the
   shell's and the study on show's, each with its size and a tick to clear to forget it, and a link
@@ -249,14 +251,17 @@ nobody has decided: what the page does there is not a requirement yet.
   `web-tests/test_data_mode_page.py`, `web-tests/test_previews_writer.py`.
   </details>
 
-- `req/shell/data/roles` A study names who may manage its data, and its Google Drive folders.
+- `req/shell/data/roles` A study names its Drive root; Drive's own sharing decides who manages its data and who tags.
   <details>
 
-  Set by the owner on 2026-11-02. A study's `permissions` maps a role to the Google accounts, by
-  email, that hold it: `data_management` (the Data Manager role, `req/shell/account/role`), and nothing else: who may write ground truth is what Drive's sharing of the study's folders allows (`req/shell/ground-truth/folders`). Its `files.folders` lists its
-  Drive folders, and Load's Drive dialog opens on the first. A role only shows or hides the page's
-  tools; what anyone can change is still what Drive itself lets them. Test:
-  `web-tests/test_study_contract.py`.
+  Set by the owner on 2026-11-02; moved to the study's root on 2026-11-07. A study's `root` is a link to its
+  Google Drive root folder, shared as "Anyone with the link" to view: the only folder the repo names. The
+  folders under it are named by the root's settings file (`req/shell/ground-truth/setup`), and until it has
+  one, by name: `Data`, its images, and `GT curated`, `GT submissions` or a single `GT`. Signed in, opening a
+  GT or PostGT study asks Drive, with the user's token, whether they may write to the root (Data Manager) and
+  to the submissions folder (Ground Truth Tagger); a role is offered only where Drive says so. Nobody is
+  listed in the repo, and what anyone can change is still what Drive lets them. Tests:
+  `web-tests/test_study_contract.py`, `web-tests/test_study_root.py`, `web-tests/test_gt_drive_page.py`.
   </details>
 
 - `req/shell/data/update-previews` Update previews makes the folder's previews for the images that lack one or changed, and keeps the rest.
@@ -301,9 +306,9 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/shell/drive/dialog` Google Drive: a study browses its own folders, the Image Viewer takes a pasted link; open on Open, double click or Enter.
   <details>
 
-  Set by the owner on 2026-11-04: a study naming Drive folders (its `files.folders`) offers no link to paste; its
-  dialog opens on its folders, straight into the one when it names one, else on a list of them by name, and browses
-  only within them. A study naming none, the Image Viewer, takes the pasted link of an image or a folder: one shared as
+  Set by the owner on 2026-11-04: a study naming a Drive root (its `root`, `req/shell/data/roles`) offers no link to
+  paste; its dialog opens straight into the data folder its root names, else the root itself, and browses only within
+  it. A study naming none, the Image Viewer, takes the pasted link of an image or a folder: one shared as
   "Anyone with the link", or, signed in, any the user's account can see (`req/shell/drive/credentials`). An image's link loads it at once; a folder lists its subfolders and the images the study opens (the kinds its `files.accept` names), to pick from, each image
   with its size, a small colour thumbnail and, for one opened before in the study, how long since, as the image
   selector says it (`req/shell/load/selector`); set by the owner on 2026-11-04, in place of the date it was added to
@@ -320,8 +325,8 @@ nobody has decided: what the page does there is not a requirement yet.
   closing the dialog stops the rest, and reopening it shows those at once and fetches what the rows
   in view still lack. Test: `web-tests/test_drive_thumbs_page.py`. An image opened from Drive saves its own in the browser (the latest 100), shown from then
   on without a download; a PNG shows Drive's own. All are in the colours the page gives the
-  channels. A checkbox at the bottom, "Show thumbnails" (on at first, remembered in the browser),
-  turns the downloads off; beside it, and in the status bar's message while they load ("Thumbnails 3 of 10 ·
+  channels. Show thumbnails in Settings (on at first, `req/shell/account/settings`) turns the downloads off; set by the
+  owner on 2026-11-07, the dialog itself holds no such checkbox. The status bar's message says, while they load ("Thumbnails 3 of 10 ·
   1.2 MB"), how many have arrived and their size; once they are in, the message says again what it said
   before (set by the owner on 2026-11-05: the message, not a text of its own beside it). It needs the site's Google API key, kept in the repository variable
   `GOOGLE_API_KEY` and written into `web/config.js` at deploy; without one the option is off
@@ -336,9 +341,9 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/shell/drive/kept-images` Images from Drive open again without a download.
   <details>
 
-  The Google Drive dialog's bottom row holds two remembered checkboxes, **Show thumbnails** and
-  **Auto-save images** (both on at first), and beside them a link that opens Manage storage, its
-  text the bytes the thumbnails and saved images take on this device. While Auto-save images is on,
+  Set by the owner on 2026-11-07, the Google Drive dialog holds neither Show thumbnails nor Auto-save images nor
+  what they take on this device: both are in Settings (`req/shell/account/settings`), Auto-save images on at first and
+  kept on this device, and Manage storage says what they take. While Auto-save images is on,
   an image downloaded from Drive is kept on this device. An image chosen in the image selector (`req/shell/load/selector`)
   opens from the copy kept here, with no call to Drive. One chosen from Drive itself, in the dialog's
   list or by its link, opens from the kept copy, whatever the checkbox says, only once its SHA-256
@@ -433,17 +438,15 @@ nobody has decided: what the page does there is not a requirement yet.
   `web-tests/test_gt_drive_page.py`.
   </details>
 
-- `req/shell/ground-truth/folders` A study names a submissions folder and a curated folder; naming one folder twice is free submission.
+- `req/shell/ground-truth/folders` A study's ground truth lives in a submissions folder and a curated folder under its root; one folder for both is free submission.
   <details>
 
-  Set by the owner on 2026-11-05. A GT or PostGT study's `groundTruth` names `submissions` and `curated`,
-  each a Google Drive folder. Taggers write to submissions; only Data Managers write to curated; viewers,
-  the file dialog and the study's lab read curated. Ground truth is never sent to GitHub. When both name
-  the same folder, every submission is curated as it lands and nothing is pending. Who may write is what
-  Drive's sharing of each folder allows, nothing listed in the study. Tentative: Data Management tells a
-  study naming one folder twice that whatever a tagger submits is used at once; it cannot tell from Drive
-  whether anyone with the link may edit the folder. Tests: `web-tests/test_study_contract.py`,
-  `web-tests/test_truth_folders.py`.
+  Set by the owner on 2026-11-05; under the study's root since 2026-11-07. Taggers write to submissions;
+  only Data Managers write to curated; viewers, the file dialog and the study's lab read curated. Ground
+  truth is never sent to GitHub. When one folder serves as both, every submission is curated as it lands and
+  nothing is pending. Who may write is what Drive's sharing of each folder allows. Tentative: Data Management
+  tells a study with one folder for both that whatever a tagger submits is used at once. Tests:
+  `web-tests/test_study_root.py`, `web-tests/test_truth_folders.py`.
   </details>
 
 - `req/shell/ground-truth/layout` Both folders hold one subfolder per image and one file per tagger in it, and a reader takes the newest that is not rejected.
@@ -458,16 +461,31 @@ nobody has decided: what the page does there is not a requirement yet.
   computer the Ground Truth Tasks box says so. Test: `web-tests/test_gt_drive_page.py`.
   </details>
 
-- `req/shell/ground-truth/pending` Taggers and Data Managers see which images have ground truth, and which have it pending.
+- `req/shell/ground-truth/pending` Taggers and Data Managers see which images have ground truth, and which have it pending, in two listings.
   <details>
 
-  Set by the owner on 2026-11-05. The Drive dialog and Data Management mark each image with ground truth
-  in the curated folder. To a Ground Truth Tagger and a Data Manager they also mark it pending when the
-  submissions folder holds a file for it newer than its curated one, or holds one and curated none; a
-  tagger's own rejected submission shows as rejected with its reason. Data Management's summary counts
-  the folder's images with ground truth, pending, and marked as needing it (the
-  `<name>.ground_truth.MISSING` marker, `req/shell/data/folder`). A viewer sees only curated ground
-  truth. Test: `web-tests/test_gt_drive_page.py`.
+  Set by the owner on 2026-11-05; its calls set by the owner on 2026-11-07. The Drive dialog and Data
+  Management mark an image as having ground truth when the curated folder holds its subfolder: one listing
+  of curated, no file in it read. To a Ground Truth Tagger and a Data Manager they also mark it pending, or
+  rejected, from one listing of submissions: each image subfolder there carries, as public properties, when
+  its newest submission landed and when it was last accepted or rejected, which Submit, Accept and Reject
+  stamp on it. Pending: submitted after the last acceptance and the last rejection. Nothing is cached. Data
+  Management's summary counts the folder's images with ground truth, pending, and marked as needing it
+  (the `<name>.ground_truth.MISSING` marker, `req/shell/data/folder`). A viewer sees only curated ground
+  truth. Tests: `web-tests/test_truth_folders.py`, `web-tests/test_gt_drive_page.py`.
+  </details>
+
+- `req/shell/ground-truth/setup` Set up ground truth, in Data Management, makes the study's ground-truth folders and the root's settings file.
+  <details>
+
+  Set by the owner on 2026-11-07. For a Data Manager of a GT or PostGT study, Data Management offers Set up
+  ground truth. It asks whether submissions need review: yes makes `GT curated` and `GT submissions` in the
+  root, no makes one `GT` for both. It shares the curated folder with anyone with the link to view, then
+  writes `rauntruth-study.json` in the root naming the data folder and the ground-truth folders by id, who
+  set it up and when. It asks first for the page's per-file permission and Google's picker on the root, if
+  not granted. Run again, it makes only what is missing and rewrites the file; it never makes a second
+  folder of a name. Google's own words show when it refuses. Tests: `web-tests/test_study_root.py`,
+  `web-tests/test_gt_drive_page.py`.
   </details>
 
 - `req/shell/ground-truth/submit` Submit writes the tagger's ground truth into the study's submissions folder.
@@ -515,11 +533,12 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/shell/ground-truth/view` Anyone can load an image's curated ground truth and see only its final results.
   <details>
 
-  Set by the owner on 2026-11-05. For an image with curated ground truth, a Viewer has Load GT tagging,
-  which reads it (no sign-in, the curated folder being public) and shows its final results on the image,
-  with no algorithm run: none of the tagging tasks' marks (no blacked-out areas, no rejected candidates,
-  no work areas). A summary follows: whose file, when it was made, and its counts. Test:
-  `web-tests/test_gt_drive_page.py`.
+  Set by the owner on 2026-11-05; its calls set by the owner on 2026-11-07. Once an image from Drive is open,
+  for anyone not tagging, the curated folder's listing says whether it has ground truth, and if so a
+  Ground truth box offers Load GT tagging. Only that click reads the image's subfolder and its newest
+  file, then shows its final results on the image, with no algorithm run: none of the tagging tasks' marks
+  (no blacked-out areas, no rejected candidates, no work areas). A summary follows: whose file, when it was
+  made, and its counts. Test: `web-tests/test_gt_drive_page.py`.
   </details>
 
 - `req/shell/header` A header with the logo, the study switcher and a dark/light switch (remembered).
@@ -611,21 +630,6 @@ nobody has decided: what the page does there is not a requirement yet.
   `web-tests/test_study_runs.py`, `web-tests/test_compressed_tiff.py`, `web-tests/test_viewer3d_page.py`.
   </details>
 
-- `req/shell/left-bar/collapse` The left bar collapses to a narrow Steps strip, giving the image its room, and expands again (remembered):
-  by a chevron in one spot, at the bar's top open or collapsed, or by dragging the gutter past the bar's narrowest and back out.
-  <details>
-
-  Set by the owner on 2026-11-03. A small tab holding a chevron sits on the gutter between the open
-  left bar and the image, at its middle; clicking it collapses the bar to a narrow strip like the
-  Data Management strip (`req/shell/data/mode`), the same width and a small gap from it: the chevron,
-  the drawers' step marks (a number, or a check once done), and "Steps" upright. Clicking the strip
-  expands the bar again; clicking a step mark expands it with that drawer open. Collapsing and
-  expanding slide as Data Management's column does, the drawers sliding in on the way out. The bar's
-  width is kept for its return, and it cannot be dragged while collapsed. Collapsed or not stays with
-  the device, beside the width (`req/shell/left-bar/width`).
-  Test: `web-tests/test_left_bar_page.py`.
-  </details>
-
 - `req/shell/left-bar/folding` The left bar's boxes stay folded until their step makes them useful, and fold again once it is done.
   <details>
 
@@ -664,6 +668,15 @@ nobody has decided: what the page does there is not a requirement yet.
   Summary shows. A box the study puts nothing in is not shown. How the study's results are drawn over the image
   is chosen in the toolbar (`req/shell/image/toolbar`), never in the left bar. Test:
   `web-tests/test_study_contract.py`, `web-tests/test_left_bar_page.py`.
+  </details>
+
+- `req/shell/left-bar/static` The left bar stays open: nothing collapses it, and it has no chevron and no Steps label.
+  <details>
+
+  Set by the owner on 2026-11-07, in place of the collapsing bar of 2026-11-03: no chevron at its top, no narrow
+  Steps strip, and dragging the gutter stops at the bar's narrowest rather than collapsing it. A collapsed state
+  kept on the device from before opens the bar.
+  Test: `web-tests/test_left_bar_page.py`.
   </details>
 
 - `req/shell/left-bar/width` The left bar drags wider or narrower (remembered; a double click restores it); there is no right bar.
@@ -1328,8 +1341,12 @@ nobody has decided: what the page does there is not a requirement yet.
   depth of that point so crossings at different depths read apart: the study's `view` sets the render
   it opens with. The depth is a row of the image box under the
   channels' rows, as a channel's row holds its points (owner, 2026-11-04): its first and last slice
-  shown on one slider, and in the colour picker's place the spacing between slices. Colour by depth is each
-  channel's own (owner, 2026-11-07): a Colour by depth tick under each channel's row, and while it is ticked the
+  shown on one slider, and in the colour picker's place the spacing between slices, a box that reads with
+  its unit ("1 µm") and steps up and down by its arrows and the arrow keys (owner, 2026-11-07). No count of the
+  slices shown sits beside its name, and each row's picker sits at the box's right edge, its slider filling the room
+  before it; a palette picker is framed as the colour picker is (owner, 2026-11-07). Colour by depth is each
+  channel's own (owner, 2026-11-07): a small icon tick on each channel's own row beside its colour picker, no words
+  and no palette bar beside it (owner, 2026-11-07), and while it is ticked the
   row's colour picker becomes a palette picker, since the channel is then drawn in a range of colours by the depth
   of each point, not in one colour by its brightness alone. Two channels coloured by depth each take a different
   palette, so they read apart; a study's `channels` may tick it from the start (`depth`: true, or a palette's name).
@@ -1415,23 +1432,36 @@ nobody has decided: what the page does there is not a requirement yet.
   working, which the owner does not review; its tentative and undecided cases are questions for the owner.
   `dev/requirements/shell-states.json` lists the shell's elements as a tree, each
   under the one holding it; each study with a `studies/<id>/states.json` grafts its own elements in there, under the
-  shell's elements holding them, and may add roots and paths of its own (`req/checks/spec-layout`). The shell's paths
+  shell's elements holding them, may say where a shell element differs there (its rule), and may add roots and paths
+  of its own (`req/checks/spec-layout`), with the sample image or z-stack its paths load and what stands in for what
+  its page reaches off the site. The shell's paths
   open the study the file names, the fixture; a study's own paths open it, on the shell's tree with its own elements
   alone grafted in. Each element gives only what differs from its parent: cases over the state (the
   study's stage, who is signed in, the role, the image open and whether it is a z-stack, the study's step done, the view, what Data Management
-  has selected, whether the page is online, whether Edit Image is open, and what the study says of itself in its
+  has selected, whether the page is online, whether Edit Image is open, whether the image fits the view, whether a
+  notice shows, and what the study says of itself in its
   `study.json` and panels: whether it opens images from the computer, has steps after Load, and has an item view,
   never shown when shelved, `req/shell/views/second`), each citing the requirement that decides it and marked tentative or undecided where the owner has
   not decided (an undecided case is shown and not checked). Its paths start from a few roots (a study's stage and a
-  role) and take actions one after another, each state one more action on the one before.
+  role) and take actions one after another, each state one more action on the one before: loading an image, a
+  z-stack or a file from the study's Drive folder, Unload, the study's first step, the view switched, a role chosen
+  (to or from Ground Truth Tagger the study opens afresh), another study and Back, the notice's OK, zooming in until
+  the image no longer fits, Data Management's folder, preview and Edit Image, and
+  the network lost and back.
   `dev/tools/build/shell_states.py` writes from it the matrix, `dev/requirements/shell-states.GENERATED.md`, one table
-  per path, and the browser test's expectations; a case no state reaches fails it. In the fast set the
+  per path, and the browser test's expectations. It fails on what the walk would leave unchecked: a case no state
+  reaches; a case decided only where a parent hides or folds the element, which the browser reads as gone whatever
+  the case says, unless the element or the case is marked unwalked with why no path shows it (what an unwalked
+  element holds goes with it); an element every state shows the same, unless marked steady with why; such a mark a
+  state contradicts; an action no path takes; and a value of a var no state has. In the fast set the
   generated files must be up to date, every element in each study's tree must be on the shell's page or that
   study's panels (one the page makes as it runs, such as the 3D view's controls, by the nearest element holding it
-  that the page does not make), and every element of the shell's page, but what a dialog, popup or menu holds, must be in the
-  shell's tree. In the full set one page per path takes the actions on its study, the study's stage set for it,
+  that the page does not make), every element of the shell's page and of each study's panels, but what a dialog,
+  popup, menu or disclosure holds, must be in the shell's tree or that study's, and the tree must call an element a
+  box or a control where the page does. In the full set one page per path takes the actions on its study, the study's stage set for it,
   against a stand-in Google and a stand-in Python answering what the study's own Python answers on loading and on
-  opening the image, or the z-stack a path loads, signed in as an account the study is shown to, and at every state reads each element as shown,
+  opening the image, or the z-stack a path loads, and the study's own Python answering its calls once it takes its
+  first step, signed in as an account the study is shown to, and at every state, the study's calls answered, reads each element as shown,
   disabled, held offline, folded or gone; every difference is listed before it fails. Test: `web-tests/test_shell_states.py`,
   `web-tests/test_shell_states_page.py`.
   </details>

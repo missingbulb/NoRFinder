@@ -125,15 +125,28 @@ try {
     await page.click("#zoom-out");
     const slicesRow = await page.evaluate(() => { const r = $("#channels .v3-slices"); return r && !!r.querySelector("#v3-z0") && !!r.querySelector("#v3-z1") && !!r.querySelector("#v3-zs"); });
     check(slicesRow, "the slices shown and their spacing are a row in the image box, under the channels' rows");
-    // req/shell/viewer-3d: Colour by depth is each channel's, a tick under its row; ticked, its colour picker is a
-    // palette picker, and two channels by depth take two palettes. The study ticks CD31's from the start.
+    // req/shell/viewer-3d: Colour by depth is each channel's, an icon tick on its own row beside its colour picker, with
+    // no row under it; ticked, its colour picker is a palette picker, and two channels by depth take two palettes. The
+    // study ticks CD31's from the start.
     if (await page.evaluate(() => $("#image-box").classList.contains("folded"))) { await page.click("#image-box"); await page.waitForFunction(() => !$("#image-box").classList.contains("folded")); }
     const depthRows = () => page.evaluate(() => [...document.querySelectorAll("#channels > .channel:not(.v3-slices)")].map((r) => {
-      const sub = r.nextElementSibling?.matches(".v3-depth-row") ? r.nextElementSibling : null, pal = r.querySelector(".v3-palette");
-      return { name: r.querySelector("label").textContent, tick: sub ? sub.querySelector("input[type=checkbox]").checked : null,
-        picker: pal ? pal.dataset.palette : r.querySelector("input[type=color]") ? "colour" : null };
+      const tick = r.querySelector(".v3-tick"), pal = r.querySelector(".v3-palette");
+      return { name: r.querySelector("label").textContent, tick: tick ? tick.checked : null, under: !!r.nextElementSibling?.matches(".v3-depth-row"),
+        picker: pal ? pal.dataset.palette : r.querySelector("input[type=color]") ? "colour" : null, label: tick?.closest(".channel")?.textContent.includes("Colour by depth") };
     }));
     const dep0 = await depthRows();
+    check(dep0.every((d) => !d.under && !d.label), `each channel's depth tick is on its own row, an icon with no words, no row under it: ${JSON.stringify(dep0)}`);
+    // req/shell/viewer-3d: each row's picker sits at its right edge, its slider filling the room before it; the slices'
+    // row carries no count beside its name; a palette picker is framed as the colour picker is
+    const lay = await page.evaluate(() => {
+      const box = $("#channels").getBoundingClientRect().right, rows = [...document.querySelectorAll("#channels > .channel")];
+      const pal = $("#channels .v3-palette"), col = $("#channels input[type=color]");
+      return { ends: rows.map((r) => Math.round(box - r.querySelector(".v3-palette, input[type=color], .v3-spin").getBoundingClientRect().right)),
+        count: /\bof\b/.test($("#channels .v3-slices .ch-name").textContent),
+        frame: [pal && getComputedStyle(pal).borderTopWidth, col && getComputedStyle(col).borderTopWidth] };
+    });
+    check(lay.ends.every((e) => Math.abs(e) <= 1) && !lay.count && lay.frame[0] === lay.frame[1],
+      `pickers anchored right, no slice count, the palette framed as the colour picker: ${JSON.stringify(lay)}`);
     check(dep0.length === 2 && dep0[0].tick === true && !["colour", null].includes(dep0[0].picker) && dep0[1].tick === false && dep0[1].picker === "colour",
       `CD31 opens coloured by depth, its colour picker a palette picker, and DAPI in its colour, each with its own tick: ${JSON.stringify(dep0)}`);
     await page.check("#depth-1");
@@ -245,6 +258,15 @@ try {
     // req/shell/viewer-3d: who stated the spacing is the spacing's tooltip, and no text sits over the 3D view
     const said = await page.evaluate(() => ({ tip: $("#v3-zs").title, over: [...$("#v3-stage").querySelectorAll("p")].filter((e) => e.checkVisibility() && e.textContent.trim()).map((e) => e.textContent) }));
     check(/owner/i.test(said.tip) && !said.over.length, `the spacing's tooltip says who stated it, and no text is over the view: ${JSON.stringify(said)}`);
+    // req/shell/viewer-3d: the spacing reads with its unit, "1 µm", and steps up and down from the keys and its arrows
+    const zs = () => page.evaluate(() => $("#v3-zs").value);
+    const zs0 = await zs();
+    await page.focus("#v3-zs"); await page.keyboard.press("ArrowUp"); const zsUp = await zs();
+    await page.click("#v3-zs-down"); const zsDown = await zs();
+    await page.fill("#v3-zs", "2.5"); await page.keyboard.press("Enter"); const zsTyped = await zs();
+    await page.fill("#v3-zs", zs0.replace(" µm", "")); await page.keyboard.press("Enter");
+    check(/^\d+(\.\d+)? µm$/.test(zs0) && parseFloat(zsUp) > parseFloat(zs0) && zsDown === zs0 && zsTyped === "2.5 µm" && await zs() === zs0,
+      `the spacing reads in µm and steps: ${JSON.stringify([zs0, zsUp, zsDown, zsTyped])}`);
 
     // Data Management wants a signed-in Drive; its Edit Image box is only kept out of sight outside it
     await page.evaluate(() => { document.documentElement.dataset.mode = "data"; $("#edit-open").click(); });

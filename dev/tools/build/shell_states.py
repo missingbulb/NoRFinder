@@ -26,17 +26,28 @@ ACTIONS = {
     'count': ('Count', {'counted': True}),
     'items': ('Items', {'view': 'items'}),
     'image': ('Image', {'view': 'image'}),
-    # choosing Ground Truth Tagger opens the study afresh on the same image (req/shell/account/role)
-    'tagger': ('→ Tagger', {'role': 'tagger', 'counted': False, 'view': 'image'}),
+    # a role chosen: to or from Ground Truth Tagger, the study opens afresh on the same image (req/shell/account/role)
+    'tagger': ('→ Tagger', {'role': 'tagger'}),
     'folder': ('Folder', {'selected': 'folder'}),
-    'preview': ('Preview', {'selected': 'image', 'image': 'preview', 'counted': False}),
+    'preview': ('Preview', {'selected': 'image', 'image': 'preview', 'stack': False, 'counted': False}),
+    'zpreview': ('Preview a z-stack', {'selected': 'image', 'image': 'preview', 'stack': True, 'counted': False}),
     'original': ('Load Original', {'image': 'original'}),
     # from a preview, Edit Image opens the image itself (req/shell/data/edit)
     'edit': ('Edit Image', {'editing': True, 'image': 'original'}),
     'done': ('Done', {'editing': False}),
     'offline': ('Offline', {'online': False}),
     'online': ('Online', {'online': True}),
+    'unload': ('Unload', {'image': 'none', 'stack': False, 'counted': False, 'view': 'image'}),
+    # the study's images in its Drive folder, the one a user of a study that opens none from the computer takes
+    'drive': ('Load from Drive', {'image': 'original', 'stack': False, 'counted': False, 'view': 'image'}),
+    'viewer': ('→ Viewer', {'role': 'viewer'}),
+    'data': ('→ Data Manager', {'role': 'data'}),
+    # to another study and Back to this one, which opens afresh, with no image
+    'restudy': ('Away and back', {'image': 'none', 'stack': False, 'counted': False, 'view': 'image'}),
+    'ok': ('OK', {'notice': False}),
+    'zoom': ('Zoom in', {'imageFits': False}),
 }
+ROLES = ('tagger', 'viewer', 'data')
 START = {'image': 'none', 'counted': False, 'view': 'image', 'selected': 'nothing', 'online': True, 'editing': False, 'stack': False,
          'notice': False, 'imageFits': True}
 STATES = ('shown', 'disabled', 'held', 'folded', 'hidden')
@@ -83,11 +94,13 @@ def check_rules(rules, tree, roots, paths):
 
 def facts(study):
     """What the study itself says, from its study.json and its panels: whether it opens images from the computer,
-    has steps of its own after Load, and has an item view not marked shelved, never shown (req/shell/views/second)."""
+    has steps of its own after Load, has an item view not marked shelved, never shown (req/shell/views/second), and
+    shows a z-stack in 3D (req/shell/viewer-3d)."""
     d = study['study']
     view = re.search(r'<[^>]*\bid="items-view"[^>]*>', study.get('panels', ''))
     shelved = bool(view) and re.search(r'\sdata-shelved[\s>=]', view.group(0)) is not None
-    return {'fromComputer': 'local' in d['files']['from'], 'hasSteps': bool(d['phases']), 'itemView': bool(view) and not shelved}
+    return {'fromComputer': 'local' in d['files']['from'], 'hasSteps': bool(d['phases']), 'itemView': bool(view) and not shelved,
+            'shows3d': d.get('viewer') == 'image3d'}
 
 
 def walk(study, roots, paths):
@@ -98,39 +111,53 @@ def walk(study, roots, paths):
         states = [('Start', dict(s))]
         for a in p['actions']:
             label, change = ACTIONS[a]
-            s = {**s, **change}
+            afresh = a in ROLES and (s['role'] == 'tagger') != (change['role'] == 'tagger')
+            s = {**s, **change, **({'counted': False, 'view': 'image'} if afresh else {})}
             # an image from the computer, open for whoever makes ground truth, is told it cannot be submitted
             # (req/shell/ground-truth/submit); the study opening afresh for a new tagger tells it again
-            if a in ('load', 'stack', 'tagger'):
+            if a in ('load', 'stack', 'drive', 'unload', 'restudy') or afresh:
                 s['notice'] = derived(s)['makesTruth'] and s['image'] == 'local'
             states.append((label, dict(s)))
         out.append((p, states))
     return out
 
 
-def own(n, s, used, key):
-    """The element's own state here: the first case matching, as (state, approval, req)."""
+DEFAULT = -1  # an element's own state when none of its cases matches: as its parent shows
+
+
+def own(n, s):
+    """The element's own state here: the first case matching, as (state, approval, req, which case, or DEFAULT)."""
     d = derived(s)
     for i, case in enumerate(n.get('rule', [])):
         if all(d[k] in vs for k, vs in case.get('when', {}).items()):
-            used.add((key, i))
-            return case['is'], case.get('approval', 'owner'), case.get('req', n['req'])
-    return 'shown', 'owner', n['req']
+            return case['is'], case.get('approval', 'owner'), case.get('req', n['req']), i
+    return 'shown', 'owner', n['req'], DEFAULT
 
 
-def cells(tree, s, used, key):
-    """{name: (state, approval)} for every element: its own state, unless a parent hidden or folded hides it."""
+def cells(tree, s, used, seen, key):
+    """{name: (state, approval)} for every element: its own state, unless a parent hidden or folded hides it. used
+    gains (element, case) for each case deciding here; seen, those of them the browser can see decide, no parent
+    hiding the element and the case not undecided."""
     out = {}
     for n, parent, _ in nodes(tree):
-        state, approval, _ = own(n, s, used, key(n))
+        state, approval, _, case = own(n, s)
+        used.add((key(n), case))
         if parent is not None:
             up, up_approval = out[parent['name']]
             if up in ('hidden', 'under-hidden'):
                 state, approval = 'under-hidden', up_approval
             elif up in ('folded', 'in-folded'):
                 state, approval = 'in-folded', up_approval
+        if state not in ('under-hidden', 'in-folded') and approval != 'undecided':
+            seen.add((key(n), case))
         out[n['name']] = (state, approval)
     return out
+
+
+def cases(n):
+    """The cases an element can be decided by: each of its own, and its default unless a case always matches."""
+    rule = n.get('rule', [])
+    return list(range(len(rule))) + ([] if any(not c.get('when') for c in rule) else [DEFAULT])
 
 
 def build(rules, studies):
@@ -139,27 +166,62 @@ def build(rules, studies):
     shell = {n['name'] for n, _, _ in nodes(rules['tree'])}
     walked = [(rules['study'], rules['roots'], rules['paths'])] + [
         (i, st.get('roots', {}), st['paths']) for i, st in sorted(studies.items()) if st.get('paths')]
-    used, trees, paths, tables, unused = set(), {}, [], [], []
+    used, seen, trees, paths, tables, every = set(), set(), {}, [], [], []
+    shows, steady, unwalked, soft, reached, acted = {}, set(), set(), set(), set(), set()
     for i, roots, ps in walked:
         tree = trees.get(i) or graft(copy.deepcopy(rules), studies[i])['tree']
         check_rules(rules, tree, roots, ps)
-        key = lambda n, i=i: n['name'] if n['name'] in shell else f"{i}: {n['name']}"
+        # an element differing in the study has its cases counted as the study's
+        own = set(studies[i].get('differ', {}))
+        key = lambda n, i=i, own=own: n['name'] if n['name'] in shell and n['name'] not in own else f"{i}: {n['name']}"
         if i not in trees:
             trees[i] = tree
-            unused += [(key(n), k) for n, _, _ in nodes(tree) for k in range(len(n.get('rule', [])))]
+            every += [(key(n), k) for n, _, _ in nodes(tree) for k in cases(n)]
+            steady |= {key(n) for n, _, _ in nodes(tree) if n.get('steady')}
+            # an element marked unwalked: what it holds is unwalked with it, and so are its own cases no state shows
+            off = set()
+            for n, parent, _ in nodes(tree):
+                if parent is not None and (parent.get('unwalked') or parent['name'] in off):
+                    off.add(n['name'])
+            unwalked |= {(key(n), k) for n, _, _ in nodes(tree) for k in cases(n)
+                         if n['name'] in off or (k != DEFAULT and n['rule'][k].get('unwalked'))}
+            soft |= {(key(n), k) for n, _, _ in nodes(tree) for k in cases(n) if n.get('unwalked')}
+            # nothing checks an undecided case: the matrix lists it
+            soft |= {(key(n), k) for n, _, _ in nodes(tree) for k in cases(n) if k != DEFAULT and n['rule'][k].get('approval') == 'undecided'}
         title = studies[i]['study']['title']
         for p, states in walk(studies[i], roots, ps):
-            rows = [(label, cells(tree, s, used, key)) for label, s in states]
+            acted |= set(p['actions'])
+            reached |= {(k, json.dumps(v)) for _, s in states for k, v in s.items()}
+            rows = [(label, cells(tree, s, used, seen, key)) for label, s in states]
+            for n, _, _ in nodes(tree):
+                shows.setdefault(key(n), set()).update(SEEN[c[n['name']][0]] for _, c in rows if c[n['name']][1] != 'undecided')
             paths.append({'study': i, 'root': p['root'], 'stage': roots[p['root']]['stage'],
                           'signedIn': roots[p['root']]['signedIn'], 'role': roots[p['root']]['role'],
                           'actions': p['actions'],
                           'states': [{'label': label, 'expect': {k: (None if a == 'undecided' else SEEN[v]) for k, (v, a) in c.items()}}
                                      for label, c in rows]})
             tables.append((f"{title} · {p['root']}: {' · '.join(label for label, _ in rows[1:])}", tree, rows))
-    unused = [f"{name}, case {k + 1}" for name, k in dict.fromkeys(unused) if (name, k) not in used]
+    every = list(dict.fromkeys(every))
+    case = lambda k: 'its default' if k == DEFAULT else f'case {k + 1}'
+    names = list(dict.fromkeys(name for name, _ in every))
+    gaps = {
+        'cases no state reaches': [f"{name}, {case(k)}" for name, k in every if (name, k) not in used],
+        # a case the browser never sees decide checks nothing: a parent hides the element wherever it decides; one
+        # marked unwalked says why no path shows it
+        'cases decided only where a parent hides the element, and not marked unwalked': [
+            f"{name}, {case(k)}" for name, k in every if (name, k) in used and (name, k) not in seen and (name, k) not in unwalked | soft],
+        'cases marked unwalked that a state shows': [f"{name}, {case(k)}" for name, k in every if (name, k) in seen and (name, k) in unwalked],
+        # an element showing the same in every state checks only that it is there: one marked steady says why it never changes
+        'elements every state shows the same, and not marked steady': [
+            n for n in names if len(shows[n]) < 2 and n not in steady and not all((n, k) in unwalked | soft for m, k in every if m == n)],
+        'elements marked steady that states show differently': [n for n in names if len(shows[n]) > 1 and n in steady],
+        'actions no path takes': [a for a in ACTIONS if a not in acted],
+        'values of the vars no state has': [f"{k} {json.dumps(v)}" for k, vs in rules['vars'].items() for v in vs
+                                            if (k, json.dumps(v)) not in reached],
+    }
     elements = {i: [{'name': n['name'], 'select': n['select'], 'control': bool(n.get('control')), 'box': bool(n.get('box')),
                      'parent': parent['name'] if parent else None} for n, parent, _ in nodes(tree)] for i, tree in trees.items()}
-    return {'elements': elements, 'paths': paths}, markdown(tables), unused
+    return {'elements': elements, 'paths': paths}, markdown(tables), {k: v for k, v in gaps.items() if v}
 
 
 def markdown(tables):
@@ -196,7 +258,12 @@ def markdown(tables):
 
 def graft(rules, study):
     """The rules with each of the study's grafts put in the tree: under the element it names, after the child it
-    names, or first."""
+    names, or first; and a shell element as the study's `differ` says it differs there: its rule, and why it is steady."""
+    for name, fields in study.get('differ', {}).items():
+        el = [n for n, _, _ in nodes(rules['tree']) if n['name'] == name]
+        assert el, f"no element {name!r} to differ"
+        assert set(fields) <= {'rule', 'steady', 'unwalked'}, f"{name}: a study's element differs in its rule alone"
+        el[0].update(fields)
     for g in study.get('grafts', []):
         under = [n for n, _, _ in nodes(rules['tree']) if n['name'] == g['under']]
         assert under, f"no element {g['under']!r} to graft under"
@@ -230,14 +297,15 @@ def load():
 
 
 def outputs():
-    expect, matrix, unused = build(*load())
-    return json.dumps(expect, indent=1, ensure_ascii=False) + '\n', matrix, unused
+    expect, matrix, gaps = build(*load())
+    return json.dumps(expect, indent=1, ensure_ascii=False) + '\n', matrix, gaps
 
 
 def main(argv):
-    expect, matrix, unused = outputs()
-    if unused:
-        print('cases no state reaches: ' + '; '.join(unused))
+    expect, matrix, gaps = outputs()
+    if gaps:
+        for kind, what in gaps.items():
+            print(f'{kind}: ' + '; '.join(what))
         return 1
     if '--check' in argv:
         stale = [p for p, text in ((EXPECT, expect), (MATRIX, matrix))

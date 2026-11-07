@@ -195,7 +195,7 @@ function card(m, it) {
       for (const i of [...it.segments].sort((a, b) => b - a)) o = Mo.deleteSegment(o, i);
       MV.edit(o);
     }));
-    requestAnimationFrame(() => vesselPicture(cv, m, it));
+    requestAnimationFrame(() => V.meta && vesselPicture(cv, m, it));
   } else {
     body.innerHTML = `<div class="card-head"><b>Junction ${it.id}</b>${it.pending ? ' <span class="chip candidate">Waits on review</span>' : ''}</div>` +
       `<div class="dim">${it.branches} branches</div>` +
@@ -203,7 +203,7 @@ function card(m, it) {
       `<dt>Nearby</dt><dd class="${it.crowd ? 'warn' : ''}">${it.crowd ? `${it.crowd} other junction${it.crowd === 1 ? '' : 's'} within ${CROWD_UM} µm` : `no other junction within ${CROWD_UM} µm`}</dd></dl>`;
     actions.append(button('Side view', () => { select(key); MV.lookAt(it.id); show3d(); }),
       button('They cross: split', () => MV.edit(Mo.splitJunction(MV.current(), it.id, V.S.zs))));
-    requestAnimationFrame(() => junctionPicture(cv, m, it));
+    requestAnimationFrame(() => V.meta && junctionPicture(cv, m, it));
   }
   body.append(actions);
   el.onclick = () => select(key);

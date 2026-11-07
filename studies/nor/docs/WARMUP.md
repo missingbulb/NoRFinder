@@ -25,7 +25,7 @@ Full specification, including the parts the overview leaves unstated:
 [`../detection/STATE.md`](../detection/STATE.md) holds the current state — the default finder, its
 scores, what to run — and is updated in every PR that changes it, so this file does not repeat it.
 
-Run the tests: `pip install -r requirements.txt && python3 studies/nor/detection/ground_truth.py fetch && python3 -m pytest web-tests studies` from the repo root (the page tests also need `npm i --prefix web-tests pyodide@314.0.7` and Playwright's Chromium). CI runs the fast set (`-m "not full"`, no Node or browser) on every PR (`.github/workflows/tests.yml`) and every test nightly and on each push to main (`.github/workflows/tests-full.yml`), where a green run wakes the site release.
+Run the tests: `pip install -r requirements.txt && python3 studies/nor/detection/ground_truth.py score && python3 -m pytest web-tests studies` from the repo root (the page tests also need `npm i --prefix web-tests pyodide@314.0.7` and Playwright's Chromium). CI runs the fast set (`-m "not full"`, no Node or browser) on every PR (`.github/workflows/tests.yml`) and every test nightly and on each push to main (`.github/workflows/tests-full.yml`), where a green run wakes the site release.
 Fetch the raw data: `python3 studies/nor/detection/fetch_data.py`
 
 ## What blocks starting
@@ -125,7 +125,7 @@ This study is one of the page's studies; the repo's own map, and what the shell 
 web/         the study's page: panels, script, style, finder_metrics.json
 detection/   the finders, nor.py (the R1 baseline), harness.py (invariance), fetch_data.py; STATE.md
 data/        sources.json: the Drive images by checksum (the images stay out of git)
-tests/       every requirement that can be executed; test_quality.py locks the finders (R9)
+tests/       every requirement that can be executed, on drawn images (synthetic_nor.py), never the study's own
 docs/
   WARMUP.md                          this file
   requirements.md                    standing constraints on HOW it is built, which no user sees;

@@ -16,8 +16,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 NODE = shutil.which('node')
 
 
-def run(driver, *args):
-    r = subprocess.run([NODE, os.path.join(HERE, driver), *args], capture_output=True, text=True, timeout=120)
+def run(driver, *args, timeout=120):
+    r = subprocess.run([NODE, os.path.join(HERE, driver), *args], capture_output=True, text=True, timeout=timeout)
     print(r.stdout, r.stderr)
     if r.returncode == 2:
         pytest.skip(r.stderr.strip())

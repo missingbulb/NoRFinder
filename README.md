@@ -47,7 +47,7 @@ not follow you across sites; it receives the page's address, the page that
 linked to it and your browser's details, never your images or results. Python and
 its packages, about 50 MB, download on the first visit and are cached for 30 days. A study that reads printed text also downloads the engines and models that read it from jsDelivr, the first time it reads, and reads on your machine too. Images opened
 from Google Drive are kept in your browser too, so they open again without a download, unless you
-untick Auto-save images, and so is what each Drive folder you browsed holds, so the Drive dialog opens
+turn off Auto-save images in Settings, and so is what each Drive folder you browsed holds, so the Drive dialog opens
 without the internet; in Chrome and Edge the Image Viewer also keeps the browser's reference to each file you
 opened from your computer, never a copy, so its recent list opens it again; your avatar's Manage storage lists, and deletes, everything kept.
 

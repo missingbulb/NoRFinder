@@ -14,7 +14,6 @@ POOL = yaml.safe_load(open(os.path.join(HERE, 'pool.yaml')))
 KEYS = {'id', 'name', 'family', 'visual', 'how', 'canonical_uses', 'hook', 'scale', 'package', 'invoke', 'docs',
         'cost', 'verified', 'try_when'}
 HOOKS = {'pre', 'map', 'candidates', 'verify', 'post', 'stats'}
-REF = os.path.join(HERE, '..', '..', '..', 'studies', 'nor', 'data', 'raw', 'Left Up- Edited', 'Slide5_4AP_NoR.sld - Slice1_up_left2.tif')
 
 
 def test_every_entry_is_complete_and_unique():
@@ -36,12 +35,12 @@ def test_runnable_entries_and_functions_match_both_ways():
 
 @pytest.fixture(scope='module')
 def crop():
-    if not os.path.exists(REF):
-        pytest.skip('the reference slide is not fetched (studies/nor/detection/ground_truth.py fetch)')
-    import tifffile
-    a = tifffile.imread(REF).astype(float)
-    a = a[..., 1] if a.ndim == 3 and a.shape[-1] <= 4 else a[1] if a.ndim == 3 else a
-    return a[400:528, 400:528]
+    # a trick is checked to run and keep its shape, not for what it finds: random spots on a noisy floor will do
+    rng = np.random.default_rng(0)
+    a = rng.poisson(14.0, (128, 128)).astype(float)
+    for y, x in rng.integers(8, 120, (12, 2)):
+        a[y - 2:y + 3, x - 2:x + 3] += 150
+    return a
 
 
 @pytest.mark.parametrize('tid', sorted(T.TRICKS))

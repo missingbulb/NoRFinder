@@ -1,49 +1,110 @@
 {
-  "about": "The Vascular Measurements study's own elements in the shell's states (req/checks/shell-states, req/checks/spec-layout): each graft puts its tree under the shell's element `under`, after its child `after` or first, in the tree of dev/requirements/shell-states.json, whose rules they follow; its roots and paths open this study. `counted` is its first step, Run algorithm, done.",
+  "about": "The Vascular Measurements study's own elements in the shell's states (req/checks/shell-states, req/checks/spec-layout): each graft puts its tree under the shell's element `under`, after its child `after` or first, in the tree of dev/requirements/shell-states.json, whose rules they follow; its roots and paths open this study. `samples` names the module writing the image or z-stack its paths load; `differ` says where a shell element shows otherwise in this study. `counted` is its first step, Run algorithm, done.",
   "grafts": [
     {"under": "Processing", "tree": [
-      {"name": "Algorithm", "select": "#vm-algo", "control": true, "req": "req/vascular/model/run"},
-      {"name": "About the algorithm", "select": "#vm-about", "req": "req/vascular/model/run"},
-      {"name": "Load a model", "select": "#model-load", "control": true, "req": "req/vascular/model/view"},
-      {"name": "Run algorithm", "select": "#vm-run", "control": true, "req": "req/vascular/model/run"},
-      {"name": "The model's controls", "select": "#model-on", "req": "req/vascular/model/correct",
-        "rule": [
-          {"when": {"counted": [false]}, "is": "hidden"}
+      {"name": "The model", "select": "#model-set", "req": "req/vascular/model/run",
+        "children": [
+          {"name": "Algorithm", "select": "#vm-algo", "control": true, "req": "req/vascular/model/run"},
+          {"name": "About the algorithm", "select": "#vm-about", "req": "req/vascular/model/run"},
+          {"name": "Run algorithm", "select": "#vm-run", "control": true, "req": "req/vascular/model/run"},
+          {"name": "The model's controls", "select": "#model-on", "req": "req/vascular/model/correct", "unwalked": "shown once Execute is done, when Processing has folded",
+            "rule": [
+              {"when": {"counted": [false]}, "is": "hidden"}
+            ],
+            "children": [
+              {"name": "Edits", "select": "#vm-edits", "req": "req/vascular/model/correct",
+                "children": [
+                  {"name": "Undo", "select": "#m-undo", "control": true, "req": "req/vascular/model/correct"},
+                  {"name": "Redo", "select": "#m-redo", "control": true, "req": "req/vascular/model/correct"},
+                  {"name": "Discard edits", "select": "#m-reset", "control": true, "req": "req/vascular/model/correct"}
+                ]
+              }
+            ]
+          },
+          {"name": "Model's message", "select": "#model-msg", "req": "req/vascular/model/run"}
         ]
       }
     ]},
     {"under": "Ground Truth Tasks", "tree": [
-      {"name": "The tasks", "select": "#vm-tasks", "req": "req/vascular/truth/tasks",
+      {"name": "The tasks", "select": "#vm-tasks", "req": "req/vascular/truth/tasks"},
+      {"name": "Missed vessels", "select": "#vm-missed", "req": "req/vascular/truth/tasks", "unwalked": "shows once every item is reviewed, which no path does",
         "rule": [
-          {"when": {"counted": [false]}, "is": "hidden"}
+          {"is": "hidden", "approval": "tentative"}
+        ],
+        "children": [
+          {"name": "Draw a missed vessel", "select": "#m-draw", "control": true, "req": "req/vascular/truth/tasks"},
+          {"name": "Drawing's note", "select": "#draw-note", "req": "req/vascular/truth/tasks"},
+          {"name": "No missed vessels here", "select": "#area-ok", "control": true, "req": "req/vascular/truth/order"}
+        ]
+      },
+      {"name": "Task tools", "select": "#task-tools", "req": "req/vascular/truth/order",
+        "children": [
+          {"name": "This item's options", "select": "#task-menu", "req": "req/vascular/truth/order"},
+          {"name": "Skip", "select": "#task-skip", "control": true, "req": "req/vascular/truth/order"}
+        ]
+      },
+      {"name": "The task now", "select": "#task-now", "req": "req/vascular/truth/tasks",
+        "children": [
+          {"name": "The task's stage", "select": "#task-stage", "req": "req/vascular/truth/tasks",
+            "children": [
+              {"name": "The task's card", "select": "#task-card", "req": "req/vascular/truth/tasks"}
+            ]
+          }
         ]
       }
     ]},
     {"under": "Summary", "tree": [
-      {"name": "What the model holds", "select": "#model-facts", "req": "req/vascular/model/run"},
+      {"name": "What the model holds", "select": "#model-facts", "req": "req/vascular/model/run"}
+    ]},
+    {"under": "Left bar", "after": "Summary", "tree": [
       {"name": "Mark a damaged area", "select": "#vm-marks", "req": "req/vascular/model/correct",
+        "about": "in Summary, or in the tasks while the study makes ground truth",
         "rule": [
           {"when": {"counted": [false]}, "is": "hidden"}
+        ],
+        "children": [
+          {"name": "Mark the area", "select": "#m-lasso", "control": true, "req": "req/vascular/model/correct"},
+          {"name": "Marking's note", "select": "#lasso-note", "req": "req/vascular/model/correct"}
         ]
       }
     ]},
     {"under": "Main view", "after": "Tasks/Items switch", "tree": [
-      {"name": "Show menu", "select": "#vm-show", "req": "req/vascular/model/view"}
+      {"name": "Show menu", "select": "#vm-show", "req": "req/vascular/model/view", "steady": "always shown"}
     ]},
     {"under": "Main view", "after": "Image view", "tree": [
       {"name": "Item view", "select": "#items-view", "req": "req/shell/views/second",
         "rule": [
           {"when": {"view": ["image"]}, "is": "hidden"}
+        ],
+        "children": [
+          {"name": "Junctions or vessels", "select": "#item-kind", "req": "req/vascular/model/cards"},
+          {"name": "Which items", "select": "#item-filter", "control": true, "req": "req/vascular/model/cards"},
+          {"name": "Order", "select": "#item-sort", "control": true, "req": "req/vascular/model/cards"},
+          {"name": "Items' note", "select": "#items-note", "req": "req/vascular/model/cards"},
+          {"name": "No items yet", "select": "#items-empty", "req": "req/vascular/model/cards", "steady": "shows only before Execute, when the item view cannot be opened",
+            "rule": [
+              {"is": "hidden"}
+            ]
+          },
+          {"name": "Item cards", "select": "#item-list", "req": "req/vascular/model/cards"}
         ]
       }
     ]}
   ],
+  "samples": "tests/state_samples.py",
+  "differ": {
+    "Submit GT crumb": {"steady": "its Review step is still to do on every path",
+      "rule": [
+        {"is": "hidden", "approval": "tentative", "req": "req/shell/status-bar/breadcrumbs"}
+      ]
+    }
+  },
   "roots": {
     "GT, signed out": {"stage": "GT", "signedIn": false, "role": "viewer"},
     "GT, Tagger": {"stage": "GT", "signedIn": true, "role": "tagger"}
   },
   "paths": [
-    {"root": "GT, signed out", "actions": ["load"]},
-    {"root": "GT, Tagger", "actions": ["load"]}
+    {"root": "GT, signed out", "actions": ["load", "stack", "count", "items", "image"]},
+    {"root": "GT, Tagger", "actions": ["stack", "count"]}
   ]
 }

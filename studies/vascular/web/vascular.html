@@ -6,10 +6,8 @@
         <div id="vm-about-note" class="hint"></div>
       </details>
       <div class="row">
-        <button type="button" id="model-load" class="link" title="Open a vessel model file, one saved earlier say, in place of running the algorithm">or load a model file</button>
         <button type="button" id="vm-run" class="primary" disabled>Execute</button>
       </div>
-      <input id="model-file" type="file" accept=".json,application/json" hidden>
       <div id="model-on" class="col" hidden>
         <div class="views" id="vm-edits">
           <button type="button" id="m-undo">Undo</button>
@@ -21,7 +19,7 @@
     </div>
 </template>
 <template data-slot="summary">
-    <p class="note" id="model-facts">No vessel model yet: Execute the algorithm, or load a model file.</p>
+    <p class="note" id="model-facts">No vessel model yet: Execute the algorithm.</p>
     <div id="vm-marks" class="col" hidden>
       <div class="views"><button type="button" id="m-lasso" aria-pressed="false">Mark a damaged area</button></div>
       <p class="note" id="lasso-note"></p>

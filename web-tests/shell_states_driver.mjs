@@ -3,21 +3,25 @@
 // actions one after another, and at every state reads each element as shown, disabled, folded or gone, against what
 // the rules expect. Every difference is reported, then the run fails. Optional RENDERS: a directory for a picture of
 // every state, arrows pointing at the elements that changed there, and an index.html of them all (req/checks/shell-states/renders).
-// STACK is the z-stack a path loads with its stack action. Exits 1 on a difference, 2 when it cannot run.
+// STACK is the z-stack a path loads with its stack action; ANSWERS' files[study] may name a study's own image and stack. Exits 1 on a difference, 2 when it cannot run.
 //   node web-tests/shell_states_driver.mjs ANSWERS STUDIES ROOT IMAGE STACK EXPECT [RENDERS]
 import fs from "node:fs";
 import path from "node:path";
 import { standIn } from "./stand_in_drive.mjs";
 
 const [answers, studies, rootDir, image, stack, expectFile, renders] = process.argv.slice(2);
-const { FILES, open, role, check, done } = await standIn({ answers, studies, rootDir });
+const { FILES, open, role, check, done, calls } = await standIn({ answers, studies, rootDir });
 const { elements: trees, paths } = JSON.parse(fs.readFileSync(expectFile, "utf8"));
+// the files each study's paths load, where ANSWERS names its own
+const FILES_OF = JSON.parse(fs.readFileSync(answers, "utf8")).files ?? {};
 const OTHER = "someone@example.com";
 const ROLE = { viewer: "viewer", tagger: "tagger", data: "data" };
 
 const ready = (page) => page.waitForFunction(() => /^(Ready|Image loaded|Counted)/.test(document.querySelector("#status").textContent));
 // done: the page settled, its drawers and fades over (a spinner going round never ends, so it is left out)
 const settled = async (page) => {
+  // no call of a live study's on its way, nor one more after the last answered
+  for (let quiet = 0; quiet < 3; ) { await new Promise((ok) => setTimeout(ok, 100)); quiet = calls() ? 0 : quiet + 1; }
   await page.waitForFunction(() => !document.documentElement.hasAttribute("data-drawers")
     && document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getTiming().iterations === Infinity));
   // and the disk's count, which the page makes once it is ready and the Storage item waits for; one that never comes
@@ -26,23 +30,47 @@ const settled = async (page) => {
   // and the frame after them drawn
   await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
 };
-// an image open, nothing working on it, and the fixture's Count ready for it
-const opened = () => !!shellForTests.page.get("image") && document.querySelector("#busy").hidden
-  && document.querySelector("#fx-count")?.disabled !== true;
+// an image open, nothing working on it, and the button of the study's first step ready for it
+const opened = (button) => !!shellForTests.page.get("image") && document.querySelector("#busy").hidden
+  && (!button || document.querySelector(button)?.disabled !== true);
+// the role chosen; to or from Ground Truth Tagger, the study opening afresh in it, its panels replaced, on the image
+// open if there is one
+const again = async (page, name, first) => {
+  const afresh = await page.evaluate((tagger) => {
+    window.panelsBefore = document.querySelector("[data-study-panel]");
+    return (document.documentElement.dataset.role === "tagger") !== tagger;
+  }, name === "Ground Truth Tagger");
+  await role(page, name);
+  if (afresh) await page.waitForFunction(() => document.querySelector("[data-study-panel]") !== window.panelsBefore);
+  await page.waitForFunction((b) => document.querySelector("#busy").hidden && (!shellForTests.page.get("image") || !b || document.querySelector(b)?.disabled !== true), first?.button);
+};
+// the folder's z-stack previewed (z), or its first image that is not
+const previewOf = async (page, z) => {
+  // the stand-in Drive is shared by every path: an earlier one may have made the previews already
+  if (!(await page.isDisabled("#update-previews"))) {
+    await page.click("#update-previews");
+    await page.waitForFunction(() => /previews? made/.test(document.querySelector("#folder-msg").textContent), null, { timeout: 30000 });
+  }
+  await page.click("#data-tree .tree-folder .count");
+  await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-image .pic img").length > 0);
+  await page.locator("#data-tree .tree-image").filter(z ? { hasText: path.basename(stack) } : { hasNotText: path.basename(stack) }).first().click();
+  await page.waitForFunction(() => shellForTests.page.get("image")?.source.kind === "preview" && !document.querySelector("#load-original").hidden);
+};
 const ACTIONS = {
-  async load(page) {
-    await page.setInputFiles("#file", image);
-    await page.waitForFunction(opened);
+  async load(page, first, files) {
+    await page.setInputFiles("#file", files.image ?? image);
+    await page.waitForFunction(opened, first?.button);
   },
   // the stack shown in 3D, the 2D view stepped aside
-  async stack(page) {
-    await page.setInputFiles("#file", stack);
+  async stack(page, first, files) {
+    await page.setInputFiles("#file", files.stack ?? stack);
     await page.waitForFunction(() => document.querySelector("#view").hasAttribute("data-v3"));
-    await page.waitForFunction(opened);
+    await page.waitForFunction(opened, first?.button);
   },
-  async count(page) {
-    await page.click("#fx-count");
-    await page.waitForFunction(() => /pixels/.test(document.querySelector("#fx-result").textContent));
+  // the study's first step: its button pressed, and the step done
+  async count(page, first) {
+    await page.click(first.button);
+    await page.waitForFunction((k) => /\nDone at /.test(document.querySelector(`#sb-${k}`)?.dataset.help ?? ""), first.key, { timeout: 60000 });
   },
   async items(page) {
     await page.click("#switch");
@@ -52,31 +80,18 @@ const ACTIONS = {
     await page.click("#switch");
     await page.waitForFunction(() => document.querySelector("#view").dataset.view === "image");
   },
-  // the study opens afresh, its panels replaced
-  async tagger(page) {
-    await page.evaluate(() => { window.panelsBefore = document.querySelector("[data-study-panel]"); });
-    await role(page, "Ground Truth Tagger");
-    await page.waitForFunction(() => document.querySelector("[data-study-panel]") !== window.panelsBefore);
-    await page.waitForFunction(opened);
-  },
+  async tagger(page, first) { await again(page, "Ground Truth Tagger", first); },
   async folder(page) {
     await page.click("#data-tree .tree-folder .name");
     await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell").length > 0);
   },
-  async preview(page) {
-    // the stand-in Drive is shared by every path: an earlier one may have made the previews already
-    if (!(await page.isDisabled("#update-previews"))) {
-      await page.click("#update-previews");
-      await page.waitForFunction(() => /previews? made/.test(document.querySelector("#folder-msg").textContent), null, { timeout: 30000 });
-    }
-    await page.click("#data-tree .tree-folder .count");
-    await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-image .pic img").length > 0);
-    await page.click("#data-tree .tree-image");
-    await page.waitForFunction(() => shellForTests.page.get("image")?.source.kind === "preview" && !document.querySelector("#load-original").hidden);
-  },
+  async preview(page) { await previewOf(page, 0); },
+  // the folder's z-stack previewed
+  async zpreview(page) { await previewOf(page, 1); },
   async edit(page) {
     await page.click("#edit-open");
-    await page.waitForFunction(() => !document.querySelector("#edit-box").hidden && document.querySelector("#edit-open").disabled);
+    await page.waitForFunction(() => !document.querySelector("#edit-box").hidden && document.querySelector("#edit-open").disabled
+      && shellForTests.page.get("image")?.source.kind === "drive" && document.querySelector("#busy").hidden);
   },
   async done(page) {
     await page.click("#edit-done");
@@ -89,6 +104,46 @@ const ACTIONS = {
   async online(page) {
     await page.context().setOffline(false);
     await page.waitForFunction(() => !document.documentElement.classList.contains("offline"));
+  },
+  async unload(page) {
+    await page.evaluate(() => document.querySelector("#unload").click());
+    await page.waitForFunction(() => !shellForTests.page.get("image") && document.querySelector("#busy").hidden);
+  },
+  // the first image of the study's Drive folder
+  async drive(page, first) {
+    await page.evaluate(() => document.querySelector("#load-remote").click());
+    await page.waitForFunction(() => document.querySelector("#remote-dlg").open && document.querySelector("#remote-list .item"));
+    // the study's folder opened, where the dialog lists the folders first
+    if (!(await page.$("#remote-list .item:not(.folder)"))) await page.dblclick("#remote-list .item.folder");
+    await page.waitForFunction(() => document.querySelector("#remote-list .item:not(.folder)"));
+    await page.dblclick("#remote-list .item:not(.folder)");
+    await page.waitForFunction(() => !document.querySelector("#remote-dlg").open);
+    await page.waitForFunction(opened, first?.button);
+  },
+  async viewer(page, first) { await again(page, "Viewer", first); },
+  async data(page, first) {
+    await again(page, "Data Manager", first);
+    await page.waitForFunction(() => document.querySelector("#data-col").checkVisibility());
+  },
+  // to the Image Viewer and Back, the study opening afresh
+  async restudy(page, first) {
+    await page.evaluate(() => { window.panelsBefore = document.querySelector("[data-study-panel]"); window.pathBefore = location.pathname; });
+    await page.click("#study-menu summary");
+    await page.click('#study-list a[data-id="viewer"]');
+    await page.waitForFunction(() => location.pathname !== window.pathBefore && !document.querySelector("[data-study-panel]")
+      && document.querySelector("#busy").hidden && /^(Ready|Image loaded)/.test(document.querySelector("#status").textContent));
+    await page.goBack();
+    await page.waitForFunction(() => document.querySelector("[data-study-panel]") && document.querySelector("[data-study-panel]") !== window.panelsBefore);
+    await page.waitForFunction(() => /^(Ready|Image loaded)/.test(document.querySelector("#status").textContent));
+  },
+  async ok(page) {
+    await page.click("#notice-ok");
+    await page.waitForFunction(() => document.querySelector("#notice").hidden);
+  },
+  // in until the image no longer fits, its minimap shown
+  async zoom(page) {
+    for (let k = 0; k < 12 && !(await page.isVisible("#minimap")); k++) await page.click("#zoom-in");
+    await page.waitForFunction(() => document.querySelector("#minimap").checkVisibility());
   },
   async original(page) {
     await page.click("#load-original");
@@ -140,18 +195,22 @@ for (const [k, p] of paths.entries()) {
   const made = FILES.findIndex((f) => f.name === "rauntruth-previews.tiff");
   if (made >= 0) FILES.splice(made, 1);
   // a study shown only to the accounts it names is opened by the first of them
-  const { visibility } = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "studies", p.study, "study.json"), "utf8"));
+  const { visibility, phases } = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "studies", p.study, "study.json"), "utf8"));
+  // what the study's states.json says stands in for what its page reaches off the site, and the keys that choose it
+  const { standIn: own } = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "studies", p.study, "states.json"), "utf8"));
+  const stood = own ? await import(path.join(import.meta.dirname, "..", "studies", p.study, own)) : {};
   const page = await open(p.signedIn, {
-    id: p.study, study: { stage: p.stage }, ...(p.role === "data" ? {} : { email: visibility.accounts?.[0] ?? OTHER }), seed: { "nor-role": ROLE[p.role] },
+    id: p.study, study: { stage: p.stage }, ...(p.role === "data" ? {} : { email: visibility.accounts?.[0] ?? OTHER }),
+    seed: { ...stood.seed, "nor-role": ROLE[p.role] }, prepare: stood.prepare,
   });
   await page.waitForFunction((s) => (document.documentElement.dataset.stage ?? null) === s, p.stage);
   await ready(page);
   let before = null;
   const shots = [];
   for (const [i, s] of p.states.entries()) {
-    if (i > 0) await ACTIONS[p.actions[i - 1]](page).catch(async (e) => {
+    if (i > 0) await ACTIONS[p.actions[i - 1]](page, phases[0], FILES_OF[p.study] ?? {}).catch(async (e) => {
       for (const d of differences) console.error("DIFFERENT: " + d);
-      console.error(`${p.study} · ${p.root}: ${p.actions[i - 1]} did not finish: ${e.message.split("\n")[0]}; status: ${await page.textContent("#status")}`);
+      console.error(`${p.study} · ${p.root}: ${p.actions[i - 1]} did not finish: ${e.message.split("\n")[0]}; status: ${await page.textContent("#status")}; at ${page.url()}`);
       await done(1);
     });
     await settled(page);

@@ -10,10 +10,10 @@ const tf = await import(path.join(repo, "web", "truth_folders.js"));
 // an in-memory Drive: the public reader's calls (all, text) and the signed-in writer's (create, folder, replace, mark)
 function memoryDrive() {
   let n = 0, clock = Date.parse("2026-11-05T10:00:00Z");
-  const files = [];
+  const files = [], lists = [];
   const add = (f) => { const g = { id: "id" + n++, properties: {}, modified: new Date(clock += 1000).toISOString(), ...f }; files.push(g); return g; };
   const reader = {
-    all: async (parent) => files.filter((f) => f.parent === parent && !f.trashed)
+    all: async (parent) => (lists.push(parent), files.filter((f) => f.parent === parent && !f.trashed))
       .map((f) => ({ id: f.id, name: f.name, folder: !!f.folder, modified: f.modified, properties: { ...f.properties } })),
     text: async (id) => files.find((f) => f.id === id).body,
   };
@@ -27,7 +27,7 @@ function memoryDrive() {
     },
     mark: async (id, properties) => { writes.push(["mark", files.find((g) => g.id === id).name]); Object.assign(files.find((g) => g.id === id).properties, properties); },
   };
-  return { files, reader, writer, writes, add };
+  return { files, reader, writer, writes, add, lists };
 }
 
 const out = {};
@@ -37,9 +37,9 @@ const IMG = { name: "slide3_s2.tif", sha256: "a1b2c3d4" + "0".repeat(56) };
 
 out.names = { sub: tf.subfolderName(IMG.name, IMG.sha256), file: tf.taggerFile("Jane@Lab.org") };
 out.folders = {
-  two: tf.folders({ groundTruth: { submissions: "https://drive.google.com/drive/folders/SUBMISSIONS0001", curated: "https://drive.google.com/drive/folders/CURATED0000001" } }),
-  one: tf.folders({ groundTruth: { submissions: "https://drive.google.com/drive/folders/SAMEFOLDER0001", curated: "https://drive.google.com/drive/folders/SAMEFOLDER0001" } }),
-  none: tf.folders({ groundTruth: { submissions: null, curated: null } }),
+  two: tf.folders({ submissions: "SUBMISSIONS0001", curated: "CURATED0000001" }),
+  one: tf.folders({ submissions: "SAMEFOLDER0001", curated: "SAMEFOLDER0001" }),
+  none: tf.folders(null),
 };
 
 // submitting: the subfolder made once, the tagger's own file replaced, keeping the old version
@@ -64,24 +64,27 @@ out.folders = {
   out.reader = { tagger: cur?.doc.tagger, none: await tf.current(d.reader, "C", { name: "other.tif", sha256: "f".repeat(64) }) };
 }
 
-// pending: a submission newer than the curated one, or one with no curated one; same folder, never pending
+// pending: from the two folders' listings alone, the stamps Submit, Accept and Reject leave on the image's submissions
+// subfolder; one folder for both, never pending
 {
-  const d = memoryDrive();
-  const subA = d.add({ parent: "S", name: tf.subfolderName("a.tif", "1".repeat(64)), folder: true });
-  d.add({ parent: subA.id, name: "gt_j@x.org.json", body: "{}" });
-  const subB = d.add({ parent: "S", name: tf.subfolderName("b.tif", "2".repeat(64)), folder: true });
-  d.add({ parent: subB.id, name: "gt_j@x.org.json", body: "{}" });
-  const curB = d.add({ parent: "C", name: tf.subfolderName("b.tif", "2".repeat(64)), folder: true });
-  d.add({ parent: curB.id, name: "gt_j@x.org.json", body: "{}" });
-  const subC = d.add({ parent: "S", name: tf.subfolderName("c.tif", "3".repeat(64)), folder: true });
-  d.add({ parent: subC.id, name: "gt_j@x.org.json", body: "{}", properties: { rejected: "yes", reason: "blurry" } });
-  const s = await tf.status(d.reader, { submissions: "S", curated: "C", same: false });
+  const d = memoryDrive(), F = { submissions: "S", curated: "C", same: false };
+  const at = (h) => new Date(Date.UTC(2026, 10, 7, h));
+  const im = (n, c) => ({ name: n + ".tif", sha256: c.repeat(64) });
+  const A = im("a", "1"), B = im("b", "2"), C = im("c", "3");
+  const put = (image, h) => tf.submit({ reader: d.reader, writer: d.writer, folder: "S", image, email: "j@x.org", doc: doc("j@x.org", at(h).toISOString()), at: at(h) });
+  await put(A, 1);
+  await put(B, 1);
+  await tf.accept({ reader: d.reader, writer: d.writer, folders: F, image: B, file: (await tf.files(d.reader, "S", B))[0], by: "dm@x.org", at: at(2) });
+  await put(C, 1);
+  await tf.reject({ reader: d.reader, writer: d.writer, folders: F, image: C, file: (await tf.files(d.reader, "S", C))[0], reason: "blurry", at: at(2) });
+  d.lists.length = 0;
+  const s = await tf.status(d.reader, F);
+  const listed = [...d.lists];
+  await put(B, 3);
+  const again = await tf.status(d.reader, F);
   const same = await tf.status(d.reader, { submissions: "S", curated: "S", same: true });
-  const pick = (st, name, sha) => st.get(tf.subfolderName(name, sha));
-  out.pending = {
-    a: pick(s, "a.tif", "1".repeat(64)), b: pick(s, "b.tif", "2".repeat(64)), c: pick(s, "c.tif", "3".repeat(64)),
-    sameA: pick(same, "a.tif", "1".repeat(64)), missing: pick(s, "zzz.tif", "9".repeat(64)) ?? null,
-  };
+  const pick = (st, x) => st.get(tf.subfolderName(x.name, x.sha256)) ?? null;
+  out.pending = { a: pick(s, A), b: pick(s, B), c: pick(s, C), bAgain: pick(again, B), sameA: pick(same, A), missing: pick(s, im("z", "9")), listed };
 }
 
 // accepting copies into curated under the same name, recording where from; rejecting marks the submission
@@ -91,7 +94,7 @@ out.folders = {
   const sub = (await tf.files(d.reader, "S", IMG))[0];
   await tf.accept({ reader: d.reader, writer: d.writer, folders: { submissions: "S", curated: "C", same: false }, image: IMG, file: sub, by: "dm@lab.org" });
   const cur = await tf.current(d.reader, "C", IMG);
-  await tf.reject({ writer: d.writer, file: sub, reason: "test run" });
+  await tf.reject({ reader: d.reader, writer: d.writer, folders: { submissions: "S", curated: "C", same: false }, image: IMG, file: sub, reason: "test run" });
   const after = (await tf.files(d.reader, "S", IMG))[0];
   out.curate = { name: cur?.name, accepted: cur?.doc.accepted && { by: cur.doc.accepted.by, from: cur.doc.accepted.from_sha256.length }, rejected: after.rejected, reason: after.reason };
 }

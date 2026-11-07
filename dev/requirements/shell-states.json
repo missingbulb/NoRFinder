@@ -16,7 +16,8 @@
     "hasSteps": [false, true],
     "itemView": [false, true],
     "notice": [false, true],
-    "imageFits": [true, false]
+    "imageFits": [true, false],
+    "shows3d": [false, true]
   },
   "roots": {
     "GT, signed out": {"stage": "GT", "signedIn": false, "role": "viewer"},
@@ -26,7 +27,8 @@
     "PreGT, signed out": {"stage": "PreGT", "signedIn": false, "role": "viewer"},
     "PreGT, Tagger": {"stage": "PreGT", "signedIn": true, "role": "tagger"},
     "Published, Viewer": {"stage": "Published", "signedIn": true, "role": "viewer"},
-    "GT, Data Manager": {"stage": "GT", "signedIn": true, "role": "data"}
+    "GT, Data Manager": {"stage": "GT", "signedIn": true, "role": "data"},
+    "PreGT, Data Manager": {"stage": "PreGT", "signedIn": true, "role": "data"}
   },
   "paths": [
     {"root": "GT, signed out", "actions": ["load", "count", "items"]},
@@ -39,28 +41,36 @@
     {"root": "GT, Tagger", "actions": ["load", "offline", "online"]},
     {"root": "GT, Data Manager", "actions": ["folder", "preview", "original", "offline"]},
     {"root": "GT, Data Manager", "actions": ["folder", "preview", "edit", "offline", "done"]},
-    {"root": "GT, Data Manager", "actions": ["folder", "offline", "online"]}
+    {"root": "GT, Data Manager", "actions": ["folder", "offline", "online"]},
+    {"root": "GT, Data Manager", "actions": ["folder", "zpreview", "edit", "done"]},
+    {"root": "PreGT, Data Manager", "actions": ["folder"]},
+    {"root": "GT, Tagger", "actions": ["load", "ok", "count", "unload"]},
+    {"root": "GT, Tagger", "actions": ["load", "count", "viewer"]},
+    {"root": "GT, Tagger", "actions": ["load", "count", "restudy"]},
+    {"root": "GT, Tagger", "actions": ["drive", "count"]},
+    {"root": "GT, Data Manager", "actions": ["viewer", "load", "data"]},
+    {"root": "GT, Viewer", "actions": ["load", "zoom"]}
   ],
   "tree": [
-    {"name": "Header", "select": "header", "req": "req/shell/header",
+    {"name": "Header", "select": "header", "req": "req/shell/header", "steady": "always shown",
       "children": [
-        {"name": "Logo", "select": "#logo", "req": "req/shell/header"},
-        {"name": "Study switcher", "select": "#study-menu", "req": "req/shell/header",
+        {"name": "Logo", "select": "#logo", "req": "req/shell/header", "steady": "always shown"},
+        {"name": "Study switcher", "select": "#study-menu", "req": "req/shell/header", "steady": "always shown",
           "children": [
-            {"name": "Study's icon", "select": "#title-icon", "req": "req/shell/header"},
-            {"name": "Study's name", "select": "#title", "req": "req/shell/header"}
+            {"name": "Study's icon", "select": "#title-icon", "req": "req/shell/header", "steady": "always shown"},
+            {"name": "Study's name", "select": "#title", "req": "req/shell/header", "steady": "always shown"}
           ]
         },
-        {"name": "Dark/light switch", "select": "#theme", "control": true, "req": "req/shell/header"},
-        {"name": "Role menu", "select": "#role-menu", "req": "req/shell/account/role",
+        {"name": "Dark/light switch", "select": "#theme", "control": true, "req": "req/shell/header", "steady": "always shown"},
+        {"name": "Role menu", "select": "#role-menu", "req": "req/shell/account/role", "steady": "always shown, its choices what the user may take",
           "children": [
-            {"name": "Role's name", "select": "#role-name", "req": "req/shell/account/role"}
+            {"name": "Role's name", "select": "#role-name", "req": "req/shell/account/role", "steady": "always shown"}
           ]
         },
-        {"name": "You (the user menu)", "select": "#user-menu", "req": "req/shell/account/sign-in"}
+        {"name": "You (the user menu)", "select": "#user-menu", "req": "req/shell/account/sign-in", "steady": "always shown, signed in or not"}
       ]
     },
-    {"name": "Layout", "select": "#layout", "req": "req/shell/left-bar/width",
+    {"name": "Layout", "select": "#layout", "req": "req/shell/left-bar/width", "steady": "always shown",
       "children": [
         {"name": "Data Management column", "select": "#data-col", "req": "req/shell/data/mode",
           "rule": [
@@ -76,28 +86,20 @@
                     {"when": {"online": [false]}, "is": "held", "req": "req/shell/offline/default"}
                   ]
                 },
+                {"name": "Set up ground truth", "select": "#gt-setup", "control": true, "req": "req/shell/ground-truth/setup",
+                  "rule": [
+                    {"when": {"stage": [null, "PreGT", "Published"]}, "is": "hidden", "approval": "tentative"},
+                    {"when": {"online": [false]}, "is": "held", "req": "req/shell/offline/default", "approval": "tentative"}
+                  ]
+                },
                 {"name": "Folder tree", "select": "#data-tree", "req": "req/shell/data/mode"},
                 {"name": "Tree's message", "select": "#data-msg", "req": "req/shell/data/mode"}
               ]
             }
           ]
         },
-        {"name": "Left bar", "select": "#left", "req": "req/shell/left-bar/folding",
+        {"name": "Left bar", "select": "#left", "req": "req/shell/left-bar/folding", "steady": "always shown",
           "children": [
-            {"name": "Collapsed strip", "select": "#left-strip", "req": "req/shell/left-bar/collapse",
-              "rule": [
-                {"is": "hidden"}
-              ],
-              "children": [
-                {"name": "Expand", "select": "#left-expand", "control": true, "req": "req/shell/left-bar/collapse"},
-                {"name": "Strip's marks", "select": "#left-marks", "req": "req/shell/left-bar/collapse"}
-              ]
-            },
-            {"name": "Left bar's head", "select": "#left-head", "req": "req/shell/left-bar/collapse",
-              "children": [
-                {"name": "Collapse", "select": "#left-collapse", "control": true, "req": "req/shell/left-bar/collapse"}
-              ]
-            },
             {"name": "Image box", "select": "#image-box", "box": true, "req": "req/shell/left-bar/folding",
               "rule": [
                 {"when": {"selected": ["folder"]}, "is": "hidden", "req": "req/shell/data/folder"},
@@ -108,7 +110,7 @@
                 {"name": "File name and info", "select": "#file-box", "req": "req/shell/image/file-info",
                   "children": [
                     {"name": "Image's name", "select": "#file-name", "req": "req/shell/image/file-info"},
-                    {"name": "Image's details", "select": "#file-info", "req": "req/shell/image/file-info",
+                    {"name": "Image's details", "select": "#file-info", "req": "req/shell/image/file-info", "steady": "opens only from the file's name",
                       "rule": [
                         {"is": "hidden"}
                       ]
@@ -129,21 +131,22 @@
                     },
                     {"name": "Depth row", "select": "#channels .v3-slices", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
                       "rule": [
+                        {"when": {"shows3d": [false]}, "is": "hidden", "req": "req/shell/viewer-3d"},
                         {"when": {"stack": [false]}, "is": "hidden"}
                       ],
                       "children": [
-                        {"name": "Slices shown", "select": "#v3-slices", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d"},
                         {"name": "First slice shown", "select": "#v3-z0", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"},
                         {"name": "Last slice shown", "select": "#v3-z1", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"},
                         {"name": "Spacing between slices", "select": "#v3-zs", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"}
                       ]
                     },
-                    {"name": "Channel's Colour by depth", "select": "#channels .v3-depth-row", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
+                    {"name": "Channel's Colour by depth", "select": "#channels .v3-tick", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
                       "rule": [
+                        {"when": {"shows3d": [false]}, "is": "hidden", "req": "req/shell/viewer-3d"},
                         {"when": {"stack": [false]}, "is": "hidden"}
                       ],
                       "children": [
-                        {"name": "Colour by depth tick", "select": "#channels .v3-depth-row input", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"}
+                        {"name": "Colour by depth tick", "select": "#channels .v3-tick", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"}
                       ]
                     }
                   ]
@@ -177,7 +180,7 @@
                   ],
                   "children": [
                     {"name": "Load Original", "select": "#load-original", "control": true, "req": "req/shell/data/preview-images"},
-                    {"name": "File chooser", "select": "#file", "req": "req/shell/load/from",
+                    {"name": "File chooser", "select": "#file", "control": true, "req": "req/shell/load/from", "steady": "the input behind This computer, never shown itself",
                       "rule": [
                         {"is": "hidden"}
                       ]
@@ -186,7 +189,7 @@
                 }
               ]
             },
-            {"name": "Ground truth box", "select": "#truth-box", "box": true, "req": "req/shell/ground-truth/view",
+            {"name": "Ground truth box", "select": "#truth-box", "box": true, "req": "req/shell/ground-truth/view", "unwalked": "shows only for a study whose ground truth is made, and the stand-in Drive holds none",
               "rule": [
                 {"is": "hidden", "approval": "tentative"}
               ],
@@ -231,16 +234,19 @@
               ],
               "children": [
                 {"name": "Split", "select": "#edit-split", "req": "req/shell/data/edit"},
-                {"name": "Split hint", "select": "#edit-split-hint", "req": "req/shell/data/edit",
+                {"name": "Split hint", "select": "#edit-split-hint", "req": "req/shell/data/edit", "steady": "shows only while an image is split",
                   "rule": [
                     {"is": "hidden"}
                   ]
                 },
                 {"name": "Crop", "select": "#edit-crop-row", "req": "req/shell/data/edit",
+                  "rule": [
+                    {"when": {"stack": [true]}, "is": "hidden", "about": "a z-stack is edited in 3D, which has tools of its own"}
+                  ],
                   "children": [
                     {"name": "Draw", "select": "#edit-crop", "control": true, "req": "req/shell/data/edit"},
                     {"name": "Crop's size", "select": "#edit-crop-size", "req": "req/shell/data/edit"},
-                    {"name": "Reset crop", "select": "#edit-crop-reset", "control": true, "req": "req/shell/data/edit",
+                    {"name": "Reset crop", "select": "#edit-crop-reset", "control": true, "req": "req/shell/data/edit", "steady": "shows only once a crop is drawn",
                       "rule": [
                         {"is": "hidden"}
                       ]
@@ -253,7 +259,11 @@
                   ],
                   "children": [
                     {"name": "Slices' text", "select": "#edit-z-text", "req": "req/shell/data/edit"},
-                    {"name": "Use suggested", "select": "#edit-suggest", "control": true, "req": "req/shell/data/edit"},
+                    {"name": "Use suggested", "select": "#edit-suggest", "control": true, "req": "req/shell/data/edit",
+                      "rule": [
+                        {"is": "disabled", "approval": "tentative", "about": "the slices kept are the suggested ones already, as on the walked z-stack"}
+                      ]
+                    },
                     {"name": "Slices slider", "select": "#edit-slices", "req": "req/shell/data/edit",
                       "children": [
                         {"name": "Suggested band", "select": "#edit-band", "req": "req/shell/data/edit"},
@@ -265,6 +275,9 @@
                 },
                 {"name": "Channels kept", "select": "#edit-channels", "req": "req/shell/data/edit"},
                 {"name": "Imperfections", "select": "#edit-flaws-row", "req": "req/shell/data/edit",
+                  "rule": [
+                    {"when": {"stack": [true]}, "is": "hidden", "about": "a z-stack is edited in 3D, which has tools of its own"}
+                  ],
                   "children": [
                     {"name": "Mark", "select": "#edit-lasso", "control": true, "req": "req/shell/data/edit"},
                     {"name": "Imperfections' list", "select": "#edit-flaws", "req": "req/shell/data/edit"}
@@ -296,7 +309,7 @@
                       "children": [
                         {"name": "Submit Ground Truth", "select": "#gt-submit", "control": true, "req": "req/shell/ground-truth/tasks",
                           "rule": [
-                            {"when": {"counted": [false]}, "is": "disabled"}
+                            {"when": {"counted": [false]}, "is": "disabled", "unwalked": "the box is folded until the first step is done"}
                           ]
                         }
                       ]
@@ -315,8 +328,8 @@
             }
           ]
         },
-        {"name": "Left bar gutter", "select": "#gutter-left", "req": "req/shell/left-bar/width"},
-        {"name": "Main view", "select": "#view", "req": "req/shell/image/minimap",
+        {"name": "Left bar gutter", "select": "#gutter-left", "req": "req/shell/left-bar/width", "steady": "always shown"},
+        {"name": "Main view", "select": "#view", "req": "req/shell/image/minimap", "steady": "always shown",
           "children": [
             {"name": "Tasks/Items switch", "select": "#switch", "control": true, "req": "req/shell/views/second",
               "rule": [
@@ -329,26 +342,27 @@
             {"name": "Ruler", "select": "#ruler-btn", "control": true, "req": "req/shell/tools/ruler",
               "rule": [
                 {"when": {"view": ["items"]}, "is": "hidden", "req": "req/shell/views/second"},
-                {"when": {"stack": [true]}, "is": "hidden", "req": "req/shell/viewer-3d"},
+                {"when": {"stack": [true], "shows3d": [true]}, "is": "hidden", "req": "req/shell/viewer-3d"},
                 {"when": {"image": ["none"]}, "is": "disabled", "req": "req/shell/image/minimap"}
               ]
             },
             {"name": "Grid", "select": "#grid-btn", "control": true, "req": "req/shell/tools/grid",
               "rule": [
                 {"when": {"view": ["items"]}, "is": "hidden", "req": "req/shell/views/second"},
-                {"when": {"stack": [true]}, "is": "hidden", "req": "req/shell/viewer-3d"},
+                {"when": {"stack": [true], "shows3d": [true]}, "is": "hidden", "req": "req/shell/viewer-3d"},
                 {"when": {"image": ["none"]}, "is": "disabled", "req": "req/shell/image/minimap"}
               ]
             },
             {"name": "Minimap button", "select": "#minimap-btn", "control": true, "req": "req/shell/image/minimap",
               "rule": [
                 {"when": {"view": ["items"]}, "is": "hidden", "req": "req/shell/views/second"},
-                {"when": {"stack": [true]}, "is": "hidden", "req": "req/shell/viewer-3d"},
+                {"when": {"stack": [true], "shows3d": [true]}, "is": "hidden", "req": "req/shell/viewer-3d"},
                 {"when": {"image": ["none"]}, "is": "disabled"}
               ]
             },
             {"name": "Reset View group", "select": "#v3-tools", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
               "rule": [
+                {"when": {"shows3d": [false]}, "is": "hidden", "req": "req/shell/viewer-3d"},
                 {"when": {"stack": [false]}, "is": "hidden"}
               ],
               "children": [
@@ -373,7 +387,7 @@
                 {"when": {"view": ["items"]}, "is": "hidden", "req": "req/shell/views/second"}
               ]
             },
-            {"name": "Busy", "select": "#busy", "req": "req/shell/waiting/visible",
+            {"name": "Busy", "select": "#busy", "req": "req/shell/waiting/visible", "unwalked": "shows only while the study works, and the walk reads the page once it has settled",
               "rule": [
                 {"is": "hidden"}
               ],
@@ -391,7 +405,7 @@
               "children": [
                 {"name": "Scroller", "select": "#scroller", "req": "req/shell/image/minimap",
                   "rule": [
-                    {"when": {"stack": [true]}, "is": "hidden", "req": "req/shell/viewer-3d"}
+                    {"when": {"stack": [true], "shows3d": [true]}, "is": "hidden", "req": "req/shell/viewer-3d"}
                   ],
                   "children": [
                     {"name": "Empty view's text", "select": "#empty", "req": "req/shell/image/minimap",
@@ -414,6 +428,7 @@
                 },
                 {"name": "3D view", "select": "#v3-stage", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
                   "rule": [
+                    {"when": {"shows3d": [false]}, "is": "hidden", "req": "req/shell/viewer-3d"},
                     {"when": {"stack": [false]}, "is": "hidden"}
                   ],
                   "children": [
@@ -450,7 +465,7 @@
         }
       ]
     },
-    {"name": "Status bar", "select": "#statusbar", "req": "req/shell/status-bar",
+    {"name": "Status bar", "select": "#statusbar", "req": "req/shell/status-bar", "steady": "always shown",
       "children": [
         {"name": "Breadcrumbs", "select": "#sb-steps", "req": "req/shell/status-bar/breadcrumbs",
           "rule": [
@@ -465,37 +480,37 @@
             }
           ]
         },
-        {"name": "Now", "select": "#sb-now", "req": "req/shell/status-bar",
+        {"name": "Now", "select": "#sb-now", "req": "req/shell/status-bar", "steady": "always shown",
           "children": [
-            {"name": "Spinner", "select": "#spin", "req": "req/shell/waiting/visible",
+            {"name": "Spinner", "select": "#spin", "req": "req/shell/waiting/visible", "steady": "turns only while something loads, never once the page has settled",
               "rule": [
                 {"is": "hidden"}
               ]
             },
-            {"name": "Status", "select": "#status", "req": "req/shell/status-bar"}
+            {"name": "Status", "select": "#status", "req": "req/shell/status-bar", "steady": "always shown"}
           ]
         },
-        {"name": "Resources", "select": "#sb-res", "req": "req/shell/status-bar/resources",
+        {"name": "Resources", "select": "#sb-res", "req": "req/shell/status-bar/resources", "steady": "always shown",
           "children": [
-            {"name": "Resources, unfolded", "select": "#sb-res-items", "req": "req/shell/status-bar/resources",
+            {"name": "Resources, unfolded", "select": "#sb-res-items", "req": "req/shell/status-bar/resources", "steady": "always shown",
               "children": [
-                {"name": "Storage", "select": "#sb-disk", "control": true, "req": "req/shell/status-bar/disk"},
-                {"name": "Memory", "select": "#sb-memory", "control": true, "req": "req/shell/status-bar/memory"},
-                {"name": "Network", "select": "#sb-net", "control": true, "req": "req/shell/status-bar/network"},
-                {"name": "CPU", "select": "#sb-cpu", "control": true, "req": "req/shell/status-bar/cpu"}
+                {"name": "Storage", "select": "#sb-disk", "control": true, "req": "req/shell/status-bar/disk", "steady": "always shown"},
+                {"name": "Memory", "select": "#sb-memory", "control": true, "req": "req/shell/status-bar/memory", "steady": "always shown"},
+                {"name": "Network", "select": "#sb-net", "control": true, "req": "req/shell/status-bar/network", "steady": "always shown"},
+                {"name": "CPU", "select": "#sb-cpu", "control": true, "req": "req/shell/status-bar/cpu", "steady": "always shown"}
               ]
             },
-            {"name": "Resources icon", "select": "#sb-res-icon", "control": true, "req": "req/shell/status-bar/resources"}
+            {"name": "Resources icon", "select": "#sb-res-icon", "control": true, "req": "req/shell/status-bar/resources", "steady": "always shown"}
           ]
         },
-        {"name": "Online icon", "select": "#sb-online", "control": true, "req": "req/shell/status-bar/online"},
+        {"name": "Online icon", "select": "#sb-online", "control": true, "req": "req/shell/status-bar/online", "steady": "always shown, its icon what the connection is"},
         {"name": "Report a problem", "select": "#sb-report", "control": true, "req": "req/shell/report/bug",
           "rule": [
             {"when": {"online": [false]}, "is": "held", "req": "req/shell/offline/default"}
           ]
         },
-        {"name": "Version", "select": "#sb-version", "control": true, "req": "req/shell/version-history"},
-        {"name": "What's new", "select": "#whats-new", "req": "req/shell/version-history",
+        {"name": "Version", "select": "#sb-version", "control": true, "req": "req/shell/version-history", "steady": "always shown"},
+        {"name": "What's new", "select": "#whats-new", "req": "req/shell/version-history", "unwalked": "pops up only for a version the user has not seen",
           "rule": [
             {"is": "hidden"}
           ],
@@ -506,12 +521,12 @@
         }
       ]
     },
-    {"name": "Tooltip", "select": "#tip", "req": "req/shell/channels/rows",
+    {"name": "Tooltip", "select": "#tip", "req": "req/shell/channels/rows", "steady": "shows only on hover",
       "rule": [
         {"is": "hidden"}
       ]
     },
-    {"name": "Icons", "select": "#icons", "req": "req/shell/header",
+    {"name": "Icons", "select": "#icons", "req": "req/shell/header", "steady": "the page's icons to copy from, never shown",
       "rule": [
         {"is": "hidden"}
       ]

@@ -37,6 +37,7 @@ import { dialogMotion } from "./dialog_motion.js";
 import { truthTagger, LOCAL_GT } from "./truth_tagger.js";
 import { truthTasks } from "./truth_tasks.js";
 import { subfolderName } from "./truth_folders.js";
+import { studyPlace } from "./study_root.js";
 
 const $ = (s) => document.querySelector(s);
 // what the user does here, kept on this device for a problem report (req/shell/report/action-log)
@@ -47,7 +48,7 @@ const VIEWERS = { image2d: viewer2d, image3d: (shell) => viewer3d(shell, viewers
 const DEFAULT_STUDY = "viewer";
 // the browser keys the shell saves under; their names predate studies, and a user's saved state lives in them
 const THEME = "nor-theme"; // "dark" | "light"; absent = follow the system
-const BARS = "nor-bars-v1"; // {left, collapsed}: the left bar's width in pixels, and whether it is collapsed (a right bar's, from before it went, is ignored)
+const BARS = "nor-bars-v1"; // {left}: the left bar's width in pixels (a right bar's, or whether it was collapsed, from before they went, is ignored)
 // the last remote link pasted, in any study
 const REMOTE_LINK = "nor-drive-link";
 // {study id: the last remote link pasted in that study}
@@ -56,6 +57,8 @@ const REMOTE_LINKS = "nor-drive-links";
 const THUMBS = "nor-drive-thumbs";
 // "on" | "off": whether an image downloaded from the remote store is kept on this device
 const AUTO_SAVE = "nor-drive-autosave";
+// Auto-save images (req/shell/drive/kept-images): an image downloaded from the remote store is kept on this device
+const autoSave = () => readJSON(AUTO_SAVE, "on") !== "off";
 // + remote id: a JPEG data URL of the image, saved when it was opened
 const SAVED_THUMB = "nor-drive-thumb:";
 // [remote id], oldest first: which images have one
@@ -105,7 +108,10 @@ const signIn = account({
   menu: $("#user-menu"),
   applied: () => reapply(),
   // after the page's own start, which this may run during
-  changed: () => queueMicrotask(() => { data.signedIn(); showRole(); drawStudies(); remoteHint(); }),
+  changed: () => queueMicrotask(async () => {
+    data.signedIn(); if (manifest) storeRoles = await readRoles();
+    showRole(); drawStudies(); remoteHint();
+  }),
 });
 // signed in, the remote store is read as the user (req/shell/drive/credentials)
 remote.use(signIn);
@@ -117,11 +123,15 @@ $("#load-original").title = `Open the image itself, not its preview: from this d
 $("#remote-title").textContent = `Load from ${remote.label}`;
 $("#remote-link").placeholder = remote.words.placeholder;
 $("#remote-throttle-say").textContent = remote.words.throttled;
-$("#remote-autosave-l").title = `Keep each image opened from ${remote.short} on this device, so it opens again without a download`;
 $("#save-remote").textContent = `Save to ${remote.label}`;
 
 // the tagger's side of the study's ground-truth folders: the line in its ground-truth box, Clear progress and Submit
-const truth = truthTagger({ account: signIn, remote, manifest: () => manifest,
+// the study on show's root in the remote store: its settings, the folders Load browses, the roles the store gives
+const place = studyPlace(remote, () => manifest);
+// what the store lets the signed-in user write in the study on show (req/shell/data/roles), read as the study comes in
+let storeRoles = { manager: false, tagger: false };
+const readRoles = () => place.roles().catch((e) => { console.warn("roles not read:", e); return { manager: false, tagger: false }; });
+const truth = truthTagger({ account: signIn, remote, place,
   image: () => (st.img ? { name: st.fileName, sha256: st.sha, source: st.source } : null), on: () => !!manifest && makesTruth(),
   cleared: () => restudy(true) });
 
@@ -447,7 +457,7 @@ const makesTruth = () => stageTruth() && role === "tagger";
 
 // ---------- the role the user works in (req/shell/account/role) ----------
 let role = "viewer";
-const rolesHeld = () => held({ signedIn: signIn.signedIn(), tagging: takesTaggers(), manager: data.manager });
+const rolesHeld = () => held({ signedIn: signIn.signedIn(), tagging: takesTaggers() && storeRoles.tagger, manager: storeRoles.manager && remote.ready });
 const keptRole = () => { try { return localStorage.getItem(ROLE); } catch { return null; } };
 // the role shown, as the study comes in: before its steps are drawn from it
 function takeRole() {
@@ -767,7 +777,7 @@ $("#file").onchange = async (e) => {
 };
 // the study's own remote folders, which its dialog browses alone; a study naming none (the Image Viewer) takes a pasted
 // link instead (req/shell/drive/dialog)
-const studyFolders = () => remote.study(manifest).folders;
+const studyFolders = () => (remote.study(manifest).root ? [remote.study(manifest).root] : []);
 // the link the remote files dialog opened on: listing it is not pasting it
 let remoteFrom = "", remoteOpened = () => {};
 function openRemote() {
@@ -775,7 +785,7 @@ function openRemote() {
   const pastes = !studyFolders().length;
   $("#remote-dlg").classList.toggle("folders", !pastes);
   remoteFrom = $("#remote-link").value = pastes ? readJSON(REMOTE_LINKS)[manifest.id] || readJSON(REMOTE_LINK, "") : "";
-  $("#remote-dlg").showModal(); if (pastes) $("#remote-link").select(); showSaved();
+  $("#remote-dlg").showModal(); if (pastes) $("#remote-link").select();
   holdRemote();
   remoteOpened();
 }
@@ -997,7 +1007,7 @@ function remoteDialog() {
         $("#busy-text").textContent = `Downloading ${what} · ${mb(got)}${total ? " of " + mb(total) : ""} MB`;
       });
       if (f.folder) { trail = [f]; return show(); }
-      if ($("#remote-autosave").checked) saveImage(id, f.name, f.bytes, { path, study: manifest.id });
+      if (autoSave()) saveImage(id, f.name, f.bytes, { path, study: manifest.id });
       remember(id, f.name, path); picture(id, f.name, f.bytes);
       openBytes(f.name, f.bytes, remote.source(id));
     } catch (err) {
@@ -1148,13 +1158,12 @@ function remoteDialog() {
     const put = (pic, url) => { const i = new Image(); i.alt = ""; i.src = url; pic.replaceChildren(i); };
     const tell = () => {
       const t = asked ? `${done} of ${asked} · ${sizeText(bytes)}` : "";
-      $("#remote-thumbs-note").textContent = t;
       loading = running && t ? "Thumbnails " + t : ""; say();
     };
     // the rows from the first in view to AHEAD past the last, that no fetch has been started for
     const wanted = () => {
       const list = $("#remote-list"), items = list.children;
-      if (!$("#remote-dlg").open || !$("#remote-thumbs").checked || throttled() || !items.length) return [];
+      if (!$("#remote-dlg").open || readJSON(THUMBS, "on") === "off" || throttled() || !items.length) return [];
       const box = list.getBoundingClientRect();
       let first = 0, last = items.length - 1;
       for (let hi = last; first < hi; ) { const m = (first + hi) >> 1; if (items[m].getBoundingClientRect().bottom > box.top) hi = m; else first = m + 1; }
@@ -1219,14 +1228,6 @@ function remoteDialog() {
     return { reset, watch, stop, later, cover };
   })();
   $("#remote-open").onclick = () => chosen && enter(chosen);
-  $("#remote-thumbs").checked = readJSON(THUMBS, "on") !== "off";
-  $("#remote-thumbs").onchange = (e) => {
-    writeJSON(THUMBS, e.target.checked ? "on" : "off");
-    if (!e.target.checked) thumbs.stop(); else thumbs.later();
-  };
-  $("#remote-autosave").checked = readJSON(AUTO_SAVE, "on") !== "off";
-  $("#remote-autosave").onchange = (e) => writeJSON(AUTO_SAVE, e.target.checked ? "on" : "off");
-  $("#remote-storage").onclick = () => usage("storage");
   if (!remote.ready) {
     const d = $("#load-remote");
     d.disabled = true; d.title = remote.words.unready;
@@ -1234,7 +1235,7 @@ function remoteDialog() {
   // offline, a folder link opens on the folder as last listed, and anything else on the images kept here
   const open = async () => {
     // a study's own folders: straight into the one, else a list of them
-    const roots = studyFolders();
+    const roots = studyFolders().length ? await place.dataFolders() : [];
     if (roots.length) {
       if (offlineCopy.offline() && !roots.some((id) => keptListing(id))) return showKept();
       keptOn = false; $("#remote-list").replaceChildren(); choose(null); msg("");
@@ -1372,21 +1373,14 @@ async function saveImage(id, name, bytes, where = {}) {
   try {
     await (await caches.open(IMAGES)).put(imageUrl(id), new Response(body, { headers }));
   } catch (e) { console.warn("image not saved:", e); }
-  showSaved(); diskBar();
+  diskBar();
 }
 const bytesOf = (k) => 2 * (k.length + (localStorage.getItem(k) || "").length); // UTF-16
-// the remote files dialog's link to Manage storage: what thumbnails and saved images take on this device
-async function showSaved() {
-  let n = 0;
-  try { for (const k of Object.keys(localStorage)) if (k.startsWith(SAVED_THUMB) || k === SAVED_THUMBS || k === THUMB_NAMES) n += bytesOf(k); } catch { /* no storage */ }
-  try { const c = await caches.open(IMAGES); for (const q of await c.keys()) n += (await (await c.match(q)).blob()).size; } catch { /* no caches */ }
-  $("#remote-storage").textContent = sizeText(n);
-}
 
 // ---------- the user: whoever opened the page on this device, and what the site keeps here ----------
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
-  [THEME]: "Theme", [ROLE]: "The role you work in", [BARS]: "Left bar width, and whether it is collapsed", [REMOTE_LINK]: `Last ${remote.label} link`, [REMOTE_LINKS]: `Last ${remote.label} link in each study`,
+  [THEME]: "Theme", [ROLE]: "The role you work in", [BARS]: "Left bar width", [REMOTE_LINK]: `Last ${remote.label} link`, [REMOTE_LINKS]: `Last ${remote.label} link in each study`,
   [THUMBS]: `Show thumbnails in the ${remote.short} dialog`, [AUTO_SAVE]: `Auto-save images from ${remote.label}`, [RECENT]: `Recent images from ${remote.label}`, [LOCAL_RECENT]: "Recent files from this computer", [LISTINGS]: `${remote.label} folders as last listed, for working offline`, [HOLDS]: `What each ${remote.short} image holds (2D or 3D)`, [THROTTLE]: `Wait after ${remote.short} downloads were throttled`, [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: SIGNED_IN_LABEL, [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [RESOURCES]: "The status bar's disk, memory, network and CPU: hidden, auto-hiding or always open", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
 };
 // What the site keeps, by what it takes to work offline (req/shell/storage/manage): a section per study, then what they share; settings
@@ -1401,7 +1395,7 @@ async function inventory() {
   const drop = (...keys) => keys.forEach((k) => { try { localStorage.removeItem(k); } catch { /* nothing kept */ } });
   const studies = await offlineCopy.studyFiles().catch((e) => { console.warn("the studies could not be read:", e); return []; });
   const live = await offlineCopy.available().catch(() => new Set());
-  const sections = studies.map((s) => ({ id: "study:" + s.id, study: s.id, title: s.title, mark: live.has(s.id), folders: !!s.manifest.files.folders?.length, entries: [] }));
+  const sections = studies.map((s) => ({ id: "study:" + s.id, study: s.id, title: s.title, mark: live.has(s.id), folders: !!s.manifest.root, entries: [] }));
   const shared = { id: "shared", title: "Shared by every study", about: SHARED_ABOUT, entries: [] };
   // a study's own, else the study on show's: kept before images were told apart by study
   const sectionOf = (id) => sections.find((x) => x.study === id) || sections.find((x) => x.study === manifest?.id) || shared;
@@ -1544,7 +1538,7 @@ function deviceSettings() {
   let keys = [];
   try { keys = Object.keys(localStorage); } catch { /* no storage */ }
   return keys.map((k) => {
-    const label = OWN_SETTINGS[k] && !FOLLOWS.includes(k) && k !== SIGNED_IN ? OWN_SETTINGS[k] : !OWN_SETTINGS[k] && study.stored?.(k)?.group === "settings" ? study.stored(k).what : null;
+    const label = OWN_SETTINGS[k] && !FOLLOWS.includes(k) && k !== SIGNED_IN && k !== AUTO_SAVE ? OWN_SETTINGS[k] : !OWN_SETTINGS[k] && study.stored?.(k)?.group === "settings" ? study.stored(k).what : null;
     return label && { key: k, label, size: sizeText(bytesOf(k)) };
   }).filter(Boolean).sort((a, b) => a.label.localeCompare(b.label));
 }
@@ -1563,6 +1557,7 @@ const settings = settingsDialog({
     { key: MOTION, label: "Animations", kind: "toggle", on: true, off: false, fallback: true },
     { key: RESOURCES, label: "The status bar's disk, memory, network and CPU", kind: "choice", fallback: "auto", options: [["hidden", "Hidden always"], ["auto", "Auto-hiding"], ["open", "Always open"]] },
     { key: SEEN_VERSION, label: "Version you saw last", kind: "text" },
+    { key: AUTO_SAVE, label: `Auto-save images from ${remote.label}, on this device`, kind: "toggle", on: "on", off: "off", fallback: "on" },
     { key: "device-only", label: "Kept on this device only", kind: "device", entries: deviceSettings },
   ],
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
@@ -1582,7 +1577,7 @@ function reapply() {
 }
 $("#open-settings").onclick = () => { $("#user-menu").open = false; settings.open(); };
 $("#storage-reload").onclick = () => location.reload();
-$("#usage-dlg").addEventListener("close", () => { $("#storage-msg").textContent = ""; if ($("#remote-dlg").open) showSaved(); });
+$("#usage-dlg").addEventListener("close", () => { $("#storage-msg").textContent = ""; });
 
 // ---------- downloads and ground truth ----------
 function saveFile(name, text, type) {
@@ -1602,10 +1597,18 @@ async function offerTruth() {
   box.hidden = true; b.hidden = false; say.hidden = true; $("#gt-offer").hidden = false;
   if (role === "tagger" || !study.showTruth || !remote.owns(st.source) || !st.sha) return;
   let got;
-  try { got = await truth.curated({ name: st.fileName, sha256: st.sha }); } catch (e) { console.warn("curated ground truth not read:", e); return; }
-  if (mine !== offered || !got) return;
+  const img = { name: st.fileName, sha256: st.sha };
+  let has;
+  try { has = await truth.hasCurated(img); } catch (e) { console.warn("curated ground truth not listed:", e); return; }
+  if (mine !== offered || !has) return;
   box.hidden = false;
-  b.onclick = () => {
+  b.onclick = async () => {
+    b.disabled = true;
+    let got;
+    try { got = await truth.curated(img); } catch (e) { say.hidden = false; say.textContent = `The ground truth could not be read: ${e.message || e}`; b.disabled = false; return; }
+    b.disabled = false;
+    if (mine !== offered) return;
+    if (!got) { say.hidden = false; say.textContent = "Its curated ground truth holds no file the page can read."; return; }
     const d = got.doc, when = d.created ? new Date(d.created).toLocaleString() : "an unknown time";
     const counts = study.showTruth(d);
     b.hidden = true; $("#gt-offer").hidden = true; say.hidden = false;
@@ -1740,14 +1743,6 @@ function retitle() {
     if (typeof want === "string") { if (t.textContent !== want || t.children.length) t.textContent = want; }
     else if (t.firstChild !== want) t.replaceChildren(want);
   });
-  // the collapsed left bar's strip (req/shell/left-bar/collapse): a mark per drawer on show, opening it
-  $("#left-marks").replaceChildren(...shown.map((b) => {
-    const h = b.querySelector(":scope > .sec-head h2"), m = document.createElement("button");
-    m.type = "button"; m.className = "step-mark"; m.textContent = h.querySelector(".step-mark").textContent;
-    m.classList.toggle("done", b.classList.contains("done")); m.classList.toggle("open", !b.classList.contains("folded"));
-    m.title = h.dataset.name; m.onclick = () => b.classList.remove("folded");
-    return m;
-  }));
 }
 // a Markdown outline drawn as HTML: paragraphs split by blank lines, "- " or "1. " items nested by their indent
 function outline(text) {
@@ -1817,42 +1812,23 @@ function foldable() {
 function showImage() { study.showImage?.(); view.minimapView(); }
 
 // ---------- the left bar and theme ----------
-// the left bar takes the width it is dragged to; a double click puts it back. Dragged past its narrowest it
-// collapses (req/shell/left-bar/collapse), and dragged out from the strip it opens again under the pointer
+// the left bar takes the width it is dragged to, never narrower than its narrowest; a double click puts it back.
+// It stays open (req/shell/left-bar/static).
 {
-  const lay = $("#layout"), saved = readJSON(BARS), g = $("#gutter-left"), bar = $("#left"), root = document.documentElement;
-  const MIN = 200, STRIP = 32, SHUT = (MIN + STRIP) / 2;
+  const lay = $("#layout"), saved = readJSON(BARS), g = $("#gutter-left"), bar = $("#left");
+  const MIN = 200;
   const set = (w) => {
     if (w == null) { lay.style.removeProperty("--lw"); return; }
     lay.style.setProperty("--lw", Math.round(Math.max(MIN, Math.min(w, innerWidth * 0.4))) + "px");
   };
   set(saved.left);
-  const collapse = (on) => { if (on) root.dataset.left = "collapsed"; else delete root.dataset.left; };
-  collapse(!!saved.collapsed);
-  const toggle = (on) => {
-    if (!!saved.collapsed === on) return;
-    saved.collapsed = on; writeJSON(BARS, saved);
-    if (!on) { bar.classList.add("sliding-in"); setTimeout(() => bar.classList.remove("sliding-in"), 400); }
-    collapse(on);
-    retitle();
-    setTimeout(() => view?.minimapView(), 400);
-  };
   g.addEventListener("pointerdown", (e) => {
     g.setPointerCapture(e.pointerId); document.body.classList.add("resizing");
-    const was = saved.left;
-    const move = (ev) => {
-      const w = ev.clientX - bar.getBoundingClientRect().left;
-      if (w < SHUT) { saved.left = was; toggle(true); }
-      else { saved.left = w; set(w); toggle(false); }
-      view?.minimapView();
-    };
+    const move = (ev) => { saved.left = Math.max(MIN, ev.clientX - bar.getBoundingClientRect().left); set(saved.left); view?.minimapView(); };
     const up = () => { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); document.body.classList.remove("resizing"); writeJSON(BARS, saved); };
     g.addEventListener("pointermove", move); g.addEventListener("pointerup", up);
   });
   g.addEventListener("dblclick", () => { delete saved.left; set(null); writeJSON(BARS, saved); view?.minimapView(); });
-  $("#left-collapse").onclick = () => toggle(true);
-  // a step mark opens its drawer first, then the click reaches the strip
-  $("#left-strip").onclick = () => toggle(false);
 }
 
 function theme() {
@@ -2075,6 +2051,7 @@ async function mountStudy(id) {
     return notice("That study is shown only to the accounts it names. Signed in with one of them, the switcher offers it.");
   }
   data.mount(manifest);
+  storeRoles = await readRoles();
   takeRole();
   document.title = manifest.title; $("#title").textContent = manifest.title; $("#title-icon").replaceChildren(...studyIcon(id, manifest.icon)); markCurrent();
   log.add(`Opened the study “${manifest.title}”`);
@@ -2148,7 +2125,7 @@ const offlineCopy = offline({ $, esc, sizeText, remote, throttled, throttle, sto
   kept: async (id) => !!(await caches.open(IMAGES).then((c) => c.match(imageUrl(id)), () => null)), keep: saveImage });
 // Data Management (req/shell/data/mode): what it borrows from the shell
 const data = dataMode({
-  $, esc, sizeText, still, status, remote, account: signIn, working, sha256, savedImage, folderPreviews, throttle,
+  $, esc, sizeText, still, status, remote, account: signIn, place, working, sha256, savedImage, folderPreviews, throttle,
   // the folder's images in the main area, or the image
   showFolder(on) {
     $("#folder-view").hidden = !on; $("#image-view").hidden = on || views.now !== "image";
@@ -2178,7 +2155,7 @@ async function loadOriginal(source) {
   try {
     const f = await remote.file(source.id, source.name, (n) => { push = peek(); busy(true, `Downloading ${n}…`, "peek"); },
       (buf, got, total) => { push(buf, got); $("#busy-text").textContent = `Downloading ${source.name} · ${mb(got)}${total ? " of " + mb(total) : ""} MB`; });
-    if ($("#remote-autosave").checked) saveImage(source.id, f.name, f.bytes, { study: manifest.id });
+    if (autoSave()) saveImage(source.id, f.name, f.bytes, { study: manifest.id });
     picture(source.id, f.name, f.bytes);
     openBytes(f.name, f.bytes, opened);
   } catch (e) {

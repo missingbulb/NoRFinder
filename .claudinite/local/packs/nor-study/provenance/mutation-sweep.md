@@ -21,3 +21,8 @@
 - **Mechanism:** the same scheduled agentic task.
 - **Rejected:** a task-local precondition for commits under the NoR finders, the pool or the ground
   truth - deferred until weekly runs show substantive-change firing on page-only weeks.
+
+## 2026-11-07 · reworded · its setup scores instead of fetching (#815)
+- **Reason:** `ground_truth.py fetch` is gone; `score` downloads what scoring needs the first time.
+- **Actor:** @missingbulb (owner).
+- **Landed:** #815

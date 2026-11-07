@@ -8,9 +8,10 @@ import tifffile
 pytestmark = pytest.mark.full
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+from synthetic_nor import nor_image
 sys_path = os.path.join(HERE, '..', 'detection')
 NODE = shutil.which('node')
-TIFS = sorted(glob.glob(os.path.join(HERE, '..', 'data', 'raw', '**', '*.tif'), recursive=True))
+TIFS = [nor_image(os.path.join(tempfile.mkdtemp(), f'slide {k}.tif'), side=160 + 40 * k, seed=k) for k in range(3)]
 
 
 EVERY = 7  # the frames keep every EVERY-th pixel
@@ -49,7 +50,7 @@ def python_roles(path):
     return a, {g: 1, dapi: 2, 3 - g - dapi: 0}
 
 
-@pytest.mark.skipif(not NODE or not TIFS, reason='needs node and the lab images')
+@pytest.mark.skipif(not NODE, reason='needs node')
 def test_paints_each_channel_in_the_colour_of_its_role_early_and_the_same_in_pieces():
     for path, (info, whole, pieces) in zip(TIFS, paint(TIFS)):
         a, roles = python_roles(path)
@@ -64,7 +65,7 @@ def test_paints_each_channel_in_the_colour_of_its_role_early_and_the_same_in_pie
             assert int(np.argmax(follows)) == k, (path, k, follows)
 
 
-@pytest.mark.skipif(not NODE or not TIFS, reason='needs node and the lab images')
+@pytest.mark.skipif(not NODE, reason='needs node')
 def test_leaves_a_compressed_tiff_alone():
     path = tempfile.mktemp(suffix='.tif')
     tifffile.imwrite(path, tifffile.imread(TIFS[0]), compression='zlib', photometric='minisblack', imagej=False)
@@ -73,7 +74,7 @@ def test_leaves_a_compressed_tiff_alone():
     os.remove(path)
 
 
-@pytest.mark.skipif(not NODE or not TIFS, reason='needs node and the lab images')
+@pytest.mark.skipif(not NODE, reason='needs node')
 def test_every_frame_is_grey_black_or_a_shade_of_the_final_colours():
     """Arriving, wiping or fading in, no pixel shows a hue its final colour lacks: it is grey, or its final
     colour at one brightness shared by the whole frame."""
@@ -97,7 +98,7 @@ def test_every_frame_is_grey_black_or_a_shade_of_the_final_colours():
         assert coloured >= 10, (path, coloured)  # the wipe and the fade both reached the check, frame by frame
 
 
-@pytest.mark.skipif(not NODE or not TIFS, reason='needs node and the lab images')
+@pytest.mark.skipif(not NODE, reason='needs node')
 def test_ends_in_the_brightness_python_draws():
     """The painting's colours are each channel stretched as naive_nor.to8 stretches it, so Python's drawing
     replacing it changes nothing visible."""

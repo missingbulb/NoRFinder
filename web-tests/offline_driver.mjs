@@ -36,9 +36,9 @@ const [site, tiffPath, shots] = process.argv.slice(2);
 const TIFF = fs.readFileSync(tiffPath);
 const shot = async (page, name) => { if (shots) await page.screenshot({ path: path.join(shots, name + ".png") }); };
 
-// the vascular study's own folder, from its study.json, holding an image and a subfolder with another
+// the vascular study's root, from its study.json, holding an image and a subfolder with another, and no data folder
 const vascular = JSON.parse(fs.readFileSync(path.join(site, "studies/vascular/study.json")));
-const ROOT = vascular.files.folders[0].match(/folders\/([\w-]+)/)[1];
+const ROOT = vascular.root.match(/folders\/([\w-]+)/)[1];
 const SUB = "acmefolder0000000002";
 const FILES = { [ROOT]: [{ id: "acmestack00000000001", name: "stack one.tif" }, { id: SUB, name: "sub", folder: true }], [SUB]: [{ id: "acmestack00000000002", name: "stack two.tif" }] };
 
