@@ -37,28 +37,27 @@ header > .grow { flex: 1; }
 h1 { font-size: 16px; font-weight: 600; margin: 0; }
 /* the study switcher, after GitHub's repository switcher: the title and a solid caret as one control, opening a
    panel under the caret with a search box and the studies, the one on show ticked */
-/* the role menu beside the avatar (req/shell/account/role) */
-#role-menu summary { display: flex; align-items: center; gap: 2px; height: 32px; padding: 0 4px 0 10px; box-sizing: border-box; font-size: 13px; }
-#role-menu summary::after { content: none; }
-#role-menu .caret { display: grid; place-items: center; color: var(--dim); } #role-menu .caret svg { fill: currentColor; }
-#role-menu .pop { width: 240px; }
+/* the role menu after the study's, the header reading "[study] as [role]" (req/shell/account/role), drawn like it */
+header > .as { color: var(--dim); font-size: 14px; }
+#role-menu .caret { anchor-name: --role-caret; }
+#role-menu .pop { left: anchor(--role-caret left); top: calc(100% + 8px); width: 240px; max-width: calc(100vw - 32px); }
 #role-menu .pop h2 { font-size: 13px; margin: 0 0 4px; color: var(--dim); font-weight: 600; }
 #role-list { display: flex; flex-direction: column; }
 #role-list .item[aria-checked=true] { font-weight: 600; } #role-list .item[aria-checked=true]::before { content: "✓ "; }
 #role-list .item[aria-checked=false]::before { content: "✓ "; visibility: hidden; }
 #role-hint { margin: 6px 0 0; font-size: 12px; white-space: normal; }
-#study-menu summary { display: flex; align-items: center; height: 32px; padding: 0; border: 0; border-radius: var(--r-chip); background: none; overflow: hidden; }
-#study-menu summary::after { content: none; }
-#study-menu h1 { height: 32px; line-height: 32px; padding: 0 8px; background: color-mix(in srgb, var(--text) 7%, var(--bg)); }
+#study-menu summary, #role-menu summary { display: flex; align-items: center; height: 32px; padding: 0; border: 0; border-radius: var(--r-chip); background: none; overflow: hidden; }
+#study-menu summary::after, #role-menu summary::after { content: none; }
+#study-menu h1, #role-name { font-size: 16px; font-weight: 600; height: 32px; line-height: 32px; padding: 0 8px; background: color-mix(in srgb, var(--text) 7%, var(--bg)); }
 #title-icon { display: flex; align-items: center; height: 32px; padding-left: 8px; color: var(--text); background: color-mix(in srgb, var(--text) 7%, var(--bg)); }
 #title-icon svg { fill: currentColor; }
 #title-icon .study-icon[hidden] { display: none; }
 #title-icon:empty { display: none; }
-#study-menu .caret { display: grid; place-items: center; width: 24px; height: 32px; color: var(--text); background: color-mix(in srgb, var(--text) 13%, var(--bg)); }
-#study-menu .caret svg, #study-menu .search svg, #study-list svg { fill: currentColor; flex: none; }
-#study-menu summary:hover h1, #study-menu[open] h1, #study-menu summary:hover #title-icon, #study-menu[open] #title-icon { background: color-mix(in srgb, var(--text) 12%, var(--bg)); }
-#study-menu summary:hover .caret, #study-menu[open] .caret { background: color-mix(in srgb, var(--text) 18%, var(--bg)); }
-#study-menu summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#study-menu .caret, #role-menu .caret { display: grid; place-items: center; width: 24px; height: 32px; color: var(--text); background: color-mix(in srgb, var(--text) 13%, var(--bg)); }
+#study-menu .caret svg, #role-menu .caret svg, #study-menu .search svg, #study-list svg { fill: currentColor; flex: none; }
+#study-menu summary:hover h1, #study-menu[open] h1, #role-menu summary:hover #role-name, #role-menu[open] #role-name, #study-menu summary:hover #title-icon, #study-menu[open] #title-icon { background: color-mix(in srgb, var(--text) 12%, var(--bg)); }
+#study-menu summary:hover .caret, #study-menu[open] .caret, #role-menu summary:hover .caret, #role-menu[open] .caret { background: color-mix(in srgb, var(--text) 18%, var(--bg)); }
+#study-menu summary:focus-visible, #role-menu summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 #study-menu .caret { anchor-name: --study-caret; }
 #study-menu .pop { left: anchor(--study-caret left); top: calc(100% + 8px); width: 320px; max-width: calc(100vw - 32px); min-width: 0; padding: 0 0 8px; gap: 0; border-radius: var(--r-panel);
   background: var(--panel); box-shadow: 0 8px 24px #0006; }
