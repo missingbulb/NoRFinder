@@ -1,8 +1,8 @@
 // Drives the 3D viewer (web/viewer3d.js) in headless Chromium, in the vascular study (viewer image3d), against a
 // stand-in worker that opens a drawn stack: two channels, the first a bright tube climbing through depth and a
 // second one level across it, the second a blob. Checks req/shell/viewer-3d: a stack opens on the 3D view, which draws it; the
-// channel rows drive it (hiding a channel or raising its black point darkens it); the toolbar holds Look from and
-// Zoom only, and the image box a row for the slices shown and their spacing; Side turns the view; a sideways scroll turns the picture about the line of sight; a drag turns on past
+// channel rows drive it (hiding a channel or raising its black point darkens it); the toolbar's right holds Look from's
+// four buttons in a row beside Zoom, and the image box a row for the slices shown and their spacing and Colour by depth; Side turns the view; a sideways scroll turns the picture about the line of sight; a drag turns on past
 // looking straight across; the Panning label toggles panning, shift holds it on, and it is stored nowhere; the depth slab hides slices; the spacing says where it came from; no 2D/3D switch
 // anywhere, and Edit Image on a stack offers no flat-image drawing tools. And req/shell/image-viewer: the Image Viewer
 // opens a stack in 3D and a flat image (a .png here) in 2D, and keeps its Image box open once either has loaded.
@@ -101,13 +101,19 @@ try {
     await openFromDrive(page, { name: "stack.tif", mimeType: "image/tiff", buffer: Buffer.from([0x49, 0x49, 42, 0]) });
     await page.waitForFunction(() => !$("#v3-stage").hidden);
     check(!(await page.$("#v3-switch, #v3-2d")) && await page.isHidden("#stage"), "a stack opens on the 3D view only, with no 2D/3D switch to flatten it");
-    const tools = await page.evaluate(() => ({
-      look: !!$("#v3-look-btn")?.matches(".toolbar button.tool") && $("#v3-look-btn").offsetParent !== null && !$("#v3-look-btn").title,
-      gone: ["#v3-render-btn", "#v3-depth", "#v3-slices-btn"].filter((s) => document.querySelector(s)),
-      zoom: ["#zoom-in", "#zoom-out", "#zoom-label"].every((s) => $(s).offsetParent !== null),
-    }));
-    check(tools.look && !(await page.$("#v3-stage #v3-tools")), "Look from is a toolbar button like the 2D ones, with no tooltip over its popup");
-    check(!tools.gone.length, `the 3D toolbar has no Render, Colour by depth or Slices tool: ${tools.gone}`);
+    const tools = await page.evaluate(() => {
+      const looks = [...document.querySelectorAll(".toolbar #v3-look button[data-look]")], zoom = $("#zoom-out").parentElement;
+      const shown = looks.filter((b) => b.offsetParent !== null), z = zoom.getBoundingClientRect(), g = $("#v3-look")?.getBoundingClientRect();
+      return {
+        looks: shown.map((b) => b.textContent).join(), popup: !!document.querySelector("#v3-look-btn, #v3-look-pop"),
+        beside: !!g && g.right <= z.left && z.left - g.right < 24 && Math.abs((g.top + g.bottom) / 2 - (z.top + z.bottom) / 2) < 4,
+        gone: ["#v3-render-btn", ".toolbar #v3-depth", "#vm-depth", "#v3-slices-btn"].filter((s) => document.querySelector(s)),
+        zoom: ["#zoom-in", "#zoom-out", "#zoom-label"].every((s) => $(s).offsetParent !== null),
+      };
+    });
+    check(tools.looks === "Top,Tilted,Side,Front" && !tools.popup && tools.beside && !(await page.$("#v3-stage #v3-tools")),
+      `Look from's Top, Tilted, Side and Front are buttons in a row in the toolbar, beside Zoom: ${JSON.stringify(tools)}`);
+    check(!tools.gone.length, `the toolbar has no Render, Colour by depth or Slices tool: ${tools.gone}`);
     check(tools.zoom && await page.isHidden("#ruler-btn"), "Zoom stays in 3D, the other 2D tools step aside");
     const z0 = await page.textContent("#zoom-label");
     await page.click("#zoom-in");
@@ -117,7 +123,18 @@ try {
     await page.click("#zoom-out");
     const slicesRow = await page.evaluate(() => { const r = $("#channels .v3-slices"); return r && !!r.querySelector("#v3-z0") && !!r.querySelector("#v3-z1") && !!r.querySelector("#v3-zs"); });
     check(slicesRow, "the slices shown and their spacing are a row in the image box, under the channels' rows");
-    const rows = await page.evaluate(() => [...document.querySelectorAll("#channels .channel:not(.v3-slices)")].map((r) => r.querySelector("label").textContent));
+    // req/shell/viewer-3d: Colour by depth is the viewer's, in the image box as a channel's colour is
+    const depthAt = () => page.evaluate(() => ({ on: window.shellForTests.viewer.three.S.depth, pressed: $("#image-box #v3-depth")?.getAttribute("aria-pressed") }));
+    const dep0 = await depthAt();
+    check(!!dep0.pressed && dep0.pressed === String(!!dep0.on), `Colour by depth is in the image box, showing the view's state: ${JSON.stringify(dep0)}`);
+    if (await page.evaluate(() => $("#image-box").classList.contains("folded"))) { await page.click("#image-box"); await page.waitForFunction(() => !$("#image-box").classList.contains("folded")); }
+    const plain = await picture();
+    await page.click("#image-box #v3-depth");
+    const dep1 = await depthAt(), painted = await picture();
+    check(dep1.on === (dep0.on ? 0 : 1) && dep1.pressed === String(!!dep1.on) && (Math.abs(painted.r - plain.r) > 1 || Math.abs(painted.g - plain.g) > 1 || Math.abs(painted.b - plain.b) > 1),
+      `clicking it turns colour by depth ${dep0.on ? "off" : "on"} and repaints the stack: ${JSON.stringify([dep0, dep1, plain, painted])}`);
+    await page.click("#image-box #v3-depth");
+    const rows = await page.evaluate(() => [...document.querySelectorAll("#channels .channel:not(.v3-slices, .v3-depth-row)")].map((r) => r.querySelector("label").textContent));
     check(rows.join() === "CD31,DAPI", `the channel rows are the stack's: ${rows}`);
     await level(0, "black", 0);
     const all = await picture();
@@ -134,23 +151,23 @@ try {
     await level(0, "black", 0);
 
     const top = await picture();
-    await page.hover("#v3-look-btn"); await page.click('#v3-look [data-look="side"]');
+    await page.click('#v3-look [data-look="side"]');
     const side = await picture();
     check(Math.abs(side.lit - top.lit) > top.lit * 0.2, `Side turns the view: ${top.lit} → ${side.lit} lit pixels`);
-    await page.hover("#v3-look-btn"); await page.click('#v3-look [data-look="top"]');
+    await page.click('#v3-look [data-look="top"]');
 
     const box = await page.locator("#v3-gl").boundingBox(), mid = [box.x + box.width / 2, box.y + box.height / 2];
     await page.mouse.move(...mid); await page.mouse.wheel(300, 0);
     const rolled = await picture(), turned = Math.abs(Math.atan2(Math.sin(2 * (rolled.axis - top.axis)), Math.cos(2 * (rolled.axis - top.axis))) / 2);
     check(turned > 0.4 && Math.abs(rolled.lit - top.lit) < top.lit * 0.1,
       `a sideways scroll turns the picture about the line of sight: its long axis turns ${turned.toFixed(2)} rad, ${top.lit} → ${rolled.lit} lit pixels`);
-    await page.hover("#v3-look-btn"); await page.click('#v3-look [data-look="top"]');
+    await page.click('#v3-look [data-look="top"]');
     await page.mouse.move(...mid); await page.mouse.down();
     await page.mouse.move(mid[0], mid[1] + Math.PI / 0.008, { steps: 20 }); await page.mouse.up();
     const under = await picture();
     check(Math.abs(under.lit - top.lit) < top.lit * 0.15,
       `dragging down by half a turn turns on past looking straight across, to the stack from beneath: ${top.lit} → ${under.lit} lit pixels`);
-    await page.hover("#v3-look-btn"); await page.click('#v3-look [data-look="top"]');
+    await page.click('#v3-look [data-look="top"]');
 
     // the Panning label: always at the bottom of the view, blue outlined while on, grey while off; a click toggles it,
     // shift holds it on until let go, back to what the label holds; and nothing of it is stored
@@ -189,7 +206,7 @@ try {
     const let_ = await label(), d3 = await drag();
     check(!let_.on && d3.turned && !d3.panned, `letting go of shift returns panning to off: ${JSON.stringify({ on: let_.on, ...d3 })}`);
     const after = await stored(); check(after === before, `the panning state is stored nowhere: ${before} → ${after}`);
-    await page.hover("#v3-look-btn"); await page.click('#v3-look [data-look="top"]');
+    await page.click('#v3-look [data-look="top"]');
 
     await page.evaluate(() => { const s = $("#v3-z1"); s.value = 0; s.dispatchEvent(new Event("input", { bubbles: true })); });
     const slab = await picture();

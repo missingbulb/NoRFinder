@@ -566,6 +566,15 @@ nobody has decided: what the page does there is not a requirement yet.
   A crop or picture narrower than its box shrinks as a whole (`studies/nor/tests/test_page_layout.py`).
   </details>
 
+- `req/shell/image/toolbar` The toolbar's left is the study's, how its results show over the image; its right is the viewer's.
+  <details>
+
+  Set by the owner on 2026-11-07. At the toolbar's left the study chooses how what it extracted is drawn over the raw
+  image (what to show, how wide, how faint); the left bar holds none of those. At its right, beside Zoom, are the
+  viewer's own tools (the ruler, the grid, the minimap, the 3D view's Look from). Test:
+  `studies/vascular/tests/test_model_page.py`, `web-tests/test_viewer3d_page.py`.
+  </details>
+
 - `req/shell/image-viewer` The Image Viewer: the page with no study's tools, the one it opens on.
   <details>
 
@@ -603,9 +612,9 @@ nobody has decided: what the page does there is not a requirement yet.
   Set by the owner on 2026-10-30. Every box in the left bar folds under its title, and clicking the
   title opens or closes it. The first is the shell's Image box (the image selector or Load, the image's
   details, its channels, Unload): open until an image opens, then folded; in a study with no steps after Load
-  (the Image Viewer) it stays open, nothing else having opened (the owner, 2026-11-05). Each of a study's boxes
-  names the step (`req/shell/status-bar/breadcrumbs`) after which it opens, or that only its title opens it, and may name the
-  step after which it folds again. When a step is done by the user (an image opening, or the
+  (the Image Viewer) it stays open, nothing else having opened (the owner, 2026-11-05). Processing opens once an image opens and folds
+  again after the study's first step (`req/shell/status-bar/breadcrumbs`); Summary and Ground Truth Tasks open after that
+  step (`req/shell/left-bar/shells`, set by the owner on 2026-11-07). When a step is done by the user (an image opening, or the
   step's button pressed, never a dial set back to the last run's) its boxes open and the boxes it
   closes fold; opening another image also folds every box waiting for a later step. Between those moments a box
   stays as the user left it; switching study (`req/shell/study/switch-in-place`) starts over.
@@ -622,6 +631,19 @@ nobody has decided: what the page does there is not a requirement yet.
   2026-10-31). Changed by the owner on 2026-11-03: a folded drawer opens from a click anywhere on it,
   not only on its title or number; an open one still folds only from its title.
   Test: `web-tests/test_left_bar_page.py`, `web-tests/test_study_contract.py`.
+  </details>
+
+- `req/shell/left-bar/shells` The shell lays out the whole left bar, Load Image, Processing, Ground Truth Tasks and Summary; a study only fills its boxes.
+  <details>
+
+  Set by the owner on 2026-11-07: the left bar's layout is the shell's, and a study adds no box to it. Under
+  the Image box (and Data Management's) come three boxes of the shell's, each holding what the study puts in it:
+  Processing (what runs the algorithm: its choice, its settings, its button, and the tools that correct its
+  result), Ground Truth Tasks and Summary (what the result adds up to, and its downloads). While the study makes
+  ground truth for the user (`req/shell/account/role`) Ground Truth Tasks shows in Summary's place; otherwise
+  Summary shows. A box the study puts nothing in is not shown. How the study's results are drawn over the image
+  is chosen in the toolbar (`req/shell/image/toolbar`), never in the left bar. Test:
+  `web-tests/test_study_contract.py`, `web-tests/test_left_bar_page.py`.
   </details>
 
 - `req/shell/left-bar/width` The left bar drags wider or narrower (remembered; a double click restores it); there is no right bar.
@@ -1274,14 +1296,16 @@ nobody has decided: what the page does there is not a requirement yet.
   blue while panning is on and grey while off; clicking it turns panning on or off, so that a plain drag
   pans instead of turning. Holding shift turns it on until shift is let go, which returns it to the state
   the label holds. That state lives only while the page is open: it is never stored or restored (owner,
-  2026-11-05). The toolbar holds Look from (Top, Tilted, Side and Front, in a
-  popup with no tooltip over it) and the 2D view's Zoom, which zooms the 3D view (owner,
+  2026-11-05). The toolbar's right holds Look from, its Top, Tilted, Side and Front
+  buttons in a row beside Zoom (owner, 2026-11-07), and the 2D view's Zoom, which zooms the 3D view (owner,
   2026-11-04); the 2D view's other tools step aside. Brightest shows the brightest point along each
   ray, Surface a lit surface where the signal crosses a level, and colour by depth paints by the
-  depth of that point so crossings at different depths read apart: the study's `view` sets which,
-  and a study may turn colour by depth on and off. The depth is a row of the image box under the
+  depth of that point so crossings at different depths read apart: the study's `view` sets which
+  it opens with. The depth is a row of the image box under the
   channels' rows, as a channel's row holds its points (owner, 2026-11-04): its first and last slice
-  shown on one slider, and in the colour picker's place the spacing between slices. The slice
+  shown on one slider, and in the colour picker's place the spacing between slices. Under it, Colour by depth is
+  the viewer's, chosen in the image box as a channel's colour is (owner, 2026-11-07); a study drawing over the
+  stack reads it. The slice
   spacing comes from the file, else from the study (`view.spacing`, saying who stated it), else
   1 µm, called a guess. Every shown channel is drawn in its colour between the black and white
   points of its row, which redraw the 3D view as they move. The study's `view` sets the render, colour

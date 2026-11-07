@@ -41,9 +41,10 @@ owner's decisions on the stacks and the vessel model, are
   own that turns with the stack's, or magenta over the stack. On the model: drag a point to move it,
   right-click a segment or a point to delete it, add or remove a bend or split a junction into
   vessels that cross, right-drag from one piece to another to connect them, and click a faded
-  low-confidence vessel to approve or decline it. Review keeps only the signal within reach of the
-  model's vessels (Detected) or away from them (Missed), within a reach that is a share of each
-  vessel's own width; Mark a damaged area lassos an area to leave out. Every edit can be undone,
+  low-confidence vessel to approve or decline it. The toolbar's Everything, Detected and Missed keep the
+  whole stack, only the signal within reach of the model's vessels, or only what lies away from them, within a
+  reach that is a share of each vessel's own width (`req/vascular/model/view`); Mark a damaged area, under
+  what the model holds in Summary or under the tasks while ground truth is made, lassos an area to leave out. Every edit can be undone,
   and the edits stay in the browser, tied to the model as drawn, until it is submitted. Test:
   `studies/vascular/tests/test_model_page.py`.
   </details>
@@ -69,8 +70,9 @@ owner's decisions on the stacks and the vessel model, are
   page's Python on the stack open, as the lab runs it (scored, with the spacing between slices the
   page shows), and the model it draws opens over the stack. The study ships no drawn models: a
   stack opens with none until Execute. A vessel model file (one saved earlier, say) can still be
-  loaded from a small link beside Execute. Show low-confidence vessels stays in the box, under
-  Execute, once a model is open. Changed by the owner on 2026-11-04: the box behaves as NoR's
+  loaded from a small link beside Execute. Once a model is open, Undo, Redo and Discard edits are under
+  Execute; what the model holds is in Summary, with Mark a damaged area and, outside ground truth, Draw a missed
+  vessel under it (owner, 2026-11-07: the left bar is the shell's, `req/shell/left-bar/shells`). Changed by the owner on 2026-11-04: the box behaves as NoR's
   (`req/nor/find/settings`). Each algorithm in the list carries its own icon and its name, and its
   precision and recall against the provisional labels (`analysis/extraction/labels/`, a model's
   verdicts, not the owner's); How the <name> algorithm works gives its steps as a nested list
@@ -83,15 +85,18 @@ owner's decisions on the stacks and the vessel model, are
   `studies/vascular/tests/test_vessel_tasks_page.py` (the page).
   </details>
 
-- `req/vascular/model/view` Above the stack: show the image, the model, the model over the image, or both side by side; colour by depth; vessel widths.
+- `req/vascular/model/view` The toolbar's left shows the image, the model, the model over the image, or both side by side, and how the model is drawn.
   <details>
 
   Set by the owner on 2026-11-04. The toolbar chooses what the main view shows: Image (the stack
   alone), Model (the model alone), Overlay (the model over the stack, in magenta) and Side by side
-  (the stack and the model each in a half, turning together). Colour by depth paints the stack and
-  the model alike by depth; over the stack the model stays magenta, a colour the depth scale never
-  gives, so it never vanishes into the signal it marks. Vessel widths draws each vessel as wide as
-  the model says. Test: `studies/vascular/tests/test_model_page.py`.
+  (the stack and the model each in a half, turning together). The viewer's Colour by depth
+  (`req/shell/viewer-3d`) paints the model by depth as it paints the stack; over the stack the model stays magenta,
+  a colour the depth scale never gives, so it never vanishes into the signal it marks. Vessel widths draws each
+  vessel as wide as the model says. Changed by the owner on 2026-11-07, everything that sets how the model shows
+  is at the toolbar's left (`req/shell/image/toolbar`): Vessel widths, Low-confidence (the faded vessels the
+  algorithm was unsure of, offered while the model has any) and Everything, Detected and Missed, with the reach
+  beyond the vessel wall while Detected or Missed is on (`req/vascular/model/correct`). Test: `studies/vascular/tests/test_model_page.py`.
   </details>
 
 - `req/vascular/stack-view` A z-stack opens in 3D in the owner's approved view; 2D shows it flattened.
@@ -125,7 +130,7 @@ owner's decisions on the stacks and the vessel model, are
   in the same order. Test: `studies/vascular/tests/test_vessel_tasks_page.py`.
   </details>
 
-- `req/vascular/truth/tasks` Ground Truth Tasks, in the left bar under Processing: vessels, low-confidence vessels, junctions, areas, then Submit.
+- `req/vascular/truth/tasks` Ground Truth Tasks, in the shell's box under Processing: vessels, low-confidence vessels, junctions, areas, then Submit.
   <details>
 
   Set by the owner on 2026-11-04, as NoR's (`req/nor/truth/tasks`), in the left bar under the

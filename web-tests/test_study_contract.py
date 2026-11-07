@@ -93,43 +93,45 @@ def test_a_study_names_its_stage_and_steps(path):
     assert all(p.get('name') for p in m['phases'])
 
 
-class Boxes(HTMLParser):
-    """Each foldable box in an HTML file: (the slot its template fills, id, its title, data-opens, data-folds)."""
+class Panels(HTMLParser):
+    """A study's panels: each template's slot, and each box (a section of class box) a template holds."""
     def __init__(self, html):
-        super().__init__(); self.slot, self.boxes, self.title = None, [], False
+        super().__init__(); self.slot, self.slots, self.boxes = None, [], []
         self.feed(html)
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         if tag == 'template':
-            self.slot = a.get('data-slot')
-        elif tag == 'section' and 'foldable' in (a.get('class') or '').split():
-            self.boxes.append([self.slot, a.get('id'), '', a.get('data-opens'), a.get('data-folds')])
-        elif tag == 'h2' and self.boxes and not self.boxes[-1][2]:
-            self.title = True
-
-    def handle_endtag(self, tag):
-        if tag == 'h2':
-            self.title = False
-
-    def handle_data(self, data):
-        if self.title:
-            self.boxes[-1][2] += data.strip()
+            self.slot = a.get('data-slot'); self.slots.append(self.slot)
+        elif tag == 'section' and 'box' in (a.get('class') or '').split():
+            self.boxes.append((self.slot, a.get('id')))
 
 
-def test_every_studys_boxes_name_the_steps_that_open_and_fold_them():
-    """req/shell/left-bar/folding: every foldable box of a study says when it opens (a step, or user: only its title), never left to a default."""
+# the slots inside the shell's own left-bar boxes, and the slots elsewhere on the page
+BOX_SLOTS = {'processing', 'summary', 'tasks'}
+PAGE_SLOTS = {'toolbar', 'toolbar-end', 'tasks-end', 'view-top', 'views', 'over-image', 'body'}
+
+
+def test_the_left_bar_is_the_shells_and_a_study_fills_its_boxes():
+    """req/shell/left-bar/shells: the shell lays out the left bar, its boxes Image, Processing, Ground Truth Tasks and
+    Summary; a study adds no box anywhere, only its part inside the shell's boxes and the page's other slots."""
+    page = open(os.path.join(WEB, 'index.html'), encoding='utf8').read()
+    left = page[page.index('<aside id="left">'):page.index('</aside>', page.index('<aside id="left">'))]
+    for bid, slot in (('processing-box', 'processing'), ('tasks-box', 'tasks'), ('summary-box', 'summary')):
+        m = re.search(rf'<section class="box foldable[^"]*" id="{bid}"[^>]*>(.*?)</section>', left, re.S)
+        assert m, f'the shell\'s left bar has no {bid}'
+        assert f'data-slot-for="{slot}"' in m.group(1), f'{bid} holds the study\'s {slot} slot'
+    assert 'data-slot-for="left"' not in page, 'the left bar has no slot of its own for a study\'s boxes'
     seen = 0
     for path in STUDIES:
         m = manifest(path)
         if 'panels' not in m['web']:
             continue
-        steps = {'load', 'submit'} | {p['key'] for p in m['phases']}
-        for slot, bid, title, opens, folds in Boxes(open(os.path.join(os.path.dirname(path), m['web']['panels']), encoding='utf8').read()).boxes:
-            seen += 1
-            assert opens in steps | {'user'}, f'{title}: data-opens names a step or user, not {opens!r}'
-            assert folds is None or folds in steps, f'{title}: data-folds names a step, not {folds!r}'
-    assert seen >= 6, f'read only {seen} foldable boxes: the sweep is not finding them all'
+        p = Panels(open(os.path.join(os.path.dirname(path), m['web']['panels']), encoding='utf8').read())
+        seen += len(p.slots)
+        assert set(p.slots) <= BOX_SLOTS | PAGE_SLOTS, f"{m['id']} fills slots the shell has not: {set(p.slots) - BOX_SLOTS - PAGE_SLOTS}"
+        assert not p.boxes, f"{m['id']} adds boxes of its own: {p.boxes}"
+    assert seen >= 10, f'read only {seen} templates: the sweep is not finding them all'
 
 
 def test_the_shell_names_no_study():

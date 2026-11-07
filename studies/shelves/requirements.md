@@ -32,7 +32,7 @@ read for a title matcher; matching the titles is not part of it.
 - `req/shelves/matcher/export` Download for the matcher writes each book's text, view, corners and how sure the reading is.
   <details>
 
-  Outside ground truth the Titles box lists each book's text in the order found, shelf by shelf
+  Outside ground truth the Summary box lists each book's text in the order found, shelf by shelf
   from the top; Download for the matcher saves `<image>_books.json`: the image, its size, and per
   book an id, its view, its text (empty when nothing was read), the reader's confidence (0 to 1,
   null when it was not read) and the reader's name, and its corners. Test:
@@ -58,14 +58,14 @@ read for a title matcher; matching the titles is not part of it.
 
   Set by the owner on 2026-11-04: boxing and reading are made into ground truth together, as
   NoR's finding and measuring are. A Ground Truth Tagger finds and reads the books, then works down
-  the Ground truth box: Books ("12/40 Books"), one book at a time, its straightened picture across
+  the Ground Truth Tasks box: Books ("12/40 Books"), one book at a time, its straightened picture across
   the box, Spine or Cover, its title in a text box filled with what the reader read, and Right or
   Not a book under it, with Back and Skip on its row; its corners drag on the photo, and the
   picture and the reading follow them. Then Missed books: Draw a book takes four clicks on the
   photo, its corners, and the book is read and reviewed as the others; None missed ends the task.
   Submit ground truth is last, and saves `<image>_books_gt.json`, each book with where it came from
   (found or missed), its verdict, its corners, view and text, and for a found one what the finder
-  and the reader proposed. The Titles box is not shown while ground truth is made. Test:
+  and the reader proposed. Summary is not shown while ground truth is made. Test:
   `studies/shelves/tests/test_shelves_page.py`.
   </details>
 

@@ -38,11 +38,13 @@ A study is a folder with a `study.json`, and a `requirements.md` for what its pa
   by `dev/tools/build/build.py`).
 - `web` — `module`, an ES module exporting `mount(shell)`; optionally `panels`, an HTML file of
   `<template data-slot="…">` elements the shell puts into its slots before mounting, and `style`, its
-  stylesheet. The slots: `left` (the left bar, below the Image box), `toolbar` (the main area's
-  toolbar, at its left), `toolbar-end` (its right end), `view-top`, `views` (beside the image view),
-  `over-image` (floating over the image) and `body`; there is no right bar. A `box foldable` section folds
-  with the steps: its `data-opens` names the step (`load`, one of its `phases`, `submit`) after which it
-  opens, or `user` for one only its title opens, and `data-folds` the step after which it folds again.
+  stylesheet. The left bar is the shell's (`req/shell/left-bar/shells`): a study adds no box, and fills the
+  shell's boxes through `processing` (Processing: the algorithm's choice, settings, button and the tools correcting
+  its result), `tasks` (Ground Truth Tasks, shown while the study makes ground truth) and `summary` (Summary,
+  shown otherwise); a box it leaves empty is not shown. The page's other slots: `toolbar` (the toolbar's left, how
+  the study's results are drawn over the image: `req/shell/image/toolbar`), `toolbar-end` (its right end),
+  `tasks-end`, `view-top`, `views` (beside the image view), `over-image` (floating over the image) and `body`;
+  there is no right bar.
 - `files` — `from`, the places it opens images from (`local`, this computer, `drive`, Google Drive, or both:
   `req/shell/load/from`), what Load accepts, the text the empty view shows, and optionally `folders`, the study's Google
   Drive folders: the Drive dialog browses them alone, with no link to paste, and Data Management works on them all.
