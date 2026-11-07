@@ -446,6 +446,7 @@ function grab(e) {
           if (to && !(to.segment != null && to.segment === h.segment)) apply(Mo.connect(model, h, to));
           V.redraw();
         } else if (h) openMenu(h, ev.clientX, ev.clientY);
+        else if (makingTruth && focused && !focused.depth && !drawing && !lasso) offerDrawing(ev);
       },
       cancel() { rubber = null; cv.classList.remove('connecting'); V.redraw(); },
     };
@@ -666,14 +667,22 @@ function setDrawing(on) {
   $('draw-note').textContent = on ? 'Click along the vessel, a point at a time; each point goes to the brightest spot under the pointer. Click an existing vessel, press Enter or Escape to end. Ctrl-Z takes back a point.' : '';
   V.redraw();
 }
+// the brightest shown voxel under the pointer, as a point of the model; null where the pointer meets none
+function brightestAt(e) {
+  const r = cv.getBoundingClientRect();
+  const w = V.brightestOnRay((e.clientX - r.left) / view.W * 2 - 1, 1 - (e.clientY - r.top) / view.H * 2, view.W / view.H);
+  return w ? { point: fromWorld(w) } : null;
+}
+// A right-click on the image in an area seen from straight above offers to draw a missed vessel, its first point there.
+function offerDrawing(e) {
+  const at = brightestAt(e);
+  if (!at) return;
+  showMenu([['Draw a missed vessel', () => { setDrawing(true); drawing.from = at; return model; }]], e.clientX, e.clientY);
+}
 function drawClick(e) {
-  const h = pick(e), r = cv.getBoundingClientRect();
-  let to = h;
-  if (!to) {
-    const w = V.brightestOnRay((e.clientX - r.left) / view.W * 2 - 1, 1 - (e.clientY - r.top) / view.H * 2, view.W / view.H);
-    if (!w) return;
-    to = { point: fromWorld(w) };
-  }
+  const h = pick(e);
+  const to = h || brightestAt(e);
+  if (!to) return;
   // an undo can take away the point the line was drawing from
   if (drawing.from?.node != null && !model.nodes.has(drawing.from.node)) drawing.from = null;
   if (!drawing.from) { drawing.from = to; return V.redraw(); }

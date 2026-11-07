@@ -74,7 +74,7 @@ owner's decisions on the stacks and the vessel model, are
   algorithm, as NoR's (owner, 2026-11-07). Once a model is open, Undo, Redo and Discard edits are under
   Execute; what the model holds is in Summary, with Mark a damaged area under it (owner, 2026-11-07: the left bar
   is the shell's, `req/shell/left-bar/shells`). Draw a missed vessel is a ground-truth action, offered only in the
-  Missed vessels step (`req/vascular/truth/tasks`; owner, 2026-11-07). Changed by the owner on 2026-11-04: the box behaves as NoR's
+  Lines and Missed vessels steps (`req/vascular/truth/tasks`; owner, 2026-11-07). Changed by the owner on 2026-11-04: the box behaves as NoR's
   (`req/nor/find/settings`). Each algorithm in the list carries its own icon and its name, and its
   precision and recall against the provisional labels (`analysis/extraction/labels/`, a model's
   verdicts, not the owner's); How the <name> algorithm works gives its steps as a nested list
@@ -157,7 +157,8 @@ owner's decisions on the stacks and the vessel model, are
     point. The area turns and pans in 3D as anywhere (owner, 2026-11-07, replacing a view held still). Dragging a
     handle from straight above moves its point across the picture, never in depth; turned, across the screen at its
     depth; a tip dropped on another vessel attaches there (`req/vascular/model/correct`). The right-click menu
-    deletes, adds a bend or connects as anywhere. A low-confidence line, faint, is kept by clicking
+    deletes, adds a bend or connects as anywhere; right-clicked on the image where no line is, it offers Draw a
+    missed vessel, its first point there (owner, 2026-11-07). A low-confidence line, faint, is kept by clicking
     it. "Lines are right" approves the area: every confident vessel whose middle lies in it is accepted, every
     low-confidence one not kept is declined.
   - **Missed vessels**, from straight above as Lines: Draw a missed vessel adds one there

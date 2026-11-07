@@ -31,15 +31,16 @@
       <div id="task-now">
         <div class="area-head"><span id="area-name"></span><select id="area-grid" aria-label="How many areas" title="How many areas the field is cut into: a bigger area is judged whole"></select></div>
         <div id="area-map" role="group" aria-label="The areas: pick one"></div>
-        <div id="step-lines" class="step"><p class="hint">Drag a point to move its line across the picture; right-click a line or a point to delete, bend or connect. A faint line is low-confidence: click it to keep it, or it is declined.</p>
+        <div id="step-lines" class="step"><p class="hint">Drag a point to move its line across the picture; right-click a line or a point to delete, bend or connect, or the image to draw a missed vessel. A faint line is low-confidence: click it to keep it, or it is declined.</p>
           <button id="lines-ok" class="primary" type="button">Lines are right</button></div>
         <div id="step-missed" class="step"><p class="hint">Draw any vessel the algorithm missed in this area.</p>
-          <button type="button" id="m-draw" aria-pressed="false">Draw a missed vessel</button><p class="note" id="draw-note"></p>
+          <button type="button" id="m-draw" aria-pressed="false">Draw a missed vessel</button>
           <button id="area-ok" class="primary" type="button">No missed vessels here</button></div>
         <div id="step-junctions" class="step"><p class="hint">Turn the area to see each junction in depth: a real junction, or vessels that only cross. Click a vessel that makes no sense to drop it.</p>
           <p class="note" id="junctions-note"></p>
           <div id="task-stage"><div id="task-card"></div></div>
           <button id="area-done" class="primary" type="button">Area done</button></div>
+        <p class="note" id="draw-note"></p>
         <p class="note" id="peek-note">Hold Ctrl to see the model alone.</p>
       </div>
     </div>
