@@ -79,9 +79,11 @@ try {
   // (outside a ground-truth stage the tasks' Back to image button is not shown)
   const menu = await page.evaluate(() => { const m = $("#vm-show");
     return { menu: !!m && m.matches(".toolbar details.menu") && m.querySelector("summary").textContent.trim(),
-      inside: ["#model-mode", "#m-widths", "#m-candidates", "#review-mode", "#reach"].filter((s) => !$(s)?.closest("#vm-show .pop")),
+      inside: ["#model-mode", "#m-widths", "#review-mode", "#reach"].filter((s) => !$(s)?.closest("#vm-show .pop")),
+      hider: !!$("#m-candidates"),
       loose: [...document.querySelectorAll(".toolbar [data-study-panel]")].filter((e) => e.id !== "vm-show" && !e.hidden).map((e) => e.id || e.tagName) }; });
-  check(menu.menu === "Show" && !menu.inside.length && !menu.loose.length, `a Show menu holds the views, Vessel widths, Low-confidence and Everything, Detected, Missed: ${JSON.stringify(menu)}`);
+  check(menu.menu === "Show" && !menu.inside.length && !menu.loose.length, `a Show menu holds the views, Vessel widths and Everything, Detected, Missed: ${JSON.stringify(menu)}`);
+  check(!menu.hider, "the low-confidence vessels always show: no option hides them");
   // a control in the menu, reached as a person reaches it: the menu opened first
   const inMenu = async (sel) => { if (!(await page.evaluate(() => $("#vm-show").open))) await page.click("#vm-show summary"); return sel; };
   const shown = () => page.evaluate(() => ({ pressed: $("#model-mode [aria-pressed=true]").dataset.v, split: $("#v3-stage").classList.contains("split"), over: !!$("#v3-stage #mcv") }));
