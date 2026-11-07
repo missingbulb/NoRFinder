@@ -38,3 +38,7 @@
   explicit, for every study.
 - **Actor:** @missingbulb (owner).
 - **Model:** Claude Opus 5.5
+- **Source:** the owner, on the vascular GT process: "entering GT tagging mode should be explicit.
+  Obviously I'm saying things relevant to the shell and all studies"; "There should be a 'Stop
+  tagging' button".
+- **Landed:** #859
