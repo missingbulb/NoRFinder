@@ -73,10 +73,11 @@ try {
   await page.waitForFunction(() => !$("#model-on").hidden);
   check(/vessel edges/.test(await facts()), `Execute opens the model it draws: ${(await facts()).slice(0, 80)}`);
   // req/vascular/model/view: every choice of how the model shows is in one Show menu at the toolbar's left, as NoR's
+  // (outside a ground-truth stage the tasks' Back to image button is not shown)
   const menu = await page.evaluate(() => { const m = $("#vm-show");
     return { menu: !!m && m.matches(".toolbar details.menu") && m.querySelector("summary").textContent.trim(),
       inside: ["#model-mode", "#m-widths", "#m-candidates", "#review-mode", "#reach"].filter((s) => !$(s)?.closest("#vm-show .pop")),
-      loose: [...document.querySelectorAll(".toolbar [data-study-panel]")].filter((e) => e.id !== "vm-show").map((e) => e.id || e.tagName) }; });
+      loose: [...document.querySelectorAll(".toolbar [data-study-panel]")].filter((e) => e.id !== "vm-show" && !e.hidden).map((e) => e.id || e.tagName) }; });
   check(menu.menu === "Show" && !menu.inside.length && !menu.loose.length, `a Show menu holds the views, Vessel widths, Low-confidence and Everything, Detected, Missed: ${JSON.stringify(menu)}`);
   // a control in the menu, reached as a person reaches it: the menu opened first
   const inMenu = async (sel) => { if (!(await page.evaluate(() => $("#vm-show").open))) await page.click("#vm-show summary"); return sel; };

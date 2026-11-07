@@ -31,8 +31,8 @@ const SURE = '#ffffff', SURE_ALPHA = .8, UNSURE = '#9db8ff', UNSURE_ALPHA = .4, 
 const TUBE_SHADES = [.5, .7, .85, 1], TUBE_MIN_PX = 1;
 // The current task's item and area: white over a dark rim, which reads over any signal and any depth colour.
 const MARK = '#ffffff', RIM = 'rgba(0,0,0,.7)';
-// a junction found right is cut out of the stack as a ball this many of its radii wide
-const JUNCTION_CUT_RADII = 3;
+// an area is done, and cut out of the stack, once this, its last step, is done there (tasks.js)
+const DONE_STEP = 'junctions';
 // The points are handles to drag, shown only once the view is zoomed this far in from the whole stack,
 // so the opening picture is the vessels alone.
 const HANDLES_ZOOM = 2;
@@ -46,6 +46,10 @@ let mode = 'image', hover = null, rubber = null, showCandidates = true, showWidt
 let review = 'all', reach = .5, maskKey = null, maskTimer = null, drawing = null, moving = null, lasso = null;
 // makingTruth: the study makes ground truth; task: the task's item, {segments} or {node}; area: the task's area, a box in µm
 let makingTruth = false, task = null, area = null, picked = null;
+// focused: the main view shows one area of the ground-truth tasks alone, {box, depth}: from straight above, the view held
+// and every point a handle, or in 3D (depth), turning freely with no handles; null for the whole stack. outside: the
+// mode chosen for the whole stack, back once the area is left; peeking: Ctrl held, the model alone
+let focused = null, outside = 'overlay', peeking = false;
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* no storage: edits live until the page closes */ } },
@@ -111,7 +115,9 @@ function hatching(c) {
   h.beginPath(); h.moveTo(0, 8); h.lineTo(8, 0); h.stroke();
   return c.createPattern(hatch, 'repeat');
 }
-const handles = () => V.S.dist <= V.FIT_DIST / HANDLES_ZOOM;
+const handles = () => (focused ? !focused.depth : V.S.dist <= V.FIT_DIST / HANDLES_ZOOM);
+// points are picked wherever handles show, and in an area seen in 3D, where a junction is clicked to judge it
+const pickable = () => handles() || !!focused;
 // how clearly a line is drawn while a point is dragged: whole near the point, faded away from it
 function nearness(line) {
   const sp = V.S.spot;
@@ -297,7 +303,7 @@ function marks(c) {
       stroke(() => { c.beginPath(); c.arc(p[0], p[1], Math.max(9, 2 * rr), 0, 2 * Math.PI); }, 2);
     }
   }
-  if (area) {
+  if (area && !focused) {
     const q = [[area.x0, area.y0], [area.x1, area.y0], [area.x1, area.y1], [area.x0, area.y1]].map(([x, y]) => V.M.xf(view.vp, toWorld({ x, y, z: (model.slices - 1) / 2 })));
     if (q.every((v) => v[3] > 0)) {
       const pts = q.map((v) => [(v[0] / v[3] + 1) / 2 * view.W, (1 - v[1] / v[3]) / 2 * view.H]);
@@ -314,7 +320,7 @@ function pick(e, segmentsOnly = false) {
   const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
   let best = null, bd = PICK_POINT_PX;
   const on = Mo.degrees(model, visible);
-  if (!segmentsOnly && handles()) for (const [id, p] of view.pts) {
+  if (!segmentsOnly && pickable()) for (const [id, p] of view.pts) {
     if (!on.get(id) || !inSlab(model.nodes.get(id))) continue;
     const d = Math.hypot(p[0] - x, p[1] - y);
     if (d < bd) { bd = d; best = { node: id }; }
@@ -367,7 +373,7 @@ function undo() { if (!history.length) return; future.push(model); model = histo
 function redo() { if (!future.length) return; history.push(model); model = future.pop(); edits++; changed(); }
 
 function grab(e) {
-  if (!model || mode === 'image') return null;
+  if (!model || (mode === 'image' && !focused)) return null;
   closeMenu();
   if (lasso && e.button === 0) {
     const r = cv.getBoundingClientRect(), add = (ev) => { lasso.pts.push([ev.clientX - r.left, ev.clientY - r.top]); V.redraw(); };
@@ -385,7 +391,7 @@ function grab(e) {
     };
   }
   const h = pick(e);
-  if (e.button === 0 && !e.shiftKey && !V.panning && h?.node != null && !drawing) {
+  if (e.button === 0 && !e.shiftKey && !V.panning && h?.node != null && !drawing && handles()) {
     const base = model, id = h.node, ndcZ = view.pts.get(id)[3];
     let moved = false;
     const done = () => { moving = null; V.S.spot = null; };
@@ -396,7 +402,10 @@ function grab(e) {
         const far = Math.max(0, ...Mo.neighbours(base, id).map((k) => view.pts.get(k)).filter(Boolean).map((q) => Math.hypot(q[0] - x, q[1] - y)));
         moving = id; V.S.spot = { x: x / view.W, y: y / view.H, r: Math.max(SPOT_MIN_PX, SPOT_REACH * far) / view.H };
         const w = V.M.xf(V.M.inv(view.vp), [nx, ny, ndcZ]);
-        const next = Mo.moveNode(base, id, fromWorld([w[0] / w[3], w[1] / w[3], w[2] / w[3]]));
+        const to = fromWorld([w[0] / w[3], w[1] / w[3], w[2] / w[3]]);
+        // from straight above a point moves across the picture, never in depth
+        if (focused) to.z = base.nodes.get(id).z;
+        const next = Mo.moveNode(base, id, to);
         if (!moved) { moved = true; history.push(base); future = []; edits++; }
         model = next; V.redraw();
       },
@@ -432,11 +441,11 @@ function grab(e) {
 
 // A left click on a faded vessel asks for its verdict.
 function clicked(e) {
-  if (!model || mode === 'image') return;
+  if (!model || (mode === 'image' && !focused)) return;
   if (drawing) return drawClick(e);
-  const h = pick(e, true);
+  const h = pick(e, !focused?.depth);
   // while the study makes ground truth an item picked on the view is the current task's
-  if (makingTruth && picked && h && picked(h)) return;
+  if (makingTruth && picked && h && picked(h, e)) return;
   if (isCandidate(h)) return openMenu(h, e.clientX, e.clientY);
   const r = cv.getBoundingClientRect(), p = ground([e.clientX - r.left, e.clientY - r.top]);
   const k = p ? (model.excluded_regions || []).findIndex((a) => Mo.excluded({ excluded_regions: [a] }, p)) : -1;
@@ -444,7 +453,7 @@ function clicked(e) {
 }
 
 // A menu of buttons at the pointer: items are [label, fn returning the next model] or [note, null].
-function showMenu(items, x, y) {
+export function showMenu(items, x, y) {
   const m = $('ctx');
   m.replaceChildren(...items.map(([label, fn]) => {
     if (!fn) { const p = document.createElement('div'); p.className = 'note'; p.textContent = label; return p; }
@@ -522,7 +531,7 @@ export function lookAt(id) {
   const along = Math.atan2(dir[best[0]][1] - dir[best[1]][1], dir[best[0]][0] - dir[best[1]][0]);
   const um = Math.max(LOOK_RADII * (N.r || 0), LOOK_MIN_UM);
   V.focus(w, um / (model.size_px[0] * model.um_per_px) * 2 * V.half[0], along);
-  if (mode !== 'overlay') setMode('overlay');
+  if (mode !== 'overlay' && !focused) setMode('overlay');
   msg('Showing this junction from the side. Top, Tilted, Side or Front shows the whole stack again.');
 }
 // Points of the model from straight above, the stack cut down to the box around them, so a vessel
@@ -550,13 +559,37 @@ export function reveal(p) {
   if (v[3] > 0 && Math.abs(x - .5) < .35 && Math.abs(y - .5) < .35) return;
   V.S.pivot = toWorld(p); V.S.clip = null; V.redraw();
 }
-// an area seen from straight above, filling much of the view, nearer still if the view already was
-export function frameArea(b) {
-  if (!model) return;
-  const lo = toWorld({ x: b.x0, y: b.y1, z: (model.slices - 1) / 2 }), hi = toWorld({ x: b.x1, y: b.y0, z: (model.slices - 1) / 2 });
+// One area of the ground-truth tasks alone in the main view, a box in µm: from straight above (depth false), the view
+// held, the lines over the stack with a handle on every point; or in 3D, turning freely, the stack alone. Holding Ctrl
+// shows the model alone. null shows the whole stack again, in the mode chosen for it.
+export function focusArea(b, depth) {
+  if (!model || !V) return;
+  if (!b) {
+    if (!focused) return;
+    focused = null; peeking = false;
+    Object.assign(V.S, { clip: null, held: false, rot: V.facing(0, 0), pivot: [0, 0, 0], dist: V.FIT_DIST });
+    $('vm-show').hidden = false; setMode(outside); refreshMask(true);
+    return;
+  }
+  if (drawing && depth) setDrawing(false);
+  focused = { box: b, depth: !!depth }; peeking = false;
+  $('vm-show').open = false; $('vm-show').hidden = true;
+  frameFocus(); setMode(focusMode()); refreshMask(true);
+}
+export const focusedArea = () => focused;
+const focusMode = () => (peeking ? 'model' : focused.depth ? 'image' : 'overlay');
+// the area filling the view, the rest of the stack cut away: from straight above, or tilted to show its depth
+const TILT = [-0.5, -0.6], FILL = 1.05;
+function frameFocus() {
+  const b = focused.box, z = (model.slices - 1) / 2, lo = toWorld({ x: b.x0, y: b.y1, z }), hi = toWorld({ x: b.x1, y: b.y0, z });
   const h = Math.max(hi[0] - lo[0], hi[1] - lo[1]) / 2;
-  Object.assign(V.S, { rot: V.facing(0, 0), clip: null, pivot: [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, 0], dist: Math.min(V.S.dist, Math.max(.15, h * 6)) });
+  Object.assign(V.S, { rot: focused.depth ? V.facing(...TILT) : V.facing(0, 0), clip: [lo[0], lo[1], hi[0], hi[1]],
+    pivot: [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, 0], dist: Math.max(.15, V.FIT_DIST * h * FILL), held: !focused.depth });
   V.redraw();
+}
+function peek(on) {
+  if (!focused || peeking === on) return;
+  peeking = on; setMode(focusMode());
 }
 function closeMenu() { if (!$('ctx').hidden) { $('ctx').hidden = true; hover = null; V.redraw(); } }
 
@@ -575,11 +608,10 @@ function setReview(r) {
 // What the owner has decided, cut out of the stack while the study makes ground truth: the vessels with a
 // verdict, the junctions found right and the areas checked for missed vessels; null while nothing is.
 function cutOut(m) {
-  if (!makingTruth) return null;
-  const points = (m.checked_junctions || []).filter((id) => (Mo.degrees(m, Mo.live).get(id) || 0) >= 3).map((id) => m.nodes.get(id))
-    .map((n) => ({ x: n.x, y: n.y, z: n.z, r: Number.isFinite(n.r) ? JUNCTION_CUT_RADII * n.r : undefined }));
-  const boxes = (m.reviewed_regions || []).filter((g) => g.x?.length === 2 && g.y?.length === 2).map((g) => ({ x0: g.x[0], x1: g.x[1], y0: g.y[0], y1: g.y[1] }));
-  return points.length || boxes.length || m.segments.some(Mo.decided) ? { points, boxes } : null;
+  if (!makingTruth || focused) return null;
+  const boxes = (m.reviewed_regions || []).filter((g) => g.x?.length === 2 && g.y?.length === 2 && (!g.step || g.step === DONE_STEP))
+    .map((g) => ({ x0: g.x[0], x1: g.x[1], y0: g.y[0], y1: g.y[1] }));
+  return boxes.length ? { points: [], boxes } : null;
 }
 // Detected keeps the stack inside the tubes of the model's vessels still to decide; Missed keeps it outside every
 // vessel shown and what is cut out; Everything keeps all but what is cut out. The mask follows the model, the
@@ -590,13 +622,13 @@ function refreshMask(now) {
   if (!V?.meta) return;
   const cut = model && cutOut(model);
   if (!model || (review === 'all' && !cut)) { maskKey = null; return V.setMask(null); }
-  const key = [model, showCandidates, reach, V.S.zs, review];
+  const key = [model, showCandidates, reach, V.S.zs, review, !!focused];
   if (maskKey && key.every((v, k) => v === maskKey.key[k])) return V.setMask(maskKey.mask, maskKey.side);
   maskTimer = setTimeout(() => {
     const o = { zStepUm: V.S.zs, reachOfWidth: reach }, extra = { points: cut?.points, boxes: cut?.boxes };
-    const [side, mask] = review === 'detected' ? ['inside', coverage(model, V.meta.shape, { ...o, which: (s) => visible(s) && !(cut && Mo.decided(s)) })]
+    const [side, mask] = review === 'detected' ? ['inside', coverage(model, V.meta.shape, { ...o, which: visible })]
       : review === 'missed' ? ['outside', coverage(model, V.meta.shape, { ...o, which: visible, ...extra })]
-      : ['outside', coverage(model, V.meta.shape, { ...o, which: Mo.decided, ...extra })];
+      : ['outside', coverage(model, V.meta.shape, { ...o, which: () => false, ...extra })];
     maskKey = { key, mask, side }; V.setMask(mask, side);
   }, now ? 0 : 150);
 }
@@ -636,6 +668,7 @@ function drawClick(e) {
 // ---------- loading, modes, saving ----------
 function setMode(m) {
   mode = model ? m : 'image';
+  if (!focused) outside = mode;
   for (const b of $('model-mode').querySelectorAll('button')) { b.setAttribute('aria-pressed', String(b.dataset.v === mode)); b.disabled = !model && b.dataset.v !== 'image'; }
   // the model's canvas stays over the stack in every mode, for the tasks' marks
   V.place(model ? cv : null, mode === 'side');
@@ -704,7 +737,8 @@ export function openFile(f) {
 
 // Called whenever a stack opens: it opens with no model until the algorithm draws one or a file is loaded.
 export function stackOpened() {
-  model = null; loaded = null; history = []; future = []; edits = 0; savedKey = null; task = null; area = null;
+  model = null; loaded = null; history = []; future = []; edits = 0; savedKey = null; task = null; area = null; focused = null; peeking = false;
+  $('vm-show').hidden = false;
   $('model-on').hidden = true; $('vm-review').hidden = true; $('vm-marks').hidden = true; $('m-candidates-row').hidden = true; msg(''); setMode('image');
   $('model-facts').textContent = 'No vessel model yet: Execute the algorithm, or load a model file.';
   if (drawing) setDrawing(false);
@@ -717,13 +751,20 @@ export { msg };
 // The model as it stands and where each of its points was last drawn, for scripts driving the page.
 // the edits kept on this device for the model on show, forgotten
 export function forget() { if (savedKey) store.del(savedKey); }
-export const inspect = () => ({ model: model && Mo.toJSON(model), points: view && Object.fromEntries(view.pts), edits });
+// at: each point in µm; kinds: each point's state and whether it is a curve point inside one vessel or an end
+export const inspect = () => ({ model: model && Mo.toJSON(model), points: view && Object.fromEntries(view.pts), edits,
+  at: model && Object.fromEntries([...model.nodes].map(([id, n]) => [id, { x: n.x, y: n.y, z: n.z }])),
+  kinds: model && Object.fromEntries([...model.nodes.keys()].map((id) => {
+    const on = model.segments.filter((s) => Mo.live(s) && (s.a === id || s.b === id)), st = new Set(on.map((s) => s.state));
+    return [id, `${st.size === 1 ? [...st][0] : 'mixed'}-${on.length === 2 ? 'curve' : 'end'}`];
+  })) });
 
 // view: the shell's 3D view; signal ends the listeners outside the study's own panels when the study leaves;
 // makesTruth: the study makes ground truth, so what is decided is cut out of the stack
 export function init(view, signal, makesTruth) {
   V = view; makingTruth = !!makesTruth;
   model = null; loaded = null; history = []; future = []; edits = 0; savedKey = null; mode = 'image'; task = null; area = null; picked = null;
+  focused = null; outside = 'overlay'; peeking = false;
   cv = document.createElement('canvas'); cv.id = 'mcv';
   V.onDraw(draw, signal);
   V.controls(cv, grab, clicked);
@@ -751,6 +792,7 @@ export function init(view, signal, makesTruth) {
   $('m-reset').onclick = () => { if (!edits || !confirm(`Discard all ${edits} edits and go back to the model as loaded?`)) return;
     store.del(savedKey); model = loaded; history = []; future = []; edits = 0; msg(''); changed(); };
   document.addEventListener('keydown', (e) => {
+    if (e.key === 'Control') peek(true);
     if (!model || e.target.closest('input, textarea')) return;
     if (e.key === 'Escape') { closeMenu(); if (lasso) setLasso(false); }
     if (drawing && (e.key === 'Escape' || e.key === 'Enter')) { setDrawing(false); return; }
@@ -763,5 +805,8 @@ export function init(view, signal, makesTruth) {
     if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
     else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); redo(); }
   }, { signal });
+  document.addEventListener('keyup', (e) => { if (e.key === 'Control') peek(false); }, { signal });
+  addEventListener('blur', () => peek(false), { signal });
+  V.onReset(() => { if (!focused || !model) return false; frameFocus(); return true; }, signal);
   document.addEventListener('pointerdown', (e) => { if (!$('ctx').contains(e.target) && e.target !== cv) closeMenu(); }, { signal });
 }

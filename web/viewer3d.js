@@ -187,10 +187,11 @@ export function viewer3d(shell, flat) {
   const html = (tag, props) => Object.assign(document.createElement(tag), props);
   let active = false, gl = null, U = {}, tex = [], dirty = true, vol = null, mode3d = false;
   // clip: [x0, y0, x1, y1] in world units, the part of the stack shown, or null for all; spot: {x, y, r}, the part of the
-  // screen kept clear while the rest dims (x and y fractions of the width and height, r of the height), or null
-  const S = { mode: 0, iso: 0.35, z0: 0, z1: 0, zs: 1, rot: facing(0, 0), dist: FIT_DIST, pivot: [0, 0, 0], dragging: false, clip: null, spot: null };
+  // screen kept clear while the rest dims (x and y fractions of the width and height, r of the height), or null;
+  // held: a drag neither turns nor pans the view, which only zooms
+  const S = { mode: 0, iso: 0.35, z0: 0, z1: 0, zs: 1, rot: facing(0, 0), dist: FIT_DIST, pivot: [0, 0, 0], dragging: false, clip: null, spot: null, held: false };
   let mask = null, keepSide = 0;
-  const drawers = [], spacingHeard = [];
+  const drawers = [], spacingHeard = [], resetHeard = [];
   let half = [1, 1, 0.1];
 
   // ---------- the page's parts: Look from's buttons in the toolbar beside Zoom, the slices' row and Colour by depth
@@ -418,8 +419,9 @@ export function viewer3d(shell, flat) {
       if (pts.size === 2) {
         const [a, b] = [...pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]);
         if (last) zoomAt(el, (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (S.dist * last) / d);
-        last = d; pan((-dx * k * S.dist) / 6, (dy * k * S.dist) / 6);
-      } else if (panning() || e.shiftKey || e.buttons === 2) pan((-dx * k * S.dist) / 3, (dy * k * S.dist) / 3);
+        last = d; if (!S.held) pan((-dx * k * S.dist) / 6, (dy * k * S.dist) / 6);
+      } else if (S.held) return;
+      else if (panning() || e.shiftKey || e.buttons === 2) pan((-dx * k * S.dist) / 3, (dy * k * S.dist) / 3);
       else { S.rot = turn(S.rot, 1, -dx * TURN_PER_PX); S.rot = turn(S.rot, 0, -dy * TURN_PER_PX); }
       redraw();
     });
@@ -428,7 +430,7 @@ export function viewer3d(shell, flat) {
       e.preventDefault();
       const line = e.deltaMode === 1 ? WHEEL_LINE_PX : 1;
       if (e.deltaY) zoomAt(el, e.clientX, e.clientY, S.dist * Math.exp(e.deltaY * line * 0.001));
-      if (e.deltaX) S.rot = turn(S.rot, 2, e.deltaX * line * ROLL_PER_PX);
+      if (e.deltaX && !S.held) S.rot = turn(S.rot, 2, e.deltaX * line * ROLL_PER_PX);
       redraw();
     }, { passive: false });
     new ResizeObserver(redraw).observe(el);
@@ -456,7 +458,8 @@ export function viewer3d(shell, flat) {
   ui("v3-zs").oninput = (e) => { if (+e.target.value > 0) { S.zs = +e.target.value; spacingNote("you"); sync(); spacingHeard.forEach((fn) => fn()); } };
   slicesRow.querySelector(".levels").ondblclick = () => { if (vol) { S.z0 = 0; S.z1 = vol.Z - 1; sync(); } };
   let chosenLook = "top";
-  const resetView = () => { Object.assign(S, { rot: facing(...LOOKS[chosenLook]), pivot: [0, 0, 0], clip: null, dist: Math.max(S.dist, 2) }); redraw(); };
+  // a study showing part of the stack may put it back to its own view instead
+  const resetView = () => { if (resetHeard.some((fn) => fn())) return redraw(); Object.assign(S, { rot: facing(...LOOKS[chosenLook]), pivot: [0, 0, 0], clip: null, dist: Math.max(S.dist, 2) }); redraw(); };
   const nameReset = () => { ui("v3-reset").textContent = `${named(chosenLook)} View`; };
   nameReset();
   ui("v3-reset").onclick = resetView;
@@ -496,7 +499,7 @@ export function viewer3d(shell, flat) {
     const v = shell.study?.view || {};
     if (again) { Object.assign(S, { z0: 0, z1: im.Z - 1 }); ui("v3-z0").max = ui("v3-z1").max = im.Z - 1; upload(); sync(); return show3d(drawn); }
     Object.assign(S, { mode: v.render === "surface" ? 1 : 0, z0: 0, z1: im.Z - 1,
-      rot: facing(0, 0), dist: FIT_DIST, pivot: [0, 0, 0], clip: null, spot: null });
+      rot: facing(0, 0), dist: FIT_DIST, pivot: [0, 0, 0], clip: null, spot: null, held: false });
     ui("v3-z0").max = ui("v3-z1").max = im.Z - 1;
     if (im.spacing) { S.zs = im.spacing; spacingNote("file"); }
     else if (v.spacing) { S.zs = v.spacing; spacingNote(v.spacingSource || "the study"); }
@@ -522,6 +525,8 @@ export function viewer3d(shell, flat) {
     // a listener for every frame drawn, or every change of the slice spacing, until signal (the study's) ends it
     onDraw: (fn, signal) => hear(drawers, fn, signal),
     onSpacing: (fn, signal) => hear(spacingHeard, fn, signal),
+    // a listener for Reset View, which puts the view back itself when it returns true
+    onReset: (fn, signal) => hear(resetHeard, fn, signal),
     // a canvas of the study's in the stack's camera: over the stack, or beside it (the stage split in two); null for none
     place(el, beside) {
       stage.classList.toggle("split", !!(el && beside));

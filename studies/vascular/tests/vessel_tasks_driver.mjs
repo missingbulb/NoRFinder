@@ -1,9 +1,10 @@
 // Drives the vascular study's page in a GT stage (web/) in headless Chromium against a stand-in worker
 // (stand_in.mjs) whose Execute answers with a model fixture. Checks req/vascular/model/run: Processing lists the
 // algorithms with their icons, precision and recall, the default first, says how the chosen one works and how well, and Execute runs it with the spacing shown, opening
-// its model; req/vascular/truth/tasks and req/vascular/truth/order: the tasks under Processing, one row each, the
-// items area by area, a verdict moving on, Skip, a junction found right or split, the areas checked one by one;
-// req/vascular/truth/marks: a checked area blacked out of the stack; req/vascular/model/ground-truth: Submit
+// its model; req/vascular/truth/tasks and req/vascular/truth/order: a row per step counted in areas, how many areas
+// chosen, Lines from above with the view held and its handles kept in depth, Missed vessels, Junctions in 3D with an
+// artifact dropped, Ctrl showing the model alone, Back to image and Back to task; req/vascular/truth/marks: an area done
+// in every step blacked out of the stack; req/vascular/model/ground-truth: Submit
 // last, its export carrying every verdict. Exits 1 on a failed check, 2 when it cannot run.
 //   node studies/vascular/tests/vessel_tasks_driver.mjs STUDIES
 import { createRequire } from "node:module";
@@ -98,79 +99,154 @@ try {
   check(await page.evaluate(() => !!($("#model-set").compareDocumentPosition($("#tasks-box")) & Node.DOCUMENT_POSITION_FOLLOWING) && !$("#tasks-box").hidden && !$("#vm-tasks").hidden),
     "Ground Truth Tasks sits under Processing once a model is open");
 
+  // the tasks are the stack's areas, each worked through in three steps
   const r0 = await rows();
-  check(/^0\/\d+ Vessels$/.test(r0[0]) && /^0\/\d+ Low-confidence$/.test(r0[1]) && /^0\/\d+ Junctions$/.test(r0[2]) && r0[3] === "0/100 Areas" && /Submit Ground Truth/.test(r0[4]),
-    `a row per task, done over all: ${r0.join(" | ")}`);
-  check(await page.evaluate(() => $("#gt-bar").children.length === 4), "the bar has a part per task");
+  check(r0.length === 4 && r0[0] === "0/16 Lines" && r0[1] === "0/16 Missed vessels" && r0[2] === "0/16 Junctions" && /Submit Ground Truth/.test(r0[3]),
+    `a row per step, counted in areas: ${r0.join(" | ")}`);
+  check(await page.evaluate(() => $("#gt-bar").children.length === 3), "the bar has a part per step");
   let t = await tasks();
-  const sizes = ["vessels", "candidates", "junctions"].map((k) => t.lists[k].length);
-  check(sizes.every((n) => n > 5), `each task has items to order: ${sizes}`);
-  const ordered = (xs) => xs.map((x) => areaOf(x.at)).every((a, i, all) => !i || all[i - 1] <= a);
-  const unordered = ["vessels", "candidates", "junctions"].filter((k) => !ordered(t.lists[k]));
-  check(!unordered.length, `each task's items come area by area: ${unordered.map((k) => `${k} ${t.lists[k].map((x) => areaOf(x.at)).join(",")}`)}`);
-  check(t.task === "vessels" && t.key === t.lists.vessels[0].key, `the open task is the first not done, at its first item: ${t.task} ${t.key}`);
-  check(await page.evaluate(() => { const c = $("#task-card canvas"); return !!c && c.getBoundingClientRect().width >= $("#gt-tasks").clientWidth - 2 && $("#task-card .verdict").children.length === 2; }),
-    "the item's picture takes the box's width, its two verdicts under it");
-  check(await page.evaluate(() => !!$("#gt-tasks li.now #task-tools") && !$("#task-tools").hidden), "the open task's row holds its cogwheel and Skip");
+  check(t.step === "lines" && t.area === 0 && t.focused && t.grid === 4, `the walk opens on the first area's Lines, the area alone in view: ${JSON.stringify({ step: t.step, area: t.area, focused: t.focused, grid: t.grid })}`);
+  const view = () => page.evaluate(() => { const v = window.shellForTests.viewer.three; return { rot: v.S.rot.map((r) => [...r]), clip: v.S.clip && [...v.S.clip], held: !!v.S.held,
+    mode: $("#model-mode [aria-pressed=true]")?.dataset.v, show: !$("#vm-show").hidden, focus: $("#vm-focus").textContent.trim(), big: $("#vm-focus").classList.contains("big") }; });
+  let v = await view();
+  check(v.focus === "Back to image" && v.big && !v.show, `in an area, a big Back to image button takes the Show menu's place: "${v.focus}", Show ${v.show ? "shown" : "hidden"}`);
+  check(v.rot[2][2] > 0.99 && v.held && v.mode === "overlay" && !!v.clip, `Lines shows the area alone, from straight above, the lines over the stack, the view held: ${JSON.stringify({ z: v.rot[2][2], held: v.held, mode: v.mode, clip: v.clip })}`);
 
-  const first = t.key;
-  await page.click("#task-card .verdict .yes");
+  // how many areas is the person's to choose
+  await page.selectOption("#area-grid", "2");
   t = await tasks();
-  check(t.task === "vessels" && t.key === t.lists.vessels[1].key && t.lists.vessels[0].done, `Approve moves on to the next vessel: ${first} → ${t.key}`);
-  check((await rows())[0].startsWith("1/"), "the row counts it done");
-  const second = t.key;
-  await page.click("#task-card .verdict .no");
+  check(t.grid === 2 && (await rows())[0] === "0/4 Lines" && Math.abs(t.box.x1 - W / 2) < 0.01 && t.box.x0 === 0 && t.box.y0 === 0, `choosing 2 × 2 makes four areas, the first the top-left quarter: ${JSON.stringify(t.box)}`);
+  check(await page.evaluate(() => $("#area-map").children.length === 4 && $("#area-map .now") === $("#area-map").children[0]), "the map of the areas shows them, the current one marked");
+
+  const mcv = () => page.evaluate(() => { const r = $("#mcv").getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; });
+  const [cx, cy, cw, ch] = await mcv();
+  // a drag where no point is does not turn the area
+  const rot0 = (await view()).rot;
+  await page.mouse.move(cx + 5, cy + ch - 5); await page.mouse.down(); await page.mouse.move(cx + 80, cy + ch - 60, { steps: 6 }); await page.mouse.up();
+  check(JSON.stringify((await view()).rot) === JSON.stringify(rot0), "in Lines a drag does not turn the view");
+  // dragging a handle moves its point across the picture, never in depth
   let m = await doc();
-  const edgesOf = (key) => { const [a, b] = key.slice(1).split("-").map(Number); return m.edges.filter((e) => (e.a === a && e.b === b) || (e.a === b && e.b === a)); };
-  check(edgesOf(first).length && edgesOf(first).every((e) => e.state === "accepted" && e.proposed === "vessel") && edgesOf(second).length && edgesOf(second).every((e) => e.state === "rejected" && e.proposed === "vessel"),
-    "the verdicts are the vessels' states, beside the state the extractor proposed");
-  const third = (await tasks()).key;
-  await page.click("#task-skip");
-  t = await tasks();
-  check(t.key !== third && !t.lists.vessels.find((x) => x.key === third).done, "Skip moves on, leaving the vessel for later");
+  const pts = await page.evaluate(() => window.vascular.model().points);
+  const inArea = (n) => n.x > 0 && n.x < W / 2 && n.y > 0 && n.y < H / 2;
+  const node = m.nodes.find((n) => pts[n.id] && n.x > W * 0.1 && n.x < W * 0.4 && n.y > H * 0.1 && n.y < H * 0.4);
+  const [px, py] = pts[node.id];
+  await page.mouse.move(cx + px, cy + py); await page.mouse.down(); await page.mouse.move(cx + px + 25, cy + py + 15, { steps: 5 }); await page.mouse.up();
+  m = await doc();
+  const moved = m.nodes.find((n) => n.id === node.id);
+  check(moved && (moved.x !== node.x || moved.y !== node.y) && moved.z === node.z, `a handle drags its point across the picture and keeps its depth: (${node.x.toFixed(1)}, ${node.y.toFixed(1)}, ${node.z}) → (${moved?.x.toFixed(1)}, ${moved?.y.toFixed(1)}, ${moved?.z})`);
+  check(JSON.stringify((await view()).rot) === JSON.stringify(rot0), "... and the view stays as it was");
 
-  await page.click('#gt-tasks li[data-task="junctions"] button.t');
+  // Lines are right: the area's confident vessels accepted, its low-confidence ones declined
+  await page.click("#lines-ok");
+  m = await doc(); t = await tasks();
+  const nodeAt = new Map(m.nodes.map((n) => [n.id, n]));
+  const mid = (e) => { const ps = [nodeAt.get(e.a), ...(e.via || []), nodeAt.get(e.b)]; return ps[ps.length >> 1]; };
+  // (a vessel whose middle lies on the area's edge may fall either side, and a curve running past the field's edge is in
+  // the area at that edge)
+  const clear = (e) => { const p = mid(e); return Math.abs(p.x - W / 2) > 5 && Math.abs(p.y - H / 2) > 5; };
+  const inQuarter = (p) => p.x < W / 2 && p.y < H / 2;
+  const there = m.edges.filter((e) => e.proposed && clear(e) && inQuarter(mid(e))), elsewhere = m.edges.filter((e) => e.proposed && clear(e) && !inQuarter(mid(e)));
+  check(there.length > 0 && there.every((e) => e.state === (e.proposed === "vessel" ? "accepted" : "rejected")) && elsewhere.every((e) => e.state === e.proposed),
+    `Lines are right accepts the area's vessels and declines its low-confidence ones, and nothing elsewhere: ${there.length} there`);
+  check(m.reviewed_regions?.length === 1 && m.reviewed_regions[0].step === "lines" && t.step === "missed" && t.area === 0, `... keeps the step done over the area, and moves to its Missed vessels: ${JSON.stringify(m.reviewed_regions)}`);
+  check((await rows())[0] === "1/4 Lines", "the row counts the area");
+  check(await page.evaluate(() => !!$("#gt-tasks li.now #m-draw") && !!$("#gt-tasks li.now #area-ok")), "Missed vessels offers Draw a missed vessel and No missed vessels here");
+
+  // Ctrl shows the model alone while it is held
+  await page.keyboard.down("Control");
+  const held = (await view()).mode;
+  await page.keyboard.up("Control");
+  check(held === "model" && (await view()).mode === "overlay", `holding Ctrl shows the model alone, letting go the stack again: ${held} → ${(await view()).mode}`);
+
+  await page.click("#area-ok");
+  m = await doc(); t = await tasks(); v = await view();
+  check(m.reviewed_regions.at(-1).step === "missed" && t.step === "junctions" && t.area === 0, `No missed vessels here checks the area and moves to its Junctions: ${t.step}`);
+  check(!v.held && v.mode === "image" && v.rot[2][2] < 0.99 && !!v.clip, `Junctions shows the area in 3D, the stack alone, free to turn: ${JSON.stringify({ held: v.held, mode: v.mode, z: v.rot[2][2] })}`);
+  check(await page.evaluate(() => !!$("#gt-tasks li.now #task-card canvas") && $("#task-card .verdict").children.length === 2), "the current junction is pictured in the box, its two verdicts under it");
+  await page.keyboard.down("Control");
+  const held3 = (await view()).mode;
+  await page.keyboard.up("Control");
+  check(held3 === "model" && (await view()).mode === "image", `in 3D too, Ctrl shows the model alone and letting go the stack: ${held3} → ${(await view()).mode}`);
+  // the view turns in 3D
+  const rot3 = (await view()).rot;
+  await page.mouse.move(cx + 5, cy + ch - 5); await page.mouse.down(); await page.mouse.move(cx + 80, cy + ch - 60, { steps: 6 }); await page.mouse.up();
+  check(JSON.stringify((await view()).rot) !== JSON.stringify(rot3), "in Junctions a drag turns the area");
+
   t = await tasks();
-  check(t.task === "junctions" && t.key === t.lists.junctions[0].key, "a task's row opens it at its first item not done");
+  const js = t.junctions;
+  check(js.length > 2 && t.key === js[0].key, `the area's junctions come one at a time: ${js.length} here`);
+  check(await page.evaluate(() => $("#area-done").disabled), "Area done is off while a junction there has no verdict");
   const j1 = Number(t.key.slice(1));
   await page.click("#task-card .verdict .yes");
-  m = await doc();
-  check(!!m.checked_junctions?.includes(j1) && (await tasks()).lists.junctions.find((x) => x.key === "j" + j1).done, `Junction marks it found right: ${m.checked_junctions}`);
-  const j2 = (await tasks()).key, n2 = (await tasks()).lists.junctions.length;
+  m = await doc(); t = await tasks();
+  check(!!m.checked_junctions?.includes(j1) && t.key !== "j" + j1, `Junction marks it found right and moves on: ${m.checked_junctions}`);
+  const j2 = t.key, n2 = t.junctions.length;
   await page.click("#task-card .verdict .no");
   t = await tasks();
-  check(!t.lists.junctions.some((x) => x.key === j2) && t.lists.junctions.length < n2 && t.task === "junctions", `They cross splits the junction into vessels that cross: ${n2} → ${t.lists.junctions.length} junctions`);
+  check(!t.junctions.some((x) => x.key === j2) && t.junctions.length < n2, `They cross splits the junction: ${n2} → ${t.junctions.length} junctions here`);
 
-  await page.click('#gt-tasks li[data-task="missed"] button.t');
-  t = await tasks();
-  check(t.task === "missed" && t.area === 0 && t.box.x0 === 0 && t.box.y0 === 0 && Math.abs(t.box.x1 - W / 10) < 0.01, `the Areas task frames the first area: ${JSON.stringify(t.box)}`);
-  check(await page.evaluate(() => window.shellForTests.viewer.three.S.rot[2][2] > 0.99), "the area is seen from straight above");
+  // a vessel clicked on the view is dropped as an artifact
+  // from straight above, two frames on, so the points' places on screen are the new view's
+  await page.evaluate(async () => { const v = window.shellForTests.viewer.three; v.S.rot = v.facing(0, 0); v.redraw();
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); });
+  // a curve point of an accepted vessel in the area, well inside the view: its vessel is the one clicked
+  const drop = await page.evaluate(([W, H]) => {
+    const { points, at, kinds } = window.vascular.model(), r = $("#mcv").getBoundingClientRect();
+    const id = Object.keys(points).find((k) => kinds[k] === "accepted-curve" && at[k].x > W * 0.05 && at[k].x < W * 0.45 && at[k].y > H * 0.05 && at[k].y < H * 0.45
+      && points[k][0] > 20 && points[k][0] < r.width - 20 && points[k][1] > 20 && points[k][1] < r.height - 20);
+    return id && points[id];
+  }, [W, H]);
+  if (drop) {
+    const before = (await doc()).edges.filter((e) => e.state === "rejected").length;
+    await page.mouse.click(cx + drop[0], cy + drop[1]);
+    const menu = await page.evaluate(() => [...document.querySelectorAll("#ctx .item")].map((b) => b.textContent));
+    check(menu.some((x) => /Drop this vessel/.test(x)), `clicking a vessel in 3D offers to drop it: ${menu}`);
+    await page.locator("#ctx .item", { hasText: "Drop this vessel" }).click();
+    check((await doc()).edges.filter((e) => e.state === "rejected").length > before, "Drop this vessel declines it");
+  } else check(false, "a vessel of the area on screen to drop");
+
+  // every junction judged, Area done ends the area
+  for (let k = 0; k < 200 && (await tasks()).key; k++) await page.click("#task-card .verdict .yes");
+  check(!(await page.evaluate(() => $("#area-done").disabled)), "Area done is on once every junction there has a verdict");
+  await page.click("#area-done");
+  m = await doc(); t = await tasks();
+  check(m.reviewed_regions.at(-1).step === "junctions" && t.area === 1 && t.step === "lines", `Area done keeps the step and moves to the next area's Lines: area ${t.area} ${t.step}`);
+  check((await rows()).slice(0, 3).join() === "1/4 Lines,1/4 Missed vessels,1/4 Junctions", `each row counts the area: ${(await rows()).join(" | ")}`);
+  check(await page.evaluate(() => $("#area-map").children[0].classList.contains("done")), "the map shows the area done");
+
+  // a finer choice keeps what was done over the areas it covers
+  await page.selectOption("#area-grid", "4");
+  check((await rows())[2] === "4/16 Junctions", `the top-left quarter done is four areas of 4 × 4: ${(await rows())[2]}`);
+  await page.selectOption("#area-grid", "2");
+
+  // Back to image: the whole stack, the Show menu again; Back to task returns
+  await page.click("#vm-focus");
+  v = await view(); t = await tasks();
+  check(!t.focused && !v.clip && !v.held && v.show && v.focus === "Back to task", `Back to image shows the whole stack and the Show menu, the button now Back to task: ${JSON.stringify({ clip: v.clip, show: v.show, focus: v.focus })}`);
   const gl = await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"));
-  const lit = gl ? await brightness() : 0;
-  await page.click("#area-ok");
-  t = await tasks(); m = await doc();
-  const g = m.reviewed_regions?.[0];
-  check(t.area === 1 && m.reviewed_regions?.length === 1 && g.x[0] === 0 && g.y[0] === 0 && g.z.join() === `0,${model.slices - 1}`,
-    `No missed vessels here checks the area, through every slice, and moves to the next: area ${t.area}, ${JSON.stringify(g)}`);
-  check((await rows())[3] === "1/100 Areas", "the row counts the area");
   if (gl) {
     const cut = await brightness();
-    check(cut < lit, `a checked area is cut out of the stack: brightness ${lit.toFixed(2)} → ${cut.toFixed(2)}`);
+    await page.keyboard.press("Control+z");
+    const lit = await brightness();
+    await page.keyboard.press("Control+y");
+    check(cut < lit, `an area done in every step is cut out of the stack: brightness ${lit.toFixed(2)} → ${cut.toFixed(2)}`);
   } else console.log(`not checked in this ${ENGINE}: the area cut out of the 3D view, which needs the WebGL2 it lacks`);
+  await page.click("#vm-focus");
+  v = await view(); t = await tasks();
+  check(t.focused && !!v.clip && v.focus === "Back to image" && t.area === 1 && t.step === "lines", "Back to task returns to the area and its step");
 
   await page.click("#gt-submit");
   check(await page.evaluate(() => $("#gt-dlg").open && !$("#gt-export").disabled), "Submit Ground Truth, the last task, exports once there are verdicts");
   const open = await page.evaluate(() => $("#gt-dlg").textContent);
-  check(/vessels still to decide/.test(open) && /99 of 100 left/.test(open), `its checklist says what of each task is open: ${open.replace(/\s+/g, " ").slice(0, 200)}`);
+  check(/Lines: 3 of 4 areas left/.test(open) && /Junctions: 3 of 4 areas left/.test(open), `its checklist says what of each step is open: ${open.replace(/\s+/g, " ").slice(0, 200)}`);
   const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#gt-export")]);
   const out = JSON.parse(fs.readFileSync(await dl.path(), "utf8"));
-  check(out.status === "corrected" && out.edges.some((e) => e.state === "accepted" && e.proposed === "vessel") && out.edges.some((e) => e.state === "rejected" && e.proposed === "vessel")
-    && !!out.checked_junctions?.includes(j1) && out.reviewed_regions?.length === 1, "the export carries every verdict: states, junctions found right, areas checked");
+  check(out.status === "corrected" && out.edges.some((e) => e.state === "accepted" && e.proposed === "vessel") && out.edges.some((e) => e.state === "rejected")
+    && !!out.checked_junctions?.includes(j1) && out.reviewed_regions.map((g) => g.step).join() === "lines,missed,junctions", "the export carries every verdict: states, junctions found right, each step over the area");
   await page.click("#gt-close");
 
   await page.keyboard.press("Control+z");
-  t = await tasks();
-  check((await doc()).reviewed_regions.length === 0 && (await rows())[3] === "0/100 Areas", "Undo takes the area's check back");
+  check((await doc()).reviewed_regions.length === 2 && (await rows())[2] === "0/4 Junctions", "Undo takes the area's last step back");
 } catch (e) {
   failed = true; console.error(e);
 }
