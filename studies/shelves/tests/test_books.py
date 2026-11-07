@@ -15,14 +15,18 @@ import shelves
 
 
 def photo():
-    """A shelf drawn as stripes: a dark board across the bottom, books as coloured vertical bands above it."""
+    """A shelf drawn as stripes: a dark board across the bottom, books as coloured vertical bands above it, each with a
+    title's bright marks down its middle."""
     rng = np.random.default_rng(3)
     a = np.full((240, 320, 3), 200, np.uint8)
     a[220:232] = 60
     x = 10
     while x < 300:
         w = int(rng.integers(14, 30))
-        a[60 + int(rng.integers(0, 40)):220, x:x + w - 2] = rng.integers(20, 180, 3)
+        top = 60 + int(rng.integers(0, 40))
+        a[top:220, x:x + w - 2] = rng.integers(20, 180, 3)
+        for y in range(top + 15, 205, 14):
+            a[y:y + 7, x + w // 3:x + w - 2 - w // 3] = 240
         x += w
     return a
 
@@ -116,45 +120,74 @@ def test_a_leaning_book_is_boxed_leaning_with_it(lean):
 
 
 def own_spines():
-    """Books drawn as the owner's shelves hold them: each leans its own way, has its own height and stands its own foot,
-    with lettering down its middle; the wall right of them is bare. (photo, each book's corners clockwise)."""
+    """Books drawn as the owner's shelves hold them: packed against each other, each leaning its own way (a run of them
+    much alike), with its own height and its own foot, lettering down its middle; two neighbours of one colour parted
+    only by their seam; the wall right of them bare. (photo, each book's corners clockwise)."""
     rng = np.random.default_rng(11)
     H, W = 420, 640
     a = np.full((H, W, 3), 214, np.float32)
     a[372:392] = 150
     yy, xx = np.mgrid[0:H, 0:W]
-    truth, x = [], 30.0
-    for k in range(8):
-        w, h, lean = float(rng.integers(26, 42)), float(rng.integers(220, 300)), float(rng.choice([-7, -4, 0, 3, 6]))
+    truth, taken, lean, colour = [], np.full(H, 20.0), 0.0, None
+    for k in range(10):
+        w, h = float(rng.integers(24, 40)), float(rng.integers(220, 300))
+        lean = float(np.clip(lean + rng.choice([-3, 0, 0, 3]), -9, 9))
         t = np.deg2rad(lean)
-        foot = 372 - float(rng.integers(0, 10))
+        foot = 372 - float(rng.integers(0, 8))
         ax, ay, nx, ny = np.sin(t), -np.cos(t), np.cos(t), np.sin(t)
-        # packed: the book's leftmost point 3 px right of the last one's rightmost
-        cx = x - min(du * nx + dv * ax for du in (-w / 2, w / 2) for dv in (0, h))
+        u0, v = (xx - 0) * nx + (yy - foot) * ny, (xx - 0) * ax + (yy - foot) * ay
+        # against the last book: as far left as it goes without covering any of it
+        rows = (v >= 0) & (v <= h) & (np.abs(u0) < 2 * W)
+        left = np.where(rows, xx - (u0 + w / 2) / nx, np.inf).min(axis=1)
+        cx = float(np.max(np.where(np.isfinite(left), taken - left, -np.inf))) + 1
         u, v = (xx - cx) * nx + (yy - foot) * ny, (xx - cx) * ax + (yy - foot) * ay
-        a[(abs(u) <= w / 2) & (v >= 0) & (v <= h)] = rng.integers(25, 160, 3)
-        # lettering: short bright marks down the spine's middle, a few rows apart
-        for s in np.arange(0.2, 0.85, 0.09) * h:
-            a[(abs(u) <= w / 5) & (v >= s) & (v <= s + 0.05 * h)] = 240
+        body = (abs(u) <= w / 2) & (v >= 0) & (v <= h)
+        colour = colour if k == 5 else rng.integers(25, 160, 3).astype(np.float32)
+        a[body] = colour
+        # a seam: the spine's own rim, a little darker
+        a[body & (abs(u) > w / 2 - 1)] = colour * 0.6
+        for s0 in np.arange(0.2, 0.85, 0.09) * h:
+            a[(abs(u) <= w / 5) & (v >= s0) & (v <= s0 + 0.05 * h)] = 240
         p = lambda du, dv: [cx + du * nx + dv * ax, foot + du * ny + dv * ay]
-        c = [p(-w / 2, h), p(w / 2, h), p(w / 2, 0), p(-w / 2, 0)]
-        truth.append(c)
-        x = max(q[0] for q in c) + 3
+        truth.append([p(-w / 2, h), p(w / 2, h), p(w / 2, 0), p(-w / 2, 0)])
+        taken = np.maximum(taken, np.where(body.any(axis=1), np.where(body, xx, -1).max(axis=1), -np.inf))
     a += rng.normal(0, 3, a.shape)
     return np.clip(a, 0, 255).astype(np.uint8), truth
 
 
-def test_each_box_is_its_own_spine_and_none_is_made_up():
-    """req/shelves/books/find (2026-11-07): each box is the book's own spine, its top and foot its own and at their own
-    angle; nothing is boxed on the bare wall, and no book's lettering splits it."""
-    a, truth = own_spines()
+def seen_from_the_side(a, truth):
+    """The same shelf photographed from its left, turned toward the camera: its far end smaller, so every upright
+    converges and every top and foot slants. (photo, each book's corners clockwise)."""
+    H, W = a.shape[:2]
+    M = books.homography([[0, 0], [W, 0], [W, H], [0, H]], [[0, 0], [W * 0.95, H * 0.16], [W * 0.95, H * 0.86], [0, H]])
+    Minv = np.linalg.inv(M)
+    yy, xx = np.mgrid[0:H, 0:W].astype(float)
+    p = Minv @ np.stack([xx.ravel(), yy.ravel(), np.ones(xx.size)])
+    X, Y = p[0] / p[2], p[1] / p[2]
+    from scipy import ndimage as ndi
+    out = np.stack([ndi.map_coordinates(a[..., k].astype(float), [Y, X], order=1, cval=214).reshape(H, W) for k in range(3)], -1)
+    to = lambda q: (lambda r: [r[0] / r[2], r[1] / r[2]])(M @ [q[0], q[1], 1])
+    return np.clip(out, 0, 255).astype(np.uint8), [[to(q) for q in c] for c in truth]
+
+
+def own_boxes(a, truth):
+    """(books matched by a box close to their own corners, boxes found, boxes on the bare wall)"""
     found = [np.array(b['corners']) for b in books.find(a)]
     bare = max(max(x for x, _ in c) for c in truth)
-    assert not [c for c in found if c[:, 0].min() > bare], 'a box on the bare wall'
     unit = np.median([np.hypot(*np.subtract(c[1], c[0])) for c in truth])
-    matched = 0
-    for c in truth:
-        d = [np.abs(f - np.array(c)).max() for f in found]
-        matched += bool(d) and min(d) <= 0.25 * unit
+    matched = sum(bool(found) and min(np.abs(f - np.array(c)).max() for f in found) <= 0.25 * unit for c in truth)
+    return matched, len(found), sum(c[:, 0].min() > bare for c in found)
+
+
+@pytest.mark.parametrize('view', ['front', 'side'])
+def test_each_box_is_its_own_spine_and_none_is_made_up(view):
+    """req/shelves/books/find (2026-11-07): each box is the book's own spine, its top and foot its own and at their own
+    angle, packed against its neighbours and seen from the front or from the side; nothing is boxed on the bare wall, and
+    no book is split or two boxed as one."""
+    a, truth = own_spines()
+    if view == 'side':
+        a, truth = seen_from_the_side(a, truth)
+    matched, found, on_wall = own_boxes(a, truth)
+    assert on_wall == 0, 'a box on the bare wall'
     assert matched >= len(truth) - 1, (matched, len(truth))
-    assert len(found) <= len(truth), 'a book split, or a box that is no book'
+    assert found <= len(truth), 'a book split, or a box that is no book'

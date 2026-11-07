@@ -21,7 +21,9 @@ read for a title matcher; matching the titles is not part of it.
   leaning with it: its box's long sides follow the spine's own edges, at the angle they run.
   Set by the owner on 2026-11-07, each box is that book's spine by itself, whatever the shelf, the camera angle or
   the books beside it: its top and foot are the book's own, at the angle they run, not a line the shelf's books
-  share. A box is kept only once it checks out as a readable spine: its long sides lie on edges along the book's
+  share, with the books packed against each other and the photo taken from the front or from a side. One camera
+  took the whole photo, so its perspective is one for every book: a box whose ends turn otherwise than the surest
+  boxes say the camera saw them is not a book's. A box is kept only once it checks out as a readable spine: its long sides lie on edges along the book's
   length, its ends on edges across it, it is convex and spine-shaped, and its inside carries a book's texture rather
   than a wall's, a board's or a gap's; a book that fails is left for the ground truth to draw in, never boxed
   wrong. Test: `studies/shelves/tests/test_books.py`, `studies/shelves/tests/test_shelves_page.py`.
