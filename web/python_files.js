@@ -14,3 +14,19 @@ export function packagesOf(python, lock, vendored, vendorBase) {
     .map((n) => ({ url: PYODIDE + lock.packages[n].file_name, sha256: lock.packages[n].sha256 }))
     .concat(own.map((w) => ({ url: new URL(w, vendorBase).href })));
 }
+
+// {name: address} the modules directly in a study's folders, its Python's bases in the order the importer tries them,
+// as the release's offline list names them (listing: its offline.json; app: the address its paths are from); null
+// without a listing, when every name is asked of the site
+export function studyModules(listing, bases, app) {
+  if (!listing) return null;
+  const found = {}, urls = new Set(listing.files.map((f) => new URL(f.path, app).href));
+  for (const base of bases) {
+    for (const url of urls) {
+      if (!url.startsWith(base)) continue;
+      const name = url.slice(base.length);
+      if (/^\w+\.py$/.test(name) && !(name.slice(0, -3) in found)) found[name.slice(0, -3)] = url;
+    }
+  }
+  return found;
+}

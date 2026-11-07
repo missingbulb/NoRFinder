@@ -4,7 +4,7 @@
 // Messages out while a study loads: progress {text}, ready {info}, error {text}; the rest are the bridge's.
 // A module worker: its imports are fetched with CORS, so the service worker can cache them.
 import { bridge } from "./bridge.js";
-import { PYODIDE, packagesOf } from "./python_files.js";
+import { CORE, PYODIDE, packagesOf, studyModules } from "./python_files.js";
 import { tiffCodecs } from "./tiff_codecs.js";
 
 const say = (text) => post({ type: "progress", text });
@@ -14,6 +14,10 @@ const first = new URL(self.location.href).searchParams.get("study");
 const python = import(PYODIDE + "pyodide.mjs").then(({ loadPyodide }) => loadPyodide({ indexURL: PYODIDE }));
 python.catch(() => {}); // reported where it is awaited
 const unpacked = new Set(); // the wheels already in Python's site-packages, by URL
+// the release's files, from which the importer knows the study's modules; none where the site has no list
+const listing = fetch(new URL("offline.json", self.location.href)).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+// whether these files are on this device already, so their reading is not told as a download
+const kept = (urls) => Promise.all(urls.map((u) => caches.match(u))).then((hits) => hits.every(Boolean), () => false);
 
 // A study into the running Python: the packages it names that are not there yet, then its entry module, with
 // the modules the study before it imported from its own folders forgotten, so a name two studies share
@@ -24,7 +28,7 @@ async function loadStudy(id) {
   const studyBase = new URL(`../studies/${id}/`, self.location.href).href;
   const m = await (await fetch(studyBase + "study.json")).json();
   current = id; manifest = m; answer = null;
-  say(py ? "Downloading packages…" : "Downloading Python…");
+  say(py ? "Downloading packages…" : (await kept(CORE)) ? "Starting Python…" : "Downloading Python…");
   // Only the packages the study imports are unpacked, and each native module loads the first time
   // Python imports it: loadPackage would load every module of every package and of its dependencies
   // up front, about 100 MB more memory. A package missing here fails loudly as an ImportError.
@@ -34,11 +38,12 @@ async function loadStudy(id) {
     const [lock, vendored] = await Promise.all([fetch(PYODIDE + "pyodide-lock.json"), fetch("vendor/wheels.json")].map(async (r) => (await r).json()));
     const list = packagesOf(m.python, lock, vendored, new URL("vendor/", self.location.href).href).filter((w) => !unpacked.has(w.url));
     expected = list.length;
+    if ((await kept([...(py ? [] : CORE), ...list.map((w) => w.url)])) && stage) stage = py ? "Reading the packages" : "Starting Python and reading its packages";
     return Promise.all(list.map(async (w) => ({ url: w.url, buf: await fetchWheel(w) })));
   })();
   wheels.catch(() => {}); // a failed download is reported where it is awaited, after Python starts
   py = await offline(python);
-  stage = "Downloading packages";
+  if (stage) stage = stage.startsWith("Downloading") ? "Downloading packages" : "Reading the packages";
   const bufs = await offline(wheels);
   if (bufs.length) say(m.progress?.install || "Installing Python's packages…");
   working(() => {
@@ -49,7 +54,9 @@ async function loadStudy(id) {
   say(m.progress?.load || "Loading the study…");
   // the study's Python modules are read straight from the repo's layout as they are imported: a new module
   // in one of its folders ships with no list to update
-  py.globals.set("bases", py.toPy(m.python.paths.map((b) => new URL(b, studyBase).href)));
+  const bases = m.python.paths.map((b) => new URL(b, studyBase).href), known = studyModules(await listing, bases, self.location.href);
+  py.globals.set("bases", py.toPy(bases));
+  if (known) py.globals.set("known", py.toPy(known)); else py.runPython("known = None");
   py.globals.set("entry", m.python.entry);
   unreached(() => py.runPython(`
 import sys, os, gc, importlib, importlib.util
@@ -59,10 +66,10 @@ if 'RepoModules' not in globals():
     class RepoModules:
         """Imports a top-level module the runtime lacks from the site, the way it sits in the repo."""
         def find_spec(self, name, path=None, target=None):
-            if path is not None or '.' in name:
+            if path is not None or '.' in name or (known is not None and name not in known):
                 return None
-            for base in bases:
-                req = XMLHttpRequest.new(); req.open('GET', base + name + '.py', False); req.send()
+            for url in [known[name]] if known is not None else [base + name + '.py' for base in bases]:
+                req = XMLHttpRequest.new(); req.open('GET', url, False); req.send()
                 if req.status == 200:
                     os.makedirs('/py', exist_ok=True); f = '/py/' + name + '.py'
                     open(f, 'w').write(req.responseText)
@@ -82,7 +89,8 @@ import json
 study = importlib.import_module(entry)
 `));
   files = py.runPython("sum(os.path.getsize(os.path.join(d, f)) for top in ('/lib', '/py') for d, _, fs in os.walk(top) for f in fs)");
-  post({ type: "ready", info: JSON.parse(py.runPython("study.ready()")), secs: (performance.now() - t0) / 1000 });
+  // modules: how many modules the importer knew the study to have, null when it asked the site for every name
+  post({ type: "ready", info: JSON.parse(py.runPython("study.ready()")), secs: (performance.now() - t0) / 1000, modules: known && Object.keys(known).length });
 }
 
 // a download the network did not answer (a fetch or an import fails with a TypeError then, an answer that is
