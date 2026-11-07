@@ -160,16 +160,21 @@ try {
   b = await badges();
   check(reads.length === 0 && window.every((k) => b[k] === FILES[k].want), `after a reload, the badges show with no read: ${reads.length} reads`);
 
-  // not read while Show thumbnails is off
-  await page.uncheck("#remote-thumbs");
-  await page.evaluate(() => { $("#remote-list").scrollTop = $("#remote-list").scrollHeight; });
-  await frames();
+  // not read while Show thumbnails, in Settings, is off
+  const thumbsSetting = async (v) => {
+    await page.click("#remote-dlg button[value=close]");
+    await page.evaluate((x) => localStorage.setItem("nor-drive-thumbs", JSON.stringify(x)), v);
+    await open();
+    await page.evaluate(() => { $("#remote-list").scrollTop = $("#remote-list").scrollHeight; });
+    await frames();
+  };
+  await thumbsSetting("off");
   check(reads.length === 0, `with Show thumbnails off, nothing is read: ${reads.length} reads`);
-  await page.check("#remote-thumbs");
+  await thumbsSetting("on");
   await quiet();
   const end = await inView();
   b = await badges();
-  check(end.length > 0 && end.every((k) => b[k] === FILES[k].want) && reads.every((r) => r.range), `ticked again, the rows in view are read: ${end.map((k) => b[k] || "-")}`);
+  check(end.length > 0 && end.every((k) => b[k] === FILES[k].want) && reads.every((r) => r.range), `turned on again, the rows in view are read: ${end.map((k) => b[k] || "-")}`);
   await page.evaluate(() => { $("#remote-list").scrollTop = 0; });
 
   // opening the stack saves its 3D thumbnail at once; opening the flat image does not (its waits for the image to show)

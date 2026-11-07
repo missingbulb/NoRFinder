@@ -47,7 +47,9 @@ nobody has decided: what the page does there is not a requirement yet.
   the theme (follow the system, dark or light); the role the user works in (`req/shell/account/role`); Show thumbnails in the Drive
   dialog; whether the low-memory popup shows; the last Google Drive link, and the last one in each
   study; the tips closed, each with a tick to clear to see it again; the recent images from Google
-  Drive, each with a tick to clear to drop it; Animations; and the version seen last. A line says where they are
+  Drive, each with a tick to clear to drop it; Animations; and the version seen last. Set by the owner on 2026-11-07,
+  it also holds Auto-save images from Google Drive (`req/shell/drive/kept-images`), which stays with the device and is
+  saved there. A line says where they are
   kept: in the user's Google Drive when signed in, else on this device only. Below them, set by the
   owner on 2026-11-02, **Kept on this device only**: every other setting the page keeps here, the
   shell's and the study on show's, each with its size and a tick to clear to forget it, and a link
@@ -323,8 +325,8 @@ nobody has decided: what the page does there is not a requirement yet.
   closing the dialog stops the rest, and reopening it shows those at once and fetches what the rows
   in view still lack. Test: `web-tests/test_drive_thumbs_page.py`. An image opened from Drive saves its own in the browser (the latest 100), shown from then
   on without a download; a PNG shows Drive's own. All are in the colours the page gives the
-  channels. A checkbox at the bottom, "Show thumbnails" (on at first, remembered in the browser),
-  turns the downloads off; beside it, and in the status bar's message while they load ("Thumbnails 3 of 10 ·
+  channels. Show thumbnails in Settings (on at first, `req/shell/account/settings`) turns the downloads off; set by the
+  owner on 2026-11-07, the dialog itself holds no such checkbox. The status bar's message says, while they load ("Thumbnails 3 of 10 ·
   1.2 MB"), how many have arrived and their size; once they are in, the message says again what it said
   before (set by the owner on 2026-11-05: the message, not a text of its own beside it). It needs the site's Google API key, kept in the repository variable
   `GOOGLE_API_KEY` and written into `web/config.js` at deploy; without one the option is off
@@ -339,9 +341,9 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/shell/drive/kept-images` Images from Drive open again without a download.
   <details>
 
-  The Google Drive dialog's bottom row holds two remembered checkboxes, **Show thumbnails** and
-  **Auto-save images** (both on at first), and beside them a link that opens Manage storage, its
-  text the bytes the thumbnails and saved images take on this device. While Auto-save images is on,
+  Set by the owner on 2026-11-07, the Google Drive dialog holds neither Show thumbnails nor Auto-save images nor
+  what they take on this device: both are in Settings (`req/shell/account/settings`), Auto-save images on at first and
+  kept on this device, and Manage storage says what they take. While Auto-save images is on,
   an image downloaded from Drive is kept on this device. An image chosen in the image selector (`req/shell/load/selector`)
   opens from the copy kept here, with no call to Drive. One chosen from Drive itself, in the dialog's
   list or by its link, opens from the kept copy, whatever the checkbox says, only once its SHA-256

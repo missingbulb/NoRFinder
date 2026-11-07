@@ -572,9 +572,6 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 #remote-list .item .pic img, #remote-list .item .pic canvas { width: 100%; height: 100%; object-fit: cover; }
 #remote-list .item.folder .pic::before { content: "📁"; font-size: 24px; }
 #remote-msg.err { color: var(--err); }
-#remote-thumbs-l, #remote-autosave-l { display: flex; gap: 6px; align-items: center; margin: 0; white-space: nowrap; }
-#remote-thumbs-note { font-variant-numeric: tabular-nums; }
-#remote-thumbs-note:not(:empty)::before { content: "· "; }
 #remote-msg { margin: 0; }
 
 /* a box that folds: its title opens and closes it */
