@@ -209,6 +209,14 @@ try {
   check(r.map((x) => x.age).join() === "<1h,3h,6d,", "each says how long since it was opened, none for one opened before that was kept", r.map((x) => x.age));
   check(r[0].selected && r.slice(1).every((x) => !x.selected), "the last opened is selected");
   check(r[1].where.includes("Old"), "each says where it is in Drive", r[1]);
+  check(r[1].where.startsWith("Data / ") && !r[1].where.includes("Google Drive"), "from the Data folder, Drive itself being the row's logo", r[1]);
+  // the row under the mouse is marked whole, apart from the selected one, as Drive's own lists do
+  const look = () => page.$$eval("#image-menu .recent", (bs) => bs.map((b) => ({ bg: getComputedStyle(b).backgroundColor, name: getComputedStyle(b.querySelector(".name")).color })));
+  const calm = await look();
+  await page.hover("#image-menu .recent:nth-child(3)");
+  const hovered = await look();
+  check(hovered[2].bg !== calm[2].bg && hovered[2].bg !== calm[0].bg && hovered[2].name === calm[2].name,
+    "the row under the mouse has its own background, not the selected row's, and its name keeps its colour", { calm, hovered });
   await shot("selector", "#left");
   await page.keyboard.press("Escape");
 
