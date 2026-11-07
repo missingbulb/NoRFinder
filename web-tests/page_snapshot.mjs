@@ -12,8 +12,9 @@ export const VOLATILE = {
   classes: ["offscreen"],
   // attributes that say nothing when empty, which a control set and cleared again leaves behind
   emptied: ["style", "title", "class"],
-  // how long Python has run and what it took, which a page that kept Python running counts from its own start
-  state: ["heap", "files", "busySince", "busyTimer", "worker"],
+  // how long Python has run and what it took, which a page that kept Python running counts from its own start, and
+  // whether it runs at all: a Run starts it and a switch keeps it, where a fresh load has none (req/shell/python/on-run)
+  state: ["heap", "files", "busySince", "busyTimer", "worker", "ready", "readyInfo", "failed"],
 };
 
 export const snapshot = (page) => page.evaluate((VOLATILE) => {
