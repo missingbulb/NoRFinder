@@ -13,7 +13,7 @@ import path from "node:path";
 import { offSite } from "../../../web-tests/off_site.mjs";
 import { ENGINE, LAUNCH } from "../../../web-tests/engine.mjs";
 import { asTagger } from "../../../web-tests/tagger.mjs";
-import { serve } from "./stand_in.mjs";
+import { serve, drawnStack } from "./stand_in.mjs";
 import { standInDrive, openFromDrive } from "../../../web-tests/drive_open.mjs";
 
 const require = createRequire(import.meta.url);
@@ -65,7 +65,7 @@ const drawn = () => page.evaluate(async () => {
 try {
   await page.goto(origin + "/web/vascular");
   await page.waitForFunction(() => window.$ && $("#status").textContent.startsWith("Ready"));
-  await openFromDrive(page, { name: model.source, mimeType: "image/tiff", buffer: Buffer.from([0x49, 0x49, 42, 0]) });
+  await openFromDrive(page, { name: model.source, mimeType: "image/tiff", buffer: drawnStack(model) });
   await page.waitForFunction(() => !$("#vm-run").disabled);
   await page.evaluate(() => { $("#notice").hidden = true; });
   check(await page.evaluate(() => $("#v3-stage #mcv") === null && $("#model-on").hidden), "a stack opens with no model");

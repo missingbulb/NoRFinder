@@ -68,19 +68,25 @@ await cdp.send("Performance.enable");
 if (process.env.THROTTLE) await cdp.send("Emulation.setCPUThrottlingRate", { rate: +process.env.THROTTLE });
 
 // resolves with the worker's next message of this type, or answer to this action (the page's own handler still gets it)
+// the worker's next answer to an action, Python starting with the first (req/shell/python/on-run)
 const next = (action) => page.evaluate((action) => new Promise((ok) => {
-  const h = (e) => { if (e.data.type === action || (e.data.type === "result" && e.data.action === action)) { st.worker.removeEventListener("message", h); ok(); } };
-  st.worker.addEventListener("message", h);
+  const hook = () => {
+    if (!st.worker) return requestAnimationFrame(hook);
+    const w = st.worker, h = (e) => { if (e.data.type === "result" && e.data.action === action) { w.removeEventListener("message", h); ok(); } };
+    w.addEventListener("message", h);
+  };
+  hook();
 }), action);
 const settled = () => page.waitForFunction(() => !st.inflight && !st.pending && $("#busy").hidden);
 
 let opened = 0;
 const slide = fs.readFileSync(image);
 async function open() {
-  const done = next("opened");
   // two images by turns, each the same file on Drive every time, so the image selector lists the same two
-  await openFromDrive(page, { name: `corner ${(++opened % 2) + 1}.tif`, mimeType: "image/tiff", buffer: slide });
-  await done; await settled();
+  const name = `corner ${(++opened % 2) + 1}.tif`;
+  await openFromDrive(page, { name, mimeType: "image/tiff", buffer: slide });
+  await page.waitForFunction((n) => shellForTests.page.get("image")?.name === n, name);
+  await settled();
 }
 // finding ends with the first filter pass on the new candidates
 async function find() {
@@ -168,7 +174,7 @@ const KB = 1024;
 const LIMITS = { heap: 256 * KB, buffers: 64 * KB, nodes: 0, listeners: 0 };
 
 await page.goto(origin + "/web/?study=nor");
-await page.waitForFunction(() => st.ready);
+await page.waitForFunction(() => $("#status").textContent.startsWith("Ready"));
 await open(); await find(); await tune();
 const problems = [];
 for (const [name, act] of Object.entries({ open, find, tune })) {

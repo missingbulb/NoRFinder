@@ -5,6 +5,7 @@
 // is down; zoom keeps it on its points; the button again, or another image, takes it away. Optional SHOTS: a
 // directory for screenshots. Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/ruler_driver.mjs ANSWERS IMAGE.png STUDIES [SHOTS]
+import { scaledImage } from "./scaled_image.mjs";
 import { EARLY } from "./early_messages.mjs";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
@@ -69,7 +70,7 @@ async function open(um) {
   page.setDefaultTimeout(10000);
   await page.goto(origin + "/web/fixture");
   await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
-  await page.setInputFiles("#file", image);
+  await page.setInputFiles("#file", um ? scaledImage(answers, um) : image);
   await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded.");
   return page;
 }
@@ -144,7 +145,7 @@ async function measure(page, [x1, y1], [x2, y2], during) {
 
   await measure(page, [10, 10], [40, 30]);
   await page.evaluate(() => { document.querySelector("#status").textContent = ""; });
-  await page.setInputFiles("#file", image);
+  await page.setInputFiles("#file", scale[0] ? scaledImage(answers, scale) : image);
   await page.waitForFunction(() => document.querySelector("#status").textContent === "Image loaded.");
   r = await ruler(page);
   await check(r.pressed === "false" && r.paths === 0, "another image takes the ruler away", r);

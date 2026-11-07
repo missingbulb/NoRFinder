@@ -1,5 +1,5 @@
-// Drives the 3D viewer (web/viewer3d.js) in headless Chromium, in the vascular study (viewer image3d), against a
-// stand-in worker that opens a drawn stack: two channels, the first a bright tube climbing through depth and a
+// Drives the 3D viewer (web/viewer3d.js) in headless Chromium, in the vascular study (viewer image3d), on a drawn
+// stack the page reads itself: two channels, the first a bright tube climbing through depth and a
 // second one level across it, the second a blob. Checks req/shell/viewer-3d: a stack opens on the 3D view, which draws it; the
 // channel rows drive it (hiding a channel or raising its black point darkens it); the toolbar's right holds Look from's
 // four buttons in a row beside Zoom, and the image box a row for the slices shown and their spacing and, per channel, Colour by depth; Side turns the view; a sideways scroll turns the picture about the line of sight; a drag turns on past
@@ -8,6 +8,7 @@
 // opens a stack in 3D and a flat image (a .png here) in 2D, and keeps its Image box open once either has loaded.
 // Exits 1 on a failed check, 2 when it cannot run.
 //   node web-tests/viewer3d_driver.mjs [SHOT.png]
+import { writeTiff } from "../web/split.js";
 import { EARLY } from "./early_messages.mjs";
 import { repoFile } from "./repo_file.mjs";
 import { createRequire } from "node:module";
@@ -28,31 +29,42 @@ try { pw = require("playwright"); } catch {
 const [shot] = process.argv.slice(2);
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
-// the stand-in: every study is ready at once, and any file opens as the same drawn stack, a .png as its flattened planes
-const STAND_IN = `
-const W = 96, H = 80, Z = 12, C = 2, n = W * H;
-const vol = new Uint8Array(C * Z * n);
+// the drawn stack, a CD31 channel of a climbing tube and a level one and a DAPI blob, written as a two-channel ImageJ
+// hyperstack, DAPI first as the study's originals have it (STACK), and its CD31 flattened as a one-page file (FLAT)
+const W = 96, H = 80, Z = 12, n = W * H;
+const cd31 = new Uint8Array(Z * n), dapi = new Uint8Array(Z * n);
 for (let z = 0; z < Z; z++) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
   const i = z * n + y * W + x;
   const t = x / (W - 1), climb = Math.hypot(y - (10 + t * 60), z - t * (Z - 1));
   const level = Math.hypot(y - (H - 1 - (x / (W - 1)) * 60), z - 2);
-  vol[i] = Math.max(climb < 2.5 ? 230 : 0, level < 2.5 ? 200 : 0, 8);
-  vol[Z * n + i] = Math.hypot(x - 70, y - 20, z - 6) < 6 ? 180 : 4;
+  cd31[i] = Math.max(climb < 2.5 ? 230 : 0, level < 2.5 ? 200 : 0, 8);
+  dapi[i] = Math.hypot(x - 70, y - 20, z - 6) < 6 ? 180 : 4;
 }
-const flat = new Uint8Array(C * n);
-for (let c = 0; c < C; c++) for (let z = 0; z < Z; z++) for (let i = 0; i < n; i++) flat[c * n + i] = Math.max(flat[c * n + i], vol[c * Z * n + z * n + i]);
-const meta = { W, H, Z, spacing: null, um: 1, um_y: 1, info: [["Slices", String(Z)]], channels: [{ name: "CD31", colour: "#ff0000" }, { name: "DAPI", colour: "#0000ff" }] };
+const planes = [];
+for (let z = 0; z < Z; z++) for (const c of [dapi, cd31]) planes.push(c.subarray(z * n, (z + 1) * n));
+const STACK = Buffer.from(writeTiff({ w: W, h: H, bps: 1, planes, xres: [1, 1], yres: [1, 1],
+  description: `ImageJ=1.54f\nimages=${2 * Z}\nchannels=2\nslices=${Z}\nhyperstack=true\nunit=micron\n` }));
+const flat = new Uint8Array(n);
+for (let z = 0; z < Z; z++) for (let i = 0; i < n; i++) flat[i] = Math.max(flat[i], cd31[z * n + i]);
+const FLAT = Buffer.from(writeTiff({ w: W, h: H, bps: 1, planes: [flat] }));
+// the stand-in: every study is ready at once
+const STAND_IN = `
 postMessage({ type: "ready", info: {} });
 onmessage = ({ data: m }) => {
   if (m.type === "study") postMessage({ type: "ready", info: {} });
-  else if (m.type === "open" && m.name.endsWith(".png")) { const images = flat.slice(); postMessage({ type: "opened", meta: { ...meta, Z: 1 }, images }, [images.buffer]); }
-  else if (m.type === "open") { const images = new Uint8Array(flat.length + vol.length); images.set(flat); images.set(vol, flat.length); postMessage({ type: "opened", meta, images }, [images.buffer]); }
+  else if (m.type === "open") postMessage({ type: "held" });
 };`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 const server = http.createServer((q, r) => {
   const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
   if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(EARLY + STAND_IN); }
   if (u === "/web/vendor/wheels.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end("[]"); }
+  // the drawn stack's levels shown as drawn, so a check can name the colour a voxel gives
+  if (u === "/studies/vascular/study.json") {
+    const m = JSON.parse(fs.readFileSync(path.join(repo, u), "utf8"));
+    r.writeHead(200, { "content-type": "application/json" });
+    return r.end(JSON.stringify({ ...m, view: { ...m.view, stretch: false } }));
+  }
   const f = repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
@@ -101,7 +113,7 @@ try {
   // the 3D view needs WebGL2, which a headless browser may lack: then only the rest is checked
   const gl3d = await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"));
   if (gl3d) {
-    await openFromDrive(page, { name: "stack.tif", mimeType: "image/tiff", buffer: Buffer.from([0x49, 0x49, 42, 0]) });
+    await openFromDrive(page, { name: "stack.tif", mimeType: "image/tiff", buffer: STACK });
     await page.waitForFunction(() => !$("#v3-stage").hidden);
     check(!(await page.$("#v3-switch, #v3-2d")) && await page.isHidden("#stage"), "a stack opens on the 3D view only, with no 2D/3D switch to flatten it");
     const tools = await page.evaluate(() => {
@@ -283,7 +295,7 @@ try {
   await page.goto(origin + "/web/");
   await page.waitForFunction(() => window.$ && $("#title").textContent === "Image Viewer" && $("#status").textContent.startsWith("Ready"));
   const loaded = async (name) => {
-    await page.setInputFiles("#file", { name, mimeType: "image/tiff", buffer: Buffer.from([0x49, 0x49, 42, 0]) });
+    await page.setInputFiles("#file", { name, mimeType: "image/tiff", buffer: name.endsWith(".png") ? FLAT : STACK });
     await page.waitForFunction((name) => window.shellForTests.page.get("image")?.name === name && $("#status").textContent === "Image loaded.", name);
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
     return page.evaluate(() => ({ in3d: !!$("#v3-stage")?.checkVisibility(), flat: $("#stage").checkVisibility(), open: !$("#image-box").classList.contains("folded") }));
@@ -315,7 +327,7 @@ try {
   p2.on("pageerror", (e) => { failed = true; console.error("page error, no WebGL2: " + e.message); });
   await p2.goto(origin + "/web/vascular");
   await p2.waitForFunction(() => window.$ && $("#status").textContent.startsWith("Ready"));
-  await openFromDrive(p2, { name: "stack.tif", mimeType: "image/tiff", buffer: Buffer.from([0x49, 0x49, 42, 0]) });
+  await openFromDrive(p2, { name: "stack.tif", mimeType: "image/tiff", buffer: STACK });
   await p2.waitForFunction(() => window.shellForTests.page.get("image"));
   const seen = await p2.evaluate(() => ({ shape: window.shellForTests.viewer.three?.meta?.shape || null, flat: !$("#stage").hidden, switch: !!$("#v3-switch") }));
   check(seen.shape?.length === 3 && seen.flat && !seen.switch, `with no WebGL2 the stack opens flattened, with no 2D/3D switch, its volume there: ${JSON.stringify(seen)}`);

@@ -1,6 +1,7 @@
 // Drives web/bridge.js in Pyodide under Node with the vascular study's own Python and only the packages its
 // study.json names (web/python_files.js, as the worker picks them): Python is ready, opens a stack, and Execute's call
-// draws a vessel model from it with each algorithm asked for, named as the list the build ships names it.
+// draws a vessel model from it with each algorithm asked for, named as the list the build ships names it; the page
+// reads and shows the stack itself, so Python only holds it.
 // Exits 1 on a wrong answer, 2 when it cannot run (no pyodide, or Pyodide's packages cannot be downloaded).
 //   node studies/vascular/tests/extract_bridge_driver.mjs STACK.tif TIFFFILE_DIR ALGORITHM...
 import { execFileSync } from "node:child_process";
@@ -44,8 +45,7 @@ let out = [];
 const answer = bridge(py, (m) => out.push(m), study.progress);
 const ask = (m) => { out = []; answer(m); return out; };
 const bytes = fs.readFileSync(stack);
-const o = ask({ type: "open", name: "stack.tif", bytes: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.length) }).find((m) => m.type === "opened");
-if (!o || !(o.meta.Z > 1)) problems.push(`opened: ${JSON.stringify(o?.meta)}`);
+if (!ask({ type: "open", name: "stack.tif", bytes: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.length) }).some((m) => m.type === "held")) problems.push("the stack is not held");
 for (const a of algorithms.length ? algorithms : [keys[0]]) {
   const t = Date.now();
   const r = ask({ type: "call", action: "extract", args: { algorithm: a, source: "stack.tif", z_step: 2 } }).find((m) => m.type === "result");

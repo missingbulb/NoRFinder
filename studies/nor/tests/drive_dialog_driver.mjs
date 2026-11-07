@@ -150,6 +150,7 @@ await fresh.waitForSelector("#remote-list .item:last-child .pic img");
 // the dialog starts its thumbnails' fetches in the frame after it lists the rows: two frames on, none was asked for
 await fresh.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
 const shown = await fresh.$$eval("#remote-list .item .pic img", (is) => is.length);
-if (thumbsServed !== before || thumbsAsked || shown !== 1) await done(1, `turned off, ${thumbsAsked} thumbnails were asked for, ${thumbsServed - before} downloaded and ${shown} shown`);
+// the ones kept in the browser still show: the image Open loaded, and the one saved above
+if (thumbsServed !== before || thumbsAsked || shown !== 2) await done(1, `turned off, ${thumbsAsked} thumbnails were asked for, ${thumbsServed - before} downloaded and ${shown} shown`);
 console.log("a saved thumbnail shows; with Show thumbnails off, none is downloaded");
 await done(0);

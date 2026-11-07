@@ -45,14 +45,12 @@ def test_data_management(answers, tmp_path):
     with tifffile.TiffFile(out) as t:
         index = json.loads(t.pages[0].description)
     assert [(e['name'], e['kind']) for e in index['images']] == [('a flat.tif', 'flat'), ('b stack.tif', 'stack'), ('e plain.tif', 'flat')]
-    # the preview handed to Python opens as a three-channel image, in the Image Viewer's own reader too
+    # the preview opens as a three-channel image in the page's own reader
     with tifffile.TiffFile(str(out) + '.preview.tif') as t:
         assert t.series[0].shape == (3, 120, 150), t.series[0].shape
-    sys.path.insert(0, os.path.join(HERE, '..', 'studies', 'viewer', 'py'))
-    import viewer
-    meta, planes = viewer.Session(str(out) + '.preview.tif').opened()
-    meta = json.loads(meta)
-    assert (meta['W'], meta['H']) == (150, 120) and len(planes) == 3 * 150 * 120, (meta, len(planes))
+    from image_open import open_image
+    meta, planes, _ = open_image(tmp_path, str(out) + '.preview.tif')
+    assert (meta['W'], meta['H']) == (150, 120) and planes.shape == (3, 120, 150), meta
 
 
 @pytest.mark.skipif(not NODE, reason='node missing')

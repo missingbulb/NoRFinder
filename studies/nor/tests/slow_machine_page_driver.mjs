@@ -56,7 +56,14 @@ const server = http.createServer((q, r) => {
     r.writeHead(200, { "content-type": "application/json" });
     return r.end(JSON.stringify({ ...JSON.parse(fs.readFileSync(path.join(repo, u))), stage: "PreGT" }));
   }
-  const f = u.startsWith("/web/answers/") ? path.join(answers, u.slice("/web/answers/".length)) : repoFile(repo, u);
+  // the page's own reading of an image, slow as on a slow computer
+  if (u === "/web/image_open.js") {
+    r.writeHead(200, { "content-type": "text/javascript" });
+    return r.end(`import * as real from "./image_open.real.js"; export * from "./image_open.real.js";
+export const openImage = async (...a) => { await new Promise((ok) => setTimeout(ok, ${LATE})); return real.openImage(...a); };`);
+  }
+  const f = u === "/web/image_open.real.js" ? path.join(repo, "web", "image_open.js")
+    : u.startsWith("/web/answers/") ? path.join(answers, u.slice("/web/answers/".length)) : repoFile(repo, u);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
   r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream" }); fs.createReadStream(f).pipe(r);
 });
@@ -87,9 +94,14 @@ async function open(gb) {
 }
 const held = (page, id) => page.evaluate((id) => { const b = $(id); return b.disabled && b.classList.contains("working"); }, id);
 // resolves once the worker's answer to this action has reached the page, after the page's own handler took it
+// the worker's next answer to an action, Python starting with the first (req/shell/python/on-run)
 const answered = (page, action) => page.evaluate((a) => new Promise((ok) => {
-  const h = (e) => { if (e.data.type === "result" && e.data.action === a) { st.worker.removeEventListener("message", h); ok(); } };
-  st.worker.addEventListener("message", h);
+  const hook = () => {
+    if (!st.worker) return requestAnimationFrame(hook);
+    const w = st.worker, h = (e) => { if (e.data.type === "result" && e.data.action === a) { w.removeEventListener("message", h); ok(); } };
+    w.addEventListener("message", h);
+  };
+  hook();
 }), action);
 const free = (page, id) => page.waitForFunction((id) => !$(id).classList.contains("working") && !$(id).disabled, id);
 // a box folded with the steps (req/shell/tools/ruler), opened by its title as the user would
@@ -100,7 +112,8 @@ const unfold = async (page, box) => { await page.evaluate((b) => { const e = $(b
   const { ctx, page } = await open(8);
   await check(!(await page.evaluate(() => $("#memory-dlg").open)), "no memory popup on a computer with 8 GB");
   const mem = await page.textContent("#sb-memory");
-  await check(/^\d+ MB$/.test(mem) && parseInt(mem) >= 570, `the status bar shows the memory in use: "${mem}"`);
+  // before any Run, Python has not started (req/shell/python/on-run): the memory is the page's own
+  await check(/^\d+ MB$/.test(mem) && parseInt(mem) > 0, `the status bar shows the memory in use: "${mem}"`);
   await shot(page, "status_memory", "#statusbar");
   await openFromDrive(page, image);
   await page.waitForFunction(() => $("#image-pick").classList.contains("working"));
