@@ -71,8 +71,9 @@ owner's decisions on the stacks and the vessel model, are
   page shows), and the model it draws opens over the stack. The study ships no drawn models: a
   stack opens with none until Execute. A vessel model file (one saved earlier, say) can still be
   loaded from a small link beside Execute. Once a model is open, Undo, Redo and Discard edits are under
-  Execute; what the model holds is in Summary, with Mark a damaged area and, outside ground truth, Draw a missed
-  vessel under it (owner, 2026-11-07: the left bar is the shell's, `req/shell/left-bar/shells`). Changed by the owner on 2026-11-04: the box behaves as NoR's
+  Execute; what the model holds is in Summary, with Mark a damaged area under it (owner, 2026-11-07: the left bar
+  is the shell's, `req/shell/left-bar/shells`). Draw a missed vessel is a ground-truth action, offered only in the
+  Areas task (`req/vascular/truth/tasks`; owner, 2026-11-07). Changed by the owner on 2026-11-04: the box behaves as NoR's
   (`req/nor/find/settings`). Each algorithm in the list carries its own icon and its name, and its
   precision and recall against the provisional labels (`analysis/extraction/labels/`, a model's
   verdicts, not the owner's); How the <name> algorithm works gives its steps as a nested list
