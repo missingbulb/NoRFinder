@@ -49,7 +49,7 @@ export function mount(shell) {
   // ---------- the status bar's steps, and the Processing box's title ----------
   function steps() {
     const m = MV.current(), a = algorithms.find((x) => x.key === ran);
-    shell.step("find", !!m && (!ran || ran === $("#vm-algo").value), m ? (a ? `${a.title}: ${m.segments.length} segments` : "A model file loaded") : "");
+    shell.step("find", !!m && (!ran || ran === $("#vm-algo").value), m ? (a ? `${a.title}: ${m.segments.length} segments` : `${m.segments.length} segments`) : "");
     shell.boxDone($("#model-set"), m ? (a ? `${a.title} executed` : "Model loaded") : null);
     const open = truth && tasks.open(), left = (open || []).filter((t) => !t.ok).map((t) => t.text + ".");
     shell.step("review", !!m && (!truth || (!!open && !left.length)), left.join(" ") || "Every task is done.");
