@@ -41,10 +41,8 @@ const media = async (blob) => ({ headers: { "content-type": blob.type || "applic
 export const remote = (() => {
   const key = GOOGLE.apiKey || "";
   const API = "https://www.googleapis.com/drive/v3/files";
-  // the bytes Drive's answers have brought, for the status bar's network: Google does not let a page read their size;
-  // and the files downloaded whole, {bytes, ms}, for how fast Drive answers
+  // the bytes Drive's answers have brought, for the status bar's network: Google does not let a page read their size
   let received = 0;
-  const timed = { bytes: 0, ms: 0 };
   // the sign-in (account.js), once the page hands it over: {signedIn(), token(), refused()}
   let signIn = null;
   const signedIn = () => !!signIn?.signedIn();
@@ -105,11 +103,10 @@ export const remote = (() => {
       if (f.mimeType === "application/vnd.google-apps.folder") return { folder: true, id, name: f.name };
       name = f.name;
     }
-    const t0 = performance.now(), r = await download(id);
+    const r = await download(id);
     if (onStart) onStart(name);
-    const done = (bytes) => { timed.bytes += bytes.byteLength; timed.ms += performance.now() - t0; return bytes; };
     const total = +r.headers.get("content-length") || null;
-    if (!onChunk || !r.body) return { name, bytes: done(await r.arrayBuffer()) };
+    if (!onChunk || !r.body) return { name, bytes: await r.arrayBuffer() };
     let buf = new ArrayBuffer(total || 1 << 20), got = 0;
     for (const reader = r.body.getReader(); ; ) {
       const { done, value } = await reader.read();
@@ -121,7 +118,7 @@ export const remote = (() => {
       new Uint8Array(buf, got).set(value); got += value.length;
       onChunk(buf, got, total);
     }
-    return { name, bytes: done(got === buf.byteLength ? buf : buf.slice(0, got)) };
+    return { name, bytes: got === buf.byteLength ? buf : buf.slice(0, got) };
   }
 
   // the first n bytes of a file, as an ArrayBuffer
@@ -300,7 +297,7 @@ export const remote = (() => {
       throttled: THROTTLING + ". Try again in 15 minutes.",
     },
     use: (s) => { signIn = s; }, signedIn, parse, file, head, checksum, list, all, name, canWrite, writer, study,
-    ready: !!key, received: () => received, speed: () => ({ ...timed }),
+    ready: !!key, received: () => received,
     // an image from the store, as a source records it; whether a source is one
     source: (id, more = {}) => ({ kind: KIND, id, ...more }),
     owns: (src) => src?.kind === KIND,

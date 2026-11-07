@@ -87,7 +87,7 @@ const FOLDER_PREVIEWS = "nor-previews-v1", PREVIEWS_SHA = "x-nor-sha256";
 const PREVIEWS_PATH = "drive-previews/";
 const CACHED_IMAGE_PATH = "drive-image/";
 const MOTION = "nor-motion"; // false: the user turned the page's animations off
-const RESOURCES = "nor-resources"; // the status bar's disk, memory, network and CPU: "hidden" | "auto" | "open"; absent = "auto"
+const RESOURCES = "nor-resources"; // the status bar's disk, memory, network and CPU: "auto" | "open"; anything else = "auto"
 const SEEN_VERSION = "nor-seen-version"; // the site version the user last saw, to tell them what changed since
 const MEMORY_TIP = "nor-memory-tip-off"; // true: the user asked never to see the low-memory popup again
 // the page's memory with a study's Python loaded (studies/nor/detection/browser/MEMORY.md), and the device
@@ -218,8 +218,7 @@ function entry(name, what, size, within) {
   row.querySelector(".name").textContent = name; row.querySelector(".what").textContent = what; row.querySelector(".size").textContent = size;
   return row;
 }
-$("#sb-memory").onclick = () => { $("#ram-msg").textContent = ""; usage("memory"); };
-$("#ram-gc").onclick = () => working($("#ram-gc"), () => { const told = until("memory"); st.worker.postMessage({ type: "memory" }); return told; });
+$("#sb-memory").onclick = () => usage("memory");
 
 // the disk: what the site keeps on this device, as Manage storage counts it
 async function diskBar() {
@@ -249,18 +248,20 @@ function usage(tab) {
 $("#usage-dlg .tab-row").onclick = (e) => { const t = e.target.closest("[role=tab]"); if (t) usage(t.dataset.tab); };
 
 // ---------- the resources block: the disk, memory, network and CPU folded into one icon ----------
-// (req/shell/status-bar/resources) Auto-hiding, it unfolds while hovered, and while something needs watching: the
+// (req/shell/status-bar/resources) Autohide checked, it unfolds while hovered, and while something needs watching: the
 // CPU over RAISE_CPU or the network over RAISE_RATE for RAISE_AFTER_MS, the tab over RAISE_RAM; it folds
 // RAISE_LINGER_MS after the last of them ends.
-const RES_MODES = ["hidden", "auto", "open"];
 const RAISE_CPU = 0.5, RAISE_RATE = 250 * 1024, RAISE_RAM = 2 ** 30, RAISE_AFTER_MS = 5000, RAISE_LINGER_MS = 8000;
 const raise = { cpuSince: null, netSince: null, until: 0 };
 function showResources() {
-  const m = readJSON(RESOURCES, "auto");
-  $("#sb-res").dataset.mode = $("#res-mode").value = RES_MODES.includes(m) ? m : "auto";
+  const kept = readJSON(RESOURCES, "auto"), open = kept === "open";
+  // a kept value other than "open" or "auto" reads as auto-hiding, and is forgotten
+  if (kept !== "auto" && !open) try { localStorage.removeItem(RESOURCES); } catch { /* no storage */ }
+  $("#sb-res").dataset.mode = open ? "open" : "auto";
+  $("#res-mode").checked = !open;
 }
 showResources();
-$("#res-mode").onchange = (e) => { writeJSON(RESOURCES, e.target.value); showResources(); };
+$("#res-mode").onchange = (e) => { writeJSON(RESOURCES, e.target.checked ? "auto" : "open"); showResources(); };
 $("#sb-res-icon").onclick = () => usage(usageTab || "storage");
 $("#sb-online").onclick = () => usage("storage"); // where the page installs as an app and each study is made available offline
 function raiseResources(cpuShare, rate) {
@@ -670,7 +671,6 @@ function handle(m) {
   } else if (m.type === "ready") {
     st.ready = true; st.readyInfo = m.info; $("#spin").classList.remove("on");
     study.ready?.(m.info); statusBar(); diskBar();
-    $("#ram-gc").disabled = false;
     status("Ready. Load an image.");
     if (st.queued) { const q = st.queued; st.queued = null; send(q.name, q.bytes); }
   } else if (m.type === "opened") {
@@ -690,8 +690,6 @@ function handle(m) {
     if (remote.owns(st.source) && st.pictured !== st.source.id) saveThumb(st.source.id, st.fileName);
   } else if (m.type === "result") {
     study.result?.(m.action, m.meta, m.bytes, m.echo);
-  } else if (m.type === "memory") {
-    $("#ram-msg").textContent = `Python: ${mbOf(m.used)} MB in use of ${mbOf(m.heap)} MB reserved.`;
   }
 }
 
@@ -823,7 +821,7 @@ function restudy(again = true) {
     dropImage();
     leaveStudy();
     try { await mountStudy(id); } catch (e) { return status("Error: " + (e.message || e), true); }
-    if (ready) { st.ready = true; $("#ram-gc").disabled = false; study.ready?.(readyInfo); }
+    if (ready) { st.ready = true; study.ready?.(readyInfo); }
     statusBar(); status(ready ? "Ready. Load an image." : "Loading Python in the background…");
     if (image) openBytes(image.name, image.bytes, image.source);
   });
@@ -1039,7 +1037,7 @@ function remoteDialog() {
       }
     } catch (e) { console.warn("cannot read the images kept here:", e); }
     kept.sort((a, b) => (b.study === manifest.id) - (a.study === manifest.id) || a.name.localeCompare(b.name));
-    msg(kept.length ? "" : "No image is kept here: Make available offline, in Manage storage, keeps a study's.");
+    msg(kept.length ? "" : "No image is kept here: Make Available Offline, in Manage storage, keeps a study's.");
     for (const f of kept) {
       const b = document.createElement("button"); b.type = "button"; b.className = "item"; b.setAttribute("aria-selected", "false");
       const meta = [sizeText(f.size), [remote.label, ...f.path].join(" / ")].join(" · ");
@@ -1381,7 +1379,7 @@ const bytesOf = (k) => 2 * (k.length + (localStorage.getItem(k) || "").length); 
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
   [THEME]: "Theme", [ROLE]: "The role you work in", [BARS]: "Left bar width", [REMOTE_LINK]: `Last ${remote.label} link`, [REMOTE_LINKS]: `Last ${remote.label} link in each study`,
-  [THUMBS]: `Show thumbnails in the ${remote.short} dialog`, [AUTO_SAVE]: `Auto-save images from ${remote.label}`, [RECENT]: `Recent images from ${remote.label}`, [LOCAL_RECENT]: "Recent files from this computer", [LISTINGS]: `${remote.label} folders as last listed, for working offline`, [HOLDS]: `What each ${remote.short} image holds (2D or 3D)`, [THROTTLE]: `Wait after ${remote.short} downloads were throttled`, [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: SIGNED_IN_LABEL, [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [RESOURCES]: "The status bar's disk, memory, network and CPU: hidden, auto-hiding or always open", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
+  [THUMBS]: `Show thumbnails in the ${remote.short} dialog`, [AUTO_SAVE]: `Auto-save images from ${remote.label}`, [RECENT]: `Recent images from ${remote.label}`, [LOCAL_RECENT]: "Recent files from this computer", [LISTINGS]: `${remote.label} folders as last listed, for working offline`, [HOLDS]: `What each ${remote.short} image holds (2D or 3D)`, [THROTTLE]: `Wait after ${remote.short} downloads were throttled`, [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: SIGNED_IN_LABEL, [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [RESOURCES]: "The status bar's disk, memory, network and CPU: auto-hiding or always open", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
 };
 // What the site keeps, by what it takes to work offline (req/shell/storage/manage): a section per study, then what they share; settings
 // apart, which Settings keeps (req/shell/account/settings), and with them what nobody names. An entry: {kind, name, what, size, del, held, ask}, del
@@ -1396,7 +1394,7 @@ async function inventory() {
   const studies = await offlineCopy.studyFiles().catch((e) => { console.warn("the studies could not be read:", e); return []; });
   const live = await offlineCopy.available().catch(() => new Set());
   const sections = studies.map((s) => ({ id: "study:" + s.id, study: s.id, title: s.title, mark: live.has(s.id), folders: !!s.manifest.root, entries: [] }));
-  const shared = { id: "shared", title: "Shared by every study", about: SHARED_ABOUT, entries: [] };
+  const shared = { id: "shared", title: "Shared", about: SHARED_ABOUT, entries: [] };
   // a study's own, else the study on show's: kept before images were told apart by study
   const sectionOf = (id) => sections.find((x) => x.study === id) || sections.find((x) => x.study === manifest?.id) || shared;
   // each section's thumbnails and its folders' previews, one record
@@ -1493,26 +1491,28 @@ async function storageTab(fresh) {
     storageTab(false);
   };
   let total = settings + overhead;
-  list.replaceChildren(...sections.map((x) => {
+  const heading = (text) => Object.assign(document.createElement("h3"), { className: "storage-head", textContent: text });
+  list.replaceChildren(...sections.flatMap((x, k) => {
     const items = x.entries, size = items.reduce((a, e) => a + e.size, 0), gone = items.filter((e) => e.del);
     total += size;
     const box = document.createElement("details"); box.className = "group"; box.dataset.group = x.id; box.open = open.has(x.id);
     box.innerHTML = `<summary><span class="title">${esc(x.title)}</span><span class="count">${items.length ? `${items.length} · ${sizeText(size)}` : x.study ? "Nothing of its own" : "Nothing kept"}</span></summary>`;
     if (x.mark) markOffline(box.querySelector(".title"), "study", true);
-    // a study not all here offers to make it so; one that is, to keep its remote images too
+    // a study not available offline offers to make it so; one with a remote folder, to keep more of its images
     if (x.study && (!x.mark || x.folders)) {
-      const make = Object.assign(document.createElement("button"), { type: "button", className: x.mark ? "link get-images" : "link make-offline", textContent: x.mark ? `Its ${remote.short} images…` : "Make available offline" });
+      const make = Object.assign(document.createElement("button"), { type: "button", className: "link make-offline", textContent: "Make Available Offline" });
       make.onclick = (e) => { e.preventDefault(); offlineCopy.makeAvailable(x.study, () => storageTab(false)); };
       box.firstChild.append(make);
     }
     if (gone.length) {
-      const clear = Object.assign(document.createElement("button"), { type: "button", className: "link clear", textContent: "Delete all" });
+      const clear = Object.assign(document.createElement("button"), { type: "button", className: "link clear", textContent: "Clear cache" });
       const ask = x.study ? `Delete everything kept for ${x.title} on this device? What other studies use stays, and so do its pages, kept with the site.`
         : `Delete all ${gone.length} of "${x.title}" from this device?`;
       clear.onclick = (e) => { e.preventDefault(); act(gone, ask); };
       box.firstChild.append(clear);
     }
-    const about = x.about || (x.mark ? "Available offline: its Python is on this device." : "Not available offline yet: its Python is not all on this device.");
+    const needs = x.folders ? "its Python and at least one of its images" : "its Python";
+    const about = x.about || (x.mark ? `Available offline: ${needs} ${x.folders ? "are" : "is"} on this device.` : `Not available offline yet: it needs ${needs} on this device.`);
     box.append(Object.assign(document.createElement("p"), { className: "hint", textContent: about }));
     for (const e of items) {
       const row = document.createElement("div"); row.className = "entry"; row.dataset.name = e.name; row.dataset.kind = e.kind;
@@ -1523,7 +1523,8 @@ async function storageTab(fresh) {
       if (e.del) row.querySelector(".del").onclick = () => act([e], e.ask && `Delete everything kept for ${e.name}?`);
       box.append(row);
     }
-    return box;
+    if (!x.study) return [heading("Shared"), box];
+    return k === 0 ? [heading("Studies"), box] : [box];
   }));
   const est = await navigator.storage?.estimate?.().catch(() => null);
   showDisk(total);
@@ -1555,7 +1556,7 @@ const settings = settingsDialog({
     { key: TIPS, label: "Tips you closed (clear one to see it again)", kind: "set" },
     { key: RECENT, label: `Recent images from ${remote.label} (clear one to drop it)`, kind: "list", name: (r) => (r.study ? `${r.study}: ` : "") + (r.path?.length ? `${r.path.join("/")}/` : "") + r.name },
     { key: MOTION, label: "Animations", kind: "toggle", on: true, off: false, fallback: true },
-    { key: RESOURCES, label: "The status bar's disk, memory, network and CPU", kind: "choice", fallback: "auto", options: [["hidden", "Hidden always"], ["auto", "Auto-hiding"], ["open", "Always open"]] },
+    { key: RESOURCES, label: "Autohide the status bar's disk, memory, network and CPU", kind: "toggle", on: "auto", off: "open", fallback: "auto" },
     { key: SEEN_VERSION, label: "Version you saw last", kind: "text" },
     { key: AUTO_SAVE, label: `Auto-save images from ${remote.label}, on this device`, kind: "toggle", on: "on", off: "off", fallback: "on" },
     { key: "device-only", label: "Kept on this device only", kind: "device", entries: deviceSettings },
@@ -2107,7 +2108,7 @@ function leaveStudy() {
   css?.remove(); css = null;
   study = {}; manifest = null; view?.use({}); view?.clear();
   for (const k of Object.keys(st)) if (!SHELL_STATE.has(k)) delete st[k];
-  st.ready = false; $("#ram-gc").disabled = true;
+  st.ready = false;
   for (const w of Object.values(waiting)) w.splice(0).forEach((x) => x.bad(new Error("the study left")));
   busy(false); $("#notice").hidden = true; $("#tip").hidden = true;
   $("#image-view").hidden = false; delete $("#view").dataset.view; $("#switch").hidden = true; views.now = "image";
@@ -2122,7 +2123,13 @@ const shell = {
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; }, get makesTruth() { return makesTruth(); },
 };
 const offlineCopy = offline({ $, esc, sizeText, remote, throttled, throttle, stored: () => diskBar(),
-  kept: async (id) => !!(await caches.open(IMAGES).then((c) => c.match(imageUrl(id)), () => null)), keep: saveImage });
+  kept: async (id) => !!(await caches.open(IMAGES).then((c) => c.match(imageUrl(id)), () => null)), keep: saveImage,
+  // the studies at least one kept image was kept in
+  keptIn: async () => {
+    const c = await caches.open(IMAGES).catch(() => null), out = new Set();
+    for (const q of c ? await c.keys() : []) { const s = (await c.match(q))?.headers.get(IMAGE_STUDY); if (s) out.add(s); }
+    return out;
+  } });
 // Data Management (req/shell/data/mode): what it borrows from the shell
 const data = dataMode({
   $, esc, sizeText, still, status, remote, account: signIn, place, working, sha256, savedImage, folderPreviews, throttle,

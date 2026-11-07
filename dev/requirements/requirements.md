@@ -768,7 +768,7 @@ nobody has decided: what the page does there is not a requirement yet.
   `offline.json` with each file's SHA-256, each checked against that list and refetched only when it
   changed. With no network the page then opens at its own address and at every study's, from that
   copy. A study whose Python is already on this device runs; one whose Python is not says so: it
-  needs the internet once, or Make available offline (`req/shell/offline/per-study`). It says so plainly, not as an error
+  needs the internet once, or Make Available Offline (`req/shell/offline/per-study`). It says so plainly, not as an error
   and with no traceback, the spinner stopping, the network dropping as the study's own modules load too (set by the owner on 2026-11-03). An image kept on this device (`req/shell/drive/kept-images`,
   `req/shell/offline/per-study`) opens: offline, the Google Drive dialog shows its folders as last listed (`req/shell/drive/offline-listing`),
   or, with none kept, the images kept here.
@@ -780,7 +780,7 @@ nobody has decided: what the page does there is not a requirement yet.
   sign-in page answering in the site's place counts as no network. What the page is doing follows it, set by the
   owner on 2026-11-03: a study whose Python could not load loads it once the network is back, with no reload;
   an open Google Drive dialog greys what cannot open once it goes and reads its folder again once it is back, and
-  an image it could not download says the internet cannot be reached; an open Make available offline reads the
+  an image it could not download says the internet cannot be reached; an open Prepare for Offline popup reads the
   study's folder and counts again, and offers Download again after a run the network cut short, what it kept
   staying kept; a signed-in user's settings sync, the version is checked and the site's copy brought up to date.
   What needs the network says so in
@@ -796,7 +796,8 @@ nobody has decided: what the page does there is not a requirement yet.
 
   Set by the owner on 2026-11-02, so the user knows before doing anything what works with no network
   (`req/shell/offline/default`). A small green mark, the same everywhere, an arrow into a tray for saved on this device,
-  follows a study whose Python is all on this device, in the header's switcher and its Storage
+  follows a study whose Python is all on this device and, for a study with a Google Drive folder of its own, at least
+  one of its images too (set by the owner on 2026-11-07), in the header's switcher and its Storage
   section, and an image kept on this device, in the Google Drive dialog's rows; what is not available
   offline carries nothing. The image selector's images carry none: with Auto-save on, they are all kept; offline,
   one not kept is greyed (`req/shell/load/selector`). The owner set on
@@ -811,19 +812,19 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Set by the owner on 2026-11-02, nothing in it happening until the user asks. The Storage tab
-  (`req/shell/storage/manage`) opens with **Install as an app**: only on the user's click does the page offer the
+  (`req/shell/storage/manage`) opens with an **Offline Settings** block holding **Install as an app** (set by the owner on
+  2026-11-07): only on the user's click does the page offer the
   browser's install, an icon that opens the site in its own window, offline too; until then the
   page names no app manifest, so the browser offers none unprompted. Where the browser has no install
   button of its own to call, the tab says where that browser's own menu has it. Each study's section
-  that is not all on this device has **Make available offline**, which opens a popup of what that
-  takes: its Python still missing, Python itself counted when it is, from jsDelivr; and, for a study
-  with a Google Drive folder of its own (`files.drive`), every image reachable from it, its
-  subfolders included, each with its folder and size, ticked, to untick one by one or all at once.
-  The popup adds up what the choice downloads, beside how much more the browser lets the site keep,
-  and estimates how long it takes, source by source (`1 GB from Google Drive at 25 MB/s + 200 MB of
-  Python at 15 MB/s, about 1 min 20 s`), at the speeds this session measured from each source; with
-  none measured yet, at the browser's own estimate of the connection, saying so, or it says it
-  cannot tell. A choice larger than the room left is refused, saying so. Download asks the browser
+  that is not available offline (`req/shell/offline/mark`), and each with a Google Drive folder of its own (`files.drive`),
+  has **Make Available Offline**, which opens the **Prepare for Offline** popup, a list of what that takes: first its
+  Python, a row ticked and greyed, since the study cannot run without it, with the size still missing (Python itself
+  counted when it is) or saying it is already on this device; then every image reachable from its Google Drive folder,
+  its subfolders included, each with its folder and size, ticked, to untick one by one or all at once. Below the list
+  the popup carries no text of its own (set by the owner on 2026-11-07); its button at the right says what the choice
+  downloads, **Download 320 MB Now**. A choice larger than how much more the browser lets the site keep is refused,
+  saying so. Download asks the browser
   to keep the site's storage until the user deletes it, downloads with its progress shown and can be
   stopped, and ends saying what is now on this device and whether the browser agreed to keep it.
   When Google throttles the downloads (`req/shell/drive/throttle`) it stops and says so. Test: `web-tests/test_offline_page.py`.
@@ -919,13 +920,16 @@ nobody has decided: what the page does there is not a requirement yet.
   Set by the owner on 2026-10-31. The disk, memory, network and CPU in the status bar each open
   the same dialog, titled Resource Usage, on their own tab, and its tabs switch between them. Every tab is laid out the
   same way: a line with the total, then rows of a name, what it is in grey beneath, and a size at
-  the right, then a row of the tab's own buttons and Close. Test: `web-tests/test_status_bar_page.py`.
+  the right, then a row of the tab's own buttons and Close. Switching tabs leaves the dialog as it is, the same width
+  and height, a tab longer than it scrolling within it (set by the owner on 2026-11-07). Test:
+  `web-tests/test_status_bar_page.py`.
   </details>
 
 - `req/shell/resources-dialog/animations` An Animations checkbox in the resources dialog's CPU tab turns every animation on the page off.
   <details>
 
-  Set by the owner on 2026-10-31. Checked at first, it is kept as the user's setting: the next visit
+  Set by the owner on 2026-10-31. It is the checkbox alone, with no text explaining it (set by the owner on
+  2026-11-07). Checked at first, it is kept as the user's setting: the next visit
   opens with it as it was left, and signed in it follows the user (`req/shell/account/sign-in`). Unchecked, nothing on the
   page moves to draw the eye: the minimap and the drawers change at once, the photocopier's light
   does not sweep the image, no button shines or glows (one that would looks plain, with no light or
@@ -1096,15 +1100,15 @@ nobody has decided: what the page does there is not a requirement yet.
   `web-tests/test_status_bar_page.py`.
   </details>
 
-- `req/shell/status-bar/memory` The memory, a memory-chip icon and "253 MB", opens what holds it and a Run GC button.
+- `req/shell/status-bar/memory` The memory, a memory-chip icon and "253 MB", opens what holds it.
   <details>
 
   The memory the tab holds: Python's, its files, the page's (Chrome and Edge say it) and an estimate
   for the compiled code and the browser, which a page cannot read; amber past a quarter of the
   computer's total where the browser says it. Clicking it opens the Memory tab (`req/shell/resources-dialog`) listing each
   of those, and within the page's share the image and the study's results, and the computer's
-  total. Its Run GC button has Python collect its garbage and says what Python then holds in use
-  against what it has reserved; the tab carries no essay on how Python's memory grows. Test:
+  total. It carries no button to have Python collect its garbage (a Run GC button removed by the owner on
+  2026-11-07), and no essay on how Python's memory grows. Test:
   `web-tests/test_status_bar_page.py`.
   </details>
 
@@ -1135,16 +1139,16 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Set by the owner on 2026-11-03. The four sit in one block with a gauge icon at its right, next to the
-  online icon (`req/shell/status-bar/online`). A setting in the resources dialog, above its tabs on every tab, chooses how the block shows:
-  Auto-hiding, the default, Hidden always, or Always open, as the status bar was before. Auto-hiding,
+  online icon (`req/shell/status-bar/online`). An Autohide checkbox in the resources dialog, above its tabs on every tab, chooses how the block shows:
+  checked, the default, it auto-hides; unchecked, it is always open, as the status bar was before (set by the owner on
+  2026-11-07, in the place of a choice that also offered Hidden always; a kept Hidden always reads as auto-hiding). Auto-hiding,
   the page opens with the four folded away and the icon alone showing; hovering the block unfolds the
   four as they look always open, opening beside the icon, which stays where it is (changed by the owner on
   2026-11-07), and leaving folds them again, both ways
   animated (at once with animations off, `req/shell/resources-dialog/animations`, or reduced motion asked for). It unfolds by
   itself, and stays unfolded, while the CPU has been over 50% of one core for more than
   5 seconds, the network has been downloading over 250 KB/s for more than 5
-  seconds, or the tab holds over 1 GB, and folds 8 seconds after the last of these ends. Hidden
-  always, only the icon shows, and neither hovering nor any of these unfolds it. Going offline does not unfold it
+  seconds, or the tab holds over 1 GB, and folds 8 seconds after the last of these ends. Going offline does not unfold it
   (set by the owner on 2026-11-04): the online icon (`req/shell/status-bar/online`) says so. Always open, the four show beside the icon. Clicking the icon opens the
   resources dialog (`req/shell/resources-dialog`) on the tab last shown, Storage at first. The choice is kept as the user's setting and,
   signed in, follows the user (`req/shell/account/sign-in`). Test: `web-tests/test_status_bar_page.py`.
@@ -1180,10 +1184,10 @@ nobody has decided: what the page does there is not a requirement yet.
   pages and code, part of the site's copy; the images kept from Google Drive in it, by name; one
   record for all their thumbnails and its Drive folders' previews; and, for the study on show, the
   selections per image, by image name. An image, a thumbnail or a preview kept before images were
-  told apart by study, and opened in none of them since, is listed with the study on show. Then
-  **Shared by every study**: the site itself, Python itself, the packages two studies or more use,
+  told apart by study, and opened in none of them since, is listed with the study on show. The study sections sit under a
+  **Studies** heading; then, under a **Shared** heading, the **Shared** section (set by the owner on 2026-11-07): the site itself, Python itself, the packages two studies or more use,
   and, as one record, code no study uses now. Each entry can be deleted, but a study's pages, kept
-  whole with the site; each section's Delete all deletes all it can, and a study's is the study's
+  whole with the site; each section's **Clear cache** (set by the owner on 2026-11-07, in the place of a Delete all) deletes all it can, and a study's is the study's
   whole purge, leaving what other studies use. Settings are not listed here: they are kept, shown
   and cleared in Settings (`req/shell/account/settings`); the total says what they take, and counts too what is stored
   under the site that neither the shell nor the study names. The shell names its own keys; the study names its keys through its `stored` hook, so the

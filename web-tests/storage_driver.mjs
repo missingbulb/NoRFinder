@@ -1,7 +1,7 @@
 // Drives the page (web/) in headless Chromium, with a worker that never answers and a stand-in Drive API, and
 // checks req/shell/storage/manage: the header's avatar opens a menu whose Manage storage dialog lists what this device keeps, a section
 // per study, then the shared and the rest, folded at first, each entry with its size, and no setting; deleting an
-// entry removes exactly what it lists, and a study's Delete all purges it but what other studies use; a thumbnail
+// entry removes exactly what it lists, and a study's Clear cache purges it but what other studies use; a thumbnail
 // saved from now on is listed by its image's name. req/shell/account/settings: Settings lists the settings kept on this device only, to
 // clear. req/shell/offline/mark: the study switcher and the Drive dialog mark what is available offline. Then req/shell/drive/kept-images: the Drive
 // dialog holds no Show thumbnails, Auto-save images or storage size, Settings holds Auto-save images; an image
@@ -175,6 +175,10 @@ try {
   let g = await groups();
   const names = (k, kind) => (g[k] || []).filter((e) => !kind || e.kind === kind).map((e) => e.name);
   check(Object.keys(g).join() === "study:viewer,study:nor,study:vascular,shared", `a section per study, by title, then the shared: ${Object.keys(g)}`);
+  const heads = await page.$$eval("#storage-list > *", (es) => es.map((e) => (e.matches("h3") ? "# " + e.textContent : e.dataset.group + " " + e.querySelector(".title")?.textContent)));
+  check(heads.join("|") === "# Studies|study:viewer Image Viewer|study:nor NoR Finder|study:vascular Vascular Measurements|# Shared|shared Shared", `the studies under Studies, then Shared under Shared: ${heads.join("|")}`);
+  const clears = await page.$$eval("#storage-list .clear", (bs) => bs.map((b) => b.textContent));
+  check(clears.length && clears.every((t) => t === "Clear cache"), `each section's button to clear it says Clear cache: ${clears}`);
   const titles = await page.$$eval("#storage-list .group > summary", (ss) => ss.map((s) => ({ text: s.textContent, mark: !!s.querySelector(".offline-mark") })));
   check(titles[0].mark && !titles[1].mark && /Image Viewer/.test(titles[0].text) && /NoR Finder/.test(titles[1].text), `a study's title says whether it is available offline: ${JSON.stringify(titles)}`);
   check(names("study:nor", "python").join() === OWN_PACKAGE && /300 KB/.test(g["study:nor"].find((e) => e.kind === "python").size), `a study's own Python packages, by package: ${JSON.stringify(g["study:nor"])}`);
@@ -205,14 +209,14 @@ try {
   const thumbs = await page.evaluate(() => [localStorage.getItem("nor-drive-thumb:ID1"), localStorage.getItem("nor-drive-thumb:ID2"), localStorage.getItem("nor-drive-thumbs-saved"), localStorage.getItem("nor-drive-thumb-names")]);
   check(thumbs[0] === null && thumbs[1] === null && thumbs[2] === "[]" && thumbs[3] === "{}", `deleting the thumbnails removes them from every list: ${thumbs}`);
 
-  // a study's Delete all purges it, leaving what other studies use
+  // a study's Clear cache purges it, leaving what other studies use
   page.once("dialog", (d) => d.accept());
   await page.click('#storage-list .group[data-group="study:nor"] .clear');
   await page.waitForFunction(() => !document.querySelector('#storage-list .group[data-group="study:nor"] .entry'));
   const left = await page.evaluate(async ({ own, shared }) => ({ own: !!(await caches.match(own)), shared: (await Promise.all(shared.map((u) => caches.match(u)))).every(Boolean),
     image: !!(await caches.match(new URL("drive-image/ID1", location.href).href)) || !!(await caches.match(new URL("drive-image/ID9", location.href).href)),
     selections: Object.keys(localStorage).filter((x) => x.startsWith("nor-edits-v1:")).length, other: localStorage.getItem("acme-key") }), { own: OWN, shared: SHARED });
-  check(!left.own && !left.image && !left.selections && left.shared && left.other === "x", `a study's Delete all deletes its own packages, images and selections, and keeps the shared and what nobody names: ${JSON.stringify(left)}`);
+  check(!left.own && !left.image && !left.selections && left.shared && left.other === "x", `a study's Clear cache deletes its own packages, images and selections, and keeps the shared and what nobody names: ${JSON.stringify(left)}`);
   g = await groups();
   check(names("shared").length === 3, "and leaves the shared section alone");
   await page.click("#usage-dlg button[value=close]");

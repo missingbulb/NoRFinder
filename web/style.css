@@ -438,7 +438,6 @@ html[data-motion=off] :is(#sb-res-items, #statusbar #sb-res-icon) { transition: 
 #usage-dlg .tab-head { display: flex; flex-wrap: wrap-reverse; align-items: center; gap: 0 12px; }
 #usage-dlg .tab-head .tab-row { flex: 1; }
 #usage-dlg .res-mode { font-size: 12px; color: var(--dim); white-space: nowrap; }
-#usage-dlg .res-mode select { font: inherit; }
 #sb-now { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 0 1 auto; overflow: hidden; }
 #sb-now #status { overflow: hidden; text-overflow: ellipsis; }
 /* too little room: what the page is doing and the four give way; the steps and the right-hand items stay whole */
@@ -640,6 +639,10 @@ kbd { font: 12px ui-monospace, monospace; padding: 1px 5px; border: 1px solid va
 #history-dlg { width: min(560px, calc(100vw - 32px)); }
 #history-dlg h2 { margin: 0 0 10px; }
 #usage-dlg h2 { margin: 0 0 10px; }
+/* one size whatever the tab: a longer tab scrolls within it (req/shell/resources-dialog) */
+#usage-dlg { height: min(560px, calc(100vh - 32px)); box-sizing: border-box; }
+#usage-dlg > form { display: flex; flex-direction: column; height: 100%; }
+#usage-dlg [role=tabpanel] { flex: 1; min-height: 0; overflow: auto; }
 /* Settings: a row per setting, its name at the left and its control at the right */
 #settings-dlg h2 { margin: 0 0 4px; }
 #settings-list { display: flex; flex-direction: column; gap: 10px; max-height: 60vh; overflow: auto; margin: 10px 0; }
@@ -694,11 +697,13 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 #usage-dlg .total { margin: 0 0 6px; }
 #usage-dlg .motion { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
 #usage-dlg .motion label { display: flex; align-items: center; gap: 6px; font-weight: 600; }
-#usage-dlg .motion .hint { margin: 2px 0 0 24px; }
 #usage-dlg:not([data-tab=storage]) [data-for=storage], #usage-dlg:not([data-tab=memory]) [data-for=memory] { display: none; }
 .rows { max-height: min(62vh, 560px); overflow-y: auto; padding-right: 6px; }
 #storage-list .group { border-top: 1px solid var(--line); padding: 6px 0; }
-#storage-list .group:first-child { border-top: 0; }
+#storage-list .storage-head + .group { border-top: 0; }
+#usage-dlg h3 { margin: 12px 0 2px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--dim); }
+#usage-dlg .offline-settings { margin-bottom: 8px; }
+#usage-dlg .offline-settings h3 { margin-top: 0; }
 #storage-list .group > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; font-weight: 600; padding: 4px 0; }
 #storage-list .group > summary::-webkit-details-marker { display: none; }
 #storage-list .group > summary::before { content: ""; flex: none; width: 0; height: 0; border-style: solid; border-width: 5px 0 5px 7px;
