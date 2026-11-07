@@ -44,8 +44,9 @@ owner's decisions on the stacks and the vessel model, are
   vessel or point to attach it there, for a connection the algorithm missed (owner, 2026-11-07), and click a faded
   low-confidence vessel to approve or decline it. The toolbar's Everything, Detected and Missed keep the
   whole stack, only the signal within reach of the model's vessels, or only what lies away from them, within a
-  reach that is a share of each vessel's own width (`req/vascular/model/view`); Mark a damaged area, under
-  what the model holds in Summary or under the tasks while ground truth is made, lassos an area to leave out. Every edit can be undone,
+  reach that is a share of each vessel's own width (`req/vascular/model/view`). Damaged sample is marked in Data
+  Management, as an imperfection of the stack (`req/shell/data/edit`), never in the model (owner, 2026-11-07); a model
+  file whose `excluded_regions` mark damage still shows it hatched and leaves it out of the counts. Every edit can be undone,
   and the edits stay in the browser, tied to the model as drawn, until it is submitted. Test:
   `studies/vascular/tests/test_model_page.py`.
   </details>
@@ -58,8 +59,8 @@ owner's decisions on the stacks and the vessel model, are
   its corrections counted, labelled `vascular-ground-truth`; it is off until the model carries a
   correction, and its checklist says what of each task is still open. Each verdict is in the file:
   a vessel's `state` (`accepted` or `rejected`) beside `proposed`, the state the extractor gave it;
-  a junction found right in `checked_junctions`; each step done over an area in `reviewed_regions`,
-  the area's box with its `step`. Test: `studies/vascular/tests/test_vessel_tasks_page.py`.
+  a junction found right in `checked_junctions`; each area done in `reviewed_regions`, the area's box
+  with its `step`, `area`. Test: `studies/vascular/tests/test_vessel_tasks_page.py`.
   </details>
 
 - `req/vascular/model/run` Processing picks an extraction algorithm, says how it works and how well, and Execute draws the vessel model in the browser.
@@ -72,9 +73,9 @@ owner's decisions on the stacks and the vessel model, are
   page shows), and the model it draws opens over the stack. The study ships no drawn models: a
   stack opens with none until Execute, and no model file is loaded in its place: an image, then the
   algorithm, as NoR's (owner, 2026-11-07). Once a model is open, Undo, Redo and Discard edits are under
-  Execute; what the model holds is in Summary, with Mark a damaged area under it (owner, 2026-11-07: the left bar
-  is the shell's, `req/shell/left-bar/shells`). Draw a missed vessel is a ground-truth action, offered only in the
-  Lines and Missed vessels steps (`req/vascular/truth/tasks`; owner, 2026-11-07). Changed by the owner on 2026-11-04: the box behaves as NoR's
+  Execute; what the model holds is in Summary (owner, 2026-11-07: the left bar
+  is the shell's, `req/shell/left-bar/shells`). Draw a missed vessel is a ground-truth action, offered only by a
+  right-click on the image in an area of the tasks (`req/vascular/truth/tasks`; owner, 2026-11-07). Changed by the owner on 2026-11-04: the box behaves as NoR's
   (`req/nor/find/settings`). Each algorithm in the list carries its own icon and its name, and its
   precision and recall against the provisional labels (`analysis/extraction/labels/`, a model's
   verdicts, not the owner's); How the <name> algorithm works gives its steps as a nested list
@@ -118,61 +119,61 @@ owner's decisions on the stacks and the vessel model, are
   Test: `studies/vascular/tests/test_stack_page.py`.
   </details>
 
-- `req/vascular/truth/marks` While tagging, an area done in every step is cut out of the stack, blacked out through every slice.
+- `req/vascular/truth/marks` While tagging, an area done is cut out of the stack, blacked out through every slice.
   <details>
 
-  Changed by the owner on 2026-11-07: an area whose Lines, Missed vessels and Junctions are all done is blacked
+  Changed by the owner on 2026-11-07: an area done is blacked
   out of the 3D stack in the whole-image view, so what is left to review stands out and the work shows as it is done.
-  Inside an area nothing is cut out, since every step there needs the signal it judges. It is a progress mark for
+  Inside an area nothing is cut out, since the work there needs the signal it judges. It is a progress mark for
   tagging, not for viewing (owner, 2026-11-07): the Show menu's Cut out what is done switches it, and out of tagging
   (`req/shell/ground-truth/tagging`) nothing is cut out and the row is off. The current area is framed
   on the whole image, and the current junction is drawn white over a dark rim, which reads over any signal. Test:
   `studies/vascular/tests/test_vessel_tasks_page.py`.
   </details>
 
-- `req/vascular/truth/order` The areas come one after another, every step of an area before the next.
+- `req/vascular/truth/order` The areas come one after another, all of an area's work before the next.
   <details>
 
-  As NoR's (`req/nor/truth/order`): the stack's field is cut into areas, never drawn, the rows of areas top to
-  bottom, each row the way back from the last; in each area its Lines, then its Missed vessels, then its Junctions,
+  As NoR's (`req/nor/truth/order`): the stack's field is cut into areas, never drawn on the stack, the rows of areas top to
+  bottom, each row the way back from the last; all of an area's work, its lines, its missed vessels and its junctions,
   before the next area. Changed by the owner on 2026-11-07: how many areas is the person's to choose in the tasks
-  box (from one area for the whole field to 10 × 10), since a bigger area is sometimes the better one to judge
-  whole; a step done over an area stays done in every area it covers whatever is chosen after. Test:
+  box (from one area for the whole field to 10 × 10, 4 × 4 at first), since a bigger area is sometimes the better one to judge
+  whole; an area done stays done in every area it covers whatever is chosen after. Test:
   `studies/vascular/tests/test_vessel_tasks_page.py`.
   </details>
 
-- `req/vascular/truth/tasks` Ground Truth Tasks, in the shell's box under Processing: Lines, Missed vessels, Junctions, each counted in areas, then Submit.
+- `req/vascular/truth/tasks` Ground Truth Tasks, in the shell's box under Processing: a row per area of the stack, then Submit.
   <details>
 
-  Set by the owner on 2026-11-07, replacing the vessel-by-vessel tasks of 2026-11-04. The tasks are the stack's
-  areas (`req/vascular/truth/order`), and each area is worked through in three steps, one row each in the left bar
-  under Processing once a model is open: "3/16 Lines", "2/16 Missed vessels", "1/16 Junctions", a check once done,
-  a bar split into a part per task, and Submit Ground Truth last. Execute leaves the stack in view as it was; the walk
-  opens on its first step not done only once Start GT tagging is pressed (`req/shell/ground-truth/tagging`), and Stop
-  tagging gives the whole stack back, as the Show menu sets it. The open step's row holds the area's place, a
-  map of the areas to pick one from, the choice of how many areas, and the step's own controls, with Skip on its row.
-  While a step is open the main view shows that area alone.
+  Set by the owner on 2026-11-07, replacing the three steps per area (Lines, Missed vessels, Junctions) set earlier
+  that day, which replaced the vessel-by-vessel tasks of 2026-11-04. The tasks are the stack's areas
+  (`req/vascular/truth/order`). Once a model is open the box's first row chooses how many areas, then come Start GT
+  tagging, a bar split into a part per area, as wide as the area has junctions and filled as far as they are judged,
+  a row per area in the walk's order, "Area 1" to "Area 16", a check once it is done, and Submit Ground Truth last.
+  Execute leaves the stack in view as it was; the walk opens on its first area not done only once Start GT tagging is
+  pressed (`req/shell/ground-truth/tagging`), and Stop tagging gives the whole stack back, as the Show menu sets it.
 
-  - **Lines**, opening from straight above: the stack flattened, the model's lines over it with a handle on every
-    point. The area turns and pans in 3D as anywhere (owner, 2026-11-07, replacing a view held still). Dragging a
-    handle from straight above moves its point across the picture, never in depth; turned, across the screen at its
-    depth; a tip dropped on another vessel attaches there (`req/vascular/model/correct`). The right-click menu
-    deletes, adds a bend or connects as anywhere; right-clicked on the image where no line is, it offers Draw a
-    missed vessel, its first point there (owner, 2026-11-07). A low-confidence line, faint, is kept by clicking
-    it. "Lines are right" approves the area: every confident vessel whose middle lies in it is accepted, every
-    low-confidence one not kept is declined.
-  - **Missed vessels**, from straight above as Lines: Draw a missed vessel adds one there
-    (`req/vascular/model/correct`), and "No missed vessels here" checks the area.
-  - **Junctions**, in 3D: the area turns freely, with no handles. Each junction in the area in turn, ringed on the
-    view and pictured in the box, is a real junction or vessels that only cross at different depths (split then);
-    clicking a junction on the view makes it the current one. Clicking a vessel drops it as a detection artifact, one
-    that only turning the area shows to make no sense. "Area done" ends the step once every junction there has a
-    verdict.
+  While tagging, and only then, the areas float as a small map at the main view's top left, the shell's minimap's
+  size (`req/shell/image/minimap`), on the whole stack and in an area alike: each area done, partly judged or not
+  started, the current one marked; clicking one opens it.
 
-  Holding Ctrl shows the model alone, and letting it go shows the stack again (over it, the lines while Lines or
-  Missed vessels is open), so what is there and what was found are a key apart. At the toolbar's left, in the
-  Show menu's place, a big Back to image button leaves the area for the whole stack, where the Show menu is again;
-  in the same place, Back to task returns to the area and its step. Each step done is kept in the model's
-  `reviewed_regions` as the area's box, with its `step` (`lines`, `missed` or `junctions`). Test:
+  The open area's row holds its cogwheel and Skip, and under it the area's work, all in one pass: the main view shows
+  the area alone, opening from straight above, the model's lines over the stack with a handle on every point and a
+  glyph on every junction, turning and panning in 3D as anywhere. Dragging a handle from straight above moves its point
+  across the picture, never in depth; turned, across the screen at its depth; a tip dropped on another vessel attaches
+  there, a junction made. The right-click menu deletes, adds a bend, connects or splits a junction into vessels that
+  cross, as anywhere (`req/vascular/model/correct`); right-clicked on the image where no line is, it offers Draw a
+  missed vessel, its first point there. A low-confidence line, faint, is kept by clicking it. Each junction in the
+  area in turn, ringed on the view and pictured in the box, is a real junction or vessels that only cross at
+  different depths (split then); clicking a junction on the view makes it the current one. "Area is right", on once
+  every junction there has a verdict, does the area: every confident vessel whose middle lies in it is accepted,
+  every low-confidence one not kept is declined, and the walk moves to the next area not done. There is no button to
+  draw a missed vessel, none saying no vessel was missed, and none ending the junctions apart (owner, 2026-11-07).
+
+  Holding Ctrl shows the model alone, and letting it go the lines over the stack again; the page says so nowhere for
+  now (owner, 2026-11-07). At the toolbar's left, in the Show menu's place, a big Back to image button leaves the area
+  for the whole stack, where the Show menu is again; in the same place, Back to task returns to the area. Each area
+  done is kept in the model's `reviewed_regions` as the area's box, with its `step`, `area`; in a file from the three
+  steps, an area counts done where its `lines`, `missed` and `junctions` boxes all cover it. Test:
   `studies/vascular/tests/test_vessel_tasks_page.py`.
   </details>

@@ -246,9 +246,7 @@ const tests = {
     // a vessel 1-2-3 along y = 0 with a branch 2-4-5 down to y = 50, and a damaged area around the branch
     const m = Mo.parse(base([[1, 0, 0, 0], [2, 20, 0, 0], [3, 40, 0, 0], [4, 20, 30, 0], [5, 20, 50, 0]], [[1, 2], [2, 3], [2, 4], [4, 5]]));
     const square = [[10, 10], [30, 10], [30, 60], [10, 60]];
-    const o = Mo.markExcluded(m, square, 'fold');
-    assert.equal(m.excluded_regions, undefined, 'the model marked on is unchanged');
-    assert.deepEqual(o.excluded_regions, [{ polygon: square, reason: 'fold' }]);
+    const o = { ...m, excluded_regions: [{ polygon: square, reason: 'fold' }] };
     assert.ok(Mo.excluded(o, { x: 20, y: 40 })); assert.ok(!Mo.excluded(o, { x: 20, y: 5 }));
     assert.deepEqual(Mo.stats(m).segments, 4);
     const s = Mo.stats(o);
@@ -257,13 +255,10 @@ const tests = {
     assert.equal(Mo.excludedFraction(o), 20 * 50 / (100 * 100));
     assert.deepEqual([Mo.pieceCounts(m).vessel, Mo.pieceCounts(m).excluded], [3, 0]);
     assert.deepEqual([Mo.pieceCounts(o).vessel, Mo.pieceCounts(o).excluded], [2, 1], 'the branch 2-4-5 lies mostly in the area');
-    assert.deepEqual(Mo.unmarkExcluded(o, 0).excluded_regions, []);
   },
-  'an outline with no area is not an area, and the areas go into the file unchanged'() {
+  'the areas go into the file unchanged, each an outline of at least three points'() {
     const m = Mo.parse(base([[1, 0, 0, 0], [2, 20, 0, 0]], [[1, 2]]));
-    assert.equal(Mo.markExcluded(m, [[0, 0], [10, 10]]), m);
-    assert.equal(Mo.markExcluded(m, [[0, 0], [10, 10], [20, 20]]), m);
-    const o = Mo.markExcluded(m, [[0, 0], [10, 0], [10, 10]]);
+    const o = { ...m, excluded_regions: [{ polygon: [[0, 0], [10, 0], [10, 10]] }] };
     assert.deepEqual(Mo.parse(Mo.toJSON(o)).excluded_regions, o.excluded_regions);
     assert.throws(() => Mo.parse({ ...Mo.toJSON(o), excluded_regions: [{ polygon: [[0, 0], [1, 1]] }] }), Mo.ModelError);
     assert.throws(() => Mo.parse({ ...Mo.toJSON(o), excluded_regions: [{ polygon: [[0, 0], [1, 'x'], [2, 0]] }] }), Mo.ModelError);
