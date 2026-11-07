@@ -131,8 +131,8 @@ $("#save-remote").textContent = `Save to ${remote.label}`;
 const place = studyPlace(remote, () => manifest);
 // what the store lets the signed-in user write in the study on show (req/shell/data/roles), read as the study comes in
 let storeRoles = { manager: false, tagger: false };
-// While the sign-in's token has run out, or Drive does not answer, they are the ones Drive last gave this user here,
-// marked as such: stale until the next renewal reads them again, failed when Drive was asked and did not say
+// While the sign-in's token has run out, or the store does not answer, they are the ones it last gave this user here,
+// marked as such: stale until the next renewal reads them again, failed when it was asked and did not say
 async function readRoles() {
   const name = "roles:" + manifest.id, last = () => signIn.learned(name) || { manager: false, tagger: false };
   if (signIn.signedIn() && !signIn.token()) return { ...last(), stale: true };
@@ -489,7 +489,7 @@ function takeRole() {
   const roles = rolesHeld();
   role = shown(roles, keptRole());
   document.documentElement.dataset.role = role;
-  const hint = storeRoles.stale ? `Your Google sign-in ran out: these are the roles ${remote.short} last gave you here, checked again as you open this menu.`
+  const hint = storeRoles.stale ? `Your sign-in ran out: these are the roles ${remote.short} last gave you here, checked again as you open this menu.`
     : storeRoles.failed ? `${remote.label} did not say which roles you hold here; these are the ones it last gave you.`
     : roles.length > 1 ? "" : !signIn.signedIn() && signIn.offered
     ? (takesTaggers() ? `${signIn.words.signIn} to tag ground truth.` : `${signIn.words.signIn} for the roles your studies give you.`) : "";
@@ -505,7 +505,7 @@ function showRole() {
   data.role(role === "data");
   truth.draw();
 }
-// opening the menu, in the user's click, renews a token that ran out: Drive is then asked for the roles again
+// opening the menu, in the user's click, renews a token that ran out: the store is then asked for the roles again
 $("#role-menu summary").addEventListener("click", () => { if (storeRoles.stale) signIn.renew(); });
 const roleChooser = roleMenu($("#role-menu"), (r) => {
   try { localStorage.setItem(ROLE, r); } catch { /* private mode: this page only */ }

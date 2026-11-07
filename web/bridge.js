@@ -1,9 +1,8 @@
 // The page's requests, answered by the study's Python (its study.json entry, imported as `study`) inside a
 // Pyodide runtime that has already imported it and json. The worker runs it; the tests drive it outside a
 // browser. It knows none of the study's actions: it opens a file with study.Session and forwards every call.
-// Messages in: open {name, bytes}, call {action, args, echo}, close (the image open is let go), memory.
-// Messages out: progress {text}, opened {meta, images}, result {action, meta, bytes, echo},
-// memory {used, heap, objects}.
+// Messages in: open {name, bytes}, call {action, args, echo}, close (the image open is let go).
+// Messages out: progress {text}, opened {meta, images}, result {action, meta, bytes, echo}.
 // progress: the status line for each step while it runs, {open, <action>: text}, from study.json.
 export function bridge(py, post, progress = {}) {
   const say = (text) => text && post({ type: "progress", text });

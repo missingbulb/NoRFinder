@@ -143,13 +143,13 @@ await page.context().close();
 const ranOut = (r) => ({ "nor-google-sign-in": JSON.stringify({ ...r, until: Date.now() - 1000 }) });
 page = await open(true, { seed: ranOut(record), prepare: stubGoogle });
 s = await seen(page);
-await check(s.list.join() === "Viewer,Ground Truth Tagger,Data Manager", "the token run out, the menu still lists the roles Drive last gave", s);
+await check(s.list.join() === "Viewer,Ground Truth Tagger,Study Manager", "the token run out, the menu still lists the roles Drive last gave", s);
 await check(await asked(page) === 0, "and nothing asks Google for a token before a click", await asked(page));
 await page.click("#role-menu summary");
 await page.waitForFunction(() => (window.asked || []).length === 1);
 await page.waitForFunction(() => $("#role-hint").hidden);
 s = await seen(page);
-await check(s.list.join() === "Viewer,Ground Truth Tagger,Data Manager" && !s.hint, "opening the menu renews the token and Drive confirms the roles", s);
+await check(s.list.join() === "Viewer,Ground Truth Tagger,Study Manager" && !s.hint, "opening the menu renews the token and Drive confirms the roles", s);
 await page.context().close();
 // never told before on this device: Viewer, until opening the menu renews the token and Drive answers
 const { learned, ...fresh } = record;

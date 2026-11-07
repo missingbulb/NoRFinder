@@ -165,8 +165,8 @@ export function dataMode(ctx) {
     const review = gt.same;
     $("#switch-title").textContent = review ? "Switch to reviewed ground truth" : "Switch to unreviewed ground truth";
     $("#switch-text").textContent = review
-      ? "No file is moved, copied or deleted. The GT folder becomes GT curated: everything submitted so far counts as accepted. A new GT submissions folder is made for taggers to submit to. In Google Drive, give taggers edit access to GT submissions and take their edit access off GT curated."
-      : "No file is moved, copied or deleted. GT curated becomes the one folder: everything accepted stays the study's ground truth, and whatever a tagger submits counts at once. GT submissions, its rejected files included, stays as it is and is no longer used. In Google Drive, give taggers edit access to GT curated.";
+      ? `No file is moved, copied or deleted. The GT folder becomes GT curated: everything submitted so far counts as accepted. A new GT submissions folder is made for taggers to submit to. In ${remote.label}, give taggers edit access to GT submissions and take their edit access off GT curated.`
+      : `No file is moved, copied or deleted. GT curated becomes the one folder: everything accepted stays the study's ground truth, and whatever a tagger submits counts at once. GT submissions, its rejected files included, stays as it is and is no longer used. In ${remote.label}, give taggers edit access to GT curated.`;
     $("#switch-go").dataset.review = review ? "yes" : "no";
     msg($("#switch-msg"), ""); $("#switch-dlg").showModal();
   };
