@@ -35,8 +35,11 @@ nobody has decided: what the page does there is not a requirement yet.
   opens the study afresh on the same image. Undecided: what a Ground Truth Tagger with an image open finds
   after going to Data Manager and back. The page opens as Viewer; the role chosen follows the user
   (`req/shell/account/sign-in`) and Settings lists it (`req/shell/account/settings`). A role not held in
-  the study on show, or no longer held, shows as Viewer, and the choice stays for where it is held. Test:
-  `web-tests/test_roles_page.py`.
+  the study on show, or no longer held, shows as Viewer, and the choice stays for where it is held. Set by the owner
+  on 2026-11-07: Google's token lasts an hour and only a click may ask for another, so the page opening after it ran
+  out, or Drive not answering, lists the roles Drive last gave that user in that study, kept until they sign out, and a
+  line under them says so; opening the menu renews the token and asks Drive again. Nothing else renews it for the
+  roles. Test: `web-tests/test_roles_page.py`.
   </details>
 
 - `req/shell/account/settings` The avatar's menu opens Settings: every setting that follows the user, to change and save.
