@@ -35,11 +35,23 @@
 #vm-show #reach { width: 110px; }
 #vm-show #reach-o { min-width: 9ch; font-size: 12px; color: var(--dim); }
 
-/* the open ground-truth task's tools on its row, and its item under it */
-#model-on[hidden], #vm-tasks[hidden], #vm-marks[hidden], #task-now[hidden], #task-menu[hidden], #task-tools[hidden] { display: none; }
-#vm-missed { display: flex; flex-direction: column; gap: 6px; }
-#vm-missed .hint, #vm-missed .note { margin: 0; }
-#vm-missed .note:empty { display: none; }
+/* the open ground-truth step's tools on its row, and its area under it */
+#model-on[hidden], #vm-tasks[hidden], #vm-marks[hidden], #task-now[hidden], #task-menu[hidden], #task-tools[hidden], #task-now .step[hidden],
+#peek-note[hidden], #vm-focus[hidden] { display: none; }
+#task-now { display: flex; flex-direction: column; gap: 8px; }
+#task-now .step { display: flex; flex-direction: column; gap: 6px; }
+#task-now .hint, #task-now .note { margin: 0; }
+#task-now .note:empty { display: none; }
+.area-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; }
+#area-name { white-space: nowrap; }
+#area-grid { font-size: 12px; min-width: 0; flex: 0 1 auto; }
+#area-map { display: grid; gap: 2px; width: 96px; }
+#area-map button { aspect-ratio: 1; min-width: 0; padding: 0; border: 1px solid var(--line); border-radius: 2px; background: transparent; }
+#area-map button.part { background: color-mix(in srgb, var(--yes) 35%, transparent); }
+#area-map button.done { background: var(--yes); border-color: var(--yes); }
+#area-map button.now { outline: 2px solid var(--accent); outline-offset: 1px; }
+#lines-ok, #area-done { width: 100%; }
+#area-done:disabled { opacity: .5; }
 #m-draw[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
 #area-ok { width: 100%; }
 #task-tools { display: inline-flex; align-items: center; gap: 6px; }

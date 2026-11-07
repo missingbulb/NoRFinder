@@ -81,6 +81,8 @@ function scale(m) { const [, Y, X] = V.meta.shape; return [X / (m.size_px[0] * m
 
 // the stack around box (µm) drawn on canvas cv, px CSS pixels square, the model over it, then mark(c, at, k, dpr)
 function picture(cv, m, box, mark, px = CARD_PX) {
+  // a picture asked for in a frame that comes after the study, or its stack, has gone
+  if (!V?.meta) return;
   const [, Y, X] = V.meta.shape, [sx, sy] = scale(m), vol = V.volume(), n = X * Y;
   const cx = (box[0] + box[2]) / 2, cy = (box[1] + box[3]) / 2;
   const half = Math.max(box[2] - box[0], box[3] - box[1], 2 * MIN_HALF_UM) / 2 * 1.15;

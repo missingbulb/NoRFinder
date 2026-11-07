@@ -27,14 +27,25 @@
 </template>
 <template data-slot="tasks">
     <div id="vm-tasks" hidden>
-      <div id="vm-missed"><p class="hint">Draw any vessel the algorithm missed in the framed area.</p>
-        <button type="button" id="m-draw" aria-pressed="false">Draw a missed vessel</button><p class="note" id="draw-note"></p>
-        <button id="area-ok" class="primary" type="button">No missed vessels here</button></div>
-      <span id="task-tools"><details class="menu" id="task-menu"><summary title="This item's options" aria-label="This item's options"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></g></svg></summary><div class="pop" id="task-opts"></div></details><button id="task-skip" class="link" type="button" title="The next one, leaving this one for later">Skip ›</button></span>
-      <div id="task-now"><div id="task-stage"><div id="task-card"></div></div></div>
+      <span id="task-tools"><details class="menu" id="task-menu"><summary title="This junction's options" aria-label="This junction's options"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></g></svg></summary><div class="pop" id="task-opts"></div></details><button id="task-skip" class="link" type="button" title="The next area, leaving this one for later">Skip ›</button></span>
+      <div id="task-now">
+        <div class="area-head"><span id="area-name"></span><select id="area-grid" aria-label="How many areas" title="How many areas the field is cut into: a bigger area is judged whole"></select></div>
+        <div id="area-map" role="group" aria-label="The areas: pick one"></div>
+        <div id="step-lines" class="step"><p class="hint">Drag a point to move its line across the picture; right-click a line or a point to delete, bend or connect. A faint line is low-confidence: click it to keep it, or it is declined.</p>
+          <button id="lines-ok" class="primary" type="button">Lines are right</button></div>
+        <div id="step-missed" class="step"><p class="hint">Draw any vessel the algorithm missed in this area.</p>
+          <button type="button" id="m-draw" aria-pressed="false">Draw a missed vessel</button><p class="note" id="draw-note"></p>
+          <button id="area-ok" class="primary" type="button">No missed vessels here</button></div>
+        <div id="step-junctions" class="step"><p class="hint">Turn the area to see each junction in depth: a real junction, or vessels that only cross. Click a vessel that makes no sense to drop it.</p>
+          <p class="note" id="junctions-note"></p>
+          <div id="task-stage"><div id="task-card"></div></div>
+          <button id="area-done" class="primary" type="button">Area done</button></div>
+        <p class="note" id="peek-note">Hold Ctrl to see the model alone.</p>
+      </div>
     </div>
 </template>
 <template data-slot="toolbar">
+      <button type="button" id="vm-focus" class="big" hidden>Back to image</button>
       <details class="menu" id="vm-show">
         <summary>Show</summary>
         <div class="pop">

@@ -27,29 +27,51 @@
     ]},
     {"under": "Ground Truth Tasks", "tree": [
       {"name": "The tasks", "select": "#vm-tasks", "req": "req/vascular/truth/tasks"},
-      {"name": "Missed vessels", "select": "#vm-missed", "req": "req/vascular/truth/tasks", "unwalked": "shows once every item is reviewed, which no path does",
-        "rule": [
-          {"is": "hidden", "approval": "tentative"}
-        ],
-        "children": [
-          {"name": "Draw a missed vessel", "select": "#m-draw", "control": true, "req": "req/vascular/truth/tasks"},
-          {"name": "Drawing's note", "select": "#draw-note", "req": "req/vascular/truth/tasks"},
-          {"name": "No missed vessels here", "select": "#area-ok", "control": true, "req": "req/vascular/truth/order"}
-        ]
-      },
       {"name": "Task tools", "select": "#task-tools", "req": "req/vascular/truth/order",
         "children": [
-          {"name": "This item's options", "select": "#task-menu", "req": "req/vascular/truth/order"},
+          {"name": "This junction's options", "select": "#task-menu", "req": "req/vascular/truth/tasks", "steady": "shows only in an area's Junctions step, which no path reaches",
+            "rule": [
+              {"is": "hidden", "approval": "tentative"}
+            ]
+          },
           {"name": "Skip", "select": "#task-skip", "control": true, "req": "req/vascular/truth/order"}
         ]
       },
-      {"name": "The task now", "select": "#task-now", "req": "req/vascular/truth/tasks",
+      {"name": "The area now", "select": "#task-now", "req": "req/vascular/truth/tasks",
         "children": [
-          {"name": "The task's stage", "select": "#task-stage", "req": "req/vascular/truth/tasks",
+          {"name": "Area's place", "select": "#area-name", "req": "req/vascular/truth/order"},
+          {"name": "How many areas", "select": "#area-grid", "control": true, "req": "req/vascular/truth/order"},
+          {"name": "Map of the areas", "select": "#area-map", "req": "req/vascular/truth/order"},
+          {"name": "Lines step", "select": "#step-lines", "req": "req/vascular/truth/tasks",
             "children": [
-              {"name": "The task's card", "select": "#task-card", "req": "req/vascular/truth/tasks"}
+              {"name": "Lines are right", "select": "#lines-ok", "control": true, "req": "req/vascular/truth/tasks"}
             ]
-          }
+          },
+          {"name": "Missed vessels step", "select": "#step-missed", "req": "req/vascular/truth/tasks", "unwalked": "shows once an area's Lines are approved, which no path does",
+            "rule": [
+              {"is": "hidden", "approval": "tentative"}
+            ],
+            "children": [
+              {"name": "Draw a missed vessel", "select": "#m-draw", "control": true, "req": "req/vascular/model/correct"},
+              {"name": "Drawing's note", "select": "#draw-note", "req": "req/vascular/model/correct"},
+              {"name": "No missed vessels here", "select": "#area-ok", "control": true, "req": "req/vascular/truth/tasks"}
+            ]
+          },
+          {"name": "Junctions step", "select": "#step-junctions", "req": "req/vascular/truth/tasks", "unwalked": "shows once an area's missed vessels are checked, which no path does",
+            "rule": [
+              {"is": "hidden", "approval": "tentative"}
+            ],
+            "children": [
+              {"name": "Junctions' note", "select": "#junctions-note", "req": "req/vascular/truth/tasks"},
+              {"name": "The junction's stage", "select": "#task-stage", "req": "req/vascular/truth/tasks",
+                "children": [
+                  {"name": "The junction's card", "select": "#task-card", "req": "req/vascular/truth/tasks"}
+                ]
+              },
+              {"name": "Area done", "select": "#area-done", "control": true, "req": "req/vascular/truth/tasks"}
+            ]
+          },
+          {"name": "Ctrl's note", "select": "#peek-note", "req": "req/vascular/truth/tasks"}
         ]
       }
     ]},
@@ -69,7 +91,18 @@
       }
     ]},
     {"under": "Main view", "after": "Tasks/Items switch", "tree": [
-      {"name": "Show menu", "select": "#vm-show", "req": "req/vascular/model/view", "steady": "always shown"}
+      {"name": "Back to image", "select": "#vm-focus", "control": true, "req": "req/vascular/truth/tasks",
+        "about": "Back to image while an area is open, Back to task on the whole stack",
+        "rule": [
+          {"when": {"counted": [false]}, "is": "hidden"},
+          {"when": {"makesTruth": [false]}, "is": "hidden", "about": "the tasks are only for those who make ground truth"}
+        ]
+      },
+      {"name": "Show menu", "select": "#vm-show", "req": "req/vascular/model/view",
+        "rule": [
+          {"when": {"counted": [true], "makesTruth": [true]}, "is": "hidden", "approval": "tentative", "about": "an area is open once the model is drawn, and Back to image takes its place"}
+        ]
+      }
     ]},
     {"under": "Main view", "after": "Image view", "tree": [
       {"name": "Item view", "select": "#items-view", "req": "req/shell/views/second",
