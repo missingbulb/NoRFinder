@@ -274,7 +274,8 @@ button.link:disabled { color: var(--dim); }
 
 #view { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; margin: var(--pad) 0;
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-panel); overflow: hidden; }
-.toolbar { display: flex; gap: 10px; align-items: center; height: 52px; padding: 0 var(--pad); border-bottom: 1px solid var(--line); font-size: 13px; }
+/* a study's options and the viewer's tools wrap to a second row, the viewer's still at the right, rather than overflow */
+.toolbar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px 10px; align-items: center; min-height: 52px; padding: 7px var(--pad); border-bottom: 1px solid var(--line); font-size: 13px; }
 .toolbar .group { display: flex; gap: 10px; align-items: center; }
 .toolbar .grow { flex: 1; }
 button.big { padding: 6px 18px; font-size: 14px; font-weight: 600; background: var(--accent); border-color: var(--accent); color: #fff; }

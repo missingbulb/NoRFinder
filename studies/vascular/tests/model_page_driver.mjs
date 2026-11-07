@@ -109,6 +109,12 @@ try {
   // req/shell/image/toolbar: how the model shows is the toolbar's left, and the left bar holds none of it
   const where = await page.evaluate(() => ["#model-mode", "#m-widths", "#review-mode", "#reach"].map((s) => !!$(s)?.closest(".toolbar") && !$(s).closest("#left")));
   check(where.every(Boolean), `what the model shows and how sit at the toolbar's left: ${where}`);
+  // the study's options and the viewer's tools together never push one out of the toolbar
+  const out = await page.evaluate(() => { const t = $("#view .toolbar").getBoundingClientRect();
+    return [...$("#view .toolbar").querySelectorAll("button, label, input")].filter((e) => e.offsetParent !== null)
+      .filter((e) => { const r = e.getBoundingClientRect(); return r.right > t.right + 0.5 || r.bottom > t.bottom + 0.5 || r.left < t.left - 0.5; })
+      .map((e) => e.id || e.textContent.trim()); });
+  check(!out.length, `every toolbar control is inside the toolbar: ${out}`);
   await page.click("#switch");
   await page.click('#item-kind [data-v="vessels"]');
   await page.selectOption("#item-filter", "review");
