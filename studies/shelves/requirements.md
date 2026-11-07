@@ -28,7 +28,10 @@ read for a title matcher; matching the titles is not part of it.
   than a wall's, a board's or a gap's; a book that fails is left for the ground truth to draw in, never boxed
   wrong. Set by the owner on 2026-11-07, two books of one series standing together, one colour and parted by no
   visible edge, are two boxes: their spines repeat one design, the same marks at the same heights, and a box that
-  holds a mark and its repeat further across is two books. Test: `studies/shelves/tests/test_books.py`,
+  holds a mark and its repeat further across is two books. Set by the owner on 2026-11-07, books lying cover-up (on a
+  ledge, a bench, a table) are boxed as covers, view `cover`, their four corners on the cover's own edges as the camera
+  sees them, at a slant or not; a cover is kept only once its four sides lie on edges with the cover on one side and
+  something else on the other, so the long lines of a bench's planks or a ledge's rim box nothing. Test: `studies/shelves/tests/test_books.py`,
   `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
