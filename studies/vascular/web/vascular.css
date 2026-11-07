@@ -27,17 +27,13 @@
 #model-on { margin-top: 10px; }
 #vm-marks { margin-top: 10px; }
 
-/* the toolbar's view controls: what the main view shows and how the model is drawn over the stack */
-.toolbar #model-mode { flex: none; }
-.toolbar #model-mode button { flex: none; padding: 5px 10px; }
-.toolbar #model-mode button:disabled { opacity: .45; }
-.toolbar .tool-check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; }
-.toolbar .tool-check[hidden], .toolbar .tool-group[hidden] { display: none; }
-.toolbar .tool-group { display: inline-flex; align-items: center; gap: 10px; }
-.toolbar #review-mode { flex: none; }
-.toolbar #review-mode button { flex: none; padding: 5px 10px; }
-.toolbar #reach { width: 90px; }
-.toolbar #reach-o { min-width: 9ch; font-size: 12px; color: var(--dim); }
+/* the toolbar's Show menu, as NoR's: what the main view shows and how the model is drawn over the stack */
+#vm-show .pop { gap: 10px; }
+#vm-show .seg button { flex: 1; padding: 5px 10px; white-space: nowrap; }
+#vm-show .seg button:disabled { opacity: .45; }
+#vm-show [hidden] { display: none; }
+#vm-show #reach { width: 110px; }
+#vm-show #reach-o { min-width: 9ch; font-size: 12px; color: var(--dim); }
 
 /* Ground Truth Tasks, under Processing: a bar of a part per task, then a row per task, the open one with its
    tools on its row and its item under it (as NoR's) */

@@ -45,22 +45,27 @@
     </div>
 </template>
 <template data-slot="toolbar">
-      <div class="seg" id="model-mode" role="group" aria-label="Show">
-        <button type="button" data-v="image" aria-pressed="true" title="The stack alone">Image</button>
-        <button type="button" data-v="model" aria-pressed="false" title="The vessel model alone" disabled>Model</button>
-        <button type="button" data-v="overlay" aria-pressed="false" title="The vessel model over the stack" disabled>Overlay</button>
-        <button type="button" data-v="side" aria-pressed="false" title="The stack and the vessel model side by side, turning together" disabled>Side by side</button>
-      </div>
-      <label class="check tool-check" title="Draw each vessel as wide as the model says"><input type="checkbox" id="m-widths" checked> Vessel widths</label>
-      <label class="check tool-check" id="m-candidates-row" title="The faint vessels the algorithm was unsure of, faded" hidden><input type="checkbox" id="m-candidates" checked> Low-confidence</label>
-      <div id="vm-review" class="tool-group" hidden>
-        <div class="seg" id="review-mode" role="group" aria-label="Signal kept" title="The whole stack.">
-          <button type="button" data-v="all" aria-pressed="true">Everything</button>
-          <button type="button" data-v="detected" aria-pressed="false">Detected</button>
-          <button type="button" data-v="missed" aria-pressed="false">Missed</button>
+      <details class="menu" id="vm-show">
+        <summary>Show</summary>
+        <div class="pop">
+          <div class="seg" id="model-mode" role="group" aria-label="Show">
+            <button type="button" data-v="image" aria-pressed="true" title="The stack alone">Image</button>
+            <button type="button" data-v="model" aria-pressed="false" title="The vessel model alone" disabled>Model</button>
+            <button type="button" data-v="overlay" aria-pressed="false" title="The vessel model over the stack" disabled>Overlay</button>
+            <button type="button" data-v="side" aria-pressed="false" title="The stack and the vessel model side by side, turning together" disabled>Side by side</button>
+          </div>
+          <label title="Draw each vessel as wide as the model says"><input type="checkbox" id="m-widths" checked> Vessel widths</label>
+          <label id="m-candidates-row" title="The faint vessels the algorithm was unsure of, faded" hidden><input type="checkbox" id="m-candidates" checked> Low-confidence vessels</label>
+          <div id="vm-review" class="col" hidden>
+            <div class="seg" id="review-mode" role="group" aria-label="Signal kept" title="The whole stack.">
+              <button type="button" data-v="all" aria-pressed="true">Everything</button>
+              <button type="button" data-v="detected" aria-pressed="false">Detected</button>
+              <button type="button" data-v="missed" aria-pressed="false">Missed</button>
+            </div>
+            <label id="reach-row" title="How far beyond the vessel wall the signal counts as the vessel's, a share of its width" hidden>Reach <input type="range" id="reach" min="0" max="200" step="5" value="50"> <output id="reach-o"></output></label>
+          </div>
         </div>
-        <label class="tool-check" id="reach-row" title="How far beyond the vessel wall the signal counts as the vessel's, a share of its width" hidden>Reach <input type="range" id="reach" min="0" max="200" step="5" value="50"> <output id="reach-o"></output></label>
-      </div>
+      </details>
 </template>
 <template data-slot="views">
     <div id="items-view" data-viewing hidden>

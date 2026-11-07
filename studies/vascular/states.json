@@ -28,18 +28,7 @@
       }
     ]},
     {"under": "Main view", "after": "Tasks/Items switch", "tree": [
-      {"name": "What to show", "select": "#model-mode", "req": "req/vascular/model/view"},
-      {"name": "Vessel widths", "select": "#m-widths", "control": true, "req": "req/vascular/model/view"},
-      {"name": "Low-confidence", "select": "#m-candidates-row", "req": "req/vascular/model/view",
-        "rule": [
-          {"when": {"counted": [false]}, "is": "hidden"}
-        ]
-      },
-      {"name": "Signal kept", "select": "#vm-review", "req": "req/vascular/model/view",
-        "rule": [
-          {"when": {"counted": [false]}, "is": "hidden"}
-        ]
-      }
+      {"name": "Show menu", "select": "#vm-show", "req": "req/vascular/model/view"}
     ]},
     {"under": "Main view", "after": "Image view", "tree": [
       {"name": "Item view", "select": "#items-view", "req": "req/shell/views/second",

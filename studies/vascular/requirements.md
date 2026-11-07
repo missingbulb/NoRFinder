@@ -96,7 +96,8 @@ owner's decisions on the stacks and the vessel model, are
   vessel as wide as the model says. Changed by the owner on 2026-11-07, everything that sets how the model shows
   is at the toolbar's left (`req/shell/image/toolbar`): Vessel widths, Low-confidence (the faded vessels the
   algorithm was unsure of, offered while the model has any) and Everything, Detected and Missed, with the reach
-  beyond the vessel wall while Detected or Missed is on (`req/vascular/model/correct`). Test: `studies/vascular/tests/test_model_page.py`.
+  beyond the vessel wall while Detected or Missed is on (`req/vascular/model/correct`). Changed by the owner on 2026-11-07, as NoR's
+  (`req/nor/show-menu`): all of them, the four views included, are in one Show menu at the toolbar's left. Test: `studies/vascular/tests/test_model_page.py`.
   </details>
 
 - `req/vascular/stack-view` A z-stack opens in 3D in the owner's approved view; 2D shows it flattened.
