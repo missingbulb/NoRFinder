@@ -85,6 +85,7 @@ def test_drive_previews(tmp_path):
     tifffile.imwrite(images / 'd new.tif', np.zeros((1, 50, 50), np.uint16), imagej=True, metadata={'axes': 'CYX'})
     with open(images / 'c changed.tif', 'ab') as f:
         f.write(b'\0')
+    Image.fromarray(np.full((40, 60, 3), 90, np.uint8)).save(images / 'e photo.jpg')
     r = subprocess.run([NODE, os.path.join(HERE, 'drive_previews_driver.mjs'), str(images)], capture_output=True, text=True, timeout=90)
     print(r.stdout, r.stderr)
     if r.returncode == 2:

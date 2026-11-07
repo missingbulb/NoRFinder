@@ -324,14 +324,16 @@ nobody has decided: what the page does there is not a requirement yet.
   compare with: `req/shell/drive/offline-listing`); the dialog keeps one
   size while the user moves between folders. A click only selects a row; Open (or a double click,
   or Enter) opens it: an image loads, a folder lists its contents. Thumbnails are never read from
-  Drive, which answers a burst of reads by refusing the browser for a while, the next image
-  included. A study may ship ready-made thumbnails (its `driveThumbs`), fetched for the rows in view
+  Drive's files, which answers a burst of reads by refusing the browser for a while, the next image
+  included. Set by the owner on 2026-11-07: an image no previews file covers (`req/shell/drive/previews`)
+  shows Drive's own small picture of it, linked from the folder's listing, unless it is a TIFF, which Drive
+  draws grey when it has several channels and which may be a 3D stack (`web-tests/test_drive_previews_page.py`). A study may ship ready-made thumbnails (its `driveThumbs`), fetched for the rows in view
   and the next 10 below them, more as the user scrolls; a row scrolled past before its turn is not
   fetched. Each thumbnail lands in its own row whatever order they arrive in, and a folder's listing
   is shown only while it is still the folder asked for. One fetched stays for the page's life:
   closing the dialog stops the rest, and reopening it shows those at once and fetches what the rows
   in view still lack. Test: `web-tests/test_drive_thumbs_page.py`. An image opened from Drive saves its own in the browser (the latest 100), shown from then
-  on without a download; a PNG shows Drive's own. All are in the colours the page gives the
+  on without a download. All but Drive's own are in the colours the page gives the
   channels. Show thumbnails in Settings (on at first, `req/shell/account/settings`) turns the downloads off; set by the
   owner on 2026-11-07, the dialog itself holds no such checkbox. The status bar's message says, while they load ("Thumbnails 3 of 10 ·
   1.2 MB"), how many have arrived and their size; once they are in, the message says again what it said

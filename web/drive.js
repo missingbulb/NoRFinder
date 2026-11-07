@@ -138,8 +138,8 @@ export const remote = (() => {
 
   // [{id, name, folder, size, created, preview, sha}] in a folder: its subfolders and the files whose extension accept
   // names, a study's files.accept (".tif,.tiff,.png"); size in bytes (null for a folder), created a Date, preview the link of Drive's own small
-  // picture of the file or null (Drive draws a multi-channel TIFF grey, so it serves only a PNG), sha its
-  // SHA-256 or null when Drive gives none
+  // picture of the file or null, served for every image but a TIFF (Drive draws a multi-channel TIFF grey, and a TIFF
+  // may be a stack, which the page pictures in 3D), sha its SHA-256 or null when Drive gives none
   async function list(id, accept) {
     need();
     const opens = accepts(accept);
@@ -149,7 +149,7 @@ export const remote = (() => {
     return (await r.json()).files
       .map((f) => ({ id: f.id, name: f.name, folder: f.mimeType === "application/vnd.google-apps.folder",
         size: f.size == null ? null : +f.size, created: f.createdTime ? new Date(f.createdTime) : null,
-        preview: f.thumbnailLink && /\.png$/i.test(f.name) ? f.thumbnailLink : null, sha: f.sha256Checksum || null }))
+        preview: f.thumbnailLink && !/\.tiff?$/i.test(f.name) ? f.thumbnailLink : null, sha: f.sha256Checksum || null }))
       .filter((f) => f.folder || opens(f.name));
   }
 
