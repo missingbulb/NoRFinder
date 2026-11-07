@@ -3,7 +3,8 @@
 // algorithms with their icons, precision and recall, the default first, says how the chosen one works and how well, and Execute runs it with the spacing shown, opening
 // its model; req/vascular/truth/tasks and req/vascular/truth/order: a row per step counted in areas, how many areas
 // chosen, req/shell/ground-truth/tagging: nothing opens until Start GT tagging, Stop tagging gives the stack back; Lines
-// opening from above, turning in 3D, its handles kept in depth from above and a tip dropped on a vessel attached there, Missed vessels, Junctions in 3D with an
+// opening from above, turning in 3D, its handles kept in depth from above, a tip dropped on a vessel attached there and a right-click
+// on the image drawing a missed vessel, Missed vessels, Junctions in 3D with an
 // artifact dropped, Ctrl showing the model alone, Back to image and Back to task; req/vascular/truth/marks: an area done
 // in every step blacked out of the stack while tagging, under the Show menu's Cut out what is done; req/vascular/model/ground-truth: Submit
 // last, its export carrying every verdict. Exits 1 on a failed check, 2 when it cannot run.
@@ -172,6 +173,40 @@ try {
   // the area turns in 3D in Lines too
   await page.mouse.move(cx + 5, cy + ch - 5); await page.mouse.down(); await page.mouse.move(cx + 80, cy + ch - 60, { steps: 6 }); await page.mouse.up();
   check(JSON.stringify((await view()).rot) !== JSON.stringify(rot0), "in Lines a drag where no point is turns the area");
+
+  // in Lines, a right-click on the image where no line is offers to draw a missed vessel, from that spot
+  {
+    await page.evaluate(async () => { const v = window.shellForTests.viewer.three; v.S.rot = v.facing(0, 0); v.redraw();
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); });
+    const { points } = await page.evaluate(() => window.vascular.model());
+    const ps = Object.values(points).filter(Boolean), far = ([x, y]) => ps.every((p) => Math.hypot(p[0] - x, p[1] - y) > 30);
+    const spots = [];
+    // the area fills a square in the middle of the view
+    const side = Math.min(cw, ch) * 0.8, x0 = (cw - side) / 2, y0 = (ch - side) / 2;
+    for (let i = 1; i < 16; i++) for (let j = 1; j < 16; j++) { const s = [x0 + side * i / 16, y0 + side * j / 16]; if (far(s)) spots.push(s); }
+    check(spots.length >= 10, `spots on the image away from every point: ${spots.length}`);
+    const menuNow = () => page.evaluate(() => (document.querySelector("#ctx").hidden ? [] : [...document.querySelectorAll("#ctx .item")].map((b) => b.textContent)));
+    let from = null, menu = [];
+    for (const s of spots.slice(0, 12)) {
+      await page.mouse.click(cx + s[0], cy + s[1], { button: "right" });
+      menu = await menuNow();
+      if (menu.includes("Draw a missed vessel")) { from = s; break; }
+      await page.keyboard.press("Escape");
+    }
+    check(!!from, `a right-click on the image in Lines offers Draw a missed vessel: ${menu}`);
+    if (from) {
+      const before = (await doc()).edges.length;
+      await page.click("#ctx .item");
+      const on = await page.evaluate(() => $("#m-draw").getAttribute("aria-pressed") === "true" && !!$("#draw-note").textContent && !$("#draw-note").closest("[hidden]"));
+      check(on, "... which starts drawing, its note in view");
+      const to = spots.find((s) => Math.hypot(s[0] - from[0], s[1] - from[1]) > 60);
+      await page.mouse.click(cx + to[0], cy + to[1]);
+      await page.keyboard.press("Escape");
+      const after = await doc();
+      check(after.edges.length === before + 1 && (await page.evaluate(() => $("#m-draw").getAttribute("aria-pressed"))) === "false",
+        `the right-clicked spot is the drawn vessel's first point, the next click its next: ${before} → ${after.edges.length} edges`);
+    }
+  }
 
   // Lines are right: the area's confident vessels accepted, its low-confidence ones declined
   await page.click("#lines-ok");
