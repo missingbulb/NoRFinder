@@ -370,6 +370,8 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   // the CPU tab's Animations checkbox, checked at first, turns every animation off but the spinners'
   await page.click("#sb-cpu"); await tabIs(page, "cpu");
   await check(await page.isChecked("#motion"), "the CPU tab's Animations checkbox is checked at first");
+  const said = await page.evaluate(() => document.querySelector("#motion").closest("[role=tabpanel] > *").textContent.trim());
+  await check(said === "Animations", "with no explanation beside it", said);
   await page.uncheck("#motion"); await page.keyboard.press("Escape");
   await check(await page.evaluate(() => JSON.parse(localStorage.getItem("nor-motion"))) === false, "unchecked, it is kept for the next visit");
   const still = await page.evaluate(() => {

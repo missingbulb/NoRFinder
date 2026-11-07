@@ -925,7 +925,8 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/shell/resources-dialog/animations` An Animations checkbox in the resources dialog's CPU tab turns every animation on the page off.
   <details>
 
-  Set by the owner on 2026-10-31. Checked at first, it is kept as the user's setting: the next visit
+  Set by the owner on 2026-10-31. It is the checkbox alone, with no text explaining it (set by the owner on
+  2026-11-07). Checked at first, it is kept as the user's setting: the next visit
   opens with it as it was left, and signed in it follows the user (`req/shell/account/sign-in`). Unchecked, nothing on the
   page moves to draw the eye: the minimap and the drawers change at once, the photocopier's light
   does not sweep the image, no button shines or glows (one that would looks plain, with no light or
