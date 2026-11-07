@@ -796,8 +796,8 @@ async function openBytes(name, bytes, source) {
   st.fileName = name; st.source = source;
   for (const p of steps) Object.assign(p, { done: false, info: "", at: null, pressed: false });
   drawSteps(); boxes().forEach((b) => summaries.delete(b)); retitle();
-  // a copy, for Edit Image and the problem report: the bytes themselves go to Python
-  const kept = st.kept = { name, source, bytes: bytes.slice(0) };
+  // the file as it came, for Python at a Run (a copy is handed over then), Edit Image and the problem report
+  const kept = st.kept = { name, source, bytes };
   study.opening?.(name, source);
   st.sha = await sha256(bytes);
   page.set({ opening: { name } }); statusBar();
@@ -809,8 +809,7 @@ async function openBytes(name, bytes, source) {
     return onWorker({ type: "error", text: `${name} could not be read: ${e.message || e}` });
   }
   if (st.kept !== kept) return; // another image came meanwhile, or none is open
-  const images = new Uint8Array(im.planes.length + (im.volume?.length || 0));
-  images.set(im.planes); if (im.volume) images.set(im.volume, im.planes.length);
+  const images = im.images;
   const meta = { W: im.W, H: im.H, Z: im.Z, um: im.um, um_y: im.umY, spacing: im.spacing, info: im.info, channels: im.channels };
   imageOpened({ type: "opened", meta, images }); settle({ type: "opened", meta }); statusBar();
 }

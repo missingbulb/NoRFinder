@@ -4,8 +4,9 @@
 // quantile and its upper one (the study's view.upper, else 99.8%), or left as stored where the study's view.stretch
 // is false; a stack comes flattened (each pixel the brightest of every slice) and slice by slice.
 // What it gives: {W, H, Z, um, umY, spacing, info, channels: [{name?, colour?}], raw: [per channel, per slice, the
-// file's own samples], planes: the channels' 8-bit flattened planes one after another, volume: every slice of every
-// channel, channel by channel, 8-bit, for a stack (Z > 1), else null}.
+// file's own samples], images: one buffer, the viewers' whole image: planes, the channels' 8-bit flattened planes
+// one after another, then volume, every slice of every channel, channel by channel, 8-bit, for a stack (Z > 1);
+// planes and volume (null for a flat image) are views into it}.
 import { readTiff } from "./split.js";
 
 const LOWER = 0.005, UPPER = 0.998;
@@ -108,7 +109,9 @@ export function lutColour(lut) {
 function shown(W, H, Z, raw, said, view, rest) {
   const n = W * H, C = raw.length, keep = view.stretch === false;
   const upper = view.upper ?? UPPER;
-  const volume = new Uint8Array(C * Z * n), planes = new Uint8Array(C * n);
+  // a flat image's one slice is its flattened plane, so it is drawn there and nothing else is held
+  const images = new Uint8Array(C * n * (Z > 1 ? 1 + Z : 1)), planes = images.subarray(0, C * n);
+  const volume = Z > 1 ? images.subarray(C * n) : planes;
   raw.forEach((slices, c) => {
     const eight = keep && slices[0] instanceof Uint8Array;
     let lo = 0, hi = 255;
@@ -124,10 +127,10 @@ function shown(W, H, Z, raw, said, view, rest) {
         const span = hi - lo;
         for (let i = 0; i < n; i++) { const v = (s[i] - lo) / span; out[i] = Math.trunc((v < 0 ? 0 : v > 1 ? 1 : v) * 255); }
       }
-      for (let i = 0; i < n; i++) if (out[i] > flat[i]) flat[i] = out[i];
+      if (Z > 1) for (let i = 0; i < n; i++) if (out[i] > flat[i]) flat[i] = out[i];
     });
   });
-  return { W, H, Z, channels: said, raw, planes, volume: Z > 1 ? volume : null, ...rest };
+  return { W, H, Z, channels: said, raw, images, planes, volume: Z > 1 ? volume : null, ...rest };
 }
 
 function extremes(slices) {
@@ -169,10 +172,11 @@ export function inOrder(im, rule) {
   const C = im.channels.length, want = rule?.(im) || [];
   const order = [...want.filter((k) => k >= 0 && k < C), ...Array.from({ length: C }, (_, k) => k).filter((k) => !want.includes(k))];
   if (order.every((k, i) => k === i)) return im;
-  const n = im.W * im.H, per = n * im.Z, planes = new Uint8Array(im.planes.length), volume = im.volume && new Uint8Array(im.volume.length);
+  const n = im.W * im.H, per = n * im.Z, images = new Uint8Array(im.images.length), planes = images.subarray(0, im.planes.length);
+  const volume = im.volume && images.subarray(im.planes.length);
   order.forEach((k, i) => {
     planes.set(im.planes.subarray(k * n, (k + 1) * n), i * n);
     volume?.set(im.volume.subarray(k * per, (k + 1) * per), i * per);
   });
-  return { ...im, channels: order.map((k) => im.channels[k]), raw: order.map((k) => im.raw[k]), planes, volume };
+  return { ...im, channels: order.map((k) => im.channels[k]), raw: order.map((k) => im.raw[k]), images, planes, volume };
 }
