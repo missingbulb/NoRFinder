@@ -11,6 +11,7 @@ The curated file outranks the lab's own labels (lab/labels_claude_v1.json, Claud
 slide. The data set is named by one SHA (dataset_sha, R11).
 
     python3 detection/ground_truth.py score [SPEC ...]          every finder on every image, vs the baseline
+    python3 detection/ground_truth.py record                    a new version's quality, written (R9, R11)
 """
 import argparse, hashlib, json, math, os, re, sys
 
@@ -311,13 +312,31 @@ def report(specs, baseline=BASELINE):
                 print('      gain ' + line)
 
 
+def record(baseline=BASELINE):
+    """A new version's quality, recorded once (R9): every finder's results on every ground-truth image written to the
+    baseline, and its precision and recall with the dataset SHA (R11). report() first names what moved."""
+    import interactive, finder_metrics
+    base = {name: {} for name in sorted(interactive.FINDERS)}
+    for im in corpus():
+        data = nor_lab.load(im['path'])
+        for name in base:
+            base[name][im['name']] = result(name, data, im['labels'])
+    with open(baseline, 'w') as f:
+        json.dump(base, f, indent=1, sort_keys=True)
+        f.write('\n')
+    finder_metrics.write()
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     sub = ap.add_subparsers(dest='cmd', required=True)
     sc = sub.add_parser('score', help='every finder (or SPEC...) on every ground-truth image, against the baseline')
     sc.add_argument('specs', nargs='*')
+    sub.add_parser('record', help="a new version's quality: the baseline and the finders' precision and recall, rewritten")
     a = ap.parse_args()
     synced()
+    if a.cmd == 'record':
+        return record()
     import interactive
     report(a.specs or list(interactive.FINDERS))
 

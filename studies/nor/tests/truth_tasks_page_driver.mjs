@@ -183,6 +183,14 @@ const frame = () => page.evaluate(() => { const f = document.querySelector("#ove
 const rectOf = (a) => { const r = Math.floor(a / 10), k = r % 2 ? 9 - (a % 10) : a % 10; return [k * IW / 10, r * IH / 10, IW / 10, IH / 10]; };
 const same = (p, q) => !!p && !!q && p.every((v, k) => Math.abs(v - q[k]) < 1e-6);
 // the view come to rest where it was sent: the image's point x, y at its centre, or as near as the image's edge lets it
+// the framed area wholly in view, and the scroll unmoved since the last frame: a right click then opens a menu no
+// scroll will close
+const framedAtRest = () => page.waitForFunction(() => {
+  const sc = $("#scroller"), v = sc.getBoundingClientRect(), f = $("#overlay .area-frame")?.getBoundingClientRect();
+  const at = [sc.scrollLeft, sc.scrollTop].join(), still = window.lastScroll === at;
+  window.lastScroll = at;
+  return still && f && f.left >= v.left && f.right <= v.right && f.top >= v.top && f.bottom <= v.bottom;
+}, null, { polling: "raf" });
 const viewAt = (x, y) => page.waitForFunction(([x, y]) => {
   const sc = $("#scroller"), v = sc.getBoundingClientRect(), p = new DOMPoint(x, y).matrixTransform($("#overlay").getScreenCTM());
   const there = (off, at, end) => Math.abs(off) <= 1.5 || (off < 0 && at <= 0) || (off > 0 && at >= end - 1);
@@ -242,9 +250,14 @@ await page.click("#task-back");
 await check((await now()).cur === skipFrom, "Back returns to the skipped one");
 
 // a rejected candidate's card is a finalist's: turned level, with the bars and the adjusters; changed, it can be reset
+// the next rejected one not done after the current item, going round the walk
+const nextFail = await page.evaluate(() => {
+  const xs = nor.walk(), k = xs.findIndex((x) => x.key === st.cur);
+  return [...xs.slice(k + 1), ...xs.slice(0, Math.max(k, 0))].find((x) => x.t === "fail" && !x.done)?.key;
+});
 await page.click('#gt-tasks > li[data-task="fail"] .task-head .t');
 s = await now();
-await check(s.task === "fail" && s.open === "fail" && s.cur === W.find((x) => x.t === "fail").key, "clicking Rejected goes to the walk's next rejected candidate", s);
+await check(s.task === "fail" && s.open === "fail" && s.cur === nextFail, "clicking Rejected goes to the walk's next rejected candidate not yet done", { s, nextFail });
 const rcard = await page.evaluate(() => ({ bars: document.querySelectorAll("#task-card .marks .bar").length, handles: document.querySelectorAll("#task-card .handle").length, tag: !!document.querySelector("#task-card .tag"), reset: !!document.querySelector("#task-card .reset-lines") }));
 await check(rcard.bars === 3 && rcard.handles === 6 && !rcard.tag && !rcard.reset, "a rejected candidate's card has the measurement bars and the six adjusters", rcard);
 {
@@ -277,7 +290,7 @@ await check(s.cur === "a:" + A && s.task === "missed" && s.open === "missed" && 
 await check(!(await holes()).some((h) => same(h, rectOf(A))), "the area is not cut out before it is checked");
 // a NoR the finder missed, added in the area, waits for its verdict there; the view framing the area first comes to
 // rest, since a scroll closes the menu
-{ const [x, y, w, h] = rectOf(A); await viewAt(x + w / 2, y + h / 2); }
+await framedAtRest();
 const fr = await page.$eval("#overlay .area-frame", (f) => { const r = f.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
 await page.mouse.click(fr.x, fr.y, { button: "right" });
 await page.click("#ctx button");
@@ -286,10 +299,18 @@ await check(s.cur === "c:u1" && s.card === "u1" && s.open === "missed" && await 
 await page.click("#task-card .verdict .up");
 s = await now();
 await check(s.cur === "a:" + A, "its verdict given, the walk is back at the area's check", s);
-// removed again, Back passes over it
-await page.mouse.click(fr.x, fr.y, { button: "right" });
-await check(/Remove/.test(await page.textContent("#ctx button")), "a right click on the added NoR offers to remove it");
-await page.click("#ctx button");
+// removed again, Back passes over it, once the view the verdict moved is at rest
+// the NoR was added at the framed area's middle, wherever the view now has it; the view may still move, which closes
+// the menu (a scroll does), so the right click and Remove are given again once it rests, as a person would
+let offered = "", removed = false;
+for (let k = 0; k < 3 && !removed; k++) {
+  await framedAtRest();
+  const mid = await page.$eval("#overlay .area-frame", (f) => { const r = f.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  await page.mouse.click(mid.x, mid.y, { button: "right" });
+  offered = await page.textContent("#ctx button");
+  removed = /Remove/.test(offered) && await page.click("#ctx button", { timeout: 2000 }).then(() => true, () => false);
+}
+await check(/Remove/.test(offered) && removed, "a right click on the added NoR offers to remove it, and Remove removes it", offered);
 await page.click("#task-back");
 s = await now();
 await check(s.cur !== null && s.cur !== "c:u1" && s.task !== "submit", "Back passes over an added NoR since removed", s);

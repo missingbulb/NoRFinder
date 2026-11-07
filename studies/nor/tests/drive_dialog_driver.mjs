@@ -1,5 +1,5 @@
 // Drives the Google Drive dialog (web/) in headless Chromium against a stand-in Drive API that serves
-// IMAGE... (lab images named in data/sources.json) and one image the lab's list lacks from a folder, with one
+// IMAGE... (each given the id the test gave its ready-made thumbnail, dialogfile<k>) and one image the lab's list lacks from a folder, with one
 // subfolder holding the first image again: a click only selects a row, Open loads the selection, a double
 // click enters a folder, and thumbnails come from the study's ready-made ones (served from THUMBS, a
 // stand-in driveThumbs folder) or one saved when an image was opened, never from Drive, and not at all
@@ -26,12 +26,7 @@ const [shot, thumbs, ...images] = process.argv.slice(2);
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const ROOT = "rootfolder0000000001", SUB = "subfolder00000000001";
-const lab = JSON.parse(fs.readFileSync(path.join(repo, "studies", "nor", "data", "sources.json"), "utf8")).sources.flatMap((x) => x.files || []);
-const files = images.map((p) => {
-  const known = lab.find((f) => p.endsWith(f.path));
-  if (!known) { console.error(p + " is not in data/sources.json"); process.exit(2); }
-  return { id: known.drive_id, name: path.basename(p), bytes: fs.readFileSync(p) };
-});
+const files = images.map((p, k) => ({ id: `dialogfile${String(k).padStart(10, "0")}`, name: path.basename(p), bytes: fs.readFileSync(p) }));
 const stranger = { id: "notinthelab000000001", name: "Not in the lab's list.tif", bytes: files[0].bytes };
 const folders = {
   [ROOT]: [{ id: SUB, name: "More slides", mimeType: "application/vnd.google-apps.folder" }, ...[...files, stranger].map((f) => ({ ...f, mimeType: "image/tiff" }))],

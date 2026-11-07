@@ -111,6 +111,8 @@ for (const width of [1000, 1600]) {
   if (process.env.SHOTS) { await page.evaluate(() => { $("#notice").hidden = true; }); await page.mouse.move(5, 5); await page.screenshot({ path: `${process.env.SHOTS}/${width}_image.png` }); }
   const views = [["image", async () => {}], ["finalists", async () => {
     await page.click("#switch"); await page.waitForFunction(() => document.querySelector("#view").dataset.view === "items" && document.querySelector("#list .card:not(.stub)"));
+    // the item view opens on the selected candidate's own tab, which may be the rejected one
+    await page.click("#tab-pass"); await page.waitForFunction(() => document.querySelector("#list .card:not(.stub)"));
   }], ["rejected", () => page.click("#tab-fail")]];
   for (const [view, go] of views) {
     await go(); await page.waitForFunction(() => !document.querySelector("button.working"));

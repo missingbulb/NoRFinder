@@ -125,7 +125,7 @@ This study is one of the page's studies; the repo's own map, and what the shell 
 web/         the study's page: panels, script, style, finder_metrics.json
 detection/   the finders, nor.py (the R1 baseline), harness.py (invariance), fetch_data.py; STATE.md
 data/        sources.json: the Drive images by checksum (the images stay out of git)
-tests/       every requirement that can be executed; test_quality.py locks the finders (R9)
+tests/       every requirement that can be executed, on drawn images (synthetic_nor.py), never the study's own
 docs/
   WARMUP.md                          this file
   requirements.md                    standing constraints on HOW it is built, which no user sees;

@@ -33,6 +33,14 @@ not belong here — propose it to the Claudinite canon instead, where every repo
   it should be, that it starts and that it ends in the right state, through `web-tests/page_motions.mjs`; never
   how it looks on the way. (testing-motion-ends)
 
+- **Testing code that needs a study's image** - draw a small one in the test (NoR's is
+  `studies/nor/tests/synthetic_nor.py`); never a study's real data, which no test downloads.
+  (tests-draw-images)
+
+- **Guarding a study algorithm's quality** - record it once per version, in the effort that makes the
+  version (its precision, recall and dataset SHA), never in a test that re-scores it on every pull
+  request; here this replaces research-project's guard-wins-regression. (quality-per-version)
+
 ## What the page reaches
 
 - **Planning a change that adds or alters a network call or a permission request** (the page's,

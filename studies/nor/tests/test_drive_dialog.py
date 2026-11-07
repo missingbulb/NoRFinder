@@ -2,7 +2,8 @@
 ready-made thumbnail or the one saved when an image was opened, never reading Drive for one
 (drive_dialog_driver.mjs). The study ships no ready-made thumbnails, so the test serves stand-ins."""
 import json, os
-from test_memory import HERE, TIF, needs_node, needs_slide, run
+from test_memory import needs_node, run
+from synthetic_nor import nor_image
 import numpy as np
 import pytest
 from PIL import Image
@@ -21,12 +22,8 @@ def stand_in_thumbnails(folder, ids):
     return str(folder)
 
 
-@needs_slide
 @needs_node
 def test_select_then_open_and_thumbnails_without_reading_drive(tmp_path):
-    named = [f for s in json.load(open(os.path.join(HERE, '..', 'data', 'sources.json')))['sources'] for f in s.get('files') or []]
-    lab = {os.path.join(HERE, '..', 'data', 'raw', f['path']): f['drive_id'] for f in named}
-    other = sorted(p for p in lab if os.path.exists(p) and not os.path.samefile(p, TIF))
-    images = [TIF, *other[:1]]
-    ids = [i for p, i in lab.items() if any(os.path.samefile(p, m) for m in images if os.path.exists(p))]
+    images = [nor_image(str(tmp_path / f'slide {k}.tif'), seed=k) for k in range(2)]
+    ids = [f'dialogfile{k:010d}' for k in range(len(images))]
     run('drive_dialog_driver.mjs', '-', stand_in_thumbnails(tmp_path / 'thumbs', ids), *images)

@@ -10,21 +10,24 @@ import pytest
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'detection'))
 import nor_lab
+from synthetic_nor import nor_image
 
-needs_slide = pytest.mark.skipif(not os.path.exists(nor_lab.TIF), reason='reference slide missing (detection/ground_truth.py score downloads it)')
+# the image every load reads, drawn once before the pool starts
+IMAGE = None
 
 
 def _load(delay):
     time.sleep(delay)  # waits on purpose: the loads start apart, so some read while another writes
-    c, n, um, bm = nor_lab.load()
+    c, n, um, bm = nor_lab.load(IMAGE)
     return c.shape, repr(n), um, int(bm.sum()), float(c.sum())
 
 
-@needs_slide
 def test_loads_at_once_share_one_whole_cache(tmp_path, monkeypatch):
-    monkeypatch.setenv('NOR_CACHE_DIR', str(tmp_path))
+    global IMAGE
+    IMAGE = nor_image(str(tmp_path / 'nodes.tif'), side=400, n=64)
+    monkeypatch.setenv('NOR_CACHE_DIR', str(tmp_path / 'cache'))
     # started across the time one load takes, so some find the cache while the first is still writing it
     with multiprocessing.get_context('fork').Pool(8) as pool:
         got = pool.map(_load, [k * 0.5 for k in range(8)])
     assert len(got) == 8 and all(g == got[0] for g in got), got
-    assert os.listdir(tmp_path) == [os.path.basename(nor_lab.cache_path(nor_lab.TIF))]
+    assert os.listdir(tmp_path / 'cache') == [os.path.basename(nor_lab.cache_path(IMAGE))]
