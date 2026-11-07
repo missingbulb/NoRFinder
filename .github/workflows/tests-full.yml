@@ -117,6 +117,10 @@ jobs:
           npm i -g "playwright@$PLAYWRIGHT"
           npm i --prefix web-tests pyodide@314.0.7
           playwright install --with-deps ${{ matrix.engine }}
+      # Mesa's software EGL, which the page tests launch Firefox on for its WebGL (web-tests/engine.mjs)
+      - name: Install Mesa's software GL
+        if: matrix.engine == 'firefox'
+        run: sudo apt-get install -y --no-install-recommends libegl1 libegl-mesa0 libgl1-mesa-dri
       - name: Restore the ground-truth images
         uses: actions/cache@v5
         with:

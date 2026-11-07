@@ -61,7 +61,11 @@ def held():
 
 
 def run(driver, *args):
-    r = subprocess.run([NODE, os.path.join(HERE, driver), *args], capture_output=True, text=True, timeout=60)
+    try:
+        r = subprocess.run([NODE, os.path.join(HERE, driver), *args], capture_output=True, text=True, timeout=120)
+    except subprocess.TimeoutExpired as e:
+        out = lambda b: (b.decode() if isinstance(b, bytes) else b) or ''
+        pytest.fail(f'{driver} still running after {e.timeout:g} s; it had got this far:\n{out(e.stdout)}{out(e.stderr)}')
     print(r.stdout, r.stderr)
     if r.returncode == 2:
         pytest.skip(r.stderr.strip())

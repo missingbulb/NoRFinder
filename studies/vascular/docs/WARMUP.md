@@ -46,9 +46,11 @@ python3 -m pytest tests
 slice by slice (`req/vascular/stack-view`), and runs the extraction lab's versions on it in the page
 (`req/vascular/model/run`: Processing's Execute; the page's Python imports `analysis/` and
 `analysis/extraction/` as they are, so a new version ships with no list to update; each version's `TITLE`, `ICON` and `STEPS` are its name, icon and How the algorithm works there, `web/algorithm_metrics.json` its precision and recall, and `lab.RETIRED` keeps a version off the list). The site ships no
-drawn models. `web/vascular.js` mounts Processing, the vessel model over or beside the stack
-(`web/model_view.js`, drawing through the 3D viewer's `three`; `req/vascular/model/view`,
-`req/vascular/model/correct`), the Ground Truth Tasks in the left bar while the study makes ground
+drawn models. The left bar is the shell's (`req/shell/left-bar/shells`): `web/vascular.html` fills its
+Processing, Summary and Ground Truth Tasks boxes, and the toolbar's left with how the model shows
+(`req/shell/image/toolbar`). `web/vascular.js` mounts Processing, the vessel model over or beside the stack
+(`web/model_view.js`, drawing through the 3D viewer's `three`, whose Colour by depth it follows; `req/vascular/model/view`,
+`req/vascular/model/correct`), the Ground Truth Tasks while the study makes ground
 truth (`web/tasks.js`; `req/vascular/truth/tasks`, `req/vascular/truth/order`, `req/vascular/truth/marks`), the item cards outside it (`web/items.js`,
 `req/vascular/model/cards`) and Submit Ground Truth (`req/vascular/model/ground-truth`). Tests:
 `tests/test_model_page.py` (PreGT: views and cards), `tests/test_vessel_tasks_page.py` (GT: Execute

@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import path from "node:path";
 import { offSite } from "../../../web-tests/off_site.mjs";
-import { ENGINE } from "../../../web-tests/engine.mjs";
+import { ENGINE, LAUNCH } from "../../../web-tests/engine.mjs";
 import { asTagger } from "../../../web-tests/tagger.mjs";
 import { serve, ALGORITHMS } from "./stand_in.mjs";
 import { standInDrive, openFromDrive } from "../../../web-tests/drive_open.mjs";
@@ -27,7 +27,7 @@ const [studies] = process.argv.slice(2);
 const model = JSON.parse(fs.readFileSync(path.join(here, "fixtures", "cd31_frontal_x20_r_1_slices1-12.vessels.json"), "utf8"));
 const site = await serve(repo, studies, model, "GT");
 
-const browser = await pw[ENGINE].launch();
+const browser = await pw[ENGINE].launch(LAUNCH);
 let failed = false;
 const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: " + what); } else console.log("ok: " + what); };
 const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
@@ -82,7 +82,7 @@ try {
   await openFromDrive(page, { name: model.source, mimeType: "image/tiff", buffer: Buffer.from([0x49, 0x49, 42, 0]) });
   await page.waitForFunction(() => !$("#vm-run").disabled);
   await page.evaluate(() => { $("#notice").hidden = true; });
-  const before = await page.evaluate(() => ({ model: !$("#model-on").hidden, tasks: !$("#tasks-box").hidden,
+  const before = await page.evaluate(() => ({ model: !$("#model-on").hidden, tasks: !$("#vm-tasks").hidden,
     modes: [...document.querySelectorAll("#model-mode button")].filter((b) => !b.disabled).map((b) => b.dataset.v),
     switch: !$("#switch").hidden, items: !!$("#items-view") && !$("#items-view").hidden }));
   check(!before.model && !before.tasks && before.modes.join() === "image", `a stack opens with no model until Execute: ${JSON.stringify(before)}`);
@@ -95,7 +95,7 @@ try {
   check(ran.algorithm === "v4-line-evidence" && ran.asked?.algorithm === "v4" && ran.asked.z_step === 1 && ran.asked.source === model.source,
     `Execute runs the chosen algorithm on the stack, with the spacing shown: ${JSON.stringify(ran.asked)}`);
   check(await page.evaluate(() => $('#model-mode [data-v="overlay"]').getAttribute("aria-pressed") === "true"), "the model opens over the stack");
-  check(await page.evaluate(() => !!($("#model-set").compareDocumentPosition($("#tasks-box")) & Node.DOCUMENT_POSITION_FOLLOWING) && !$("#tasks-box").hidden),
+  check(await page.evaluate(() => !!($("#model-set").compareDocumentPosition($("#tasks-box")) & Node.DOCUMENT_POSITION_FOLLOWING) && !$("#tasks-box").hidden && !$("#vm-tasks").hidden),
     "Ground Truth Tasks sits under Processing once a model is open");
 
   const r0 = await rows();

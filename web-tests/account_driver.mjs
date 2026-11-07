@@ -20,7 +20,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { offSite } from "./off_site.mjs";
-import { ENGINE } from "./engine.mjs";
+import { ENGINE, LAUNCH } from "./engine.mjs";
 import { cutShort } from "./page_errors.mjs";
 
 const require = createRequire(import.meta.url);
@@ -85,7 +85,7 @@ async function google(route) {
   return json(404, { error: "not a call this test knows" });
 }
 
-const browser = await pw[ENGINE].launch();
+const browser = await pw[ENGINE].launch(LAUNCH);
 let failed = false;
 const check = (ok, what) => { if (!ok) { failed = true; console.error("FAILED: " + what); } else console.log("ok: " + what); };
 // what the stand-in Google holds changes only as a request reaches it: a wait on it looks again at each one

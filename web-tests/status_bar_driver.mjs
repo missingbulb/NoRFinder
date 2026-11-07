@@ -19,7 +19,7 @@ import http from "node:http";
 import path from "node:path";
 import { repoFile } from "./repo_file.mjs";
 import { offSite } from "./off_site.mjs";
-import { ENGINE } from "./engine.mjs";
+import { ENGINE, LAUNCH } from "./engine.mjs";
 import { asTagger } from "./tagger.mjs";
 import { localStudy } from "./local_study.mjs";
 import { standInDrive } from "./drive_open.mjs";
@@ -35,15 +35,15 @@ const MB = 2 ** 20;
 const BIG = 6 * MB; // a download fast enough to flash the network
 
 // the fixture's answers, each saying how much memory Python holds and how long it has worked as the real worker
-// does; memory: what Python holds in use after a collection. A count keeps Python working for WORK ms, and grows
-// Python's memory by 10 MB.
+// does; memory: what Python holds in use after a collection. A count keeps Python working for WORK ms, told once it
+// is done, so the CPU rises in one step, and grows Python's memory by 10 MB.
 const WORK = 1500;
 const STAND_IN = `
 const A = await (await fetch("answers.json")).json();
 const bytes = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 let ms = 0, heap = ${60 * MB};
 const mem = () => ({ heap, files: ${20 * MB}, busy: { ms, since: null } });
-const work = (n) => { postMessage({ type: "progress", text: "Counting…", ...mem(), busy: { ms, since: Date.now() } }); const t = Date.now(); while (Date.now() - t < n); ms += n; heap += ${10 * MB}; };
+const work = (n) => { postMessage({ type: "progress", text: "Counting…", ...mem() }); const t = Date.now(); while (Date.now() - t < n); ms += n; heap += ${10 * MB}; };
 const first = new URL(location.href).searchParams.get("study");
 if (A.ready[first]) postMessage({ type: "ready", info: A.ready[first], ...mem() });
 onmessage = ({ data: m }) => {
@@ -77,7 +77,7 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[ENGINE].launch();
+const browser = await pw[ENGINE].launch(LAUNCH);
 const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
 const check = async (ok, what, seen) => { if (!ok) { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); } console.log("ok: " + what); };
 const shot = async (page, name) => { if (shots) await page.locator("#statusbar").screenshot({ path: path.join(shots, name + ".png") }); };
@@ -255,11 +255,11 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await steps(page, ["Load image", "Count*"], ["#fx-count", "#sb-count"]);
   await check((await tip(page, "Load image")).includes("squares.png"), "Load image's popup names the image");
   // Count's box folded and scrolled away: its crumb unfolds it, scrolls to Count and presses it
-  await page.evaluate(() => { document.querySelector("#fx-box").classList.add("folded"); document.querySelector("#left").scrollTop = 1e6; });
+  await page.evaluate(() => { document.querySelector("#processing-box").classList.add("folded"); document.querySelector("#left").scrollTop = 1e6; });
   await page.click("#sb-count");
   const shown = await page.evaluate(() => {
     const b = document.querySelector("#fx-count"), r = b.getBoundingClientRect(), l = document.querySelector("#left").getBoundingClientRect();
-    return { unfolded: !document.querySelector("#fx-box").classList.contains("folded"), inView: r.height > 0 && r.top >= l.top && r.bottom <= l.bottom };
+    return { unfolded: !document.querySelector("#processing-box").classList.contains("folded"), inView: r.height > 0 && r.top >= l.top && r.bottom <= l.bottom };
   });
   await check(shown.unfolded && shown.inView, "the shining crumb unfolds Count's box and brings Count into view", shown);
   await page.waitForFunction(() => /pixels/.test(document.querySelector("#fx-result").textContent));
@@ -435,11 +435,23 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await check(/max-width|width|all/.test(look.property) && look.ms >= 150, "folding and unfolding is animated", look);
   await page.hover("#sb-res-icon");
   await isOpen(true, "hovering the icon unfolds the four as they look always open");
-  await check((await block()).icon === 0, "the icon going away as they come");
+  await check((await block()).icon > 10 && await page.evaluate(() => document.querySelector("#sb-res-items").getBoundingClientRect().right <= document.querySelector("#sb-res-icon").getBoundingClientRect().left),
+    "the icon staying, the four opening beside it", await block());
   const unfolded = await bars(page);
   await check(unfolded.length && unfolded.every((x) => x[2] === x[3]), "unfolded, no bar between the four, one between the CPU and the online icon and between all else", unfolded);
   const after = await fixed();
-  await check(after.slice(1).every((x, k) => x === before[k + 1]), "unfolding moves neither the online icon, the report icon nor the version", { before, after });
+  await check(after.every((x, k) => x === before[k]), "unfolding moves neither the icon, the online icon, the report icon nor the version", { before, after });
+  // too little room: what the page is doing and the four give way; the steps and the icons and version stay whole
+  await page.setViewportSize({ width: 620, height: 900 });
+  await page.evaluate(() => { document.querySelector("#status").textContent = "Loading the study's Python packages, a long message that cannot fit"; });
+  await page.waitForFunction(() => ["#sb-res-items", "#sb-res-icon"].every((id) => !document.querySelector(id).getAnimations().length));
+  const squeezed = await page.evaluate(() => {
+    const bar = document.querySelector("#statusbar").getBoundingClientRect(), whole = (e) => { const r = e.getBoundingClientRect(); return r.width >= e.scrollWidth - 1 && r.left >= bar.left && r.right <= bar.right; };
+    return { steps: [...document.querySelectorAll("#sb-steps .crumb")].every(whole), right: ["#sb-res-icon", "#sb-online", "#sb-report", "#sb-version"].filter((id) => !whole(document.querySelector(id))),
+      status: document.querySelector("#sb-now").getBoundingClientRect().width < document.querySelector("#status").scrollWidth };
+  });
+  await check(squeezed.steps && !squeezed.right.length && squeezed.status, "with too little room the status gives way, the steps and the right-hand items stay whole", squeezed);
+  await page.setViewportSize({ width: 1400, height: 900 });
   await shot(page, "10-resources-hovered");
   await page.mouse.move(700, 300);
   await isOpen(false, "and they fold again once the pointer leaves");
@@ -489,7 +501,7 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   // always open: as before; kept for the next visit
   await page.click("#sb-res-icon"); await page.selectOption("#res-mode", "open"); await page.keyboard.press("Escape"); await page.mouse.move(700, 300);
   await isOpen(true, "always open, the four show");
-  await check((await block()).icon === 0, "with no icon");
+  await check((await block()).icon > 10, "beside their icon");
   await check(await page.evaluate(() => JSON.parse(localStorage.getItem("nor-resources"))) === "open", "the choice is kept for the next visit");
   // hidden always: only the icon, which hovering and the network going do not unfold
   await page.click("#sb-disk"); await page.selectOption("#res-mode", "hidden"); await page.keyboard.press("Escape");

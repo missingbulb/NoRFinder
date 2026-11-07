@@ -4,7 +4,7 @@
 // the signed-in user's token approved for ROOT alone, and for the folders and files the page itself makes; the
 // fixture study given the user as its data manager and ROOT as its folder; a stand-in worker answering ANSWERS
 // (tests/test_study_runs.py), which keeps the last file it was handed as self.lastOpen, and opens a study's image as
-// ANSWERS' studies[id] says where it says so. Exits 2 when it cannot run.
+// ANSWERS' studies[id] says where it says so, a file its named[file's name] names as that says. Exits 2 when it cannot run.
 import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
 import { execSync } from "node:child_process";
@@ -13,7 +13,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { repoFile } from "./repo_file.mjs";
-import { ENGINE } from "./engine.mjs";
+import { ENGINE, LAUNCH } from "./engine.mjs";
 import { offSite } from "./off_site.mjs";
 import { cutShort } from "./page_errors.mjs";
 
@@ -62,7 +62,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
     if (m.type === "study") { id = m.id; postMessage({ type: "ready", info: A.ready[id], heap: 0, files: 0 }); }
     else if (m.type === "open") {
       self.lastOpen = { name: m.name, bytes: new Uint8Array(m.bytes) };
-      const own = A.studies?.[id], images = bytes(own ? own.images : A.images);
+      const own = A.studies?.[id]?.named?.[m.name] ?? A.studies?.[id], images = bytes(own ? own.images : A.images);
       postMessage({ type: "opened", meta: own ? own.opened : A.opened, images }, [images.buffer]);
     }
     else if (m.type === "call") { const b = bytes(A.mask); postMessage({ type: "result", action: m.action, meta: A.count, bytes: b, echo: m.echo }, [b.buffer]); }
@@ -83,7 +83,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {} }
   await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
   const origin = `http://127.0.0.1:${server.address().port}`;
 
-  const browser = await pw[ENGINE].launch();
+  const browser = await pw[ENGINE].launch(LAUNCH);
   const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
   const check = async (ok, what, seen) => { if (!ok) { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); } console.log("ok: " + what); };
   // a page or a check gone wrong ends the run

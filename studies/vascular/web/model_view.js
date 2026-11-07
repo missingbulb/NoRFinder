@@ -174,9 +174,9 @@ function vessel(c, { line, r }, tint) {
     for (const j of [0, line.length - 1]) { c.beginPath(); c.arc(line[j][0], line[j][1], rr[j], 0, 2 * Math.PI); c.fill(); }
   }
 }
-// a depth in slices in the depth colour the stack shows it in, while the view colours by depth
+// a depth in slices in the depth colour the stack shows it in: the palette of the channel coloured by depth
 const hex = (rgb) => '#' + rgb.map((v) => Math.round(v * 255).toString(16).padStart(2, '0')).join('');
-const depthTint = (z) => hex(V.depthColour((z - V.S.z0) / Math.max(V.S.z1 - V.S.z0, 1)));
+const depthTint = (palette, z) => hex(palette((z - V.S.z0) / Math.max(V.S.z1 - V.S.z0, 1)));
 const shade = (hex, f) => `rgb(${[1, 3, 5].map((k) => Math.round(parseInt(hex.slice(k, k + 2), 16) * f)).join(',')})`;
 
 const alone = () => mode === 'side' || mode === 'model';
@@ -212,11 +212,11 @@ function drawModel(c) {
     // On its own the model is a picture: confident vessels white and nearly opaque, or in the depth colours
     // while the view colours by depth, low-confidence ones faded. Each kind is drawn opaque on a layer of its own
     // and laid on once, so the pieces of a vessel never stack into beads.
-    const rs = runs(new Set(order)), lit = (run) => run.segs.some((i) => hot.has(i));
+    const rs = runs(new Set(order)), lit = (run) => run.segs.some((i) => hot.has(i)), palette = V.depthPalette();
     for (const [which, tint, alpha] of [[true, UNSURE, UNSURE_ALPHA], [false, SURE, SURE_ALPHA]]) {
       const layer = document.createElement('canvas'); layer.width = cv.width; layer.height = cv.height;
       const l = layer.getContext('2d'); l.scale(dpr, dpr); l.lineCap = 'round'; l.lineJoin = 'round';
-      for (const run of rs) if (unsure(run.segs[0]) === which && !lit(run)) { l.globalAlpha = nearness(run.line) * damageFade(run.segs); vessel(l, run, V.S.depth ? depthTint(run.z) : tint); }
+      for (const run of rs) if (unsure(run.segs[0]) === which && !lit(run)) { l.globalAlpha = nearness(run.line) * damageFade(run.segs); vessel(l, run, palette ? depthTint(palette, run.z) : tint); }
       c.globalAlpha = alpha; c.drawImage(layer, 0, 0, cv.clientWidth, cv.clientHeight);
     }
     c.globalAlpha = 1;
@@ -564,7 +564,7 @@ function closeMenu() { if (!$('ctx').hidden) { $('ctx').hidden = true; hover = n
 function setReview(r) {
   review = r;
   for (const b of $('review-mode').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.v === r));
-  $('review-note').textContent = {
+  $('review-mode').title = {
     all: 'The whole stack.',
     detected: 'Only the signal within reach of the model’s vessels: check them and measure their widths (hover a vessel).',
     missed: 'Only the signal away from the model’s vessels: whatever bright line is left is a vessel the model does not have.',
@@ -641,8 +641,6 @@ function setMode(m) {
   V.place(model ? cv : null, mode === 'side');
   V.redraw();
 }
-// colour by depth, for the stack and the model alike
-function setDepth(on) { V.S.depth = on ? 1 : 0; $('vm-depth').setAttribute('aria-pressed', String(on)); V.redraw(); }
 
 function facts() {
   if (!model) return;
@@ -679,7 +677,7 @@ function open(text, name) {
     catch { store.del(savedKey); }
   }
   if (V.meta && m.slices !== slices()) msg(`This model has ${m.slices} slices and the stack has ${slices()}: they are probably not the same stack.`, true);
-  $('model-on').hidden = false; $('review-box').hidden = false;
+  $('model-on').hidden = false; $('vm-review').hidden = false; $('vm-marks').hidden = false;
   maskKey = null; refreshMask(true);
   $('m-candidates-row').hidden = !model.segments.some((s) => s.state !== 'vessel');
   setMode(mode === 'image' ? 'overlay' : mode);
@@ -707,7 +705,8 @@ export function openFile(f) {
 // Called whenever a stack opens: it opens with no model until the algorithm draws one or a file is loaded.
 export function stackOpened() {
   model = null; loaded = null; history = []; future = []; edits = 0; savedKey = null; task = null; area = null;
-  $('model-on').hidden = true; $('review-box').hidden = true; msg(''); setMode('image');
+  $('model-on').hidden = true; $('vm-review').hidden = true; $('vm-marks').hidden = true; $('m-candidates-row').hidden = true; msg(''); setMode('image');
+  $('model-facts').textContent = 'No vessel model yet: Execute the algorithm, or load a model file.';
   if (drawing) setDrawing(false);
   if (lasso) setLasso(false);
   maskKey = null; refreshMask(true);
@@ -739,8 +738,6 @@ export function init(view, signal, makesTruth) {
   $('model-mode').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b && !b.disabled) setMode(b.dataset.v); });
   $('model-load').onclick = () => $('model-file').click();
   $('model-file').onchange = (e) => { if (e.target.files[0]) openFile(e.target.files[0]); e.target.value = ''; };
-  $('vm-depth').onclick = () => setDepth(!V.S.depth);
-  setDepth(!!V.S.depth);
   $('m-candidates').onchange = (e) => { showCandidates = e.target.checked; if (!showCandidates && isCandidate(hover)) closeMenu(); hover = null; refreshMask(); V.redraw(); };
   $('review-mode').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setReview(b.dataset.v); });
   const reachOut = () => { $('reach-o').value = `${Math.round(reach * 100)}% of its width`; };

@@ -29,12 +29,12 @@ export function mount(shell) {
     opened() {
       counted = null; $("#fx-count").disabled = !ready; $("#fx-truth").disabled = true;
       $("#switch").disabled = true; $("#fx-done").disabled = true; $("#fx-done").checked = false; shell.views.count(null);
-      $("#fx-result").textContent = "Nothing counted yet."; shell.viewer.layer("fx").replaceChildren();
+      $("#fx-result").textContent = $("#fx-sum").textContent = "Nothing counted yet."; shell.viewer.layer("fx").replaceChildren();
     },
     result(action, meta, bytes) {
       shell.busy(false);
       counted = { threshold: +$("#fx-threshold").value, count: meta.count };
-      $("#fx-result").textContent = `${meta.count} pixels above the threshold`; $("#fx-truth").disabled = false;
+      $("#fx-result").textContent = $("#fx-sum").textContent = `${meta.count} pixels above the threshold`; $("#fx-truth").disabled = false;
       $("#switch").disabled = false; $("#fx-done").disabled = false; $("#fx-done").checked = false; task(true);
       shell.step("count", true, `${meta.count} pixels above ${counted.threshold}`);
       shell.boxDone($("#fx-box"), `Counted at ${counted.threshold}`);

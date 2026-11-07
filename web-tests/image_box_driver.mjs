@@ -14,7 +14,8 @@ import path from "node:path";
 import { repoFile } from "./repo_file.mjs";
 import { helpTip } from "./help_tip.mjs";
 import { offSite } from "./off_site.mjs";
-import { ENGINE } from "./engine.mjs";
+import { ENGINE, LAUNCH } from "./engine.mjs";
+import { motion, record, begun, moved } from "./page_motions.mjs";
 import { asTagger } from "./tagger.mjs";
 import { localStudy } from "./local_study.mjs";
 
@@ -53,7 +54,7 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[ENGINE].launch();
+const browser = await pw[ENGINE].launch(LAUNCH);
 const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
 const check = async (ok, what, seen) => { if (!ok) { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); } console.log("ok: " + what); };
 
@@ -64,6 +65,7 @@ await localStudy(ctx, "fixture");
 await asTagger(ctx);
 await ctx.route(offSite(origin), (r) => r.abort());
 await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
+await record(ctx);
 const page = await ctx.newPage();
 page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
 page.setDefaultTimeout(10000);
@@ -138,29 +140,19 @@ await check(expand.x === fold.x && expand.y === fold.y && (await glyph()) === "d
 await shot("minimap_collapsed", "#minimap");
 await page.mouse.click(fold.x + fold.w / 2, fold.y + fold.h / 2);
 await check(await visible("#minimap canvas"), "a second click on the same spot undoes the first");
-// hiding folds the minimap into its toolbar button, and showing unfolds it back out of it
-const flight = () => page.waitForFunction(() => document.getAnimations().some((a) => a.effect?.pseudoElement === "::view-transition-group(minimap)"));
-const landed = () => page.waitForFunction(() => !document.getAnimations().some((a) => a.effect?.pseudoElement?.startsWith("::view-transition")));
-// the button itself never flies: a copy of it does, so the button stands where it is throughout
-const flier = () => page.evaluate(() => ({ button: getComputedStyle($("#minimap-btn")).viewTransitionName, copy: !!document.querySelector(".mm-flier") }));
+// hiding folds the minimap into its toolbar button, and showing unfolds it back out of it: each flight starts and
+// lands, whatever it looks like on the way
 // no flight still under way from the minimap showing, which WebKit holds a click behind
-await landed();
-// a click that never completes says what the page was doing, or that it no longer answers
-const stuck = () => page.evaluate(() => {
-  const b = document.querySelector("#minimap-hide").getBoundingClientRect(), at = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
-  return { transition: !!document.activeViewTransition, animations: document.getAnimations().map((a) => `${a.effect?.target?.id || a.effect?.target?.className || "?"}${a.effect?.pseudoElement || ""} ${a.playState}`), at: at && (at.id || at.className || at.tagName) };
-}).then((x) => JSON.stringify(x), (e) => "the page does not answer: " + e.message);
-await page.click("#minimap-hide", { timeout: 8000 }).catch(async (e) => { console.error("FAILED: hiding the minimap: the click never completed: " + (await stuck())); throw e; });
-await check(await flight().then(() => true, () => false), "hiding flies the minimap into its toolbar button");
-const folding = await flier();
-await check(folding.button === "none" && folding.copy, "folding, a copy of the button is what the minimap lands as, not the button", folding);
-await landed();
+await page.waitForFunction(() => window.viewTransitions.every((v) => v.finished), null, { timeout: 15000 });
+let flights = await begun(page);
+await page.click("#minimap-hide", { timeout: 8000 }).catch(async (e) => { console.error("FAILED: hiding the minimap: the click never completed: " + (await motion(page))); throw e; });
+const folding = await moved(page, flights, "minimap");
+await check(!folding.missing, "hiding flies the minimap into its toolbar button, and the flight ends", folding);
 await check(!(await visible("#minimap")) && (await page.getAttribute("#minimap-btn", "aria-pressed")) === "false", "hidden: the minimap goes, and its toolbar button is up");
+flights = await begun(page);
 await page.click("#minimap-btn");
-await check(await flight().then(() => true, () => false), "and showing flies it back out of the button");
-const unfolding = await flier();
-await check(unfolding.button === "none" && unfolding.copy, "unfolding, a copy of the button is what flies out, and the button stays", unfolding);
-await landed();
+const unfolding = await moved(page, flights, "minimap");
+await check(!unfolding.missing, "and showing flies it back out of the button, and the flight ends", unfolding);
 await check((await visible("#minimap canvas")) && (await page.getAttribute("#minimap-btn", "aria-pressed")) === "true", "the toolbar button opens it again");
 
 // hovering the toolbar button opens its opacity
@@ -280,7 +272,7 @@ const clear = await page.evaluate(() => ({ stage: document.querySelector("#stage
 await check(clear.stage && clear.empty && !clear.minimap && !clear.unload && !clear.img, "Unload clears the image, the minimap and itself", clear);
 await check(clear.shine && !clear.done && clear.crumbs === "Load image", "Load shines again, and the steps start over", clear);
 await check(clear.fx === "Nothing counted yet." && !clear.overlay && clear.status.startsWith("Ready"), "the study starts over too", clear);
-await check(await page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].filter((b) => b.checkVisibility()).map((b) => b.classList.contains("folded")).join()) === "false,true,true,true", "and the boxes on show fold as before any image");
+await check(await page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].filter((b) => b.checkVisibility()).map((b) => b.classList.contains("folded")).join()) === "false,true,true", "and the boxes on show fold as before any image");
 await check((await rows()).length === 0, "and no channel rows are left, with no image (req/shell/channels/rows)");
 
 // ---- after Unload, the next image's switch still shows the item view ----

@@ -14,7 +14,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { offSite } from "../../../web-tests/off_site.mjs";
-import { ENGINE } from "../../../web-tests/engine.mjs";
+import { ENGINE, LAUNCH } from "../../../web-tests/engine.mjs";
 import { asTagger } from "../../../web-tests/tagger.mjs";
 import { standInDrive, openFromDrive } from "../../../web-tests/drive_open.mjs";
 
@@ -61,7 +61,7 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[ENGINE].launch();
+const browser = await pw[ENGINE].launch(LAUNCH);
 const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
 const fail = async (what, seen) => { console.error("FAILED: " + what + (seen === undefined ? "" : ": " + JSON.stringify(seen))); await done(1); };
 const check = async (ok, what, seen) => { console.log((ok ? "ok    " : "FAIL  ") + what); if (!ok) await fail(what, seen); };
@@ -182,6 +182,13 @@ await check(ring.shown && ring.stroke === "rgb(255, 212, 0)", "the current candi
 const frame = () => page.evaluate(() => { const f = document.querySelector("#overlay .area-frame"); return f && f.style.display !== "none" && getComputedStyle(f).display !== "none" ? ["x", "y", "width", "height"].map((k) => +f.getAttribute(k)) : null; });
 const rectOf = (a) => { const r = Math.floor(a / 10), k = r % 2 ? 9 - (a % 10) : a % 10; return [k * IW / 10, r * IH / 10, IW / 10, IH / 10]; };
 const same = (p, q) => !!p && !!q && p.every((v, k) => Math.abs(v - q[k]) < 1e-6);
+// the view come to rest where it was sent: the image's point x, y at its centre, or as near as the image's edge lets it
+const viewAt = (x, y) => page.waitForFunction(([x, y]) => {
+  const sc = $("#scroller"), v = sc.getBoundingClientRect(), p = new DOMPoint(x, y).matrixTransform($("#overlay").getScreenCTM());
+  const there = (off, at, end) => Math.abs(off) <= 1.5 || (off < 0 && at <= 0) || (off > 0 && at >= end - 1);
+  return there(p.x - (v.left + sc.clientLeft + sc.clientWidth / 2), sc.scrollLeft, sc.scrollWidth - sc.clientWidth)
+    && there(p.y - (v.top + sc.clientTop + sc.clientHeight / 2), sc.scrollTop, sc.scrollHeight - sc.clientHeight);
+}, [x, y]);
 await check(same(await frame(), rectOf(first.a)), "the area the walk is in is framed", [await frame(), rectOf(first.a)]);
 // the picture the study names stands behind the whole image, shown only where it is cut out; black under it
 await page.waitForFunction(() => document.querySelector("#overlay image.reveal"));
@@ -253,13 +260,7 @@ await check(await page.evaluate(() => !st.edits.has(st.sel) && !document.querySe
 // a candidate clicked on the image becomes the current one
 const target = +W.filter((x) => x.t === "pass")[2].key.slice(2);
 await page.evaluate((i) => nor.focusOn(nor.candOf(i)), target);
-// the view scrolled to it: the candidate in view, its place on screen the same two frames running
-await page.waitForFunction((sel) => {
-  const r = document.querySelector(sel)?.getBoundingClientRect(), v = $("#scroller").getBoundingClientRect();
-  const x = r && r.left + r.width / 2, y = r && r.top + r.height / 2, at = r && `${x},${y}`;
-  const still = !!r && x > v.left && x < v.right && y > v.top && y < v.bottom && window.wasAt === at;
-  window.wasAt = at; return still;
-}, `#overlay g[data-i="${target}"] .hit`);
+await viewAt(...await page.evaluate((i) => { const c = nor.candOf(i); return [c.cx, c.cy]; }, target));
 const at = await page.evaluate((i) => { const r = document.querySelector(`#overlay g[data-i="${i}"] .hit`).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, target);
 await page.mouse.click(at.x, at.y);
 s = await now();
@@ -274,7 +275,9 @@ await page.click("#task-card .verdict .up");
 s = await now();
 await check(s.cur === "a:" + A && s.task === "missed" && s.open === "missed" && same(await frame(), rectOf(A)) && !(await page.isDisabled("#area-ok")), "every candidate in the area decided, the walk comes to its check, the area framed", s);
 await check(!(await holes()).some((h) => same(h, rectOf(A))), "the area is not cut out before it is checked");
-// a NoR the finder missed, added in the area, waits for its verdict there
+// a NoR the finder missed, added in the area, waits for its verdict there; the view framing the area first comes to
+// rest, since a scroll closes the menu
+{ const [x, y, w, h] = rectOf(A); await viewAt(x + w / 2, y + h / 2); }
 const fr = await page.$eval("#overlay .area-frame", (f) => { const r = f.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
 await page.mouse.click(fr.x, fr.y, { button: "right" });
 await page.click("#ctx button");

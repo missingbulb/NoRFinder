@@ -49,7 +49,6 @@ export function mount(shell) {
   choice.replaceChildren(...Object.entries(READERS).map(([k, name]) => Object.assign(document.createElement("option"), { value: k, textContent: name })));
   choice.value = shell.readJSON(READER, "lines") in READERS ? shell.readJSON(READER, "lines") : "lines";
   choice.onchange = () => shell.writeJSON(READER, choice.value);
-  $("#bs-tasks").hidden = !truth(); $("#bs-titles").hidden = truth();
 
   // ---------- Python: finding and straightening ----------
   $("#bs-find").onclick = async () => {

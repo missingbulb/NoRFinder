@@ -13,7 +13,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { offSite } from "../../../web-tests/off_site.mjs";
-import { ENGINE } from "../../../web-tests/engine.mjs";
+import { ENGINE, LAUNCH } from "../../../web-tests/engine.mjs";
 import { asTagger } from "../../../web-tests/tagger.mjs";
 import { withItemView } from "./item_view_shown.mjs";
 import { standInDrive, openFromDrive } from "../../../web-tests/drive_open.mjs";
@@ -63,7 +63,7 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[ENGINE].launch();
+const browser = await pw[ENGINE].launch(LAUNCH);
 const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
 const check = async (ok, what) => { if (!ok) { console.error("FAILED: " + what); await done(1); } console.log("ok: " + what); };
 const shot = async (page, name, sel) => { if (shots) await (sel ? page.locator(sel) : page).screenshot({ path: path.join(shots, name + ".png") }); };
@@ -117,7 +117,7 @@ const unfold = async (page, box) => { await page.evaluate((b) => { const e = $(b
   await check(await page.evaluate(() => st.meta && !st.inflight), "it lets go once the candidates are drawn");
   const preset = "#presets button[data-preset=precise]";
   await page.evaluate(() => { for (const d of $("#filters").children) d.kept = true; });
-  await unfold(page, "#finder-box"); await page.evaluate(() => { $("#filters-fold").open = true; });
+  await unfold(page, "#processing-box"); await page.evaluate(() => { $("#filters-fold").open = true; });
   await page.click(preset);
   await check(await held(page, preset), "a filter preset is held while the filters run again");
   await free(page, preset);
@@ -151,7 +151,7 @@ const unfold = async (page, box) => { await page.evaluate((b) => { const e = $(b
   await check(!(await page.evaluate(() => $("#memory-dlg").open)), "after Don't show this again, it does not come back");
   // running out of memory shows it anyway, without the opt-out
   await openFromDrive(page, image); await free(page, "#image-pick");
-  for (let k = 0; k < 3; k++) { await unfold(page, "#finder-box"); await page.click("#find"); await page.waitForFunction(() => !$("#find").classList.contains("working"), null, { timeout: 4 * LATE + 2000 }); }
+  for (let k = 0; k < 3; k++) { await unfold(page, "#processing-box"); await page.click("#find"); await page.waitForFunction(() => !$("#find").classList.contains("working"), null, { timeout: 4 * LATE + 2000 }); }
   const oom = await page.evaluate(() => $("#memory-dlg").open && $("#memory-never").hidden && $("#memory-why").textContent);
   await check(oom && /ran out of memory/.test(oom), `running out of memory shows it, whatever the user chose: "${oom}"`);
   await check(await page.evaluate(() => !$("#find").disabled), "Find Candidates is free again after the failure");

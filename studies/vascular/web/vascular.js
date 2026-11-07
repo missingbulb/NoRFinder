@@ -13,9 +13,9 @@ export function mount(shell) {
   shell.signal.addEventListener("abort", () => MV.leave());
   shell.views.on((v) => { items.visibleNow(v === "items"); if (v === "image") V.redraw(); });
   items.init(V, () => shell.views.show("image"), shell.views.count);
-  // outside a ground-truth stage there are no tasks, and a missed vessel is drawn from the Review box
-  if (truth) tasks.init(V, steps);
-  else $("#review-box .col").append($("#m-draw"), $("#draw-note"));
+  // marking a damaged area goes under the tasks while the study makes ground truth, else under what the model holds;
+  // drawing a missed vessel is the Areas task's alone
+  if (truth) { tasks.init(V, steps); $("#vm-tasks").append($("#vm-marks")); }
 
   // ---------- Processing: the algorithm, how it works and how well, Execute ----------
   // each algorithm's precision and recall against the provisional labels, as the lab's grader measured them

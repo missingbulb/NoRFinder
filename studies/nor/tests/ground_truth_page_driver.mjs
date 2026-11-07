@@ -19,7 +19,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { offSite } from "../../../web-tests/off_site.mjs";
-import { ENGINE } from "../../../web-tests/engine.mjs";
+import { ENGINE, LAUNCH } from "../../../web-tests/engine.mjs";
 import { asTagger } from "../../../web-tests/tagger.mjs";
 import { withItemView } from "./item_view_shown.mjs";
 import { localStudy } from "../../../web-tests/local_study.mjs";
@@ -66,7 +66,7 @@ const server = http.createServer((q, r) => {
 await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
 const origin = `http://127.0.0.1:${server.address().port}`;
 
-const browser = await pw[ENGINE].launch();
+const browser = await pw[ENGINE].launch(LAUNCH);
 const done = async (code) => { await browser.close(); server.close(); process.exit(code); };
 const check = async (ok, what) => { if (!ok) { console.error("FAILED: " + what); await done(1); } console.log("ok: " + what); };
 const bytes = fs.readFileSync(image);
@@ -144,7 +144,7 @@ const offAxis = (L) => {
 // a box folded with the steps (req/shell/tools/ruler), opened by its title as the user would
 const unfold = async (page, box) => { await page.evaluate((b) => { const e = $(b); if (e.classList.contains("folded")) e.querySelector(".sec-head h2").click(); }, box); await page.waitForFunction(() => !document.documentElement.hasAttribute("data-drawers")); };
 async function markAndVote(page) {
-  await unfold(page, "#finder-box");
+  await unfold(page, "#processing-box");
   await page.click("#find");
   await page.waitForFunction(() => st.alone && $("#busy").hidden);
   const ran = await crumbs(page);

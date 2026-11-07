@@ -1,15 +1,15 @@
 // The 3D viewer: a stack shown in 3D only, a WebGL2 ray-caster through every slice, in the place of the 2D viewer of
 // its flattened planes (viewer2d.js), whose interface it keeps; that flat view shows only where WebGL2 is missing.
 // Each shown channel is drawn in its colour between its row's black and white points, so the rows drive it, and a row
-// of the 3D view's own under them shows part of the depth and sets the spacing between slices. The study's `view` in
-// study.json sets what the 3D view opens with: render ("brightest" | "surface"), depthColour, and the spacing
-// between slices when the file does not say, with who stated it (spacingSource); the study may turn depth colour
-// on and off (three.S.depth).
+// of the 3D view's own under them shows part of the depth and sets the spacing between slices. Each channel may be
+// coloured by depth instead of in its colour: a tick under its row, and its colour picker then a palette picker
+// (the channel's `depth`, a palette's key; a study's channels may set it, true taking a palette no other channel has).
+// The study's `view` in study.json sets what the 3D view opens with: render ("brightest" | "surface") and the
+// spacing between slices when the file does not say, with who stated it (spacingSource).
 //
 // The stack reaches it as the page's image: its flattened planes (C of W × H), then, for a stack (Z > 1), every
 // slice of every channel, channel by channel.
 "use strict";
-import { hoverPop } from "./viewer2d.js";
 
 const MAX_SIDE = 640; // the GPU's budget: a ray samples every voxel it crosses, so a wider volume is binned to this
 const CHANNELS = 4;   // the most channels the 3D view adds together
@@ -81,23 +81,22 @@ const FS = `#version 300 es
 precision highp float; precision highp sampler3D;
 uniform sampler3D uV0; uniform sampler3D uV1; uniform sampler3D uV2; uniform sampler3D uV3; uniform sampler3D uMask;
 uniform mat4 uInvVP; uniform vec3 uHalf; uniform vec2 uZc; uniform vec4 uClip; uniform vec3 uTexel; uniform int uKeep;
-uniform int uMode; uniform int uDepth; uniform float uIso; uniform float uStep;
+uniform int uMode; uniform float uIso; uniform float uStep; uniform float uDep[4]; uniform vec3 uPal[32];
 uniform float uOn[4]; uniform vec3 uCol[4]; uniform float uLo[4]; uniform float uHi[4];
 in vec2 vNdc; out vec4 o;
 vec3 toTc(vec3 p){ return vec3((p.x/uHalf.x+1.)*.5, (1.-p.y/uHalf.y)*.5, (1.-p.z/uHalf.z)*.5); }
-vec3 turbo(float x){
-  const vec4 kR=vec4(0.13572138,4.61539260,-42.66032258,132.13108234); const vec2 kR2=vec2(-152.94239396,59.28637943);
-  const vec4 kG=vec4(0.09140261,2.19418839,4.84296658,-14.18503333); const vec2 kG2=vec2(4.27729857,2.82956604);
-  const vec4 kB=vec4(0.10667330,12.64194608,-60.58204836,110.36276771); const vec2 kB2=vec2(-89.90310912,27.34824973);
-  x = mix(.12, .92, clamp(x,0.,1.)); vec4 v4=vec4(1.,x,x*x,x*x*x); vec2 v2=v4.zw*v4.z;
-  return clamp(vec3(dot(v4,kR)+dot(v2,kR2), dot(v4,kG)+dot(v2,kG2), dot(v4,kB)+dot(v2,kB2)),0.,1.); }
 // a mask keeps the stack inside it (1) or outside it (2), or all of it (0)
 float keep(vec3 tc){ if (uKeep == 0) return 1.; float k = smoothstep(.3, .7, texture(uMask,tc).r); return uKeep == 1 ? k : 1. - k; }
 vec4 raw(vec3 tc){ return vec4(texture(uV0,tc).r, texture(uV1,tc).r, texture(uV2,tc).r, texture(uV3,tc).r) * keep(tc); }
 float win(int k, float v){ return uOn[k] * clamp((v-uLo[k])/max(uHi[k]-uLo[k],1e-4), 0., 1.); }
 vec4 wins(vec4 v){ return vec4(win(0,v.x), win(1,v.y), win(2,v.z), win(3,v.w)); }
 float field(vec3 tc){ vec4 w = wins(raw(tc)); return max(max(w.x,w.y), max(w.z,w.w)); }
-vec3 mixed(vec4 w){ return w.x*uCol[0] + w.y*uCol[1] + w.z*uCol[2] + w.w*uCol[3]; }
+// a channel's colour at a depth: its palette's, between its stops, while it is coloured by depth, else its own
+vec3 hue(int k, float z){
+  if (uDep[k] < .5) return uCol[k];
+  float x = clamp((z - uZc.x) / max(uZc.y - uZc.x, 1e-4), 0., 1.) * 7.; int i = int(min(floor(x), 6.));
+  return mix(uPal[k*8+i], uPal[k*8+i+1], x - float(i)); }
+vec3 mixed(vec4 w, vec4 z){ return w.x*hue(0,z.x) + w.y*hue(1,z.y) + w.z*hue(2,z.z) + w.w*hue(3,z.w); }
 void main(){
   vec4 a = uInvVP*vec4(vNdc,-1.,1.), b = uInvVP*vec4(vNdc,1.,1.);
   vec3 ro = a.xyz/a.w, rd = normalize(b.xyz/b.w - ro);
@@ -115,12 +114,7 @@ void main(){
       if (v.x > m.x) { m.x = v.x; z.x = tc.z; } if (v.y > m.y) { m.y = v.y; z.y = tc.z; }
       if (v.z > m.z) { m.z = v.z; z.z = tc.z; } if (v.w > m.w) { m.w = v.w; z.w = tc.z; }
     }
-    vec4 w = wins(m);
-    if (uDepth == 1) {
-      float best = w.x, zb = z.x;
-      if (w.y > best) { best = w.y; zb = z.y; } if (w.z > best) { best = w.z; zb = z.z; } if (w.w > best) { best = w.w; zb = z.w; }
-      o = vec4(turbo((zb - uZc.x) / max(uZc.y - uZc.x, 1e-4)) * best, 1.);
-    } else o = vec4(min(mixed(w), 1.), 1.);
+    o = vec4(min(mixed(wins(m), z), 1.), 1.);
     return;
   }
   float prev = tN;
@@ -137,7 +131,7 @@ void main(){
       vec3 n = length(g) > 1e-6 ? -normalize(g) : -rd;
       float d = abs(dot(n, -rd)), s = pow(max(dot(reflect(rd, n), -rd), 0.), 24.);
       vec4 w = wins(raw(tc)); float top = max(max(w.x,w.y), max(w.z,w.w));
-      vec3 base = uDepth == 1 ? turbo((tc.z - uZc.x) / max(uZc.y - uZc.x, 1e-4)) : mixed(w) / max(top, 1e-4);
+      vec3 base = mixed(w, vec4(tc.z)) / max(top, 1e-4);
       o = vec4(base*(.22+.78*d) + .25*s, 1.);
       return;
     }
@@ -147,7 +141,7 @@ void main(){
 }`;
 
 const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
-// the depth colours, as the shader's turbo
+// the Turbo palette's colours, a depth (0..1) to [r, g, b] of 0 to 1
 function turbo(x) {
   x = 0.12 + 0.8 * Math.min(Math.max(x, 0), 1);
   const p = (k, k2) => k[0] + k[1] * x + k[2] * x * x + k[3] * x ** 3 + k2[0] * x ** 4 + k2[1] * x ** 5;
@@ -155,6 +149,22 @@ function turbo(x) {
     p([0.09140261, 2.19418839, 4.84296658, -14.18503333], [4.27729857, 2.82956604]),
     p([0.1066733, 12.64194608, -60.58204836, 110.36276771], [-89.90310912, 27.34824973])].map((v) => Math.min(Math.max(v, 0), 1));
 }
+
+// the palettes a channel coloured by depth is painted in, from its first slice shown to its last: eight stops each,
+// the shader blending between them
+const hexes = (...h) => h.map((x) => rgb("#" + x));
+const PALETTES = {
+  turbo: { name: "Turbo", stops: Array.from({ length: 8 }, (_, i) => turbo(i / 7)) },
+  viridis: { name: "Viridis", stops: hexes("440154", "46327e", "365c8d", "277f8e", "1fa187", "4ac16d", "a0da39", "fde725") },
+  plasma: { name: "Plasma", stops: hexes("0d0887", "5302a3", "8b0aa5", "b83289", "db5c68", "f48849", "febd2a", "f0f921") },
+  cool: { name: "Cool", stops: Array.from({ length: 8 }, (_, i) => [i / 7, 1 - i / 7, 1]) },
+};
+// a palette's colour at x, 0..1 through the slices shown, [r, g, b] of 0 to 1, as the shader blends it
+function paletteAt(key, x) {
+  const st = PALETTES[key].stops, t = Math.min(Math.max(x, 0), 1) * 7, i = Math.min(Math.floor(t), 6), f = t - i;
+  return st[i].map((v, c) => v + (st[i + 1][c] - v) * f);
+}
+const gradient = (key) => `linear-gradient(90deg, ${PALETTES[key].stops.map((c) => `rgb(${c.map((v) => Math.round(v * 255)).join(",")})`).join(",")})`;
 
 // planes: C channel volumes of Z × H × W, channel by channel, binned in x and y by `bin` (block mean), slice by slice
 function binned(planes, at, C, Z, W, H, bin) {
@@ -178,21 +188,20 @@ export function viewer3d(shell, flat) {
   let active = false, gl = null, U = {}, tex = [], dirty = true, vol = null, mode3d = false;
   // clip: [x0, y0, x1, y1] in world units, the part of the stack shown, or null for all; spot: {x, y, r}, the part of the
   // screen kept clear while the rest dims (x and y fractions of the width and height, r of the height), or null
-  const S = { mode: 0, depth: 1, iso: 0.35, z0: 0, z1: 0, zs: 1, rot: facing(0, 0), dist: FIT_DIST, pivot: [0, 0, 0], dragging: false, clip: null, spot: null };
+  const S = { mode: 0, iso: 0.35, z0: 0, z1: 0, zs: 1, rot: facing(0, 0), dist: FIT_DIST, pivot: [0, 0, 0], dragging: false, clip: null, spot: null };
   let mask = null, keepSide = 0;
   const drawers = [], spacingHeard = [];
   let half = [1, 1, 0.1];
 
-  // ---------- the page's parts: Look from in the toolbar beside Zoom, the slices' row under the channels' rows,
-  // the stage in the 2D one's place ----------
-  const icon = (paths) => `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">${paths}</g></svg>`;
+  // ---------- the page's parts: Look from's buttons in the toolbar beside Zoom, the slices' row and Colour by depth
+  // under the channels' rows, the stage in the 2D one's place ----------
   const tools = html("div", { id: "v3-tools", className: "group", hidden: true });
-  // no tooltip on the button: its popup opens where a tooltip would show
-  tools.innerHTML = `
-    <button id="v3-look-btn" class="tool" type="button" aria-label="Look from">${icon('<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/>')}</button>
-    <div id="v3-look-pop" class="v3-pop" popover aria-label="Look from">
-      <div id="v3-look" role="group" aria-label="Look from">${Object.keys(LOOKS).map((k) => `<button type="button" data-look="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join("")}</div>
-    </div>`;
+  // Reset View: a split button named after the view chosen, putting the view back to it; its arrow chooses the view
+  const named = (k) => k[0].toUpperCase() + k.slice(1);
+  tools.innerHTML = `<div id="v3-look" class="split-btn" role="group" aria-label="Reset view">
+    <button id="v3-reset" type="button" title="Put the view back to the one chosen"></button>
+    <details class="menu" id="v3-look-menu"><summary title="Choose the view to reset to" aria-label="Choose the view to reset to"></summary>
+      <div class="pop right">${Object.keys(LOOKS).map((k) => `<button type="button" class="item" data-look="${k}">${named(k)}</button>`).join("")}</div></details></div>`;
   const bar = $("#view .toolbar"), zoom = $("#zoom-out").parentElement;
   bar.insertBefore(tools, zoom.parentElement === bar ? zoom : bar.firstChild);
   // the slices shown, from the first to the last, as a channel's row holds its points, and in the colour picker's
@@ -202,10 +211,42 @@ export function viewer3d(shell, flat) {
     >?</span><span id="v3-slices" class="from-file"></span></span>
     <div class="levels" title="The first and the last slice shown"><input type="range" class="black" id="v3-z0" min="0" step="1" aria-label="First slice shown"><input type="range" class="white" id="v3-z1" min="0" step="1" aria-label="Last slice shown"><span class="bubble" hidden></span></div>
     <input id="v3-zs" type="number" min="0.05" max="50" step="0.05" title="Spacing between slices, µm" aria-label="Spacing between slices, µm">`;
+  // colour by depth, each channel's own: a tick under its row and, ticked, a palette picker in its colour picker's
+  // place; the palettes in one popup the picker opens
+  const palettes = html("div", { className: "v3-palettes", popover: "auto" });
+  palettes.setAttribute("aria-label", "Depth palettes");
+  palettes.innerHTML = Object.entries(PALETTES).map(([k, p]) => `<button type="button" data-palette="${k}"><span class="v3-swatch" style="--scale: ${gradient(k)}"></span>${p.name}</button>`).join("");
+  document.body.append(palettes);
+  let choosing = null; // the channel whose palette the popup chooses
+  palettes.onclick = (e) => { const b = e.target.closest("[data-palette]"); if (!b || !choosing) return; choosing.depth = b.dataset.palette; palettes.hidePopover(); depthRows(); };
+  // a palette no other channel coloured by depth has, so two of them read apart
+  const freePalette = (k) => { const used = flat.levels().filter((c, j) => j !== k && PALETTES[c.depth]).map((c) => c.depth);
+    return Object.keys(PALETTES).find((p) => !used.includes(p)) || Object.keys(PALETTES)[k % Object.keys(PALETTES).length]; };
+  function depthRow(c, k, { pick }) {
+    if (c.depth && !PALETTES[c.depth]) c.depth = freePalette(k);
+    const sub = html("div", { className: "v3-depth-row" + (c.depth ? "" : " off") });
+    sub.innerHTML = `<span></span><label class="v3-tick" title="Paint ${c.name} by the depth of each point, from the first slice shown to the last, so crossings at different depths read apart"><input type="checkbox" id="depth-${k}"> Colour by depth</label><span class="v3-scale"></span><span></span>`;
+    const tick = sub.querySelector("input");
+    tick.checked = !!c.depth;
+    tick.onchange = () => { c.depth = tick.checked ? freePalette(k) : null; depthRows(); };
+    if (c.depth) {
+      sub.querySelector(".v3-scale").style.setProperty("--scale", gradient(c.depth));
+      const b = html("button", { type: "button", className: "v3-palette", title: `${c.name} by depth in ${PALETTES[c.depth].name}: choose its palette` });
+      b.dataset.palette = c.depth; b.style.setProperty("--scale", gradient(c.depth)); b.setAttribute("aria-label", `${c.name} depth palette`);
+      b.onclick = () => {
+        // a palette another channel coloured by depth has is not offered, so the two read apart
+        const others = flat.levels().filter((x) => x !== c && PALETTES[x.depth]).map((x) => x.depth);
+        for (const o of palettes.querySelectorAll("[data-palette]")) o.disabled = others.includes(o.dataset.palette);
+        choosing = c; const r = b.getBoundingClientRect(); palettes.style.left = `${Math.max(8, r.right - 160)}px`; palettes.style.top = `${r.bottom + 4}px`; palettes.showPopover(); };
+      pick.replaceWith(b);
+    }
+    return [sub];
+  }
+  const depthRows = () => { flat.rowsWith(mode3d ? depthRow : null); redraw(); };
   const stage = html("div", { id: "v3-stage", hidden: true });
-  const cv = html("canvas", { id: "v3-gl" }), hudCv = html("canvas", { id: "v3-hud" }), note = html("p", { id: "v3-note" });
+  const cv = html("canvas", { id: "v3-gl" }), hudCv = html("canvas", { id: "v3-hud" });
   // whether a plain drag pans rather than turns: the label's state, and shift held over it; kept only while the page is open
-  const panBtn = html("button", { id: "v3-pan", type: "button", textContent: "Panning" });
+  const panBtn = html("button", { id: "v3-pan", type: "button", textContent: "Panning", title: "Press Shift to pan, or click to keep panning on" });
   let panOn = false, shiftHeld = false;
   const panning = () => panOn || shiftHeld;
   const showPan = () => panBtn.setAttribute("aria-pressed", String(panning()));
@@ -215,7 +256,7 @@ export function viewer3d(shell, flat) {
   addEventListener("keyup", (e) => { if (e.key === "Shift") heldShift(false); });
   addEventListener("blur", () => heldShift(false));
   showPan();
-  stage.append(cv, hudCv, note, panBtn);
+  stage.append(cv, hudCv, panBtn);
   $("#scroller").after(stage);
 
   // ---------- GL ----------
@@ -230,7 +271,7 @@ export function viewer3d(shell, flat) {
     gl.linkProgram(prog);
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
     gl.useProgram(prog);
-    for (const n of ["uInvVP", "uHalf", "uZc", "uClip", "uTexel", "uKeep", "uMode", "uDepth", "uIso", "uStep", "uOn", "uCol", "uLo", "uHi"]) U[n] = gl.getUniformLocation(prog, n);
+    for (const n of ["uInvVP", "uHalf", "uZc", "uClip", "uTexel", "uKeep", "uMode", "uIso", "uStep", "uOn", "uCol", "uLo", "uHi", "uDep", "uPal"]) U[n] = gl.getUniformLocation(prog, n);
     const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
     const loc = gl.getAttribLocation(prog, "aPos"); gl.enableVertexAttribArray(loc);
@@ -288,14 +329,16 @@ export function viewer3d(shell, flat) {
     gl.uniform2f(U.uZc, S.z0 / vol.Z, (S.z1 + 1) / vol.Z);
     gl.uniform4f(U.uClip, ...(S.clip || [-half[0], -half[1], half[0], half[1]])); gl.uniform1i(U.uKeep, keepSide);
     gl.uniform3f(U.uTexel, 1 / vol.X, 1 / vol.Y, 1 / vol.Z);
-    gl.uniform1i(U.uMode, S.mode); gl.uniform1i(U.uDepth, S.depth); gl.uniform1f(U.uIso, S.iso);
+    gl.uniform1i(U.uMode, S.mode); gl.uniform1f(U.uIso, S.iso);
     gl.uniform1f(U.uStep, ((2 * half[0]) / vol.X) * (S.dragging ? 1.6 : 0.7));
-    const on = [], col = [], lo = [], hi = [];
+    const on = [], col = [], lo = [], hi = [], dep = [], pal = [];
     for (let k = 0; k < CHANNELS; k++) {
-      const c = k < vol.vols.length ? rows[k] : null;
+      const c = k < vol.vols.length ? rows[k] : null, p = c && PALETTES[c.depth];
       on.push(c && c.on ? 1 : 0); col.push(...(c ? rgb(c.colour) : [0, 0, 0]));
       lo.push(c ? c.black / 255 : 0); hi.push(c ? c.white / 255 : 1);
+      dep.push(p ? 1 : 0); for (let i = 0; i < 8; i++) pal.push(...(p ? p.stops[i] : [0, 0, 0]));
     }
+    gl.uniform1fv(U.uDep, dep); gl.uniform3fv(U.uPal, pal);
     gl.uniform1fv(U.uOn, on); gl.uniform3fv(U.uCol, col); gl.uniform1fv(U.uLo, lo); gl.uniform1fv(U.uHi, hi);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     zoomText();
@@ -394,7 +437,6 @@ export function viewer3d(shell, flat) {
 
   // ---------- the tools ----------
   const ui = (id) => (tools.querySelector("#" + id) || slicesRow.querySelector("#" + id));
-  hoverPop(ui("v3-look-btn"), ui("v3-look-pop"), () => {});
   // zoom as the 2D view's: a share of the whole stack in view
   const zoomText = () => { if (mode3d) $("#zoom-label").textContent = Math.round((FIT_DIST / S.dist) * 100) + "%"; };
   function sync() {
@@ -413,14 +455,20 @@ export function viewer3d(shell, flat) {
   ui("v3-z1").oninput = (e) => { S.z1 = Math.max(+e.target.value, S.z0); tell(e.target); sync(); };
   ui("v3-zs").oninput = (e) => { if (+e.target.value > 0) { S.zs = +e.target.value; spacingNote("you"); sync(); spacingHeard.forEach((fn) => fn()); } };
   slicesRow.querySelector(".levels").ondblclick = () => { if (vol) { S.z0 = 0; S.z1 = vol.Z - 1; sync(); } };
-  ui("v3-look").onclick = (e) => {
+  let chosenLook = "top";
+  const resetView = () => { Object.assign(S, { rot: facing(...LOOKS[chosenLook]), pivot: [0, 0, 0], clip: null, dist: Math.max(S.dist, 2) }); redraw(); };
+  const nameReset = () => { ui("v3-reset").textContent = `${named(chosenLook)} View`; };
+  nameReset();
+  ui("v3-reset").onclick = resetView;
+  ui("v3-look").querySelector(".pop").onclick = (e) => {
     const b = e.target.closest("[data-look]"); if (!b) return;
-    Object.assign(S, { rot: facing(...LOOKS[b.dataset.look]), pivot: [0, 0, 0], clip: null, dist: Math.max(S.dist, 2) }); redraw();
+    chosenLook = b.dataset.look; nameReset(); ui("v3-look-menu").open = false; resetView();
   };
-  // who stated the spacing between slices, S.zsFrom: "file", "you", the one the study names, or null for a guess
+  // who stated the spacing between slices, S.zsFrom: "file", "you", the one the study names, or null for a guess; the
+  // spacing's tooltip says so
   function spacingNote(from) {
     S.zsFrom = from;
-    note.textContent = from === "file" ? `${S.zs} µm between slices, as the file records.`
+    ui("v3-zs").title = from === "file" ? `${S.zs} µm between slices, as the file records.`
       : from === "you" ? `${S.zs} µm between slices, as you set it.`
       : from ? `${S.zs} µm between slices, as ${from} stated; the file does not record it.`
       : `${S.zs} µm between slices is a guess: the file does not record it. Judge shapes, not depth in µm.`;
@@ -428,7 +476,7 @@ export function viewer3d(shell, flat) {
   function show3d(on) {
     mode3d = on && !!vol;
     stage.hidden = !mode3d; tools.hidden = !mode3d; $("#scroller").hidden = mode3d;
-    flat.rowsAfter(mode3d ? [slicesRow] : []);
+    flat.rowsAfter(mode3d ? [slicesRow] : []); flat.rowsWith(mode3d ? depthRow : null);
     flat.zoomWith(mode3d ? (k) => { S.dist = Math.min(Math.max(S.dist / k, MIN_DIST), 12); redraw(); } : null);
     if (mode3d) $("#view").dataset.v3 = ""; else delete $("#view").dataset.v3;
     redraw();
@@ -447,7 +495,7 @@ export function viewer3d(shell, flat) {
     vol = { vols, X, Y, Z: im.Z, bin };
     const v = shell.study?.view || {};
     if (again) { Object.assign(S, { z0: 0, z1: im.Z - 1 }); ui("v3-z0").max = ui("v3-z1").max = im.Z - 1; upload(); sync(); return show3d(drawn); }
-    Object.assign(S, { mode: v.render === "surface" ? 1 : 0, depth: v.depthColour ? 1 : 0, z0: 0, z1: im.Z - 1,
+    Object.assign(S, { mode: v.render === "surface" ? 1 : 0, z0: 0, z1: im.Z - 1,
       rot: facing(0, 0), dist: FIT_DIST, pivot: [0, 0, 0], clip: null, spot: null });
     ui("v3-z0").max = ui("v3-z1").max = im.Z - 1;
     if (im.spacing) { S.zs = im.spacing; spacingNote("file"); }
@@ -528,11 +576,15 @@ export function viewer3d(shell, flat) {
     // the first shown channel's volume, slices of Y rows of X, and its colour for a value at a depth (0..1 through the
     // slices shown), as the 3D view paints it: [r, g, b] of 0 to 255
     volume: () => vol && vol.vols[first()],
-    // the depth colour of a depth (0..1 through the slices shown), [r, g, b] of 0 to 1, as the 3D view paints it
-    depthColour: turbo,
+    // the depth colours of the first shown channel coloured by depth, as the 3D view paints them: a depth (0..1
+    // through the slices shown) to [r, g, b] of 0 to 1; null while no shown channel is coloured by depth
+    depthPalette() {
+      const c = vol && flat.levels().find((x, k) => k < vol.vols.length && x.on && PALETTES[x.depth]);
+      return c ? (x) => paletteAt(c.depth, x) : null;
+    },
     lut2d(v, z) {
       const c = flat.levels()[first()], w = Math.min(Math.max((v - c.black) / Math.max(1, c.white - c.black), 0), 1);
-      const col = S.depth ? turbo(z) : rgb(c.colour);
+      const col = PALETTES[c.depth] ? paletteAt(c.depth, z) : rgb(c.colour);
       return col.map((x) => Math.round(x * w * 255));
     },
   };

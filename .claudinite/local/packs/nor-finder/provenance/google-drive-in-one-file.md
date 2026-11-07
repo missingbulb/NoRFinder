@@ -22,3 +22,17 @@
 - **Mechanism:** the same line check, its exemptions narrowed to web/drive.js and web/account.js
   (web/welcome.js and the sign-in phrases no longer pass).
 - **Landed:** missingbulb/NoRFinder#804
+
+## 2026-11-06 · reworded · its messages cut to the 32 words a declared check may carry
+- **Source:** the repo's checks on missingbulb/NoRFinder#796: basics/declared-check-messages blocked
+  main, the failure message at 47 words and the fix at 44.
+- **Reason:** a declaration's messages are the whole check, read as one clause each.
+- **Actor:** Claude, on missingbulb/NoRFinder#796.
+- **Model:** claude-opus-5-5
+- **Mechanism:** unchanged: the same line check, the same exemptions; only the words shortened.
+- **Landed:** missingbulb/NoRFinder#796
+
+## 2026-11-06 · reworded · the messages fit the declared-check-messages cap
+- **Reason:** both ran past 32 words, which blocked Full tests on main.
+- **Actor:** @missingbulb (owner).
+- **Model:** claude-opus-5-5

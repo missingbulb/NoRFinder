@@ -1,30 +1,11 @@
 {
   "about": "The NoR Finder's own elements in the shell's states (req/checks/shell-states, req/checks/spec-layout): each graft puts its tree under the shell's element `under`, after its child `after` or first, in the tree of dev/requirements/shell-states.json, whose rules they follow; its roots and paths open this study. `counted` is its first step, Run algorithm, done.",
   "grafts": [
-    {"under": "Left bar", "after": "Edit Image box", "tree": [
-      {"name": "Finder", "select": "#finder-box", "box": true, "req": "req/shell/left-bar/folding",
-        "rule": [
-          {"when": {"image": ["none"]}, "is": "folded"}
-        ],
-        "children": [
-          {"name": "Algorithm", "select": "#finder", "control": true, "req": "req/nor/find/finders"},
-          {"name": "About the algorithm", "select": "#about-box", "req": "req/nor/find/finders"},
-          {"name": "Settings", "select": "#settings-box", "req": "req/nor/find/settings"},
-          {"name": "Run algorithm", "select": "#find", "control": true, "req": "req/nor/find/one-slow-step"}
-        ]
-      },
-      {"name": "Results", "select": "#summary-box", "box": true, "req": "req/nor/layout",
-        "rule": [
-          {"when": {"makesTruth": [true]}, "is": "hidden", "req": "req/nor/truth/tasks"},
-          {"when": {"counted": [false]}, "is": "folded", "req": "req/shell/left-bar/folding"}
-        ]
-      },
-      {"name": "Ground truth tasks", "select": "#tasks-box", "box": true, "req": "req/nor/truth/tasks",
-        "rule": [
-          {"when": {"makesTruth": [false]}, "is": "hidden"},
-          {"when": {"counted": [false]}, "is": "folded", "req": "req/shell/left-bar/folding"}
-        ]
-      }
+    {"under": "Processing", "tree": [
+      {"name": "Algorithm", "select": "#finder", "control": true, "req": "req/nor/find/finders"},
+      {"name": "About the algorithm", "select": "#about-box", "req": "req/nor/find/finders"},
+      {"name": "Settings", "select": "#settings-box", "req": "req/nor/find/settings"},
+      {"name": "Run algorithm", "select": "#find", "control": true, "req": "req/nor/find/one-slow-step"}
     ]},
     {"under": "Main view", "after": "Tasks/Items switch", "tree": [
       {"name": "Show menu", "select": "#show-menu", "req": "req/nor/show-menu"},

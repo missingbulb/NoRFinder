@@ -304,7 +304,7 @@ nobody has decided: what the page does there is not a requirement yet.
   Set by the owner on 2026-11-04: a study naming Drive folders (its `files.folders`) offers no link to paste; its
   dialog opens on its folders, straight into the one when it names one, else on a list of them by name, and browses
   only within them. A study naming none, the Image Viewer, takes the pasted link of an image or a folder: one shared as
-  "Anyone with the link", or, signed in, any the user's account can see (`req/shell/drive/credentials`). An image's link loads it at once; a folder lists its images and subfolders to pick from, each image
+  "Anyone with the link", or, signed in, any the user's account can see (`req/shell/drive/credentials`). An image's link loads it at once; a folder lists its subfolders and the images the study opens (the kinds its `files.accept` names), to pick from, each image
   with its size, a small colour thumbnail and, for one opened before in the study, how long since, as the image
   selector says it (`req/shell/load/selector`); set by the owner on 2026-11-04, in place of the date it was added to
   Drive, an image the folder did not hold when this device last listed it carries a small boxed "new", and hovering
@@ -566,6 +566,15 @@ nobody has decided: what the page does there is not a requirement yet.
   A crop or picture narrower than its box shrinks as a whole (`studies/nor/tests/test_page_layout.py`).
   </details>
 
+- `req/shell/image/toolbar` The toolbar's left is the study's, how its results show over the image; its right is the viewer's.
+  <details>
+
+  Set by the owner on 2026-11-07. At the toolbar's left the study chooses how what it extracted is drawn over the raw
+  image (what to show, how wide, how faint); the left bar holds none of those. At its right, beside Zoom, are the
+  viewer's own tools (the ruler, the grid, the minimap, the 3D view's Look from). Test:
+  `studies/vascular/tests/test_model_page.py`, `web-tests/test_viewer3d_page.py`.
+  </details>
+
 - `req/shell/image-viewer` The Image Viewer: the page with no study's tools, the one it opens on.
   <details>
 
@@ -603,9 +612,9 @@ nobody has decided: what the page does there is not a requirement yet.
   Set by the owner on 2026-10-30. Every box in the left bar folds under its title, and clicking the
   title opens or closes it. The first is the shell's Image box (the image selector or Load, the image's
   details, its channels, Unload): open until an image opens, then folded; in a study with no steps after Load
-  (the Image Viewer) it stays open, nothing else having opened (the owner, 2026-11-05). Each of a study's boxes
-  names the step (`req/shell/status-bar/breadcrumbs`) after which it opens, or that only its title opens it, and may name the
-  step after which it folds again. When a step is done by the user (an image opening, or the
+  (the Image Viewer) it stays open, nothing else having opened (the owner, 2026-11-05). Processing opens once an image opens and folds
+  again after the study's first step (`req/shell/status-bar/breadcrumbs`); Summary and Ground Truth Tasks open after that
+  step (`req/shell/left-bar/shells`, set by the owner on 2026-11-07). When a step is done by the user (an image opening, or the
   step's button pressed, never a dial set back to the last run's) its boxes open and the boxes it
   closes fold; opening another image also folds every box waiting for a later step. Between those moments a box
   stays as the user left it; switching study (`req/shell/study/switch-in-place`) starts over.
@@ -622,6 +631,19 @@ nobody has decided: what the page does there is not a requirement yet.
   2026-10-31). Changed by the owner on 2026-11-03: a folded drawer opens from a click anywhere on it,
   not only on its title or number; an open one still folds only from its title.
   Test: `web-tests/test_left_bar_page.py`, `web-tests/test_study_contract.py`.
+  </details>
+
+- `req/shell/left-bar/shells` The shell lays out the whole left bar, Load Image, Processing, Ground Truth Tasks and Summary; a study only fills its boxes.
+  <details>
+
+  Set by the owner on 2026-11-07: the left bar's layout is the shell's, and a study adds no box to it. Under
+  the Image box (and Data Management's) come three boxes of the shell's, each holding what the study puts in it:
+  Processing (what runs the algorithm: its choice, its settings, its button, and the tools that correct its
+  result), Ground Truth Tasks and Summary (what the result adds up to, and its downloads). While the study makes
+  ground truth for the user (`req/shell/account/role`) Ground Truth Tasks shows in Summary's place; otherwise
+  Summary shows. A box the study puts nothing in is not shown. How the study's results are drawn over the image
+  is chosen in the toolbar (`req/shell/image/toolbar`), never in the left bar. Test:
+  `web-tests/test_study_contract.py`, `web-tests/test_left_bar_page.py`.
   </details>
 
 - `req/shell/left-bar/width` The left bar drags wider or narrower (remembered; a double click restores it); there is no right bar.
@@ -990,7 +1012,9 @@ nobody has decided: what the page does there is not a requirement yet.
   version (stamped by each release; `req/shell/version-history`, `req/shell/site/out-of-date`), the CPU (`req/shell/status-bar/cpu`), the network (`req/shell/status-bar/network`), the
   memory (`req/shell/status-bar/memory`) and the disk (`req/shell/status-bar/disk`); between the version and those four, the report icon (`req/shell/report/bug`), a bug, or a warning sign in a browser the page does not support,
   and then the online icon (`req/shell/status-bar/online`). The four are folded into one icon unless set
-  always open (`req/shell/status-bar/resources`), and unfolding them moves neither the online icon, the report icon nor the version. Each of the four before the version is a small grey icon
+  always open (`req/shell/status-bar/resources`), and unfolding them moves neither their icon, the online icon, the report icon nor the version. With too
+  little room, what the page is doing now and the four give way, cut short, while the steps at the left and the
+  icons and version at the right stay whole (owner, 2026-11-07). Each of the four before the version is a small grey icon
   and its number, with no word naming it; all five are plain, with no box, alike. A mild vertical
   bar separates each item from the next, the resources icon included, folded or not, but the four, which sit
   together with none between them. Nothing in the status bar turns the pointer into a
@@ -1081,13 +1105,14 @@ nobody has decided: what the page does there is not a requirement yet.
   online icon (`req/shell/status-bar/online`). A setting in the resources dialog, above its tabs on every tab, chooses how the block shows:
   Auto-hiding, the default, Hidden always, or Always open, as the status bar was before. Auto-hiding,
   the page opens with the four folded away and the icon alone showing; hovering the block unfolds the
-  four as they look always open, the icon going away as they come (set by the owner on 2026-11-03), and leaving folds them again, the icon coming back, both ways
+  four as they look always open, opening beside the icon, which stays where it is (changed by the owner on
+  2026-11-07), and leaving folds them again, both ways
   animated (at once with animations off, `req/shell/resources-dialog/animations`, or reduced motion asked for). It unfolds by
   itself, and stays unfolded, while the CPU has been over 50% of one core for more than
   5 seconds, the network has been downloading over 250 KB/s for more than 5
   seconds, or the tab holds over 1 GB, and folds 8 seconds after the last of these ends. Hidden
   always, only the icon shows, and neither hovering nor any of these unfolds it. Going offline does not unfold it
-  (set by the owner on 2026-11-04): the online icon (`req/shell/status-bar/online`) says so. Always open, the icon does not show. Clicking the icon opens the
+  (set by the owner on 2026-11-04): the online icon (`req/shell/status-bar/online`) says so. Always open, the four show beside the icon. Clicking the icon opens the
   resources dialog (`req/shell/resources-dialog`) on the tab last shown, Storage at first. The choice is kept as the user's setting and,
   signed in, follows the user (`req/shell/account/sign-in`). Test: `web-tests/test_status_bar_page.py`.
   </details>
@@ -1270,22 +1295,29 @@ nobody has decided: what the page does there is not a requirement yet.
   as the microscope does. Dragging turns it about the screen's two axes, on past looking straight
   across, a sideways scroll spins it about the line of sight (owner, 2026-11-03), the wheel zooms,
   shift-drag pans, and Top, Tilted,
-  Side and Front put the view back. A Panning label at the bottom of the 3D view always shows, outlined in
-  blue while panning is on and grey while off; clicking it turns panning on or off, so that a plain drag
+  Side and Front put the view back. A Panning label at the bottom left of the 3D view always shows, filled
+  blue while panning is on and outlined grey while off, its tooltip saying to press Shift to pan (owner,
+  2026-11-07); clicking it turns panning on or off, so that a plain drag
   pans instead of turning. Holding shift turns it on until shift is let go, which returns it to the state
   the label holds. That state lives only while the page is open: it is never stored or restored (owner,
-  2026-11-05). The toolbar holds Look from (Top, Tilted, Side and Front, in a
-  popup with no tooltip over it) and the 2D view's Zoom, which zooms the 3D view (owner,
+  2026-11-05). The toolbar's right holds, beside Zoom, a split button named after the
+  view chosen ("Top View" at first) that puts the view back to it, its arrow choosing Top, Tilted, Side or Front
+  and going there (owner, 2026-11-07), and the 2D view's Zoom, which zooms the 3D view (owner,
   2026-11-04); the 2D view's other tools step aside. Brightest shows the brightest point along each
   ray, Surface a lit surface where the signal crosses a level, and colour by depth paints by the
-  depth of that point so crossings at different depths read apart: the study's `view` sets which,
-  and a study may turn colour by depth on and off. The depth is a row of the image box under the
+  depth of that point so crossings at different depths read apart: the study's `view` sets the render
+  it opens with. The depth is a row of the image box under the
   channels' rows, as a channel's row holds its points (owner, 2026-11-04): its first and last slice
-  shown on one slider, and in the colour picker's place the spacing between slices. The slice
+  shown on one slider, and in the colour picker's place the spacing between slices. Colour by depth is each
+  channel's own (owner, 2026-11-07): a Colour by depth tick under each channel's row, and while it is ticked the
+  row's colour picker becomes a palette picker, since the channel is then drawn in a range of colours by the depth
+  of each point, not in one colour by its brightness alone. Two channels coloured by depth each take a different
+  palette, so they read apart; a study's `channels` may tick it from the start (`depth`: true, or a palette's name).
+  A study drawing over the stack reads the depth colours of the first shown channel coloured by depth. The slice
   spacing comes from the file, else from the study (`view.spacing`, saying who stated it), else
-  1 µm, called a guess. Every shown channel is drawn in its colour between the black and white
-  points of its row, which redraw the 3D view as they move. The study's `view` sets the render, colour
-  by depth and the spacing it opens with. A study draws over the 3D view, over the stack or beside it
+  1 µm, called a guess, which the spacing's tooltip says; no text over the 3D view says it (owner, 2026-11-07). Every shown channel is drawn in its colour between the black and white
+  points of its row, which redraw the 3D view as they move. The study's `view` sets the render and the
+  spacing it opens with. A study draws over the 3D view, over the stack or beside it
   in the same camera, picks and drags there, and can keep only the stack inside or outside a mask of
   its own. Test: `web-tests/test_viewer3d_page.py`, and the vascular study's `req/vascular/model/correct`.
   </details>
@@ -1382,7 +1414,7 @@ nobody has decided: what the page does there is not a requirement yet.
   shell's elements holding them, and may add roots and paths of its own (`req/checks/spec-layout`). The shell's paths
   open the study the file names, the fixture; a study's own paths open it, on the shell's tree with its own elements
   alone grafted in. Each element gives only what differs from its parent: cases over the state (the
-  study's stage, who is signed in, the role, the image open, the study's step done, the view, what Data Management
+  study's stage, who is signed in, the role, the image open and whether it is a z-stack, the study's step done, the view, what Data Management
   has selected, whether the page is online, whether Edit Image is open, and what the study says of itself in its
   `study.json` and panels: whether it opens images from the computer, has steps after Load, and has an item view,
   shelved or viewing, `req/shell/views/second`), each citing the requirement that decides it and marked tentative or undecided where the owner has
@@ -1391,10 +1423,11 @@ nobody has decided: what the page does there is not a requirement yet.
   `dev/tools/build/shell_states.py` writes from it the matrix, `dev/requirements/shell-states.GENERATED.md`, one table
   per path, and the browser test's expectations; a case no state reaches fails it. In the fast set the
   generated files must be up to date, every element in each study's tree must be on the shell's page or that
-  study's panels, and every element of the shell's page, but what a dialog, popup or menu holds, must be in the
+  study's panels (one the page makes as it runs, such as the 3D view's controls, by the nearest element holding it
+  that the page does not make), and every element of the shell's page, but what a dialog, popup or menu holds, must be in the
   shell's tree. In the full set one page per path takes the actions on its study, the study's stage set for it,
   against a stand-in Google and a stand-in Python answering what the study's own Python answers on loading and on
-  opening the image, signed in as an account the study is shown to, and at every state reads each element as shown,
+  opening the image, or the z-stack a path loads, signed in as an account the study is shown to, and at every state reads each element as shown,
   disabled, held offline, folded or gone; every difference is listed before it fails. Test: `web-tests/test_shell_states.py`,
   `web-tests/test_shell_states_page.py`.
   </details>
