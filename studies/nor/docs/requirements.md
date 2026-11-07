@@ -253,17 +253,20 @@ labels, not the owner's (`detection/STATE.md`), so the lock is only as right as 
 
 Set by the owner on 2026-10-03; its source moved from GitHub to Drive on 2026-11-05.
 
-- **Curated on Drive, read by code.** The page's taggers submit to the study's submissions folder and a
-  Data Manager curates into its curated folder (the shell's `req/shell/ground-truth/folders`).
-  `python3 detection/ground_truth.py fetch` lists the curated folder with no key (the folder is shared
-  as "Anyone with the link"), downloads every file under it, and keeps per image the one with the
-  latest `created` (`req/shell/ground-truth/layout`). It checks each (`norfinder-ground-truth/2` or
-  later, an image from Google Drive with its SHA-256, at least one mark inside the image) and says why
-  it skips one it cannot use. **A listing that returns 50 entries stops the fetch with an error**:
-  the keyless listing returns at most 50, so a full one may be cut short, and a cut-short set
-  silently changes every score. No ground truth enters git, and nothing is submitted through GitHub.
-- **Images stay on Drive.** A ground-truth file names its image by Drive id and SHA-256; the fetch
-  downloads each image into `data/raw/` and checks it (R6). No image enters git.
+- **Curated on Drive, read when scored.** The page's taggers submit to the study's submissions folder and a
+  Data Manager curates into its curated folder, both under the study's root (the shell's
+  `req/shell/ground-truth/folders`). Set by the owner on 2026-11-07: there is no fetch step. Scoring
+  (`ground_truth.py score`, `finder_metrics.py`) lists the root with no key, takes the curated folder from
+  its settings file (`rauntruth-study.json`), else the one named `GT curated` or `GT`, and downloads an
+  image's newest curated file, by its own `created`, the first time it scores that image, then keeps it under
+  `data/raw/ground-truth/`, never git. It checks each (`norfinder-ground-truth/2` or later, an image from
+  Google Drive with its SHA-256, at least one mark inside the image) and says why it skips one it cannot
+  use. **A listing that returns 50 entries stops it with an error**: the keyless listing may stop at 50, and
+  a cut-short set silently changes every score. The tests read only what is already on disk.
+- **No study data in CI.** Set by the owner on 2026-11-07: no CI run downloads an image or ground truth; the
+  quality lock and the metrics check skip there and run where a session runs them.
+- **Images stay on Drive.** A ground-truth file names its image by Drive id and SHA-256; scoring downloads
+  each image into `data/raw/` the first time it needs it, and checks it (R6). No image enters git.
 - **A set changed is a baseline to re-record.** A changed curated set changes the dataset SHA (R11), so
   `tests/test_finder_metrics.py` fails until the metrics and the quality baseline (R9) are measured on it
   again; the finders are then improved following the pack's `improve-on-ground-truth` skill, and losses
