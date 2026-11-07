@@ -596,7 +596,7 @@ nobody has decided: what the page does there is not a requirement yet.
 
   Folded at first: the field in µm and px, the pixel size, the bit depth, the ImageJ series, the
   microscope and date when the file names them (the lab's ImageJ exports never do, and the box says
-  so), and the software that saved it (`studies/nor/tests/test_file_info.py`).
+  so), and the software that saved it (`web-tests/test_file_info.py`).
   </details>
 
 - `req/shell/image/minimap` A minimap hovers over the image, showing the part in view; drag, zoom and step by mouse.
