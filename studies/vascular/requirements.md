@@ -69,8 +69,8 @@ owner's decisions on the stacks and the vessel model, are
   works shows the chosen version's own description; Execute, at the box's end, runs it in the
   page's Python on the stack open, as the lab runs it (scored, with the spacing between slices the
   page shows), and the model it draws opens over the stack. The study ships no drawn models: a
-  stack opens with none until Execute. A vessel model file (one saved earlier, say) can still be
-  loaded from a small link beside Execute. Once a model is open, Undo, Redo and Discard edits are under
+  stack opens with none until Execute, and no model file is loaded in its place: an image, then the
+  algorithm, as NoR's (owner, 2026-11-07). Once a model is open, Undo, Redo and Discard edits are under
   Execute; what the model holds is in Summary, with Mark a damaged area under it (owner, 2026-11-07: the left bar
   is the shell's, `req/shell/left-bar/shells`). Draw a missed vessel is a ground-truth action, offered only in the
   Areas task (`req/vascular/truth/tasks`; owner, 2026-11-07). Changed by the owner on 2026-11-04: the box behaves as NoR's

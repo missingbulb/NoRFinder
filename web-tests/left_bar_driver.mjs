@@ -16,7 +16,7 @@ import { repoFile } from "./repo_file.mjs";
 import { offSite } from "./off_site.mjs";
 import { ENGINE, LAUNCH } from "./engine.mjs";
 import { asTagger } from "./tagger.mjs";
-import { record, begun, moved, played, ran } from "./page_motions.mjs";
+import { record, begun, moved } from "./page_motions.mjs";
 import { localStudy } from "./local_study.mjs";
 
 const require = createRequire(import.meta.url);
@@ -128,56 +128,19 @@ await title(0); await page.click("#unload");
 await page.waitForFunction(() => document.querySelector("#unload").hidden && [...document.querySelectorAll("#left > .box.foldable")].filter((b) => b.checkVisibility()).length === 3);
 await boxes(["1 Load Image open", "2 Processing folded", "3 Ground Truth Tasks folded"], "Unload: every drawer waits again, as at first");
 
-// req/shell/left-bar/collapse: the bar collapses to a narrow Steps strip and expands again, sliding, remembered
+// req/shell/left-bar/static: the bar stays open, with no chevron, no Steps label or strip, and the gutter only resizes it
 const left = () => page.evaluate(() => Math.round(document.querySelector("#left").getBoundingClientRect().width));
-const viewW = () => page.evaluate(() => Math.round(document.querySelector("#view").getBoundingClientRect().width));
-// the column's slide over: the grid's transition and the drawers' slide in done
-// getAnimations() applies the style changes waiting, so a transition the last action started is among them
-const settled = () => page.waitForFunction(() => !document.getAnimations().some((a) => a.transitionProperty === "grid-template-columns" || a.animationName === "data-in"));
-const wide = await left(), imageW = await viewW();
-await check(await page.evaluate(() => document.querySelector("#data-col").getClientRects().length === 0), "no data manager: no sliver of the Data Management strip beside the bar");
-// one spot toggles it: the open bar's chevron sits where the strip's does, and the gutter between the bar and the image is
-// only the resize handle, no wider than the gap beside the image
-const chev = (sel) => page.evaluate((sel) => { const r = document.querySelector(sel).getBoundingClientRect(); return [Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2)]; }, sel);
+const settled = () => page.waitForFunction(() => !document.getAnimations().some((a) => a.transitionProperty === "grid-template-columns"));
+const gone = await page.evaluate(() => ({ parts: ["#left-collapse", "#left-strip", "#left-head", "#left-expand", "#left-marks"].filter((s) => document.querySelector(s)),
+  steps: [...document.querySelectorAll("#left *")].filter((e) => e.children.length === 0 && e.textContent.trim() === "Steps").length }));
+await check(!gone.parts.length && !gone.steps, "the left bar has no chevron, no Steps label and no strip", gone);
 const gutter = await page.evaluate(() => ({ w: Math.round(document.querySelector("#gutter-left").getBoundingClientRect().width), holds: document.querySelector("#gutter-left").children.length }));
 await check(gutter.holds === 0 && gutter.w <= 12, "the gutter holds no tab, only the resize handle", gutter);
-const openAt = await chev("#left-collapse .chev");
-await page.click("#left-collapse");
-await page.waitForFunction(() => document.documentElement.dataset.left === "collapsed"); await settled();
-await check((await left()) < 60, "collapsing leaves a narrow strip", await left());
-await check((await viewW()) > imageW + 200, "and gives the image the room", [imageW, await viewW()]);
-const strip = await page.evaluate(() => ({ label: document.querySelector("#left-strip .strip-name").textContent, vertical: getComputedStyle(document.querySelector("#left-strip .strip-name")).writingMode,
-  marks: [...document.querySelectorAll("#left-marks .step-mark")].map((m) => m.textContent).join(),
-  tab: document.querySelector("#left-collapse").checkVisibility({ visibilityProperty: true }), drawers: [...document.querySelectorAll("#left > .box")].filter((b) => b.checkVisibility({ visibilityProperty: true })).length }));
-await check(strip.label === "Steps" && strip.vertical === "vertical-rl" && strip.marks === "1,2,3" && !strip.tab && strip.drawers === 0,
-  "the strip shows the step marks and Steps, upright, and hides the drawers and the tab", strip);
-const shutAt = await chev("#left-expand .chev");
-await check(Math.abs(shutAt[0] - openAt[0]) <= 1 && Math.abs(shutAt[1] - openAt[1]) <= 1, "the strip's chevron is where the open bar's was, so a second click there expands it", [openAt, shutAt]);
-await page.reload();
-await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
-await settled();
-await check((await left()) < 60, "collapsed stays collapsed on the next visit", await left());
-// expanding: the column slides out as Data Management's does, the drawers sliding in
-const slideOut = (since) => ran(page, since, [{ name: "grid-template-columns" }, { name: "data-in", left: true }]);
-const played0 = await played(page);
-await page.click("#left-strip .strip-name");
-const out = await slideOut(played0);
-await check(!out.missing, "clicking the strip slides the bar out and the drawers in, and both end", out);
-await settled();
-await page.waitForFunction(() => !document.querySelector("#left").classList.contains("sliding-in"));
-await check((await left()) === wide, "expanding brings the bar back at its width", [wide, await left()]);
-await boxes(["1 Load Image open", "2 Processing folded", "3 Ground Truth Tasks folded"], "with its drawers as they were");
-await page.click("#left-collapse");
-await page.waitForFunction(() => document.documentElement.dataset.left === "collapsed"); await settled();
-await page.locator("#left-marks .step-mark").nth(2).click();
-await settled();
-await boxes(["1 Load Image open", "2 Processing folded", "3 Ground Truth Tasks open"], "clicking a step mark expands the bar with that drawer open");
-// the gutter drags it shut, past the bar's narrowest, and out again from the strip's edge, following the pointer
 const drag = async (to) => { const g = await page.locator("#gutter-left").boundingBox(); await page.mouse.move(g.x + g.width / 2, g.y + 100); await page.mouse.down();
   for (const x of to) await page.mouse.move(x, g.y + 100, { steps: 4 }); await page.mouse.up(); await settled(); };
 const barLeft = await page.evaluate(() => Math.round(document.querySelector("#left").getBoundingClientRect().left));
-await drag([barLeft + 150, barLeft + 40]);
-await check((await left()) < 60, "dragging the gutter past the bar's narrowest collapses it", await left());
-await drag([barLeft + 100, barLeft + 280]);
-await check(Math.abs((await left()) - 280) <= 14, "dragging the collapsed strip's edge out expands the bar to where it is let go", await left());
+await drag([barLeft + 150, barLeft + 20]);
+await check((await left()) >= 190, "dragging the gutter to the edge stops at the bar's narrowest, never collapsing it", await left());
+await drag([barLeft + 280]);
+await check(Math.abs((await left()) - 280) <= 14, "and it drags wider again", await left());
 await done(0);

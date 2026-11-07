@@ -84,20 +84,6 @@
         },
         {"name": "Left bar", "select": "#left", "req": "req/shell/left-bar/folding",
           "children": [
-            {"name": "Collapsed strip", "select": "#left-strip", "req": "req/shell/left-bar/collapse",
-              "rule": [
-                {"is": "hidden"}
-              ],
-              "children": [
-                {"name": "Expand", "select": "#left-expand", "control": true, "req": "req/shell/left-bar/collapse"},
-                {"name": "Strip's marks", "select": "#left-marks", "req": "req/shell/left-bar/collapse"}
-              ]
-            },
-            {"name": "Left bar's head", "select": "#left-head", "req": "req/shell/left-bar/collapse",
-              "children": [
-                {"name": "Collapse", "select": "#left-collapse", "control": true, "req": "req/shell/left-bar/collapse"}
-              ]
-            },
             {"name": "Image box", "select": "#image-box", "box": true, "req": "req/shell/left-bar/folding",
               "rule": [
                 {"when": {"selected": ["folder"]}, "is": "hidden", "req": "req/shell/data/folder"},
@@ -132,18 +118,17 @@
                         {"when": {"stack": [false]}, "is": "hidden"}
                       ],
                       "children": [
-                        {"name": "Slices shown", "select": "#v3-slices", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d"},
                         {"name": "First slice shown", "select": "#v3-z0", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"},
                         {"name": "Last slice shown", "select": "#v3-z1", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"},
                         {"name": "Spacing between slices", "select": "#v3-zs", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"}
                       ]
                     },
-                    {"name": "Channel's Colour by depth", "select": "#channels .v3-depth-row", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
+                    {"name": "Channel's Colour by depth", "select": "#channels .v3-tick", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
                       "rule": [
                         {"when": {"stack": [false]}, "is": "hidden"}
                       ],
                       "children": [
-                        {"name": "Colour by depth tick", "select": "#channels .v3-depth-row input", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"}
+                        {"name": "Colour by depth tick", "select": "#channels .v3-tick", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"}
                       ]
                     }
                   ]

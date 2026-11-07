@@ -47,7 +47,7 @@ const VIEWERS = { image2d: viewer2d, image3d: (shell) => viewer3d(shell, viewers
 const DEFAULT_STUDY = "viewer";
 // the browser keys the shell saves under; their names predate studies, and a user's saved state lives in them
 const THEME = "nor-theme"; // "dark" | "light"; absent = follow the system
-const BARS = "nor-bars-v1"; // {left, collapsed}: the left bar's width in pixels, and whether it is collapsed (a right bar's, from before it went, is ignored)
+const BARS = "nor-bars-v1"; // {left}: the left bar's width in pixels (a right bar's, or whether it was collapsed, from before they went, is ignored)
 // the last remote link pasted, in any study
 const REMOTE_LINK = "nor-drive-link";
 // {study id: the last remote link pasted in that study}
@@ -1386,7 +1386,7 @@ async function showSaved() {
 // ---------- the user: whoever opened the page on this device, and what the site keeps here ----------
 // what each of the shell's own setting keys holds, in the user's words
 const OWN_SETTINGS = {
-  [THEME]: "Theme", [ROLE]: "The role you work in", [BARS]: "Left bar width, and whether it is collapsed", [REMOTE_LINK]: `Last ${remote.label} link`, [REMOTE_LINKS]: `Last ${remote.label} link in each study`,
+  [THEME]: "Theme", [ROLE]: "The role you work in", [BARS]: "Left bar width", [REMOTE_LINK]: `Last ${remote.label} link`, [REMOTE_LINKS]: `Last ${remote.label} link in each study`,
   [THUMBS]: `Show thumbnails in the ${remote.short} dialog`, [AUTO_SAVE]: `Auto-save images from ${remote.label}`, [RECENT]: `Recent images from ${remote.label}`, [LOCAL_RECENT]: "Recent files from this computer", [LISTINGS]: `${remote.label} folders as last listed, for working offline`, [HOLDS]: `What each ${remote.short} image holds (2D or 3D)`, [THROTTLE]: `Wait after ${remote.short} downloads were throttled`, [TIPS]: "Tips you closed", [SEEN_VERSION]: "Version you saw last", [MEMORY_TIP]: "Low-memory popup turned off", [SIGNED_IN]: SIGNED_IN_LABEL, [GRID]: "Grid colour and spacing", [MINIMAP]: "Minimap: shown or not, and how see-through", [SPLIT_PATTERN]: "File names of an image split into parts", [MOTION]: "Animations turned off", [RESOURCES]: "The status bar's disk, memory, network and CPU: hidden, auto-hiding or always open", [APP_ASKED]: "Asked for the site as an app", [WELCOME]: "Sign in or go on anonymously, as answered on opening the page", [ACTIONS]: "Your last actions here, for a problem report",
 };
 // What the site keeps, by what it takes to work offline (req/shell/storage/manage): a section per study, then what they share; settings
@@ -1740,14 +1740,6 @@ function retitle() {
     if (typeof want === "string") { if (t.textContent !== want || t.children.length) t.textContent = want; }
     else if (t.firstChild !== want) t.replaceChildren(want);
   });
-  // the collapsed left bar's strip (req/shell/left-bar/collapse): a mark per drawer on show, opening it
-  $("#left-marks").replaceChildren(...shown.map((b) => {
-    const h = b.querySelector(":scope > .sec-head h2"), m = document.createElement("button");
-    m.type = "button"; m.className = "step-mark"; m.textContent = h.querySelector(".step-mark").textContent;
-    m.classList.toggle("done", b.classList.contains("done")); m.classList.toggle("open", !b.classList.contains("folded"));
-    m.title = h.dataset.name; m.onclick = () => b.classList.remove("folded");
-    return m;
-  }));
 }
 // a Markdown outline drawn as HTML: paragraphs split by blank lines, "- " or "1. " items nested by their indent
 function outline(text) {
@@ -1817,42 +1809,23 @@ function foldable() {
 function showImage() { study.showImage?.(); view.minimapView(); }
 
 // ---------- the left bar and theme ----------
-// the left bar takes the width it is dragged to; a double click puts it back. Dragged past its narrowest it
-// collapses (req/shell/left-bar/collapse), and dragged out from the strip it opens again under the pointer
+// the left bar takes the width it is dragged to, never narrower than its narrowest; a double click puts it back.
+// It stays open (req/shell/left-bar/static).
 {
-  const lay = $("#layout"), saved = readJSON(BARS), g = $("#gutter-left"), bar = $("#left"), root = document.documentElement;
-  const MIN = 200, STRIP = 32, SHUT = (MIN + STRIP) / 2;
+  const lay = $("#layout"), saved = readJSON(BARS), g = $("#gutter-left"), bar = $("#left");
+  const MIN = 200;
   const set = (w) => {
     if (w == null) { lay.style.removeProperty("--lw"); return; }
     lay.style.setProperty("--lw", Math.round(Math.max(MIN, Math.min(w, innerWidth * 0.4))) + "px");
   };
   set(saved.left);
-  const collapse = (on) => { if (on) root.dataset.left = "collapsed"; else delete root.dataset.left; };
-  collapse(!!saved.collapsed);
-  const toggle = (on) => {
-    if (!!saved.collapsed === on) return;
-    saved.collapsed = on; writeJSON(BARS, saved);
-    if (!on) { bar.classList.add("sliding-in"); setTimeout(() => bar.classList.remove("sliding-in"), 400); }
-    collapse(on);
-    retitle();
-    setTimeout(() => view?.minimapView(), 400);
-  };
   g.addEventListener("pointerdown", (e) => {
     g.setPointerCapture(e.pointerId); document.body.classList.add("resizing");
-    const was = saved.left;
-    const move = (ev) => {
-      const w = ev.clientX - bar.getBoundingClientRect().left;
-      if (w < SHUT) { saved.left = was; toggle(true); }
-      else { saved.left = w; set(w); toggle(false); }
-      view?.minimapView();
-    };
+    const move = (ev) => { saved.left = Math.max(MIN, ev.clientX - bar.getBoundingClientRect().left); set(saved.left); view?.minimapView(); };
     const up = () => { g.removeEventListener("pointermove", move); g.removeEventListener("pointerup", up); document.body.classList.remove("resizing"); writeJSON(BARS, saved); };
     g.addEventListener("pointermove", move); g.addEventListener("pointerup", up);
   });
   g.addEventListener("dblclick", () => { delete saved.left; set(null); writeJSON(BARS, saved); view?.minimapView(); });
-  $("#left-collapse").onclick = () => toggle(true);
-  // a step mark opens its drawer first, then the click reaches the strip
-  $("#left-strip").onclick = () => toggle(false);
 }
 
 function theme() {

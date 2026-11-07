@@ -4,7 +4,6 @@
     {"under": "Processing", "tree": [
       {"name": "Algorithm", "select": "#vm-algo", "control": true, "req": "req/vascular/model/run"},
       {"name": "About the algorithm", "select": "#vm-about", "req": "req/vascular/model/run"},
-      {"name": "Load a model", "select": "#model-load", "control": true, "req": "req/vascular/model/view"},
       {"name": "Run algorithm", "select": "#vm-run", "control": true, "req": "req/vascular/model/run"},
       {"name": "The model's controls", "select": "#model-on", "req": "req/vascular/model/correct",
         "rule": [

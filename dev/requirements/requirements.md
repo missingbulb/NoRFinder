@@ -611,21 +611,6 @@ nobody has decided: what the page does there is not a requirement yet.
   `web-tests/test_study_runs.py`, `web-tests/test_compressed_tiff.py`, `web-tests/test_viewer3d_page.py`.
   </details>
 
-- `req/shell/left-bar/collapse` The left bar collapses to a narrow Steps strip, giving the image its room, and expands again (remembered):
-  by a chevron in one spot, at the bar's top open or collapsed, or by dragging the gutter past the bar's narrowest and back out.
-  <details>
-
-  Set by the owner on 2026-11-03. A small tab holding a chevron sits on the gutter between the open
-  left bar and the image, at its middle; clicking it collapses the bar to a narrow strip like the
-  Data Management strip (`req/shell/data/mode`), the same width and a small gap from it: the chevron,
-  the drawers' step marks (a number, or a check once done), and "Steps" upright. Clicking the strip
-  expands the bar again; clicking a step mark expands it with that drawer open. Collapsing and
-  expanding slide as Data Management's column does, the drawers sliding in on the way out. The bar's
-  width is kept for its return, and it cannot be dragged while collapsed. Collapsed or not stays with
-  the device, beside the width (`req/shell/left-bar/width`).
-  Test: `web-tests/test_left_bar_page.py`.
-  </details>
-
 - `req/shell/left-bar/folding` The left bar's boxes stay folded until their step makes them useful, and fold again once it is done.
   <details>
 
@@ -664,6 +649,15 @@ nobody has decided: what the page does there is not a requirement yet.
   Summary shows. A box the study puts nothing in is not shown. How the study's results are drawn over the image
   is chosen in the toolbar (`req/shell/image/toolbar`), never in the left bar. Test:
   `web-tests/test_study_contract.py`, `web-tests/test_left_bar_page.py`.
+  </details>
+
+- `req/shell/left-bar/static` The left bar stays open: nothing collapses it, and it has no chevron and no Steps label.
+  <details>
+
+  Set by the owner on 2026-11-07, in place of the collapsing bar of 2026-11-03: no chevron at its top, no narrow
+  Steps strip, and dragging the gutter stops at the bar's narrowest rather than collapsing it. A collapsed state
+  kept on the device from before opens the bar.
+  Test: `web-tests/test_left_bar_page.py`.
   </details>
 
 - `req/shell/left-bar/width` The left bar drags wider or narrower (remembered; a double click restores it); there is no right bar.
@@ -1328,8 +1322,12 @@ nobody has decided: what the page does there is not a requirement yet.
   depth of that point so crossings at different depths read apart: the study's `view` sets the render
   it opens with. The depth is a row of the image box under the
   channels' rows, as a channel's row holds its points (owner, 2026-11-04): its first and last slice
-  shown on one slider, and in the colour picker's place the spacing between slices. Colour by depth is each
-  channel's own (owner, 2026-11-07): a Colour by depth tick under each channel's row, and while it is ticked the
+  shown on one slider, and in the colour picker's place the spacing between slices, a box that reads with
+  its unit ("1 µm") and steps up and down by its arrows and the arrow keys (owner, 2026-11-07). No count of the
+  slices shown sits beside its name, and each row's picker sits at the box's right edge, its slider filling the room
+  before it; a palette picker is framed as the colour picker is (owner, 2026-11-07). Colour by depth is each
+  channel's own (owner, 2026-11-07): a small icon tick on each channel's own row beside its colour picker, no words
+  and no palette bar beside it (owner, 2026-11-07), and while it is ticked the
   row's colour picker becomes a palette picker, since the channel is then drawn in a range of colours by the depth
   of each point, not in one colour by its brightness alone. Two channels coloured by depth each take a different
   palette, so they read apart; a study's `channels` may tick it from the start (`depth`: true, or a palette's name).
