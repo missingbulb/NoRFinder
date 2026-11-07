@@ -151,7 +151,7 @@ nobody has decided: what the page does there is not a requirement yet.
   (0–255) shows in a small bubble above it, gone once it is let go. A double click on the slider puts
   the points back. The channels are added together, each in its colour. A channel's name, colour,
   description, whether it shows at first and its first points come from the study's `channels` for the
-  channel the file displays in its colour, or at its place when the file names no colours
+  channel at that place, the study's rule having put the file's channels in its order
   (`req/shell/image/open`), else from what the file says, else from its place: red,
   green and blue, then more colours, a lone channel grey; a channel the file colours but does not name
   is named for its colour. The rows start over with every image, and before any image there are none (set by
@@ -633,9 +633,12 @@ nobody has decided: what the page does there is not a requirement yet.
   depth still looks faded: between its 0.5% quantile and its 99.8% one, or the upper quantile the study's
   `view.upper` sets. What a study's `study.json` says of a channel (its name, description, whether it shows, its
   black point, its colour, coloured by depth) is only where that channel's row starts, every one of them the
-  user's to change (`req/shell/channels/rows`); a study's channel finds its file channel by the colour the file
-  displays it in, and by its place when the file names no colours (owner, 2026-11-07). A file the shell cannot
-  read says why in the status line. Test: `web-tests/test_image_open.py`.
+  user's to change (`req/shell/channels/rows`). A file's display colours do not say which channel is which
+  (Vascular's originals show DAPI red, NoR's come in three arrangements), so a study may give a rule, in its page
+  part, that puts the file's channels in its own channels' order by what each holds, for these first settings
+  alone; a study with none takes the file's order (owner, 2026-11-07). A study whose `view.stretch` is false
+  shows an 8-bit image as stored, a photo as the camera took it. A file the shell cannot read says why in the
+  status line. Test: `web-tests/test_image_open.py`.
   </details>
 
 - `req/shell/image/progressive` An image shows while it downloads.

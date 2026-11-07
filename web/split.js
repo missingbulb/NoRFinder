@@ -210,7 +210,7 @@ export function readTiff(input) {
   try { record = recLine ? JSON.parse(recLine.slice(SPLIT_KEY.length + 1)) : null; } catch { record = null; }
   let cache = { at: -1, planes: null };
   return {
-    W: p0.W, H: p0.H, bps: p0.bps, sampleFormat: p0.sampleFormat, C, Z, T, names, ij, meta, record,
+    W: p0.W, H: p0.H, bps: p0.bps, sampleFormat: p0.sampleFormat, C, Z, T, names, ij, meta, record, tags: t0,
     xres: t0[282]?.[0] || null, yres: t0[283]?.[0] || null, resUnit: t0[296]?.[0] || null,
     async plane(c, z, t) {
       const [i, s] = index(c, z, t);
