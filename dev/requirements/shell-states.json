@@ -27,8 +27,8 @@
     "PreGT, signed out": {"stage": "PreGT", "signedIn": false, "role": "viewer"},
     "PreGT, Tagger": {"stage": "PreGT", "signedIn": true, "role": "tagger"},
     "Published, Viewer": {"stage": "Published", "signedIn": true, "role": "viewer"},
-    "GT, Data Manager": {"stage": "GT", "signedIn": true, "role": "data"},
-    "PreGT, Data Manager": {"stage": "PreGT", "signedIn": true, "role": "data"}
+    "GT, Study Manager": {"stage": "GT", "signedIn": true, "role": "data"},
+    "PreGT, Study Manager": {"stage": "PreGT", "signedIn": true, "role": "data"}
   },
   "paths": [
     {"root": "GT, signed out", "actions": ["load", "count", "items"]},
@@ -39,16 +39,16 @@
     {"root": "PreGT, Tagger", "actions": ["load", "count", "items"]},
     {"root": "Published, Viewer", "actions": ["load", "count", "items"]},
     {"root": "GT, Tagger", "actions": ["load", "offline", "online"]},
-    {"root": "GT, Data Manager", "actions": ["folder", "preview", "original", "offline"]},
-    {"root": "GT, Data Manager", "actions": ["folder", "preview", "edit", "offline", "done"]},
-    {"root": "GT, Data Manager", "actions": ["folder", "offline", "online"]},
-    {"root": "GT, Data Manager", "actions": ["folder", "zpreview", "edit", "done"]},
-    {"root": "PreGT, Data Manager", "actions": ["folder"]},
+    {"root": "GT, Study Manager", "actions": ["folder", "preview", "original", "offline"]},
+    {"root": "GT, Study Manager", "actions": ["folder", "preview", "edit", "offline", "done"]},
+    {"root": "GT, Study Manager", "actions": ["folder", "offline", "online"]},
+    {"root": "GT, Study Manager", "actions": ["folder", "zpreview", "edit", "done"]},
+    {"root": "PreGT, Study Manager", "actions": ["folder"]},
     {"root": "GT, Tagger", "actions": ["load", "ok", "count", "unload"]},
     {"root": "GT, Tagger", "actions": ["load", "count", "viewer"]},
     {"root": "GT, Tagger", "actions": ["load", "count", "restudy"]},
     {"root": "GT, Tagger", "actions": ["drive", "count"]},
-    {"root": "GT, Data Manager", "actions": ["viewer", "load", "data"]},
+    {"root": "GT, Study Manager", "actions": ["viewer", "load", "data"]},
     {"root": "GT, Viewer", "actions": ["load", "zoom"]}
   ],
   "tree": [
@@ -81,15 +81,30 @@
             {"name": "Fold the folders", "select": "#data-open", "control": true, "req": "req/shell/data/mode"},
             {"name": "Folders", "select": "#data-body", "req": "req/shell/data/mode",
               "children": [
+                {"name": "Set up ground truth", "select": "#gt-setup", "control": true, "req": "req/shell/ground-truth/setup",
+                  "steady": "shows only while the study's root names no ground-truth folders, never in the fixture, which is set up",
+                  "rule": [
+                    {"is": "hidden", "approval": "tentative"}
+                  ]
+                },
+                {"name": "Ground Truth box", "select": "#gt-box", "req": "req/shell/ground-truth/summary",
+                  "rule": [
+                    {"when": {"stage": [null, "PreGT", "Published"]}, "is": "hidden", "approval": "tentative"}
+                  ],
+                  "children": [
+                    {"name": "Ground Truth box's title", "select": "#gt-box-title", "req": "req/shell/ground-truth/summary"},
+                    {"name": "How the study takes ground truth", "select": "#gt-mode", "req": "req/shell/ground-truth/summary"},
+                    {"name": "Ground truth counts", "select": "#gt-counts", "req": "req/shell/ground-truth/summary"},
+                    {"name": "Switch reviewed or unreviewed", "select": "#gt-switch", "control": true, "req": "req/shell/ground-truth/switch",
+                      "rule": [
+                        {"when": {"online": [false]}, "is": "held", "req": "req/shell/offline/default", "approval": "tentative"}
+                      ]
+                    }
+                  ]
+                },
                 {"name": "Approve folders", "select": "#data-approve", "control": true, "req": "req/shell/data/drive-access",
                   "rule": [
                     {"when": {"online": [false]}, "is": "held", "req": "req/shell/offline/default"}
-                  ]
-                },
-                {"name": "Set up ground truth", "select": "#gt-setup", "control": true, "req": "req/shell/ground-truth/setup",
-                  "rule": [
-                    {"when": {"stage": [null, "PreGT", "Published"]}, "is": "hidden", "approval": "tentative"},
-                    {"when": {"online": [false]}, "is": "held", "req": "req/shell/offline/default", "approval": "tentative"}
                   ]
                 },
                 {"name": "Folder tree", "select": "#data-tree", "req": "req/shell/data/mode"},

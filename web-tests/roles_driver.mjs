@@ -52,7 +52,7 @@ for (const menu of ["#role-menu", "#user-menu"]) {
 }
 await page.context().close();
 
-// signed in, not a data manager: Viewer first, Ground Truth Tagger to choose
+// signed in, not a study manager: Viewer first, Ground Truth Tagger to choose
 page = await open(true, { email: OTHER, prepare: standInDrive });
 s = await seen(page);
 await check(s.role === "Viewer" && s.list.join() === "Viewer,Ground Truth Tagger" && !s.hint, "signed in, the page opens as Viewer, Ground Truth Tagger offered", s);
@@ -87,19 +87,19 @@ await choose(page, "Ground Truth Tagger", true);
 await check(await role(page) === "tagger", "and chosen, it is the role there", await role(page));
 await page.context().close();
 
-// a data manager kept in that role, opening where they hold it no more: Viewer, the choice kept for where they do
+// a study manager kept in that role, opening where they hold it no more: Viewer, the choice kept for where they do
 page = await open(true, { email: OTHER, seed: { "nor-role": "data" } });
 s = await seen(page);
 await check(s.role === "Viewer" && !s.data, "a role not held shows as Viewer", s);
 await check(await role(page) === "data", "and the choice stays", await role(page));
 await page.context().close();
 
-// the study's data manager: Data Manager offered; choosing it opens the tree, asking only there
+// the study's study manager: Study Manager offered; choosing it opens the tree, asking only there
 page = await open(true);
 s = await seen(page);
 await page.click("#role-menu summary"); await shot(page, "menu"); await page.click("#role-menu summary");
-await check(s.list.join() === "Viewer,Ground Truth Tagger,Data Manager" && !s.data, "a data manager is offered Data Manager, and sees no Data Management until choosing it", s);
-await choose(page, "Data Manager");
+await check(s.list.join() === "Viewer,Ground Truth Tagger,Study Manager" && !s.data, "a study manager is offered Study Manager, and sees no Data Management until choosing it", s);
+await choose(page, "Study Manager");
 await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder").length === 2);
 const width = () => page.evaluate(() => Math.round($("#data-col").getBoundingClientRect().width));
 // the column, folded or open, once its motion has ended at the width asked for
@@ -110,7 +110,7 @@ const widthReaches = (open) => page.waitForFunction((open) => {
 await widthReaches(true);
 s = await seen(page);
 await shot(page, "data-manager");
-await check(s.data && s.mode === "data" && (await width()) > 200, "as Data Manager the folder tree shows, open", { ...s, width: await width(), motion: await motion(page) });
+await check(s.data && s.mode === "data" && (await width()) > 200, "as Study Manager the folder tree shows, open", { ...s, width: await width(), motion: await motion(page) });
 await check(!s.bar, "no bar over the image asks for folders", s);
 await page.click("#data-open"); await widthReaches(false);
 await check((await width()) < 60 && (await seen(page)).mode === "data", "its chevron folds the tree to a strip", await width());

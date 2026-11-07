@@ -1,5 +1,5 @@
 // Data Management (req/shell/data/mode, req/shell/data/drive-access, req/shell/data/folder,
-// req/shell/data/update-previews, req/shell/data/preview-images, req/shell/ground-truth/setup): the Data Manager role's
+// req/shell/data/update-previews, req/shell/data/preview-images, req/shell/ground-truth/setup): the Study Manager role's
 // view, for a signed-in user the store lets write to the study's root: its data folder as a tree in a column left of the left bar, its chevron folding
 // it; a folder chosen fills the main area with its images and the left bar with their sums, and its actions; an image
 // chosen opens from its preview. The tree's head asks for the folders' access, and it writes only
@@ -11,7 +11,7 @@ import { readTiff, fromPlanes, writeTiff } from "./split.js";
 import { CONNECTION } from "./offline.js";
 import { replacedBy, stemOf } from "./edit.js";
 import * as tf from "./truth_folders.js";
-import { setup as setUp } from "./study_root.js";
+import { setup as setUp, switchMode } from "./study_root.js";
 
 const IMAGE = /\.(tiff?|png)$/i;
 const MAX_FOLDERS = 200;
@@ -69,7 +69,7 @@ export function dataMode(ctx) {
       roots = top ? [s?.data || top] : [];
       gt = tf.folders(s);
       gtNodes = [...new Set([gt.curated, gt.submissions].filter(Boolean))].map((id) => ({ id, name: "Ground truth", access: null }));
-      drawSetup(s);
+      drawSetup(s); drawTruthBox(null); truthStatus();
       const queue = roots.map((id) => ({ id, parent: null, name: null }));
       while (queue.length && nodes.size < MAX_FOLDERS) {
         const at = queue.shift();
@@ -109,13 +109,15 @@ export function dataMode(ctx) {
   $("#data-approve").onclick = approve;
 
   // ---------- Set up ground truth (req/shell/ground-truth/setup) ----------
+  // offered while the study's root names no ground-truth folders, and nudged while it has none at all
+  const gtStudy = () => !!manifest && (manifest.stage === "GT" || manifest.stage === "PostGT");
   function drawSetup(s) {
-    const b = $("#gt-setup"), gtStudy = manifest && (manifest.stage === "GT" || manifest.stage === "PostGT");
-    b.hidden = !gtStudy || !place.root();
-    b.textContent = s?.set ? "Set up ground truth again…" : "Set up ground truth…";
-    b.title = s?.set ? (s.same ? "One folder for submissions and curated ground truth" : "Submissions reviewed into a curated folder") : "Make the study's ground-truth folders in its root";
+    const b = $("#gt-setup");
+    b.hidden = !gtStudy() || !place.root() || !!s?.set;
+    b.classList.toggle("nudge", !gt.curated);
+    b.title = gt.curated ? "Name the study's ground-truth folders in its root's settings" : "Make the study's ground-truth folders in its root";
   }
-  $("#gt-setup").onclick = () => $("#setup-dlg").showModal();
+  $("#gt-setup").onclick = () => { msg($("#setup-msg"), ""); $("#setup-dlg").showModal(); };
   $("#setup-cancel").onclick = () => $("#setup-dlg").close();
   for (const b of document.querySelectorAll("#setup-dlg [data-review]")) b.onclick = async () => {
     const review = b.dataset.review === "yes", say = (text, err) => msg($("#setup-msg"), text, err);
@@ -128,10 +130,55 @@ export function dataMode(ctx) {
       }
       say("Making the ground-truth folders…");
       await setUp({ reader, writer, root: top, review, by: account.email() });
-      say(review ? "Set up: GT curated and GT submissions, and the settings file." : "Set up: one GT folder, and the settings file.");
+      $("#setup-dlg").close();
+      msg($("#data-msg"), review ? "Ground truth set up: GT submissions, reviewed into GT curated." : "Ground truth set up: one GT folder.");
       nodes = new Map(); loaded = null; chosen = null; await load();
     } catch (e) { say(e.message || String(e), true); }
     for (const x of document.querySelectorAll("#setup-dlg button")) x.disabled = false;
+  };
+
+  // ---------- the Ground Truth box: how the study takes it, and how many images have it ----------
+  function drawTruthBox(gts) {
+    const box = $("#gt-box");
+    box.hidden = !gt.curated || !gtStudy();
+    if (box.hidden) return;
+    $("#gt-mode").textContent = gt.same ? "One folder: whatever a tagger submits counts at once."
+      : "Reviewed: taggers submit to GT submissions, and a study manager accepts each into GT curated.";
+    const sw = $("#gt-switch");
+    sw.textContent = gt.same ? "Switch to reviewed…" : "Switch to unreviewed…";
+    if (!gts) { $("#gt-counts").textContent = "Reading…"; sw.disabled = true; return; }
+    const all = [...gts.values()], n = (p) => all.filter(p).length, images = (k) => `${k} image${k === 1 ? "" : "s"}`;
+    const has = n((g) => g.curated), pending = n((g) => g.pending), rejected = n((g) => g.rejected);
+    // going unreviewed waits for every pending submission to be accepted or rejected
+    sw.disabled = !gt.same && pending > 0;
+    sw.title = sw.disabled ? `${pending} submission${pending === 1 ? " is" : "s are"} pending review: accept or reject ${pending === 1 ? "it" : "them"} first`
+      : gt.same ? "Have a study manager review each submission into GT curated" : "Let whatever a tagger submits count at once";
+    $("#gt-counts").textContent = [has ? `${images(has)} ${has === 1 ? "has" : "have"} ground truth.` : "No image has ground truth yet.",
+      pending ? `${images(pending)} pending review.` : "", rejected ? `${images(rejected)} rejected.` : ""].filter(Boolean).join(" ");
+  }
+
+  // ---------- switching between reviewed and unreviewed (req/shell/ground-truth/switch) ----------
+  $("#gt-switch").onclick = () => {
+    const review = gt.same;
+    $("#switch-title").textContent = review ? "Switch to reviewed ground truth" : "Switch to unreviewed ground truth";
+    $("#switch-text").textContent = review
+      ? "No file is moved, copied or deleted. The GT folder becomes GT curated: everything submitted so far counts as accepted. A new GT submissions folder is made for taggers to submit to. In Google Drive, give taggers edit access to GT submissions and take their edit access off GT curated."
+      : "No file is moved, copied or deleted. GT curated becomes the one folder: everything accepted stays the study's ground truth, and whatever a tagger submits counts at once. GT submissions, its rejected files included, stays as it is and is no longer used. In Google Drive, give taggers edit access to GT curated.";
+    $("#switch-go").dataset.review = review ? "yes" : "no";
+    msg($("#switch-msg"), ""); $("#switch-dlg").showModal();
+  };
+  $("#switch-cancel").onclick = () => $("#switch-dlg").close();
+  $("#switch-go").onclick = async () => {
+    const review = $("#switch-go").dataset.review === "yes", top = place.root(), btns = document.querySelectorAll("#switch-dlg button");
+    for (const x of btns) x.disabled = true;
+    try {
+      msg($("#switch-msg"), "Switching…");
+      await switchMode({ reader, writer, root: top, review, by: account.email() });
+      $("#switch-dlg").close();
+      msg($("#data-msg"), review ? "Switched to reviewed ground truth." : "Switched to unreviewed ground truth.");
+      nodes = new Map(); loaded = null; chosen = null; await load();
+    } catch (e) { msg($("#switch-msg"), e.message || String(e), true); }
+    for (const x of btns) x.disabled = false;
   };
 
   // ---------- the tree ----------
@@ -204,7 +251,10 @@ export function dataMode(ctx) {
   // the ground truth of every image either folder holds, an empty Map while the study names none
   async function truthStatus() {
     if (!gt.curated) return new Map();
-    try { return await tf.status(reader, gt); } catch (e) { msg($("#folder-msg"), "The ground-truth folders could not be read: " + (e.message || e), true); return new Map(); }
+    try { const gts = await tf.status(reader, gt); drawTruthBox(gts); return gts; } catch (e) {
+      msg($("#folder-msg"), "The ground-truth folders could not be read: " + (e.message || e), true);
+      $("#gt-counts").textContent = "The ground-truth folders could not be read."; return new Map();
+    }
   }
 
   async function chooseFolder(n) {
@@ -416,12 +466,12 @@ export function dataMode(ctx) {
       epoch++; manifest = m; who = account.email(); nodes = new Map(); loaded = null; chosen = null;
       if (on()) enter(false);
       roots = []; gt = tf.folders(null); gtNodes = [];
-      $("#gt-setup").hidden = true;
+      $("#gt-setup").hidden = true; $("#gt-box").hidden = true;
       $("#data-tree").replaceChildren(); msg($("#data-msg"), "");
     },
     // whoever is signed in may have changed: the study's roles again, if so
     signedIn() { if (manifest && account.email() !== who) this.mount(manifest); },
-    // the Data Manager role chosen, or left (req/shell/account/role)
+    // the Study Manager role chosen, or left (req/shell/account/role)
     role(open) { $("#data-col").hidden = !open; enter(open); },
     get on() { return on(); },
     // the access to the folder an image is in, as the tree knows it ("write", "view", "none", or null when unknown)

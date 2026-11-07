@@ -41,7 +41,7 @@ ACTIONS = {
     # the study's images in its Drive folder, the one a user of a study that opens none from the computer takes
     'drive': ('Load from Drive', {'image': 'original', 'stack': False, 'counted': False, 'view': 'image'}),
     'viewer': ('→ Viewer', {'role': 'viewer'}),
-    'data': ('→ Data Manager', {'role': 'data'}),
+    'data': ('→ Study Manager', {'role': 'data'}),
     # to another study and Back to this one, which opens afresh, with no image
     'restudy': ('Away and back', {'image': 'none', 'stack': False, 'counted': False, 'view': 'image'}),
     'ok': ('OK', {'notice': False}),

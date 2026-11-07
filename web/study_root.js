@@ -58,6 +58,29 @@ export async function setup({ reader, writer, root, review, by, at = new Date() 
   return read(reader, root, { fresh: true });
 }
 
+// A set-up study switched between reviewed and unreviewed (req/shell/ground-truth/switch), no file moved, copied or
+// deleted: to one folder, the curated one serves as both; to review, the one folder is curated and a GT submissions
+// folder is found by name, else made. The settings file keeps who set it up and records the mode before, who
+// switched and when. Returns read()'s answer afresh.
+export async function switchMode({ reader, writer, root, review, by, at = new Date() }) {
+  const was = await read(reader, root, { fresh: true });
+  if (!was.set || !was.file) throw new Error("The study's ground truth is not set up yet.");
+  if (!!review === !was.same) return was;
+  let doc = {};
+  try { doc = JSON.parse(await reader.text(was.file)) || {}; } catch { doc = {}; }
+  const curated = was.curated;
+  let submissions = curated;
+  if (review) {
+    const there = (await reader.all(root)).find((f) => f.folder && f.id !== curated && f.name.trim().toLowerCase() === MADE.submissions.toLowerCase());
+    submissions = there ? there.id : await writer.folder(root, MADE.submissions);
+  }
+  const next = { ...doc, format: FORMAT, data: was.data, curated, submissions, review: !!review,
+    switched: { from: { review: !was.same, curated: was.curated, submissions: was.submissions }, by, at: at.toISOString() } };
+  await writer.replace(was.file, new Blob([JSON.stringify(next, null, 1)], { type: "application/json" }));
+  known.delete(root);
+  return read(reader, root, { fresh: true });
+}
+
 // The study on show's place in the remote store, for the page: remote the store, manifest() the study.
 // Its reads are the store's own, as the signed-in user where anyone is (req/shell/drive/credentials).
 export function studyPlace(remote, manifest) {

@@ -75,6 +75,31 @@ const out = {};
   out.byFile = { curated: s.curated === renamed.id, same: s.same };
 }
 
+// switching a set-up study's mode (req/shell/ground-truth/switch): no file moved, copied or deleted; the settings file
+// recording the mode before, who switched and when
+{
+  const m = memory(); m.add({ parent: "ROOT", name: "Data", folder: true });
+  const two = await sr.setup({ reader: m.reader, writer: m.writer, root: "ROOT", review: true, by: "dm@acme.example", at: AT });
+  m.calls.length = 0;
+  const one = await sr.switchMode({ reader: m.reader, writer: m.writer, root: "ROOT", review: false, by: "sm@acme.example", at: AT });
+  const doc = JSON.parse(m.files.find((f) => f.name === sr.SETTINGS).body);
+  out.toOne = { writes: m.calls.filter(([k]) => k !== "all" && k !== "text"), same: one.same, curatedKept: one.curated === two.curated,
+    set: { by: doc.set_by, review: doc.review }, was: doc.switched?.from && { review: doc.switched.from.review, curated: doc.switched.from.curated === two.curated, submissions: doc.switched.from.submissions === two.submissions },
+    who: doc.switched?.by, at: doc.switched?.at };
+  m.calls.length = 0;
+  const back = await sr.switchMode({ reader: m.reader, writer: m.writer, root: "ROOT", review: true, by: "sm@acme.example", at: AT });
+  out.toTwo = { writes: m.calls.filter(([k]) => k !== "all" && k !== "text"), same: back.same, curatedKept: back.curated === two.curated,
+    submissionsBack: back.submissions === two.submissions };
+}
+{
+  // from one folder: it becomes the curated one, and a new GT submissions folder is made
+  const m = memory(); m.add({ parent: "ROOT", name: "Data", folder: true });
+  const one = await sr.setup({ reader: m.reader, writer: m.writer, root: "ROOT", review: false, by: "dm@acme.example", at: AT });
+  m.calls.length = 0;
+  const two = await sr.switchMode({ reader: m.reader, writer: m.writer, root: "ROOT", review: true, by: "sm@acme.example", at: AT });
+  out.oneToTwo = { writes: m.calls.filter(([k]) => k !== "all" && k !== "text"), curatedKept: two.curated === one.curated, same: two.same, review: two.review };
+}
+
 // read twice within the minute: one listing; fresh reads again
 {
   const m = memory(); m.add({ parent: "R2", name: "Data", folder: true });

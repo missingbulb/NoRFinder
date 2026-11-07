@@ -24,11 +24,11 @@ const slid = (wide) => page.waitForFunction((wide) => (wide ? $("#data-col").get
   && !document.getAnimations().some((a) => a.playState === "running"), wide, { timeout: 5000 }).catch(() => {});
 // the page's handlers for what was just done have all run: a click it ignores has had every chance to act
 const turned = () => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
-await check(await page.evaluate(() => $("#data-col").hidden && !document.documentElement.dataset.mode), "a data manager in another role sees no Data Management");
-await role(page, "Data Manager");
+await check(await page.evaluate(() => $("#data-col").hidden && !document.documentElement.dataset.mode), "a study manager in another role sees no Data Management");
+await role(page, "Study Manager");
 await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder").length === 2);
 await slid(true);
-await check((await width()) > 200, "choosing Data Manager slides the column out, open", await width());
+await check((await width()) > 200, "choosing Study Manager slides the column out, open", await width());
 await page.click("#data-open");
 await slid(false);
 await check((await width()) < 60, "its chevron folds it to a narrow strip", await width());
@@ -131,16 +131,16 @@ const leftMode = () => $("#data-col").hidden && !$("#load").classList.contains("
 await page.waitForFunction(leftMode, null, { timeout: 5000 }).catch(() => {});
 await check(await page.evaluate(leftMode),
   "another role leaves the mode: the column gone, Load back, Preprocessing gone");
-// offline, Data Manager is listed, says it needs the internet, and choosing it does nothing (req/shell/data/mode)
+// offline, Study Manager is listed, says it needs the internet, and choosing it does nothing (req/shell/data/mode)
 await page.context().setOffline(true);
 await page.waitForFunction(() => document.documentElement.classList.contains("offline"));
 await page.click("#role-menu summary");
-const offered = await page.evaluate(() => { const b = [...document.querySelectorAll("#role-list .item")].find((x) => x.textContent === "Data Manager");
+const offered = await page.evaluate(() => { const b = [...document.querySelectorAll("#role-list .item")].find((x) => x.textContent === "Study Manager");
   return b && { needs: /needs the internet/i.test(b.title), dim: +getComputedStyle(b).opacity < 1 }; });
-await page.click('#role-list .item:text-is("Data Manager")', { force: true });
+await page.click('#role-list .item:text-is("Study Manager")', { force: true });
 // the item's own click closes the menu at once, so a menu still open is a click that reached nothing
 const after = await page.evaluate(() => ({ open: $("#role-menu").open, role: $("#role-name").textContent.trim(), mode: document.documentElement.dataset.mode || "" }));
-await check(offered?.needs && offered.dim && after.open && after.role === "Viewer" && !after.mode, "offline, Data Manager is listed, says it needs the internet, and choosing it does nothing", { offered, after });
+await check(offered?.needs && offered.dim && after.open && after.role === "Viewer" && !after.mode, "offline, Study Manager is listed, says it needs the internet, and choosing it does nothing", { offered, after });
 await page.evaluate(() => { $("#role-menu").open = false; });
 await page.context().setOffline(false);
 await page.waitForFunction(() => !document.documentElement.classList.contains("offline"));
@@ -166,7 +166,7 @@ const damage = (bytes) => {
 };
 const kept = FILES.find((f) => f.name === "rauntruth-previews.tiff");
 kept.bytes = damage(Buffer.from(kept.bytes));
-await role(page, "Data Manager");
+await role(page, "Study Manager");
 await page.click("#data-tree .tree-folder .name");
 await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell .pic.none").length === 3, null, { timeout: 5000 }).catch(() => {});
 await check(await page.evaluate(() => document.querySelectorAll("#folder-items .cell .pic.none").length === 3), "a previews file that cannot be read: each image shows no preview");

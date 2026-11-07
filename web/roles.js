@@ -4,7 +4,7 @@
 
 // the browser key the role chosen is kept under, as its name: "viewer" | "tagger" | "data"; absent = "viewer"
 export const ROLE = "nor-role";
-export const ROLE_NAMES = { viewer: "Viewer", tagger: "Ground Truth Tagger", data: "Data Manager" };
+export const ROLE_NAMES = { viewer: "Viewer", tagger: "Ground Truth Tagger", data: "Study Manager" };
 
 // the roles held, in the menu's order: signedIn, whether anyone is; tagging, whether the study takes Ground Truth
 // Taggers and the store lets the user write to its submissions; manager, whether it lets them write to its root

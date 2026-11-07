@@ -1,7 +1,7 @@
-"""req/shell/ground-truth/setup, req/shell/data/roles, req/shell/ground-truth/tagger-access, req/shell/ground-truth/submit,
+"""req/shell/ground-truth/setup, req/shell/ground-truth/summary, req/shell/ground-truth/switch, req/shell/data/roles, req/shell/ground-truth/tagger-access, req/shell/ground-truth/submit,
 req/shell/ground-truth/layout, req/shell/ground-truth/clear, req/shell/ground-truth/pending, req/shell/ground-truth/curate,
 req/shell/ground-truth/view: the fixture study's ground truth, in headless Chromium against a stand-in Google
-(gt_drive_driver.mjs), from Set up in Data Management through a tagger's Submit, the data manager's Accept and a
+(gt_drive_driver.mjs), from Set up in Data Management through a tagger's Submit, the study manager's Accept and a
 viewer's Load GT tagging."""
 import os
 
