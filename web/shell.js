@@ -1125,7 +1125,7 @@ function remoteDialog() {
     if (off) { if (!before && asked === listing) msg("This folder is not listed on this device yet: it needs the internet.", true); return; }
     if (!before) msg("Reading the folder…");
     try {
-      const all = await remote.list(at.id);
+      const all = await remote.list(at.id, manifest.files.accept);
       if (asked !== listing) return;
       keepListing(at.id, all, at.unnamed ? readJSON(LISTINGS)[at.id]?.name : at.name);
       // what the store says now takes the kept listing's place, redrawn only where it differs

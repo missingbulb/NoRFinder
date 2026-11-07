@@ -304,7 +304,7 @@ nobody has decided: what the page does there is not a requirement yet.
   Set by the owner on 2026-11-04: a study naming Drive folders (its `files.folders`) offers no link to paste; its
   dialog opens on its folders, straight into the one when it names one, else on a list of them by name, and browses
   only within them. A study naming none, the Image Viewer, takes the pasted link of an image or a folder: one shared as
-  "Anyone with the link", or, signed in, any the user's account can see (`req/shell/drive/credentials`). An image's link loads it at once; a folder lists its images and subfolders to pick from, each image
+  "Anyone with the link", or, signed in, any the user's account can see (`req/shell/drive/credentials`). An image's link loads it at once; a folder lists its subfolders and the images the study opens (the kinds its `files.accept` names), to pick from, each image
   with its size, a small colour thumbnail and, for one opened before in the study, how long since, as the image
   selector says it (`req/shell/load/selector`); set by the owner on 2026-11-04, in place of the date it was added to
   Drive, an image the folder did not hold when this device last listed it carries a small boxed "new", and hovering

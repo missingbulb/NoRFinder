@@ -207,7 +207,7 @@ export function offline({ $, esc, sizeText, remote, kept, keep, throttled, throt
       const at = queue.shift();
       if (seen.has(at.id)) continue;
       seen.add(at.id);
-      for (const f of await remote.list(at.id)) {
+      for (const f of await remote.list(at.id, s.manifest.files.accept)) {
         if (f.folder) queue.push({ id: f.id, path: [...at.path, f.name] });
         else if (f.name !== PREVIEWS) found.push({ ...f, path: at.path, study: s.id, kept: await kept(f.id) });
       }
