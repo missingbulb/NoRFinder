@@ -44,7 +44,8 @@
     "accept": ".tif,.tiff",
     "empty": "Load a confocal z-stack (a multi-page TIFF of CD31, or CD31 and DAPI) to turn it in 3D.",
     "folders": [
-      "https://drive.google.com/drive/folders/1AH4EVGT-ECPZvhHiHMwUzrMLLtljs1Pd"
+      "https://drive.google.com/drive/folders/1AH4EVGT-ECPZvhHiHMwUzrMLLtljs1Pd",
+      "https://drive.google.com/drive/folders/1ho0Qk3JePd60hr_HGVrkGHZ7UfV6YjyW"
     ]
   },
   "channels": [
