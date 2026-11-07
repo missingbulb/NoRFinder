@@ -260,6 +260,7 @@ details.fold[open] > summary::before, .box.foldable:not(.folded) > .sec-head h2:
 .box > .sec-head { margin-bottom: 10px; }
 .box.foldable.folded > .sec-head { margin-bottom: 0; }
 .box.foldable.folded { cursor: pointer; }
+.study-box[hidden] { display: none; }
 .sec-head button { padding: 3px 10px; font-size: 12px; }
 button.link { border: 0; background: none; padding: 0; color: var(--accent); font-size: 12px; }
 button.link:not(:disabled):hover { text-decoration: underline; }
@@ -345,9 +346,9 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
   background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px #0004; }
 #grid-pop:popover-open, #minimap-pop:popover-open { display: flex; }
 /* a toolbar's hover popup, under its button (the popup's anchor), their right edges lined up, turned the other way at the window's edge */
-#grid-pop, #minimap-pop, .v3-pop { position-area: bottom span-left; margin: 6px 0 0; position-try-fallbacks: flip-inline; }
-@supports not (anchor-name: --a) { #grid-pop, #minimap-pop, .v3-pop { inset: 96px 16px auto auto; } }
-#grid-btn, #minimap-btn, #v3-tools .tool { interest-delay: 0s 300ms; }
+#grid-pop, #minimap-pop { position-area: bottom span-left; margin: 6px 0 0; position-try-fallbacks: flip-inline; }
+@supports not (anchor-name: --a) { #grid-pop, #minimap-pop { inset: 96px 16px auto auto; } }
+#grid-btn, #minimap-btn { interest-delay: 0s 300ms; }
 #minimap-pop { position: fixed; inset: auto; padding: 10px 14px; flex-direction: column; gap: 4px; font-size: 13px;
   background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px #0004; }
 #minimap-pop label { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
@@ -723,19 +724,18 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 #v3-gl { cursor: grab; touch-action: none; }
 #v3-hud { pointer-events: none; }
 #v3-tools[hidden] { display: none; }
-.v3-pop { position: fixed; inset: auto; padding: 10px 14px; flex-direction: column; gap: 8px; font-size: 13px;
-  background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-ctl); box-shadow: 0 6px 18px #0004; }
-.v3-pop:popover-open { display: flex; }
-.v3-pop label { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-.v3-pop label[hidden] { display: none; }
-.v3-pop input[type="number"] { width: 70px; padding: 2px 6px; }
-#v3-look { display: flex; gap: 6px; }
-#v3-look button { padding: 4px 10px; font-size: 13px; }
+#v3-look { display: flex; }
+#v3-look button { padding: 4px 9px; font-size: 13px; }
 #v3-note { position: absolute; left: 8px; right: calc(50% + 48px); bottom: 6px; margin: 0; color: rgba(225, 232, 238, .75); font-size: 12px; pointer-events: none; }
 #view[data-v3] #minimap, #view[data-v3] #ruler-btn, #view[data-v3] #grid-btn, #view[data-v3] #minimap-btn { display: none; }
 /* the slices' row: the channels' row with the depth's start and end on a plain track, and the spacing in the colour's place */
 .channel.v3-slices .levels::before { background: var(--line); }
 .channel.v3-slices input[type=number] { width: 48px; padding: 1px 3px; font-size: 11px; }
+/* colour by depth: the depth scale across the row, and its swatch in the colour picker's place */
+.channel.v3-depth-row .v3-scale { height: 4px; margin: 0 10px; border-radius: 2px; background: var(--scale); }
+.channel.v3-depth-row #v3-depth { width: 22px; height: 15px; padding: 0; border: 3px solid var(--line); border-radius: 2px; background: var(--scale); cursor: pointer; }
+.channel.v3-depth-row #v3-depth[aria-pressed="true"] { border-color: var(--accent); }
+.channel.v3-depth-row.off .v3-scale, .channel.v3-depth-row.off #v3-depth { opacity: .35; }
 #v3-stage.split #v3-gl, #v3-stage.split #v3-hud { width: 50%; }
 #v3-stage .v3-side { position: absolute; top: 0; left: 50%; width: 50%; height: 100%; border-left: 1px solid #333; }
 #v3-stage:not(.split) .v3-side { left: 0; width: 100%; border-left: 0; }
@@ -861,7 +861,7 @@ html:not(.offline) #welcome-offline { display: none; }
 .pic.none { background: repeating-linear-gradient(45deg, var(--line) 0 4px, transparent 4px 8px); }
 
 /* in the mode the left bar keeps the Image box and Preprocessing; the study's own panels and the steps step aside */
-:root[data-mode=data] [data-study-panel], :root[data-mode=data] #sb-steps, :root[data-mode=data] #switch, :root[data-mode=data] #tasks-bar { display: none !important; }
+:root[data-mode=data] [data-study-panel], :root[data-mode=data] .study-box, :root[data-mode=data] #sb-steps, :root[data-mode=data] #switch, :root[data-mode=data] #tasks-bar { display: none !important; }
 :root:not([data-mode=data]) #preprocessing-box, :root:not([data-sel=folder]) #folder-box, :root[data-sel=folder] #image-box { display: none !important; }
 :root[data-mode=data] #load.gone { display: none; }
 #load.poof { animation: poof .45s ease-in forwards; pointer-events: none; }

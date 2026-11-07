@@ -1,15 +1,14 @@
 // The 3D viewer: a stack shown in 3D only, a WebGL2 ray-caster through every slice, in the place of the 2D viewer of
 // its flattened planes (viewer2d.js), whose interface it keeps; that flat view shows only where WebGL2 is missing.
 // Each shown channel is drawn in its colour between its row's black and white points, so the rows drive it, and a row
-// of the 3D view's own under them shows part of the depth and sets the spacing between slices. The study's `view` in
+// of the 3D view's own under them shows part of the depth and sets the spacing between slices, and another turns
+// colour by depth on and off (three.S.depth, which a study drawing over the stack reads). The study's `view` in
 // study.json sets what the 3D view opens with: render ("brightest" | "surface"), depthColour, and the spacing
-// between slices when the file does not say, with who stated it (spacingSource); the study may turn depth colour
-// on and off (three.S.depth).
+// between slices when the file does not say, with who stated it (spacingSource).
 //
 // The stack reaches it as the page's image: its flattened planes (C of W × H), then, for a stack (Z > 1), every
 // slice of every channel, channel by channel.
 "use strict";
-import { hoverPop } from "./viewer2d.js";
 
 const MAX_SIDE = 640; // the GPU's budget: a ray samples every voxel it crosses, so a wider volume is binned to this
 const CHANNELS = 4;   // the most channels the 3D view adds together
@@ -183,16 +182,11 @@ export function viewer3d(shell, flat) {
   const drawers = [], spacingHeard = [];
   let half = [1, 1, 0.1];
 
-  // ---------- the page's parts: Look from in the toolbar beside Zoom, the slices' row under the channels' rows,
-  // the stage in the 2D one's place ----------
-  const icon = (paths) => `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">${paths}</g></svg>`;
+  // ---------- the page's parts: Look from's buttons in the toolbar beside Zoom, the slices' row and Colour by depth
+  // under the channels' rows, the stage in the 2D one's place ----------
   const tools = html("div", { id: "v3-tools", className: "group", hidden: true });
-  // no tooltip on the button: its popup opens where a tooltip would show
-  tools.innerHTML = `
-    <button id="v3-look-btn" class="tool" type="button" aria-label="Look from">${icon('<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/>')}</button>
-    <div id="v3-look-pop" class="v3-pop" popover aria-label="Look from">
-      <div id="v3-look" role="group" aria-label="Look from">${Object.keys(LOOKS).map((k) => `<button type="button" data-look="${k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join("")}</div>
-    </div>`;
+  tools.innerHTML = `<div id="v3-look" class="tabs" role="group" aria-label="Look from">${Object.keys(LOOKS).map((k) =>
+    `<button type="button" data-look="${k}" title="Look from the ${k === "tilted" ? "top, tilted" : k}">${k[0].toUpperCase() + k.slice(1)}</button>`).join("")}</div>`;
   const bar = $("#view .toolbar"), zoom = $("#zoom-out").parentElement;
   bar.insertBefore(tools, zoom.parentElement === bar ? zoom : bar.firstChild);
   // the slices shown, from the first to the last, as a channel's row holds its points, and in the colour picker's
@@ -202,6 +196,13 @@ export function viewer3d(shell, flat) {
     >?</span><span id="v3-slices" class="from-file"></span></span>
     <div class="levels" title="The first and the last slice shown"><input type="range" class="black" id="v3-z0" min="0" step="1" aria-label="First slice shown"><input type="range" class="white" id="v3-z1" min="0" step="1" aria-label="Last slice shown"><span class="bubble" hidden></span></div>
     <input id="v3-zs" type="number" min="0.05" max="50" step="0.05" title="Spacing between slices, µm" aria-label="Spacing between slices, µm">`;
+  // colour by depth, chosen as a channel's colour is: its swatch in the colour picker's place, and the depth scale
+  // across the row
+  const scale = Array.from({ length: 9 }, (_, i) => `rgb(${turbo(i / 8).map((v) => Math.round(v * 255)).join(",")})`).join(",");
+  const depthRow = html("div", { className: "channel v3-depth-row" });
+  depthRow.innerHTML = `<span></span><span class="ch-name"><label for="v3-depth">Colour by depth</label><span class="help" tabindex="0" data-help="Paints the stack by the depth of each point, from the first slice shown to the last, so crossings at different depths read apart."
+    >?</span></span><span class="v3-scale" style="--scale: linear-gradient(90deg, ${scale})"></span>
+    <button id="v3-depth" type="button" aria-pressed="false" title="Colour by depth" aria-label="Colour by depth" style="--scale: linear-gradient(90deg, ${scale})"></button>`;
   const stage = html("div", { id: "v3-stage", hidden: true });
   const cv = html("canvas", { id: "v3-gl" }), hudCv = html("canvas", { id: "v3-hud" }), note = html("p", { id: "v3-note" });
   // whether a plain drag pans rather than turns: the label's state, and shift held over it; kept only while the page is open
@@ -393,12 +394,15 @@ export function viewer3d(shell, flat) {
   controls(cv);
 
   // ---------- the tools ----------
-  const ui = (id) => (tools.querySelector("#" + id) || slicesRow.querySelector("#" + id));
-  hoverPop(ui("v3-look-btn"), ui("v3-look-pop"), () => {});
+  const ui = (id) => (tools.querySelector("#" + id) || slicesRow.querySelector("#" + id) || depthRow.querySelector("#" + id));
+  const setDepth = (on) => { S.depth = on ? 1 : 0; depthRow.classList.toggle("off", !on); ui("v3-depth").setAttribute("aria-pressed", String(!!on)); redraw(); };
+  ui("v3-depth").onclick = () => setDepth(!S.depth);
+  depthRow.querySelector("label").onclick = (e) => { e.preventDefault(); setDepth(!S.depth); };
   // zoom as the 2D view's: a share of the whole stack in view
   const zoomText = () => { if (mode3d) $("#zoom-label").textContent = Math.round((FIT_DIST / S.dist) * 100) + "%"; };
   function sync() {
     ui("v3-z0").value = S.z0; ui("v3-z1").value = S.z1; ui("v3-zs").value = S.zs;
+    depthRow.classList.toggle("off", !S.depth); ui("v3-depth").setAttribute("aria-pressed", String(!!S.depth));
     ui("v3-slices").textContent = `${S.z0 + 1}–${S.z1 + 1} of ${vol ? vol.Z : 0}`;
     if (vol) geometry();
     redraw();
@@ -428,7 +432,7 @@ export function viewer3d(shell, flat) {
   function show3d(on) {
     mode3d = on && !!vol;
     stage.hidden = !mode3d; tools.hidden = !mode3d; $("#scroller").hidden = mode3d;
-    flat.rowsAfter(mode3d ? [slicesRow] : []);
+    flat.rowsAfter(mode3d ? [slicesRow, depthRow] : []);
     flat.zoomWith(mode3d ? (k) => { S.dist = Math.min(Math.max(S.dist / k, MIN_DIST), 12); redraw(); } : null);
     if (mode3d) $("#view").dataset.v3 = ""; else delete $("#view").dataset.v3;
     redraw();

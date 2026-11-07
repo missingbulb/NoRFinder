@@ -101,7 +101,7 @@ try {
   const titles = await page.$$eval("#bs-list li", (l) => l.map((x) => x.textContent));
   // a tall spine reads across once turned a quarter, so its crop is read as its height by its width
   check(titles.join() === "Title 260x40,Title 240x35,Title 180x180", "each book is read at the turn that reads across, listed in the order found", titles);
-  check(await page.evaluate(() => $("#bs-tasks").hidden), "a viewer has no ground-truth box");
+  check(await page.evaluate(() => $("#tasks-box").hidden && !$("#summary-box").hidden), "a viewer has no ground-truth box: Summary lists the titles");
   const m = await saved(page, "#bs-export");
   const [m1, m2, m3] = m.doc.books;
   check(m.name === "shelf_books.json" && m.doc.books.length === 3 && m1.id === 1 && m1.text === "Title 260x40" && m1.confidence === 0.9 && m1.reader === "tesseract"
@@ -114,8 +114,8 @@ try {
   await page.click("#bs-find");
   await page.waitForFunction(() => $("#status").textContent.startsWith("Titles read"));
   const rows = () => page.$$eval("#bs-task-list > li > .bs-task-head", (h) => h.map((x) => x.textContent));
-  check((await rows()).join() === "0/3 Books,0 Missed books" && await page.evaluate(() => $("#bs-titles").hidden && !$("#bs-tasks").hidden),
-    "the Ground truth box lists Books and Missed books, and the Titles box is not shown", await rows());
+  check((await rows()).join() === "0/3 Books,0 Missed books" && await page.evaluate(() => $("#summary-box").hidden && !$("#tasks-box").hidden),
+    "Ground Truth Tasks lists Books and Missed books, and Summary is not shown", await rows());
   check(await page.evaluate(() => $(".bs-item input").value) === "Title 260x40" && await page.$$eval(".bs-item canvas", (c) => c[0].width) === 260,
     "the first book shows upright with what the reader read, to correct");
   await page.click('.bs-views [data-view="cover"]');

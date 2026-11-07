@@ -69,7 +69,7 @@ await page.waitForFunction(() => document.querySelector("#status").textContent.s
 // open or folded, by its contents shown or not
 // the drawers on show: Data Management's own are not, out of it
 const bar = () => page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].filter((b) => b.checkVisibility()).map((b) => {
-  const body = b.querySelector(":scope > :not(.sec-head)"), h = b.querySelector(".sec-head h2");
+  const body = [...b.children].find((c) => !c.matches(".sec-head, .gt-access, slot-here")), h = b.querySelector(".sec-head h2");
   const mark = h.querySelector(".step-mark"), t = h.querySelector(".title");
   const text = [...(t?.querySelectorAll("img, canvas") || [])].map(() => "[img] ").join("") + (t ? t.textContent.trim() : h.textContent);
   return `${mark ? mark.textContent : "?"} ${text} ${body && body.offsetParent ? "open" : "folded"}`;
@@ -91,11 +91,11 @@ const gaps = await page.evaluate(() => { const r = [...document.querySelectorAll
 await check(gaps.every((g) => g <= 0), "the drawers stack with no gap between them", gaps);
 const bars = () => page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].filter((b) => b.checkVisibility()).map((b) => getComputedStyle(b).boxShadow !== "none"));
 
-await boxes(["1 Load Image open", "2 Threshold folded", "3 Counted folded", "4 Notes folded"], "before an image only Load Image is open, each drawer numbered");
-await check((await bars()).join() === "true,false,false,false", "the open drawer, and only it, carries the accent bar", await bars());
+await boxes(["1 Load Image open", "2 Processing folded", "3 Ground Truth Tasks folded"], "before an image only Load Image is open, each drawer numbered");
+await check((await bars()).join() === "true,false,false", "the open drawer, and only it, carries the accent bar", await bars());
 await loadImage();
-await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted folded", "4 Notes folded"],
-  "an image open: Load Image folds to its preview, name and what it holds, checked, and the drawer opening on it opens");
+await boxes(["✓ [img] " + name + "2D folded", "2 Processing open", "3 Ground Truth Tasks folded"],
+  "an image open: Load Image folds to its preview, name and what it holds, checked, and Processing opens");
 // a drawer slides open or shut, and the drawers below slide to their new places: the slide starts and ends
 const before = await begun(page);
 await title(0);
@@ -103,32 +103,30 @@ await title(0);
 const slides = await page.evaluate(() => !!document.startViewTransition && CSS.supports("view-transition-group", "contain"));
 const slid = slides ? await moved(page, before, /^drawer-/) : null;
 await check(!slides || (!slid.missing && slid.groups.filter((g) => g.startsWith("drawer-")).length >= 2), slides ? "a drawer slides open, and the drawers below it slide down" : "a browser without the view transitions the slide takes: the drawers change at once", slid);
-await boxes(["✓ Loaded Image open", "2 Threshold open", "3 Counted folded", "4 Notes folded"], "its title opens a folded drawer, done: Loaded Image");
+await boxes(["✓ Loaded Image open", "2 Processing open", "3 Ground Truth Tasks folded"], "its title opens a folded drawer, done: Loaded Image");
 await title(0);
-await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted folded", "4 Notes folded"], "and folds it again");
+await boxes(["✓ [img] " + name + "2D folded", "2 Processing open", "3 Ground Truth Tasks folded"], "and folds it again");
 // a folded drawer opens from anywhere on it, not only its title: a click at the far end of its row; an open one folds
 // only from its title
 const rowEnd = async (k) => { const r = await page.locator("#left > .box.foldable:visible > .sec-head").nth(k).boundingBox();
   await page.mouse.click(r.x + r.width - 4, r.y + r.height / 2); await page.waitForFunction(() => !document.documentElement.hasAttribute("data-drawers")); };
-await rowEnd(3);
-await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted folded", "4 Notes open"], "a click anywhere on a folded drawer opens it");
-await rowEnd(3);
-await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted folded", "4 Notes open"], "a click beside an open drawer's title leaves it open");
-await title(3);
+await rowEnd(2);
+await boxes(["✓ [img] " + name + "2D folded", "2 Processing open", "3 Ground Truth Tasks open"], "a click anywhere on a folded drawer opens it");
+await rowEnd(2);
+await boxes(["✓ [img] " + name + "2D folded", "2 Processing open", "3 Ground Truth Tasks open"], "a click beside an open drawer's title leaves it open");
+await title(2);
 await page.click("#fx-count");
 await page.waitForFunction(() => /pixels/.test(document.querySelector("#fx-result").textContent));
-await boxes(["✓ [img] " + name + "2D folded", "✓ Counted at 100 folded", "3 Counted open", "4 Notes folded"],
-  "Count done: Threshold folds to the study's summary of it, Counted opens, Notes waits for its title");
+await boxes(["✓ [img] " + name + "2D folded", "✓ Counted at 100 folded", "3 Ground Truth Tasks open"],
+  "Count done: Processing folds to the study's summary of it, and Ground Truth Tasks opens");
 await title(1);
-await boxes(["✓ [img] " + name + "2D folded", "✓ Threshold open", "3 Counted open", "4 Notes folded"], "a done drawer open names itself");
+await boxes(["✓ [img] " + name + "2D folded", "✓ Processing open", "3 Ground Truth Tasks open"], "a done drawer open names itself");
 await title(1);
-await title(3);
-await boxes(["✓ [img] " + name + "2D folded", "✓ Counted at 100 folded", "3 Counted open", "4 Notes open"], "Notes opens from its title");
 await loadImage();
-await boxes(["✓ [img] " + name + "2D folded", "2 Threshold open", "3 Counted folded", "4 Notes folded"], "another image starts over: the study's drawers wait again");
+await boxes(["✓ [img] " + name + "2D folded", "2 Processing open", "3 Ground Truth Tasks folded"], "another image starts over: the study's drawers wait again");
 await title(0); await page.click("#unload");
-await page.waitForFunction(() => document.querySelector("#unload").hidden && [...document.querySelectorAll("#left > .box.foldable")].filter((b) => b.checkVisibility()).length === 4);
-await boxes(["1 Load Image open", "2 Threshold folded", "3 Counted folded", "4 Notes folded"], "Unload: every drawer waits again, as at first");
+await page.waitForFunction(() => document.querySelector("#unload").hidden && [...document.querySelectorAll("#left > .box.foldable")].filter((b) => b.checkVisibility()).length === 3);
+await boxes(["1 Load Image open", "2 Processing folded", "3 Ground Truth Tasks folded"], "Unload: every drawer waits again, as at first");
 
 // req/shell/left-bar/collapse: the bar collapses to a narrow Steps strip and expands again, sliding, remembered
 const left = () => page.evaluate(() => Math.round(document.querySelector("#left").getBoundingClientRect().width));
@@ -151,7 +149,7 @@ await check((await viewW()) > imageW + 200, "and gives the image the room", [ima
 const strip = await page.evaluate(() => ({ label: document.querySelector("#left-strip .strip-name").textContent, vertical: getComputedStyle(document.querySelector("#left-strip .strip-name")).writingMode,
   marks: [...document.querySelectorAll("#left-marks .step-mark")].map((m) => m.textContent).join(),
   tab: document.querySelector("#left-collapse").checkVisibility({ visibilityProperty: true }), drawers: [...document.querySelectorAll("#left > .box")].filter((b) => b.checkVisibility({ visibilityProperty: true })).length }));
-await check(strip.label === "Steps" && strip.vertical === "vertical-rl" && strip.marks === "1,2,3,4" && !strip.tab && strip.drawers === 0,
+await check(strip.label === "Steps" && strip.vertical === "vertical-rl" && strip.marks === "1,2,3" && !strip.tab && strip.drawers === 0,
   "the strip shows the step marks and Steps, upright, and hides the drawers and the tab", strip);
 const shutAt = await chev("#left-expand .chev");
 await check(Math.abs(shutAt[0] - openAt[0]) <= 1 && Math.abs(shutAt[1] - openAt[1]) <= 1, "the strip's chevron is where the open bar's was, so a second click there expands it", [openAt, shutAt]);
@@ -168,12 +166,12 @@ await check(!out.missing, "clicking the strip slides the bar out and the drawers
 await settled();
 await page.waitForFunction(() => !document.querySelector("#left").classList.contains("sliding-in"));
 await check((await left()) === wide, "expanding brings the bar back at its width", [wide, await left()]);
-await boxes(["1 Load Image open", "2 Threshold folded", "3 Counted folded", "4 Notes folded"], "with its drawers as they were");
+await boxes(["1 Load Image open", "2 Processing folded", "3 Ground Truth Tasks folded"], "with its drawers as they were");
 await page.click("#left-collapse");
 await page.waitForFunction(() => document.documentElement.dataset.left === "collapsed"); await settled();
 await page.locator("#left-marks .step-mark").nth(2).click();
 await settled();
-await boxes(["1 Load Image open", "2 Threshold folded", "3 Counted open", "4 Notes folded"], "clicking a step mark expands the bar with that drawer open");
+await boxes(["1 Load Image open", "2 Processing folded", "3 Ground Truth Tasks open"], "clicking a step mark expands the bar with that drawer open");
 // the gutter drags it shut, past the bar's narrowest, and out again from the strip's edge, following the pointer
 const drag = async (to) => { const g = await page.locator("#gutter-left").boundingBox(); await page.mouse.move(g.x + g.width / 2, g.y + 100); await page.mouse.down();
   for (const x of to) await page.mouse.move(x, g.y + 100, { steps: 4 }); await page.mouse.up(); await settled(); };

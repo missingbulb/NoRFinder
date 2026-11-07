@@ -1137,7 +1137,7 @@ export function mount(shell) {
     for (const b of $("#gt-bar").children) {
       const t = b.dataset.task;
       b.style.flexGrow = ready ? count[t] : 1; b.style.setProperty("--done", ready && count[t] ? did[t] / count[t] : 0);
-      b.title = ready ? `${b.closest("#tasks-box").querySelector(`#gt-tasks > li[data-task="${t}"] .t`).textContent.trim()}` : "";
+      b.title = ready ? `${$("#nor-tasks").querySelector(`#gt-tasks > li[data-task="${t}"] .t`).textContent.trim()}` : "";
     }
     // the open task: its tools on its row, and its item's card under it
     const li = ready && $(`#gt-tasks > li[data-task="${st.task}"]`), now = $("#task-now"), tools = $("#task-tools");
@@ -1145,7 +1145,7 @@ export function mount(shell) {
     if (li && st.task !== "submit") {
       li.querySelector(".task-head").append(tools);
       (st.task === "missed" ? li.querySelector(".missed-slot") : li.querySelector(".task-body")).append(now);
-    } else $("#tasks-box").append(tools);
+    } else $("#nor-tasks").append(tools);
     tools.hidden = !li || st.task === "submit";
     // the area's check: its words and button only on the area's own step
     const checking = !!st.cur && st.cur.startsWith("a:");
@@ -1172,7 +1172,6 @@ export function mount(shell) {
     fresh.animate([{ transform: `translateX(${dir * 60}%)`, opacity: 0 }, { transform: "none", opacity: 1 }], t);
   }
   if (TRUTH) {
-    $("#summary-box").hidden = true; $("#tasks-box").hidden = false;
     $("#card-menu").open = false; $("#task-back").before($("#card-menu"));
     $("#overlay").classList.add("gt"); shell.signal.addEventListener("abort", () => $("#overlay").classList.remove("gt"));
     for (const li of $("#gt-tasks").children) li.querySelector("button.t")?.addEventListener("click", () => { if (st.meta) goTask(li.dataset.task); });

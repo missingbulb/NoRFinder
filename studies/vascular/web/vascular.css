@@ -1,4 +1,4 @@
-/* The vascular study's panels: Processing, the ground-truth tasks, the review, the toolbar's view controls, the
+/* The vascular study's panels: its part of Processing, Summary and the ground-truth tasks, the toolbar's view controls, the
    model's right-click menu and the item cards. */
 .col { display: flex; flex-direction: column; gap: 8px; }
 .note { font-size: 12px; color: var(--dim); margin: 0; }
@@ -11,7 +11,6 @@
 .views button { padding: 4px 10px; font-size: 13px; }
 .views button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
 .check { display: flex; gap: 6px; align-items: center; font-size: 13px; }
-#review-box .row { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
 #mcv { cursor: grab; touch-action: none; }
 #mcv.over-point { cursor: move; }
 #mcv.connecting { cursor: crosshair; }
@@ -26,18 +25,23 @@
 #vm-about-note li > ul, #vm-about-note li > ol { margin-top: 2px; }
 #model-set .row { align-items: center; }
 #model-on { margin-top: 10px; }
+#vm-marks { margin-top: 10px; }
 
-/* the toolbar's view controls: what the main view shows, colour by depth, vessel widths */
+/* the toolbar's view controls: what the main view shows and how the model is drawn over the stack */
 .toolbar #model-mode { flex: none; }
 .toolbar #model-mode button { flex: none; padding: 5px 10px; }
 .toolbar #model-mode button:disabled { opacity: .45; }
 .toolbar .tool-check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; white-space: nowrap; }
-#vm-depth[aria-pressed="false"] svg { opacity: .45; }
-#vm-depth[aria-pressed="true"] { border-color: var(--accent); }
+.toolbar .tool-check[hidden], .toolbar .tool-group[hidden] { display: none; }
+.toolbar .tool-group { display: inline-flex; align-items: center; gap: 10px; }
+.toolbar #review-mode { flex: none; }
+.toolbar #review-mode button { flex: none; padding: 5px 10px; }
+.toolbar #reach { width: 90px; }
+.toolbar #reach-o { min-width: 9ch; font-size: 12px; color: var(--dim); }
 
 /* Ground Truth Tasks, under Processing: a bar of a part per task, then a row per task, the open one with its
    tools on its row and its item under it (as NoR's) */
-#model-on[hidden], #tasks-box[hidden], #review-box[hidden], #task-now[hidden], #task-menu[hidden], #task-tools[hidden] { display: none; }
+#model-on[hidden], #vm-tasks[hidden], #vm-marks[hidden], #task-now[hidden], #task-menu[hidden], #task-tools[hidden] { display: none; }
 #gt-bar { display: flex; gap: 3px; height: 8px; margin-bottom: 10px; }
 #gt-bar > span { flex: 1 1 0; min-width: 6px; border-radius: 4px; --done: 0;
   background: linear-gradient(to right, var(--yes) calc(var(--done) * 100%), var(--line) calc(var(--done) * 100%)); }

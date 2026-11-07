@@ -255,11 +255,11 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await steps(page, ["Load image", "Count*"], ["#fx-count", "#sb-count"]);
   await check((await tip(page, "Load image")).includes("squares.png"), "Load image's popup names the image");
   // Count's box folded and scrolled away: its crumb unfolds it, scrolls to Count and presses it
-  await page.evaluate(() => { document.querySelector("#fx-box").classList.add("folded"); document.querySelector("#left").scrollTop = 1e6; });
+  await page.evaluate(() => { document.querySelector("#processing-box").classList.add("folded"); document.querySelector("#left").scrollTop = 1e6; });
   await page.click("#sb-count");
   const shown = await page.evaluate(() => {
     const b = document.querySelector("#fx-count"), r = b.getBoundingClientRect(), l = document.querySelector("#left").getBoundingClientRect();
-    return { unfolded: !document.querySelector("#fx-box").classList.contains("folded"), inView: r.height > 0 && r.top >= l.top && r.bottom <= l.bottom };
+    return { unfolded: !document.querySelector("#processing-box").classList.contains("folded"), inView: r.height > 0 && r.top >= l.top && r.bottom <= l.bottom };
   });
   await check(shown.unfolded && shown.inView, "the shining crumb unfolds Count's box and brings Count into view", shown);
   await page.waitForFunction(() => /pixels/.test(document.querySelector("#fx-result").textContent));

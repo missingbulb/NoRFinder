@@ -1,29 +1,27 @@
 {
   "about": "The Vascular Measurements study's own elements in the shell's states (req/checks/shell-states, req/checks/spec-layout): each graft puts its tree under the shell's element `under`, after its child `after` or first, in the tree of dev/requirements/shell-states.json, whose rules they follow; its roots and paths open this study. `counted` is its first step, Run algorithm, done.",
   "grafts": [
-    {"under": "Left bar", "after": "Edit Image box", "tree": [
-      {"name": "Processing", "select": "#model-set", "box": true, "req": "req/shell/left-bar/folding",
-        "rule": [
-          {"when": {"image": ["none"]}, "is": "folded"}
-        ],
-        "children": [
-          {"name": "Algorithm", "select": "#vm-algo", "control": true, "req": "req/vascular/model/run"},
-          {"name": "About the algorithm", "select": "#vm-about", "req": "req/vascular/model/run"},
-          {"name": "Load a model", "select": "#model-load", "control": true, "req": "req/vascular/model/view"},
-          {"name": "Run algorithm", "select": "#vm-run", "control": true, "req": "req/vascular/model/run"},
-          {"name": "The model's controls", "select": "#model-on", "req": "req/vascular/model/correct",
-            "rule": [
-              {"when": {"counted": [false]}, "is": "hidden"}
-            ]
-          }
-        ]
-      },
-      {"name": "Ground truth tasks", "select": "#tasks-box", "box": true, "req": "req/vascular/truth/tasks",
+    {"under": "Processing", "tree": [
+      {"name": "Algorithm", "select": "#vm-algo", "control": true, "req": "req/vascular/model/run"},
+      {"name": "About the algorithm", "select": "#vm-about", "req": "req/vascular/model/run"},
+      {"name": "Load a model", "select": "#model-load", "control": true, "req": "req/vascular/model/view"},
+      {"name": "Run algorithm", "select": "#vm-run", "control": true, "req": "req/vascular/model/run"},
+      {"name": "The model's controls", "select": "#model-on", "req": "req/vascular/model/correct",
         "rule": [
           {"when": {"counted": [false]}, "is": "hidden"}
         ]
-      },
-      {"name": "Review", "select": "#review-box", "box": true, "req": "req/vascular/model/correct",
+      }
+    ]},
+    {"under": "Ground Truth Tasks", "tree": [
+      {"name": "The tasks", "select": "#vm-tasks", "req": "req/vascular/truth/tasks",
+        "rule": [
+          {"when": {"counted": [false]}, "is": "hidden"}
+        ]
+      }
+    ]},
+    {"under": "Summary", "tree": [
+      {"name": "What the model holds", "select": "#model-facts", "req": "req/vascular/model/run"},
+      {"name": "Mark a damaged area", "select": "#vm-marks", "req": "req/vascular/model/correct",
         "rule": [
           {"when": {"counted": [false]}, "is": "hidden"}
         ]
@@ -31,8 +29,17 @@
     ]},
     {"under": "Main view", "after": "Tasks/Items switch", "tree": [
       {"name": "What to show", "select": "#model-mode", "req": "req/vascular/model/view"},
-      {"name": "Colour by depth", "select": "#vm-depth", "control": true, "req": "req/vascular/stack-view"},
-      {"name": "Vessel widths", "select": "#m-widths", "control": true, "req": "req/vascular/model/view"}
+      {"name": "Vessel widths", "select": "#m-widths", "control": true, "req": "req/vascular/model/view"},
+      {"name": "Low-confidence", "select": "#m-candidates-row", "req": "req/vascular/model/view",
+        "rule": [
+          {"when": {"counted": [false]}, "is": "hidden"}
+        ]
+      },
+      {"name": "Signal kept", "select": "#vm-review", "req": "req/vascular/model/view",
+        "rule": [
+          {"when": {"counted": [false]}, "is": "hidden"}
+        ]
+      }
     ]},
     {"under": "Main view", "after": "Image view", "tree": [
       {"name": "Item view", "select": "#items-view", "req": "req/shell/views/second",

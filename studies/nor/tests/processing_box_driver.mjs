@@ -57,7 +57,7 @@ try {
   if (folds.about) problems.push("the algorithm's note starts open");
   // the box is folded until an image opens, so it is unfolded here to see what a Viewer would see in it
   const filters = await page.evaluate(() => {
-    const box = document.querySelector("#finder-box"), folded = box.classList.contains("folded"); box.classList.remove("folded"); set = document.querySelector("#settings-box"), fold = document.querySelector("#filters-fold");
+    const box = document.querySelector("#processing-box"), folded = box.classList.contains("folded"); box.classList.remove("folded"); set = document.querySelector("#settings-box"), fold = document.querySelector("#filters-fold");
     const f = document.querySelector("#filters"), p = document.querySelector("#presets");
     const got = { fold: !!fold && fold.matches("details.fold") && box.contains(fold) && fold.contains(f) && fold.contains(p),
       title: fold && fold.querySelector(":scope > summary").textContent.trim(), open: !!fold && fold.open, count: f ? f.children.length : 0,

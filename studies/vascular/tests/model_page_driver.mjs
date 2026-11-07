@@ -81,12 +81,14 @@ try {
   await page.click('#model-mode [data-v="model"]');
   const alone = await drawn();
   check(!(await shown()).split && alone.lit > 500, `Model shows the model alone, over the whole view: ${alone.lit} lit pixels`);
-  const depth = await page.getAttribute("#vm-depth", "aria-pressed");
-  await page.click("#vm-depth");
+  // the viewer's Colour by depth, in the image box (req/shell/viewer-3d), paints the model as it paints the stack
+  if (await page.evaluate(() => $("#image-box").classList.contains("folded"))) { await page.click("#image-box"); await page.waitForFunction(() => !$("#image-box").classList.contains("folded")); }
+  const depth = await page.getAttribute("#image-box #v3-depth", "aria-pressed");
+  await page.click("#image-box #v3-depth");
   const flip = await drawn(), [byDepth, plain] = depth === "true" ? [alone, flip] : [flip, alone];
   check(byDepth.coloured > plain.coloured * 4 + 100, `Colour by depth paints the model in depth colours: ${plain.coloured} → ${byDepth.coloured} coloured pixels`);
   check(await page.evaluate(() => window.shellForTests.viewer.three.S.depth) === (depth === "true" ? 0 : 1), "and the stack too");
-  await page.click("#vm-depth");
+  await page.click("#image-box #v3-depth");
   await page.uncheck("#m-widths");
   const thin = await drawn();
   check(thin.lit < alone.lit * 0.7, `Vessel widths off draws the vessels as lines: ${alone.lit} → ${thin.lit} lit pixels`);
@@ -102,8 +104,11 @@ try {
     await page.click('#review-mode [data-v="all"]');
   } else console.log(`not checked in this ${ENGINE}: what Detected leaves in the 3D view, which needs the WebGL2 it lacks`);
 
-  check(await page.isHidden("#tasks-box") && await page.isHidden("#vm-truth") && await page.isVisible("#review-box #m-draw"),
-    "outside a ground-truth stage there are no tasks and no Submit, and a missed vessel is drawn from Review");
+  check(await page.isHidden("#tasks-box") && await page.isHidden("#vm-truth") && await page.isVisible("#summary-box #m-draw") && await page.isVisible("#summary-box #m-lasso"),
+    "outside a ground-truth stage there are no tasks and no Submit, and a missed vessel is drawn, and a damaged area marked, from Summary");
+  // req/shell/image/toolbar: how the model shows is the toolbar's left, and the left bar holds none of it
+  const where = await page.evaluate(() => ["#model-mode", "#m-widths", "#review-mode", "#reach"].map((s) => !!$(s)?.closest(".toolbar") && !$(s).closest("#left")));
+  check(where.every(Boolean), `what the model shows and how sit at the toolbar's left: ${where}`);
   await page.click("#switch");
   await page.click('#item-kind [data-v="vessels"]');
   await page.selectOption("#item-filter", "review");

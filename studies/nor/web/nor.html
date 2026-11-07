@@ -1,6 +1,5 @@
-<template data-slot="left">
-    <section class="box foldable" id="finder-box" data-opens="load" data-folds="find">
-      <div class="sec-head"><h2>Processing</h2></div>
+<template data-slot="processing">
+    <div id="finder-box">
       <select id="finder" disabled></select>
       <details id="about-box" class="fold">
         <summary>How the algorithm works</summary>
@@ -23,18 +22,17 @@
       <div class="row">
         <button id="find" class="primary" disabled>Find Candidates</button>
       </div>
-    </section>
-
-    <section class="box foldable" id="summary-box" data-opens="find">
-      <div class="sec-head"><h2>Summary</h2></div>
+    </div>
+</template>
+<template data-slot="summary">
+    <div id="nor-summary">
       <div class="mask-btns"><button id="mask-add" class="primary" disabled title="Lasso the part of the image the summary and the CSVs should count; lasso again to add or cut out an area">Add mask</button><button id="mask-clear" hidden>Clear mask</button></div>
       <div id="summary" class="dim">No candidates yet.</div>
       <div class="csv-btns"><button id="dl-cands" disabled>Download Candidates</button><button id="dl-summary" disabled>Download Summary</button></div>
-    </section>
-
-    <section class="box foldable" id="tasks-box" data-opens="find" hidden>
-      <div class="sec-head"><h2>Ground Truth Tasks</h2></div>
-      <div class="gt-access" hidden></div>
+    </div>
+</template>
+<template data-slot="tasks">
+    <div id="nor-tasks">
       <div id="gt-bar"><span data-task="pass"></span><span data-task="fail"></span><span data-task="missed"></span></div>
       <ol id="gt-tasks">
         <li data-task="pass"><div class="task-head"><span class="tick" aria-hidden="true"></span><button class="t" type="button"><span class="n"></span> Finalists</button></div><div class="task-body"></div></li>
@@ -45,7 +43,7 @@
       </ol>
       <span id="task-tools"><button id="task-back" class="link" type="button" title="The one you were on before, to change your mind" disabled>‹ Back</button><button id="task-skip" class="link" type="button" title="The next one, leaving this one for later">Skip ›</button></span>
       <div id="task-now"><div id="task-stage"><div id="task-card"></div></div></div>
-    </section>
+    </div>
 </template>
 <template data-slot="toolbar">
       <details class="menu for-image" id="show-menu">
