@@ -1439,7 +1439,7 @@ nobody has decided: what the page does there is not a requirement yet.
   shift-drag pans, and Top, Tilted,
   Side and Front put the view back. A Panning label at the bottom left of the 3D view always shows, filled
   blue while panning is on and outlined grey while off, its tooltip saying to press Shift to pan (owner,
-  2026-11-07); clicking it turns panning on or off, so that a plain drag
+  2026-11-07), a faded grey "shift" right beside it (owner, 2026-11-08); clicking it turns panning on or off, so that a plain drag
   pans instead of turning. Holding shift turns it on until shift is let go, which returns it to the state
   the label holds. That state lives only while the page is open: it is never stored or restored (owner,
   2026-11-05). The toolbar's right holds, beside Zoom, a split button named after the

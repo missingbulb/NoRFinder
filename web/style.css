@@ -766,10 +766,15 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 #v3-stage.split #v3-gl, #v3-stage.split #v3-hud { width: 50%; }
 #v3-stage .v3-side { position: absolute; top: 0; left: 50%; width: 50%; height: 100%; border-left: 1px solid #333; }
 #v3-stage:not(.split) .v3-side { left: 0; width: 100%; border-left: 0; }
-/* the Panning label: always there at the bottom left of the view, filled blue while panning is on, grey outlined while off */
-#v3-pan { position: absolute; left: 8px; bottom: 6px; z-index: 2; padding: 2px 10px; font-size: 12px;
+/* the Panning label: always there at the bottom left of the view, filled blue while panning is on, grey outlined while off;
+   a study's own labels beside it alike */
+.v3-keys { position: absolute; left: 8px; bottom: 6px; z-index: 2; display: flex; align-items: center; gap: 6px; }
+.v3-keys > button { padding: 2px 10px; font-size: 12px;
   color: var(--dim); background: #000a; border: 1px solid #6b7078; border-radius: var(--r-chip); cursor: pointer; }
-#v3-pan[aria-pressed="true"] { color: #fff; background: var(--blue); border-color: var(--blue); }
+.v3-keys > button[aria-pressed="true"] { color: #fff; background: var(--blue); border-color: var(--blue); }
+/* the key beside a label, faded grey */
+.v3-key { font-size: 11px; color: var(--dim); opacity: .6; margin-right: 6px; }
+.v3-keys [hidden] { display: none; }
 /* Reset View: the button and its arrow joined */
 #v3-look { display: inline-flex; }
 #v3-reset { border-top-right-radius: 0; border-bottom-right-radius: 0; padding: 5px 12px; white-space: nowrap; }
