@@ -658,7 +658,14 @@ nobody has decided: what the page does there is not a requirement yet.
   colour the file displays it in, a z-stack flattened (each pixel the brightest of every slice) and slice by
   slice. Each channel's contrast is set once over the whole stack, never per slice, so signal that fades with
   depth still looks faded: between its 0.5% quantile and its 99.8% one, or the upper quantile the study's
-  `view.upper` sets. What a study's `study.json` says of a channel (its name, description, whether it shows, its
+  `view.upper` sets, its black point then lifted where its black-point method measures the background on the
+  channel's histogram in that window (set by the owner on 2026-11-08). The method is a preference the viewer takes
+  from the first that sets one of the image, the user, the study (`view.blackPoint`) and the file's format; the
+  shell has the last two. `triangle`, the format's own for a TIFF of separate channels, puts the black point at the
+  histogram's knee where the background's fall meets the signal's tail (Zack's triangle), each channel by its own
+  histogram; `quantile`, a photo's (an RGB TIFF, a PNG or a JPEG) and any light background's, leaves it at the 0.5%
+  quantile; `background` puts it 2.5 robust standard deviations (1.4826 median absolute deviations) over the
+  background's median. What a study's `study.json` says of a channel (its name, description, whether it shows, its
   black point, its colour, coloured by depth) is only where that channel's row starts, every one of them the
   user's to change (`req/shell/channels/rows`). A file's display colours do not say which channel is which
   (Vascular's originals show DAPI red, NoR's come in three arrangements), so a study may give a rule, in its page

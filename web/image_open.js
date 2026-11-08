@@ -1,8 +1,8 @@
 // Opening an image for the viewers, the same way in every study and with no Python (req/shell/image/open): a TIFF
 // read by split.js's reader, any other image as the browser decodes it. Each channel is shown under the name the file
 // gives it and in the colour the file displays it in; its contrast is set once over the whole stack, between its 0.5%
-// quantile and its upper one (the study's view.upper, else 99.8%), or left as stored where the study's view.stretch
-// is false; a stack comes flattened (each pixel the brightest of every slice) and slice by slice.
+// quantile and its upper one (the study's view.upper, else 99.8%), its black point then lifted where the black-point
+// method says (BLACK_POINT), or left as stored where the study's view.stretch is false; a stack comes flattened (each pixel the brightest of every slice) and slice by slice.
 // What it gives: {W, H, Z, um, umY, spacing, info, channels: [{name?, colour?}], raw: [per channel, per slice, the
 // file's own samples], images: one buffer, the viewers' whole image: planes, the channels' 8-bit flattened planes
 // one after another, then volume, every slice of every channel, channel by channel, 8-bit, for a stack (Z > 1);
@@ -10,6 +10,9 @@
 import { readTiff } from "./split.js";
 
 const LOWER = 0.005, UPPER = 0.998;
+// a robust standard deviation in median absolute deviations, for normal noise, and how many of them a
+// background-measured black point stands above the background's median
+const SIGMA_PER_MAD = 1.4826, ABOVE = 2.5;
 // the channels shown at most: each is a plane of the image's size in the page's memory
 export const MOST = 8;
 const RGB = [{ name: "Red", colour: "#ff0000" }, { name: "Green", colour: "#00ff00" }, { name: "Blue", colour: "#0000ff" }];
@@ -29,6 +32,34 @@ export async function openImage(bytes, view = {}) {
   bitmap.close?.();
   return fromPixels(W, H, rgba, view, greyFile(b));
 }
+
+// Where each channel's black point sits, as the step of its 256 between the 0.5% and upper quantiles that a method
+// measures on the channel's histogram there, 0 leaving it at the quantile. The method is a preference, the first
+// set of the image's, the user's, the study's (view.blackPoint) and its format's; the shell has the last two.
+const BLACK_POINT = {
+  quantile: () => 0,
+  // Zack's triangle: the step farthest below the line from the histogram's peak to its brightest filled step, where
+  // the background's fall meets the signal's tail; none for a peak in the bright half, a light background
+  triangle(h) {
+    let p = 0, e = 255;
+    for (let b = 1; b < 256; b++) if (h[b] > h[p]) p = b;
+    while (e > p && !h[e]) e--;
+    if (p > 127 || e <= p) return 0;
+    let t = p, most = -Infinity;
+    for (let b = p; b <= e; b++) { const d = h[p] * (e - b) - h[b] * (e - p); if (d > most) { most = d; t = b; } }
+    return t;
+  },
+  // the background's median step and ABOVE robust standard deviations over it
+  background(h) {
+    const half = Math.floor((h.reduce((a, v) => a + v, 0) - 1) / 2);
+    const rank = (hist) => { let seen = 0; for (let b = 0; b < 256; b++) { seen += hist[b]; if (seen > half) return b; } return 255; };
+    const m = rank(h), d = new Float64Array(256);
+    for (let b = 0; b < 256; b++) d[Math.abs(b - m)] += h[b];
+    return Math.min(254, m + ABOVE * SIGMA_PER_MAD * rank(d));
+  },
+};
+// a format's own black-point method: a fluorescence TIFF's background is most of its pixels, a photo's is not
+const FORMAT_BLACK = { tiff: "triangle", photo: "quantile" };
 
 // whether a PNG or a JPEG says it is grey (true) or in colour (false); null for a file that does not say
 export function greyFile(b) {
@@ -51,7 +82,7 @@ export function fromPixels(W, H, rgba, view = {}, said = null) {
   if (said === null) for (let i = 0; i < n && grey; i++) grey = ch[0][i] === ch[1][i] && ch[1][i] === ch[2][i];
   const chans = grey ? [ch[0]] : ch, names = grey ? [{ name: "Grey", colour: "#ffffff" }] : RGB;
   const info = [["Field", `${W} × ${H} px`], ["Depth", grey ? "8-bit grey" : "8-bit RGB"]];
-  return shown(W, H, 1, chans.map((p) => [p]), names, view, { um: null, umY: null, spacing: null, info });
+  return shown(W, H, 1, chans.map((p) => [p]), names, view, "photo", { um: null, umY: null, spacing: null, info });
 }
 
 // a TIFF read whole, its first time point
@@ -88,7 +119,7 @@ export async function openTiff(b, view = {}) {
   const saved = text(305) || (ij.ImageJ ? `ImageJ ${ij.ImageJ}` : "");
   if (saved) info.push(["Saved by", saved]);
   const spacing = microns && ij.spacing ? Number(ij.spacing) : null;
-  return shown(W, H, t.Z, raw, said, view, { um, umY, spacing, info });
+  return shown(W, H, t.Z, raw, said, view, rgb ? "photo" : "tiff", { um, umY, spacing, info });
 }
 
 // a plane's little-endian bytes as numbers
@@ -106,9 +137,9 @@ export function lutColour(lut) {
   return "#" + top.map((v) => Math.round((v / most) * 255).toString(16).padStart(2, "0")).join("");
 }
 
-function shown(W, H, Z, raw, said, view, rest) {
+function shown(W, H, Z, raw, said, view, format, rest) {
   const n = W * H, C = raw.length, keep = view.stretch === false;
-  const upper = view.upper ?? UPPER;
+  const upper = view.upper ?? UPPER, black = BLACK_POINT[view.blackPoint ?? FORMAT_BLACK[format]];
   // a flat image's one slice is its flattened plane, so it is drawn there and nothing else is held
   const images = new Uint8Array(C * n * (Z > 1 ? 1 + Z : 1)), planes = images.subarray(0, C * n);
   const volume = Z > 1 ? images.subarray(C * n) : planes;
@@ -118,6 +149,12 @@ function shown(W, H, Z, raw, said, view, rest) {
     if (!eight) {
       [lo, hi] = quantiles(slices, [LOWER, upper]);
       if (!(hi > lo)) [lo, hi] = extremes(slices);
+      if (hi > lo) {
+        const h = new Float64Array(256), span = hi - lo;
+        for (const s of slices) for (let i = 0; i < n; i++) { const v = (s[i] - lo) / span; h[Math.trunc((v < 0 ? 0 : v > 1 ? 1 : v) * 255)]++; }
+        const step = black(h);
+        if (step) lo = lo + (step * (hi - lo)) / 255;
+      }
     }
     const flat = planes.subarray(c * n, (c + 1) * n);
     slices.forEach((s, z) => {
