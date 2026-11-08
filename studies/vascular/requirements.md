@@ -164,7 +164,9 @@ owner's decisions on the stacks and the vessel model, are
   across the picture, never in depth; turned, across the screen at its depth; a tip dropped on another vessel attaches
   there, a junction made. The right-click menu deletes, adds a bend, connects or splits a junction into vessels that
   cross, as anywhere (`req/vascular/model/correct`); right-clicked on the image where no line is, it offers Draw a
-  missed vessel, its first point there. A low-confidence line, faint, is kept by clicking it. Each junction in the
+  missed vessel, its first point there; while it is drawn, the line's end snaps onto the point or vessel under the
+  pointer, lit as a dragged tip's target is, never onto the vessel being drawn, and the click joins it there (owner,
+  2026-11-08). A low-confidence line, faint, is kept by clicking it. Each junction in the
   area in turn, ringed on the view and pictured in the box, is a real junction or vessels that only cross at
   different depths (split then); clicking a junction on the view makes it the current one. "Area is right", on once
   every junction there has a verdict, does the area: every confident vessel whose middle lies in it is accepted,

@@ -221,6 +221,44 @@ try {
       await page.keyboard.press("Escape");
       const after = await doc();
       check(after.edges.length === before + 1 && !(await drawingNow()), `the right-clicked spot is the drawn vessel's first point, the next click its next: ${before} → ${after.edges.length} edges`);
+
+      // drawn again, the line's end snaps onto a vessel's point under the pointer, as a dragged tip's target lights,
+      // never onto the vessel just drawn; the click joins it there
+      const seg = (p, a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], u = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy)));
+        return Math.hypot(a[0] + u * dx - p[0], a[1] + u * dy - p[1]); };
+      let from2 = null;
+      for (const s of spots.filter((s) => seg(s, from, to) > 30)) {
+        await page.mouse.click(cx + s[0], cy + s[1], { button: "right" });
+        if ((await menuNow()).includes("Draw a missed vessel")) { from2 = s; break; }
+        await page.keyboard.press("Escape");
+      }
+      check(!!from2, "a second spot away from the drawn vessel to draw from");
+      await page.click("#ctx .item");
+      const to2 = spots.find((s) => seg(s, from, to) > 30 && Math.hypot(s[0] - from2[0], s[1] - from2[1]) > 60);
+      await page.mouse.click(cx + to2[0], cy + to2[1]);
+      const { points, at, kinds } = await page.evaluate(() => window.vascular.model());
+      const onScreen = (p) => p && p[0] > 20 && p[0] < cw - 20 && p[1] > 20 && p[1] < ch - 20;
+      const alone = (k) => Object.entries(points).every(([j, q]) => j === k || !q || Math.hypot(q[0] - points[k][0], q[1] - points[k][1]) > 30);
+      const target = Object.keys(at).find((k) => /^(vessel|accepted)-curve$/.test(kinds[k]) && onScreen(points[k]) && inArea(at[k], 10) && alone(k));
+      check(!!target, "a vessel's point in the area to draw to");
+      if (target) {
+        const [qx, qy] = points[target];
+        await page.mouse.move(cx + qx + 5, cy + qy + 4, { steps: 3 });
+        const snap = await page.evaluate(() => window.vascular.model().drawing);
+        check(snap?.onto?.node === +target && Math.hypot(snap.end[0] - qx, snap.end[1] - qy) < 0.5,
+          `over a vessel's point, the line being drawn ends on it, not at the pointer: ${JSON.stringify(snap)} vs point ${target} at ${qx.toFixed(1)}, ${qy.toFixed(1)}`);
+        const mid = [(from2[0] + to2[0]) / 2, (from2[1] + to2[1]) / 2];
+        await page.mouse.move(cx + mid[0], cy + mid[1], { steps: 3 });
+        const own = await page.evaluate(() => window.vascular.model().drawing);
+        check(own && !own.onto && Math.hypot(own.end[0] - mid[0], own.end[1] - mid[1]) < 0.5,
+          `over the segment just drawn, the line ends at the pointer: ${JSON.stringify(own)}`);
+        const n0 = (await doc()).edges.length;
+        await page.mouse.click(cx + qx + 5, cy + qy + 4);
+        const joined = await page.evaluate(() => window.vascular.model());
+        check(joined.model.edges.length === n0 + 1 && /-end$/.test(joined.kinds[target]) && !(await drawingNow()),
+          `the click there joins the drawn vessel to that point and ends drawing: ${n0} → ${joined.model.edges.length} edges, point ${target} ${joined.kinds[target]}`);
+      }
+      await page.keyboard.press("Escape");
     }
   }
 

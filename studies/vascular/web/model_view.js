@@ -279,9 +279,10 @@ function drawModel(c) {
     c.font = '11px "IBM Plex Mono", monospace'; c.fillStyle = 'rgba(0,0,0,.6)';
     c.fillRect(x + 8, y - 22, c.measureText(t).width + 8, 16); c.fillStyle = '#fff'; c.fillText(t, x + 12, y - 10);
   }
-  if (drawing?.from && drawing.to) {
+  const end = drawEnd();
+  if (end) {
     c.setLineDash([5, 4]); c.strokeStyle = '#fff'; c.lineWidth = 1.5;
-    c.beginPath(); c.moveTo(...screenOf(drawing.from)); c.lineTo(...drawing.to); c.stroke(); c.setLineDash([]);
+    c.beginPath(); c.moveTo(...screenOf(drawing.from)); c.lineTo(...end); c.stroke(); c.setLineDash([]);
     if (drawing.from.point) { const [x, y] = screenOf(drawing.from); c.beginPath(); c.arc(x, y, 3, 0, 2 * Math.PI); c.fillStyle = '#fff'; c.fill(); }
   }
   if (rubber) {
@@ -341,6 +342,11 @@ function pick(e, segmentsOnly = false, except = null) {
   }
   return best;
 }
+// While a missed vessel is drawn: the point it is drawn from, never a place to join it to, nor a segment ending on it; and
+// where the line being drawn ends, on the point or vessel under the pointer, lit as a dragged tip's target is, which a
+// click joins it to, else at the pointer.
+const drawnFrom = () => drawing?.from?.node ?? null;
+const drawEnd = () => (drawing?.from && drawing.to ? (hover ? screenOf(hover) : drawing.to) : null);
 // the vessel's radius in µm under a picked point or segment, when the model gives it
 const hoverRadius = (h) => (h.node != null ? model.nodes.get(h.node)?.r : model.segments[h.segment] ? Mo.curvePoint(model, h.segment, h.t).r : null);
 const screenOf = (h) => {
@@ -632,7 +638,7 @@ function offerDrawing(e) {
   showMenu([['Draw a missed vessel', () => { setDrawing(true); drawing.from = at; return model; }]], e.clientX, e.clientY);
 }
 function drawClick(e) {
-  const h = pick(e);
+  const h = pick(e, false, drawnFrom());
   const to = h || brightestAt(e);
   if (!to) return;
   // an undo can take away the point the line was drawing from
@@ -725,9 +731,10 @@ export { msg };
 // the edits kept on this device for the model on show, forgotten
 export function forget() { if (savedKey) store.del(savedKey); }
 // at: each point in µm; kinds: each point's state and whether it is a curve point inside one vessel or an end
-// handles: the points are handles to drag now
+// handles: the points are handles to drag now; drawing: while a missed vessel is drawn, where the line ends on screen and
+// what a click there joins it to
 export const inspect = () => ({ model: model && Mo.toJSON(model), points: view && Object.fromEntries(view.pts), edits,
-  handles: !!V && handles(),
+  handles: !!V && handles(), drawing: drawing && { end: drawEnd(), onto: hover },
   at: model && Object.fromEntries([...model.nodes].map(([id, n]) => [id, { x: n.x, y: n.y, z: n.z }])),
   kinds: model && Object.fromEntries([...model.nodes.keys()].map((id) => {
     const on = model.segments.filter((s) => Mo.live(s) && (s.a === id || s.b === id)), st = new Set(on.map((s) => s.state));
@@ -748,7 +755,7 @@ export function init(view, signal, makesTruth) {
   cv.addEventListener('pointermove', (e) => {
     if (!model || e.buttons || rubber) return;
     if (drawing) { const r = cv.getBoundingClientRect(); drawing.to = [e.clientX - r.left, e.clientY - r.top]; }
-    const h = pick(e), same = JSON.stringify(h) === JSON.stringify(hover);
+    const h = pick(e, false, drawnFrom()), same = JSON.stringify(h) === JSON.stringify(hover);
     cv.classList.toggle('over-point', !!h);
     if ((!same || drawing) && $('ctx').hidden) { hover = h; V.redraw(); }
   });
