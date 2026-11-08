@@ -258,7 +258,7 @@ export function viewer3d(shell, flat) {
   addEventListener("keyup", (e) => { if (e.key === "Shift") heldShift(false); });
   addEventListener("blur", () => heldShift(false));
   showPan();
-  // the labels at the bottom left, each with the key that holds it on beside it; a study may add its own to the row
+  // the labels at the bottom left, one above the other, each with the key that holds it on beside it; a study may add its own above
   const keys = html("div", { className: "v3-keys" });
   keys.append(panBtn, html("span", { className: "v3-key", textContent: "shift" }));
   stage.append(cv, hudCv, keys);

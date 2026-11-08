@@ -171,7 +171,7 @@ owner's decisions on the stacks and the vessel model, are
   draw a missed vessel, none saying no vessel was missed, and none ending the junctions apart (owner, 2026-11-07).
 
   Holding Ctrl shows the model alone, and letting it go the lines over the stack again (owner, 2026-11-07). While an
-  area is open a Model label sits beside the 3D view's Panning label, alike: filled blue while the model shows alone,
+  area is open a Model label sits right above the 3D view's Panning label, alike: filled blue while the model shows alone,
   a faded grey "ctrl" right beside it; clicking it keeps the model alone on or off, as Panning's click does (owner,
   2026-11-08). At the toolbar's left, in the Show menu's place, a big Back to image button leaves the area
   for the whole stack, where the Show menu is again; in the same place, Back to task returns to the area. Each area

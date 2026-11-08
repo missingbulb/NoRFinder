@@ -562,7 +562,7 @@ function frameFocus() {
     pivot: [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, 0], dist: Math.max(.15, V.FIT_DIST * h * FILL), held: false });
   V.redraw();
 }
-// the Model label beside Panning: in an area only, filled while the model shows alone
+// the Model label above Panning: in an area only, filled while the model shows alone
 function showPeek() {
   for (const el of peekKeys) el.hidden = !focused;
   peekKeys[0]?.setAttribute('aria-pressed', String(peeking));
@@ -754,7 +754,7 @@ export function init(view, signal, makesTruth) {
   const peekBtn = Object.assign(document.createElement('button'), { id: 'vm-peek', type: 'button', textContent: 'Model', title: 'Hold Ctrl to see the model alone, or click to keep it on' });
   peekBtn.onclick = () => { peekOn = !peekOn; peek(); };
   peekKeys = [peekBtn, Object.assign(document.createElement('span'), { className: 'v3-key', textContent: 'ctrl' })];
-  V.keys.append(...peekKeys); showPeek();
+  V.keys.prepend(...peekKeys); showPeek();
   cv.addEventListener('pointermove', (e) => {
     if (!model || e.buttons || rubber) return;
     if (drawing) { const r = cv.getBoundingClientRect(); drawing.to = [e.clientX - r.left, e.clientY - r.top]; }

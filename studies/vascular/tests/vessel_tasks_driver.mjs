@@ -217,16 +217,16 @@ try {
     }
   }
 
-  // Ctrl shows the model alone while it is held, a Model label beside Panning saying so, a faded "ctrl" beside it
+  // Ctrl shows the model alone while it is held, a Model label above Panning saying so, a faded "ctrl" beside it
   const peekLabel = () => page.evaluate(() => {
     const b = $("#vm-peek"), p = $("#v3-pan").getBoundingClientRect(), r = b?.getBoundingClientRect(), k = b?.nextElementSibling, kr = k?.getBoundingClientRect();
     return b && { text: b.textContent.trim(), shown: b.checkVisibility(), on: b.getAttribute("aria-pressed") === "true", fill: getComputedStyle(b).backgroundColor,
       key: k?.textContent.trim(), keyShown: !!k?.checkVisibility(), keyFaded: !!k && Number(getComputedStyle(k).opacity) < 1,
-      row: Math.abs((r.top + r.bottom) / 2 - (p.top + p.bottom) / 2) < 4 && r.left > p.right, beside: !!kr && kr.left >= r.right && kr.left - r.right < 16 };
+      above: r.bottom <= p.top && p.top - r.bottom < 12 && Math.abs(r.left - p.left) < 2, beside: !!kr && kr.left >= r.right && kr.left - r.right < 16 };
   });
   const free = await peekLabel();
-  check(free && free.text === "Model" && free.shown && !free.on && free.row && free.key === "ctrl" && free.keyShown && free.keyFaded && free.beside,
-    `in an area a Model label shows beside Panning, off, a faded "ctrl" right beside it: ${JSON.stringify(free)}`);
+  check(free && free.text === "Model" && free.shown && !free.on && free.above && free.key === "ctrl" && free.keyShown && free.keyFaded && free.beside,
+    `in an area a Model label shows right above Panning, off, a faded "ctrl" right beside it: ${JSON.stringify(free)}`);
   await page.keyboard.down("Control");
   const held = (await view()).mode, heldLabel = await peekLabel();
   await page.keyboard.up("Control");
