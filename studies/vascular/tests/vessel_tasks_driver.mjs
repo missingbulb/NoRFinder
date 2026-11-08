@@ -1,12 +1,12 @@
 // Drives the vascular study's page in a GT stage (web/) in headless Chromium against a stand-in worker
 // (stand_in.mjs) whose Execute answers with a model fixture. Checks req/vascular/model/run: Processing lists the
 // algorithms with their icons, precision and recall, the default first, says how the chosen one works and how well, and Execute runs it with the spacing shown, opening
-// its model; req/vascular/truth/tasks and req/vascular/truth/order: a row per step counted in areas, how many areas
-// chosen, req/shell/ground-truth/tagging: nothing opens until Start GT tagging, Stop tagging gives the stack back; Lines
-// opening from above, turning in 3D, its handles kept in depth from above, a tip dropped on a vessel attached there and a right-click
-// on the image drawing a missed vessel, Missed vessels, Junctions in 3D with an
-// artifact dropped, Ctrl showing the model alone, Back to image and Back to task; req/vascular/truth/marks: an area done
-// in every step blacked out of the stack while tagging, under the Show menu's Cut out what is done; req/vascular/model/ground-truth: Submit
+// its model; req/vascular/truth/tasks and req/vascular/truth/order: how many areas chosen first, a row per area, the
+// areas' map floating over the view while tagging, req/shell/ground-truth/tagging: nothing opens until Start GT tagging,
+// Stop tagging gives the stack back; an area opening from above, turning in 3D, its handles kept in depth from above, a
+// tip dropped on a vessel attached there, a right-click on the image drawing a missed vessel, its junctions judged one at
+// a time and picked on the view, Area is right, Ctrl showing the model alone, Back to image and Back to task, a file of
+// the earlier three steps read; req/vascular/truth/marks: an area done blacked out of the stack while tagging, under the Show menu's Cut out what is done; req/vascular/model/ground-truth: Submit
 // last, its export carrying every verdict. Exits 1 on a failed check, 2 when it cannot run.
 //   node studies/vascular/tests/vessel_tasks_driver.mjs STUDIES
 import { createRequire } from "node:module";
@@ -57,11 +57,7 @@ const brightness = () => page.evaluate(async () => {
 const tasks = () => page.evaluate(() => window.vascular.tasks());
 const doc = () => page.evaluate(() => window.vascular.model().model);
 const rows = () => page.evaluate(() => [...document.querySelectorAll("#gt-tasks > li")].map((li) => li.querySelector(".task-head .t, .task-head #gt-submit").textContent.trim()));
-// an area's place in the review, as the requirement orders them: rows top to bottom, each the way back from the last
 const [W, H] = [model.size_px[0] * model.um_per_px, model.size_px[1] * model.um_per_px];
-// (a curve point just outside the field is in the area at its edge)
-const cell = (v, L) => Math.min(9, Math.max(0, Math.floor((v / L) * 10)));
-const areaOf = (p) => { const r = cell(p.y, H), k = cell(p.x, W); return r * 10 + (r % 2 ? 9 - k : k); };
 
 try {
   await page.goto(site.origin + "/web/vascular");
@@ -110,23 +106,35 @@ try {
   check(v.start === "Start GT tagging" && v.cut.off, `Start GT tagging heads the tasks, and Cut out what is done is off out of tagging: ${JSON.stringify(v)}`);
   await page.click("#gt-start");
 
-  // the tasks are the stack's areas, each worked through in three steps
+  // the tasks are the stack's areas, a row each, 4 × 4 at first, the choice of how many first in the box
   t = await tasks();
   const r0 = await rows(), all = t.grid * t.grid;
-  check(r0.length === 4 && r0[0] === `0/${all} Lines` && r0[1] === `0/${all} Missed vessels` && r0[2] === `0/${all} Junctions` && /Submit Ground Truth/.test(r0[3]),
-    `a row per step, counted in areas: ${r0.join(" | ")}`);
-  check(await page.evaluate(() => $("#gt-bar").children.length === 3), "the bar has a part per step");
-  check(t.step === "lines" && t.area === 0 && t.focused, `Start GT tagging opens the walk on the first area's Lines, the area alone in view: ${JSON.stringify({ step: t.step, area: t.area, focused: t.focused })}`);
+  check(t.grid === 4 && r0.length === all + 1 && r0.slice(0, all).every((x, k) => x === `Area ${k + 1}`) && /Submit Ground Truth/.test(r0[all]),
+    `a row per area, 4 × 4 at first, then Submit: ${r0.join(" | ")}`);
+  check(await page.evaluate(() => $("#gt-bar").children.length === 16), "the bar has a part per area");
+  check(await page.evaluate(() => !!($("#area-grid").compareDocumentPosition($("#gt-start")) & Node.DOCUMENT_POSITION_FOLLOWING)
+    && !!($("#gt-start").compareDocumentPosition($("#gt-bar")) & Node.DOCUMENT_POSITION_FOLLOWING)), "how many areas is the box's first row, the bar after it");
+  check(await page.evaluate(() => !$("#m-draw") && !$("#m-lasso") && ![...document.querySelectorAll("button")].some((b) => /Draw a missed vessel|No missed vessels|Area done|Lines are right|Mark a damaged area/.test(b.textContent)) && !/Hold Ctrl/.test(document.body.textContent)),
+    "no Draw a missed vessel, No missed vessels here, Area done, Mark a damaged area or Ctrl note on the page");
+  check(t.area === 0 && t.focused, `Start GT tagging opens the walk on the first area, alone in view: ${JSON.stringify({ area: t.area, focused: t.focused })}`);
   v = await view();
-  check(v.start === "Stop tagging" && v.open === "lines", `the button now reads Stop tagging, the Lines row open: ${v.start}`);
+  check(v.start === "Stop tagging" && v.open === "a0", `the button now reads Stop tagging, the first area's row open: ${v.start} ${v.open}`);
   check(v.focus === "Back to image" && v.big && !v.show, `in an area, a big Back to image button takes the Show menu's place: "${v.focus}", Show ${v.show ? "shown" : "hidden"}`);
-  check(v.rot[2][2] > 0.99 && !v.held && v.mode === "overlay" && !!v.clip, `Lines shows the area alone, from straight above, the lines over the stack, free to turn: ${JSON.stringify({ z: v.rot[2][2], held: v.held, mode: v.mode, clip: v.clip })}`);
+  check(v.rot[2][2] > 0.99 && !v.held && v.mode === "overlay" && !!v.clip, `the area shows alone, from straight above, the lines over the stack, free to turn: ${JSON.stringify({ z: v.rot[2][2], held: v.held, mode: v.mode, clip: v.clip })}`);
+  const mini = () => page.evaluate(() => { const el = $("#gt-mini"), r = el?.getBoundingClientRect(), mm = getComputedStyle(document.documentElement).getPropertyValue("--mm-width");
+    return el && { shown: el.checkVisibility(), cells: el.querySelectorAll(".mm-body button").length, now: [...el.querySelectorAll(".mm-body button")].findIndex((b) => b.classList.contains("now")),
+      done: [...el.querySelectorAll(".mm-body button")].filter((b) => b.classList.contains("done")).length, width: Math.round(r.width),
+      mm: parseFloat(mm), over: $("#image-view").contains(el) }; });
+  let mm = await mini();
+  check(mm?.shown && mm.over && mm.cells === 16 && mm.now === 0 && mm.width === mm.mm, `while tagging the areas float as a map over the view, the minimap's width, the current one marked: ${JSON.stringify(mm)}`);
+  check(await page.evaluate(() => !!$("#gt-tasks li.now #task-card canvas") && $("#task-card .verdict").children.length === 2), "the area's current junction is pictured in the box, its two verdicts under it");
 
   // how many areas is the person's to choose
   await page.selectOption("#area-grid", "2");
   t = await tasks();
-  check(t.grid === 2 && (await rows())[0] === "0/4 Lines" && Math.abs(t.box.x1 - W / 2) < 0.01 && t.box.x0 === 0 && t.box.y0 === 0, `choosing 2 × 2 makes four areas, the first the top-left quarter: ${JSON.stringify(t.box)}`);
-  check(await page.evaluate(() => $("#area-map").children.length === 4 && $("#area-map .now") === $("#area-map").children[0]), "the map of the areas shows them, the current one marked");
+  check(t.grid === 2 && (await rows()).length === 5 && Math.abs(t.box.x1 - W / 2) < 0.01 && t.box.x0 === 0 && t.box.y0 === 0, `choosing 2 × 2 makes four areas, the first the top-left quarter: ${JSON.stringify(t.box)}`);
+  mm = await mini();
+  check(mm.cells === 4 && mm.now === 0, `the map shows the four areas, the first current: ${JSON.stringify(mm)}`);
 
   const mcv = () => page.evaluate(() => { const r = $("#mcv").getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; });
   const [cx, cy, cw, ch] = await mcv();
@@ -136,6 +144,7 @@ try {
   const pts = await page.evaluate(() => window.vascular.model().points);
   // inside the current area, the top-left quarter, at least margin µm from its edges
   const inArea = (n, margin = 0) => n.x > margin && n.x < W / 2 - margin && n.y > margin && n.y < H / 2 - margin;
+  const deg = (d) => { const g = new Map(); for (const e of d.edges) if (e.state !== "rejected") for (const id of [e.a, e.b]) g.set(id, (g.get(id) || 0) + 1); return g; };
   const node = m.nodes.find((n) => pts[n.id] && n.x > W * 0.1 && n.x < W * 0.4 && n.y > H * 0.1 && n.y < H * 0.4);
   const [px, py] = pts[node.id];
   await page.mouse.move(cx + px, cy + py); await page.mouse.down(); await page.mouse.move(cx + px + 25, cy + py + 15, { steps: 5 }); await page.mouse.up();
@@ -144,11 +153,10 @@ try {
   check(moved && (moved.x !== node.x || moved.y !== node.y) && moved.z === node.z, `a handle drags its point across the picture and keeps its depth: (${node.x.toFixed(1)}, ${node.y.toFixed(1)}, ${node.z}) → (${moved?.x.toFixed(1)}, ${moved?.y.toFixed(1)}, ${moved?.z})`);
   check(JSON.stringify((await view()).rot) === JSON.stringify(rot0), "... and the view stays as it was");
 
-  // a vessel's tip dragged onto another vessel's point is attached there, for a connection the algorithm missed
+  // a vessel's tip dragged onto another vessel's point is attached there, a junction made
   {
     const d = await doc(), { points, at, kinds } = await page.evaluate(() => window.vascular.model());
-    const degree = new Map();
-    for (const e of d.edges) if (e.state !== "rejected") for (const id of [e.a, e.b]) degree.set(id, (degree.get(id) || 0) + 1);
+    const degree = deg(d);
     const onScreen = (p) => p && p[0] > 20 && p[0] < cw - 20 && p[1] > 20 && p[1] < ch - 20;
     const near = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
     let pair = null;
@@ -167,17 +175,19 @@ try {
       await page.mouse.move(cx + tx, cy + ty); await page.mouse.down(); await page.mouse.move(cx + qx, cy + qy, { steps: 8 }); await page.mouse.up();
       const after = await page.evaluate(() => window.vascular.model());
       check(!after.at[tip] && /-end$/.test(after.kinds[to] || ""), `a tip dropped on another vessel's point attaches there, the point now a junction: tip ${tip} → point ${to} (${after.kinds[to]})`);
+      check((await tasks()).junctions.some((j) => j.key === `j${to}`), "... and the new junction is one of the area's to judge");
     } else check(false, "a vessel's tip in the area, near another vessel's point, to attach");
   }
 
-  // the area turns in 3D in Lines too
+  // the area turns in 3D
   await page.mouse.move(cx + 5, cy + ch - 5); await page.mouse.down(); await page.mouse.move(cx + 80, cy + ch - 60, { steps: 6 }); await page.mouse.up();
-  check(JSON.stringify((await view()).rot) !== JSON.stringify(rot0), "in Lines a drag where no point is turns the area");
+  check(JSON.stringify((await view()).rot) !== JSON.stringify(rot0), "a drag where no point is turns the area");
+  const flat = () => page.evaluate(async () => { const v = window.shellForTests.viewer.three; v.S.rot = v.facing(0, 0); v.redraw();
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); });
 
-  // in Lines, a right-click on the image where no line is offers to draw a missed vessel, from that spot
+  // a right-click on the image where no line is offers to draw a missed vessel, from that spot
   {
-    await page.evaluate(async () => { const v = window.shellForTests.viewer.three; v.S.rot = v.facing(0, 0); v.redraw();
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); });
+    await flat();
     const { points } = await page.evaluate(() => window.vascular.model());
     const ps = Object.values(points).filter(Boolean), far = ([x, y]) => ps.every((p) => Math.hypot(p[0] - x, p[1] - y) > 30);
     const spots = [];
@@ -193,23 +203,55 @@ try {
       if (menu.includes("Draw a missed vessel")) { from = s; break; }
       await page.keyboard.press("Escape");
     }
-    check(!!from, `a right-click on the image in Lines offers Draw a missed vessel: ${menu}`);
+    check(!!from, `a right-click on the image offers Draw a missed vessel: ${menu}`);
     if (from) {
       const before = (await doc()).edges.length;
       await page.click("#ctx .item");
-      const on = await page.evaluate(() => $("#m-draw").getAttribute("aria-pressed") === "true" && !!$("#draw-note").textContent && !$("#draw-note").closest("[hidden]"));
-      check(on, "... which starts drawing, its note in view");
+      const drawingNow = () => page.evaluate(() => !!$("#draw-note").textContent && !$("#draw-note").closest("[hidden]"));
+      check(await drawingNow(), "... which starts drawing, its note in view");
       const to = spots.find((s) => Math.hypot(s[0] - from[0], s[1] - from[1]) > 60);
       await page.mouse.click(cx + to[0], cy + to[1]);
       await page.keyboard.press("Escape");
       const after = await doc();
-      check(after.edges.length === before + 1 && (await page.evaluate(() => $("#m-draw").getAttribute("aria-pressed"))) === "false",
-        `the right-clicked spot is the drawn vessel's first point, the next click its next: ${before} → ${after.edges.length} edges`);
+      check(after.edges.length === before + 1 && !(await drawingNow()), `the right-clicked spot is the drawn vessel's first point, the next click its next: ${before} → ${after.edges.length} edges`);
     }
   }
 
-  // Lines are right: the area's confident vessels accepted, its low-confidence ones declined
-  await page.click("#lines-ok");
+  // Ctrl shows the model alone while it is held
+  await page.keyboard.down("Control");
+  const held = (await view()).mode;
+  await page.keyboard.up("Control");
+  check(held === "model" && (await view()).mode === "overlay", `holding Ctrl shows the model alone, letting go the lines over the stack again: ${held} → ${(await view()).mode}`);
+
+  // the area's junctions, one at a time
+  t = await tasks();
+  const js = t.junctions;
+  check(js.length > 2 && t.key === js.find((j) => !j.done).key, `the area's junctions come one at a time: ${js.length} here`);
+  check(await page.evaluate(() => $("#area-ok").disabled), "Area is right is off while a junction there has no verdict");
+  const j1 = Number(t.key.slice(1));
+  await page.click("#task-card .verdict .yes");
+  m = await doc(); t = await tasks();
+  check(!!m.checked_junctions?.includes(j1) && t.key !== "j" + j1, `Junction marks it found right and moves on: ${m.checked_junctions}`);
+  const j2 = t.key, n2 = t.junctions.length;
+  await page.click("#task-card .verdict .no");
+  t = await tasks();
+  check(!t.junctions.some((x) => x.key === j2) && t.junctions.length < n2, `They cross splits the junction: ${n2} → ${t.junctions.length} junctions here`);
+  // a junction clicked on the view becomes the one to judge
+  {
+    await flat();
+    const { points } = await page.evaluate(() => window.vascular.model()), now = (await tasks()).key;
+    const other = (await tasks()).junctions.find((j) => !j.done && j.key !== now && points[j.key.slice(1)]);
+    if (other) {
+      const [x, y] = points[other.key.slice(1)];
+      await page.mouse.click(cx + x, cy + y);
+      check((await tasks()).key === other.key, `a junction clicked on the view is the one to judge: ${now} → ${(await tasks()).key} (wanted ${other.key})`);
+    } else check(false, "a second junction of the area on screen to click");
+  }
+
+  // every junction judged, Area is right does the area
+  for (let k = 0; k < 200 && (await tasks()).key; k++) await page.click("#task-card .verdict .yes");
+  check(!(await page.evaluate(() => $("#area-ok").disabled)), "Area is right is on once every junction there has a verdict");
+  await page.click("#area-ok");
   m = await doc(); t = await tasks();
   const nodeAt = new Map(m.nodes.map((n) => [n.id, n]));
   const mid = (e) => { const ps = [nodeAt.get(e.a), ...(e.via || []), nodeAt.get(e.b)]; return ps[ps.length >> 1]; };
@@ -219,89 +261,31 @@ try {
   const inQuarter = (p) => p.x < W / 2 && p.y < H / 2;
   const there = m.edges.filter((e) => e.proposed && clear(e) && inQuarter(mid(e))), elsewhere = m.edges.filter((e) => e.proposed && clear(e) && !inQuarter(mid(e)));
   check(there.length > 0 && there.every((e) => e.state === (e.proposed === "vessel" ? "accepted" : "rejected")) && elsewhere.every((e) => e.state === e.proposed),
-    `Lines are right accepts the area's vessels and declines its low-confidence ones, and nothing elsewhere: ${there.length} there`);
-  check(m.reviewed_regions?.length === 1 && m.reviewed_regions[0].step === "lines" && t.step === "missed" && t.area === 0, `... keeps the step done over the area, and moves to its Missed vessels: ${JSON.stringify(m.reviewed_regions)}`);
-  check((await rows())[0] === "1/4 Lines", "the row counts the area");
-  check(await page.evaluate(() => !!$("#gt-tasks li.now #m-draw") && !!$("#gt-tasks li.now #area-ok")), "Missed vessels offers Draw a missed vessel and No missed vessels here");
-
-  // Ctrl shows the model alone while it is held
-  await page.keyboard.down("Control");
-  const held = (await view()).mode;
-  await page.keyboard.up("Control");
-  check(held === "model" && (await view()).mode === "overlay", `holding Ctrl shows the model alone, letting go the stack again: ${held} → ${(await view()).mode}`);
-
-  await page.click("#area-ok");
-  m = await doc(); t = await tasks(); v = await view();
-  check(m.reviewed_regions.at(-1).step === "missed" && t.step === "junctions" && t.area === 0, `No missed vessels here checks the area and moves to its Junctions: ${t.step}`);
-  check(!v.held && v.mode === "image" && v.rot[2][2] < 0.99 && !!v.clip, `Junctions shows the area in 3D, the stack alone, free to turn: ${JSON.stringify({ held: v.held, mode: v.mode, z: v.rot[2][2] })}`);
-  check(await page.evaluate(() => !!$("#gt-tasks li.now #task-card canvas") && $("#task-card .verdict").children.length === 2), "the current junction is pictured in the box, its two verdicts under it");
-  await page.keyboard.down("Control");
-  const held3 = (await view()).mode;
-  await page.keyboard.up("Control");
-  check(held3 === "model" && (await view()).mode === "image", `in 3D too, Ctrl shows the model alone and letting go the stack: ${held3} → ${(await view()).mode}`);
-  // the view turns in 3D
-  const rot3 = (await view()).rot;
-  await page.mouse.move(cx + 5, cy + ch - 5); await page.mouse.down(); await page.mouse.move(cx + 80, cy + ch - 60, { steps: 6 }); await page.mouse.up();
-  check(JSON.stringify((await view()).rot) !== JSON.stringify(rot3), "in Junctions a drag turns the area");
-
-  t = await tasks();
-  const js = t.junctions;
-  check(js.length > 2 && t.key === js[0].key, `the area's junctions come one at a time: ${js.length} here`);
-  check(await page.evaluate(() => $("#area-done").disabled), "Area done is off while a junction there has no verdict");
-  const j1 = Number(t.key.slice(1));
-  await page.click("#task-card .verdict .yes");
-  m = await doc(); t = await tasks();
-  check(!!m.checked_junctions?.includes(j1) && t.key !== "j" + j1, `Junction marks it found right and moves on: ${m.checked_junctions}`);
-  const j2 = t.key, n2 = t.junctions.length;
-  await page.click("#task-card .verdict .no");
-  t = await tasks();
-  check(!t.junctions.some((x) => x.key === j2) && t.junctions.length < n2, `They cross splits the junction: ${n2} → ${t.junctions.length} junctions here`);
-
-  // a vessel clicked on the view is dropped as an artifact
-  // from straight above, two frames on, so the points' places on screen are the new view's
-  await page.evaluate(async () => { const v = window.shellForTests.viewer.three; v.S.rot = v.facing(0, 0); v.redraw();
-    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); });
-  // a curve point of an accepted vessel in the area, well inside the view: its vessel is the one clicked
-  const drop = await page.evaluate(([W, H]) => {
-    const { points, at, kinds } = window.vascular.model(), r = $("#mcv").getBoundingClientRect();
-    const id = Object.keys(points).find((k) => kinds[k] === "accepted-curve" && at[k].x > W * 0.05 && at[k].x < W * 0.45 && at[k].y > H * 0.05 && at[k].y < H * 0.45
-      && points[k][0] > 20 && points[k][0] < r.width - 20 && points[k][1] > 20 && points[k][1] < r.height - 20);
-    return id && points[id];
-  }, [W, H]);
-  if (drop) {
-    const before = (await doc()).edges.filter((e) => e.state === "rejected").length;
-    await page.mouse.click(cx + drop[0], cy + drop[1]);
-    const menu = await page.evaluate(() => [...document.querySelectorAll("#ctx .item")].map((b) => b.textContent));
-    check(menu.some((x) => /Drop this vessel/.test(x)), `clicking a vessel in 3D offers to drop it: ${menu}`);
-    await page.locator("#ctx .item", { hasText: "Drop this vessel" }).click();
-    check((await doc()).edges.filter((e) => e.state === "rejected").length > before, "Drop this vessel declines it");
-  } else check(false, "a vessel of the area on screen to drop");
-
-  // every junction judged, Area done ends the area
-  for (let k = 0; k < 200 && (await tasks()).key; k++) await page.click("#task-card .verdict .yes");
-  check(!(await page.evaluate(() => $("#area-done").disabled)), "Area done is on once every junction there has a verdict");
-  await page.click("#area-done");
-  m = await doc(); t = await tasks();
-  check(m.reviewed_regions.at(-1).step === "junctions" && t.area === 1 && t.step === "lines", `Area done keeps the step and moves to the next area's Lines: area ${t.area} ${t.step}`);
-  check((await rows()).slice(0, 3).join() === "1/4 Lines,1/4 Missed vessels,1/4 Junctions", `each row counts the area: ${(await rows()).join(" | ")}`);
-  check(await page.evaluate(() => $("#area-map").children[0].classList.contains("done")), "the map shows the area done");
+    `Area is right accepts the area's vessels and declines its low-confidence ones, and nothing elsewhere: ${there.length} there`);
+  check(m.reviewed_regions?.length === 1 && m.reviewed_regions[0].step === "area" && t.area === 1, `... keeps the area done and moves to the next: ${JSON.stringify(m.reviewed_regions)} area ${t.area}`);
+  const doneRows = () => page.evaluate(() => [...document.querySelectorAll("#gt-tasks > li.done")].map((li) => li.dataset.task));
+  check((await doneRows()).join() === "a0", `the first area's row is done: ${await doneRows()}`);
+  mm = await mini();
+  check(mm.done === 1 && mm.now === 1, `the map shows the area done and the next current: ${JSON.stringify(mm)}`);
+  check(await page.evaluate(() => { const ps = [...$("#gt-bar").children]; return ps.length === 4 && parseFloat(ps[0].style.getPropertyValue("--done")) === 1; }), "the bar's first part is full");
 
   // a finer choice keeps what was done over the areas it covers
   await page.selectOption("#area-grid", "4");
-  check((await rows())[2] === "4/16 Junctions", `the top-left quarter done is four areas of 4 × 4: ${(await rows())[2]}`);
+  check((await doneRows()).join() === "a0,a1,a6,a7", `the top-left quarter done is four areas of 4 × 4: ${await doneRows()}`);
   await page.selectOption("#area-grid", "2");
 
-  // Back to image: the whole stack, the Show menu again; Back to task returns
+  // Back to image: the whole stack, the Show menu again, the map still over it; Back to task returns
   await page.click("#vm-focus");
   v = await view(); t = await tasks();
   check(!t.focused && !v.clip && !v.held && v.show && v.focus === "Back to task", `Back to image shows the whole stack and the Show menu, the button now Back to task: ${JSON.stringify({ clip: v.clip, show: v.show, focus: v.focus })}`);
+  check((await mini()).shown, "the map of the areas shows over the whole stack too");
   const gl = await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"));
   if (gl) {
     const cut = await brightness();
     await page.keyboard.press("Control+z");
     const lit = await brightness();
     await page.keyboard.press("Control+y");
-    check(cut < lit, `an area done in every step is cut out of the stack: brightness ${lit.toFixed(2)} → ${cut.toFixed(2)}`);
+    check(cut < lit, `an area done is cut out of the stack: brightness ${lit.toFixed(2)} → ${cut.toFixed(2)}`);
     await page.click("#vm-show summary"); await page.click("#m-cut"); await page.click("#vm-show summary");
     const whole = await brightness();
     check(Math.abs(whole - lit) < 1e-6, `the Show menu's Cut out what is done off: the stack whole: brightness ${whole.toFixed(2)}`);
@@ -310,12 +294,13 @@ try {
   } else console.log(`not checked in this ${ENGINE}: the area cut out of the 3D view, which needs the WebGL2 it lacks`);
   await page.click("#vm-focus");
   v = await view(); t = await tasks();
-  check(t.focused && !!v.clip && v.focus === "Back to image" && t.area === 1 && t.step === "lines", "Back to task returns to the area and its step");
+  check(t.focused && !!v.clip && v.focus === "Back to image" && t.area === 1, "Back to task returns to the area");
 
-  // Stop tagging: the whole stack, no task open, nothing cut out, the Show menu's row off
+  // Stop tagging: the whole stack, no task open, nothing cut out, the Show menu's row off, no map
   await page.click("#gt-start");
   v = await view(); t = await tasks();
   check(!t.focused && !v.clip && v.show && !v.focus && !v.open && v.cut.off && v.start === "Start GT tagging", `Stop tagging gives the whole stack back, no task open, Cut out what is done off: ${JSON.stringify(v)}`);
+  check(!(await mini()).shown, "out of tagging the map of the areas is gone");
   if (gl) {
     await page.keyboard.press("Control+z");
     const lit = await brightness();
@@ -324,20 +309,26 @@ try {
   }
   await page.click("#gt-start");
   t = await tasks();
-  check(t.focused && t.area === 1 && t.step === "lines", "Start GT tagging again returns to the walk's next step not done");
+  check(t.focused && t.area === 1, "Start GT tagging again returns to the walk's next area not done");
 
   await page.click("#gt-submit");
   check(await page.evaluate(() => $("#gt-dlg").open && !$("#gt-export").disabled), "Submit Ground Truth, the last task, exports once there are verdicts");
   const open = await page.evaluate(() => $("#gt-dlg").textContent);
-  check(/Lines: 3 of 4 areas left/.test(open) && /Junctions: 3 of 4 areas left/.test(open), `its checklist says what of each step is open: ${open.replace(/\s+/g, " ").slice(0, 200)}`);
+  check(/Areas: 3 of 4 left/.test(open), `its checklist says how many areas are left: ${open.replace(/\s+/g, " ").slice(0, 200)}`);
   const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#gt-export")]);
   const out = JSON.parse(fs.readFileSync(await dl.path(), "utf8"));
   check(out.status === "corrected" && out.edges.some((e) => e.state === "accepted" && e.proposed === "vessel") && out.edges.some((e) => e.state === "rejected")
-    && !!out.checked_junctions?.includes(j1) && out.reviewed_regions.map((g) => g.step).join() === "lines,missed,junctions", "the export carries every verdict: states, junctions found right, each step over the area");
+    && !!out.checked_junctions?.includes(j1) && out.reviewed_regions.map((g) => g.step).join() === "area", "the export carries every verdict: states, junctions found right, the area done");
   await page.click("#gt-close");
 
   await page.keyboard.press("Control+z");
-  check((await doc()).reviewed_regions.length === 2 && (await rows())[2] === "0/4 Junctions", "Undo takes the area's last step back");
+  check(!(await doc()).reviewed_regions.length && !(await doneRows()).length, "Undo takes the area back");
+
+  // a file from the three steps: an area whose lines, missed and junctions boxes all cover it is done
+  await page.evaluate(() => window.vascular.edit((m) => ({ ...m, reviewed_regions: ["lines", "missed", "junctions"].map((step) => ({ x: [0, m.size_px[0] * m.um_per_px / 2], y: [0, m.size_px[1] * m.um_per_px / 2], z: [0, m.slices - 1], step })) })));
+  check((await doneRows()).join() === "a0", `an area its earlier lines, missed and junctions steps all cover is done: ${await doneRows()}`);
+  await page.evaluate(() => window.vascular.edit((m) => ({ ...m, reviewed_regions: ["lines", "missed"].map((step) => ({ x: [0, m.size_px[0] * m.um_per_px / 2], y: [0, m.size_px[1] * m.um_per_px / 2], z: [0, m.slices - 1], step })) })));
+  check(!(await doneRows()).length, "... and one missing its junctions step is not");
 } catch (e) {
   failed = true; console.error(e);
 }

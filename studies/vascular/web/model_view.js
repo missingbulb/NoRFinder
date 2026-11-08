@@ -1,9 +1,7 @@
 // The vessel model over the stack, beside it or on its own, in the stack's own camera, and the owner's
 // corrections to it: drag a point to move it, and a tip onto another vessel to attach it there, right-click a segment
 // or a point to delete it or split a junction, right-drag from one piece to another to connect them, click a faded
-// low-confidence vessel to
-// approve or decline it, lasso an area of damaged sample to leave it out of the analysis. The corrected
-// model goes to the shell's Submit Ground Truth as JSON.
+// low-confidence vessel to approve or decline it. The corrected model goes to the shell's Submit Ground Truth as JSON.
 //
 // The review narrows the stack to what the model accounts for: Detected keeps only the signal around
 // the model's vessels, to check and measure them; Missed keeps only the signal away from them, to find
@@ -32,8 +30,8 @@ const SURE = '#ffffff', SURE_ALPHA = .8, UNSURE = '#9db8ff', UNSURE_ALPHA = .4, 
 const TUBE_SHADES = [.5, .7, .85, 1], TUBE_MIN_PX = 1;
 // The current task's item and area: white over a dark rim, which reads over any signal and any depth colour.
 const MARK = '#ffffff', RIM = 'rgba(0,0,0,.7)';
-// an area is done, and cut out of the stack, once this, its last step, is done there (tasks.js)
-const DONE_STEP = 'junctions';
+// an area done, cut out of the stack, kept with one of these steps (tasks.js): its own, or the last of the earlier three
+const DONE_STEPS = ['area', 'junctions'];
 // The points are handles to drag, shown only once the view is zoomed this far in from the whole stack,
 // so the opening picture is the vessels alone.
 const HANDLES_ZOOM = 2;
@@ -44,13 +42,13 @@ const SPOT_REACH = 1.25, SPOT_MIN_PX = 60, FADED = .15;
 let model = null, loaded = null, history = [], future = [], edits = 0, savedKey = null;
 // mode: what the main view shows, "image" (the stack alone), "model" (the model alone), "overlay" or "side"
 let mode = 'image', hover = null, rubber = null, showWidths = true;
-let review = 'all', reach = .5, maskKey = null, maskTimer = null, drawing = null, moving = null, lasso = null;
+let review = 'all', reach = .5, maskKey = null, maskTimer = null, drawing = null, moving = null;
 // makingTruth: the study makes ground truth; tagOn: the owner tags it now; cutOn: what is done is cut out while they
 // do; task: the task's item, {segments} or {node}; area: the task's area, a box in µm
 let makingTruth = false, tagOn = false, cutOn = true, task = null, area = null, picked = null;
-// focused: the main view shows one area of the ground-truth tasks alone, {box, depth}: opening from straight above with
-// every point a handle, or in 3D (depth) with no handles, turning freely either way; null for the whole stack. outside: the
-// mode chosen for the whole stack, back once the area is left; peeking: Ctrl held, the model alone
+// focused: the main view shows one area of the ground-truth tasks alone, {box}: opening from straight above with every
+// point a handle, turning freely; null for the whole stack. outside: the mode chosen for the whole stack, back once the
+// area is left; peeking: Ctrl held, the model alone
 let focused = null, outside = 'overlay', peeking = false;
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
@@ -117,9 +115,9 @@ function hatching(c) {
   h.beginPath(); h.moveTo(0, 8); h.lineTo(8, 0); h.stroke();
   return c.createPattern(hatch, 'repeat');
 }
-const handles = () => (focused ? !focused.depth : V.S.dist <= V.FIT_DIST / HANDLES_ZOOM);
-// points are picked wherever handles show, and in an area seen in 3D, where a junction is clicked to judge it
-const pickable = () => handles() || !!focused;
+// points are handles, and picked, in an area of the tasks and once zoomed in
+const handles = () => !!focused || V.S.dist <= V.FIT_DIST / HANDLES_ZOOM;
+const pickable = handles;
 // how clearly a line is drawn while a point is dragged: whole near the point, faded away from it
 function nearness(line) {
   const sp = V.S.spot;
@@ -256,7 +254,6 @@ function drawModel(c) {
   c.setLineDash([]);
   const outline = (q) => { c.beginPath(); q.forEach((p, k) => (k ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]))); c.closePath(); };
   for (const a of view.areas) { outline(a); c.fillStyle = hatching(c); c.fill(); c.strokeStyle = EXCLUDED; c.lineWidth = 1.2; c.stroke(); }
-  if (lasso?.pts.length > 1) { c.setLineDash([5, 4]); c.strokeStyle = '#fff'; c.lineWidth = 1.5; outline(lasso.pts); c.stroke(); c.setLineDash([]); }
   c.globalAlpha = 1;
   // the handles: none in the opening view, and only the one being dragged while it moves
   for (const n of model.nodes.values()) {
@@ -268,6 +265,8 @@ function drawModel(c) {
     if (v >= 3) {
       c.globalAlpha = d >= 3 || hot ? 1 : UNSURE_ALPHA;
       c.arc(p[0], p[1], hot ? 6 : 4, 0, 2 * Math.PI); c.strokeStyle = hot ? '#fff' : mode === 'overlay' ? OVERLAY : 'rgba(255,255,255,.85)'; c.lineWidth = hot ? 2 : 1.2; c.stroke();
+      // in an area of the tasks, a junction already judged carries a dot
+      if (focused && Mo.checkedJunction(model, n.id)) { c.beginPath(); c.arc(p[0], p[1], 1.8, 0, 2 * Math.PI); c.fillStyle = c.strokeStyle; c.fill(); }
       c.globalAlpha = 1;
     } else if (hot || (all.get(n.id) !== cand.get(n.id) && !(v === 2 && tubes))) {
       // a candidate's own points are left undrawn, so it reads as one faded line and not as a row of dots
@@ -379,21 +378,6 @@ function redo() { if (!future.length) return; history.push(model); model = futur
 function grab(e) {
   if (!model || (mode === 'image' && !focused)) return null;
   closeMenu();
-  if (lasso && e.button === 0) {
-    const r = cv.getBoundingClientRect(), add = (ev) => { lasso.pts.push([ev.clientX - r.left, ev.clientY - r.top]); V.redraw(); };
-    lasso.pts = []; add(e);
-    return {
-      move: add,
-      up(ev) {
-        const poly = lasso.pts.map((q) => ground(q)).filter(Boolean).map((p) => [round(p.x), round(p.y)]);
-        lasso.pts = [];
-        const next = Mo.markExcluded(model, poly);
-        if (next === model) { V.redraw(); return msg('That outline encloses no area: draw around the damage, ending where you began.'); }
-        setLasso(false); apply(next); askReason(model.excluded_regions.length - 1, ev.clientX, ev.clientY);
-      },
-      cancel() { lasso.pts = []; V.redraw(); },
-    };
-  }
   const h = pick(e);
   if (e.button === 0 && !e.shiftKey && !V.panning && h?.node != null && !drawing && handles()) {
     const base = model, id = h.node, ndcZ = view.pts.get(id)[3], tip = Mo.neighbours(base, id).length === 1;
@@ -446,7 +430,7 @@ function grab(e) {
           if (to && !(to.segment != null && to.segment === h.segment)) apply(Mo.connect(model, h, to));
           V.redraw();
         } else if (h) openMenu(h, ev.clientX, ev.clientY);
-        else if (makingTruth && focused && !focused.depth && !drawing && !lasso) offerDrawing(ev);
+        else if (makingTruth && focused && !drawing) offerDrawing(ev);
       },
       cancel() { rubber = null; cv.classList.remove('connecting'); V.redraw(); },
     };
@@ -458,13 +442,11 @@ function grab(e) {
 function clicked(e) {
   if (!model || (mode === 'image' && !focused)) return;
   if (drawing) return drawClick(e);
-  const h = pick(e, !focused?.depth);
-  // while the study makes ground truth an item picked on the view is the current task's
-  if (makingTruth && picked && h && picked(h, e)) return;
+  // while the study makes ground truth a junction picked on the view is the current task's
+  const at = makingTruth && picked && focused && pick(e);
+  if (at?.node != null && picked(at, e)) return;
+  const h = pick(e, true);
   if (isCandidate(h)) return openMenu(h, e.clientX, e.clientY);
-  const r = cv.getBoundingClientRect(), p = ground([e.clientX - r.left, e.clientY - r.top]);
-  const k = p ? (model.excluded_regions || []).findIndex((a) => Mo.excluded({ excluded_regions: [a] }, p)) : -1;
-  if (k >= 0) askReason(k, e.clientX, e.clientY);
 }
 
 // A menu of buttons at the pointer: items are [label, fn returning the next model] or [note, null].
@@ -505,33 +487,7 @@ function openMenu(h, x, y) {
   hover = h; V.redraw();
 }
 
-// ---------- damaged areas ----------
-// The point on the stack's middle depth under a screen point, in µm; null when the view looks along
-// that plane. From straight above this is exactly the spot under the pointer.
-function ground([x, y]) {
-  const iv = V.M.inv(view.vp), nx = x / view.W * 2 - 1, ny = 1 - y / view.H * 2;
-  const [a, b] = [-1, 1].map((d) => { const w = V.M.xf(iv, [nx, ny, d]); return w.slice(0, 3).map((v) => v / w[3]); });
-  const zc = toWorld({ x: 0, y: 0, z: (model.slices - 1) / 2 })[2], t = (zc - a[2]) / (b[2] - a[2]);
-  return Number.isFinite(t) && Math.abs(b[2] - a[2]) > 1e-9 ? fromWorld(a.map((v, k) => v + t * (b[k] - v))) : null;
-}
-const round = (v) => Math.round(v * 10) / 10;
-function setLasso(on) {
-  lasso = on ? { pts: [] } : null;
-  $('m-lasso').textContent = on ? 'Cancel marking' : 'Mark a damaged area';
-  $('m-lasso').setAttribute('aria-pressed', String(!!on));
-  cv.classList.toggle('connecting', !!on);
-  if (on) { if (drawing) setDrawing(false); if (mode !== 'overlay') setMode('overlay'); }
-  $('lasso-note').textContent = on ? 'Drag around the damaged area. It is left out of the analysis through every slice.' : '';
-  V.redraw();
-}
-// What the damage is, for an area just drawn or clicked, or taking the area back out.
-function askReason(k, x, y) {
-  const now = model.excluded_regions[k].reason;
-  const set = (reason) => () => ({ ...model, excluded_regions: model.excluded_regions.map((a, i) => (i === k ? { ...a, reason } : a)) });
-  showMenu([[now ? `Damaged area: ${now}` : 'What is wrong here?', null],
-    ...Mo.REASONS.filter((r) => r !== now).map((r) => [r[0].toUpperCase() + r.slice(1), set(r)]),
-    ['Unmark: analyse this area again', () => Mo.unmarkExcluded(model, k)]], x, y);
-}
+// ---------- looking closer ----------
 // The junction from the side, cut out of the stack: two vessels that only cross sit apart in depth.
 // The view looks across the straightest pair of branches through it, the vessel running on.
 const LOOK_RADII = 8, LOOK_MIN_UM = 10;
@@ -574,10 +530,10 @@ export function reveal(p) {
   if (v[3] > 0 && Math.abs(x - .5) < .35 && Math.abs(y - .5) < .35) return;
   V.S.pivot = toWorld(p); V.S.clip = null; V.redraw();
 }
-// One area of the ground-truth tasks alone in the main view, a box in µm: opening from straight above (depth false), the
-// lines over the stack with a handle on every point; or in 3D, the stack alone; turning freely either way. Holding Ctrl
-// shows the model alone. null shows the whole stack again, in the mode chosen for it.
-export function focusArea(b, depth) {
+// One area of the ground-truth tasks alone in the main view, a box in µm: opening from straight above, the lines over
+// the stack with a handle on every point, turning freely. Holding Ctrl shows the model alone. null shows the whole stack
+// again, in the mode chosen for it.
+export function focusArea(b) {
   if (!model || !V) return;
   if (!b) {
     if (!focused) return;
@@ -586,8 +542,7 @@ export function focusArea(b, depth) {
     $('vm-show').hidden = false; setMode(outside); refreshMask(true);
     return;
   }
-  if (drawing && depth) setDrawing(false);
-  focused = { box: b, depth: !!depth }; peeking = false;
+  focused = { box: b }; peeking = false;
   $('vm-show').open = false; $('vm-show').hidden = true;
   frameFocus(); setMode(focusMode()); refreshMask(true);
 }
@@ -597,13 +552,13 @@ export function tagging(on) {
   tagOn = !!on; $('m-cut').disabled = !tagOn;
   refreshMask(true);
 }
-const focusMode = () => (peeking ? 'model' : focused.depth ? 'image' : 'overlay');
-// the area filling the view, the rest of the stack cut away: from straight above, or tilted to show its depth
-const TILT = [-0.5, -0.6], FILL = 1.05;
+const focusMode = () => (peeking ? 'model' : 'overlay');
+// the area filling the view from straight above, the rest of the stack cut away
+const FILL = 1.05;
 function frameFocus() {
   const b = focused.box, z = (model.slices - 1) / 2, lo = toWorld({ x: b.x0, y: b.y1, z }), hi = toWorld({ x: b.x1, y: b.y0, z });
   const h = Math.max(hi[0] - lo[0], hi[1] - lo[1]) / 2;
-  Object.assign(V.S, { rot: focused.depth ? V.facing(...TILT) : V.facing(0, 0), clip: [lo[0], lo[1], hi[0], hi[1]],
+  Object.assign(V.S, { rot: V.facing(0, 0), clip: [lo[0], lo[1], hi[0], hi[1]],
     pivot: [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, 0], dist: Math.max(.15, V.FIT_DIST * h * FILL), held: false });
   V.redraw();
 }
@@ -629,7 +584,7 @@ function setReview(r) {
 // area done; null while nothing is.
 function cutOut(m) {
   if (!makingTruth || !tagOn || !cutOn || focused) return null;
-  const boxes = (m.reviewed_regions || []).filter((g) => g.x?.length === 2 && g.y?.length === 2 && (!g.step || g.step === DONE_STEP))
+  const boxes = (m.reviewed_regions || []).filter((g) => g.x?.length === 2 && g.y?.length === 2 && (!g.step || DONE_STEPS.includes(g.step)))
     .map((g) => ({ x0: g.x[0], x1: g.x[1], y0: g.y[0], y1: g.y[1] }));
   return boxes.length ? { points: [], boxes } : null;
 }
@@ -654,16 +609,13 @@ function refreshMask(now) {
 }
 
 // Drawing a missed vessel: each click places its next point, on an existing point or vessel when the
-// click lands on one, else at the brightest shown voxel under the pointer. Joining the network, Enter,
-// Escape or the button again ends it.
+// click lands on one, else at the brightest shown voxel under the pointer. Joining the network, Enter or
+// Escape ends it.
 function setDrawing(on) {
   if (on && !model) return;
   drawing = on ? { from: null, to: null } : null;
-  $('m-draw').textContent = on ? 'Finish drawing' : 'Draw a missed vessel';
-  $('m-draw').setAttribute('aria-pressed', String(!!on));
   cv.classList.toggle('connecting', !!on);
   if (on && mode !== 'overlay') setMode('overlay');
-  if (on && lasso) setLasso(false);
   $('draw-note').textContent = on ? 'Click along the vessel, a point at a time; each point goes to the brightest spot under the pointer. Click an existing vessel, press Enter or Escape to end. Ctrl-Z takes back a point.' : '';
   V.redraw();
 }
@@ -738,7 +690,7 @@ function open(text, name) {
     catch { store.del(savedKey); }
   }
   if (V.meta && m.slices !== slices()) msg(`This model has ${m.slices} slices and the stack has ${slices()}: they are probably not the same stack.`, true);
-  $('model-on').hidden = false; $('vm-review').hidden = false; $('vm-marks').hidden = false;
+  $('model-on').hidden = false; $('vm-review').hidden = false;
   maskKey = null; refreshMask(true);
   setMode(mode === 'image' ? 'overlay' : mode);
   facts(); tell();
@@ -761,10 +713,9 @@ export function truth() {
 export function stackOpened() {
   model = null; loaded = null; history = []; future = []; edits = 0; savedKey = null; task = null; area = null; focused = null; peeking = false;
   $('vm-show').hidden = false;
-  $('model-on').hidden = true; $('vm-review').hidden = true; $('vm-marks').hidden = true; msg(''); setMode('image');
+  $('model-on').hidden = true; $('vm-review').hidden = true; msg(''); setMode('image');
   $('model-facts').textContent = 'No vessel model yet: Execute the algorithm.';
   if (drawing) setDrawing(false);
-  if (lasso) setLasso(false);
   maskKey = null; refreshMask(true);
   tell();
 }
@@ -806,8 +757,6 @@ export function init(view, signal, makesTruth) {
   $('reach').addEventListener('input', (e) => { reach = e.target.value / 100; reachOut(); refreshMask(); });
   reachOut();
   V.onSpacing(() => refreshMask(), signal);
-  $('m-draw').onclick = () => setDrawing(!drawing);
-  $('m-lasso').onclick = () => setLasso(!lasso);
   $('m-widths').onchange = (e) => { showWidths = e.target.checked; V.redraw(); };
   $('m-undo').onclick = undo; $('m-redo').onclick = redo;
   $('m-reset').onclick = () => { if (!edits || !confirm(`Discard all ${edits} edits and go back to the model as loaded?`)) return;
@@ -815,7 +764,7 @@ export function init(view, signal, makesTruth) {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Control') peek(true);
     if (!model || e.target.closest('input, textarea')) return;
-    if (e.key === 'Escape') { closeMenu(); if (lasso) setLasso(false); }
+    if (e.key === 'Escape') closeMenu();
     if (drawing && (e.key === 'Escape' || e.key === 'Enter')) { setDrawing(false); return; }
     const k0 = e.key.toLowerCase();
     if (!(e.ctrlKey || e.metaKey || e.altKey) && (k0 === 'a' || k0 === 'd') && isCandidate(hover)) {

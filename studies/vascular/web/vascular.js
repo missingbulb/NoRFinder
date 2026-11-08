@@ -14,9 +14,7 @@ export function mount(shell) {
   shell.signal.addEventListener("abort", () => MV.leave());
   shell.views.on((v) => { items.visibleNow(v === "items"); if (v === "image") V.redraw(); });
   items.init(V, () => shell.views.show("image"), shell.views.count);
-  // marking a damaged area goes under the tasks while the study makes ground truth, else under what the model holds;
-  // drawing a missed vessel is the Areas task's alone
-  if (truth) { tasks.init(V, shell.tasks, steps, submit); $("#vm-tasks").append($("#vm-marks")); }
+  if (truth) tasks.init(V, shell.tasks, steps, submit);
 
   // ---------- Processing: the algorithm, how it works and how well, Execute ----------
   // each algorithm's precision and recall against the provisional labels, as the lab's grader measured them
@@ -66,11 +64,12 @@ export function mount(shell) {
     const gt = MV.truth();
     if (!gt) return;
     shell.submitTruth({ doc: gt.doc, count: gt.edits, file: gt.file, items: truth ? tasks.open() : gt.items,
-      empty: "Correct the model first: approve or decline a vessel, check a junction or an area, or draw a missed vessel." });
+      empty: "Correct the model first: approve or decline a vessel, judge a junction, do an area or draw a missed vessel." });
   }
   // a stack already open when the study comes in (a switch from another study)
   if (shell.page.get("image")) MV.stackOpened();
-  window.vascular = { tasks: tasks.inspect, model: MV.inspect };
+  // edit: an edit of the model from a page test, fn(model) the next model
+  window.vascular = { tasks: tasks.inspect, model: MV.inspect, edit: (fn) => MV.edit(fn(MV.current())) };
 
   offered.then((list) => {
     algorithms = list;

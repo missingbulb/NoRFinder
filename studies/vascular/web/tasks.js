@@ -1,8 +1,9 @@
-// The Ground Truth Tasks, in the left bar while the study makes ground truth: the stack's areas, each worked through
-// in three steps, its Lines from straight above, its Missed vessels, then its Junctions in 3D, then Submit. A step is
-// open only while the owner tags, from Start GT tagging to Stop tagging; then the main view shows its area alone
-// (model_view.js), Back to image the whole stack and Back to task the area again. Every verdict is an edit of the
-// model, so it is undone, saved and submitted with the rest.
+// The Ground Truth Tasks, in the left bar while the study makes ground truth: the stack's areas, a row each, then
+// Submit. An area is open only while the owner tags, from Start GT tagging to Stop tagging; then the main view shows
+// it alone (model_view.js), its lines, points and junctions corrected there in one pass, each of its junctions judged
+// in the box, and Area is right does it. Back to image shows the whole stack and Back to task the area again; the
+// areas float as a map over the view meanwhile. Every verdict is an edit of the model, so it is undone, saved and
+// submitted with the rest.
 import * as Mo from './model.js';
 import * as MV from './model_view.js';
 import { build, junctionPicture } from './items.js';
@@ -10,25 +11,23 @@ import { build, junctionPicture } from './items.js';
 const $ = (id) => document.getElementById(id);
 // the areas across the field, each way, that the person may choose; the field cut into GRID × GRID until they do
 const GRIDS = [1, 2, 3, 4, 5, 6, 8, 10], GRID = 4;
-const STEPS = ['lines', 'missed', 'junctions'];
-const ROWS = [
-  { key: 'lines', name: 'Lines', title: "From straight above: every vessel line in the area is where the vessel is" },
-  { key: 'missed', name: 'Missed vessels', title: 'From straight above: every vessel the algorithm missed in the area drawn' },
-  { key: 'junctions', name: 'Junctions', title: 'In 3D: each junction in the area real, or vessels that only cross; artifacts dropped' },
-];
-// a step done over an area: every one of these points across it, each way, lies in a box kept for that step
+// an area done is kept with this step; a file from the earlier three steps did it with all of these
+const STEP = 'area', STEPS_BEFORE = ['lines', 'missed', 'junctions'];
+// an area done: every one of these points across it, each way, lies in a box kept for it
 const PROBES = 4;
 // a junction's picture, as wide as the box, and no narrower than this
 const MIN_PX = 160;
 
-let V = null, T = null, n = GRID, st = null, items = null, heard = () => {};
-const fresh = () => ({ area: null, step: null, junction: null, focused: true, dir: 0 });
+// tools: the open area's cogwheel and Skip, for its row; work: what is done in it, under its row
+let V = null, T = null, n = GRID, st = null, items = null, heard = () => {}, tools = null, work = null;
+const fresh = () => ({ area: null, submit: false, junction: null, focused: true, dir: 0 });
 
 // ---------- the areas, in the order they are worked through ----------
 // rows of areas top to bottom, each the way back from the last, so the next area always borders the one before
 const size = (m) => [m.size_px[0] * m.um_per_px, m.size_px[1] * m.um_per_px];
 const count = () => n * n;
 const place = (a) => { const r = Math.floor(a / n), k = r % 2 ? n - 1 - (a % n) : a % n; return [r, k]; };
+const keyOf = (a) => `a${a}`;
 // an area's box in µm, {x0, y0, x1, y1}
 function areaBox(m, a) {
   const [W, H] = size(m), [r, k] = place(a), w = W / n, h = H / n, q = (v) => Math.round(v * 100) / 100;
@@ -40,11 +39,11 @@ function areaOf(m, p) {
   const r = cell(p.y, H), k = cell(p.x, W);
   return r * n + (r % 2 ? n - 1 - k : k);
 }
-// a step done over an area, as the model's reviewed_regions keep it: through every slice, with the day and the step
-const region = (m, b, step) => ({ x: [b.x0, b.x1], y: [b.y0, b.y1], z: [0, m.slices - 1], on: new Date().toISOString().slice(0, 10), step });
+// an area done, as the model's reviewed_regions keep it: through every slice, with the day and the step
+const region = (m, b) => ({ x: [b.x0, b.x1], y: [b.y0, b.y1], z: [0, m.slices - 1], on: new Date().toISOString().slice(0, 10), step: STEP });
 // a box kept before the steps had names was an area checked for missed vessels
 const stepOf = (g) => g.step || 'missed';
-function done(m, a, step) {
+function covered(m, a, step) {
   const b = areaBox(m, a), gs = (m.reviewed_regions || []).filter((g) => g.x?.length === 2 && g.y?.length === 2 && stepOf(g) === step);
   if (!gs.length) return false;
   for (let i = 0; i < PROBES; i++) for (let j = 0; j < PROBES; j++) {
@@ -53,61 +52,49 @@ function done(m, a, step) {
   }
   return true;
 }
-const areaDone = (m, a) => STEPS.every((s) => done(m, a, s));
-const stepsDone = (m, s) => Array.from({ length: count() }, (_, a) => done(m, a, s)).filter(Boolean).length;
-// the first step not done in the walk from area a on, the area's own steps first: {area, step}, or null when all are
-function nextOpen(m, a, from = 0) {
-  for (let k = 0; k < count(); k++) {
-    const b = (a + k) % count(), s = STEPS.slice(k ? 0 : from).find((x) => !done(m, b, x));
-    if (s) return { area: b, step: s };
-  }
+const done = (m, a) => covered(m, a, STEP) || STEPS_BEFORE.every((s) => covered(m, a, s));
+const areasDone = (m) => Array.from({ length: count() }, (_, a) => done(m, a)).filter(Boolean).length;
+// the first area not done in the walk from area a on, a itself first; null when all are
+function nextOpen(m, a) {
+  for (let k = 0; k < count(); k++) { const b = (a + k) % count(); if (!done(m, b)) return b; }
   return null;
 }
 
-// ---------- the area's items: its vessels and its junctions, each by where it lies ----------
+// ---------- the areas' items: their vessels and their junctions, each by where it lies ----------
 function itemsOf(m) {
   const { vessels, junctions } = build(m);
   const js = junctions.map((j) => ({ ...j, key: `j${j.id}`, at: { x: j.x, y: j.y, z: j.z }, done: Mo.checkedJunction(m, j.id) }))
     .sort((p, q) => p.y - q.y || p.x - q.x);
   return { vessels: vessels.map((v) => ({ ...v, at: v.path[v.path.length >> 1] })), junctions: js };
 }
-const here = (m) => (st.area == null ? [] : items.junctions.filter((j) => areaOf(m, j) === st.area));
+const junctionsIn = (m, a) => items.junctions.filter((j) => areaOf(m, j) === a);
 
 // ---------- moving through the areas ----------
+// to: an area, or null for Submit
 function go(to, dir = 1) {
-  const m = MV.current(); if (!m) return;
-  if (!to) { st.area = null; st.step = 'submit'; }
-  else { st.area = to.area; st.step = to.step; }
-  st.junction = null; st.focused = !!to; st.dir = dir;
+  if (!MV.current()) return;
+  st.area = to ?? st.area; st.submit = to == null;
+  st.junction = null; st.focused = to != null; st.dir = dir;
   show(true);
 }
-// after a step is done: the area's next step not done, else the next area's
-function moveOn() { const m = MV.current(); go(nextOpen(m, st.area, STEPS.indexOf(st.step) + 1) || nextOpen(m, st.area)); }
-// a step's row: that step in the walk's next area where it is not done
-function pickStep(key) {
-  const m = MV.current(); if (!m) return;
-  if (!STEPS.includes(key)) return;
-  const from = st.area ?? 0;
-  for (let k = 0; k < count(); k++) { const a = (from + k) % count(); if (!done(m, a, key)) return go({ area: a, step: key }); }
-  go({ area: from, step: key });
-}
-// Skip: the next area with a step not done, leaving this one for later
-function skip() { const m = MV.current(); if (!m || st.area == null) return; go(nextOpen(m, (st.area + 1) % count()) || nextOpen(m, st.area)); }
+const moveOn = () => { const m = MV.current(); go(nextOpen(m, (st.area + 1) % count())); };
+// an area's row, or its square on the map: that area
+function pick(key) { const a = +String(key).slice(1); if (String(key)[0] === 'a' && a >= 0 && a < count()) go(a); }
+// Skip: the next area not done, leaving this one for later
+function skip() { const m = MV.current(); if (!m || st.area == null) return; const to = nextOpen(m, (st.area + 1) % count()); go(to ?? st.area); }
 function setGrid(k) {
   const m = MV.current(); n = k;
   if (!m) return;
+  st.area = null;
   go(nextOpen(m, 0), 0);
 }
 
-// ---------- the steps' verdicts ----------
-function keep(step) {
-  const m = MV.current(); if (!m || st.area == null) return null;
-  return { ...m, reviewed_regions: [...(m.reviewed_regions || []), region(m, areaBox(m, st.area), step)] };
-}
-// Lines are right: each vessel whose middle lies in the area, confident ones accepted, low-confidence ones not kept declined
-function linesRight() {
-  const m = MV.current();
-  let o = keep('lines');
+// ---------- the verdicts ----------
+// Area is right: the area done, each vessel whose middle lies in it, confident ones accepted, low-confidence ones
+// not kept declined
+function areaRight() {
+  const m = MV.current(); if (!m || st.area == null) return;
+  let o = { ...m, reviewed_regions: [...(m.reviewed_regions || []), region(m, areaBox(m, st.area))] };
   for (const v of items.vessels) {
     if (areaOf(m, v.at) !== st.area || !v.proposed) continue;
     const open = v.segments.filter((i) => o.segments[i].state === v.proposed);
@@ -115,22 +102,13 @@ function linesRight() {
   }
   MV.edit(o); moveOn();
 }
-function noneMissed() { MV.edit(keep('missed')); moveOn(); }
-function areaDoneHere() { MV.edit(keep('junctions')); moveOn(); }
 function verdict(j, v) {
   const m = MV.current();
   MV.edit(v === 'cross' ? Mo.splitJunction(m, j.id, V.S.zs) : Mo.checkJunction(m, j.id, true));
   st.junction = null; st.dir = 1; show(false);
 }
-// a vessel clicked in 3D, a detection artifact, dropped: declined where the algorithm drew it, deleted where the person did
-function dropped(v) {
-  let o = MV.current();
-  if (v.proposed) return Mo.decide(o, v.segments, 'rejected');
-  for (const i of [...v.segments].sort((a, b) => b - a)) o = Mo.deleteSegment(o, i);
-  return o;
-}
 
-// ---------- drawing the box ----------
+// ---------- drawing the box and the map ----------
 const button = (label, fn, cls = '') => { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; if (cls) b.className = cls; b.onclick = fn; return b; };
 function card(m, j) {
   const el = document.createElement('div'), cv = document.createElement('canvas'), acts = document.createElement('div');
@@ -143,21 +121,29 @@ function card(m, j) {
   el.append(cv, acts);
   return el;
 }
-// the areas as a map, each a square to pick it by: done, partly done or not started, the current one marked
-function map(m) {
-  const el = $('area-map');
-  el.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+// how far an area has got: its junctions judged, and itself once done
+function progress(m, a) {
+  const js = junctionsIn(m, a), d = done(m, a);
+  return { did: js.filter((j) => j.done).length + (d ? 1 : 0), of: js.length + 1, done: d };
+}
+// the areas as a map floating over the view while tagging, as the field is laid out: each done, partly judged or not
+// started, the current one marked; a click opens it
+function map(m, on) {
+  const el = $('gt-mini'); el.hidden = !on;
+  if (!on) return;
+  const body = $('gt-mini-areas'), [W, H] = size(m);
+  body.style.gridTemplateColumns = `repeat(${n}, 1fr)`; body.style.aspectRatio = `${W} / ${H}`;
   const cells = [];
   for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) {
-    const a = r * n + (r % 2 ? n - 1 - k : k), d = STEPS.filter((s) => done(m, a, s)).length, b = document.createElement('button');
-    b.type = 'button'; b.className = d === STEPS.length ? 'done' : d ? 'part' : '';
-    if (a === st.area) b.classList.add('now');
-    b.title = `Area ${a + 1}: ${d === STEPS.length ? 'done' : d ? `${d} of ${STEPS.length} steps done` : 'not started'}`;
+    const a = r * n + (r % 2 ? n - 1 - k : k), p = progress(m, a), b = document.createElement('button');
+    b.type = 'button'; b.className = p.done ? 'done' : p.did ? 'part' : '';
+    if (a === st.area && !st.submit) b.classList.add('now');
+    b.title = `Area ${a + 1}: ${p.done ? 'done' : p.did ? `${p.did} of ${p.of - 1} junctions judged` : 'not started'}`;
     b.setAttribute('aria-label', b.title);
-    b.onclick = () => { const to = nextOpen(MV.current(), a); go(to?.area === a ? to : { area: a, step: 'lines' }); };
+    b.onclick = () => go(a);
     cells.push(b);
   }
-  el.replaceChildren(...cells);
+  body.replaceChildren(...cells);
 }
 // the current junction's options, under the cogwheel
 function options(j) {
@@ -170,15 +156,16 @@ function options(j) {
   $('task-opts').replaceChildren(...out);
   $('task-menu').hidden = !out.length;
 }
+const rows = () => Array.from({ length: count() }, (_, a) => ({ key: keyOf(a), name: `Area ${a + 1}`, title: 'Every line, point and junction in the area right' }));
 
-// tagging started: the walk's first step not done, from the one it was on; stopped: the whole stack as viewed
+// tagging started: the walk's first area not done, from the one it was on; stopped: the whole stack as viewed
 function tagged(on) {
   const m = MV.current();
   MV.tagging(on);
   if (!m) return;
   if (on) {
-    const to = nextOpen(m, st.area ?? 0, Math.max(0, STEPS.indexOf(st.step))) || nextOpen(m, 0);
-    st.area = to?.area ?? null; st.step = to?.step ?? 'submit'; st.junction = null; st.focused = true;
+    const to = nextOpen(m, st.area ?? 0);
+    st.area = to ?? st.area; st.submit = to == null; st.junction = null; st.focused = to != null;
   }
   show(true);
 }
@@ -186,96 +173,87 @@ function tagged(on) {
 function show(moved) {
   const m = MV.current(), on = T.tagging();
   $('vm-tasks').hidden = !m; $('vm-focus').hidden = !m || !on;
-  T.list(m ? ROWS : null);
-  if (!m) { MV.mark(null, null); MV.focusArea(null); return; }
+  // rows made anew for another grid take what was on the open one with them
+  $('vm-tasks').append(tools, work);
+  T.list(m ? rows() : null);
+  if (!m) { MV.mark(null, null); MV.focusArea(null); map(null, false); return; }
   items = itemsOf(m);
-  for (const r of ROWS) T.count(r.key, stepsDone(m, r.key), count());
-  const open = on && st.step !== 'submit' && st.area != null;
-  const li = T.open(open ? st.step : 'submit'), tools = $('task-tools'), now = $('task-now');
-  if (open) { li.querySelector('.task-head').append(tools); li.querySelector('.task-body').append(now); }
-  tools.hidden = now.hidden = !open;
-  if (open) {
-    $('area-name').textContent = `Area ${st.area + 1} of ${count()}`;
-    $('area-grid').value = String(n);
-    map(m);
-    for (const s of STEPS) $(`step-${s}`).hidden = s !== st.step;
-  }
-  // the junctions step: the area's junction to judge, the current one or its first without a verdict
-  const js = open && st.step === 'junctions' ? here(m) : [];
+  $('area-grid').value = String(n);
+  for (let a = 0; a < count(); a++) { const p = progress(m, a); T.count(keyOf(a), p.did, p.of, p.done, ''); }
+  const open = on && !st.submit && st.area != null;
+  const li = T.open(open ? keyOf(st.area) : 'submit');
+  if (open) { li.querySelector('.task-head').append(tools); li.querySelector('.task-body').append(work); }
+  tools.hidden = work.hidden = !open;
+  map(m, on);
+  // the area's junction to judge, the current one or its first without a verdict
+  const js = open ? junctionsIn(m, st.area) : [];
   let j = js.find((x) => x.id === st.junction) || js.find((x) => !x.done) || null;
-  if (open && st.step === 'junctions') {
-    st.junction = j?.id ?? null;
+  st.junction = j?.id ?? null;
+  if (open) {
     const left = js.filter((x) => !x.done).length;
     $('junctions-note').textContent = !js.length ? 'No junctions in this area.' : left ? `${js.length - left + 1} of ${js.length} junctions here` : `All ${js.length} junctions here judged.`;
-    $('area-done').disabled = left > 0;
-    $('area-done').title = left ? `${left} junction${left === 1 ? '' : 's'} here still to judge` : 'Every junction here is judged: on to the next area';
+    $('area-ok').disabled = left > 0;
+    $('area-ok').title = left ? `${left} junction${left === 1 ? '' : 's'} here still to judge` : 'Every line, point and junction here is right: on to the next area';
   } else j = null;
   options(j);
-  const was = $('task-card').firstElementChild, fresh = j ? card(m, j) : null;
-  $('task-card').replaceChildren(...(fresh ? [fresh] : []));
-  if (was && fresh && was.dataset.key !== fresh.dataset.key && st.dir) slideIn(was, fresh, st.dir);
+  const was = $('task-card').firstElementChild, card_ = j ? card(m, j) : null;
+  $('task-card').replaceChildren(...(card_ ? [card_] : []));
+  if (was && card_ && was.dataset.key !== card_.dataset.key && st.dir) slideIn(was, card_, st.dir);
   st.dir = 0;
   const box = open ? areaBox(m, st.area) : null;
   if (!on) { MV.mark(null, null); if (MV.focusedArea()) MV.focusArea(null); heard(); return; }
   MV.mark(j ? { node: j.id } : null, box);
   // the area alone in the main view, or the whole stack once it is left
   const focus = st.focused && box, f = MV.focusedArea();
-  if (focus && (moved || !f || f.depth !== (st.step === 'junctions') || JSON.stringify(f.box) !== JSON.stringify(box))) MV.focusArea(box, st.step === 'junctions');
+  if (focus && (moved || !f || JSON.stringify(f.box) !== JSON.stringify(box))) MV.focusArea(box);
   else if (!focus && f) MV.focusArea(null);
   $('vm-focus').textContent = focus ? 'Back to image' : 'Back to task';
   $('vm-focus').title = focus ? 'The whole stack, as the Show menu sets it' : 'The task again: its area alone';
   $('vm-focus').disabled = !box;
-  $('peek-note').hidden = !focus;
   heard();
 }
 // the next junction's card slides in over the last one's, which slides out the other way
-function slideIn(was, fresh, dir) {
+function slideIn(was, next, dir) {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   $('task-stage').querySelectorAll('.leaving').forEach((e) => e.remove());
   const out = document.createElement('div'); out.className = 'leaving'; out.setAttribute('aria-hidden', 'true'); out.inert = true;
   out.append(was); $('task-stage').append(out);
   const t = { duration: 220, easing: 'cubic-bezier(.2,.7,.3,1)' };
   out.animate([{ transform: 'none', opacity: 1 }, { transform: `translateX(${-dir * 60}%)`, opacity: 0 }], t).finished.then(() => out.remove(), () => out.remove());
-  fresh.animate([{ transform: `translateX(${dir * 60}%)`, opacity: 0 }, { transform: 'none', opacity: 1 }], t);
+  next.animate([{ transform: `translateX(${dir * 60}%)`, opacity: 0 }, { transform: 'none', opacity: 1 }], t);
 }
 
-// What of each step is still open, for Submit Ground Truth's checklist and the status bar's step; null with no model.
+// What is still open, for Submit Ground Truth's checklist and the status bar's step; null with no model.
 export function open() {
   const m = MV.current(); if (!m || !items) return null;
-  return ROWS.map((r) => {
-    const left = count() - stepsDone(m, r.key);
-    return { level: 'warn', grade: true, ok: !left, text: left ? `${r.name}: ${left} of ${count()} areas left` : `${r.name}: every area done` };
-  });
+  const left = count() - areasDone(m);
+  return [{ level: 'warn', grade: true, ok: !left, text: left ? `Areas: ${left} of ${count()} left` : 'Areas: every one done' }];
 }
 
 // view: the shell's 3D view; tasks: the shell's list of them; changed() hears every redraw of the tasks; submit() sends them
 export function init(view, tasks, changed, submit) {
-  V = view; T = tasks; n = GRID;
-  T.list(ROWS, { pick: pickStep, submit, tagging: tagged });
+  V = view; T = tasks; n = GRID; tools = $('task-tools'); work = $('task-now');
+  T.list([], { pick, submit, tagging: tagged });
   T.list(null); st = fresh(); items = null; heard = changed || (() => {});
-  $('area-grid').replaceChildren(...GRIDS.map((k) => new Option(k === 1 ? 'The whole field' : `${k} × ${k} areas`, String(k))));
+  $('area-grid').replaceChildren(...GRIDS.map((k) => new Option(k === 1 ? 'The whole field' : `${k} × ${k}`, String(k))));
   $('area-grid').onchange = (e) => setGrid(+e.target.value);
   MV.onChange((m) => { if (!m) { st = fresh(); items = null; } show(false); });
-  // in 3D, a junction clicked becomes the one to judge and a vessel clicked is offered to drop
-  MV.onPick((h, e) => {
-    const m = MV.current(), f = MV.focusedArea();
-    if (!items || !f?.depth || st.step !== 'junctions') return false;
-    const j = h.node != null && here(m).find((x) => x.id === h.node);
-    if (j) { st.junction = j.id; show(false); return true; }
-    const v = items.vessels.find((x) => (h.node != null ? x.ids.includes(h.node) : x.segments.includes(h.segment)) && Mo.live(m.segments[x.segments[0]]));
-    if (!v) return false;
-    MV.showMenu([['Drop this vessel: a detection artifact', () => dropped(v)]], e.clientX, e.clientY);
+  // a junction of the area clicked on the view becomes the one to judge
+  MV.onPick((h) => {
+    const m = MV.current();
+    if (!items || !MV.focusedArea() || st.area == null || h.node == null) return false;
+    const j = junctionsIn(m, st.area).find((x) => x.id === h.node);
+    if (!j) return false;
+    st.junction = j.id; show(false);
     return true;
   });
   $('task-skip').onclick = skip;
-  $('lines-ok').onclick = linesRight;
-  $('area-ok').onclick = noneMissed;
-  $('area-done').onclick = areaDoneHere;
+  $('area-ok').onclick = areaRight;
   $('vm-focus').onclick = () => { if (st.area == null) return; st.focused = !st.focused; show(true); };
 }
 // for the study's page tests, which drive it from outside
 export const inspect = () => {
   const m = MV.current();
-  return { step: st.step, area: st.area, grid: n, focused: !!MV.focusedArea(), box: st.area != null && m ? areaBox(m, st.area) : null,
-    key: st.junction != null ? `j${st.junction}` : null, junctions: m && items ? here(m).map((j) => ({ key: j.key, done: j.done })) : [] };
+  return { area: st.submit ? null : st.area, grid: n, focused: !!MV.focusedArea(), box: st.area != null && m ? areaBox(m, st.area) : null,
+    key: st.junction != null ? `j${st.junction}` : null, junctions: m && items && st.area != null ? junctionsIn(m, st.area).map((j) => ({ key: j.key, done: j.done })) : [] };
 };

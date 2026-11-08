@@ -24,6 +24,8 @@
 @media (prefers-color-scheme: light) { :root:not([data-theme]) { --ink-amt: 45%; } }
 .lt, .filter .badge { color: color-mix(in srgb, var(--c), #000 var(--ink-amt)); }
 :root { --pad: 12px; --r-panel: 12px; --r-ctl: 8px; --r-chip: 6px; }
+/* the minimap's width, which a study's own floating map over the image takes too */
+:root { --mm-width: 200px; }
 * { box-sizing: border-box; }
 /* the browser's own [hidden] rule reaches HTML elements only */
 svg[hidden] { display: none; }
@@ -358,7 +360,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 /* the minimap: hovering over the image's top left corner, framed in white to stand apart from any image;
    opaque at first, and under the pointer whatever opacity the user chose for it at rest */
 #image-view { position: relative; }
-#minimap { position: absolute; top: 12px; left: 12px; z-index: 5; width: 200px; border: 2px solid #fff; border-radius: var(--r-ctl);
+#minimap { position: absolute; top: 12px; left: 12px; z-index: 5; width: var(--mm-width); border: 2px solid #fff; border-radius: var(--r-ctl);
   background: var(--panel); box-shadow: 0 4px 14px #0008; overflow: hidden; opacity: var(--mm-opacity, 1); transition: opacity .15s; }
 #minimap:hover, #minimap:focus-within { opacity: 1; }
 #minimap[hidden] { display: none; }
@@ -927,9 +929,11 @@ html:not(.offline) #welcome-offline { display: none; }
 #overlay .edit-cut { stroke: #fff; stroke-width: 2px; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 1px #000); }
 #overlay .edit-cut.dragging { stroke: var(--accent); stroke-width: 3px; }
 #overlay .edit-left { fill: #ddd; font-size: 14px; text-anchor: middle; dominant-baseline: central; paint-order: stroke; stroke: #000; stroke-width: 3px; }
-#overlay .edit-flaw { fill: #ff4d4d22; stroke: #ff4d4d; stroke-width: 1.5px; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
+#overlay .edit-flaw, #edit-3d .edit-flaw { fill: #ff4d4d22; stroke: #ff4d4d; stroke-width: 1.5px; stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
 #overlay .edit-crop { fill: none; stroke: #fff; stroke-width: 2px; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke; }
-#overlay .edit-lasso { fill: none; stroke: #ff4d4d; stroke-width: 2px; vector-effect: non-scaling-stroke; }
+#overlay .edit-lasso, #edit-3d .edit-lasso { fill: none; stroke: #ff4d4d; stroke-width: 2px; vector-effect: non-scaling-stroke; }
+/* a stack's imperfections and lasso, over the 3D view, in its pixels */
+#edit-3d { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; overflow: visible; }
 :root[data-editing] #scroller { cursor: default; }
 :root[data-edit-tool] #scroller { cursor: crosshair; }
 /* the tagger's line in a study's ground-truth box: may they write to the submissions folder (req/shell/ground-truth/tagger-access) */

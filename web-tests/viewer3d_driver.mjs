@@ -284,9 +284,30 @@ try {
     // Data Management wants a signed-in Drive; its Edit Image box is only kept out of sight outside it
     await page.evaluate(() => { document.documentElement.dataset.mode = "data"; $("#edit-open").click(); });
     await page.waitForFunction(() => !$("#edit-box").hidden);
-    check(await page.isVisible("#edit-slices-sec") && await page.isHidden("#edit-crop") && await page.isHidden("#edit-lasso") && await page.isHidden("#edit-split-hint"),
-      "Edit Image on a stack offers no Crop or Imperfections lasso, which draw on a flat image");
+    check(await page.isVisible("#edit-slices-sec") && await page.isHidden("#edit-crop") && await page.isVisible("#edit-lasso") && await page.isHidden("#edit-split-hint"),
+      "Edit Image on a stack offers no Crop, which draws on a flat image, but has the Imperfections lasso");
     check(await page.isVisible("#v3-stage") && await page.isHidden("#stage"), "Edit Image keeps the stack in 3D");
+    // req/shell/data/edit: a stack's lasso draws on it from straight above, held still, and leaves out what it encloses
+    // through every slice
+    await page.evaluate(() => { const v = window.shellForTests.viewer.three; v.S.rot = v.facing(0.4, -0.5); v.redraw(); });
+    await page.click("#edit-lasso");
+    const armed = await page.evaluate(() => { const v = window.shellForTests.viewer.three; return { top: v.S.rot[2][2] > 0.999, held: v.S.held }; });
+    check(armed.top && armed.held, `Mark turns the stack to straight above and holds it there: ${JSON.stringify(armed)}`);
+    const r = await page.evaluate(() => { const b = $("#v3-stage").getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; });
+    const corner = await page.evaluate(() => window.shellForTests.viewer.three.toScreen(0, 0));
+    const s0 = Math.min(r[0] - corner[0], r[1] - corner[1]) * 0.15;
+    await page.mouse.move(r[0] - s0, r[1] - s0); await page.mouse.down();
+    for (const [dx, dy] of [[1, -1], [1, 1], [-1, 1], [-1, -1]]) await page.mouse.move(r[0] + dx * s0, r[1] + dy * s0, { steps: 4 });
+    await page.mouse.up();
+    await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
+    const cut = await page.evaluate(([W, H]) => {
+      const im = window.shellForTests.page.get("image"), m = im.W * im.H, at = (x, y) => [...Array(im.planes.length / m).keys()].map((k) => im.planes[k * m + y * im.W + x]);
+      return { flaws: $("#edit-flaws").textContent, outlined: !!$("#edit-3d polygon"), middle: at(W >> 1, H >> 1), edge: at(2, 2), turned: window.shellForTests.viewer.three.S.rot[2][2] > 0.999 };
+    }, [W, H]);
+    check(/Imperfection 1, \d+% of the image/.test(cut.flaws) && cut.outlined, `the lasso marks an imperfection on the stack, outlined over the view: ${cut.flaws}`);
+    check(cut.middle.every((v) => v === 0) && cut.edge.some((v) => v > 0) && cut.turned, `what it encloses is left out of every slice and channel, the rest kept: ${JSON.stringify(cut)}`);
+    await page.click("#edit-lasso");
+    check(!(await page.evaluate(() => window.shellForTests.viewer.three.S.held)), "unarmed, the stack turns again");
     await page.click("#edit-done");
     await page.evaluate(() => delete document.documentElement.dataset.mode);
   } else console.log(`not checked in this ${ENGINE}: the 3D view, which needs the WebGL2 it lacks`);

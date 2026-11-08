@@ -408,11 +408,10 @@ export function stats(m) {
 }
 
 // ---------- areas excluded from analysis ----------
-// Areas the owner marked as damaged sample (a fold, a tear, a bubble, debris, out of focus), each an
+// Areas a model file marks as damaged sample (a fold, a tear, a bubble, debris, out of focus), each an
 // outline of x, y points in µm drawn from above. An area runs through every slice: the stacks are thin
 // and damage cuts through them. Analysis leaves out what lies inside, and measures density over the
 // rest of the field.
-export const REASONS = ['fold', 'tear', 'bubble', 'debris', 'out of focus', 'other'];
 
 function inPolygon(poly, x, y) {
   let inside = false;
@@ -423,14 +422,6 @@ function inPolygon(poly, x, y) {
   return inside;
 }
 export const excluded = (m, p) => (m.excluded_regions || []).some((r) => inPolygon(r.polygon, p.x, p.y));
-const area = (poly) => Math.abs(poly.reduce((a, [x, y], i) => { const [u, v] = poly[(i + 1) % poly.length]; return a + x * v - u * y; }, 0)) / 2;
-
-// A new area from an outline; an outline enclosing nothing leaves the model as it was.
-export function markExcluded(m, polygon, reason) {
-  if (polygon.length < 3 || !(area(polygon) > 0)) return m;
-  return { ...m, excluded_regions: [...(m.excluded_regions || []), { polygon: polygon.map(([x, y]) => [x, y]), ...(reason && { reason }) }] };
-}
-export const unmarkExcluded = (m, k) => ({ ...m, excluded_regions: (m.excluded_regions || []).filter((_, i) => i !== k) });
 
 // The share of the field the areas cover, overlaps counted once, sampled on a fine grid.
 export function excludedFraction(m, n = 500) {

@@ -29,6 +29,9 @@ export function imageEditor(ctx) {
   // tool: "crop" or "lasso" while one is armed; signal: each slice's, for the slider's band
   let base = null, e = null, polygons = [], tool = null, n = 1, suggested = null, frame = 0, drag = null;
   const editing = () => !!base;
+  // a stack shown in 3D: its lasso draws on the stack from straight above, over it; shown flat, as any flat image
+  const three = () => ctx.viewer().three, stack = () => (base?.Z || 1) > 1 && !!three() && !three().stage.hidden;
+  let over3d = null;
   const C = () => Math.floor(base.planes.length / (base.W * base.H * (base.Z > 1 ? 1 + base.Z : 1)));
 
   // ---------- the image as it will be saved ----------
@@ -46,6 +49,7 @@ export function imageEditor(ctx) {
 
   // the cuts, the parts left out, the crop's rectangle and the imperfections, over the image
   function overlay(live) {
+    if (stack()) return overlay3d(live);
     const g = ctx.viewer().layer("edit"), L = layout(shownEdit(), base.W, base.H);
     g.replaceChildren();
     const s = shownEdit();
@@ -73,6 +77,22 @@ export function imageEditor(ctx) {
     if (live?.line) g.append(svgEl("line", { class: "edit-cut dragging", ...live.line }));
   }
 
+  // on a stack, the imperfections and the lasso over the 3D view, following it as it zooms and pans
+  let live3d = null;
+  function overlay3d(live = live3d) {
+    live3d = live;
+    if (!over3d) {
+      over3d = svgEl("svg", { id: "edit-3d" });
+      three().stage.append(over3d);
+      three().onDraw(() => { if (editing() && stack()) overlay3d(); });
+    }
+    const L = layout(e, base.W, base.H), at = (p) => three().toScreen(...p);
+    const shape = (tag, cls, pts) => { const q = pts.map(at); if (q.every(Boolean)) over3d.append(svgEl(tag, { class: cls, points: q.map((v) => v.join(",")).join(" ") })); };
+    over3d.replaceChildren();
+    for (const poly of polygons) shape("polygon", "edit-flaw", poly.map(([x, y]) => L.toView(x, y)));
+    if (live?.lasso) shape("polyline", "edit-lasso", live.lasso);
+  }
+
   // ---------- the box ----------
   function controls() {
     for (const b of $("#edit-split").children) b.setAttribute("aria-pressed", String(+b.dataset.n === n));
@@ -84,8 +104,8 @@ export function imageEditor(ctx) {
     $("#edit-crop-reset").hidden = !cropped;
     const Z = base.Z || 1;
     $("#edit-slices-sec").hidden = Z < 2;
-    // crop, the lasso and the cut lines draw on a flat image; a stack is shown in 3D, which has tools of its own
-    for (const id of ["#edit-crop-row", "#edit-flaws-row"]) $(id).hidden = Z > 1;
+    // crop and the cut lines draw on a flat image; a stack is shown in 3D, where the lasso draws from straight above
+    $("#edit-crop-row").hidden = Z > 1;
     if (Z > 1) {
       for (const [id, v] of [["#edit-z0", e.z[0]], ["#edit-z1", e.z[1]]]) Object.assign($(id), { min: 1, max: Z, value: v + 1 });
       $("#edit-z-text").textContent = `${e.z[0] + 1}–${e.z[1] + 1} of ${Z}`;
@@ -123,6 +143,8 @@ export function imageEditor(ctx) {
   const arm = (t) => {
     tool = tool === t ? null : t;
     root.toggleAttribute("data-edit-tool", !!tool);
+    // a stack's lasso draws on it from straight above, the view held still while it is armed
+    if (stack()) { const S = three().S; if (tool === "lasso") S.rot = three().facing(0, 0); S.held = tool === "lasso"; three().redraw(); }
     controls(); later();
   };
   $("#edit-split").addEventListener("click", (ev) => { const k = +ev.target.dataset?.n; if (k) setGrid(k); });
@@ -144,11 +166,13 @@ export function imageEditor(ctx) {
   });
 
   // ---------- the pointer on the image: the crop's rectangle, the lasso, a cut dragged, a part clicked ----------
-  const sc = () => ctx.viewer().scroller;
-  const viewAt = (ev) => ctx.viewer().toImage(ev);
+  const sc = () => (stack() ? three().stage : ctx.viewer().scroller);
+  const viewAt = (ev) => (stack() ? three().toImage(ev) : ctx.viewer().toImage(ev));
   function down(ev) {
-    if (!editing() || ev.button !== 0 || !ev.target.closest("#stage")) return;
+    if (!editing() || ev.button !== 0 || !ev.target.closest(stack() ? "#v3-stage" : "#stage")) return;
+    if (stack() && tool !== "lasso") return;
     const at = viewAt(ev), zoom = ctx.state.zoom, L = layout(shownEdit(), base.W, base.H);
+    if (!at) return;
     if (tool === "crop") drag = { kind: "crop", from: at };
     else if (tool === "lasso") drag = { kind: "lasso", points: [at] };
     else {
@@ -178,7 +202,7 @@ export function imageEditor(ctx) {
       const [x, y] = [clamp(at[0], base.W), clamp(at[1], base.H)], [fx, fy] = [clamp(drag.from[0], base.W), clamp(drag.from[1], base.H)];
       drag.crop = { x0: Math.min(x, fx), y0: Math.min(y, fy), x1: Math.max(x, fx), y1: Math.max(y, fy) };
       overlay({ crop: drag.crop });
-    } else if (drag.kind === "lasso") { drag.points.push(at); overlay({ lasso: drag.points }); }
+    } else if (drag.kind === "lasso") { if (at) drag.points.push(at); overlay({ lasso: drag.points }); }
     else if (drag.kind === "cut") {
       drag.to = cutAt(drag.axis, drag.i, at);
       const L = layout(e, base.W, base.H), p = drag.axis === "x" ? L.toView(drag.to, 0)[0] - L.gap / 2 : L.toView(0, drag.to)[1] - L.gap / 2;
@@ -193,7 +217,7 @@ export function imageEditor(ctx) {
     else if (d.kind === "lasso" && d.points.length > 2) {
       const L = layout(e, base.W, base.H);
       polygons.push(d.points.map((p) => L.toImage(...p).map((v) => Math.round(v * 10) / 10)));
-      e.mask = maskOf(polygons, base.W, base.H); controls(); later();
+      e.mask = maskOf(polygons, base.W, base.H); live3d = null; controls(); later();
     } else if (d.kind === "cut" && d.to != null) { (d.axis === "x" ? e.xs : e.ys)[d.i] = d.to; later(); }
     else if (d.kind === "part" && d.part) {
       if (e.left.has(d.part)) e.left.delete(d.part); else e.left.add(d.part);
@@ -230,9 +254,10 @@ export function imageEditor(ctx) {
   function done() {
     if (!editing()) return;
     const was = base;
-    base = null; tool = null; drag = null;
+    if (stack()) three().S.held = false;
+    base = null; tool = null; drag = null; live3d = null;
     delete root.dataset.editing; root.removeAttribute("data-edit-tool");
-    ctx.viewer().layer("edit").replaceChildren();
+    ctx.viewer().layer("edit").replaceChildren(); over3d?.replaceChildren();
     asStarted(); box.hidden = true; ctx.boxDone(box, null); ctx.relabel();
     page.set({ image: was });
   }
