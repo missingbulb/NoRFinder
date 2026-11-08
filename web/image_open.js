@@ -13,6 +13,8 @@ const LOWER = 0.005, UPPER = 0.998;
 // a robust standard deviation in median absolute deviations, for normal noise, and how many of them a
 // background-measured black point stands above the background's median
 const SIGMA_PER_MAD = 1.4826, ABOVE = 2.5;
+// the share of the flattened image a flattened window leaves black and the share it leaves under full colour
+const FLAT_DARK = 0.01, FLAT_LIGHT = 0.987;
 // the channels shown at most: each is a plane of the image's size in the page's memory
 export const MOST = 8;
 const RGB = [{ name: "Red", colour: "#ff0000" }, { name: "Green", colour: "#00ff00" }, { name: "Blue", colour: "#0000ff" }];
@@ -33,31 +35,42 @@ export async function openImage(bytes, view = {}) {
   return fromPixels(W, H, rgba, view, greyFile(b));
 }
 
-// Where each channel's black point sits, as the step of its 256 between the 0.5% and upper quantiles that a method
-// measures on the channel's histogram there, 0 leaving it at the quantile. The method is a preference, the first
-// set of the image's, the user's, the study's (view.blackPoint) and its format's; the shell has the last two.
+// Where each channel's black and white points sit, as [black, white] steps of its 256 between the 0.5% and upper
+// quantiles that a method measures on the channel's histograms there, the whole stack's (h) and its flattened
+// image's (flat); [0, 255] leaves them at the quantiles. The method is a preference, the first set of the image's,
+// the user's, the study's (view.blackPoint) and its format's; the shell has the last two.
 const BLACK_POINT = {
-  quantile: () => 0,
-  // Zack's triangle: the step farthest below the line from the histogram's peak to its brightest filled step, where
-  // the background's fall meets the signal's tail; none for a peak in the bright half, a light background
-  triangle(h) {
-    let p = 0, e = 255;
-    for (let b = 1; b < 256; b++) if (h[b] > h[p]) p = b;
-    while (e > p && !h[e]) e--;
-    if (p > 127 || e <= p) return 0;
-    let t = p, most = -Infinity;
-    for (let b = p; b <= e; b++) { const d = h[p] * (e - b) - h[b] * (e - p); if (d > most) { most = d; t = b; } }
-    return t;
-  },
-  // the background's median step and ABOVE robust standard deviations over it
-  background(h) {
-    const half = Math.floor((h.reduce((a, v) => a + v, 0) - 1) / 2);
-    const rank = (hist) => { let seen = 0; for (let b = 0; b < 256; b++) { seen += hist[b]; if (seen > half) return b; } return 255; };
-    const m = rank(h), d = new Float64Array(256);
-    for (let b = 0; b < 256; b++) d[Math.abs(b - m)] += h[b];
-    return Math.min(254, m + ABOVE * SIGMA_PER_MAD * rank(d));
-  },
+  quantile: () => [0, 255],
+  triangle: (h) => [triangle(h), 255],
+  background: (h) => [background(h), 255],
+  // the window that leaves the flattened image's darkest FLAT_DARK black and its brightest 1 - FLAT_LIGHT full colour
+  flattened: (h, flat) => [stepAt(flat, FLAT_DARK), stepAt(flat, FLAT_LIGHT)],
 };
+// the step of a 256-step histogram at quantile q, the lower of the two ranks it falls between
+function stepAt(h, q) {
+  const k = Math.floor(q * (h.reduce((a, v) => a + v, 0) - 1));
+  let seen = 0;
+  for (let b = 0; b < 256; b++) { seen += h[b]; if (seen > k) return b; }
+  return 255;
+}
+
+// Zack's triangle: the step farthest below the line from the histogram's peak to its brightest filled step, where
+// the background's fall meets the signal's tail; none for a peak in the bright half, a light background
+function triangle(h) {
+  let p = 0, e = 255;
+  for (let b = 1; b < 256; b++) if (h[b] > h[p]) p = b;
+  while (e > p && !h[e]) e--;
+  if (p > 127 || e <= p) return 0;
+  let t = p, most = -Infinity;
+  for (let b = p; b <= e; b++) { const d = h[p] * (e - b) - h[b] * (e - p); if (d > most) { most = d; t = b; } }
+  return t;
+}
+// the background's median step and ABOVE robust standard deviations over it
+function background(h) {
+  const m = stepAt(h, 0.5), d = new Float64Array(256);
+  for (let b = 0; b < 256; b++) d[Math.abs(b - m)] += h[b];
+  return Math.min(254, m + ABOVE * SIGMA_PER_MAD * stepAt(d, 0.5));
+}
 // a format's own black-point method: a fluorescence TIFF's background is most of its pixels, a photo's is not
 const FORMAT_BLACK = { tiff: "triangle", photo: "quantile" };
 
@@ -150,10 +163,16 @@ function shown(W, H, Z, raw, said, view, format, rest) {
       [lo, hi] = quantiles(slices, [LOWER, upper]);
       if (!(hi > lo)) [lo, hi] = extremes(slices);
       if (hi > lo) {
-        const h = new Float64Array(256), span = hi - lo;
-        for (const s of slices) for (let i = 0; i < n; i++) { const v = (s[i] - lo) / span; h[Math.trunc((v < 0 ? 0 : v > 1 ? 1 : v) * 255)]++; }
-        const step = black(h);
-        if (step) lo = lo + (step * (hi - lo)) / 255;
+        // the stack's histogram and, in the plane drawn over below, its flattened image's
+        const h = new Float64Array(256), hf = new Float64Array(256), span = hi - lo, top = planes.subarray(c * n, (c + 1) * n);
+        for (const s of slices) for (let i = 0; i < n; i++) {
+          const v = (s[i] - lo) / span, e = Math.trunc((v < 0 ? 0 : v > 1 ? 1 : v) * 255);
+          h[e]++; if (e > top[i]) top[i] = e;
+        }
+        for (let i = 0; i < n; i++) hf[top[i]]++;
+        top.fill(0);
+        const [b, w] = black(h, hf);
+        if ((b || w < 255) && w > b) [lo, hi] = [lo + (b * (hi - lo)) / 255, lo + (w * (hi - lo)) / 255];
       }
     }
     const flat = planes.subarray(c * n, (c + 1) * n);

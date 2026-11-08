@@ -26,16 +26,24 @@ def triangle(h):
     return p + int(np.argmax(h[p] * (e - b) - h[b] * (e - p)))
 
 
+def step_at(h, q):
+    """The step of a 256-step histogram at quantile q, the lower of the two ranks it falls between."""
+    return int(np.searchsorted(np.cumsum(h), int(q * (h.sum() - 1)) + 1))
+
+
 def background(h):
     """The background's median step and ABOVE robust standard deviations over it, at most step 254."""
-    n = int(h.sum())
-    rank = lambda hist: int(np.searchsorted(np.cumsum(hist), (n - 1) // 2 + 1))
-    m = rank(h)
+    m = step_at(h, 0.5)
     d = np.bincount(np.abs(np.arange(256) - m), weights=h, minlength=256)
-    return min(254, m + ABOVE * SIGMA_PER_MAD * rank(d))
+    return min(254, m + ABOVE * SIGMA_PER_MAD * step_at(d, 0.5))
 
 
-BLACK = {'triangle': triangle, 'background': background}
+# the share of the flattened image a flattened window leaves black and the share it leaves under full colour
+FLAT_DARK, FLAT_LIGHT = 0.01, 0.987
+
+
+BLACK = {'triangle': lambda h, f: (triangle(h), 255), 'background': lambda h, f: (background(h), 255),
+         'flattened': lambda h, f: (step_at(f, FLAT_DARK), step_at(f, FLAT_LIGHT))}
 
 
 def eight(c, lo, hi):
@@ -48,7 +56,8 @@ def eight(c, lo, hi):
 def stretch(c, upper=0.998, black='quantile'):
     """8-bit display stretch of the whole channel, every slice by the one window so signal that fades with depth
     still looks faded; slice by slice so no float copy is held. The window runs from the 0.5% quantile to the upper
-    one, its black point then lifted to the step of it the black method measures on the channel's histogram there."""
+    one, then narrowed to the steps of it the black-point method measures on the channel's histogram there, the
+    whole stack's or its flattened image's."""
     lo, hi = np.quantile(c, 0.005), np.quantile(c, upper)
     if hi <= lo:
         lo, hi = c.min(), c.max()
@@ -56,10 +65,10 @@ def stretch(c, upper=0.998, black='quantile'):
         return np.zeros(c.shape, np.uint8)
     out = eight(c, lo, hi)
     if black in BLACK:
-        step = BLACK[black](np.bincount(out.ravel(), minlength=256))
-        if step:
+        b, w = BLACK[black](np.bincount(out.ravel(), minlength=256), np.bincount(out.max(axis=0).ravel(), minlength=256))
+        if (b or w < 255) and w > b:
             lo, hi = float(lo), float(hi)
-            out = eight(c, lo + step * (hi - lo) / 255, hi)
+            out = eight(c, lo + b * (hi - lo) / 255, lo + w * (hi - lo) / 255)
     return out
 
 

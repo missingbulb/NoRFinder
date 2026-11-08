@@ -665,7 +665,9 @@ nobody has decided: what the page does there is not a requirement yet.
   histogram's knee where the background's fall meets the signal's tail (Zack's triangle), each channel by its own
   histogram; `quantile`, a photo's (an RGB TIFF, a PNG or a JPEG) and any light background's, leaves it at the 0.5%
   quantile; `background` puts it 2.5 robust standard deviations (1.4826 median absolute deviations) over the
-  background's median. What a study's `study.json` says of a channel (its name, description, whether it shows, its
+  background's median; `flattened` sets the white point too, leaving the darkest 1% of the flattened image black
+  and its brightest 1.3% full colour, the window the owner set by eye on a vascular stack (black 67, white 213 on
+  `cd31_frontal_x20_r_1_slices1-12`, owner, 2026-11-08). What a study's `study.json` says of a channel (its name, description, whether it shows, its
   black point, its colour, coloured by depth) is only where that channel's row starts, every one of them the
   user's to change (`req/shell/channels/rows`). A file's display colours do not say which channel is which
   (Vascular's originals show DAPI red, NoR's come in three arrangements), so a study may give a rule, in its page

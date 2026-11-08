@@ -155,3 +155,14 @@ def test_a_photo_keeps_the_low_quantile(tmp_path):
     got, = opened(tmp_path, {'file': p})
     same_as_the_viewer(p, got)
     assert np.mean(np.frombuffer(got['planes'], np.uint8) == 0) < 0.05
+
+
+def test_a_studys_flattened_window(tmp_path):
+    p = str(tmp_path / 'vascular.tif')
+    tifffile.imwrite(p, vessels(11), imagej=True, metadata={'axes': 'ZYX'})
+    got, = opened(tmp_path, {'file': p, 'view': {'upper': 0.999, 'blackPoint': 'flattened'}})
+    s = View(p, upper=0.999, black='flattened')
+    assert got['volume_bytes'] == s.volume.tobytes() and got['planes'] == s.planes.tobytes()
+    # the flattened image runs from black at its 1% point to full colour at its 98.7% one
+    flat = np.frombuffer(got['planes'], np.uint8)
+    assert 0.005 < np.mean(flat == 0) < 0.03 and 0.005 < np.mean(flat == 255) < 0.03
