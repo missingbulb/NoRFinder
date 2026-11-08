@@ -269,8 +269,8 @@ try {
     const onScreen = (p) => p && p[0] > 20 && p[0] < cw - 20 && p[1] > 20 && p[1] < ch - 20;
     const at0 = (await page.evaluate(() => window.vascular.model())).at;
     const menuNow = () => page.evaluate(() => (document.querySelector("#ctx").hidden ? [] : [...document.querySelectorAll("#ctx .item")].map((b) => b.textContent)));
-    const bend = Object.keys(kinds).find((k) => /-curve$/.test(kinds[k]) && onScreen(points[k]) && inArea(at0[k], 10));
-    check(!!bend, "a curve point in the area");
+    const bend = Object.keys(kinds).find((k) => kinds[k] === "candidate-curve" && onScreen(points[k]) && inArea(at0[k], 10));
+    check(!!bend, "a low-confidence vessel's curve point in the area");
     if (bend) {
       const n0 = (await doc()).edges.length, segs0 = (await page.evaluate(() => window.vascular.model())).kinds;
       await page.mouse.click(cx + points[bend][0], cy + points[bend][1], { button: "right" });
