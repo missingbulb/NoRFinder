@@ -430,7 +430,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #statusbar .grow ~ .sb-item, #statusbar #sb-res-icon, #sb-res-items > .sb-item:first-child { padding-left: 10px; border-left: 1px solid var(--line); }
 /* the disk, memory, network and CPU, folded into one icon (req/shell/status-bar/resources): unfolded always open,
    or auto-hiding while hovered or raised by what needs watching; the icon goes only always open */
-#sb-res { display: flex; align-items: center; }
+#sb-res { display: grid; grid-template-columns: minmax(0, auto) max-content; align-items: center; }
 #sb-res-items { display: flex; align-items: center; overflow: hidden; max-width: 0; opacity: 0; transition: max-width .35s ease, opacity .35s ease; }
 #sb-res-items > .sb-item:not(:last-child) { margin-right: 14px; }
 /* the gauge goes away as the four come, and comes back as they fold */
@@ -445,7 +445,7 @@ html[data-motion=off] :is(#sb-res-items, #statusbar #sb-res-icon) { transition: 
 #sb-now #status { overflow: hidden; text-overflow: ellipsis; }
 /* too little room: what the page is doing and the four give way; the steps and the right-hand items stay whole */
 #sb-steps, #sb-online, #sb-report, #sb-version, #statusbar #sb-res-icon { flex-shrink: 0; }
-#sb-res { min-width: 0; flex: 0 1 auto; }
+#sb-res { flex: 0 1 auto; }
 #sb-res-items { min-width: 0; flex: 0 1 auto; }
 #sb-memory.warn { color: var(--warn); }
 #statusbar .sb-item, #statusbar .sb-item svg { transition: color 1s; }
