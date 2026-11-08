@@ -40,8 +40,9 @@ owner's decisions on the stacks and the vessel model, are
   file loaded, shows as the toolbar says (`req/vascular/model/view`): white tubes in a view of its
   own that turns with the stack's, or magenta over the stack. On the model: drag a point to move it, its handle shown
   only while ground truth is tagged, never on the main view out of tagging (owner, 2026-11-08),
-  right-click a segment or a point to delete it, add or remove a bend or split a junction into
-  vessels that cross, right-drag from one piece to another to connect them, drag a vessel's tip onto another
+  right-click a segment or a point to delete it, add or remove a bend (a point on any vessel, low-confidence ones
+  too: its two lines become one), split a segment where it was clicked into two tips set a little apart (owner,
+  2026-11-08) or split a junction into vessels that cross, right-drag from one piece to another to connect them, drag a vessel's tip onto another
   vessel or point to attach it there, for a connection the algorithm missed (owner, 2026-11-07), and click a faded
   low-confidence vessel to approve or decline it. The toolbar's Everything, Detected and Missed keep the
   whole stack, only the signal within reach of the model's vessels, or only what lies away from them, within a

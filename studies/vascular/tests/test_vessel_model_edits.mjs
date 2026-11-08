@@ -154,6 +154,19 @@ const tests = {
     assert.equal(c.segments.at(-1).state, 'vessel', 'a segment the owner draws is a vessel');
     assert.equal('confidence' in c.segments.at(-1), false);
   },
+  'a segment cut in two leaves two tips a little apart on its curve, each half keeping its state'() {
+    const m = branching(), i = m.segments.findIndex((s) => s.a === 1 && s.b === 2);
+    const o = Mo.cutSegment(m, i, .4, .6);
+    assert.equal(o.segments.length, m.segments.length + 1);
+    const d = Mo.degrees(o), tips = [...o.nodes.keys()].filter((id) => !m.nodes.has(id));
+    assert.equal(tips.length, 2);
+    assert.ok(tips.every((id) => d.get(id) === 1), 'both new points are tips');
+    const [p, q] = tips.map((id) => o.nodes.get(id)), want = [Mo.curvePoint(m, i, .4), Mo.curvePoint(m, i, .6)];
+    assert.ok([p, q].every((n, k) => Math.hypot(n.x - want[k].x, n.y - want[k].y) < 1e-9), 'the tips sit on the curve where it was cut');
+    assert.deepEqual(Mo.neighbours(o, p.id), [1]); assert.deepEqual(Mo.neighbours(o, q.id), [2]);
+    assert.ok(o.segments.filter((s) => tips.includes(s.a) || tips.includes(s.b)).every((s) => s.state === 'vessel' && s.confidence === .9));
+    assert.equal(Mo.cutSegment(m, i, .6, .4), m, 'unchanged when the cut runs backwards');
+  },
   'a v2 file reads as points along curves and writes back as the same edges'() {
     const m = Mo.parse(SAMPLE);
     assert.equal(m.nodes.size, 6, 'four junctions and tips, and two curve points');
@@ -267,4 +280,4 @@ const tests = {
 
 let n = 0;
 for (const [name, fn] of Object.entries(tests)) { fn(); n++; console.log('ok', name); }
-assert.equal(n, 31);
+assert.equal(n, 32);

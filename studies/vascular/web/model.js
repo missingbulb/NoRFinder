@@ -264,6 +264,16 @@ export function splitSegment(m, i, t) {
   return [o, id];
 }
 
+// Segment i cut in two between fractions ta < tb along it: each half ends in a tip of its own, on the curve where it
+// was cut, and keeps the segment's state. Unchanged when ta and tb are not in order inside the segment.
+export function cutSegment(m, i, ta, tb) {
+  const s = m.segments[i];
+  if (!s || !(0 < ta && ta < tb && tb < 1)) return m;
+  const o = clone(m), p = curvePoint(m, i, ta), q = curvePoint(m, i, tb), pa = addNode(o, p), qb = addNode(o, q);
+  o.segments.splice(i, 1, seg(s.a, pa, { ...s, rb: p.r }), seg(qb, s.b, { ...s, ra: q.r }));
+  return o;
+}
+
 // The junction is wrong: its vessels pass each other instead of meeting. The branches are paired off
 // most-opposite first (a vessel runs straight through a crossing), each pair keeps its own point at
 // the depth between its two neighbours, and a branch left over becomes a tip set a little back from
