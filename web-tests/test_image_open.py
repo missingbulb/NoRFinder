@@ -166,3 +166,12 @@ def test_a_studys_flattened_window(tmp_path):
     # the flattened image runs from black at its 1% point to full colour at its 98.7% one
     flat = np.frombuffer(got['planes'], np.uint8)
     assert 0.005 < np.mean(flat == 0) < 0.03 and 0.005 < np.mean(flat == 255) < 0.03
+
+
+def test_a_light_background_keeps_the_low_quantile(tmp_path):
+    p = str(tmp_path / 'brightfield.tif')
+    a = (60000 - vessels(12).astype(np.int64)).clip(0, 65535).astype(np.uint16)
+    tifffile.imwrite(p, a, imagej=True, metadata={'axes': 'ZYX'})
+    got, = opened(tmp_path, {'file': p})
+    same_as_the_viewer(p, got)
+    assert np.mean(np.frombuffer(got['volume_bytes'], np.uint8) == 0) < 0.05
