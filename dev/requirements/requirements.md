@@ -1438,7 +1438,7 @@ nobody has decided: what the page does there is not a requirement yet.
   across, a sideways scroll spins it about the line of sight (owner, 2026-11-03), the wheel zooms,
   shift-drag pans, and a reset button puts the view back to the top. A Panning label at the bottom left of the 3D view always shows, filled
   blue while panning is on and outlined grey while off, its tooltip saying to press Shift to pan (owner,
-  2026-11-07); clicking it turns panning on or off, so that a plain drag
+  2026-11-07), a faded grey "shift" right beside it (owner, 2026-11-08); clicking it turns panning on or off, so that a plain drag
   pans instead of turning. Holding shift turns it on until shift is let go, which returns it to the state
   the label holds. That state lives only while the page is open: it is never stored or restored (owner,
   2026-11-05). The toolbar's right holds, beside Zoom, one icon button, its tooltip "Reset view to top", that puts

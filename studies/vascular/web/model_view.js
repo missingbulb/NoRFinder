@@ -48,8 +48,8 @@ let review = 'all', reach = .5, maskKey = null, maskTimer = null, drawing = null
 let makingTruth = false, tagOn = false, cutOn = true, task = null, area = null, picked = null;
 // focused: the main view shows one area of the ground-truth tasks alone, {box}: opening from straight above with every
 // point a handle, turning freely; null for the whole stack. outside: the mode chosen for the whole stack, back once the
-// area is left; peeking: Ctrl held, the model alone
-let focused = null, outside = 'overlay', peeking = false;
+// area is left; peeking: the model alone, while its label is on or Ctrl held
+let focused = null, outside = 'overlay', peeking = false, peekOn = false, ctrlHeld = false, peekKeys = [];
 const store = {
   get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* no storage: edits live until the page closes */ } },
@@ -360,7 +360,7 @@ const listeners = [];
 // Other views of the model (the item cards) hear every change to it, a new model included.
 export const onChange = (fn) => listeners.push(fn);
 // the study left: nothing hears the model any more, and its canvas leaves the 3D view
-export function leave() { listeners.length = 0; V?.place(null); V = null; }
+export function leave() { listeners.length = 0; for (const el of peekKeys) el.remove(); peekKeys = []; V?.place(null); V = null; }
 const tell = () => listeners.forEach((fn) => fn(model));
 export const current = () => model;
 // an edit made from another view, undoable like any other
@@ -537,12 +537,12 @@ export function focusArea(b) {
   if (!model || !V) return;
   if (!b) {
     if (!focused) return;
-    focused = null; peeking = false;
+    focused = null; peeking = peekOn = false; showPeek();
     Object.assign(V.S, { clip: null, held: false, rot: V.facing(0, 0), pivot: [0, 0, 0], dist: V.FIT_DIST });
     $('vm-show').hidden = false; setMode(outside); refreshMask(true);
     return;
   }
-  focused = { box: b }; peeking = false;
+  focused = { box: b }; peeking = peekOn = false; showPeek();
   $('vm-show').open = false; $('vm-show').hidden = true;
   frameFocus(); setMode(focusMode()); refreshMask(true);
 }
@@ -562,10 +562,17 @@ function frameFocus() {
     pivot: [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, 0], dist: Math.max(.15, V.FIT_DIST * h * FILL), held: false });
   V.redraw();
 }
-function peek(on) {
-  if (!focused || peeking === on) return;
-  peeking = on; setMode(focusMode());
+// the Model label above Panning: in an area only, filled while the model shows alone
+function showPeek() {
+  for (const el of peekKeys) el.hidden = !focused;
+  peekKeys[0]?.setAttribute('aria-pressed', String(peeking));
 }
+function peek() {
+  const on = peekOn || ctrlHeld;
+  if (!focused || peeking === on) return;
+  peeking = on; showPeek(); setMode(focusMode());
+}
+const heldCtrl = (on) => { ctrlHeld = on; peek(); };
 function closeMenu() { if (!$('ctx').hidden) { $('ctx').hidden = true; hover = null; V.redraw(); } }
 
 // ---------- the review: detected or missed ----------
@@ -711,7 +718,7 @@ export function truth() {
 
 // Called whenever a stack opens: it opens with no model until the algorithm draws one.
 export function stackOpened() {
-  model = null; loaded = null; history = []; future = []; edits = 0; savedKey = null; task = null; area = null; focused = null; peeking = false;
+  model = null; loaded = null; history = []; future = []; edits = 0; savedKey = null; task = null; area = null; focused = null; peeking = peekOn = false; showPeek();
   $('vm-show').hidden = false;
   $('model-on').hidden = true; $('vm-review').hidden = true; msg(''); setMode('image');
   $('model-facts').textContent = 'No vessel model yet: Execute the algorithm.';
@@ -739,10 +746,15 @@ export function init(view, signal, makesTruth) {
   $('m-cut-row').hidden = !makingTruth; $('m-cut').checked = true; $('m-cut').disabled = true;
   $('m-cut').onchange = (e) => { cutOn = e.target.checked; refreshMask(true); };
   model = null; loaded = null; history = []; future = []; edits = 0; savedKey = null; mode = 'image'; task = null; area = null; picked = null;
-  focused = null; outside = 'overlay'; peeking = false;
+  focused = null; outside = 'overlay'; peeking = peekOn = ctrlHeld = false;
   cv = document.createElement('canvas'); cv.id = 'mcv';
   V.onDraw(draw, signal);
   V.controls(cv, grab, clicked);
+  for (const el of peekKeys) el.remove();
+  const peekBtn = Object.assign(document.createElement('button'), { id: 'vm-peek', type: 'button', textContent: 'Model', title: 'Hold Ctrl to see the model alone, or click to keep it on' });
+  peekBtn.onclick = () => { peekOn = !peekOn; peek(); };
+  peekKeys = [peekBtn, Object.assign(document.createElement('span'), { className: 'v3-key', textContent: 'ctrl' })];
+  V.keys.prepend(...peekKeys); showPeek();
   cv.addEventListener('pointermove', (e) => {
     if (!model || e.buttons || rubber) return;
     if (drawing) { const r = cv.getBoundingClientRect(); drawing.to = [e.clientX - r.left, e.clientY - r.top]; }
@@ -762,7 +774,7 @@ export function init(view, signal, makesTruth) {
   $('m-reset').onclick = () => { if (!edits || !confirm(`Discard all ${edits} edits and go back to the model as loaded?`)) return;
     store.del(savedKey); model = loaded; history = []; future = []; edits = 0; msg(''); changed(); };
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Control') peek(true);
+    if (e.key === 'Control') heldCtrl(true);
     if (!model || e.target.closest('input, textarea')) return;
     if (e.key === 'Escape') closeMenu();
     if (drawing && (e.key === 'Escape' || e.key === 'Enter')) { setDrawing(false); return; }
@@ -775,8 +787,8 @@ export function init(view, signal, makesTruth) {
     if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
     else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); redo(); }
   }, { signal });
-  document.addEventListener('keyup', (e) => { if (e.key === 'Control') peek(false); }, { signal });
-  addEventListener('blur', () => peek(false), { signal });
+  document.addEventListener('keyup', (e) => { if (e.key === 'Control') heldCtrl(false); }, { signal });
+  addEventListener('blur', () => heldCtrl(false), { signal });
   V.onReset(() => { if (!focused || !model) return false; frameFocus(); return true; }, signal);
   document.addEventListener('pointerdown', (e) => { if (!$('ctx').contains(e.target) && e.target !== cv) closeMenu(); }, { signal });
 }

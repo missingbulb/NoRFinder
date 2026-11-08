@@ -3,7 +3,7 @@
 // second one level across it, the second a blob. Checks req/shell/viewer-3d: a stack opens on the 3D view, which draws it; the
 // channel rows drive it (hiding a channel or raising its black point darkens it); the toolbar's right holds Look from's
 // four buttons in a row beside Zoom, and the image box a row for the slices shown and their spacing and, per channel, Colour by depth; Side turns the view; a sideways scroll turns the picture about the line of sight; a drag turns on past
-// looking straight across; the Panning label, at the bottom left, toggles panning, shift holds it on, and it is stored nowhere; the depth slab hides slices; the spacing's tooltip says where it came from; no 2D/3D switch
+// looking straight across; the Panning label, at the bottom left with a faded "shift" beside it, toggles panning, shift holds it on, and it is stored nowhere; the depth slab hides slices; the spacing's tooltip says where it came from; no 2D/3D switch
 // anywhere, and Edit Image on a stack offers no flat-image drawing tools. And req/shell/image-viewer: the Image Viewer
 // opens a stack in 3D and a flat image (a .png here) in 2D, and keeps its Image box open once either has loaded.
 // Exits 1 on a failed check, 2 when it cannot run.
@@ -240,6 +240,13 @@ try {
     const off = await label();
     check(off && off.text === "Panning" && off.shown && off.corner && !off.on && /press shift to pan/i.test(off.tip),
       `a Panning label shows at the 3D view's bottom left, off, its tooltip saying to press Shift: ${JSON.stringify(off)}`);
+    const key = await page.evaluate(() => {
+      const b = $("#v3-pan").getBoundingClientRect(), k = $("#v3-pan").nextElementSibling, r = k?.getBoundingClientRect();
+      return k && { text: k.textContent.trim(), shown: k.checkVisibility(), color: getComputedStyle(k).color, opacity: getComputedStyle(k).opacity,
+        beside: r.left >= b.right && r.left - b.right < 16 && Math.abs((r.top + r.bottom) / 2 - (b.top + b.bottom) / 2) < 4 };
+    });
+    check(key && key.text === "shift" && key.shown && key.beside && (Number(key.opacity) < 1 || /^rgba\(.*, 0?\.\d+\)$/.test(key.color)),
+      `a faded grey "shift" sits right beside the Panning label: ${JSON.stringify(key)}`);
     const d0 = await drag();
     check(d0.turned && !d0.panned, `with panning off a drag turns the view: ${JSON.stringify(d0)}`);
     await page.click("#v3-pan");

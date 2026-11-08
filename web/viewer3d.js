@@ -254,7 +254,10 @@ export function viewer3d(shell, flat) {
   addEventListener("keyup", (e) => { if (e.key === "Shift") heldShift(false); });
   addEventListener("blur", () => heldShift(false));
   showPan();
-  stage.append(cv, hudCv, panBtn);
+  // the labels at the bottom left, one above the other, each with the key that holds it on beside it; a study may add its own above
+  const keys = html("div", { className: "v3-keys" });
+  keys.append(panBtn, html("span", { className: "v3-key", textContent: "shift" }));
+  stage.append(cv, hudCv, keys);
 
   // ---------- GL ----------
   function initGL() {
@@ -530,6 +533,7 @@ export function viewer3d(shell, flat) {
     get meta() { return vol ? { shape: [vol.Z, vol.Y, vol.X], um_per_px: (page.get("image")?.um || 1) * vol.bin } : null; },
     get half() { return half; },
     get stage() { return stage; },
+    get keys() { return keys; },
     camera, redraw, controls, axes,
     // whether a drag pans rather than turns just now, for a study's own drags to give way to it
     get panning() { return panning(); },

@@ -5,7 +5,7 @@
 // areas' map floating over the view while tagging, req/shell/ground-truth/tagging: nothing opens until Start GT tagging,
 // Stop tagging gives the stack back; an area opening from above, turning in 3D, its handles kept in depth from above, a
 // tip dropped on a vessel attached there, a right-click on the image drawing a missed vessel, its junctions judged one at
-// a time and picked on the view, Area is right, Ctrl showing the model alone, Back to image and Back to task, a file of
+// a time and picked on the view, Area is right, Ctrl or the Model label showing the model alone, Back to image and Back to task, a file of
 // the earlier three steps read; req/vascular/truth/marks: an area done blacked out of the stack while tagging, under the Show menu's Cut out what is done; req/vascular/model/ground-truth: Submit
 // last, its export carrying every verdict. Exits 1 on a failed check, 2 when it cannot run.
 //   node studies/vascular/tests/vessel_tasks_driver.mjs STUDIES
@@ -217,11 +217,26 @@ try {
     }
   }
 
-  // Ctrl shows the model alone while it is held
+  // Ctrl shows the model alone while it is held, a Model label above Panning saying so, a faded "ctrl" beside it
+  const peekLabel = () => page.evaluate(() => {
+    const b = $("#vm-peek"), p = $("#v3-pan").getBoundingClientRect(), r = b?.getBoundingClientRect(), k = b?.nextElementSibling, kr = k?.getBoundingClientRect();
+    return b && { text: b.textContent.trim(), shown: b.checkVisibility(), on: b.getAttribute("aria-pressed") === "true", fill: getComputedStyle(b).backgroundColor,
+      key: k?.textContent.trim(), keyShown: !!k?.checkVisibility(), keyFaded: !!k && Number(getComputedStyle(k).opacity) < 1,
+      above: r.bottom <= p.top && p.top - r.bottom < 12 && Math.abs(r.left - p.left) < 2, beside: !!kr && kr.left >= r.right && kr.left - r.right < 16 };
+  });
+  const free = await peekLabel();
+  check(free && free.text === "Model" && free.shown && !free.on && free.above && free.key === "ctrl" && free.keyShown && free.keyFaded && free.beside,
+    `in an area a Model label shows right above Panning, off, a faded "ctrl" right beside it: ${JSON.stringify(free)}`);
   await page.keyboard.down("Control");
-  const held = (await view()).mode;
+  const held = (await view()).mode, heldLabel = await peekLabel();
   await page.keyboard.up("Control");
   check(held === "model" && (await view()).mode === "overlay", `holding Ctrl shows the model alone, letting go the lines over the stack again: ${held} → ${(await view()).mode}`);
+  check(heldLabel.on && /^rgba?\(\s*\d{1,2},\s*\d+,\s*2\d\d(,\s*1)?\)$/.test(heldLabel.fill) && !(await peekLabel()).on,
+    `the Model label is filled blue while Ctrl is held, as Panning is while on, and off once it is let go: ${heldLabel.fill}`);
+  await page.click("#vm-peek");
+  const clicked = (await view()).mode;
+  await page.click("#vm-peek");
+  check(clicked === "model" && (await view()).mode === "overlay", `clicking the Model label shows the model alone, clicking it again the lines over the stack: ${clicked} → ${(await view()).mode}`);
 
   // the area's junctions, one at a time
   t = await tasks();
@@ -301,6 +316,7 @@ try {
   v = await view(); t = await tasks();
   check(!t.focused && !v.clip && v.show && !v.focus && !v.open && v.cut.off && v.start === "Start GT tagging", `Stop tagging gives the whole stack back, no task open, Cut out what is done off: ${JSON.stringify(v)}`);
   check(!(await mini()).shown, "out of tagging the map of the areas is gone");
+  check(!(await peekLabel())?.shown && !(await page.evaluate(() => $("#vm-peek")?.nextElementSibling?.checkVisibility())), "out of an area the Model label and its ctrl are gone");
   if (gl) {
     await page.keyboard.press("Control+z");
     const lit = await brightness();
