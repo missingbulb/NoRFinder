@@ -1436,15 +1436,13 @@ nobody has decided: what the page does there is not a requirement yet.
   WebGL2 does the flattened stack show instead. The 3D view casts rays through the stack in the browser (WebGL2), looking straight down
   as the microscope does. Dragging turns it about the screen's two axes, on past looking straight
   across, a sideways scroll spins it about the line of sight (owner, 2026-11-03), the wheel zooms,
-  shift-drag pans, and Top, Tilted,
-  Side and Front put the view back. A Panning label at the bottom left of the 3D view always shows, filled
+  shift-drag pans, and a reset button puts the view back to the top. A Panning label at the bottom left of the 3D view always shows, filled
   blue while panning is on and outlined grey while off, its tooltip saying to press Shift to pan (owner,
   2026-11-07); clicking it turns panning on or off, so that a plain drag
   pans instead of turning. Holding shift turns it on until shift is let go, which returns it to the state
   the label holds. That state lives only while the page is open: it is never stored or restored (owner,
-  2026-11-05). The toolbar's right holds, beside Zoom, a split button named after the
-  view chosen ("Top View" at first) that puts the view back to it, its arrow choosing Top, Tilted, Side or Front
-  and going there (owner, 2026-11-07), and the 2D view's Zoom, which zooms the 3D view (owner,
+  2026-11-05). The toolbar's right holds, beside Zoom, one icon button, its tooltip "Reset view to top", that puts
+  the view back to looking straight down; no menu of other views (owner, 2026-11-08), and the 2D view's Zoom, which zooms the 3D view (owner,
   2026-11-04); the 2D view's other tools step aside. Brightest shows the brightest point along each
   ray, Surface a lit surface where the signal crosses a level, and colour by depth paints by the
   depth of that point so crossings at different depths read apart: the study's `view` sets the render

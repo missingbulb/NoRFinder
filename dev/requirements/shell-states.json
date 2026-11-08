@@ -373,14 +373,13 @@
                 {"when": {"image": ["none"]}, "is": "disabled"}
               ]
             },
-            {"name": "Reset View group", "select": "#v3-tools", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
+            {"name": "Reset view group", "select": "#v3-tools", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d",
               "rule": [
                 {"when": {"shows3d": [false]}, "is": "hidden", "req": "req/shell/viewer-3d"},
                 {"when": {"stack": [false]}, "is": "hidden"}
               ],
               "children": [
-                {"name": "Reset View", "select": "#v3-reset", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"},
-                {"name": "Reset View's arrow", "select": "#v3-look-menu", "made": "by the 3D view, once a stack opens", "req": "req/shell/viewer-3d"}
+                {"name": "Reset view to top", "select": "#v3-reset", "made": "by the 3D view, once a stack opens", "control": true, "req": "req/shell/viewer-3d"}
               ]
             },
             {"name": "Zoom out", "select": "#zoom-out", "control": true, "req": "req/shell/image/minimap",

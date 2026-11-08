@@ -100,8 +100,6 @@ const picture = () => page.evaluate(async () => {
   const axis = 0.5 * Math.atan2(2 * (sxy / lit - mx * my), sxx / lit - mx * mx - (syy / lit - my * my));
   return { r: r / n, g: gr / n, b: b / n, lit, sum: (r + gr + b) / n, axis };
 });
-// a view chosen from the reset button's arrow, which then names it and puts the view there
-const look = async (v) => { await page.click("#v3-look-menu summary"); await page.click(`#v3-look [data-look="${v}"]`); };
 const show = (k, on) => page.evaluate(([k, on]) => { const b = document.querySelector("#show-" + k); b.checked = on; b.dispatchEvent(new Event("change", { bubbles: true })); }, [k, on]);
 const level = async (k, which, v) => page.evaluate(([k, which, v]) => {
   const s = document.querySelectorAll("#channels .channel")[k].querySelector("." + which); s.value = v; s.dispatchEvent(new Event("input", { bubbles: true }));
@@ -117,17 +115,18 @@ try {
     await page.waitForFunction(() => !$("#v3-stage").hidden);
     check(!(await page.$("#v3-switch, #v3-2d")) && await page.isHidden("#stage"), "a stack opens on the 3D view only, with no 2D/3D switch to flatten it");
     const tools = await page.evaluate(() => {
-      const looks = [...document.querySelectorAll(".toolbar #v3-look [data-look]")], zoom = $("#zoom-out").parentElement;
-      const z = zoom.getBoundingClientRect(), g = $("#v3-look")?.getBoundingClientRect();
+      const r = $(".toolbar #v3-reset"), zoom = $("#zoom-out").parentElement;
+      const z = zoom.getBoundingClientRect(), g = r?.getBoundingClientRect();
       return {
-        looks: looks.map((b) => b.textContent).join(), reset: $("#v3-reset")?.textContent, closed: looks.every((b) => !b.checkVisibility()),
+        title: r?.title, label: r?.getAttribute("aria-label"), icon: !!r?.querySelector("svg"), text: r?.textContent.trim(),
+        menu: !!document.querySelector("#v3-look, #v3-look-menu, [data-look]"),
         beside: !!g && g.right <= z.left && z.left - g.right < 24 && Math.abs((g.top + g.bottom) / 2 - (z.top + z.bottom) / 2) < 4,
         gone: ["#v3-render-btn", "#v3-depth", "#vm-depth", "#v3-slices-btn"].filter((s) => document.querySelector(s)),
         zoom: ["#zoom-in", "#zoom-out", "#zoom-label"].every((s) => $(s).offsetParent !== null),
       };
     });
-    check(tools.reset === "Top View" && tools.looks === "Top,Tilted,Side,Front" && tools.closed && tools.beside && !(await page.$("#v3-stage #v3-tools")),
-      `beside Zoom a Top View button, its arrow offering Top, Tilted, Side and Front: ${JSON.stringify(tools)}`);
+    check(tools.title === "Reset view to top" && tools.label === "Reset view to top" && tools.icon && !tools.text && !tools.menu && tools.beside && !(await page.$("#v3-stage #v3-tools")),
+      `beside Zoom one icon button, its tooltip Reset view to top, and no menu of views: ${JSON.stringify(tools)}`);
     check(!tools.gone.length, `the toolbar has no Render, Colour by depth or Slices tool: ${tools.gone}`);
     check(tools.zoom && await page.isHidden("#ruler-btn"), "Zoom stays in 3D, the other 2D tools step aside");
     const z0 = await page.textContent("#zoom-label");
@@ -200,29 +199,26 @@ try {
     await level(0, "black", 0);
 
     const top = await picture();
-    await look("side");
-    const sideRot = await page.evaluate(() => JSON.stringify(window.shellForTests.viewer.three.S.rot));
-    check(await page.textContent("#v3-reset") === "Side View", "choosing Side names the reset button after it");
+    const rot = () => page.evaluate(() => JSON.stringify(window.shellForTests.viewer.three.S.rot));
+    const topRot = await rot();
     const gl0 = await page.locator("#v3-gl").boundingBox(), at = [gl0.x + gl0.width / 2, gl0.y + gl0.height / 2];
     await page.mouse.move(...at); await page.mouse.down(); await page.mouse.move(at[0] + 50, at[1] + 30, { steps: 5 }); await page.mouse.up();
+    const dragged = await rot();
     await page.click("#v3-reset");
-    check(await page.evaluate(() => JSON.stringify(window.shellForTests.viewer.three.S.rot)) === sideRot, "after a drag, Side View puts the view back to the side");
-    const side = await picture();
-    check(Math.abs(side.lit - top.lit) > top.lit * 0.2, `Side turns the view: ${top.lit} → ${side.lit} lit pixels`);
-    await look("top");
+    check(dragged !== topRot && await rot() === topRot, "after a drag, Reset view to top puts the view back to looking straight down");
 
     const box = await page.locator("#v3-gl").boundingBox(), mid = [box.x + box.width / 2, box.y + box.height / 2];
     await page.mouse.move(...mid); await page.mouse.wheel(300, 0);
     const rolled = await picture(), turned = Math.abs(Math.atan2(Math.sin(2 * (rolled.axis - top.axis)), Math.cos(2 * (rolled.axis - top.axis))) / 2);
     check(turned > 0.4 && Math.abs(rolled.lit - top.lit) < top.lit * 0.1,
       `a sideways scroll turns the picture about the line of sight: its long axis turns ${turned.toFixed(2)} rad, ${top.lit} → ${rolled.lit} lit pixels`);
-    await look("top");
+    await page.click("#v3-reset");
     await page.mouse.move(...mid); await page.mouse.down();
     await page.mouse.move(mid[0], mid[1] + Math.PI / 0.008, { steps: 20 }); await page.mouse.up();
     const under = await picture();
     check(Math.abs(under.lit - top.lit) < top.lit * 0.15,
       `dragging down by half a turn turns on past looking straight across, to the stack from beneath: ${top.lit} → ${under.lit} lit pixels`);
-    await look("top");
+    await page.click("#v3-reset");
 
     // the Panning label: always at the bottom of the view, blue outlined while on, grey while off; a click toggles it,
     // shift holds it on until let go, back to what the label holds; and nothing of it is stored
@@ -262,7 +258,7 @@ try {
     const let_ = await label(), d3 = await drag();
     check(!let_.on && d3.turned && !d3.panned, `letting go of shift returns panning to off: ${JSON.stringify({ on: let_.on, ...d3 })}`);
     const after = await stored(); check(after === before, `the panning state is stored nowhere: ${before} → ${after}`);
-    await look("top");
+    await page.click("#v3-reset");
 
     await page.evaluate(() => { const s = $("#v3-z1"); s.value = 0; s.dispatchEvent(new Event("input", { bubbles: true })); });
     const slab = await picture();
