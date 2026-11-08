@@ -1,6 +1,6 @@
 // The vessel model over the stack, beside it or on its own, in the stack's own camera, and the owner's
 // corrections to it: drag a point to move it, and a tip onto another vessel to attach it there, right-click a segment
-// or a point to delete it or split a junction, right-drag from one piece to another to connect them, click a faded
+// or a point to delete it, split it in two or split a junction, right-drag from one piece to another to connect them, click a faded
 // low-confidence vessel to approve or decline it. The corrected model goes to the shell's Submit Ground Truth as JSON.
 //
 // The review narrows the stack to what the model accounts for: Detected keeps only the signal around
@@ -35,6 +35,8 @@ const DONE_STEPS = ['area', 'junctions'];
 // The points are handles to drag, shown only once the view is zoomed this far in from the whole stack,
 // so the opening picture is the vessels alone.
 const HANDLES_ZOOM = 2;
+// a segment split in two leaves its two new tips this far apart on screen, so both read as ends
+const SPLIT_GAP_PX = 12;
 // While a point is dragged the rest of the picture fades: what lies within reach of it (the farthest of
 // its neighbours, times SPOT_REACH, and at least SPOT_MIN_PX) stays clear, the rest drops to FADED.
 const SPOT_REACH = 1.25, SPOT_MIN_PX = 60, FADED = .15;
@@ -115,8 +117,8 @@ function hatching(c) {
   h.beginPath(); h.moveTo(0, 8); h.lineTo(8, 0); h.stroke();
   return c.createPattern(hatch, 'repeat');
 }
-// points are handles, and picked, in an area of the tasks and once zoomed in
-const handles = () => !!focused || V.S.dist <= V.FIT_DIST / HANDLES_ZOOM;
+// points are handles, and picked, only while the owner tags ground truth: in an area of the tasks and once zoomed in
+const handles = () => tagOn && (!!focused || V.S.dist <= V.FIT_DIST / HANDLES_ZOOM);
 const pickable = handles;
 // how clearly a line is drawn while a point is dragged: whole near the point, faded away from it
 function nearness(line) {
@@ -279,9 +281,10 @@ function drawModel(c) {
     c.font = '11px "IBM Plex Mono", monospace'; c.fillStyle = 'rgba(0,0,0,.6)';
     c.fillRect(x + 8, y - 22, c.measureText(t).width + 8, 16); c.fillStyle = '#fff'; c.fillText(t, x + 12, y - 10);
   }
-  if (drawing?.from && drawing.to) {
+  const end = drawEnd();
+  if (end) {
     c.setLineDash([5, 4]); c.strokeStyle = '#fff'; c.lineWidth = 1.5;
-    c.beginPath(); c.moveTo(...screenOf(drawing.from)); c.lineTo(...drawing.to); c.stroke(); c.setLineDash([]);
+    c.beginPath(); c.moveTo(...screenOf(drawing.from)); c.lineTo(...end); c.stroke(); c.setLineDash([]);
     if (drawing.from.point) { const [x, y] = screenOf(drawing.from); c.beginPath(); c.arc(x, y, 3, 0, 2 * Math.PI); c.fillStyle = '#fff'; c.fill(); }
   }
   if (rubber) {
@@ -341,6 +344,11 @@ function pick(e, segmentsOnly = false, except = null) {
   }
   return best;
 }
+// While a missed vessel is drawn: the point it is drawn from, never a place to join it to, nor a segment ending on it; and
+// where the line being drawn ends, on the point or vessel under the pointer, lit as a dragged tip's target is, which a
+// click joins it to, else at the pointer.
+const drawnFrom = () => drawing?.from?.node ?? null;
+const drawEnd = () => (drawing?.from && drawing.to ? (hover ? screenOf(hover) : drawing.to) : null);
 // the vessel's radius in µm under a picked point or segment, when the model gives it
 const hoverRadius = (h) => (h.node != null ? model.nodes.get(h.node)?.r : model.segments[h.segment] ? Mo.curvePoint(model, h.segment, h.t).r : null);
 const screenOf = (h) => {
@@ -473,18 +481,30 @@ function openMenu(h, x, y) {
   }
   if (h.segment != null) {
     items.push(['Delete this segment', () => Mo.deleteSegment(model, h.segment)]);
+    items.push(['Split this segment here', () => splitAt(h)]);
     items.push(['Add a curve point here', () => Mo.splitSegment(model, h.segment, h.t)[0]]);
   } else {
-    const d = Mo.degrees(model).get(h.node) || 0;
+    // every vessel at the point counts, a low-confidence one too, as the edits see them
+    const d = Mo.neighbours(model, h.node).length;
     if (d >= 3) {
       items.push(['Look at it from the side: crossing or split?', () => { lookAt(h.node); return model; }]);
       items.push(['Wrong junction: these vessels cross, split them', () => Mo.splitJunction(model, h.node, zScale)]);
     }
-    if (d === 2) items.push(['Remove this curve point (smoother curve)', () => Mo.removeBend(model, h.node)]);
+    if (d === 2) items.push(['Remove this point: its two lines become one', () => Mo.removeBend(model, h.node)]);
     items.push([d === 1 ? 'Delete this tip and its segment' : 'Delete this point and its segments', () => Mo.deleteNode(model, h.node)]);
   }
   showMenu(items, x, y);
   hover = h; V.redraw();
+}
+
+// The segment under the pointer cut in two there, its two new tips set SPLIT_GAP_PX apart along it on screen, or less
+// on a segment too short on screen for that.
+function splitAt(h) {
+  const line = view.curves.get(h.segment);
+  let L = 0;
+  for (let k = 1; k < line.length; k++) L += Math.hypot(line[k][0] - line[k - 1][0], line[k][1] - line[k - 1][1]);
+  const d = Math.min(SPLIT_GAP_PX / 2 / (L || 1), h.t / 2, (1 - h.t) / 2);
+  return Mo.cutSegment(model, h.segment, h.t - d, h.t + d);
 }
 
 // ---------- looking closer ----------
@@ -550,7 +570,7 @@ export const focusedArea = () => focused;
 // the owner tags ground truth now or not: only while they do is what is done cut out, and the Show menu's row for it on
 export function tagging(on) {
   tagOn = !!on; $('m-cut').disabled = !tagOn;
-  refreshMask(true);
+  refreshMask(true); V?.redraw();
 }
 const focusMode = () => (peeking ? 'model' : 'overlay');
 // the area filling the view from straight above, the rest of the stack cut away
@@ -639,7 +659,7 @@ function offerDrawing(e) {
   showMenu([['Draw a missed vessel', () => { setDrawing(true); drawing.from = at; return model; }]], e.clientX, e.clientY);
 }
 function drawClick(e) {
-  const h = pick(e);
+  const h = pick(e, false, drawnFrom());
   const to = h || brightestAt(e);
   if (!to) return;
   // an undo can take away the point the line was drawing from
@@ -732,7 +752,10 @@ export { msg };
 // the edits kept on this device for the model on show, forgotten
 export function forget() { if (savedKey) store.del(savedKey); }
 // at: each point in µm; kinds: each point's state and whether it is a curve point inside one vessel or an end
+// handles: the points are handles to drag now; drawing: while a missed vessel is drawn, where the line ends on screen and
+// what a click there joins it to
 export const inspect = () => ({ model: model && Mo.toJSON(model), points: view && Object.fromEntries(view.pts), edits,
+  handles: !!V && handles(), drawing: drawing && { end: drawEnd(), onto: hover },
   at: model && Object.fromEntries([...model.nodes].map(([id, n]) => [id, { x: n.x, y: n.y, z: n.z }])),
   kinds: model && Object.fromEntries([...model.nodes.keys()].map((id) => {
     const on = model.segments.filter((s) => Mo.live(s) && (s.a === id || s.b === id)), st = new Set(on.map((s) => s.state));
@@ -758,7 +781,7 @@ export function init(view, signal, makesTruth) {
   cv.addEventListener('pointermove', (e) => {
     if (!model || e.buttons || rubber) return;
     if (drawing) { const r = cv.getBoundingClientRect(); drawing.to = [e.clientX - r.left, e.clientY - r.top]; }
-    const h = pick(e), same = JSON.stringify(h) === JSON.stringify(hover);
+    const h = pick(e, false, drawnFrom()), same = JSON.stringify(h) === JSON.stringify(hover);
     cv.classList.toggle('over-point', !!h);
     if ((!same || drawing) && $('ctx').hidden) { hover = h; V.redraw(); }
   });

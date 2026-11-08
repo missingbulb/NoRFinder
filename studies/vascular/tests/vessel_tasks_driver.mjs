@@ -104,7 +104,13 @@ try {
   let t = await tasks(), v = await view();
   check(!t.focused && !v.clip && v.show && !v.focus && !v.open && v.mode === "overlay", `drawn, the whole stack stays in view as the Show menu sets it, no task open: ${JSON.stringify({ focused: t.focused, clip: v.clip, show: v.show, focus: v.focus, open: v.open })}`);
   check(v.start === "Start GT tagging" && v.cut.off, `Start GT tagging heads the tasks, and Cut out what is done is off out of tagging: ${JSON.stringify(v)}`);
+  // out of tagging the model's points carry no handles on the main view, zoomed in or not; tagging, they do
+  const zoomedHandles = () => page.evaluate(async () => { const v = window.shellForTests.viewer.three, d = v.S.dist; v.S.dist = v.FIT_DIST / 4; v.redraw();
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const h = window.vascular.model().handles; v.S.dist = d; v.redraw(); return h; });
+  check(await zoomedHandles() === false, "out of GT tagging, the model's points have no handles on the main view, even zoomed in");
   await page.click("#gt-start");
+  check(await page.evaluate(() => window.vascular.model().handles) === true, "... and once tagging starts, they do");
 
   // the tasks are the stack's areas, a row each, 4 × 4 at first, the choice of how many first in the box
   t = await tasks();
@@ -214,6 +220,93 @@ try {
       await page.keyboard.press("Escape");
       const after = await doc();
       check(after.edges.length === before + 1 && !(await drawingNow()), `the right-clicked spot is the drawn vessel's first point, the next click its next: ${before} → ${after.edges.length} edges`);
+
+      // drawn again, the line's end snaps onto a vessel's point under the pointer, as a dragged tip's target lights,
+      // never onto the vessel just drawn; the click joins it there
+      const seg = (p, a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], u = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy)));
+        return Math.hypot(a[0] + u * dx - p[0], a[1] + u * dy - p[1]); };
+      let from2 = null;
+      for (const s of spots.filter((s) => seg(s, from, to) > 30)) {
+        await page.mouse.click(cx + s[0], cy + s[1], { button: "right" });
+        if ((await menuNow()).includes("Draw a missed vessel")) { from2 = s; break; }
+        await page.keyboard.press("Escape");
+      }
+      check(!!from2, "a second spot away from the drawn vessel to draw from");
+      await page.click("#ctx .item");
+      const to2 = spots.find((s) => seg(s, from, to) > 30 && Math.hypot(s[0] - from2[0], s[1] - from2[1]) > 60);
+      await page.mouse.click(cx + to2[0], cy + to2[1]);
+      const { points, at, kinds } = await page.evaluate(() => window.vascular.model());
+      const onScreen = (p) => p && p[0] > 20 && p[0] < cw - 20 && p[1] > 20 && p[1] < ch - 20;
+      const alone = (k) => Object.entries(points).every(([j, q]) => j === k || !q || Math.hypot(q[0] - points[k][0], q[1] - points[k][1]) > 30);
+      const target = Object.keys(at).find((k) => /^(vessel|accepted)-curve$/.test(kinds[k]) && onScreen(points[k]) && inArea(at[k], 10) && alone(k));
+      check(!!target, "a vessel's point in the area to draw to");
+      if (target) {
+        const [qx, qy] = points[target];
+        await page.mouse.move(cx + qx + 5, cy + qy + 4, { steps: 3 });
+        const snap = await page.evaluate(() => window.vascular.model().drawing);
+        check(snap?.onto?.node === +target && Math.hypot(snap.end[0] - qx, snap.end[1] - qy) < 0.5,
+          `over a vessel's point, the line being drawn ends on it, not at the pointer: ${JSON.stringify(snap)} vs point ${target} at ${qx.toFixed(1)}, ${qy.toFixed(1)}`);
+        const mid = [(from2[0] + to2[0]) / 2, (from2[1] + to2[1]) / 2];
+        await page.mouse.move(cx + mid[0], cy + mid[1], { steps: 3 });
+        const own = await page.evaluate(() => window.vascular.model().drawing);
+        check(own && !own.onto && Math.hypot(own.end[0] - mid[0], own.end[1] - mid[1]) < 0.5,
+          `over the segment just drawn, the line ends at the pointer: ${JSON.stringify(own)}`);
+        const n0 = (await doc()).edges.length;
+        await page.mouse.click(cx + qx + 5, cy + qy + 4);
+        const joined = await page.evaluate(() => window.vascular.model());
+        check(joined.model.edges.length === n0 + 1 && /-end$/.test(joined.kinds[target]) && !(await drawingNow()),
+          `the click there joins the drawn vessel to that point and ends drawing: ${n0} → ${joined.model.edges.length} edges, point ${target} ${joined.kinds[target]}`);
+      }
+      await page.keyboard.press("Escape");
+    }
+  }
+
+  // a curve point's menu takes it out of its line, the two lines into it one; a segment's middle is split there into
+  // two tips set a little apart
+  {
+    await flat();
+    const { points, kinds } = await page.evaluate(() => window.vascular.model());
+    const onScreen = (p) => p && p[0] > 20 && p[0] < cw - 20 && p[1] > 20 && p[1] < ch - 20;
+    const at0 = (await page.evaluate(() => window.vascular.model())).at;
+    const menuNow = () => page.evaluate(() => (document.querySelector("#ctx").hidden ? [] : [...document.querySelectorAll("#ctx .item")].map((b) => b.textContent)));
+    const bend = Object.keys(kinds).find((k) => kinds[k] === "candidate-curve" && onScreen(points[k]) && inArea(at0[k], 10));
+    check(!!bend, "a low-confidence vessel's curve point in the area");
+    if (bend) {
+      const n0 = (await doc()).edges.length, segs0 = (await page.evaluate(() => window.vascular.model())).kinds;
+      await page.mouse.click(cx + points[bend][0], cy + points[bend][1], { button: "right" });
+      const menu = await menuNow(), k = menu.findIndex((x) => /^Remove this point/.test(x));
+      check(k >= 0, `a curve point's menu offers to remove it from its line: ${menu}`);
+      if (k >= 0) {
+        await page.click(`#ctx .item >> nth=${k}`);
+        const after = await page.evaluate(() => window.vascular.model());
+        check(!after.at[bend] && after.model.edges.length === n0 && Object.keys(after.kinds).length === Object.keys(segs0).length - 1,
+          `... which takes it out, the line running on through its neighbours: ${n0} → ${after.model.edges.length} edges`);
+      } else await page.keyboard.press("Escape");
+    }
+    const m1 = await page.evaluate(() => window.vascular.model()), d1 = await doc();
+    // the middle of a segment between two curve points of one confident vessel, on screen and in the area
+    let mid = null;
+    for (const e of d1.edges) {
+      if (mid || e.state !== "vessel" || e.via.length < 3) continue;
+      const ids = Object.keys(m1.at).filter((k) => e.via.some((p) => Math.hypot(p.x - m1.at[k].x, p.y - m1.at[k].y) < 1e-6 && p.z === m1.at[k].z));
+      for (let i = 0; i + 1 < ids.length && !mid; i++) {
+        const p = m1.points[ids[i]], q = m1.points[ids[i + 1]];
+        if (onScreen(p) && onScreen(q) && inArea(m1.at[ids[i]], 10) && Math.hypot(p[0] - q[0], p[1] - q[1]) > 40) mid = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+      }
+    }
+    check(!!mid, "a segment in the area, long enough on screen to split");
+    if (mid) {
+      const n0 = d1.edges.length, tips0 = Object.values(m1.kinds).filter((k) => /-end$/.test(k)).length;
+      await page.mouse.click(cx + mid[0], cy + mid[1], { button: "right" });
+      const menu = await menuNow(), k = menu.indexOf("Split this segment here");
+      check(k >= 0 && menu.includes("Delete this segment"), `a segment's menu offers Split this segment here beside Delete this segment: ${menu}`);
+      if (k >= 0) {
+        await page.click(`#ctx .item >> nth=${k}`);
+        const after = await page.evaluate(() => window.vascular.model()), fresh = Object.keys(after.at).filter((id) => !m1.at[id]);
+        const gap = fresh.length === 2 && Math.hypot(after.points[fresh[0]][0] - after.points[fresh[1]][0], after.points[fresh[0]][1] - after.points[fresh[1]][1]);
+        check(fresh.length === 2 && fresh.every((id) => /-end$/.test(after.kinds[id])) && after.model.edges.length === n0 + 1 && gap > 6,
+          `... which cuts it into two tips, set apart on screen: ${n0} → ${after.model.edges.length} edges, new points ${fresh.map((id) => after.kinds[id])}, ${gap && gap.toFixed(1)} px apart`);
+      } else await page.keyboard.press("Escape");
     }
   }
 

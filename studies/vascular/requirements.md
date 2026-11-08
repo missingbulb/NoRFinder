@@ -38,9 +38,11 @@ owner's decisions on the stacks and the vessel model, are
   Moved from the 3D MicroViewer (`studies/vascular/docs/3D-STACKS.md`, the owner's decisions of
   2026-10-03 to 10-29). The model Execute draws (`req/vascular/model/run`), or any `vessel-model/2`
   file loaded, shows as the toolbar says (`req/vascular/model/view`): white tubes in a view of its
-  own that turns with the stack's, or magenta over the stack. On the model: drag a point to move it,
-  right-click a segment or a point to delete it, add or remove a bend or split a junction into
-  vessels that cross, right-drag from one piece to another to connect them, drag a vessel's tip onto another
+  own that turns with the stack's, or magenta over the stack. On the model: drag a point to move it, its handle shown
+  only while ground truth is tagged, never on the main view out of tagging (owner, 2026-11-08),
+  right-click a segment or a point to delete it, add or remove a bend (a point on any vessel, low-confidence ones
+  too: its two lines become one), split a segment where it was clicked into two tips set a little apart (owner,
+  2026-11-08) or split a junction into vessels that cross, right-drag from one piece to another to connect them, drag a vessel's tip onto another
   vessel or point to attach it there, for a connection the algorithm missed (owner, 2026-11-07), and click a faded
   low-confidence vessel to approve or decline it. The toolbar's Everything, Detected and Missed keep the
   whole stack, only the signal within reach of the model's vessels, or only what lies away from them, within a
@@ -163,7 +165,9 @@ owner's decisions on the stacks and the vessel model, are
   across the picture, never in depth; turned, across the screen at its depth; a tip dropped on another vessel attaches
   there, a junction made. The right-click menu deletes, adds a bend, connects or splits a junction into vessels that
   cross, as anywhere (`req/vascular/model/correct`); right-clicked on the image where no line is, it offers Draw a
-  missed vessel, its first point there. A low-confidence line, faint, is kept by clicking it. Each junction in the
+  missed vessel, its first point there; while it is drawn, the line's end snaps onto the point or vessel under the
+  pointer, lit as a dragged tip's target is, never onto the vessel being drawn, and the click joins it there (owner,
+  2026-11-08). A low-confidence line, faint, is kept by clicking it. Each junction in the
   area in turn, ringed on the view and pictured in the box, is a real junction or vessels that only cross at
   different depths (split then); clicking a junction on the view makes it the current one. "Area is right", on once
   every junction there has a verdict, does the area: every confident vessel whose middle lies in it is accepted,
