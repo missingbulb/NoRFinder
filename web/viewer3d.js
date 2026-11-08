@@ -14,7 +14,6 @@ import { asLoaded } from "./as_loaded.js";
 
 const MAX_SIDE = 640; // the GPU's budget: a ray samples every voxel it crosses, so a wider volume is binned to this
 const CHANNELS = 4;   // the most channels the 3D view adds together
-const LOOKS = { top: [0, 0], tilted: [-0.5, -0.6], side: [Math.PI / 2, 0], front: [0, Math.PI / 2 - 0.001] };
 const FIT_DIST = 4.4, MIN_DIST = 0.15, CLICK_PX = 4, WHEEL_LINE_PX = 16;
 const TURN_PER_PX = 0.008, ROLL_PER_PX = 0.0025; // radians the view turns for a pixel dragged, and for a pixel scrolled sideways
 const TAN_HALF_FOV = Math.tan((15 * Math.PI) / 180);
@@ -195,15 +194,12 @@ export function viewer3d(shell, flat) {
   const drawers = [], spacingHeard = [], resetHeard = [];
   let half = [1, 1, 0.1];
 
-  // ---------- the page's parts: Look from's buttons in the toolbar beside Zoom, the slices' row and Colour by depth
+  // ---------- the page's parts: Reset view to top in the toolbar beside Zoom, the slices' row and Colour by depth
   // under the channels' rows, the stage in the 2D one's place ----------
   const tools = html("div", { id: "v3-tools", className: "group", hidden: true });
-  // Reset View: a split button named after the view chosen, putting the view back to it; its arrow chooses the view
-  const named = (k) => k[0].toUpperCase() + k.slice(1);
-  tools.innerHTML = `<div id="v3-look" class="split-btn" role="group" aria-label="Reset view">
-    <button id="v3-reset" type="button" title="Put the view back to the one chosen"></button>
-    <details class="menu" id="v3-look-menu"><summary title="Choose the view to reset to" aria-label="Choose the view to reset to"></summary>
-      <div class="pop right">${Object.keys(LOOKS).map((k) => `<button type="button" class="item" data-look="${k}">${named(k)}</button>`).join("")}</div></details></div>`;
+  // a cube seen from above its lit top face, an arrow coming down onto it
+  tools.innerHTML = `<button id="v3-reset" class="tool" type="button" title="Reset view to top" aria-label="Reset view to top"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"
+    ><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"><path d="M12 9.5 19 13 12 16.5 5 13Z" fill="currentColor" fill-opacity=".35"/><path d="M5 13v5.5L12 22l7-3.5V13M12 16.5V22M12 1.5v5.5M9.5 4.5 12 7l2.5-2.5"/></g></svg></button>`;
   const bar = $("#view .toolbar"), zoom = $("#zoom-out").parentElement;
   // the slices shown, from the first to the last, as a channel's row holds its points, and in the colour picker's
   // place the spacing between slices, read with its unit and stepped by
@@ -467,16 +463,9 @@ export function viewer3d(shell, flat) {
   ui("v3-zs-up").onclick = () => spacing(S.zs + ZS.step);
   ui("v3-zs-down").onclick = () => spacing(S.zs - ZS.step);
   slicesRow.querySelector(".levels").ondblclick = () => { if (vol) { S.z0 = 0; S.z1 = vol.Z - 1; sync(); } };
-  let chosenLook = "top";
   // a study showing part of the stack may put it back to its own view instead
-  const resetView = () => { if (resetHeard.some((fn) => fn())) return redraw(); Object.assign(S, { rot: facing(...LOOKS[chosenLook]), pivot: [0, 0, 0], clip: null, dist: Math.max(S.dist, 2) }); redraw(); };
-  const nameReset = () => { ui("v3-reset").textContent = `${named(chosenLook)} View`; };
-  nameReset();
+  const resetView = () => { if (resetHeard.some((fn) => fn())) return redraw(); Object.assign(S, { rot: facing(0, 0), pivot: [0, 0, 0], clip: null, dist: Math.max(S.dist, 2) }); redraw(); };
   ui("v3-reset").onclick = resetView;
-  ui("v3-look").querySelector(".pop").onclick = (e) => {
-    const b = e.target.closest("[data-look]"); if (!b) return;
-    chosenLook = b.dataset.look; nameReset(); ui("v3-look-menu").open = false; resetView();
-  };
   // who stated the spacing between slices, S.zsFrom: "file", "you", the one the study names, or null for a guess; the
   // spacing's tooltip says so
   function spacingNote(from) {
@@ -490,7 +479,7 @@ export function viewer3d(shell, flat) {
   const asBuilt = asLoaded([tools, stage, palettes]);
   function placed(on) {
     if (!on) { for (const el of [tools, stage, palettes]) el.remove(); return; }
-    asBuilt(); panOn = false; chosenLook = "top";
+    asBuilt(); panOn = false;
     if (tools.isConnected) return;
     bar.insertBefore(tools, zoom.parentElement === bar ? zoom : bar.firstChild);
     $("#scroller").after(stage);
