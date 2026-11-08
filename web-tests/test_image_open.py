@@ -1,7 +1,7 @@
 """req/shell/image/open: the page reads and shows the image itself (web/image_open.js, under Node through
 image_open_driver.mjs). On TIFFs written by tifffile in the shapes the studies meet, its 8-bit planes and slices are
 the rule's own in numpy (numpy_view.py) to the bit, and so are its channels' names and colours and what it says of
-the file; a study's upper quantile and an 8-bit image kept as stored are honoured."""
+the file; a study's upper quantile, its black-point method and an 8-bit image kept as stored are honoured."""
 import json
 import os
 import shutil
@@ -39,8 +39,8 @@ def opened(tmp_path, *jobs):
     return out
 
 
-def same_as_the_viewer(path, got):
-    s = View(path)
+def same_as_the_viewer(path, got, black=None):
+    s = View(path, black=black)
     assert (got['W'], got['H'], got['Z']) == (s.planes.shape[2], s.planes.shape[1], s.Z)
     assert got['planes'] == s.planes.tobytes(), f'{np.count_nonzero(np.frombuffer(got["planes"], np.uint8) != s.planes.ravel())} pixels differ'
     assert got['volume_bytes'] == (s.volume.tobytes() if s.Z > 1 else b'')
@@ -107,8 +107,71 @@ def test_a_studys_upper_quantile_and_an_image_kept_as_stored(tmp_path):
     a, b = noise((3, 40, 50), np.uint16, 6), noise((30, 20), np.uint8, 7)
     tifffile.imwrite(p, a, imagej=True, metadata={'axes': 'ZYX'})
     tifffile.imwrite(e, b)
-    upper, kept = opened(tmp_path, {'file': p, 'view': {'upper': 0.999}}, {'file': e, 'view': {'stretch': False}})
+    upper, kept = opened(tmp_path, {'file': p, 'view': {'upper': 0.999, 'blackPoint': 'quantile'}}, {'file': e, 'view': {'stretch': False}})
     lo, hi = np.quantile(a, 0.005), np.quantile(a, 0.999)
     want = (np.clip((a.astype(np.float64) - lo) / (hi - lo), 0, 1) * 255).astype(np.uint8)
     assert upper['volume_bytes'] == want.tobytes() and upper['planes'] == want.max(axis=0).tobytes()
     assert kept['planes'] == b.tobytes()
+
+
+def vessels(seed):
+    """A confocal-like stack: dim noisy background over most of the field, a few bright lines through it."""
+    rng = np.random.default_rng(seed)
+    a = rng.normal(900, 120, (4, 80, 90))
+    a[:, 20:23, :] += 6000
+    a[:, :, 40:42] += 3000
+    return a.clip(0, 65535).astype(np.uint16)
+
+
+def test_a_fluorescence_tiff_puts_its_black_point_at_the_triangle_knee(tmp_path):
+    p, q = str(tmp_path / 'cd31.tif'), str(tmp_path / 'cd31_q.tif')
+    tifffile.imwrite(p, vessels(8), imagej=True, metadata={'axes': 'ZYX'})
+    tifffile.imwrite(q, vessels(8), imagej=True, metadata={'axes': 'ZYX'})
+    got, old = opened(tmp_path, {'file': p}, {'file': q, 'view': {'blackPoint': 'quantile'}})
+    same_as_the_viewer(p, got)
+    dark = lambda o: np.mean(np.frombuffer(o['volume_bytes'], np.uint8) == 0)
+    # the background goes black, the vessels stay lit; the 0.5% quantile alone left the background grey
+    assert dark(got) > 0.5 and dark(old) < 0.05
+    v = np.frombuffer(got['volume_bytes'], np.uint8).reshape(4, 80, 90)
+    assert v[:, 20:23, :].min() > 0 and v[:, :, 40:42].min() > 0
+
+
+def test_a_studys_background_black_point(tmp_path):
+    p = str(tmp_path / 'vascular.tif')
+    a = vessels(9)
+    tifffile.imwrite(p, a, imagej=True, metadata={'axes': 'ZYX'})
+    got, = opened(tmp_path, {'file': p, 'view': {'upper': 0.999, 'blackPoint': 'background'}})
+    s = View(p, upper=0.999, black='background')
+    assert got['volume_bytes'] == s.volume.tobytes() and got['planes'] == s.planes.tobytes()
+    # about 2.5 standard deviations of noise over the median: all but about 0.6% of the background is black
+    bg = np.frombuffer(got['volume_bytes'], np.uint8).reshape(4, 80, 90)[:, 30:, 50:]
+    assert 0.98 < np.mean(bg == 0) < 1.0
+
+
+def test_a_photo_keeps_the_low_quantile(tmp_path):
+    p = str(tmp_path / 'photo.tif')
+    a = vessels(10)
+    tifffile.imwrite(p, np.stack([(a[0] // 16).clip(0, 255).astype(np.uint8)] * 3, axis=-1), photometric='rgb')
+    got, = opened(tmp_path, {'file': p})
+    same_as_the_viewer(p, got)
+    assert np.mean(np.frombuffer(got['planes'], np.uint8) == 0) < 0.05
+
+
+def test_a_studys_flattened_window(tmp_path):
+    p = str(tmp_path / 'vascular.tif')
+    tifffile.imwrite(p, vessels(11), imagej=True, metadata={'axes': 'ZYX'})
+    got, = opened(tmp_path, {'file': p, 'view': {'upper': 0.999, 'blackPoint': 'flattened'}})
+    s = View(p, upper=0.999, black='flattened')
+    assert got['volume_bytes'] == s.volume.tobytes() and got['planes'] == s.planes.tobytes()
+    # the flattened image runs from black at its 1% point to full colour at its 98.7% one
+    flat = np.frombuffer(got['planes'], np.uint8)
+    assert 0.005 < np.mean(flat == 0) < 0.03 and 0.005 < np.mean(flat == 255) < 0.03
+
+
+def test_a_light_background_keeps_the_low_quantile(tmp_path):
+    p = str(tmp_path / 'brightfield.tif')
+    a = (60000 - vessels(12).astype(np.int64)).clip(0, 65535).astype(np.uint16)
+    tifffile.imwrite(p, a, imagej=True, metadata={'axes': 'ZYX'})
+    got, = opened(tmp_path, {'file': p})
+    same_as_the_viewer(p, got)
+    assert np.mean(np.frombuffer(got['volume_bytes'], np.uint8) == 0) < 0.05
