@@ -290,9 +290,6 @@
                 },
                 {"name": "Channels kept", "select": "#edit-channels", "req": "req/shell/data/edit"},
                 {"name": "Imperfections", "select": "#edit-flaws-row", "req": "req/shell/data/edit",
-                  "rule": [
-                    {"when": {"stack": [true]}, "is": "hidden", "about": "a z-stack is edited in 3D, which has tools of its own"}
-                  ],
                   "children": [
                     {"name": "Mark", "select": "#edit-lasso", "control": true, "req": "req/shell/data/edit"},
                     {"name": "Imperfections' list", "select": "#edit-flaws", "req": "req/shell/data/edit"}

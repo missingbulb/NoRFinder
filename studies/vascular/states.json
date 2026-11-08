@@ -26,14 +26,18 @@
       }
     ]},
     {"under": "Ground Truth Tasks", "tree": [
-      {"name": "The tasks", "select": "#vm-tasks", "req": "req/vascular/truth/tasks"},
+      {"name": "The tasks", "select": "#vm-tasks", "req": "req/vascular/truth/tasks",
+        "children": [
+          {"name": "How many areas", "select": "#area-grid", "control": true, "req": "req/vascular/truth/order"}
+        ]
+      },
       {"name": "Task tools", "select": "#task-tools", "req": "req/vascular/truth/order",
         "unwalked": "shows only while tagging, which no path starts (req/shell/ground-truth/tagging)",
         "rule": [
           {"is": "hidden", "approval": "tentative"}
         ],
         "children": [
-          {"name": "This junction's options", "select": "#task-menu", "req": "req/vascular/truth/tasks", "steady": "shows only in an area's Junctions step, which no path reaches",
+          {"name": "This junction's options", "select": "#task-menu", "req": "req/vascular/truth/tasks", "steady": "shows only for an area's current junction, while tagging, which no path starts",
             "rule": [
               {"is": "hidden", "approval": "tentative"}
             ]
@@ -47,54 +51,28 @@
           {"is": "hidden", "approval": "tentative"}
         ],
         "children": [
-          {"name": "Area's place", "select": "#area-name", "req": "req/vascular/truth/order"},
-          {"name": "How many areas", "select": "#area-grid", "control": true, "req": "req/vascular/truth/order"},
-          {"name": "Map of the areas", "select": "#area-map", "req": "req/vascular/truth/order"},
-          {"name": "Lines step", "select": "#step-lines", "req": "req/vascular/truth/tasks",
+          {"name": "Junctions' note", "select": "#junctions-note", "req": "req/vascular/truth/tasks"},
+          {"name": "The junction's stage", "select": "#task-stage", "req": "req/vascular/truth/tasks",
             "children": [
-              {"name": "Lines are right", "select": "#lines-ok", "control": true, "req": "req/vascular/truth/tasks"}
+              {"name": "The junction's card", "select": "#task-card", "req": "req/vascular/truth/tasks"}
             ]
           },
-          {"name": "Missed vessels step", "select": "#step-missed", "req": "req/vascular/truth/tasks", "unwalked": "shows once an area's Lines are approved, which no path does",
-            "rule": [
-              {"is": "hidden", "approval": "tentative"}
-            ],
-            "children": [
-              {"name": "Draw a missed vessel", "select": "#m-draw", "control": true, "req": "req/vascular/model/correct"},
-              {"name": "Drawing's note", "select": "#draw-note", "req": "req/vascular/model/correct"},
-              {"name": "No missed vessels here", "select": "#area-ok", "control": true, "req": "req/vascular/truth/tasks"}
-            ]
-          },
-          {"name": "Junctions step", "select": "#step-junctions", "req": "req/vascular/truth/tasks", "unwalked": "shows once an area's missed vessels are checked, which no path does",
-            "rule": [
-              {"is": "hidden", "approval": "tentative"}
-            ],
-            "children": [
-              {"name": "Junctions' note", "select": "#junctions-note", "req": "req/vascular/truth/tasks"},
-              {"name": "The junction's stage", "select": "#task-stage", "req": "req/vascular/truth/tasks",
-                "children": [
-                  {"name": "The junction's card", "select": "#task-card", "req": "req/vascular/truth/tasks"}
-                ]
-              },
-              {"name": "Area done", "select": "#area-done", "control": true, "req": "req/vascular/truth/tasks"}
-            ]
-          },
-          {"name": "Ctrl's note", "select": "#peek-note", "req": "req/vascular/truth/tasks"}
+          {"name": "Area is right", "select": "#area-ok", "control": true, "req": "req/vascular/truth/tasks"},
+          {"name": "Drawing's note", "select": "#draw-note", "req": "req/vascular/model/correct"}
         ]
       }
     ]},
     {"under": "Summary", "tree": [
       {"name": "What the model holds", "select": "#model-facts", "req": "req/vascular/model/run"}
     ]},
-    {"under": "Left bar", "after": "Summary", "tree": [
-      {"name": "Mark a damaged area", "select": "#vm-marks", "req": "req/vascular/model/correct",
-        "about": "in Summary, or in the tasks while the study makes ground truth",
+    {"under": "Image view", "after": "Minimap", "tree": [
+      {"name": "Map of the areas", "select": "#gt-mini", "req": "req/vascular/truth/tasks",
+        "unwalked": "shows only while tagging, which no path starts (req/shell/ground-truth/tagging)",
         "rule": [
-          {"when": {"counted": [false]}, "is": "hidden"}
+          {"is": "hidden", "approval": "tentative"}
         ],
         "children": [
-          {"name": "Mark the area", "select": "#m-lasso", "control": true, "req": "req/vascular/model/correct"},
-          {"name": "Marking's note", "select": "#lasso-note", "req": "req/vascular/model/correct"}
+          {"name": "The areas", "select": "#gt-mini-areas", "req": "req/vascular/truth/tasks"}
         ]
       }
     ]},
