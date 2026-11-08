@@ -448,16 +448,25 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   await check(unfolded.length && unfolded.every((x) => x[2] === x[3]), "unfolded, no bar between the four, one between the CPU and the online icon and between all else", unfolded);
   const after = await fixed();
   await check(after.every((x, k) => x === before[k]), "unfolding moves neither the icon, the online icon, the report icon nor the version", { before, after });
-  // too little room: what the page is doing and the four give way; the steps and the icons and version stay whole
-  await page.setViewportSize({ width: 620, height: 900 });
+  // too little room: what the page is doing and the four give way; the steps and the icons and version stay whole, none
+  // overlapping the next, the resources icon inside its block
   await page.evaluate(() => { document.querySelector("#status").textContent = "Loading the study's Python packages, a long message that cannot fit"; });
-  await page.waitForFunction(() => ["#sb-res-items", "#sb-res-icon"].every((id) => !document.querySelector(id).getAnimations().length));
-  const squeezed = await page.evaluate(() => {
-    const bar = document.querySelector("#statusbar").getBoundingClientRect(), whole = (e) => { const r = e.getBoundingClientRect(); return r.width >= e.scrollWidth - 1 && r.left >= bar.left && r.right <= bar.right; };
-    return { steps: [...document.querySelectorAll("#sb-steps .crumb")].every(whole), right: ["#sb-res-icon", "#sb-online", "#sb-report", "#sb-version"].filter((id) => !whole(document.querySelector(id))),
-      status: document.querySelector("#sb-now").getBoundingClientRect().width < document.querySelector("#status").scrollWidth };
-  });
-  await check(squeezed.steps && !squeezed.right.length && squeezed.status, "with too little room the status gives way, the steps and the right-hand items stay whole", squeezed);
+  for (const width of [620, 520, 480]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.waitForFunction(() => ["#sb-res-items", "#sb-res-icon"].every((id) => !document.querySelector(id).getAnimations().length));
+    const squeezed = await page.evaluate(() => {
+      const bar = document.querySelector("#statusbar").getBoundingClientRect(), box = (s) => document.querySelector(s).getBoundingClientRect();
+      const whole = (e) => { const r = e.getBoundingClientRect(); return r.width >= e.scrollWidth - 1 && r.left >= bar.left && r.right <= bar.right; };
+      const right = ["#sb-res-icon", "#sb-online", "#sb-report", "#sb-version"];
+      return { steps: [...document.querySelectorAll("#sb-steps .crumb")].every(whole), right: right.filter((id) => !whole(document.querySelector(id))),
+        overlap: right.slice(1).filter((id, k) => box(right[k]).right > box(id).left),
+        outside: box("#sb-res-icon").right > box("#sb-res").right + 0.5,
+        status: box("#sb-now").width < document.querySelector("#status").scrollWidth };
+    });
+    await check(squeezed.steps && !squeezed.right.length && !squeezed.overlap.length && !squeezed.outside && squeezed.status,
+      `at ${width}px the status gives way, the steps and the right-hand items stay whole and apart`, squeezed);
+    await shot(page, `11-squeezed-${width}`);
+  }
   await page.setViewportSize({ width: 1400, height: 900 });
   await shot(page, "10-resources-hovered");
   await page.mouse.move(700, 300);
