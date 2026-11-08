@@ -115,8 +115,8 @@ function hatching(c) {
   h.beginPath(); h.moveTo(0, 8); h.lineTo(8, 0); h.stroke();
   return c.createPattern(hatch, 'repeat');
 }
-// points are handles, and picked, in an area of the tasks and once zoomed in
-const handles = () => !!focused || V.S.dist <= V.FIT_DIST / HANDLES_ZOOM;
+// points are handles, and picked, only while the owner tags ground truth: in an area of the tasks and once zoomed in
+const handles = () => tagOn && (!!focused || V.S.dist <= V.FIT_DIST / HANDLES_ZOOM);
 const pickable = handles;
 // how clearly a line is drawn while a point is dragged: whole near the point, faded away from it
 function nearness(line) {
@@ -550,7 +550,7 @@ export const focusedArea = () => focused;
 // the owner tags ground truth now or not: only while they do is what is done cut out, and the Show menu's row for it on
 export function tagging(on) {
   tagOn = !!on; $('m-cut').disabled = !tagOn;
-  refreshMask(true);
+  refreshMask(true); V?.redraw();
 }
 const focusMode = () => (peeking ? 'model' : 'overlay');
 // the area filling the view from straight above, the rest of the stack cut away
@@ -725,7 +725,9 @@ export { msg };
 // the edits kept on this device for the model on show, forgotten
 export function forget() { if (savedKey) store.del(savedKey); }
 // at: each point in µm; kinds: each point's state and whether it is a curve point inside one vessel or an end
+// handles: the points are handles to drag now
 export const inspect = () => ({ model: model && Mo.toJSON(model), points: view && Object.fromEntries(view.pts), edits,
+  handles: !!V && handles(),
   at: model && Object.fromEntries([...model.nodes].map(([id, n]) => [id, { x: n.x, y: n.y, z: n.z }])),
   kinds: model && Object.fromEntries([...model.nodes.keys()].map((id) => {
     const on = model.segments.filter((s) => Mo.live(s) && (s.a === id || s.b === id)), st = new Set(on.map((s) => s.state));

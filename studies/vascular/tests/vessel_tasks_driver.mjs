@@ -104,7 +104,14 @@ try {
   let t = await tasks(), v = await view();
   check(!t.focused && !v.clip && v.show && !v.focus && !v.open && v.mode === "overlay", `drawn, the whole stack stays in view as the Show menu sets it, no task open: ${JSON.stringify({ focused: t.focused, clip: v.clip, show: v.show, focus: v.focus, open: v.open })}`);
   check(v.start === "Start GT tagging" && v.cut.off, `Start GT tagging heads the tasks, and Cut out what is done is off out of tagging: ${JSON.stringify(v)}`);
+  // out of tagging the model's points carry no handles on the main view, zoomed in or not; tagging, they do
+  const zoomedHandles = () => page.evaluate(async () => { const v = window.shellForTests.viewer.three, d = v.S.dist; v.S.dist = v.FIT_DIST / 4; v.redraw();
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const h = window.vascular.model().handles; v.S.dist = d; v.redraw(); return h; });
+  check(await zoomedHandles() === false, "out of GT tagging, the model's points have no handles on the main view, even zoomed in");
   await page.click("#gt-start");
+  check(await page.evaluate(() => window.vascular.model().handles) === true, "... and once tagging starts, they do");
+
 
   // the tasks are the stack's areas, a row each, 4 × 4 at first, the choice of how many first in the box
   t = await tasks();

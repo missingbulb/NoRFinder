@@ -38,7 +38,8 @@ owner's decisions on the stacks and the vessel model, are
   Moved from the 3D MicroViewer (`studies/vascular/docs/3D-STACKS.md`, the owner's decisions of
   2026-10-03 to 10-29). The model Execute draws (`req/vascular/model/run`), or any `vessel-model/2`
   file loaded, shows as the toolbar says (`req/vascular/model/view`): white tubes in a view of its
-  own that turns with the stack's, or magenta over the stack. On the model: drag a point to move it,
+  own that turns with the stack's, or magenta over the stack. On the model: drag a point to move it, its handle shown
+  only while ground truth is tagged, never on the main view out of tagging (owner, 2026-11-08),
   right-click a segment or a point to delete it, add or remove a bend or split a junction into
   vessels that cross, right-drag from one piece to another to connect them, drag a vessel's tip onto another
   vessel or point to attach it there, for a connection the algorithm missed (owner, 2026-11-07), and click a faded

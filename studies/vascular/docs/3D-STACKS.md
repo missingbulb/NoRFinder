@@ -171,9 +171,9 @@ one thing that stays put while the view turns. A sideways drag turns it about th
 line, an up-and-down drag about its left-right line, with no stop at looking straight across, and a
 sideways scroll spins the picture about the line of sight, the third axis (owner, 2026-11-03; it
 panned before). A wheel or pinch zooms, and shift-drag or right-drag pans. The stage carries no instructions of its own. The model's
-points, the handles that are dragged to correct it, appear only once the view is zoomed in to twice
-the whole-stack view, so the opening picture is the vessels alone; until then a point cannot be
-picked, and segments still can. While a point is dragged, every other handle is hidden and the stack
+points, the handles that are dragged to correct it, appear only while ground truth is tagged (owner,
+2026-11-08), in an area of the tasks or once the view is zoomed in to twice the whole-stack view, so the
+opening picture is the vessels alone; until then a point cannot be picked, and segments still can. While a point is dragged, every other handle is hidden and the stack
 and the model away from it fade, leaving clear what lies within reach of the point (its farthest
 neighbour, and at least 60 px).
 
