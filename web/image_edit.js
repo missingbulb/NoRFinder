@@ -29,8 +29,8 @@ export function imageEditor(ctx) {
   // tool: "crop" or "lasso" while one is armed; signal: each slice's, for the slider's band
   let base = null, e = null, polygons = [], tool = null, n = 1, suggested = null, frame = 0, drag = null;
   const editing = () => !!base;
-  // a stack is shown in 3D: its lasso draws on the stack from straight above, over it
-  const stack = () => (base?.Z || 1) > 1, three = () => ctx.viewer().three;
+  // a stack shown in 3D: its lasso draws on the stack from straight above, over it; shown flat, as any flat image
+  const three = () => ctx.viewer().three, stack = () => (base?.Z || 1) > 1 && !!three() && !three().stage.hidden;
   let over3d = null;
   const C = () => Math.floor(base.planes.length / (base.W * base.H * (base.Z > 1 ? 1 + base.Z : 1)));
 
@@ -254,7 +254,7 @@ export function imageEditor(ctx) {
   function done() {
     if (!editing()) return;
     const was = base;
-    if (stack() && three()) three().S.held = false;
+    if (stack()) three().S.held = false;
     base = null; tool = null; drag = null; live3d = null;
     delete root.dataset.editing; root.removeAttribute("data-edit-tool");
     ctx.viewer().layer("edit").replaceChildren(); over3d?.replaceChildren();
