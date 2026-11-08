@@ -275,3 +275,32 @@ def test_books_lying_cover_up_are_boxed_as_covers_and_the_planks_are_not():
     matched = sum(bool(covers) and min(np.abs(f - np.array(c)).max() for f in covers) <= 0.15 * unit for c in truth)
     assert matched == len(truth), (matched, len(truth), len(covers))
     assert len(found) == len(truth), found
+
+
+def test_the_finder_runs_on_only_the_packages_the_page_installs(tmp_path):
+    """The page's Pyodide installs only study.json's packages: a module of any other installed distribution is
+    blocked here, as it is missing there."""
+    import subprocess
+    Image.fromarray(photo()).save(tmp_path / 'shelf.png')
+    here = os.path.dirname(os.path.abspath(__file__))
+    script = '''
+import importlib.abc, importlib.metadata, json, re, sys
+norm = lambda n: re.sub(r'[-_.]+', '-', n).lower()
+study, py, path = sys.argv[1:4]
+allowed = {norm(p) for p in json.load(open(study))['python']['packages']}
+owners = importlib.metadata.packages_distributions()
+class Missing(importlib.abc.MetaPathFinder):
+    def find_spec(self, name, path=None, target=None):
+        top = name.split('.')[0]
+        if top in owners and not any(norm(d) in allowed for d in owners[top]):
+            raise ModuleNotFoundError(f'No module named {top!r} on the page', name=top)
+sys.meta_path.insert(0, Missing())
+sys.path.insert(0, py)
+import shelves
+s = shelves.Session(path)
+found = json.loads(s.call('find', {})[0])['books']
+s.call('straighten', {'corners': [b['corners'] for b in found]})
+'''
+    run = subprocess.run([sys.executable, '-c', script, os.path.join(here, '..', 'study.json'), os.path.join(here, '..', 'py'),
+                          str(tmp_path / 'shelf.png')], capture_output=True, text=True)
+    assert run.returncode == 0, run.stderr
