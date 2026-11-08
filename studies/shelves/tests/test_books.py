@@ -275,3 +275,40 @@ def test_books_lying_cover_up_are_boxed_as_covers_and_the_planks_are_not():
     matched = sum(bool(covers) and min(np.abs(f - np.array(c)).max() for f in covers) <= 0.15 * unit for c in truth)
     assert matched == len(truth), (matched, len(truth), len(covers))
     assert len(found) == len(truth), found
+
+
+def test_the_finder_runs_on_only_the_packages_the_page_installs(tmp_path, monkeypatch):
+    """The page's Pyodide installs only study.json's packages: a module of any other installed distribution is
+    blocked here, as it is missing there."""
+    import importlib
+    import importlib.abc
+    import importlib.metadata
+    import re
+    norm = lambda n: re.sub(r'[-_.]+', '-', n).lower()
+    study = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'study.json')
+    with open(study) as f:
+        allowed = {norm(p) for p in json.load(f)['python']['packages']}
+    owners = importlib.metadata.packages_distributions()
+    missing = lambda top: top in owners and not any(norm(d) in allowed for d in owners[top])
+
+    class Missing(importlib.abc.MetaPathFinder):
+        def find_spec(self, name, path=None, target=None):
+            if missing(name.split('.')[0]):
+                raise ModuleNotFoundError(f'No module named {name!r} on the page', name=name)
+
+    blocker = Missing()
+    sys.meta_path.insert(0, blocker)
+    try:
+        for name in [n for n in sys.modules if missing(n.split('.')[0]) or n in ('books', 'shelves')]:
+            monkeypatch.delitem(sys.modules, name)
+        Image.fromarray(photo()).save(tmp_path / 'shelf.png')
+        s = importlib.import_module('shelves').Session(str(tmp_path / 'shelf.png'))
+        found = json.loads(s.call('find', {})[0])['books']
+        s.call('straighten', {'corners': [b['corners'] for b in found]})
+        error = None
+    except ModuleNotFoundError as e:
+        error = e
+    finally:
+        sys.meta_path.remove(blocker)
+    assert error is None, f'the page has no {error.name!r}'
+    assert found, 'the photo has books to box'

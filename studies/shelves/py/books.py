@@ -9,6 +9,7 @@ the most that share no ground are the books. It boxes spines alone: a cover, or 
 apart yet."""
 import numpy as np
 from scipy import ndimage as ndi
+from skimage.measure import points_in_poly
 
 # scale-dependent: the long side the finder works at, in pixels; boxes are scaled back to the photo's own
 WORK = 900
@@ -554,7 +555,6 @@ def covers(e, keep):
     near-parallel straight lines make, kept when it is a cover's size and shape, each side lies on edges with a colour
     change across it, at most one side's edge runs on past its corners (a cover's edges end at its corners, a
     plank's or a ledge's do not); the smallest first, and none holding one already kept."""
-    from matplotlib.path import Path
     h, w = e.h, e.w
     ang, dist = straight_lines(e, keep)
     n = len(ang)
@@ -593,7 +593,7 @@ def covers(e, keep):
     good = np.flatnonzero(np.all(on >= COVER_ON, axis=1) & np.all(across >= COVER_CONTRAST, axis=1) & (runs.sum(axis=1) <= 1))
     kept = []
     for i in good[np.argsort(area[good])]:
-        if any(Path(q).contains_point(c[i].mean(0)) or Path(c[i]).contains_point(q.mean(0)) for q in kept):
+        if any(points_in_poly(c[i].mean(0)[None], q)[0] or points_in_poly(q.mean(0)[None], c[i])[0] for q in kept):
             continue
         kept.append(c[i])
     return kept
@@ -627,7 +627,6 @@ def clockwise(c):
 def find(rgb):
     """The books in an RGB photo, [{corners, view}]: the spines shelf by shelf from the top, left to right, then the
     covers lying outside the shelves."""
-    from matplotlib.path import Path
     H, W = rgb.shape[:2]
     s = min(1.0, WORK / max(H, W))
     small = np.stack([ndi.zoom(rgb[..., k].astype(np.float32), s, order=1) if s < 1 else rgb[..., k].astype(np.float32) for k in range(3)], -1)
@@ -664,7 +663,7 @@ def find(rgb):
     yy, xx = np.mgrid[0:h, 0:w]
     grid = np.stack([xx.ravel(), yy.ravel()], 1)
     for c in spines:
-        shelf |= Path(np.asarray(c)).contains_points(grid).reshape(h, w)
+        shelf |= points_in_poly(grid, np.asarray(c)).reshape(h, w)
     shelf = ndi.binary_dilation(shelf, iterations=max(2, int(0.01 * max(h, w))))
     found = covers(Edges(g, small), ~shelf)
     scale = lambda c: [[round(min(max(x, 0), w) / s, 1), round(min(max(y, 0), h) / s, 1)] for x, y in c]
