@@ -72,6 +72,8 @@ const THUMB_NAMES = "nor-drive-thumb-names";
 const GT_DRAFT = "gt-draft|";
 // {remote id: what the file holds, "3D · 8 slices" or "" when it cannot tell}, oldest first
 const HOLDS = "nor-drive-holds";
+// what an image holds, in 2D or 3D and in how many channels, is told for a TIFF alone; a PNG or JPEG is always a flat picture
+const TIFF = /\.tiff?$/i;
 const TIPS = "nor-tips-closed"; // [tip id]: the tips the user closed, never shown again
 // when the wait after the store throttled the site's downloads ends, in ms
 const THROTTLE = "nor-drive-throttled-until";
@@ -1314,7 +1316,7 @@ function remoteDialog() {
     const cover = (p) => { covered = p || Promise.resolve(null); };
     const fromPreviews = async (pic, e, pv) => {
       const row = pic.closest(".item");
-      row.querySelector(".shape").textContent = holds({ images: 1, slices: e.slices, channels: e.channels });
+      if (TIFF.test(e.name)) row.querySelector(".shape").textContent = holds({ images: 1, slices: e.slices, channels: e.channels });
       put(pic, await pv.picture(e));
       if (e.kind === "stack") turning(row, pic, pv.volume(e));
     };
@@ -1324,7 +1326,7 @@ function remoteDialog() {
       if (e) return fromPreviews(pic, e, pv);
       const url = made.get(f.id) || readJSON(SAVED_THUMB + f.id, "") || f.preview;
       if (url) put(pic, url);
-      const holds = /\.tiff?$/i.test(f.name) && remote.ready && !offlineCopy.offline() && !(f.id in readJSON(HOLDS)), thumb = !url && (await ready).has(f.id);
+      const holds = TIFF.test(f.name) && remote.ready && !offlineCopy.offline() && !(f.id in readJSON(HOLDS)), thumb = !url && (await ready).has(f.id);
       if (of !== epoch || !(thumb || holds)) return;
       rows.push({ at, row: pic.closest(".item"), f, thumb, holds, asked: false, done: false }); later();
     };
@@ -1906,7 +1908,7 @@ function loadedSummary() {
   const name = document.createElement("span"); name.className = "name"; name.textContent = st.fileName;
   const tags = document.createElement("span"); tags.className = "tags";
   let said = ""; try { const k = st.kept.bytes; said = holds(shape(k.buffer || k)); } catch (e) { console.warn("cannot read what the image holds:", e); }
-  for (const w of (said || "2D").split(" · ")) tags.append(Object.assign(document.createElement("span"), { className: "tag", textContent: w }));
+  if (TIFF.test(st.fileName)) for (const w of (said || "2D").split(" · ")) tags.append(Object.assign(document.createElement("span"), { className: "tag", textContent: w }));
   text.append(name, tags); n.append(pic, text);
   return n;
 }
