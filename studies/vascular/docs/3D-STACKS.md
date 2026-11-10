@@ -331,7 +331,7 @@ remain.
 ## Open questions for the owner
 
 1. ~~**The z-step**~~ — answered by the owner on 2026-10-29: **1 µm**, recorded in
-   `data/sources.json` and read from there by every script when a file stores none.
+   `study.json` (`view.spacing`) and read from there by every script when a file stores none.
 2. **Ground truth.** Nothing measures width or length until the owner has marked the draft graph:
    which edges are vessels, which junctions are real, and which vessels the draft missed.
 

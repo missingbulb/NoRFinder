@@ -33,7 +33,7 @@ The study's working rules and its skills (`paper-intake`, `vessel-overlay-review
 From `studies/vascular/`:
 
 ```
-python3 analysis/stack_sources.py                 # the owner's stacks into data/raw/, checked by SHA-256
+python3 analysis/stacks.py                        # the owner's stacks from the study root into data/raw/
 python3 analysis/extraction/lab.py cmp            # every extraction version on every stack
 python3 analysis/extraction/lab.py run v5 STACK.tif OUT.vessels.json
 python3 analysis/measure_vessels.py               # the figure-panel pipeline (needs the panels)

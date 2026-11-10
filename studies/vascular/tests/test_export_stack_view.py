@@ -17,6 +17,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'analysis'))
 import export_stack_view as ev
+import stacks
 
 Z, Y, X = 6, 40, 40
 
@@ -38,12 +39,12 @@ def main():
         h = ev.header(src)
         assert h['axes'] == 'ZCYX' and h['shape'] == [Z, 2, Y, X], h
         assert abs(h['um_per_px'] - 0.55) < 1e-6, h['um_per_px']
-        assert h['z_step_um'] is None, 'this stack records no z-step'
+        assert h['z_step_um'] == stacks.z_step_um() is not None and h['z_step_source'] == 'the study (study.json view.spacing)', 'a stack recording no z-step takes the study\'s'
 
         m = ev.export(src, out, 2, None)
         assert m['shape'] == [Z, Y // 2, X // 2], m['shape']
         assert abs(m['um_per_px'] - 1.1) < 1e-6, 'binning must scale the pixel size'
-        assert m['z_step_um'] is None and m['z_step_source'] is None, 'an unknown z-step stays unknown'
+        assert m['z_step_um'] == stacks.z_step_um(), 'the study\'s z-step carries into the export'
         with open(os.path.join(out, 'meta.json')) as f:
             assert json.load(f)['shape'] == m['shape']
         assert os.path.exists(os.path.join(out, 'index.html'))

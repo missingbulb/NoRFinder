@@ -17,3 +17,9 @@
 - **Actor:** @missingbulb (owner).
 - **Model:** claude-opus-5-5
 - **Mechanism:** unchanged carrier, now in the study's own local pack.
+
+## 2026-11-10 · reworded · the stacks' facts are read from study.json, sources.json retired (#833)
+- **Reason:** the stack manifest went; the z-step lives only in `study.json` `view.spacing`.
+- **Actor:** @missingbulb (owner), who chose to retire the manifest on 2026-11-07.
+- **Model:** claude-opus-5-5
+- **Landed:** #908

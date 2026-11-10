@@ -17,7 +17,7 @@ import numpy as np
 import tifffile
 from PIL import Image
 
-import stack_sources
+import stacks
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 VIEWER = os.path.join(HERE, 'stack_view', 'index.html')
@@ -41,8 +41,8 @@ def header(path):
             'pages': len(tf.pages), 'file_bytes': os.path.getsize(path),
             'um_per_px': (1 / px_per_unit) if px_per_unit and unit in ('micron', 'um', 'µm') else None,
             'unit': unit,
-            'z_step_um': ij.get('spacing') or stack_sources.z_step_um(path),
-            'z_step_source': 'file' if ij.get('spacing') else ('the owner (data/sources.json)' if stack_sources.z_step_um(path) else None),
+            'z_step_um': ij.get('spacing') or stacks.z_step_um(),
+            'z_step_source': 'file' if ij.get('spacing') else ('the study (study.json view.spacing)' if stacks.z_step_um() else None),
             'imagej': {k: v for k, v in ij.items() if not isinstance(v, (bytes, np.ndarray)) and k not in ('Ranges', 'LUTs')},
         }
 

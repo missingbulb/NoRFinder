@@ -12,7 +12,7 @@ _Last updated 2026-11-04._
 ## Run
 
 ```
-python3 analysis/stack_sources.py                            # the owner's stacks into data/raw/
+python3 analysis/stacks.py                                   # the owner's stacks into data/raw/ (the lab also fetches them itself)
 python3 analysis/extraction/lab.py cmp                    # every version on every stack: score table
 python3 analysis/extraction/lab.py grade                  # every version against the provisional labels
 python3 analysis/extraction/lab.py grade --json web/algorithm_metrics.json   # ... and the precision and recall the page shows
