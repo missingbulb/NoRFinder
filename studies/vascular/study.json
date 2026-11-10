@@ -5,6 +5,7 @@
   "visibility": "listed",
   "stage": "GT",
   "icon": "web/icon.svg",
+  "poster": "web/poster.jpg",
   "phases": [
     {
       "key": "find",
