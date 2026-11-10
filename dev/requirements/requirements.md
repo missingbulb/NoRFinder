@@ -287,7 +287,9 @@ nobody has decided: what the page does there is not a requirement yet.
   the browser as `dev/tools/previews/make_previews.py` does (`req/shell/drive/previews`; a flat image at
   most 256 px a side, a photo that is not a TIFF (a PNG, JPEG, WebP or BMP) a flat colour image, a stack at most
   96 px and 24 slices), keeps every still-valid preview as it was,
-  and writes `rauntruth-previews.tiff`: a new file, or the page's own one replaced. A previews file the
+  and writes the folder's previews file (`req/shell/drive/previews`) into the study root's `Previews` folder, made
+  there when the root has none: a new file, or the page's own one replaced. Nothing is written into the data
+  folder, which may be one no study participant can write to (set by the owner on 2026-11-10). A previews file the
   page did not make is left alone, and the page says to delete it in Drive to let the page manage it;
   deleting the page's own makes it start over. Test: `web-tests/test_data_mode_page.py`,
   `web-tests/test_previews_writer.py`.
@@ -386,11 +388,15 @@ nobody has decided: what the page does there is not a requirement yet.
   they are kept. Test: `web-tests/test_image_line_page.py`.
   </details>
 
-- `req/shell/drive/previews` A folder's `rauntruth-previews.tiff` gives every image it covers a preview at once, a stack turning on hover.
+- `req/shell/drive/previews` A folder's previews file gives every image it covers a preview at once, a stack turning on hover.
   <details>
 
-  A Drive folder may hold `rauntruth-previews.tiff`, made by `dev/tools/previews/make_previews.py`
-  on a computer that has the folder's images (its TIFFs, and the photos Pillow opens) and uploaded beside them: a multi-page TIFF, its pages
+  A data folder's previews file is `<folder id>.tiff` in the `Previews` folder of the study's root, named by the
+  data folder's id so that renaming or moving the folder keeps its previews (set by the owner on 2026-11-10; a
+  `rauntruth-previews.tiff` inside a data folder, where previews were kept before, is no longer read). The
+  `Previews` folder is found in the root's listing the page already reads, and listed once a minute at most.
+  The file is made by Update previews (`req/shell/data/update-previews`), or by `dev/tools/previews/make_previews.py`
+  on a computer that has the folder's images (its TIFFs, and the photos Pillow opens) and uploaded under that name: a multi-page TIFF, its pages
   deflate-compressed, whose first page's description is a JSON index naming each image, its SHA-256
   and its pages. A flat image has one colour page; a stack has a mini-volume, one 8-bit page per
   slice and channel. The dialog never lists the file; when a folder has one it downloads it at

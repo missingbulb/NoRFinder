@@ -9,7 +9,13 @@ import { createHash } from "node:crypto";
 import { standIn } from "./stand_in_drive.mjs";
 
 const [answers, studies, rootDir, out, shots] = process.argv.slice(2);
-const { FILES, GT, approved, writes, open, role, check, done } = await standIn({ answers, studies, rootDir, uploaded: (f) => { if (f.name === "rauntruth-previews.tiff") fs.writeFileSync(out, f.bytes); } });
+const PREVIEWS_DIR = "dmpreviewsfolder00001";
+const { ROOT, FILES, GT, approved, writes, open, role, check, done } = await standIn({ answers, studies, rootDir, uploaded: (f) => { if (f.parent === PREVIEWS_DIR) fs.writeFileSync(out, f.bytes); } });
+// the data folder's previews file (req/shell/drive/previews): in the root's Previews folder, which the page made, under the
+// data folder's id, a file someone else put there; the copy the tool left beside the images is never read
+const OURS = `${ROOT}.tiff`;
+FILES.push({ id: PREVIEWS_DIR, name: "Previews", parent: ROOT, folder: true, bytes: null, mine: true, props: {}, modified: "2026-11-05T07:00:00Z" },
+  { id: "dmpreviewsfile000001", name: OURS, parent: PREVIEWS_DIR, folder: false, bytes: FILES.find((f) => f.name === "rauntruth-previews.tiff").bytes, mine: false, props: {}, modified: "2026-11-05T07:00:00Z" });
 // an image's Needs GT marker, in the curated folder, named as its ground-truth subfolder
 const neededOf = (name) => { const f = FILES.find((g) => g.name === name); return `${name.replace(/\.[^.]*$/, "")}__${createHash("sha256").update(f.bytes).digest("hex").slice(0, 8)}.needs_gt`; };
 // the curated folder approved for the site, as the study manager does from the tree's head, so the page may write its markers
@@ -61,13 +67,14 @@ await check(true, "the list button lays the images out as a list");
 await page.click("#update-previews");
 await page.waitForFunction(() => /Delete it/.test($("#folder-msg").textContent));
 await check(!writes.length, "a previews file the page did not make is left alone", writes);
-// the user deletes it in Drive
-FILES.splice(FILES.findIndex((f) => f.name === "rauntruth-previews.tiff"), 1);
+// the user deletes it in Drive; the old file beside the images stays, unread
+FILES.splice(FILES.findIndex((f) => f.name === OURS), 1);
 await page.click("#data-tree .tree-folder .name");
 await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="previews"]')?.textContent === "0");
 await page.click("#update-previews");
 await page.waitForFunction(() => /4 previews made/.test($("#folder-msg").textContent), null, { timeout: 30000 });
-await check(JSON.stringify(writes) === JSON.stringify([["create", "rauntruth-previews.tiff"]]), "Update previews creates the file", writes);
+await check(JSON.stringify(writes) === JSON.stringify([["create", OURS]]) && FILES.find((f) => f.name === OURS)?.parent === PREVIEWS_DIR,
+  "Update previews creates the file in the root's Previews folder, named by the data folder's id, and writes nothing into the data folder", writes);
 await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="previews"]')?.textContent === "4");
 await check(JSON.stringify(await summary()) === JSON.stringify({ images: 4, previews: 4, stale: 0, truth: 0, pending: 0, missing: 1 }), "then every image has a preview, the photo's too", await summary());
 await page.waitForFunction(() => document.querySelectorAll("#folder-items .pic img").length === 4);
@@ -84,8 +91,8 @@ await page.click("#data-tree .tree-folder .name");
 await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="stale"]')?.textContent === "1");
 await page.click("#update-previews");
 await page.waitForFunction(() => /1 preview made, 3 kept/.test($("#folder-msg").textContent), null, { timeout: 30000 });
-await check(JSON.stringify(writes.at(-1)) === JSON.stringify(["replace", "rauntruth-previews.tiff"]), "a changed image: the page's own file is replaced, the rest kept", writes);
-fs.writeFileSync(out, FILES.find((f) => f.name === "rauntruth-previews.tiff").bytes);
+await check(JSON.stringify(writes.at(-1)) === JSON.stringify(["replace", OURS]), "a changed image: the page's own file is replaced, the rest kept", writes);
+fs.writeFileSync(out, FILES.find((f) => f.name === OURS).bytes);
 
 const cell = (name) => `#folder-items .cell:has(.name:text-is("${name}"))`;
 await page.click(cell("e plain.tif") + " .mark-gt");
@@ -174,7 +181,7 @@ const damage = (bytes) => {
   }
   return bytes;
 };
-const kept = FILES.find((f) => f.name === "rauntruth-previews.tiff");
+const kept = FILES.find((f) => f.name === OURS);
 kept.bytes = damage(Buffer.from(kept.bytes));
 await role(page, "Study Manager");
 await page.click("#data-tree .tree-folder .name");

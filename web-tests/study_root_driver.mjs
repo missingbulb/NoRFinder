@@ -75,6 +75,17 @@ const out = {};
   out.byFile = { curated: s.curated === renamed.id, same: s.same };
 }
 
+// the root's Previews folder (req/shell/drive/previews): found by name, made once when missing, a data folder's file
+// named by its id
+{
+  const m = memory(); m.add({ parent: "ROOT", name: "Data", folder: true });
+  const none = (await sr.read(m.reader, "ROOT", { fresh: true })).previews;
+  const made = await sr.previewsFolder({ reader: m.reader, writer: m.writer, root: "ROOT" });
+  const again = await sr.previewsFolder({ reader: m.reader, writer: m.writer, root: "ROOT" });
+  out.previews = { none, made: made === again, folders: m.calls.filter(([k]) => k === "folder"), found: (await sr.read(m.reader, "ROOT", { fresh: true })).previews === made,
+    name: sr.previewsName("1AbCdataFolderId") };
+}
+
 // switching a set-up study's mode (req/shell/ground-truth/switch): no file moved, copied or deleted; the settings file
 // recording the mode before, who switched and when
 {
