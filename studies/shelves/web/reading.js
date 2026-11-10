@@ -55,9 +55,12 @@ const tidy = (t) => t.replace(/\s+/g, " ").trim();
 // prefixed with
 const LOOK_ALIKE = ["בכנ", "דרך", "החת", "וזןי", "סםט", "גנ", "עצ"];
 const PREFIXES = "והבכלמש";
+// ו and י, the letters full spelling adds and defective spelling leaves out
+const MATRES = "וי";
 // a reading's Hebrew words set right by a word list, most frequent first ('#' lines aside): a word of three letters
 // or more that is not on it, even with one or two prefix letters off, becomes the most frequent listed word one
-// look-alike letter away, or stays as read
+// look-alike letter, or one ו or י more or fewer, away, or stays as read; a final letter read inside a run of letters
+// ends a word there
 export function spelling(list) {
   const rank = new Map();
   for (const w of list.split("\n")) if (w && !w.startsWith("#") && !rank.has(w)) rank.set(w, rank.size);
@@ -72,14 +75,17 @@ export function spelling(list) {
   const alike = (c) => LOOK_ALIKE.filter((g) => g.includes(c)).join("").replaceAll(c, "");
   const word = (w) => {
     if (w.length < 3 || listed(w)) return w;
-    let to = w, most = 0;
-    for (let i = 0; i < w.length; i++) for (const c of alike(w[i])) {
-      const v = w.slice(0, i) + c + w.slice(i + 1), f = listed(v);
-      if (f > most) [to, most] = [v, f];
+    const near = [];
+    for (let i = 0; i < w.length; i++) for (const c of alike(w[i])) near.push(w.slice(0, i) + c + w.slice(i + 1));
+    for (let i = 1; i < w.length; i++) {
+      for (const c of MATRES) near.push(w.slice(0, i) + c + w.slice(i));
+      if (MATRES.includes(w[i])) near.push(w.slice(0, i) + w.slice(i + 1));
     }
+    let to = w, most = 0;
+    for (const v of near) { const f = listed(v); if (f > most) [to, most] = [v, f]; }
     return to;
   };
-  return (text) => text.replace(/[א-ת]+/g, word);
+  return (text) => text.replace(/[א-ת]+/g, (run) => run.split(/(?<=[ךםןףץ])(?=[א-ת])/).map(word).join(" "));
 }
 
 export function reader(engines) {

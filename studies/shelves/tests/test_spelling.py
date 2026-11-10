@@ -23,7 +23,7 @@ def spell(words, texts):
     return json.loads(out.stdout)
 
 
-LIST = '# a header line\nהחתול\nרוברט\nהעובר\nכוכבים\nנוכבים\n'
+LIST = '# a header line\nהחתול\nרוברט\nהעובר\nכוכבים\nנוכבים\nדרך\nקירות\nהיינליין\n'
 
 
 def test_a_word_one_look_alike_letter_off_becomes_the_dictionary_s():
@@ -41,3 +41,13 @@ def test_the_site_s_list_is_hebrew_words_in_frequency_order():
     lines = [l for l in open(WORDS, encoding='utf8').read().split('\n') if l and not l.startswith('#')]
     assert len(lines) > 40000 and lines[:3] == ['לא', 'את', 'אני']
     assert all(set(w) <= set('אבגדהוזחטיכךלמםנןסעפףצץקרשת') for w in lines)
+
+
+def test_a_final_letter_inside_a_run_ends_a_word():
+    # ך is written only at a word's end: the space after it was missed
+    assert spell(LIST, ['דרךקירות', 'רוברט']) == ['דרך קירות', 'רוברט']
+
+
+def test_full_and_defective_spellings_are_one_word():
+    # one י fewer, and one ו more, than the listed spelling
+    assert spell(LIST, ['היינלין', 'החתוול']) == ['היינליין', 'החתול']

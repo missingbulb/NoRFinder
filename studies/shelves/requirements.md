@@ -77,7 +77,8 @@ read for a title matcher; matching the titles is not part of it.
   the browser. Set by the owner on 2026-11-10, a dictionary sets each reading's Hebrew words right: a word of three
   letters or more that is not in it, nor is once a prefix letter or two (ו, ה, ב, כ, ל, מ, ש) is taken off, becomes the most
   frequent word in it that differs by one letter for a letter print makes look alike (ב כ נ, ד ר ך, ה ח ת, ו ז ן י,
-  ס ם ט, ג נ, ע צ), and stays as read when none is. The word list is the site's own file, so reading needs no network
+  ס ם ט, ג נ, ע צ), or by a ו or a י added or dropped (full and defective spelling), and stays as read when none is.
+  A final letter (ך ם ן ף ץ) ends a word, so one read inside a run of letters ends a word there. The word list is the site's own file, so reading needs no network
   for it. Test: `studies/shelves/tests/test_reading.py`, `studies/shelves/tests/test_spelling.py`,
   `studies/shelves/tests/test_shelves_page.py`.
   </details>
