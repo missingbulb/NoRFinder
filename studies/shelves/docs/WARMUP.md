@@ -396,7 +396,8 @@ number below is a score.
 - Books the frame cuts at a photo's edge (both of
   `1g4iFN`'s misses).
 - The readers: `tesseract` reads best but most spines come back noisy; what to try next is the owner's call.
-- Hebrew word spaces in the `lines` reader.
+- Hebrew word spaces in the `lines` reader: runs are now parted by the word lists (R7); a run of names neither list
+  holds stays whole.
 - R5's own breaks: several covers on the ledge and the bench missed, two half boxed; pale spines on a pale wall; piles of books lying flat.
 - A study pack (`shelves-study`) for its improving-on-ground-truth skill and its ground-truth intake, once there is
   ground truth to take in.
