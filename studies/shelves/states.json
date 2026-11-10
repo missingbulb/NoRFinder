@@ -11,7 +11,11 @@
               {"when": {"counted": [false]}, "is": "disabled"}
             ]
           },
-          {"name": "Books found", "select": "#bs-found", "req": "req/shelves/books/find"}
+          {"name": "Books found", "select": "#bs-found", "req": "req/shelves/books/find", "unwalked": "shows once Find books is done, when Processing has folded",
+            "rule": [
+              {"when": {"counted": [false]}, "is": "hidden"}
+            ]
+          }
         ]
       }
     ]},
