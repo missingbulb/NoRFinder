@@ -219,14 +219,24 @@ try {
   // the cover picked on the photo, and a book already approved picked there too
   const toScreen = (x, y) => page.evaluate(([x, y]) => { const r = $("#base").getBoundingClientRect(); return [r.left + x * st.zoom, r.top + y * st.zoom]; }, [x, y]);
   const viewOf = () => page.evaluate(() => [st.zoom, $("#scroller").scrollLeft, $("#scroller").scrollTop]);
+  // the page's next n frames drawn, by when a smooth scroll begun has moved the view
+  const frames = (n) => page.evaluate((n) => new Promise((done) => { const f = (k) => (k ? requestAnimationFrame(() => f(k - 1)) : done()); f(n); }), n);
+  // the view still for a frame, a smooth scroll that framed the last book over
+  const settled = () => page.waitForFunction(() => new Promise((done) => {
+    const sc = $("#scroller"), at = [sc.scrollLeft, sc.scrollTop];
+    requestAnimationFrame(() => requestAnimationFrame(() => done(sc.scrollLeft === at[0] && sc.scrollTop === at[1])));
+  }));
   // zoomed in, the cover's left edge alone in view, at the view's right
-  await page.waitForTimeout(600);
+  await settled();
   for (let i = 0; i < 4; i++) await page.click("#zoom-in");
   await page.evaluate(() => { const sc = $("#scroller"); sc.scrollLeft = 130 * st.zoom - sc.clientWidth + 40; sc.scrollTop = 190 * st.zoom - sc.clientHeight / 2; });
+  await settled(); await frames(1);
   const viewBefore = await viewOf();
+  await page.evaluate(() => { window.scrolls = 0; $("#scroller").addEventListener("scroll", () => window.scrolls++); });
   await page.mouse.click(...(await toScreen(125, 190)));
   check(await value() === "Title 180x180", "clicking a book on the photo opens it in the task", await value());
-  await page.waitForTimeout(600);
+  await frames(3);
+  check(await page.evaluate(() => window.scrolls) === 0, "a book clicked on the photo, partly in view, starts no scroll", await page.evaluate(() => window.scrolls));
   check(JSON.stringify(await viewOf()) === JSON.stringify(viewBefore), "a book clicked on the photo, partly in view, leaves the view where it was", [viewBefore, await viewOf()]);
   await page.waitForFunction(() => document.activeElement === $(".bs-item input"));
   check(await selected(), "a book picked on the photo, not yet approved, has its title selected to retype");
