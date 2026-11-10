@@ -11,13 +11,13 @@ export default { createWorker: async (langs) => (tess.langs.push(langs.join("+")
 }) };`;
 // the browser keys that choose it
 export const seed = { "shelves-reader": JSON.stringify("tesseract") };
-// A stand-in onnxruntime-web for the text finder Find books runs: every pixel half text. It counts the runs in
-// window.textRuns.
+// A stand-in onnxruntime-web for the text finder Find books runs: no text anywhere, so the finder finds as on a
+// photo with none. It counts the runs in window.textRuns.
 export const ORT = `globalThis.textRuns = 0;
 export const env = { wasm: {} };
 export class Tensor { constructor(type, data, dims) { Object.assign(this, { type, data, dims }); } }
 export const InferenceSession = { create: async () => ({ inputNames: ["x"], outputNames: ["y"],
-  run: async (feeds) => { globalThis.textRuns++; const [, , h, w] = feeds.x.dims; return { y: { data: new Float32Array(h * w).fill(0.5) } }; } }) };`;
+  run: async (feeds) => { globalThis.textRuns++; const [, , h, w] = feeds.x.dims; return { y: { data: new Float32Array(h * w) } }; } }) };`;
 const CDN = "https://cdn.jsdelivr.net/npm/";
 // ctx: a browser context, its CDN requests for Tesseract and for the text finder answered by the stand-ins; with
 // textFinder false, the text finder's never answered, as when it cannot be reached

@@ -125,6 +125,9 @@
               ],
               "children": [
                 {"name": "File name and info", "select": "#file-box", "req": "req/shell/image/file-info",
+                  "rule": [
+                    {"when": {"image": ["none"]}, "is": "hidden"}
+                  ],
                   "children": [
                     {"name": "Image's name", "select": "#file-name", "req": "req/shell/image/file-info"},
                     {"name": "Image's details", "select": "#file-info", "req": "req/shell/image/file-info", "steady": "opens only from the file's name",

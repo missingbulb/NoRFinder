@@ -67,13 +67,13 @@ await page.goto(origin + "/web/fixture");
 await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
 
 // the left bar's drawers as the user sees them: the step mark, the title (a picture in it as "[img]") and
-// open or folded, by its contents shown or not
+// open or folded, by any of its contents shown or not
 // the drawers on show: Data Management's own are not, out of it
 const bar = () => page.evaluate(() => [...document.querySelectorAll("#left > .box.foldable")].filter((b) => b.checkVisibility()).map((b) => {
-  const body = [...b.children].find((c) => !c.matches(".sec-head, .gt-access, slot-here")), h = b.querySelector(".sec-head h2");
+  const body = [...b.children].filter((c) => !c.matches(".sec-head, .gt-access, slot-here")), h = b.querySelector(".sec-head h2");
   const mark = h.querySelector(".step-mark"), t = h.querySelector(".title");
   const text = [...(t?.querySelectorAll("img, canvas") || [])].map(() => "[img] ").join("") + (t ? t.textContent.trim() : h.textContent);
-  return `${mark ? mark.textContent : "?"} ${text} ${body && body.offsetParent ? "open" : "folded"}`;
+  return `${mark ? mark.textContent : "?"} ${text} ${body.some((c) => c.offsetParent) ? "open" : "folded"}`;
 }));
 const boxes = async (want, what) => { const b = await bar(); await check(b.join("|") === want.join("|"), what, b); };
 // a drawer slides open or shut: read once it has
