@@ -7,7 +7,7 @@
 // file's own samples], images: one buffer, the viewers' whole image: planes, the channels' 8-bit flattened planes
 // one after another, then volume, every slice of every channel, channel by channel, 8-bit, for a stack (Z > 1);
 // planes and volume (null for a flat image) are views into it}.
-import { readTiff } from "./split.js";
+import { readTiff, fromPlanes } from "./split.js";
 
 const LOWER = 0.005, UPPER = 0.998;
 // a robust standard deviation in median absolute deviations, for normal noise, and how many of them a
@@ -34,16 +34,16 @@ export async function openImage(bytes, view = {}) {
   const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   if (isTiff(b)) return openTiff(b, view);
   if (isHeif(b)) return openHeif(b, view);
-  const bitmap = await createImageBitmap(new Blob([b])), W = bitmap.width, H = bitmap.height;
-  const cv = new OffscreenCanvas(W, H), ctx = cv.getContext("2d", { willReadFrequently: true });
-  ctx.drawImage(bitmap, 0, 0);
-  const rgba = ctx.getImageData(0, 0, W, H).data;
-  bitmap.close?.();
+  const { W, H, rgba } = await browserPixels(b);
   return fromPixels(W, H, rgba, view, greyFile(b));
 }
 
-// its primary image, turned as the file says it was held, as RGB
 async function openHeif(b, view) {
+  const { W, H, rgba } = await heifPixels(b);
+  return fromPixels(W, H, rgba, view, false);
+}
+// a HEIC's primary image, turned as the file says it was held, as RGBA
+async function heifPixels(b) {
   libheif ||= import(LIBHEIF).then((m) => m.default());
   const [im] = new (await libheif).HeifDecoder().decode(b);
   if (!im) throw new Error("This HEIC file holds no image.");
@@ -51,7 +51,26 @@ async function openHeif(b, view) {
   const rgba = await new Promise((ok, no) => im.display({ data: new Uint8ClampedArray(W * H * 4), width: W, height: H },
     (d) => (d ? ok(d.data) : no(new Error("This HEIC file could not be decoded.")))));
   im.free?.();
-  return fromPixels(W, H, rgba, view, false);
+  return { W, H, rgba };
+}
+// any other image as the browser decodes it, RGBA
+async function browserPixels(b) {
+  const bitmap = await createImageBitmap(new Blob([b])), W = bitmap.width, H = bitmap.height;
+  const cv = new OffscreenCanvas(W, H), ctx = cv.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(bitmap, 0, 0);
+  const rgba = ctx.getImageData(0, 0, W, H).data;
+  bitmap.close?.();
+  return { W, H, rgba };
+}
+
+// the image in bytes as split.js's reader gives it, read by the decoder the viewers use for it: a TIFF's own
+// planes, a photo's red, green and blue
+export async function readImage(bytes) {
+  const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  if (isTiff(b)) return readTiff(b);
+  const { W, H, rgba } = await browserPixels(b), n = W * H, planes = [0, 1, 2].map(() => new Uint8Array(n));
+  for (let i = 0; i < n; i++) for (let j = 0; j < 3; j++) planes[j][i] = rgba[4 * i + j];
+  return fromPlanes(W, H, planes);
 }
 
 // Where each channel's black and white points sit, as [black, white] steps of its 256 between the 0.5% and upper

@@ -90,3 +90,25 @@ def test_a_stacks_preview_opens_in_3d(tmp_path):
     meta, _, _ = open_image(tmp_path, str(tiffs / 'z.preview.tif'))
     assert (meta['Z'], meta['W'], meta['H']) == (24, 83, 96), meta
     assert meta['spacing'] == pytest.approx(0.5 * 40 / 24), meta
+
+
+@pytest.mark.skipif(not NODE, reason='node missing')
+def test_a_heic_photo_gets_a_preview_whatever_its_name_says(tmp_path):
+    """A phone's HEIC photo, under its own name and under a JPEG's, is read as the viewer reads it, so its preview is
+    the one the same pixels make as a TIFF."""
+    import pillow_heif
+    from PIL import Image
+    images = tmp_path / 'images'
+    images.mkdir()
+    rng = np.random.default_rng(3)
+    a = np.repeat(np.repeat(rng.integers(0, 256, (12, 16, 3)), 8, 0), 8, 1).astype(np.uint8)
+    pillow_heif.from_pillow(Image.fromarray(a)).save(images / 'a photo.heic', quality=-1)
+    shutil.copy(images / 'a photo.heic', images / 'b photo.jpg')
+    decoded = np.asarray(pillow_heif.open_heif(images / 'a photo.heic').to_pillow().convert('RGB'))
+    tifffile.imwrite(images / 'c same pixels.tif', decoded.transpose(2, 0, 1).copy(), imagej=True, metadata={'axes': 'CYX'})
+    assert write(images, tmp_path / 'p.tiff')['made'] == ['a photo.heic', 'b photo.jpg', 'c same pixels.tif']
+    index, pages = read(tmp_path / 'p.tiff')
+    heic, jpg, tif = (pages[e['page']] for e in index['images'])
+    assert heic.shape == tif.shape == (96, 128, 3)
+    assert np.array_equal(heic, jpg)
+    assert np.abs(heic.astype(int) - tif.astype(int)).mean() < 2

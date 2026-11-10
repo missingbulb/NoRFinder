@@ -7,7 +7,8 @@
 "use strict";
 import { PREVIEWS } from "./previews.js";
 import { makePreview, buildPreviews } from "./previews_writer.js";
-import { readTiff, fromPlanes, writeTiff } from "./split.js";
+import { writeTiff } from "./split.js";
+import { readImage } from "./image_open.js";
 import { CONNECTION, holdOwns } from "./offline.js";
 import { asLoaded } from "./as_loaded.js";
 import { accepts } from "./accepts.js";
@@ -377,15 +378,6 @@ export function dataMode(ctx) {
   }
   $("#curate-close").onclick = () => $("#curate-dlg").close();
 
-  // the image's planes as a reader gives them
-  async function sourceOf(name, bytes) {
-    if (/\.tiff?$/i.test(name)) return readTiff(new Uint8Array(bytes));
-    const bmp = await createImageBitmap(new Blob([bytes])), c = new OffscreenCanvas(bmp.width, bmp.height), g = c.getContext("2d");
-    g.drawImage(bmp, 0, 0);
-    const d = g.getImageData(0, 0, bmp.width, bmp.height).data, n = bmp.width * bmp.height, planes = [0, 1, 2].map(() => new Uint8Array(n));
-    for (let i = 0; i < n; i++) for (let j = 0; j < 3; j++) planes[j][i] = d[4 * i + j];
-    return fromPlanes(bmp.width, bmp.height, planes);
-  }
   $("#update-previews").onclick = () => ctx.working($("#update-previews"), async () => {
     const n = nodes.get(chosen?.id);
     if (!n) return;
@@ -399,7 +391,7 @@ export function dataMode(ctx) {
       for (const [k, s] of todo.entries()) {
         say(`Making previews: ${k + 1} of ${todo.length}, ${s.f.name}…`);
         const got = (await ctx.savedImage(s.f.id)) || (await remote.file(s.f.id, s.f.name));
-        const src = await sourceOf(s.f.name, got.bytes), spacing = src.ij?.spacing ? +src.ij.spacing : null;
+        const src = await readImage(got.bytes), spacing = src.ij?.spacing ? +src.ij.spacing : null;
         made.push({ name: s.f.name, sha256: await ctx.sha256(got.bytes), ...(await makePreview(src, spacing)) });
       }
       say(`Saving the previews to ${remote.label}…`);
