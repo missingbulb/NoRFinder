@@ -1,4 +1,4 @@
-# Makes rauntruth-previews.tiff for a Drive folder from its images, TIFFs and the pictures Pillow opens (req/shell/drive/previews): run it
+# Makes rauntruth-previews.tiff for a Drive folder from its TIFFs, the photos left to Drive's own picture (req/shell/drive/previews): run it
 # where the folder's images are, then upload the file to the study root's Previews folder as <the folder's Drive id>.tiff
 # (beside the images, for a study with no root). Each page is deflate-compressed.
 #   python3 dev/tools/previews/make_previews.py IMAGES_DIR [OUT_DIR]   (OUT_DIR defaults to IMAGES_DIR)
@@ -7,7 +7,7 @@
 # The first page's description is the index: {version, images: [{name, sha256, page, kind, ...}]}.
 import hashlib, json, os, sys
 import numpy as np, tifffile
-from PIL import Image, UnidentifiedImageError
+from PIL import Image
 
 FLAT, VOL, SLICES = 256, 96, 24
 COLOURS = {1: [(1, 1, 1)], 2: [(0, 1, 0), (1, 0, 1)], 3: [(1, 0, 0), (0, 1, 0), (0, 0, 1)]}
@@ -31,10 +31,6 @@ def shrink(plane, side):
 
 def read(path):
     """(array as Z, C, Y, X, ImageJ metadata or {})."""
-    if not path.lower().endswith((".tif", ".tiff")):
-        with Image.open(path) as im:
-            a = np.asarray(im.convert("RGB")).transpose(2, 0, 1)[None]
-        return a, {}
     with tifffile.TiffFile(path) as t:
         s, ij = t.series[0], t.imagej_metadata or {}
         a, axes = s.asarray(), s.axes
@@ -91,17 +87,20 @@ def main(src, out=None):
     index, pages = {"version": 1, "images": []}, []
     for name in sorted(os.listdir(src)):
         p = os.path.join(src, name)
-        if name.startswith("rauntruth-previews") or os.path.isdir(p):
+        if name.startswith("rauntruth-previews") or os.path.isdir(p) or not name.lower().endswith((".tif", ".tiff")):
             continue
         try:
             meta, ps = preview(p)
-        except (UnidentifiedImageError, tifffile.TiffFileError):  # not an image
+        except tifffile.TiffFileError:  # not an image
             continue
         with open(p, "rb") as f:
             sha = hashlib.sha256(f.read()).hexdigest()
         index["images"].append({"name": name, "sha256": sha, "page": len(pages), "pages": len(ps), **meta})
         pages += ps
         print(f"  {name}: {meta['kind']}, {len(ps)} page(s)", flush=True)
+    if not pages:
+        print(f"{src}: no TIFFs, so no previews file")
+        return
     path = os.path.join(out, "rauntruth-previews.tiff")
     write(path, index, pages)
     print(f"{path}: {len(index['images'])} images, {os.path.getsize(path) / 1024:.0f} KB")

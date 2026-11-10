@@ -1,8 +1,9 @@
-// A remote folder's rauntruth-previews.tiff (req/shell/drive/previews): its index, the first page's description, and its
+// A remote folder's rauntruth-previews.tiff (req/shell/drive/previews), its TIFFs' previews: its index, the first page's description, and its
 // pages, each deflate-compressed with the horizontal predictor; a flat image's preview is a colour picture of
 // its page, a stack's a mini-volume drawn by drawVolume.
 "use strict";
 import { drawVolume, TURN } from "./stack.js";
+import { isTiff } from "./accepts.js";
 
 export const PREVIEWS = "rauntruth-previews.tiff";
 
@@ -43,8 +44,9 @@ export function readPreviews(buf) {
   };
   return {
     index,
-    // the image's entry when the file was made from the bytes the store has for it now
-    entry: (name, sha) => index.images.find((e) => e.name === name && sha && e.sha256 === sha) || null,
+    // the TIFF's entry when the file was made from the bytes the store has for it now; a photo has none, the
+    // remote store picturing it, whatever an older file holds
+    entry: (name, sha) => (isTiff(name) && index.images.find((e) => e.name === name && sha && e.sha256 === sha)) || null,
     // a data URL of a flat image's picture, or of a stack's still
     async picture(e) {
       if (e.kind === "stack") return drawVolume(await this.volume(e), TURN).toDataURL("image/jpeg", 0.85);

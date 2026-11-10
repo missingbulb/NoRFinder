@@ -21,6 +21,7 @@ import { viewer3d } from "./viewer3d.js";
 import { pageState } from "./page_state.js";
 import { shape, stackPicture, holds, drawVolume, TURN } from "./stack.js";
 import { PREVIEWS, readPreviews } from "./previews.js";
+import { isTiff } from "./accepts.js";
 import { account, SIGNED_IN, SIGNED_IN_LABEL } from "./account.js";
 import { remote } from "./drive.js";
 import { settingsDialog } from "./settings_dialog.js";
@@ -1324,7 +1325,7 @@ function remoteDialog() {
       if (e) return fromPreviews(pic, e, pv);
       const url = made.get(f.id) || readJSON(SAVED_THUMB + f.id, "") || f.preview;
       if (url) put(pic, url);
-      const holds = /\.tiff?$/i.test(f.name) && remote.ready && !offlineCopy.offline() && !(f.id in readJSON(HOLDS)), thumb = !url && (await ready).has(f.id);
+      const holds = isTiff(f.name) && remote.ready && !offlineCopy.offline() && !(f.id in readJSON(HOLDS)), thumb = !url && (await ready).has(f.id);
       if (of !== epoch || !(thumb || holds)) return;
       rows.push({ at, row: pic.closest(".item"), f, thumb, holds, asked: false, done: false }); later();
     };

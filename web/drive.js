@@ -8,7 +8,7 @@
 // marked as its own, and changes or trashes only the files so marked. Reading keeps nothing: a file goes to the study
 // like one loaded from the computer.
 "use strict";
-import { accepts } from "./accepts.js";
+import { accepts, isTiff } from "./accepts.js";
 
 const GOOGLE = (window.NOR_CONFIG && window.NOR_CONFIG.google) || {};
 // what a study's image from Drive is, as its source records it on this device and in the documents it writes
@@ -140,6 +140,7 @@ export const remote = (() => {
   // names, a study's files.accept (".tif,.tiff,.png"); size in bytes (null for a folder), created a Date, preview the link of Drive's own small
   // picture of the file or null, served for every image but a TIFF (Drive draws a multi-channel TIFF grey, and a TIFF
   // may be a stack, which the page pictures in 3D), sha its SHA-256 or null when Drive gives none
+  const driveThumb = (f) => (f.thumbnailLink && !isTiff(f.name) ? f.thumbnailLink : null);
   async function list(id, accept) {
     need();
     const opens = accepts(accept);
@@ -149,21 +150,22 @@ export const remote = (() => {
     return (await r.json()).files
       .map((f) => ({ id: f.id, name: f.name, folder: f.mimeType === "application/vnd.google-apps.folder",
         size: f.size == null ? null : +f.size, created: f.createdTime ? new Date(f.createdTime) : null,
-        preview: f.thumbnailLink && !/\.tiff?$/i.test(f.name) ? f.thumbnailLink : null, sha: f.sha256Checksum || null }))
+        preview: driveThumb(f), sha: f.sha256Checksum || null }))
       .filter((f) => f.folder || opens(f.name));
   }
 
-  // [{id, name, folder, size, sha, modified, properties}] every file and folder in a folder, whatever its kind,
-  // every page of them; modified Drive's time of its last change, properties its public ones
-  async function all(id) {
+  // [{id, name, folder, size, sha, modified, properties, preview}] every file and folder in a folder, whatever its kind,
+  // every page of them; modified Drive's time of its last change, properties its public ones; preview, with pictures,
+  // as list gives it, else null
+  async function all(id, { pictures = false } = {}) {
     need();
     const q = encodeURIComponent(`'${id}' in parents and trashed = false`), out = [];
     for (let page = ""; ; ) {
-      const r = await get(`${API}?q=${q}&fields=nextPageToken,files(id,name,mimeType,size,sha256Checksum,modifiedTime,properties)&pageSize=1000&orderBy=folder,name${page && "&pageToken=" + page}`);
+      const r = await get(`${API}?q=${q}&fields=nextPageToken,files(id,name,mimeType,size,sha256Checksum,modifiedTime,properties${pictures ? ",thumbnailLink" : ""})&pageSize=1000&orderBy=folder,name${page && "&pageToken=" + page}`);
       if (!r.ok) throw refused(r, "folder");
       const got = await r.json();
       out.push(...got.files.map((f) => ({ id: f.id, name: f.name, folder: f.mimeType === "application/vnd.google-apps.folder",
-        size: f.size == null ? null : +f.size, sha: f.sha256Checksum || null, modified: f.modifiedTime || null, properties: f.properties || {} })));
+        size: f.size == null ? null : +f.size, sha: f.sha256Checksum || null, modified: f.modifiedTime || null, properties: f.properties || {}, preview: driveThumb(f) })));
       if (!(page = got.nextPageToken)) return out;
     }
   }

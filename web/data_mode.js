@@ -11,7 +11,7 @@ import { writeTiff } from "./split.js";
 import { readImage } from "./image_open.js";
 import { CONNECTION, holdOwns } from "./offline.js";
 import { asLoaded } from "./as_loaded.js";
-import { accepts } from "./accepts.js";
+import { accepts, isTiff } from "./accepts.js";
 import { replacedBy, stemOf } from "./edit.js";
 import * as tf from "./truth_folders.js";
 import { setup as setUp, switchMode, previewsFolder, previewsName } from "./study_root.js";
@@ -80,7 +80,7 @@ export function dataMode(ctx) {
         const at = queue.shift();
         if (nodes.has(at.id)) continue;
         let all;
-        try { all = await remote.all(at.id); } catch (e) { if (of !== epoch) return; all = []; at.error = e.message || String(e); }
+        try { all = await remote.all(at.id, { pictures: true }); } catch (e) { if (of !== epoch) return; all = []; at.error = e.message || String(e); }
         if (of !== epoch) return;
         const node = { id: at.id, name: at.name || "Study folder", parent: at.parent, error: at.error || null, files: all.filter((f) => !f.folder),
           folders: all.filter((f) => f.folder && !isTruth(f.id)).map((f) => f.id), access: null, el: null };
@@ -240,22 +240,25 @@ export function dataMode(ctx) {
   // fresh: read past the minute's copy, as choosing a folder does
   const previewsFile = (n, fresh = false) => place.previewsOf(n.id, { fresh });
   const previewsOf = async (n, fresh = false) => { const f = await previewsFile(n, fresh); return f ? ctx.folderPreviews(n, f) : null; };
+  // a TIFF's from the previews file, a photo's the store's own
   async function picture(pic, pv, f) {
     const e = pv?.entry(f.name, f.sha);
-    let src = null;
+    let src = isTiff(f.name) ? null : f.preview;
     if (e) try { src = await pv.picture(e); } catch (err) { console.warn(`${f.name}'s preview could not be read:`, err); }
     if (!src) { pic.classList.add("none"); return; }
     const i = new Image(); i.alt = ""; i.src = src; pic.replaceChildren(i);
   }
-  // each image's state in the folder: {f, entry, stale, truth, pending, rejected, marker (its Needs GT marker's id)}, its ground truth as gts
-  // (truth_folders.js status) has it
+  // each image's state in the folder: {f, entry, shown, stale, truth, pending, rejected, marker (its Needs GT marker's id)}, shown
+  // whether it has a preview, its entry's or the store's, its ground truth as gts (truth_folders.js status) has it
   function states(n, pv, gts) {
     return imagesOf(n).map((f) => {
       const entry = pv?.entry(f.name, f.sha) || null, g = (f.sha && gts.get(tf.subfolderName(f.name, f.sha))) || {};
-      return { f, entry, stale: !entry && !!pv?.index.images.some((e) => e.name === f.name),
+      return { f, entry, shown: !!entry || (!isTiff(f.name) && !!f.preview), stale: !entry && isTiff(f.name) && !!pv?.index.images.some((e) => e.name === f.name),
         truth: !!g.curated, pending: !!g.pending, rejected: !!g.rejected, marker: g.needed || null };
     });
   }
+  // a TIFF that Update previews makes a preview for
+  const unpreviewed = (s) => isTiff(s.f.name) && !s.entry;
   // the ground truth of every image either folder holds, an empty Map while the study names none
   async function truthStatus() {
     if (!gt.curated) return new Map();
@@ -272,23 +275,23 @@ export function dataMode(ctx) {
     msg($("#folder-msg"), "");
     const of = epoch;
     // read again: the folder may have changed in the store since
-    try { n.files = (await remote.all(n.id)).filter((f) => !f.folder); } catch (e) { msg($("#folder-msg"), e.message || String(e), true); }
+    try { n.files = (await remote.all(n.id, { pictures: true })).filter((f) => !f.folder); } catch (e) { msg($("#folder-msg"), e.message || String(e), true); }
     if (of !== epoch || chosen?.id !== n.id) return;
     if (n.el) n.el.querySelector(".tree-images").replaceChildren();
     drawTree();
     const [pv, gts] = await Promise.all([previewsOf(n, true), truthStatus()]);
     if (of !== epoch || chosen?.id !== n.id) return;
     const all = states(n, pv, gts), count = (p) => all.filter(p).length;
-    const rows = [["images", "Images", all.length], ["previews", "With a preview", count((s) => s.entry)], ["stale", "Preview out of date", count((s) => s.stale)],
+    const rows = [["images", "Images", all.length], ["previews", "With a preview", count((s) => s.shown)], ["stale", "Preview out of date", count((s) => s.stale)],
       ["truth", "With ground truth", count((s) => s.truth)], ["pending", "Ground truth pending", count((s) => s.pending)], ["missing", "Marked as needing it", count((s) => s.marker)]];
     if (gt.same) msg($("#folder-msg"), "This study's submissions are its curated ground truth: whatever a tagger submits is used at once.");
     $("#folder-summary").replaceChildren(...rows.flatMap(([k, label, v]) => {
       const dt = Object.assign(document.createElement("dt"), { textContent: label }), dd = Object.assign(document.createElement("dd"), { textContent: String(v) });
       dd.dataset.k = k; return [dt, dd];
     }));
-    const todo = count((s) => !s.entry);
+    const todo = count(unpreviewed);
     $("#update-previews").disabled = !todo || n.access !== "write";
-    $("#update-previews").title = !todo ? "Every image has an up-to-date preview" : n.access !== "write" ? ACCESS[n.access || "unknown"][1] : `Make the ${todo} missing or out-of-date previews`;
+    $("#update-previews").title = !todo ? `Every TIFF has an up-to-date preview; ${remote.label} pictures the photos` : n.access !== "write" ? ACCESS[n.access || "unknown"][1] : `Make the ${todo} missing or out-of-date previews`;
     drawItems(n, all, pv);
   }
 
@@ -299,7 +302,7 @@ export function dataMode(ctx) {
       const cell = document.createElement("div");
       cell.className = "cell"; cell.dataset.id = s.f.id; cell.tabIndex = 0;
       if (k < 60) cell.style.viewTransitionName = "cell-" + k;
-      const tag = s.entry ? "" : s.stale ? "Preview out of date" : "No preview";
+      const tag = s.shown ? "" : s.stale ? "Preview out of date" : "No preview";
       cell.innerHTML = `<span class="pic"></span><span class="name">${esc(s.f.name)}</span><span class="meta">${esc(s.f.size == null ? "" : sizeText(s.f.size))}</span>` +
         `<span class="tags">${tag ? `<span class="tag warn">${tag}</span>` : ""}${s.truth ? '<span class="tag yes">Ground truth</span>' : ""}` +
         `${s.pending ? '<span class="tag pending">GT pending</span>' : ""}${s.rejected ? '<span class="tag warn">GT rejected</span>' : ""}</span>` +
@@ -395,7 +398,7 @@ export function dataMode(ctx) {
       if (f && !(await sd.ours(f.id))) return say(`This folder's previews file, ${f.name} in the study's Previews folder, was not made by this page, so the page leaves it alone. Delete it in ${remote.label} to let the page make and update it.`, true);
       const pv = f ? await ctx.folderPreviews(n, f) : null, all = states(n, pv, new Map()), kept = [], made = [];
       for (const s of all) if (s.entry) kept.push({ entry: s.entry, pages: await pv.pages(s.entry) });
-      const todo = all.filter((s) => !s.entry);
+      const todo = all.filter(unpreviewed);
       for (const [k, s] of todo.entries()) {
         say(`Making previews: ${k + 1} of ${todo.length}, ${s.f.name}…`);
         const got = (await ctx.savedImage(s.f.id)) || (await remote.file(s.f.id, s.f.name));
@@ -420,7 +423,7 @@ export function dataMode(ctx) {
     chosen = { kind: "image", id: f.id, folder: n.id }; root.dataset.sel = "image"; ctx.relabel();
     drawTree(); ctx.showFolder(false);
     const pv = await previewsOf(n), e = pv?.entry(f.name, f.sha), source = remote.source(f.id, { name: f.name, folder: n.id });
-    if (!e) { ctx.status(`${f.name} has no preview yet: opening the image itself.`); return ctx.loadOriginal(source); }
+    if (!e) { ctx.status(isTiff(f.name) ? `${f.name} has no preview yet: opening the image itself.` : `Opening ${f.name} itself.`); return ctx.loadOriginal(source); }
     let pages;
     try { pages = await pv.pages(e); } catch (err) {
       console.warn(`${f.name}'s preview could not be read:`, err);
