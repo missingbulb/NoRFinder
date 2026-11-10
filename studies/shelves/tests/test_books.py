@@ -38,6 +38,13 @@ def test_every_single_2d_format_opens_as_rgb(tmp_path, ext):
     assert shelves.Session(str(path)).rgb.shape == (240, 320, 3)
 
 
+def test_an_iphone_heic_opens_as_rgb(tmp_path):
+    import pillow_heif
+    pillow_heif.from_pillow(Image.fromarray(photo())).save(tmp_path / 'shelf.heic', quality=-1)
+    rgb = shelves.Session(str(tmp_path / 'shelf.heic')).rgb
+    assert rgb.shape == (240, 320, 3) and np.abs(rgb.astype(int) - photo()).mean() < 8
+
+
 def test_a_grey_16_bit_tiff_is_stretched_to_grey(tmp_path):
     a = np.linspace(1000, 3000, 320 * 240).reshape(240, 320).astype(np.uint16)
     Image.fromarray(a).save(tmp_path / 'grey.tif')
@@ -74,6 +81,14 @@ def test_straightening_an_upright_box_is_the_photo_cut_out():
     crop = books.straighten(a, [[40, 50], [90, 50], [90, 200], [40, 200]])
     assert crop.shape == (150, 50, 4) and (crop[..., 3] == 255).all()
     assert np.array_equal(crop[..., :3], a[50:200, 40:90])
+
+
+def test_a_box_reaching_past_the_photo_is_black_beyond_its_edge():
+    """A book cut off by the photo's edge keeps four corners, the ones the camera missed outside the photo."""
+    a = photo()
+    crop = books.straighten(a, [[-30, 50], [40, 50], [40, 200], [-30, 200]])
+    assert crop.shape == (150, 70, 4)
+    assert np.array_equal(crop[:, 30:, :3], a[50:200, 0:40]) and (crop[:, :30, :3] == 0).all()
 
 
 def test_straightening_a_tilted_box_sets_it_upright():

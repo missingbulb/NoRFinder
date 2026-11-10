@@ -44,7 +44,7 @@ export function mount(shell) {
   $("#vm-run").onclick = () => {
     const a = chosen(), im = shell.page.get("image"); if (!a || !im) return;
     running = a.key; canRun();
-    shell.busy(true, `Drawing the vessel model with ${a.title}…`, "scan");
+    shell.busy(true, `Drawing the vessel model with ${a.title}…`);
     shell.call("extract", { algorithm: a.key, source: shell.state.fileName, z_step: V.S.zsFrom ? V.S.zs : null });
   };
 

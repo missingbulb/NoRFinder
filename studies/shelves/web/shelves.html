@@ -11,7 +11,7 @@
   </div>
 </template>
 <template data-slot="tasks">
-  <p id="bs-tasks" class="hint">Check each book the finder found, then draw any it missed.</p>
+  <p id="bs-tasks" class="hint">Check each book the finder found, then add any it missed.</p>
 </template>
 <template data-slot="summary">
   <div id="bs-titles">
@@ -21,4 +21,9 @@
 </template>
 <template data-slot="over-image">
   <p id="bs-draw-hint" class="bs-hint" hidden>Click the book's four corners. Esc stops.</p>
+  <div id="bs-menu" class="bs-menu" role="menu" hidden>
+    <button type="button" role="menuitem" data-do="add">Add a book here</button>
+    <button type="button" role="menuitem" data-do="flip">Flip upside down</button>
+    <button type="button" role="menuitem" data-do="delete">Delete this book</button>
+  </div>
 </template>

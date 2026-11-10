@@ -653,7 +653,9 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Set by the owner on 2026-11-07. The shell reads a TIFF (ImageJ hyperstacks, OME-TIFFs in one file and plain
-  TIFFs; uncompressed, LZW, Deflate or PackBits) and any image the browser decodes (PNG, JPEG), and opens it in
+  TIFFs; uncompressed, LZW, Deflate or PackBits), a HEIC (set by the owner on 2026-11-10: by libheif's
+  WebAssembly build, fetched from jsDelivr at a pinned version only when a HEIC is first opened, in every browser)
+  and any image the browser decodes (PNG, JPEG), and opens it in
   the study's viewer: its channels in the file's own order, each under the name the file gives it and in the
   colour the file displays it in, a z-stack flattened (each pixel the brightest of every slice) and slice by
   slice. Each channel's contrast is set once over the whole stack, never per slice, so signal that fades with
@@ -1510,7 +1512,9 @@ nobody has decided: what the page does there is not a requirement yet.
 
   While an image is read, the page shows a spinner and the elapsed time; while a study's
   action runs (for NoR, a finder), a photocopier's light sweeps back and forth over the image, with
-  what it is doing and the elapsed time below.
+  what it is doing and the elapsed time below. Set by the owner on 2026-11-10, the light is the shell's: a
+  study says only that it works and what it is doing, and over an image the shell sweeps it, in every study
+  alike. Test: `web-tests/test_status_bar_page.py`, `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
 ## `req/checks` The repo's checks

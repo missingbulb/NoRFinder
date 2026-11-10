@@ -60,7 +60,7 @@ const server = http.createServer((q, r) => {
   if (u === "/web/image_open.js") {
     r.writeHead(200, { "content-type": "text/javascript" });
     return r.end(`import * as real from "./image_open.real.js"; export * from "./image_open.real.js";
-export const openImage = async (...a) => { await new Promise((ok) => setTimeout(ok, ${LATE})); return real.openImage(...a); };`);
+export const openImage = async (...a) => { await new Promise((ok) => setTimeout(ok, ${LATE})); return real.openImage(...a); };`); // waits on purpose: it stands in for a slow computer reading the image
   }
   const f = u === "/web/image_open.real.js" ? path.join(repo, "web", "image_open.js")
     : u.startsWith("/web/answers/") ? path.join(answers, u.slice("/web/answers/".length)) : repoFile(repo, u);

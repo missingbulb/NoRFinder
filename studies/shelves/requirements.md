@@ -35,11 +35,14 @@ read for a title matcher; matching the titles is not part of it.
   `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
-- `req/shelves/books/open` Load takes any single 2D photo: JPEG, PNG, WebP, BMP or a one-page TIFF.
+- `req/shelves/books/open` Load takes any single 2D photo: JPEG, PNG, WebP, BMP, a one-page TIFF or HEIC.
   <details>
 
   The photo is shown in its own colours, turned as the camera said it was held (its EXIF
-  orientation); a grey or 16-bit image is shown grey. Test: `studies/shelves/tests/test_books.py`.
+  orientation); a grey or 16-bit image is shown grey. Set by the owner on 2026-11-10, a phone's HEIC photo is
+  listed and opened too: the shell decodes it for the view (`req/shell/image/open`), and the study's Python reads
+  the file itself, through Pillow's HEIF plugin, never what the view decoded (`req/shell/python/file-bytes`). Test:
+  `studies/shelves/tests/test_books.py`, `web-tests/test_image_open.py`.
   </details>
 
 - `req/shelves/matcher/export` Download for the matcher writes each book's text, view, corners and how sure the reading is.
@@ -66,20 +69,41 @@ read for a title matcher; matching the titles is not part of it.
   the browser. Test: `studies/shelves/tests/test_reading.py`, `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
-- `req/shelves/truth/task` One ground-truth task: each book in turn has its corners, view and title set right, then the missed books are drawn in.
+- `req/shelves/truth/task` One ground-truth task: each book in turn has its corners, turn and title set right, then the missed books are added.
   <details>
 
   Set by the owner on 2026-11-04: boxing and reading are made into ground truth together, as
   NoR's finding and measuring are. A Ground Truth Tagger finds and reads the books, then works down
   the Ground Truth Tasks box: Books ("12/40 Books"), one book at a time, its straightened picture across
-  the box, Spine or Cover, its title in a text box filled with what the reader read, and Right or
-  Not a book under it, with Back and Skip on its row; its corners drag on the photo, and the
-  picture and the reading follow them. Then Missed books: Draw a book takes four clicks on the
-  photo, its corners, and the book is read and reviewed as the others; None missed ends the task.
-  Submit ground truth is last, and saves `<image>_books_gt.json`, each book with where it came from
-  (found or missed), its verdict, its corners, view and text, and for a found one what the finder
-  and the reader proposed. Summary is not shown while ground truth is made. Test:
-  `studies/shelves/tests/test_shelves_page.py`.
+  the box, Flip and Turn 90° beside Hebrew, English and Both, its title in a text box filled with what the
+  reader read, and Right or Not a book under it, with Back and Skip on its row; its corners drag on the photo,
+  and the picture and the reading follow them. Then Missed books: a book is added from the photo's right-click
+  menu, or drawn with Draw a book, four clicks on the photo, its corners, and is read and reviewed as the others;
+  None missed ends the task. Submit ground truth is last, and saves `<image>_books_gt.json`, each book with where
+  it came from (found or missed), its verdict, its corners, its turn and text, and for a found one what the
+  finder and the reader proposed. Summary is not shown while ground truth is made.
+
+  Set by the owner on 2026-11-10:
+  - The photo is never covered while a book is straightened and read again: the picture is drawn by the page
+    from the photo it shows, and follows a corner while it is dragged; the reading runs behind it, the study's
+    Python straightening the book from the photo's file (`req/shell/python/file-bytes`), and a later reading of
+    the same book replaces one still under way.
+  - A corner may be dragged past the photo's edge, for a book the camera cut off, so that every book keeps four
+    corners; the picture is black where the box leaves the photo.
+  - The picture is shown upright at the turn the reader read it at, and Flip (half a turn) and Turn 90° set it
+    right; the book is then read again at that turn alone. Hebrew, English and Both say which language the title
+    is in, Both at first, and read it again in that language alone (PP-OCR reads English whatever is chosen). The
+    file keeps the turn (quarter turns clockwise from the picture's first corner at its top left), not the
+    language.
+  - The task asks no spine or cover: the box's shape and the finder's search already tell them apart, and
+    nothing reads the label; the matcher's file keeps the finder's own (`req/shelves/matcher/export`).
+  - Right-clicking the photo opens a menu: off every book, Add a book here, which boxes an upright book centred
+    at the click, as wide and as tall as the median book kept so far, its corners then dragged into place; on a
+    book, Flip upside down and Delete this book, which takes an added book away and marks a found one not a
+    book (Back undoes it).
+  - Each book's outline keeps its width on the screen at any zoom, thick enough to see on any photo.
+
+  Test: `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
 - `req/shelves/visibility` The study is shown to its owner's account alone.

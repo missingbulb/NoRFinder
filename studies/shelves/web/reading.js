@@ -14,6 +14,8 @@ export const READERS = {
   lines: "Paddle lines + Tesseract",
   ppocr: "PP-OCR (English only)",
 };
+// the languages a book may be read in, by Tesseract's names: both, or the one the tagger says the title is in
+export const LANGS = { both: ["heb", "eng"], heb: ["heb"], eng: ["eng"] };
 export const MODELS = { find: "ch_PP-OCRv4_det_infer.onnx", read: "ch_PP-OCRv4_rec_infer.onnx", keys: "ppocr_keys_v1.txt" };
 
 // k quarter turns clockwise
@@ -50,8 +52,10 @@ const best = (tries) => tries.reduce((a, b) => (b.confidence > a.confidence ? b 
 const tidy = (t) => t.replace(/\s+/g, " ").trim();
 
 export function reader(engines) {
-  let tess = null, ort = null, find = null, read = null, keys = null;
-  const tesseract = () => (tess ||= engines.Tesseract().then((T) => T.createWorker(["heb", "eng"], 1, { ...engines.tesseract, langPath: engines.langPath, cacheMethod: "none", gzip: true })
+  let ort = null, find = null, read = null, keys = null;
+  const tess = {};
+  // a worker for each set of languages, made the first time a book is read in it
+  const tesseract = (lang) => (tess[lang] ||= engines.Tesseract().then((T) => T.createWorker(LANGS[lang], 1, { ...engines.tesseract, langPath: engines.langPath, cacheMethod: "none", gzip: true })
     .then(async (w) => { await w.setParameters({ preserve_interword_spaces: "1" }); return w; })));
   const session = (name) => Promise.all([ort, engines.model(name)]).then(([o, bytes]) => o.InferenceSession.create(bytes, { executionProviders: ["wasm"] }));
   const paddle = async () => {
@@ -61,8 +65,8 @@ export function reader(engines) {
     return { ort: await ort, find: await find, read: await read, keys: await keys };
   };
 
-  async function tesseractAt(im, turn) {
-    const w = await tesseract(), { data } = await w.recognize(bmp(rotate(im, turn)));
+  async function tesseractAt(im, turn, lang) {
+    const w = await tesseract(lang), { data } = await w.recognize(bmp(rotate(im, turn)));
     return { text: tidy(data.text), confidence: data.confidence / 100, turn };
   }
 
@@ -122,14 +126,15 @@ export function reader(engines) {
     return { text: tidy(text), confidence: n ? sure / n : 0 };
   }
 
-  // each line upright: the turn of the two that reads with more certainty
-  async function byLines(im, readLine) {
+  // each line upright: the turn of the two that reads with more certainty, or the one turn the book is known to be
+  // upright at
+  async function byLines(im, readLine, at) {
     const found = [];
-    for (const turn of turns(im)) {
+    for (const turn of at ?? turns(im)) {
       const up = rotate(im, turn), parts = [];
       for (const [x0, y0, x1, y1] of await lines(up)) {
         const line = cut(up, x0, y0, x1, y1);
-        parts.push(best(await Promise.all([0, 2].map(async (t) => ({ ...(await readLine(rotate(line, t))), t })))));
+        parts.push(best(await Promise.all((at ? [0] : [0, 2]).map(async (t) => ({ ...(await readLine(rotate(line, t))), t })))));
       }
       const chars = parts.reduce((a, p) => a + p.text.length, 0);
       found.push({ text: tidy(parts.map((p) => p.text).join(" ")), turn, lines: parts.length,
@@ -139,13 +144,16 @@ export function reader(engines) {
   }
 
   return {
-    // the crop's text by one reader: {text, confidence (0 to 1), turn (quarter turns clockwise that set it upright)}
-    async read(im, how) {
-      if (how === "tesseract") return best(await Promise.all(turns(im).map((t) => tesseractAt(im, t))));
-      if (how === "lines") return byLines(im, async (line) => { const r = await tesseractAt(line, 0); return { text: r.text, confidence: r.confidence }; });
-      if (how === "ppocr") return byLines(im, ppocrLine);
+    // the crop's text by one reader: {text, confidence (0 to 1), turn (quarter turns clockwise that set it upright)};
+    // given a turn, it is read upright at that turn alone, and given a lang (a key of LANGS), in those languages alone
+    // (PP-OCR reads English whatever it is given)
+    async read(im, how, { turn = null, lang = "both" } = {}) {
+      const at = turn == null ? null : [turn];
+      if (how === "tesseract") return best(await Promise.all((at ?? turns(im)).map((t) => tesseractAt(im, t, lang))));
+      if (how === "lines") return byLines(im, async (line) => { const r = await tesseractAt(line, 0, lang); return { text: r.text, confidence: r.confidence }; }, at);
+      if (how === "ppocr") return byLines(im, ppocrLine, at);
       throw new Error(`no reader "${how}"`);
     },
-    async close() { if (tess) await (await tess).terminate(); tess = null; },
+    async close() { for (const k in tess) { await (await tess[k]).terminate(); delete tess[k]; } },
   };
 }

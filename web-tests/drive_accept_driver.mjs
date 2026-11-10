@@ -80,8 +80,8 @@ async function listed(id, paste) {
 }
 
 const shelves = await listed("shelves", false);
-check(JSON.stringify(shelves) === JSON.stringify(["a.jpg", "b.JPEG", "c.webp", "d.bmp", "e.png", "f.tif", "sub"]),
-  "Bookshelf Reader lists its subfolders and every photo it opens: JPEG, WebP, BMP, PNG and TIFF, no HEIC or PDF", shelves);
+check(JSON.stringify(shelves) === JSON.stringify(["a.jpg", "b.JPEG", "c.webp", "d.bmp", "e.png", "f.tif", "g.heic", "sub"]),
+  "Bookshelf Reader lists its subfolders and every photo it opens: JPEG, WebP, BMP, PNG, TIFF and HEIC, no PDF", shelves);
 const viewer = await listed("viewer", true);
 check(JSON.stringify(viewer) === JSON.stringify(["e.png", "f.tif", "sub"]), "the Image Viewer lists its subfolders, TIFF and PNG alone", viewer);
 

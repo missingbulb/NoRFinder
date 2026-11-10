@@ -173,7 +173,7 @@ export function mount(shell) {
   function detect() {
     const finder = $("#finder").value, overrides = detectOverrides(finder);
     st.running = runKey(); st.runOverrides = overrides; $("#find").disabled = true;
-    busy(true, "Finding candidates…", "scan");
+    busy(true, "Finding candidates…");
     shell.call("detect", { finder, overrides });
   }
 
