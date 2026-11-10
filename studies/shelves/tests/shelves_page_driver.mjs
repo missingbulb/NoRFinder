@@ -230,6 +230,13 @@ try {
   await page.waitForFunction(() => window.$ && /^Ready/.test($("#status").textContent));
   await load(page);
   check(await page.evaluate(() => !$("#gt-continue").disabled), "with a draft kept for the photo, Continue tagging is on");
+  // the draft is a choice, never the only way in: Find books and Start GT tagging begin afresh beside it
+  await page.click("#bs-find");
+  await page.waitForFunction(() => $("#status").textContent.startsWith("Titles read"));
+  await page.click("#gt-start");
+  check((await rows()).join() === "0/3 Books" && await value() === "Title 260x40" && await page.evaluate(() => !$("#gt-continue").disabled),
+    "with a draft kept, Find books and Start GT tagging start a new tagging from a new run, the draft still offered", await rows());
+  await page.click("#gt-start");
   await page.click("#gt-continue");
   await page.waitForFunction(() => document.querySelector("#gt-tasks > li.now"));
   check((await rows()).join() === "4/4 Books" && (await books(page)).length === 4 && await page.evaluate(() => $("#gt-start").textContent === "Stop tagging" && !$("#gt-submit").disabled),
