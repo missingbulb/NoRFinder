@@ -11,10 +11,12 @@ page must do is `req/shelves` in [its requirements](../requirements.md).
 study.json            the study's contract with the shell; stage GT
 py/shelves.py         the Python entry: opens the photo (HEIC through pillow-heif), answers view, find and straighten
 py/books.py           the finder (find), its text finder's view of the photo, and the straightening of four corners
-lab/photos.py         the owner's photos from Drive (data/sources.json)
+lab/photos.py         the owner's photos from Drive (data/sources.json), and with --gt the ground truth
 lab/grade.py          the finder and the readers scored against a submitted ground truth
+lab/words.py          the names list from one dated dump of Hebrew Wikipedia's titles, into web/words/
 web/shelves.js        the page: Find books, Read titles, the titles in Summary, the ground-truth task and its pictures
 web/reading.js        the three readers, the same module in the page and in the sandbox
+web/words/names.txt   Hebrew Wikipedia titles' words the readings are spelled by after the subtitle list (CC BY-SA 4.0, lab/words.py)
 web/tessdata/         Tesseract's Hebrew and English (4.0.0_best_int, from @tesseract.js-data/*@1.0.0, MIT): served by the site, pinned
 reading/              the sandbox: read.mjs and the pinned engine builds (package.json)
 tests/                test_books.py and test_grade.py (fast), test_reading.py and test_shelves_page.py (full)
@@ -46,6 +48,12 @@ tests/                test_books.py and test_grade.py (fast), test_reading.py an
    - `tesseract`: Tesseract 5 (tesseract.js 7.0.0, core 7.0.0), Hebrew and English, on the whole crop;
    - `lines`: PaddleOCR's PP-OCRv4 text finder (ONNX on onnxruntime-web 1.31.1) marks each line, Tesseract reads it;
    - `ppocr`: PP-OCRv4 finds and reads (its reader is Chinese and English: **no Hebrew**).
+
+   Each reading's Hebrew words are then spelled (`spelling` in `reading.js`, R7) by FrequencyWords' subtitle list,
+   fetched from jsDelivr at a pinned commit and kept offline, then the site's names list: a word not on them becomes
+   the most frequent listed word one look-alike letter, or one ו or י, away; a final letter inside a run of letters
+   ends a word; a run no word fits is parted into listed words. The problems of Hebrew on spines, their classic fixes and the word sources are in
+   [HEBREW.md](HEBREW.md).
 
 The page loads the engines and PaddleOCR's models from jsDelivr at those pinned versions when first needed: the text
 finder (onnxruntime-web and the PP-OCRv4 finding model) on Find books, the rest when a reader first needs them. The
@@ -101,11 +109,71 @@ corner at once; what the reader reads is still Python's straightening of the fil
 never covered. Flip reads the book again at that turn alone, in both languages. The submitted `<photo>_books_gt.json` keeps, for each found book, what the
 finder and the reader proposed beside the corrected values, so one file scores both the finder (corners, view) and
 each reader (text), which `lab/grade.py` does. The ground truth is in the study's GT folder on Drive
-(`GT/<photo>__<sha8>/gt_<tagger>.json` under the study's root), fetched by hand for now (`gdown`, as `lab/photos.py`
-does). One photo so far: `1g4iFN`, re-tagged 2026-11-10 after the task's rework, 13 books right (4 of them added
-as missed) and 1 found box marked no book.
+(`GT/<photo>__<sha8>/gt_<tagger>.json` under the study's root), fetched by `python3 studies/shelves/lab/photos.py --gt`
+into `data/raw/gt/<photo's drive id>__<tagger>.json`. Two photos so far: `1g4iFN`, re-tagged 2026-11-10 after the task's rework, 13 books right (4 of them added
+as missed) and 1 found box marked no book; `1HyJrL`, tagged 2026-11-10, 19 books right, all found (the book the
+frame cuts at its left edge left untagged).
 
 ## Iterations
+
+### R7 — no box over another; a line the books cross is no shelf; readings spelled (2026-11-10)
+
+The second ground truth, `1HyJrL` (19 books). **Two photos, nothing held out**: every number is indicative. The
+other 12 photos were checked base against R7 for what moved.
+
+| | precision | recall | matched | mean IoU |
+|---|---|---|---|---|
+| `1HyJrL` R6 (base) | 0.38 | 0.68 | 13/19 | 0.60 |
+| `1HyJrL` R7 | 0.86 | 0.95 | 18/19 | 0.79 |
+| `1g4iFN` R6 = R7 | 0.92 | 0.85 | 11/13 | 0.82 |
+
+- **What was wrong (R6 on `1HyJrL`):** the shelf finder cut the photo at a row across the middle of the books (the
+  titles' slashes, a light's edge), so nearly every spine came out as two boxes stacked one over the other, each
+  about half the book: 34 boxes for 19 books.
+- **What changed:** (1) `[shelf-lines]` a shelf's cut is dropped when the edges between books run on across it
+  (`books.crossed`, `CROSSED`): measured on every photo's cuts, 0.53 on `1HyJrL`'s and 0.39 on `1yTHiP`'s (both
+  through standing spines), at most 0.11 on every real board. (2) The owner's rule, no box over another
+  (`books.apart`): two boxes overlapping each other alone, by a fifth of the smaller and in one column, are one
+  book's halves, boxed as one; of others overlapping, the weaker fit goes. Ablated on `1HyJrL`: (2) alone 0.79/0.79,
+  15/19 (where a half was never found the other stays half a book); (1) alone or both 0.86/0.95. With (1) in, (2)
+  fires on no photo here: it is the guard the owner asked for.
+- **On the other photos, by eye:** only `1yTHiP` moved (38 → 41 boxes): its middle shelf's spines are boxed whole,
+  one new box runs down onto the board.
+- **Still missed on `1HyJrL`:** Henderson, split in two at the lettering (the dark gap beside it is the real edge);
+  the leftmost Herbert keeps a sliver box over its right part. Both are the owner's note: books stand apart, a gap's
+  two sides are two books' edges. `books.most_books` maximises the number of boxes, so it always prefers a split;
+  letting a box span one inner line (`REACH` 2) changed nothing for that reason. Its objective is the next lead.
+- **The readers on both photos, at the finder's turn (`lab/grade.py --read`):** `tesseract` CER 0.39 / words 0.35
+  (`1HyJrL`), 0.69 / 0.15 (`1g4iFN`); `lines` 0.37 / 0.18, 0.78 / 0.08. The grader paired readings to books in
+  order and so, on a file holding a box marked no book (`1g4iFN`), scored each against the next book's title: it
+  now pairs them by corners.
+- **The readings spelled by a dictionary, the owner's idea (`spelling` in `reading.js`):** tesseract.js reports no
+  dictionary of its own, so the page fetches a Hebrew word list (FrequencyWords' 50,000 most frequent subtitle words,
+  from jsDelivr at a pinned commit, kept offline with the study's Python). A word of three letters or more not on it, even with one or two prefix
+  letters off (ו ה ב כ ל מ ש), becomes the most frequent listed word one letter away, that letter one print makes
+  look alike (`[look-alike]`). On the tagged books' corners, CER / words before → after:
+
+  | | `tesseract` | `lines` |
+  |---|---|---|
+  | `1HyJrL` | 0.389 / 0.35 → 0.387 / 0.38 | 0.373 / 0.18 → 0.365 / 0.23 |
+  | `1g4iFN` | 0.689 / 0.15 → 0.684 / 0.19 | 0.785 / 0.08 → unchanged |
+
+  It sets `רוכרט`, `הרכרט`, `הבדרסון`, `מרובינטון` right; a name off the list it leaves, or turns into a listed word
+  (`גאלויה` → `גלויה`, `חולית` → `חולי`). Rejected on the way: any one-letter edit (fixes names into wrong words:
+  `קריספין` → `קריסטין`; `lines` words on `1g4iFN` 0.08 → 0.05); letting a letter be dropped too (the same loss);
+  choosing a reading's turn by the dictionary (the wrong turn reads as short common words, `שש`, `זו`, and won:
+  `tesseract` CER 0.39 → 0.72 by share of known words, 0.39 → 0.42 at best by known letters added to confidence).
+  English is not spelled: no tagged title is English, so nothing could measure it. Then, from the research in
+  [HEBREW.md](HEBREW.md): a final letter inside a run ends a word, full and defective spellings match, and, with the
+  names of Hebrew Wikipedia's titles added to the list (the owner's choice), runs are parted into listed words. Words
+  read whole, all of it on the page's own path: `tesseract` 0.35 → 0.48 (`1HyJrL`), 0.15 → 0.23 (`1g4iFN`); `lines`
+  0.18 → 0.35, 0.08 → 0.15; CER 0.389 → 0.384, 0.689 → 0.682, 0.373 → 0.361, 0.785 unchanged. `SPLIT` (3 letters)
+  and the names list's 3 titles were chosen on these two photos.
+- **Tried and rejected, the owner's one-language idea:** reading each book in Hebrew alone and in English alone at
+  each turn and keeping the surest (twice the passes): `lines` 0.37 → 0.34 on `1HyJrL` but words 0.08 → 0.05 on
+  `1g4iFN`, `tesseract` unchanged. Dropping the words of the minority script from a reading: within 0.02 everywhere.
+  The readings are nearly all one script already; their errors are Hebrew letters confused (`רוכרט` for `רוברט`),
+  which a dictionary would catch and a script rule cannot.
 
 ### R6 — text lines place the books; the perspective check dropped (2026-11-10)
 
@@ -294,6 +362,8 @@ number below is a score.
 
 - `[shelf-lines]` A shelf is a horizontal edge across at least half the photo. Fails on a photo of one shelf seen at an
   angle, or one whose board is out of frame.
+  (R7) A board stops the edges between books: a cut they run on across, on `CROSSED` of the columns, is no shelf.
+  Fails on a board only a few rows thick, and on books standing on books.
 - `[spine-lean]` A spine's edges lean 30° from upright at most (`books.LEAN`). Fails on a book lying flat in a pile,
   whose edges run across the shelf, and on a photo taken turned.
 - `[spine-sides]` A book's two sides lean within 6° of each other (`books.SIDES`). Fails on a spine seen in steep
@@ -308,6 +378,9 @@ number below is a score.
   ten photos.
 - `[cover-shape]` A cover is a quadrilateral of one cover's size whose edges end at its corners (`books.covers`). Fails on
   covers that touch or overlap, whose sides run on into the next one's.
+- `[look-alike]` (R7) A reader's slip on a Hebrew word is one letter for one print makes look alike
+  (`LOOK_ALIKE` in `reading.js`, set from the letters' shapes, not from the photos). Fails on a name or a rare word the
+  word list lacks that is one such letter from a listed word, which it turns into that word.
 - `[text-lines]` A book's title is a line of text along its spine, and no text runs across the edge between two books
   (`books.TEXT_*`). Fails on a spine with no lettering, a title printed across two spines, a sticker spanning a gap,
   and a photo the text finder reads poorly (dark, blurred); calibrated on one tagged photo.
@@ -316,10 +389,15 @@ number below is a score.
 
 ## Open items
 
-- More ground truth: one tagged photo is too few to hold any out. Books the frame cuts at a photo's edge (both of
+- More ground truth: two tagged photos are too few to hold any out. A book split at its lettering beside a dark
+  gap (`1HyJrL`'s Henderson): `most_books` prefers more boxes.
+- Names the Wikipedia titles miss (`אולדיס`, `גאלויה`, `וונגרין`), and the geresh of foreign names (`ג'ון`).
+  English is not spelled yet (no English ground truth).
+- Books the frame cuts at a photo's edge (both of
   `1g4iFN`'s misses).
 - The readers: `tesseract` reads best but most spines come back noisy; what to try next is the owner's call.
-- Hebrew word spaces in the `lines` reader.
+- Hebrew word spaces in the `lines` reader: runs are now parted by the word lists (R7); a run of names neither list
+  holds stays whole.
 - R5's own breaks: several covers on the ledge and the bench missed, two half boxed; pale spines on a pale wall; piles of books lying flat.
 - A study pack (`shelves-study`) for its improving-on-ground-truth skill and its ground-truth intake, once there is
   ground truth to take in.

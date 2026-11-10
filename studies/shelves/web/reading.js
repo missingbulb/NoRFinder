@@ -8,7 +8,8 @@
 //
 // engines: {Tesseract() and ort(): the tesseract.js module and onnxruntime-web, each loaded once a reader needs it, langPath: where heb and eng .traineddata.gz sit,
 // tesseract: options for its worker (workerPath, corePath), model(name): an ONNX model's bytes, keys(): the PP-OCR
-// reader's character list, as text}
+// reader's character list, as text, words(): the Hebrew words readings are spelled by, as text: the lists of WORDS
+// one after the other}
 export const READERS = {
   tesseract: "Tesseract",
   lines: "Paddle lines + Tesseract",
@@ -16,6 +17,12 @@ export const READERS = {
 };
 // the languages a book may be read in, by Tesseract's names: both, or the one the tagger says the title is in
 export const LANGS = { both: ["heb", "eng"], heb: ["heb"], eng: ["eng"] };
+// the Hebrew words readings are spelled by, most frequent first: FrequencyWords' subtitle list at a pinned commit
+// (CC BY-SA 4.0), then the names of Hebrew Wikipedia's titles it lacks, the site's own (relative to this module)
+export const WORDS = {
+  list: "https://cdn.jsdelivr.net/gh/hermitdave/FrequencyWords@525f9b560de45753a5ea01069454e72e9aa541c6/content/2018/he/he_50k.txt",
+  names: "words/names.txt",
+};
 export const MODELS = { find: "ch_PP-OCRv4_det_infer.onnx", read: "ch_PP-OCRv4_rec_infer.onnx", keys: "ppocr_keys_v1.txt" };
 
 // k quarter turns clockwise
@@ -51,8 +58,68 @@ export const turns = ({ width, height }) => (height > width ? [1, 3] : [0, 2]);
 const best = (tries) => tries.reduce((a, b) => (b.confidence > a.confidence ? b : a));
 const tidy = (t) => t.replace(/\s+/g, " ").trim();
 
+// Hebrew letters print makes look alike, each set a reader confuses one for another; and the letters a word may be
+// prefixed with
+const LOOK_ALIKE = ["בכנ", "דרך", "החת", "וזןי", "סםט", "גנ", "עצ"];
+const PREFIXES = "והבכלמש";
+// ו and י, the letters full spelling adds and defective spelling leaves out
+const MATRES = "וי";
+// the fewest letters of a word a run is parted into
+const SPLIT = 3;
+// a reading's Hebrew words set right by a word list, most frequent first, a word to a line, any count after it ('#'
+// lines aside): a word of three letters
+// or more that is not on it, even with one or two prefix letters off, becomes the most frequent listed word one
+// look-alike letter, or one ו or י more or fewer, away, or stays as read; a final letter read inside a run of letters
+// ends a word there, and a run no word fits is parted into the likeliest listed words, each of SPLIT letters or more
+export function spelling(list) {
+  const rank = new Map();
+  for (const line of list.split("\n")) {
+    const w = line.split(" ")[0];
+    if (/^[א-ת]+$/.test(w) && !rank.has(w)) rank.set(w, rank.size);
+  }
+  const listed = (w) => {
+    if (rank.has(w)) return 1 / (1 + rank.get(w));
+    for (const k of [1, 2]) {
+      const rest = w.slice(k);
+      if (rest.length > 1 && [...w.slice(0, k)].every((c) => PREFIXES.includes(c)) && rank.has(rest)) return 0.1 / (1 + rank.get(rest));
+    }
+    return 0;
+  };
+  const alike = (c) => LOOK_ALIKE.filter((g) => g.includes(c)).join("").replaceAll(c, "");
+  const word = (w) => {
+    if (w.length < 3 || listed(w)) return w;
+    const near = [];
+    for (let i = 0; i < w.length; i++) for (const c of alike(w[i])) near.push(w.slice(0, i) + c + w.slice(i + 1));
+    for (let i = 1; i < w.length; i++) {
+      for (const c of MATRES) near.push(w.slice(0, i) + c + w.slice(i));
+      if (MATRES.includes(w[i])) near.push(w.slice(0, i) + w.slice(i + 1));
+    }
+    let to = w, most = 0;
+    for (const v of near) { const f = listed(v); if (f > most) [to, most] = [v, f]; }
+    return to;
+  };
+  // the parts of w that are listed words and likeliest together (each word's likelihood its listed frequency), or
+  // [w] when no such parting covers it
+  const parts = (w) => {
+    if (w.length < 2 * SPLIT || listed(word(w))) return [w];
+    const best = [{ p: 0, from: -1 }];
+    for (let j = 1; j <= w.length; j++) {
+      best[j] = { p: -Infinity, from: -1 };
+      for (let i = Math.max(0, j - 16); i <= j - SPLIT; i++) {
+        const f = listed(w.slice(i, j)), p = best[i].p + Math.log(f);
+        if (f && p > best[j].p) best[j] = { p, from: i };
+      }
+    }
+    if (best[w.length].p === -Infinity) return [w];
+    const out = [];
+    for (let j = w.length; j > 0; j = best[j].from) out.unshift(w.slice(best[j].from, j));
+    return out;
+  };
+  return (text) => text.replace(/[א-ת]+/g, (run) => run.split(/(?<=[ךםןףץ])(?=[א-ת])/).flatMap(parts).map(word).join(" "));
+}
+
 export function reader(engines) {
-  let ort = null, find = null, read = null, keys = null;
+  let ort = null, find = null, read = null, keys = null, spell = null;
   const tess = {};
   // a worker for each set of languages, made the first time a book is read in it
   const tesseract = (lang) => (tess[lang] ||= engines.Tesseract().then((T) => T.createWorker(LANGS[lang], 1, { ...engines.tesseract, langPath: engines.langPath, cacheMethod: "none", gzip: true })
@@ -154,6 +221,14 @@ export function reader(engines) {
     return best(found);
   }
 
+  async function readAs(im, how, { turn = null, lang = "both" } = {}) {
+    const at = turn == null ? null : [turn];
+    if (how === "tesseract") return best(await Promise.all((at ?? turns(im)).map((t) => tesseractAt(im, t, lang))));
+    if (how === "lines") return byLines(im, async (line) => { const r = await tesseractAt(line, 0, lang); return { text: r.text, confidence: r.confidence }; }, at);
+    if (how === "ppocr") return byLines(im, ppocrLine, at);
+    throw new Error(`no reader "${how}"`);
+  }
+
   return {
     // the text over a whole photo as Python's view gives it ({width, height, data}, RGB, sides multiples of 32): its
     // probability per pixel, 255 for 1, base64, as the finder takes it ({width, height, data})
@@ -166,13 +241,11 @@ export function reader(engines) {
     },
     // the crop's text by one reader: {text, confidence (0 to 1), turn (quarter turns clockwise that set it upright)};
     // given a turn, it is read upright at that turn alone, and given a lang (a key of LANGS), in those languages alone
-    // (PP-OCR reads English whatever it is given)
-    async read(im, how, { turn = null, lang = "both" } = {}) {
-      const at = turn == null ? null : [turn];
-      if (how === "tesseract") return best(await Promise.all((at ?? turns(im)).map((t) => tesseractAt(im, t, lang))));
-      if (how === "lines") return byLines(im, async (line) => { const r = await tesseractAt(line, 0, lang); return { text: r.text, confidence: r.confidence }; }, at);
-      if (how === "ppocr") return byLines(im, ppocrLine, at);
-      throw new Error(`no reader "${how}"`);
+    // (PP-OCR reads English whatever it is given), its Hebrew words spelled by the word list
+    async read(im, how, opts = {}) {
+      spell ||= engines.words().then(spelling).catch((e) => { spell = null; throw e; });
+      const [r, s] = await Promise.all([readAs(im, how, opts), spell]);
+      return { ...r, text: s(r.text) };
     },
     async close() { for (const k in tess) { await (await tess[k]).terminate(); delete tess[k]; } },
   };

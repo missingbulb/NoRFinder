@@ -36,7 +36,10 @@ read for a title matcher; matching the titles is not part of it.
   face, however plain. The text finder's files are fetched at pinned versions from jsDelivr on Find books' first run,
   and kept offline with the study's Python; when they cannot be reached, Find books finds without them and says so.
   The same day the owner dropped the rule that one camera's perspective must turn every book's ends alike: on the
-  photos it removed real books. Test: `studies/shelves/tests/test_books.py`,
+  photos it removed real books. Set by the owner on 2026-11-10, no box lies over another: of two boxes overlapping,
+  one is certainly wrong, and two stacked one over the other that overlap each other alone, by a large share, are one
+  book's two halves, boxed as one. A line across the shelf that the edges between books run on across is lettering
+  or a light's edge over the books, not a shelf's board, and cuts no book. Test: `studies/shelves/tests/test_books.py`,
   `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
@@ -71,7 +74,16 @@ read for a title matcher; matching the titles is not part of it.
   most confident kept. The page loads pinned builds of the engines from jsDelivr (the text finder already on Find books) and the two
   languages from the site; the sandbox (`studies/shelves/reading/read.mjs`) runs the same builds on
   the same straightened crops, so a reading there is the page's. The reader last chosen is kept in
-  the browser. Test: `studies/shelves/tests/test_reading.py`, `studies/shelves/tests/test_shelves_page.py`.
+  the browser. Set by the owner on 2026-11-10, a dictionary sets each reading's Hebrew words right: a word of three
+  letters or more that is not in it, nor is once a prefix letter or two (ו, ה, ב, כ, ל, מ, ש) is taken off, becomes the most
+  frequent word in it that differs by one letter for a letter print makes look alike (ב כ נ, ד ר ך, ה ח ת, ו ז ן י,
+  ס ם ט, ג נ, ע צ), or by a ו or a י added or dropped (full and defective spelling), and stays as read when none is.
+  A final letter (ך ם ן ף ץ) ends a word, so one read inside a run of letters ends a word there, and a run no listed
+  word fits is parted into the likeliest listed words, of three letters or more each. The words are FrequencyWords'
+  subtitle list, fetched from jsDelivr at a pinned commit on Read titles' first run and kept offline with the study's
+  Python, then, the owner's choice of 2026-11-10, the names of Hebrew Wikipedia's article titles (authors, book
+  titles, publishers), the site's own file, made by the lab from one dated dump. Test: `studies/shelves/tests/test_reading.py`, `studies/shelves/tests/test_spelling.py`,
+  `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
 - `req/shelves/truth/task` One ground-truth task: each book in turn, in the order they stand, has its corners, turn and title set right, and the missed books are added.

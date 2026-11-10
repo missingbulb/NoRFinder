@@ -377,3 +377,52 @@ def test_the_finder_runs_on_only_the_packages_the_page_installs(tmp_path, monkey
         sys.meta_path.remove(blocker)
     assert error is None, f'the page has no {error.name!r}'
     assert found, 'the photo has books to box'
+
+
+def banded_shelf():
+    """Spines packed on a board, each with a pale label at one height across the shelf, its edges a line across more
+    than half the photo, with the spines' own edges running on across it. (photo, each book's corners clockwise)."""
+    rng = np.random.default_rng(7)
+    H, W = 600, 420
+    a = np.full((H, W, 3), 225, np.float32)
+    a[560:580] = 70
+    truth, x = [], 30
+    while x < 380:
+        w = int(rng.integers(24, 34))
+        a[60:560, x:x + w - 2] = rng.integers(30, 150, 3)
+        a[60:560, x + w - 2:x + w] = 20
+        for y in range(90, 540, 18):
+            a[y:y + 6, x + w // 3:x + w - 2 - w // 3] = 235
+        a[280:330, x:x + w - 2] = 245
+        truth.append([[x, 60], [x + w - 2, 60], [x + w - 2, 560], [x, 560]])
+        x += w
+    a += rng.normal(0, 3, a.shape)
+    return np.clip(a, 0, 255).astype(np.uint8), truth
+
+
+def test_a_line_across_the_books_cuts_none():
+    """req/shelves/books/find (2026-11-10): a horizontal edge across the shelf that the edges between books run on
+    across is not a board: the books are boxed whole, top to foot."""
+    a, truth = banded_shelf()
+    g = ndi.gaussian_filter(books.grey(a.astype(np.float32)), 1.0)
+    assert len(books.shelves(g)) == 1
+    tall = [b for b in books.find(a) if np.ptp(np.array(b['corners'])[:, 1]) > 400]
+    assert len(tall) >= len(truth) // 2, tall
+
+
+def quad(x0, x1, y0, y1):
+    return [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]
+
+
+def test_no_box_lies_over_another_and_a_book_s_two_halves_are_one():
+    """req/shelves/books/find (2026-11-10): two boxes stacked over one book, overlapping each other alone, are boxed as
+    one from the top of the upper to the foot of the lower; of boxes overlapping otherwise one is dropped, the one
+    with the weaker fit; boxes only touching are left as they are."""
+    halves = [dict(corners=quad(10, 40, 10, 120), fit=0.9), dict(corners=quad(11, 41, 75, 230), fit=0.8)]
+    neighbour = dict(corners=quad(40, 70, 10, 230), fit=0.7)
+    kept = books.apart(halves + [neighbour])
+    assert sorted(map(str, (k['corners'] for k in kept))) == sorted(map(str, [[[10, 10], [40, 10], [41, 230], [11, 230]], neighbour['corners']]))
+    crowded = [dict(corners=quad(100, 140, 10, 200), fit=0.9), dict(corners=quad(110, 150, 20, 210), fit=0.5),
+               dict(corners=quad(95, 145, 150, 260), fit=0.6)]
+    kept = books.apart(crowded)
+    assert [k['fit'] for k in kept] == [0.9]

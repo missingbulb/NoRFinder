@@ -6,16 +6,22 @@ photos share a file name in the folder, so each is kept by its Drive id.
     pip install gdown
     python3 studies/shelves/lab/photos.py          # fetch what is missing, verify everything
     python3 studies/shelves/lab/photos.py --pin    # list the folder again: record what is new, drop what is gone
+    python3 studies/shelves/lab/photos.py --gt     # the ground truth too, from the study root's GT folder
+
+The ground truth lands in data/raw/gt/<photo's drive id>__<tagger>.json: the shell saves it as
+GT/<photo>__<its sha256's first 8>/gt_<tagger>.json, and the hash names which photo it is.
 """
 import argparse
 import hashlib
 import json
 import os
+import re
 import sys
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 MANIFEST = os.path.join(ROOT, 'data', 'sources.json')
 RAW = os.path.join(ROOT, 'data', 'raw')
+STUDY = os.path.join(ROOT, 'study.json')
 
 
 def sha256_of(path):
@@ -36,10 +42,29 @@ def photos():
         return [dict(p, path=path_of(p)) for p in json.load(f)['photos']]
 
 
+def gt_name(path, photos):
+    """data/raw/gt/<photo's drive id>__<tagger>.json for a GT folder file's path, or None when it is no ground truth or
+    no photo the manifest records has its hash."""
+    m = re.fullmatch(r'(?:.*/)?GT/[^/]*__([0-9a-f]{8})/gt_(.+)\.json', path)
+    ids = [p['drive_id'] for p in photos if m and (p['sha256'] or '').startswith(m.group(1))]
+    return os.path.join(RAW, 'gt', f'{ids[0]}__{m.group(2)}.json') if ids else None
+
+
+def ground_truth(gdown, photos):
+    with open(STUDY) as f:
+        root = json.load(f)['root'].rstrip('/').rsplit('/', 1)[-1]
+    os.makedirs(os.path.join(RAW, 'gt'), exist_ok=True)
+    for f in gdown.download_folder(id=root, skip_download=True, quiet=True):
+        out = gt_name(f.path, photos)
+        if out and gdown.download(id=f.id, output=out, quiet=True) is not None:
+            print('ok', os.path.relpath(out, ROOT))
+
+
 def main(argv=None):
     import gdown
     ap = argparse.ArgumentParser()
     ap.add_argument('--pin', action='store_true')
+    ap.add_argument('--gt', action='store_true')
     a = ap.parse_args(argv)
     with open(MANIFEST) as f:
         doc = json.load(f)
@@ -59,6 +84,8 @@ def main(argv=None):
         elif got != p['sha256']:
             sys.exit(f'{out}: sha256 {got}, the manifest says {p["sha256"]}')
         print('ok', os.path.relpath(out, ROOT))
+    if a.gt:
+        ground_truth(gdown, doc['photos'])
     if a.pin:
         with open(MANIFEST, 'w') as f:
             json.dump(doc, f, indent=2)

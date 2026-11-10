@@ -7,7 +7,7 @@
 import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
-import { reader } from "../web/reading.js";
+import { reader, WORDS } from "../web/reading.js";
 
 const [image, booksFile, how, out] = process.argv.slice(2);
 const here = import.meta.dirname, require = createRequire(path.join(here, "package.json"));
@@ -26,6 +26,7 @@ const assets = path.join(here, "node_modules", "@gutenye", "ocr-models", "assets
 const r = reader({
   Tesseract: async () => require("tesseract.js"), ort: async () => require("onnxruntime-web"), langPath: path.join(here, "..", "web", "tessdata"), tesseract: {},
   model: async (name) => fs.readFileSync(path.join(assets, name)), keys: async () => fs.readFileSync(path.join(assets, "ppocr_keys_v1.txt"), "utf8"),
+  words: async () => [await (await fetch(WORDS.list)).text(), fs.readFileSync(path.join(here, "..", "web", WORDS.names), "utf8")].join("\n"),
 });
 // found as the page finds them: the text finder over Python's view of the photo, its map handed to the finder
 let books;

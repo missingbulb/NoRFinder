@@ -37,3 +37,13 @@ def test_a_reading_scores_letters_and_whole_words():
     assert grade.text('', 'מעוף הדרקון') == (1.0, 0.0)
     r = grade.readings(GT, dict(books=[dict(text='Two Towers'), dict(text='מעוף הדרקון')]))
     assert (r['cer'], r['words'], r['books']) == (0.0, 1.0, 2)
+
+
+def test_a_reading_of_the_whole_file_is_paired_with_each_book_by_its_corners():
+    """read.mjs reads every box of a ground-truth file, the ones marked no book too: each reading is the book's whose
+    corners it was read on, whatever the order."""
+    wrong, towers, dragon = GT['books'][2], GT['books'][0], GT['books'][1]
+    read = dict(books=[dict(corners=wrong['corners'], text='junk'), dict(corners=dragon['corners'], text='מעוף הדרקון'),
+                       dict(corners=towers['corners'], text='Two Towers')])
+    r = grade.readings(GT, read)
+    assert (r['cer'], r['words'], r['books']) == (0.0, 1.0, 2)
