@@ -296,8 +296,48 @@ def test_a_plain_spine_whose_title_the_text_finder_marks_is_boxed():
     a, truth, text = titled_shelf()
     pale = np.array(truth[4])
     hit = lambda found: any(np.abs(np.array(b['corners']) - pale).max() <= 10 for b in found)
+    assert hit(books.find(a, text))
+
+
+def test_without_its_text_a_plain_spine_is_boxed_only_by_its_colour(monkeypatch):
+    """req/shelves/books/find (2026-11-10): the text line is what keeps the plain spine among the line-found boxes;
+    with no text, only its face's one colour boxes it."""
+    a, truth, text = titled_shelf()
+    pale = np.array(truth[4])
+    hit = lambda found: any(np.abs(np.array(b['corners']) - pale).max() <= 10 for b in found)
+    assert hit(books.find(a))
+    monkeypatch.setattr(books, 'REGION_SCALES', ())
     assert not hit(books.find(a))
     assert hit(books.find(a, text))
+
+
+def packed_thin():
+    """Books packed on a shelf, two thin ones (a little over a hundredth of the photo wide) to each wider one, each
+    with its own top, its left side a dark rim and its lettering down its middle. (photo, each book's corners)"""
+    rng = np.random.default_rng(7)
+    H, W = 500, 900
+    a = np.full((H, W, 3), 205, np.float32)
+    a[430:470] = 90
+    truth, x = [], 30
+    for w in [11, 11, 20, 11, 11, 24] * 7:
+        top = 120 + int(rng.integers(0, 30))
+        a[top:430, x:x + w] = rng.integers(30, 200, 3)
+        a[top:430, x] *= 0.5
+        for y in range(top + 12, 410, 16):
+            a[y:y + 8, x + w // 3:x + w - w // 3] = 240
+        truth.append([[x, top], [x + w, top], [x + w, 430], [x, 430]])
+        x += w
+    a += rng.normal(0, 3, a.shape)
+    return np.clip(a, 0, 255).astype(np.uint8), truth
+
+
+def test_thin_spines_packed_among_wider_ones_are_boxed_one_by_one():
+    """req/shelves/books/find (2026-11-10): two edges between books are told apart at the shelf's own spacing, so
+    spines thinner than the finder's fixed floor of twice the narrowest book are each boxed, not two to a box."""
+    a, truth = packed_thin()
+    found = [np.array(b['corners']) for b in books.find(a)]
+    own = sum(any(np.abs(f - np.array(t)).max() <= 6 for f in found) for t in truth)
+    assert own >= 0.85 * len(truth), (own, len(truth))
 
 
 def covers_on_a_bench():

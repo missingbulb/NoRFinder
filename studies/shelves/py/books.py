@@ -10,6 +10,8 @@ apart yet."""
 import numpy as np
 from scipy import ndimage as ndi
 from skimage.measure import points_in_poly
+from skimage.segmentation import felzenszwalb
+from skimage.transform import resize
 
 # scale-dependent: the long side the finder works at, in pixels; boxes are scaled back to the photo's own
 WORK = 900
@@ -31,6 +33,10 @@ SIGMA = 2.0
 PIECE = 0.04
 # a book lies between two neighbouring edges between books: none lies between its sides
 REACH = 1
+# two edges between books are one when closer, at both ends, than this share of the shelf's own spacing between its
+# edges (this percentile of it), and never closer than twice MIN_WIDTH apart: packed thin spines stand closer than
+# that floor
+SPACING_Q, CROWD = 25, 0.7
 # the edges between books, after Osef's spine segmentation (yoavberliner/Osef, 2026-09-25): an unblurred upright
 # gradient over this, and this many times the across one, on a strict pass and on a relaxed one inside a wide gap
 SEAM_STRICT, SEAM_RELAXED = (40, 1.5), (25, 1.0)
@@ -68,6 +74,12 @@ SIDES_EQUAL, SQUARE = 0.75, 30
 TEXTURE = 0.5
 #   it is longer than this share of its shelf, and wider than this share of the photo
 LENGTH, MIN_WIDTH = 0.5, 0.008
+# [spine-colour] a book's face is one region of colour: the shelf, at this many pixels wide, cut into regions at these
+# scales (Felzenszwalb's), each one long and thin, leaning at most this many degrees, filling this share of its
+# rectangle, is a book's face where no line-found box stands; its sides are moved to the strongest edge within this
+# share of its width and this many degrees
+REGION_WIDE, REGION_SCALES, REGION_SIGMA, REGION_LEAST = 500, (50, 150), 0.8, 40
+REGION_LEAN, REGION_FILL, REGION_SNAP, REGION_TURN = 50, 0.6, 0.25, 3
 # how far, as a share of the shelf's height, a book's end is looked for around where its texture stops
 SNAP = 0.04
 # and how far, in degrees, from square to its sides it is looked for at: the camera's angle on it
@@ -239,7 +251,14 @@ def side_lines(e, top, bottom, text=None):
                 kept.append(f)
         return sorted(kept, key=lambda f: f[1])
 
-    kept = keep(scan(range(1, e.w - 1), True), [])
+    first = scan(range(1, e.w - 1), True)
+    kept = keep(first, [])
+    spans = np.diff([x for _, x, _ in kept])
+    if len(spans) >= 4:
+        near = max(MIN_WIDTH * e.w, CROWD * float(np.percentile(spans, SPACING_Q)))
+        if near < gap:
+            gap = near
+            kept = keep(first, [])
     spans = np.diff([x for _, x, _ in kept])
     if len(spans):
         usual = float(np.median(spans))
@@ -376,7 +395,7 @@ def end_edge(e, la, lb, y, out, win, limit, tilt, colour):
 def book_colour(e, la, lb, y0, y1):
     """The colour most of the strip carries between y0 and y1: the book's own, its lettering aside."""
     px = [e.rgb[y, a:b] for y in range(int(y0), int(y1), 2)
-          for a, b in [(int(np.ceil(la.x(y))) + 1, int(np.floor(lb.x(y))))] if b > a]
+          for a, b in [(max(0, int(np.ceil(la.x(y))) + 1), min(e.w, int(np.floor(lb.x(y)))))] if b > a]
     return np.median(np.concatenate(px), axis=0) if px else np.zeros(3)
 
 
@@ -523,7 +542,62 @@ def shelf_books(g, rgb, text=None):
         if new:
             lines = sorted(lines + new, key=lambda l: l.xm)
             found = all_found()
+    for n, (la, lb) in enumerate(regions(e, top, bottom)):
+        if lb.xm > la.xm:
+            b = spine(e, [la, lb], 0, 1, top, bottom)
+            if b:
+                if text is not None:
+                    b['text'] = text_along(text, b['corners'])
+                found['region', n] = b
     return found, lines, rows
+
+
+def regions(e, top, bottom):
+    """[(left, right) Line] of each region of one colour on the shelf rows top..bottom that is shaped like a spine:
+    long, thin, near upright and filling its rectangle, its sides each moved onto the strongest edge near it."""
+    mid = (top + bottom) / 2
+    q = max(1.0, e.w / REGION_WIDE)
+    sub = e.rgb[top:bottom, :, :3].astype(np.float32) / 255
+    small = resize(sub, (max(8, round(sub.shape[0] / q)), max(8, round(sub.shape[1] / q))), anti_aliasing=True)
+    qy, qx = sub.shape[0] / small.shape[0], sub.shape[1] / small.shape[1]
+    out = []
+    for scale in REGION_SCALES:
+        seg = felzenszwalb(small, scale=scale, sigma=REGION_SIGMA, min_size=REGION_LEAST)
+        for k, sl in enumerate(ndi.find_objects(seg + 1)):
+            if sl is None:
+                continue
+            ys, xs = np.nonzero(seg[sl] == k)
+            if len(ys) < REGION_LEAST:
+                continue
+            p = np.stack([(xs + sl[1].start + 0.5) * qx, (ys + sl[0].start + 0.5) * qy + top], 1)
+            c = p.mean(0)
+            a = np.linalg.eigh(np.cov((p - c).T))[1][:, 1]
+            a = -a if a[1] < 0 else a
+            n = np.array([-a[1], a[0]])
+            a0, a1 = np.percentile((p - c) @ a, [1, 99])
+            b0, b1 = np.percentile((p - c) @ n, [1, 99])
+            width, length = b1 - b0, a1 - a0
+            if (width < MIN_WIDTH * e.w or length < ASPECT * width or a[1] < np.cos(np.deg2rad(REGION_LEAN))
+                    or len(ys) * qx * qy / (width * length) < REGION_FILL):
+                continue
+            y0, y1 = c[1] + a0 * a[1], c[1] + a1 * a[1]
+            r = np.arange(int(max(top, y0)), int(min(bottom, y1)))
+            t0 = a[0] / a[1]
+            sides = []
+            for b in (b0, b1):
+                px, py = c[0] + n[0] * b, c[1] + n[1] * b
+                best = (-1.0, t0, px + t0 * (mid - py))
+                for turn in np.arange(-REGION_TURN, REGION_TURN + 0.1, 1.0):
+                    t = np.tan(np.arctan(t0) + np.deg2rad(turn))
+                    for dx in np.arange(-REGION_SNAP * width, REGION_SNAP * width + 0.5, 1.0):
+                        xs_ = np.round(px + dx + t * (r - py)).astype(int)
+                        ok = (xs_ >= 0) & (xs_ < e.w)
+                        cover = float(e.seam[r[ok], xs_[ok]].mean()) if ok.any() else 0
+                        if cover > best[0]:
+                            best = (cover, t, px + dx + t * (mid - py))
+                sides.append(Line(best[2], -best[1], mid))
+            out.append(sorted(sides, key=lambda l: l.xm))
+    return out
 
 
 def most_books(found, n):
@@ -735,7 +809,7 @@ def find(rgb, text=None):
     for top, bottom in shelves(g):
         barcode_bands(g, small, max(0, top - m), min(h, bottom + m), shelf)
     per_shelf = [(top, found, lines) for top, found, lines, _ in per_shelf]
-    textures = [b['texture'] for _, found, _ in per_shelf for b in found.values()]
+    textures = [b['texture'] for _, found, _ in per_shelf for k, b in found.items() if k[0] != 'region']
     spines = []
     if textures:
         least = TEXTURE * float(np.median(textures))
@@ -749,6 +823,11 @@ def find(rgb, text=None):
                 continue
             for k in chosen:
                 spines.append(dict(corners=[(x, y + top) for x, y in found[k]['corners']], fit=found[k]['fit']))
+            # [spine-colour] a region of one colour boxes a book where nothing else does
+            for k, b in found.items():
+                c = [(x, y + top) for x, y in b['corners']]
+                if k[0] == 'region' and not any(overlap(c, sp['corners']) > TOUCH * min(area(c), area(sp['corners'])) for sp in spines):
+                    spines.append(dict(corners=c, fit=b['fit']))
     spines = [b['corners'] for b in apart(spines)]
     # [barcode] covers are looked for outside the shelves: the barcode bands, and the spines boxed
     yy, xx = np.mgrid[0:h, 0:w]
