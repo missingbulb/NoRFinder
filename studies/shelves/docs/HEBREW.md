@@ -40,7 +40,8 @@ cut-offs below were chosen on those same photos.
    segmentation, the most probable split under word frequencies (a unigram Viterbi pass); a study of historical OCR
    correction finds segmentation errors among the commonest. **Here (not yet):** with the subtitle list alone it
    splits names into nonsense (`קריספין` → `קריס פין`, `וונגרין` → `וונג רין`): `lines` on `1g4iFN` 0.07 → 0.12,
-   but `tesseract` there 0.19 → 0.17. With the names lexicon (below) it gains on all four. It waits on the lexicon.
+   but `tesseract` there 0.19 → 0.17. **With the names list (below), kept:** runs are parted into listed words of 3
+   letters or more (`SPLIT`).
 6. **Direction marks in the output**: Tesseract puts U+200E and U+200F around runs it reads as the other direction.
    They are invisible, but they part a word in two for anything matching words. To be stripped before the lookup
    (the speller already sees only Hebrew letters).
@@ -60,13 +61,17 @@ cut-offs below were chosen on those same photos.
 | Wikidata, Hebrew labels of writers | author names | no bulk file; queries over all writers time out server-side | CC0 |
 | National Library of Israel's authority file | authors' Hebrew names, authoritative | no bulk download found | — |
 
-With the Wikipedia titles' words added to the dictionary (titles in at least 3 articles), words read whole, with the
-final-letter split and full/defective spelling, `tesseract` / `lines`:
+**Chosen (the owner, 2026-11-10):** the subtitle list from jsDelivr at a pinned commit, kept offline with the
+study's Python; then the words of Hebrew Wikipedia's titles in at least 3 articles that it lacks (38,538, 490 KB),
+which the lab writes from the 2026-11-01 dump (`lab/words.py`, pinned by SHA-256) and the site serves. All of it on
+the page's own path, words read whole, `tesseract` / `lines`:
 
-| | without segmentation | with segmentation |
-|---|---|---|
-| `1HyJrL` | 0.43 / 0.29 | 0.47 / 0.32 |
-| `1g4iFN` | 0.21 / 0.07 | 0.21 / 0.16 |
+| | the look-alike speller alone | + final letters, ו/י | + names list, runs parted |
+|---|---|---|---|
+| `1HyJrL` | 0.38 / 0.23 | 0.40 / 0.30 | 0.48 / 0.35 |
+| `1g4iFN` | 0.19 / 0.08 | 0.20 / 0.08 | 0.23 / 0.15 |
+
+CER on the last column: 0.384 / 0.361 and 0.682 / 0.785, none worse than the first.
 
 ## Gaps
 

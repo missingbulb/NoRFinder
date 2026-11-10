@@ -13,10 +13,10 @@ py/shelves.py         the Python entry: opens the photo (HEIC through pillow-hei
 py/books.py           the finder (find), its text finder's view of the photo, and the straightening of four corners
 lab/photos.py         the owner's photos from Drive (data/sources.json), and with --gt the ground truth
 lab/grade.py          the finder and the readers scored against a submitted ground truth
-lab/words.py          the Hebrew word list from FrequencyWords at a pinned commit, into web/words/
+lab/words.py          the names list from one dated dump of Hebrew Wikipedia's titles, into web/words/
 web/shelves.js        the page: Find books, Read titles, the titles in Summary, the ground-truth task and its pictures
 web/reading.js        the three readers, the same module in the page and in the sandbox
-web/words/heb.txt     the Hebrew word list the readings are spelled by (CC BY-SA 4.0, written by lab/words.py)
+web/words/names.txt   Hebrew Wikipedia titles' words the readings are spelled by after the subtitle list (CC BY-SA 4.0, lab/words.py)
 web/tessdata/         Tesseract's Hebrew and English (4.0.0_best_int, from @tesseract.js-data/*@1.0.0, MIT): served by the site, pinned
 reading/              the sandbox: read.mjs and the pinned engine builds (package.json)
 tests/                test_books.py and test_grade.py (fast), test_reading.py and test_shelves_page.py (full)
@@ -49,9 +49,10 @@ tests/                test_books.py and test_grade.py (fast), test_reading.py an
    - `lines`: PaddleOCR's PP-OCRv4 text finder (ONNX on onnxruntime-web 1.31.1) marks each line, Tesseract reads it;
    - `ppocr`: PP-OCRv4 finds and reads (its reader is Chinese and English: **no Hebrew**).
 
-   Each reading's Hebrew words are then spelled by the site's word list (`spelling` in `reading.js`, R7): a word not
-   on it becomes the most frequent listed word one look-alike letter, or one ו or י, away, and a final letter inside a
-   run of letters ends a word. The problems of Hebrew on spines, their classic fixes and the word sources are in
+   Each reading's Hebrew words are then spelled (`spelling` in `reading.js`, R7) by FrequencyWords' subtitle list,
+   fetched from jsDelivr at a pinned commit and kept offline, then the site's names list: a word not on them becomes
+   the most frequent listed word one look-alike letter, or one ו or י, away; a final letter inside a run of letters
+   ends a word; a run no word fits is parted into listed words. The problems of Hebrew on spines, their classic fixes and the word sources are in
    [HEBREW.md](HEBREW.md).
 
 The page loads the engines and PaddleOCR's models from jsDelivr at those pinned versions when first needed: the text
@@ -147,8 +148,8 @@ other 12 photos were checked base against R7 for what moved.
   order and so, on a file holding a box marked no book (`1g4iFN`), scored each against the next book's title: it
   now pairs them by corners.
 - **The readings spelled by a dictionary, the owner's idea (`spelling` in `reading.js`):** tesseract.js reports no
-  dictionary of its own, so the site serves a Hebrew word list (FrequencyWords' 50,000 most frequent subtitle words,
-  `lab/words.py`), loaded with no network. A word of three letters or more not on it, even with one or two prefix
+  dictionary of its own, so the page fetches a Hebrew word list (FrequencyWords' 50,000 most frequent subtitle words,
+  from jsDelivr at a pinned commit, kept offline with the study's Python). A word of three letters or more not on it, even with one or two prefix
   letters off (ו ה ב כ ל מ ש), becomes the most frequent listed word one letter away, that letter one print makes
   look alike (`[look-alike]`). On the tagged books' corners, CER / words before → after:
 
@@ -162,7 +163,12 @@ other 12 photos were checked base against R7 for what moved.
   `קריספין` → `קריסטין`; `lines` words on `1g4iFN` 0.08 → 0.05); letting a letter be dropped too (the same loss);
   choosing a reading's turn by the dictionary (the wrong turn reads as short common words, `שש`, `זו`, and won:
   `tesseract` CER 0.39 → 0.72 by share of known words, 0.39 → 0.42 at best by known letters added to confidence).
-  English is not spelled: no tagged title is English, so nothing could measure it.
+  English is not spelled: no tagged title is English, so nothing could measure it. Then, from the research in
+  [HEBREW.md](HEBREW.md): a final letter inside a run ends a word, full and defective spellings match, and, with the
+  names of Hebrew Wikipedia's titles added to the list (the owner's choice), runs are parted into listed words. Words
+  read whole, all of it on the page's own path: `tesseract` 0.35 → 0.48 (`1HyJrL`), 0.15 → 0.23 (`1g4iFN`); `lines`
+  0.18 → 0.35, 0.08 → 0.15; CER 0.389 → 0.384, 0.689 → 0.682, 0.373 → 0.361, 0.785 unchanged. `SPLIT` (3 letters)
+  and the names list's 3 titles were chosen on these two photos.
 - **Tried and rejected, the owner's one-language idea:** reading each book in Hebrew alone and in English alone at
   each turn and keeping the surest (twice the passes): `lines` 0.37 → 0.34 on `1HyJrL` but words 0.08 → 0.05 on
   `1g4iFN`, `tesseract` unchanged. Dropping the words of the minority script from a reading: within 0.02 everywhere.
@@ -385,7 +391,7 @@ number below is a score.
 
 - More ground truth: two tagged photos are too few to hold any out. A book split at its lettering beside a dark
   gap (`1HyJrL`'s Henderson): `most_books` prefers more boxes.
-- The word list holds few names, and most titles carry their author's: a list of authors' names would spare them.
+- Names the Wikipedia titles miss (`אולדיס`, `גאלויה`, `וונגרין`), and the geresh of foreign names (`ג'ון`).
   English is not spelled yet (no English ground truth).
 - Books the frame cuts at a photo's edge (both of
   `1g4iFN`'s misses).

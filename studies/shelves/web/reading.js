@@ -8,7 +8,8 @@
 //
 // engines: {Tesseract() and ort(): the tesseract.js module and onnxruntime-web, each loaded once a reader needs it, langPath: where heb and eng .traineddata.gz sit,
 // tesseract: options for its worker (workerPath, corePath), model(name): an ONNX model's bytes, keys(): the PP-OCR
-// reader's character list, as text, words(): the Hebrew word list readings are spelled by, as text (words/heb.txt)}
+// reader's character list, as text, words(): the Hebrew words readings are spelled by, as text: the lists of WORDS
+// one after the other}
 export const READERS = {
   tesseract: "Tesseract",
   lines: "Paddle lines + Tesseract",
@@ -16,6 +17,12 @@ export const READERS = {
 };
 // the languages a book may be read in, by Tesseract's names: both, or the one the tagger says the title is in
 export const LANGS = { both: ["heb", "eng"], heb: ["heb"], eng: ["eng"] };
+// the Hebrew words readings are spelled by, most frequent first: FrequencyWords' subtitle list at a pinned commit
+// (CC BY-SA 4.0), then the names of Hebrew Wikipedia's titles it lacks, the site's own (relative to this module)
+export const WORDS = {
+  list: "https://cdn.jsdelivr.net/gh/hermitdave/FrequencyWords@525f9b560de45753a5ea01069454e72e9aa541c6/content/2018/he/he_50k.txt",
+  names: "words/names.txt",
+};
 export const MODELS = { find: "ch_PP-OCRv4_det_infer.onnx", read: "ch_PP-OCRv4_rec_infer.onnx", keys: "ppocr_keys_v1.txt" };
 
 // k quarter turns clockwise
@@ -57,13 +64,19 @@ const LOOK_ALIKE = ["בכנ", "דרך", "החת", "וזןי", "סםט", "גנ", 
 const PREFIXES = "והבכלמש";
 // ו and י, the letters full spelling adds and defective spelling leaves out
 const MATRES = "וי";
-// a reading's Hebrew words set right by a word list, most frequent first ('#' lines aside): a word of three letters
+// the fewest letters of a word a run is parted into
+const SPLIT = 3;
+// a reading's Hebrew words set right by a word list, most frequent first, a word to a line, any count after it ('#'
+// lines aside): a word of three letters
 // or more that is not on it, even with one or two prefix letters off, becomes the most frequent listed word one
 // look-alike letter, or one ו or י more or fewer, away, or stays as read; a final letter read inside a run of letters
-// ends a word there
+// ends a word there, and a run no word fits is parted into the likeliest listed words, each of SPLIT letters or more
 export function spelling(list) {
   const rank = new Map();
-  for (const w of list.split("\n")) if (w && !w.startsWith("#") && !rank.has(w)) rank.set(w, rank.size);
+  for (const line of list.split("\n")) {
+    const w = line.split(" ")[0];
+    if (/^[א-ת]+$/.test(w) && !rank.has(w)) rank.set(w, rank.size);
+  }
   const listed = (w) => {
     if (rank.has(w)) return 1 / (1 + rank.get(w));
     for (const k of [1, 2]) {
@@ -85,7 +98,24 @@ export function spelling(list) {
     for (const v of near) { const f = listed(v); if (f > most) [to, most] = [v, f]; }
     return to;
   };
-  return (text) => text.replace(/[א-ת]+/g, (run) => run.split(/(?<=[ךםןףץ])(?=[א-ת])/).map(word).join(" "));
+  // the parts of w that are listed words and likeliest together (each word's likelihood its listed frequency), or
+  // [w] when no such parting covers it
+  const parts = (w) => {
+    if (w.length < 2 * SPLIT || listed(word(w))) return [w];
+    const best = [{ p: 0, from: -1 }];
+    for (let j = 1; j <= w.length; j++) {
+      best[j] = { p: -Infinity, from: -1 };
+      for (let i = Math.max(0, j - 16); i <= j - SPLIT; i++) {
+        const f = listed(w.slice(i, j)), p = best[i].p + Math.log(f);
+        if (f && p > best[j].p) best[j] = { p, from: i };
+      }
+    }
+    if (best[w.length].p === -Infinity) return [w];
+    const out = [];
+    for (let j = w.length; j > 0; j = best[j].from) out.unshift(w.slice(best[j].from, j));
+    return out;
+  };
+  return (text) => text.replace(/[א-ת]+/g, (run) => run.split(/(?<=[ךםןףץ])(?=[א-ת])/).flatMap(parts).map(word).join(" "));
 }
 
 export function reader(engines) {

@@ -1,7 +1,7 @@
 // The Bookshelf Reader's page: the books found on a photo of shelves, each a four-cornered box with its view (spine or
 // cover) and the title read from it, and, while ground truth is made, one task that takes each book in turn, in the
 // order they stand, its corners, its turn and its text set right, and adds the books the finder missed.
-import { reader, rotate, READERS, MODELS } from "./reading.js";
+import { reader, rotate, READERS, MODELS, WORDS } from "./reading.js";
 
 const CDN = "https://cdn.jsdelivr.net/npm/";
 const TESSERACT = CDN + "tesseract.js@7.0.0/dist/", CORE = CDN + "tesseract.js-core@7.0.0", ORT = CDN + "onnxruntime-web@1.31.1/dist/";
@@ -17,7 +17,7 @@ function engines() {
     ort: () => import(ORT + "ort.wasm.min.mjs").then((o) => { o.env.wasm.wasmPaths = ORT; return o; }), langPath: new URL("tessdata", import.meta.url).href,
     tesseract: { workerPath: TESSERACT + "worker.min.js", corePath: CORE },
     model: (name) => bytes(MODEL_FILES + name), keys: async () => new TextDecoder().decode(await bytes(MODEL_FILES + MODELS.keys)),
-    words: async () => new TextDecoder().decode(await bytes(new URL("words/heb.txt", import.meta.url).href)),
+    words: async () => (await Promise.all([WORDS.list, new URL(WORDS.names, import.meta.url).href].map(async (u) => new TextDecoder().decode(await bytes(u))))).join("\n"),
   };
 }
 
