@@ -459,8 +459,11 @@ nobody has decided: what the page does there is not a requirement yet.
   by the study, the image's name and its SHA-256. Beside Start GT tagging, Continue tagging shows while an image is
   open in such a study, and is on only while a draft of that image is kept, the box then open as the image opens: it hands the draft back to the study,
   which puts its results and the tagger's progress back with no step run again, and starts tagging. Manage storage
-  lists a draft among its image's selections, and Clear progress forgets it with the rest. Test:
-  `studies/shelves/tests/test_shelves_page.py`.
+  lists a draft among its image's selections, and Clear progress forgets it with the rest. Changed by the owner on
+  2026-11-10: in such a study the box offers one of three, never two at once. Start GT tagging, while no draft
+  of the image is kept, before the study's algorithm has run or after; Continue GT tagging, once one is, which
+  goes back to the item the tagger last had open; and Stop tagging while the tagger tags. Clear progress
+  brings back Start GT tagging. Test: `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
 - `req/shell/ground-truth/folders` A study's ground truth lives in a submissions folder and a curated folder under its root; one folder for both is free submission.

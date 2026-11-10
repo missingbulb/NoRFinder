@@ -1,7 +1,8 @@
 // The study's ground-truth tasks in the shell's Ground Truth Tasks box (req/shell/ground-truth/tasks): a bar of one
 // part per task, a row per task, and Submit Ground Truth last. The study says what its tasks are and how far each has
 // got; how a task is worked through stays the study's, which puts what it needs on the open task's row. A task is open
-// only while the tagger tags, from Start GT tagging to Stop tagging (req/shell/ground-truth/tagging).
+// only while the tagger tags, from Start GT tagging, or Continue GT tagging, to Stop tagging
+// (req/shell/ground-truth/tagging, req/shell/ground-truth/draft).
 "use strict";
 
 // started(): whether the study's first step is done; until it is, Submit stays off whatever the study says; heardBy(on):
@@ -17,18 +18,20 @@ export function truthTasks({ $, icon, started, heardBy, draftKey, readJSON, writ
 
   $("#gt-submit").onclick = () => submit?.();
   $("#gt-start").onclick = () => api.tagging(!on);
-  // the tagger's progress on the image open, as the study last gave it: what Continue tagging hands back
+  // the tagger's progress on the image open, as the study last gave it: what Continue GT tagging hands back
   const draft = () => { const k = draftKey(); return k ? readJSON(k, null) : null; };
-  $("#gt-continue").onclick = () => {
-    const d = draft();
-    if (!d || !resume) return api.offer();
-    resume(d);
-    if (!on) api.tagging(true);
-  };
+  const kept = () => (resume && draftKey() ? draft() : null);
+  // tagging begun again: from the draft where one is kept, afresh where none is
+  function begin() {
+    const d = kept();
+    if (d) resume(d);
+    api.tagging(true);
+  }
+  $("#gt-continue").onclick = () => { if (!on) begin(); };
   $("#gt-tasks").addEventListener("click", (e) => {
     const t = e.target.closest("button.t"), li = t?.closest("li");
     if (!li || li.parentElement !== $("#gt-tasks")) return;
-    if (!on) api.tagging(true);
+    if (!on) begin();
     pick?.(li.dataset.task);
   });
   function tagged(now) {
@@ -36,6 +39,7 @@ export function truthTasks({ $, icon, started, heardBy, draftKey, readJSON, writ
     $("#gt-start").title = now ? "Back to viewing the image" : "Work through the tasks, one item at a time";
     $("#gt-start").classList.toggle("primary", !now);
     if (!now) for (const li of rows()) li.classList.remove("now");
+    api.offer();
   }
 
   const api = {
@@ -103,12 +107,11 @@ export function truthTasks({ $, icon, started, heardBy, draftKey, readJSON, writ
     // Clear progress forgets it
     draft(doc) { const k = draftKey(); if (k) { writeJSON(k, doc); api.offer(); } },
     forget() { const k = draftKey(); if (k) try { localStorage.removeItem(k); } catch { /* no storage */ } api.offer(); },
-    // Continue tagging: shown for a study that takes drafts back, with an image open; on, and true, while a draft of it
-    // is kept
+    // one tagging button at a time: Stop tagging while tagging; out of it, Continue GT tagging in Start GT tagging's
+    // place while a draft of the image is kept, and true then
     offer() {
-      const b = $("#gt-continue"), d = resume && draftKey() ? draft() : null;
-      b.hidden = !resume || !draftKey(); b.disabled = !d;
-      b.title = d ? "Back to your ground truth drafted on this image on this device" : "No ground truth drafted for this image on this device yet";
+      const d = kept();
+      $("#gt-continue").hidden = on || !d; $("#gt-start").hidden = !on && !!d;
       return !!d;
     },
     // the study's steps moved: Submit follows its first one

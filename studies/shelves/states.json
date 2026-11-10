@@ -43,8 +43,9 @@
   "standIn": "tests/reader_stand_in.mjs",
   "differ": {
     "Continue tagging": {
+      "steady": "hidden in every state of this study: no path keeps a draft",
       "rule": [
-        {"is": "disabled", "req": "req/shell/ground-truth/draft", "about": "until a draft of the photo is kept on this device, which no path leaves"}
+        {"is": "hidden", "req": "req/shell/ground-truth/draft", "about": "until a draft of the photo is kept on this device, which no path leaves, Start GT tagging shown in its place"}
       ]
     },
     "Ruler": {
