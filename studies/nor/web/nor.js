@@ -1083,36 +1083,15 @@ export function mount(shell) {
     if (st.zoom < fit * 0.6) shell.viewer.setZoom(Math.min(fit, 8));
     shell.viewer.focus(x + w / 2, y + h / 2);
   }
-  // What is done, cut out of the image: the rectangle around each decided candidate's pixels, two pixels wider
-  // each way, and each area done. A picture behind the image shows there, black when it cannot load.
-  // the picture the study links to (study.json's groundTruth.reveal), fetched from where it lives; none: black
-  const REVEAL = shell.study.groundTruth?.reveal || null;
-  // the picture is placed only once it has loaded: a link that fails leaves black, not the browser's broken-picture icon
-  let revealLoaded = null;
-  const revealReady = () => (revealLoaded ||= new Promise((ok) => {
-    if (!REVEAL) return ok(false);
-    const im = new Image(); im.onload = () => ok(true); im.onerror = () => ok(false); im.src = REVEAL;
-  }));
+  // What is done, cut out of the image by the viewer: the rectangle around each decided candidate's pixels, two pixels
+  // wider each way, and each area done.
   function drawReveal() {
     if (!TRUTH || !st.W) return;
-    const svg = $("#overlay");
-    let g = svg.querySelector(".reveal-marks");
-    svg.classList.toggle("tagging", tagging());
-    if (!g) {
-      g = el("g", { class: "reveal-marks" });
-      const defs = el("defs"), clip = el("clipPath", { id: "gt-reveal" }); defs.append(clip);
-      g.append(defs, el("rect", { class: "reveal-bg", x: 0, y: 0, width: st.W, height: st.H, "clip-path": "url(#gt-reveal)" }));
-      svg.prepend(g);
-      const W = st.W, H = st.H;
-      revealReady().then((ok) => {
-        if (ok && g.isConnected) g.append(el("image", { class: "reveal", href: REVEAL, x: 0, y: 0, width: W, height: H, preserveAspectRatio: "xMidYMid slice", "clip-path": "url(#gt-reveal)" }));
-      });
-    }
     const holes = [], w = walk();
     for (const c of st.order) if (st.forced.get(c.i)) holes.push([c.bb[0] - 2, c.bb[1] - 2, c.bb[2] - c.bb[0] + 4, c.bb[3] - c.bb[1] + 4]);
     for (const c of addedCands()) if (verdictOf(c)) { const r = radiusOf(c); holes.push([c.cx - r, c.cy - r, 2 * r, 2 * r]); }
     for (const a of st.areas) if (areaDone(a, w)) holes.push(areaRect(a));
-    g.querySelector("clipPath").replaceChildren(...holes.map(([x, y, width, height]) => el("rect", { x, y, width, height })));
+    shell.viewer.doneMask(holes.map(([x, y, width, height]) => [[x, y], [x + width, y], [x + width, y + height], [x, y + height]]));
   }
   function renderTasks() {
     if (!TRUTH) return;

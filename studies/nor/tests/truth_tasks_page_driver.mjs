@@ -142,7 +142,7 @@ const same = (p, q) => !!p && !!q && p.every((v, k) => Math.abs(v - q[k]) < 1e-6
 // req/shell/ground-truth/tagging: found, the image stays as it is viewed until Start GT tagging is pressed
 const ring = () => page.$eval("#overlay .ring", (r) => ({ shown: r.style.display !== "none" && getComputedStyle(r).display !== "none", stroke: getComputedStyle(r).stroke })).catch(() => ({ shown: false }));
 const frame = () => page.evaluate(() => { const f = document.querySelector("#overlay .area-frame"); return f && f.style.display !== "none" && getComputedStyle(f).display !== "none" ? ["x", "y", "width", "height"].map((k) => +f.getAttribute(k)) : null; });
-const cutShown = () => page.evaluate(() => { const g = document.querySelector("#overlay .reveal-marks"); return !!g && getComputedStyle(g).display !== "none"; });
+const cutShown = () => page.evaluate(() => { const g = document.querySelector("#overlay .done-mask"); return !!g && getComputedStyle(g).display !== "none"; });
 const tagRows = () => page.evaluate(() => ["show-gt-cut", "show-gt-frame"].map((id) => $("#" + id).disabled));
 const startSays = () => page.evaluate(() => { const b = $("#gt-start"); return b && b.offsetParent ? b.textContent.trim() : null; });
 let s = await now();
@@ -190,10 +190,10 @@ await check(await page.evaluate(() => { const p = $("#card-menu .pop"), r = p.ge
 await page.click("#card-menu summary");
 
 // req/nor/truth/marks: waiting, a faint outline and nothing else; decided, cut out of the image
-const holes = () => page.evaluate(() => [...document.querySelectorAll("#gt-reveal rect")].map((r) => ["x", "y", "width", "height"].map((k) => +r.getAttribute(k))));
+const holes = () => page.evaluate(() => [...document.querySelectorAll("#done-mask-clip polygon")].map((p) => { const q = p.getAttribute("points").split(" ").map((v) => v.split(",").map(Number)), xs = q.map((v) => v[0]), ys = q.map((v) => v[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)]; }));
 const mark = (i) => page.evaluate((i) => {
   const g = document.querySelector(`#overlay g[data-i="${i}"]`), out = g.querySelector("path:not(.red)"), cs = getComputedStyle(out);
-  const c = nor.candOf(i), holes = [...document.querySelectorAll("#gt-reveal rect")].map((r) => ["x", "y", "width", "height"].map((k) => +r.getAttribute(k)));
+  const c = nor.candOf(i), holes = [...document.querySelectorAll("#done-mask-clip polygon")].map((p) => { const q = p.getAttribute("points").split(" ").map((v) => v.split(",").map(Number)), xs = q.map((v) => v[0]), ys = q.map((v) => v[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)]; });
   const cut = holes.some(([x, y, w, h]) => x <= c.bb[0] - 2 + 1e-6 && y <= c.bb[1] - 2 + 1e-6 && x + w >= c.bb[2] + 2 - 1e-6 && y + h >= c.bb[3] + 2 - 1e-6);
   return { cls: g.getAttribute("class"), stroke: cs.stroke, opacity: +cs.strokeOpacity, outline: cs.display, num: getComputedStyle(g.querySelector(".num")).display, cut };
 }, i);
@@ -218,11 +218,6 @@ const viewAt = (x, y) => page.waitForFunction(([x, y]) => {
     && there(p.y - (v.top + sc.clientTop + sc.clientHeight / 2), sc.scrollTop, sc.scrollHeight - sc.clientHeight);
 }, [x, y]);
 await check(same(await frame(), rectOf(first.a)), "the area the walk is in is framed", [await frame(), rectOf(first.a)]);
-// the picture the study names stands behind the whole image, shown only where it is cut out; black under it
-await page.waitForFunction(() => document.querySelector("#overlay image.reveal"));
-const pic = await page.evaluate(() => { const im = document.querySelector("#overlay image.reveal"), bg = document.querySelector("#overlay .reveal-bg"); return { href: im?.getAttribute("href"), clip: im?.getAttribute("clip-path"), w: +im?.getAttribute("width"), bg: bg && getComputedStyle(bg).fill, bgClip: bg?.getAttribute("clip-path") }; });
-await check(pic.href === "https://acme.example/dog.jpg" && /gt-reveal/.test(pic.clip) && /gt-reveal/.test(pic.bgClip) && pic.bg === "rgb(0, 0, 0)" && pic.w === IW, "the picture the study links to, behind the whole image, black under it, shown only where it is cut out", pic);
-
 // req/nor/summary/mask: the mask shows only with the summary
 await check(await page.evaluate(() => st.mask.length === 1 && !document.querySelector("#overlay .mask-marks")), "the summary's mask is kept but not drawn while the study makes ground truth");
 
@@ -237,7 +232,7 @@ await toggle("Frame the area");
 await check(!(await frame()), "Frame the area off: no frame");
 await toggle("Frame the area");
 await toggle("Cut out what is done");
-await check(await hidden("#overlay .reveal-marks"), "Cut out what is done off: the image whole");
+await check(await hidden("#overlay .done-mask"), "Cut out what is done off: the image whole");
 await toggle("Cut out what is done");
 await toggle("Finalists");
 await check(await hidden(`#overlay g.pass.todo[data-i="${second.key.slice(2)}"]`), "Finalists off: no outline on a waiting finalist");
@@ -253,6 +248,15 @@ let want = await nextOpen(first.key);
 await check(s.cur === want && s.rows[0].startsWith(`1/${P} Finalists`) && s.bar[0].fill > 0 && s.back, "a thumbs up moves on to the walk's next item and fills the bar", { s, want });
 m = await mark(i0);
 await check(/\byes\b/.test(m.cls) && m.cut && m.outline === "none", "voted up, its area is cut out of the image", m);
+// the picture the study names stands behind the whole image, shown only where it is cut out; black under it
+await page.waitForFunction(() => document.querySelector("#overlay image.done-reveal"));
+const pic = await page.evaluate(() => { const im = document.querySelector("#overlay image.done-reveal"), bg = document.querySelector("#overlay .done-bg"); return { href: im?.getAttribute("href"), clip: im?.getAttribute("clip-path"), w: +im?.getAttribute("width"), bg: bg && getComputedStyle(bg).fill, bgClip: bg?.getAttribute("clip-path") }; });
+await check(pic.href === "https://acme.example/dog.jpg" && /done-mask-clip/.test(pic.clip) && /done-mask-clip/.test(pic.bgClip) && pic.bg === "rgb(0, 0, 0)" && pic.w === IW, "the picture the study links to, behind the whole image, black under it, shown only where it is cut out", pic);
+await page.click("#show-menu summary");
+await toggle("Cut out what is done");
+await check(await page.evaluate(() => !!document.querySelector("#overlay .done-mask")) && await hidden("#overlay .done-mask"), "with something cut out, Cut out what is done off: the image whole");
+await toggle("Cut out what is done");
+await page.click("#show-menu summary");
 // Back: the item before, to change a verdict
 await page.click("#task-back");
 s = await now();
@@ -355,7 +359,7 @@ await page.click("#gt-start");
 await page.evaluate(() => nor.decide(st.order[0].i, "approve"));
 await page.pictureFailed;
 await page.evaluate(() => new Promise((ok) => requestAnimationFrame(ok)));
-const none = await page.evaluate(() => ({ image: !!document.querySelector("#overlay image.reveal"), bg: getComputedStyle(document.querySelector("#overlay .reveal-bg")).fill }));
+const none = await page.evaluate(() => ({ image: !!document.querySelector("#overlay image.done-reveal"), bg: getComputedStyle(document.querySelector("#overlay .done-bg")).fill }));
 await check(!none.image && none.bg === "rgb(0, 0, 0)", "a picture that cannot load leaves the cut-outs black", none);
 await page.close();
 picture = true;

@@ -207,15 +207,11 @@
 #overlay.gt .num, #overlay.gt .let, #overlay.gt .red, #overlay.gt .lines, #overlay.gt .added text { display: none; }
 #overlay.gt g[data-i] path { stroke: #fff; stroke-width: 1px; stroke-opacity: .3; stroke-dasharray: none; }
 #overlay.gt g.yes path, #overlay.gt g.no path, #overlay.gt .added.yes, #overlay.gt .added.no { display: none; }
-#overlay .reveal-marks { pointer-events: none; }
-#overlay .reveal-bg { fill: #000; }
 /* the Show menu's rows for the tasks' markings */
 #overlay.gt.no-gt-pass g.pass.todo, #overlay.gt.no-gt-fails g.fail.todo, #overlay.gt.no-gt-added .added-marks,
-#overlay.gt.no-gt-cut .reveal-marks, #overlay.gt.no-gt-frame .area-frame { display: none; }
-/* out of tagging nothing is cut out: the image is viewed whole */
-#overlay.gt:not(.tagging) .reveal-marks { display: none; }
+#overlay.gt.no-gt-cut .done-mask, #overlay.gt.no-gt-frame .area-frame { display: none; }
 /* the cut-outs' edges unsmoothed, so neighbouring areas join with no seam */
-#overlay #gt-reveal rect { shape-rendering: crispEdges; }
+#overlay #done-mask-clip polygon { shape-rendering: crispEdges; }
 #overlay .area-frame { fill: none; stroke: #ffd400; stroke-width: 2; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke; pointer-events: none; }
 #overlay.gt .ring { stroke: #ffd400; stroke-opacity: 1; stroke-width: 2; }
 /* a curated ground truth's NoRs, in the added NoRs' yellow, none of the image's own colours (req/shell/ground-truth/view) */
