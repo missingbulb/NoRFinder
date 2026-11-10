@@ -4,8 +4,9 @@
 // only while the tagger tags, from Start GT tagging to Stop tagging (req/shell/ground-truth/tagging).
 "use strict";
 
-// started(): whether the study's first step is done; until it is, Submit stays off whatever the study says
-export function truthTasks({ $, icon, started }) {
+// started(): whether the study's first step is done; until it is, Submit stays off whatever the study says; heardBy(on):
+// the shell's own listener, told as the study is each time tagging starts or stops
+export function truthTasks({ $, icon, started, heardBy }) {
   let pick = null, submit = null, heard = null, wants = false, on = false;
   const rows = () => [...$("#gt-tasks").children].filter((li) => li.dataset.task !== "submit");
   const row = (key) => rows().find((li) => li.dataset.task === key) || null;
@@ -76,7 +77,7 @@ export function truthTasks({ $, icon, started }) {
       if (now === undefined) return on;
       now = !!now;
       if (now === on) return on;
-      on = now; tagged(on); heard?.(on);
+      on = now; tagged(on); heardBy?.(on); heard?.(on);
       return on;
     },
     row,
