@@ -32,7 +32,8 @@
       "scikit-image",
       "lazy-loader",
       "packaging",
-      "pillow"
+      "pillow",
+      "pillow-heif"
     ],
     "wheels": []
   },
@@ -46,8 +47,8 @@
     "from": [
       "drive"
     ],
-    "accept": ".jpg,.jpeg,.png,.webp,.tif,.tiff,.bmp",
-    "empty": "Load a photo of bookshelves (JPEG, PNG, WebP or TIFF), then press Find books."
+    "accept": ".jpg,.jpeg,.png,.webp,.tif,.tiff,.bmp,.heic,.heif",
+    "empty": "Load a photo of bookshelves (JPEG, PNG, WebP, TIFF or HEIC), then press Find books."
   },
   "channels": [
     {
@@ -70,7 +71,7 @@
     }
   ],
   "progress": {
-    "install": "Installing numpy, scipy, scikit-image, Pillow…",
+    "install": "Installing numpy, scipy, scikit-image, Pillow, pillow-heif…",
     "load": "Loading the book finder…",
     "open": "Reading the photo…",
     "find": "Finding the books…",

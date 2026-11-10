@@ -1,7 +1,8 @@
 """req/shell/image/open: the page reads and shows the image itself (web/image_open.js, under Node through
 image_open_driver.mjs). On TIFFs written by tifffile in the shapes the studies meet, its 8-bit planes and slices are
 the rule's own in numpy (numpy_view.py) to the bit, and so are its channels' names and colours and what it says of
-the file; a study's upper quantile, its black-point method and an 8-bit image kept as stored are honoured."""
+the file; a study's upper quantile, its black-point method and an 8-bit image kept as stored are honoured. A HEIC photo is
+decoded by the page's own libheif build to the pixels Pillow's HEIF plugin reads."""
 import json
 import os
 import shutil
@@ -175,3 +176,16 @@ def test_a_light_background_keeps_the_low_quantile(tmp_path):
     got, = opened(tmp_path, {'file': p})
     same_as_the_viewer(p, got)
     assert np.mean(np.frombuffer(got['volume_bytes'], np.uint8) == 0) < 0.05
+
+
+def test_a_heic_photo_is_decoded_by_the_page(tmp_path):
+    import pillow_heif
+    from PIL import Image
+    rng = np.random.default_rng(5)
+    a = np.repeat(np.repeat(rng.integers(0, 256, (12, 16, 3)), 8, 0), 8, 1).astype(np.uint8)
+    pillow_heif.from_pillow(Image.fromarray(a)).save(tmp_path / 'photo.heic', quality=-1)
+    want = np.asarray(pillow_heif.open_heif(tmp_path / 'photo.heic').to_pillow().convert('RGB'))
+    got, = opened(tmp_path, {'file': str(tmp_path / 'photo.heic'), 'view': {'stretch': False}})
+    assert (got['W'], got['H'], got['Z']) == (128, 96, 1) and [c.get('name') for c in got['channels']] == ['Red', 'Green', 'Blue']
+    planes = np.frombuffer(got['planes'], np.uint8).reshape(3, 96, 128).transpose(1, 2, 0)
+    assert np.abs(planes.astype(int) - want).mean() < 2

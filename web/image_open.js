@@ -1,5 +1,5 @@
 // Opening an image for the viewers, the same way in every study and with no Python (req/shell/image/open): a TIFF
-// read by split.js's reader, any other image as the browser decodes it. Each channel is shown under the name the file
+// read by split.js's reader, a HEIC (a phone's photo) by libheif, any other image as the browser decodes it. Each channel is shown under the name the file
 // gives it and in the colour the file displays it in; its contrast is set once over the whole stack, between its 0.5%
 // quantile and its upper one (the study's view.upper, else 99.8%), its black point then lifted where the black-point
 // method says (BLACK_POINT), or left as stored where the study's view.stretch is false; a stack comes flattened (each pixel the brightest of every slice) and slice by slice.
@@ -20,6 +20,12 @@ export const MOST = 8;
 const RGB = [{ name: "Red", colour: "#ff0000" }, { name: "Green", colour: "#00ff00" }, { name: "Blue", colour: "#0000ff" }];
 const MICRONS = ["micron", "um", "µm"];
 
+// libheif's WebAssembly build, fetched the first time a HEIC is opened
+const LIBHEIF = "https://cdn.jsdelivr.net/npm/libheif-js@1.19.8/libheif-wasm/libheif-bundle.mjs";
+const HEIF_BRANDS = new Set(["heic", "heix", "hevc", "hevx", "heim", "heis", "hevm", "hevs", "mif1", "msf1"]);
+const isHeif = (b) => b.length >= 12 && String.fromCharCode(...b.subarray(4, 8)) === "ftyp" && HEIF_BRANDS.has(String.fromCharCode(...b.subarray(8, 12)));
+let libheif = null;
+
 const isTiff = (b) => b.length >= 4 && ((b[0] === 0x49 && b[1] === 0x49 && b[2] === 42) || (b[0] === 0x4d && b[1] === 0x4d && b[3] === 42) ||
   (b[0] === 0x49 && b[1] === 0x49 && b[2] === 43) || (b[0] === 0x4d && b[1] === 0x4d && b[3] === 43));
 
@@ -27,12 +33,25 @@ const isTiff = (b) => b.length >= 4 && ((b[0] === 0x49 && b[1] === 0x49 && b[2] 
 export async function openImage(bytes, view = {}) {
   const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   if (isTiff(b)) return openTiff(b, view);
+  if (isHeif(b)) return openHeif(b, view);
   const bitmap = await createImageBitmap(new Blob([b])), W = bitmap.width, H = bitmap.height;
   const cv = new OffscreenCanvas(W, H), ctx = cv.getContext("2d", { willReadFrequently: true });
   ctx.drawImage(bitmap, 0, 0);
   const rgba = ctx.getImageData(0, 0, W, H).data;
   bitmap.close?.();
   return fromPixels(W, H, rgba, view, greyFile(b));
+}
+
+// its primary image, turned as the file says it was held, as RGB
+async function openHeif(b, view) {
+  libheif ||= import(LIBHEIF).then((m) => m.default());
+  const [im] = new (await libheif).HeifDecoder().decode(b);
+  if (!im) throw new Error("This HEIC file holds no image.");
+  const W = im.get_width(), H = im.get_height();
+  const rgba = await new Promise((ok, no) => im.display({ data: new Uint8ClampedArray(W * H * 4), width: W, height: H },
+    (d) => (d ? ok(d.data) : no(new Error("This HEIC file could not be decoded.")))));
+  im.free?.();
+  return fromPixels(W, H, rgba, view, false);
 }
 
 // Where each channel's black and white points sit, as [black, white] steps of its 256 between the 0.5% and upper

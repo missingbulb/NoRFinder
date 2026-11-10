@@ -1,11 +1,14 @@
 """The Bookshelf Reader's Python: a photo of shelves opened, its books found, and each book straightened for the
-page's readers (reading.js) to read. Any single 2D image Pillow opens: JPEG, PNG, WebP, a one-page TIFF."""
+page's readers (reading.js) to read. Any single 2D image Pillow opens: JPEG, PNG, WebP, a one-page TIFF, and HEIC."""
 import json
 
 import numpy as np
 from PIL import Image, ImageOps
+from pillow_heif import register_heif_opener
 
 import books
+
+register_heif_opener()
 
 
 def ready():

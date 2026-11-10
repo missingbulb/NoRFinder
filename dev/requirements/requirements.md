@@ -653,7 +653,9 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Set by the owner on 2026-11-07. The shell reads a TIFF (ImageJ hyperstacks, OME-TIFFs in one file and plain
-  TIFFs; uncompressed, LZW, Deflate or PackBits) and any image the browser decodes (PNG, JPEG), and opens it in
+  TIFFs; uncompressed, LZW, Deflate or PackBits), a HEIC (set by the owner on 2026-11-10: by libheif's
+  WebAssembly build, fetched from jsDelivr at a pinned version only when a HEIC is first opened, in every browser)
+  and any image the browser decodes (PNG, JPEG), and opens it in
   the study's viewer: its channels in the file's own order, each under the name the file gives it and in the
   colour the file displays it in, a z-stack flattened (each pixel the brightest of every slice) and slice by
   slice. Each channel's contrast is set once over the whole stack, never per slice, so signal that fades with
