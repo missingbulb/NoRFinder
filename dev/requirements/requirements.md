@@ -1077,16 +1077,19 @@ nobody has decided: what the page does there is not a requirement yet.
   leaving the site's pages open to crawlers. Test: `web-tests/test_published_site.py`.
   </details>
 
-- `req/shell/site/icons` The site, the app and each study show their own icon in the tab and their own poster in a shared link.
+- `req/shell/site/icons` The site, the app and each study show their own icon in the tab and their own poster and description in a shared link.
   <details>
 
   Set by the owner on 2026-11-02. The site's pages carry the site's favicon (`favicon.svg`, and
   `favicon.ico` for whatever asks for it unnamed) and its poster; the app carries a different icon
-  and its own poster. A study may name its own in `study.json`, `icon` (an SVG) and `poster` (a
-  1200 × 630 PNG), files under its `web/`: its address then carries them, and while it is on show
-  the tab's icon is its own; a study naming none shows the app's. A poster is named by its full
-  address (`og:image`), with the page's title and description, for a shared link's preview. Test:
-  `web-tests/test_published_site.py`, `web-tests/test_study_contract.py`, `web-tests/test_study_runs.py`.
+  and its own poster. Every study a person can open (any but an `unlisted` one, which only the tests
+  open) names its own in `study.json`, set by the owner on 2026-11-10: `icon` (an SVG) and `poster`
+  (a 1200 × 630 JPEG), files under its `web/`, and `description`, one line of at most 160 characters.
+  Its address then carries them, and while it is on show the tab's icon is its own; an unlisted study
+  naming none shows the app's. A poster is named by its full address (`og:image`), with the page's
+  title and description, for a shared link's preview; posters are JPEG, which every link preview
+  shows. Test: `web-tests/test_published_site.py`, `web-tests/test_study_contract.py`,
+  `web-tests/test_study_runs.py`.
   </details>
 
 - `req/shell/site/landing` The site's root is a short page saying what the site is, opening the app and each listed study.
