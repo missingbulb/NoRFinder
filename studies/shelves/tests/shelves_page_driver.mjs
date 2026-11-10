@@ -218,10 +218,19 @@ try {
   check(!(await selected()), "an approved book's title is not selected for retyping");
   // the cover picked on the photo, and a book already approved picked there too
   const toScreen = (x, y) => page.evaluate(([x, y]) => { const r = $("#base").getBoundingClientRect(); return [r.left + x * st.zoom, r.top + y * st.zoom]; }, [x, y]);
-  await page.mouse.click(...(await toScreen(210, 190)));
+  const viewOf = () => page.evaluate(() => [st.zoom, $("#scroller").scrollLeft, $("#scroller").scrollTop]);
+  // zoomed in, the cover's left edge alone in view, at the view's right
+  await page.waitForTimeout(600);
+  for (let i = 0; i < 4; i++) await page.click("#zoom-in");
+  await page.evaluate(() => { const sc = $("#scroller"); sc.scrollLeft = 130 * st.zoom - sc.clientWidth + 40; sc.scrollTop = 190 * st.zoom - sc.clientHeight / 2; });
+  const viewBefore = await viewOf();
+  await page.mouse.click(...(await toScreen(125, 190)));
   check(await value() === "Title 180x180", "clicking a book on the photo opens it in the task", await value());
+  await page.waitForTimeout(600);
+  check(JSON.stringify(await viewOf()) === JSON.stringify(viewBefore), "a book clicked on the photo, partly in view, leaves the view where it was", [viewBefore, await viewOf()]);
   await page.waitForFunction(() => document.activeElement === $(".bs-item input"));
   check(await selected(), "a book picked on the photo, not yet approved, has its title selected to retype");
+  for (let i = 0; i < 4; i++) await page.click("#zoom-out");
   await page.mouse.click(...(await toScreen(77, 200)));
   check(await value() === "Title 240x35", "a book already approved opens from the photo too", await value());
   await page.mouse.click(...(await toScreen(210, 190)));
