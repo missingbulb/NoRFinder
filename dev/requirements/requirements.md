@@ -702,6 +702,14 @@ nobody has decided: what the page does there is not a requirement yet.
   status line. Test: `web-tests/test_image_open.py`.
   </details>
 
+- `req/shell/image/opens-fitted` Every image opens whole in the view, never above 100%.
+  <details>
+
+  Set by the owner on 2026-11-10, in every study and the 2D viewer. An image larger than the view opens shrunk to
+  fit it; one smaller opens at 100%, centred in the view. The next image opens the same way, whatever the last one
+  was zoomed to. Test: `web-tests/test_image_fit_page.py`.
+  </details>
+
 - `req/shell/image/progressive` An image shows while it downloads.
   <details>
 
