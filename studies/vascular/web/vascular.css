@@ -49,11 +49,14 @@
 #gt-mini { position: absolute; top: 12px; left: 12px; z-index: 5; width: var(--mm-width); border: 2px solid #fff; border-radius: var(--r-ctl);
   background: var(--panel); box-shadow: 0 4px 14px #0008; overflow: hidden; }
 #gt-mini .mm-head { display: flex; align-items: center; height: 24px; padding: 0 6px; font-size: 12px; font-weight: 600; color: var(--dim); user-select: none; }
-#gt-mini .mm-body { display: grid; gap: 2px; padding: 4px; background: #000; }
+#gt-mini .mm-body { position: relative; padding: 4px; background: #000; }
+#gt-mini-image { position: absolute; top: 4px; left: 4px; width: calc(100% - 8px); height: calc(100% - 8px); image-rendering: pixelated; }
+#gt-mini .mm-areas { position: relative; display: grid; gap: 2px; }
 #gt-mini .mm-body button { min-width: 0; padding: 0; border: 1px solid #fff6; border-radius: 2px; background: transparent; cursor: pointer; }
 #gt-mini .mm-body button:hover { border-color: #fff; }
-#gt-mini .mm-body button.part { background: color-mix(in srgb, var(--yes) 35%, transparent); }
-#gt-mini .mm-body button.done { background: var(--yes); border-color: var(--yes); }
+/* the stack stays seen through an area's mark */
+#gt-mini .mm-body button.part { background: color-mix(in srgb, var(--yes) 25%, transparent); }
+#gt-mini .mm-body button.done { background: color-mix(in srgb, var(--yes) 55%, transparent); border-color: var(--yes); }
 #gt-mini .mm-body button.now { outline: 2px solid #fff; outline-offset: 0; z-index: 1; }
 #task-tools { display: inline-flex; align-items: center; gap: 6px; }
 #task-tools .link { font-size: 12px; padding: 2px 0; white-space: nowrap; }
