@@ -769,7 +769,6 @@ function imageOpened(m) {
 function fileInfo(rows) {
   const box = $("#file-info"), item = (tag, text, cls) => Object.assign(document.createElement(tag), { textContent: text, className: cls || "" });
   box.replaceChildren(...(rows || []).flatMap(([k, v]) => [item("dt", k), item("dd", v)]));
-  if (rows && !rows.some(([k]) => k === "Microscope")) box.append(item("dd", "No microscope or acquisition details in the file.", "dim none"));
   $("#file-box").classList.toggle("empty", !rows);
   if (!rows) $("#file-box").open = false;
 }
@@ -798,7 +797,7 @@ function placeLoad() {
 // filled until an image is open and plain after, and Unload once one is
 function imageBox() {
   const opening = page.get("opening"), im = page.get("image"), name = opening?.name || im?.name, remoteOn = fromRemote();
-  $("#file-name").textContent = remoteOn && name ? "Details" : name || "No image loaded"; $("#file-name").classList.toggle("dim", !name);
+  $("#file-name").textContent = remoteOn && name ? "Details" : name || ""; $("#file-box").hidden = !name;
   fileInfo(opening ? null : im?.info || null);
   $("#load").classList.toggle("done", !!im); $("#unload").hidden = !im;
   const listed = remoteOn && recentAll().length > 0;

@@ -214,7 +214,7 @@ export function mount(shell) {
 
   // the titles, outside ground truth: what the matcher is sent
   function list() {
-    $("#bs-found").textContent = books.length ? `${books.length} books: ${books.filter((b) => b.view === "spine").length} spines, ${books.filter((b) => b.view === "cover").length} covers.` : "Nothing found yet.";
+    $("#bs-found").textContent = books.length ? `${books.length} books: ${books.filter((b) => b.view === "spine").length} spines, ${books.filter((b) => b.view === "cover").length} covers.` : "";
     if (truth()) return;
     $("#bs-list").replaceChildren(...books.map((b) => {
       const li = document.createElement("li"); li.className = b === cur ? "current" : "";

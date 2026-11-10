@@ -256,15 +256,18 @@ await check(ch.map((r) => r.name).join() === "Grey,Nuclei,Blue" && ch.map((r) =>
 await check(ch[0].file.includes("Ch1"), "the file's own name for a channel the study names shows beside it", ch[0]);
 await check((await pixel(15, 15)).join() === "255,200,255", "each channel in its colour, added", await pixel(15, 15));
 await shot("channels", "#image-box");
+const said = await page.evaluate(() => document.querySelector("#file-info").textContent);
+await check(!/microscope/i.test(said), "the details say nothing of what the file does not carry (req/shell/image/file-info)", said);
 
 // ---- Unload: the page as it was before any image ----
 await page.click("#unload");
-await page.waitForFunction(() => document.querySelector("#file-name").textContent === "No image loaded" && document.querySelector("#fx-result") && document.querySelector("#status").textContent.startsWith("Ready"));
+await page.waitForFunction(() => document.querySelector("#file-box").hidden && document.querySelector("#fx-result") && document.querySelector("#status").textContent.startsWith("Ready"));
 const clear = await page.evaluate(() => ({ stage: document.querySelector("#stage").hidden, empty: !document.querySelector("#empty").hidden,
   minimap: !!document.querySelector("#minimap").offsetParent, unload: !!document.querySelector("#unload").offsetParent, img: !!st.img,
   shine: document.querySelector("#load-main").classList.contains("shine"), done: document.querySelector("#load").classList.contains("done"),
   crumbs: [...document.querySelectorAll("#sb-steps .crumb")].map((c) => c.textContent).join(), fx: document.querySelector("#fx-result").textContent,
   overlay: document.querySelector("#overlay").children.length, status: document.querySelector("#status").textContent }));
+await check(await page.evaluate(() => document.querySelector("#file-name").textContent === ""), "with no image, the Image box names none (req/shell/load/button)");
 await check(clear.stage && clear.empty && !clear.minimap && !clear.unload && !clear.img, "Unload clears the image, the minimap and itself", clear);
 await check(clear.shine && !clear.done && clear.crumbs === "Load image", "Load shines again, and the steps start over", clear);
 await check(clear.fx === "Nothing counted yet." && !clear.overlay && clear.status.startsWith("Ready"), "the study starts over too", clear);

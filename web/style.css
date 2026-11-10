@@ -185,7 +185,6 @@ body.resizing #layout { transition: none; }
 #file-info { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 6px 0 0 13px; font-size: 12px; }
 #file-info dt { color: var(--dim); }
 #file-info dd { margin: 0; overflow-wrap: anywhere; }
-#file-info dd.none { grid-column: 1 / -1; margin-top: 2px; }
 /* a row per channel, on one line: its checkbox, its name, its description behind a (?), the file's own name
    for it, one slider holding its black and white points over a ramp from black to white, and its colour
    picker, the one part in the channel's colour */

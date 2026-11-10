@@ -85,7 +85,8 @@
     "stretch": false,
     "hide": [
       "ruler",
-      "grid"
+      "grid",
+      "channels"
     ]
   }
 }

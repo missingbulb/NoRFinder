@@ -157,6 +157,9 @@ nobody has decided: what the page does there is not a requirement yet.
   is named for its colour. The rows start over with every image, and before any image there are none (set by
   the owner on 2026-11-04). Test:
   `web-tests/test_image_box_page.py`, `studies/viewer/tests/test_viewer.py`.
+  Set by the owner on 2026-11-10, a study may show no channel rows at all, naming `channels` in its
+  `study.json`'s `view.hide`: the Bookshelf Reader's photos are the camera's colours, nothing to unmix
+  (`studies/shelves/tests/test_shelves_page.py`).
   </details>
 
 - `req/shell/data/drive-access` A study manager is offered, in the folder tree, to let the site into the study's folders, just those, and sees which it may write.
@@ -635,8 +638,10 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Folded at first: the field in µm and px, the pixel size, the bit depth, the ImageJ series, the
-  microscope and date when the file names them (the lab's ImageJ exports never do, and the box says
-  so), and the software that saved it (`web-tests/test_file_info.py`).
+  microscope and date when the file names them (the lab's ImageJ exports never do), and the software that saved
+  it (`web-tests/test_file_info.py`). What the file does not carry goes unsaid: set by the owner on 2026-11-10, no
+  line says the microscope or acquisition is missing, and with no image open the box names none and shows no
+  details line, the empty viewer saying it already (`web-tests/test_image_box_page.py`).
   </details>
 
 - `req/shell/image/minimap` A minimap hovers over the image, showing the part in view; drag, zoom and step by mouse.
