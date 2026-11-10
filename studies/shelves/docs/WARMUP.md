@@ -11,7 +11,7 @@ page must do is `req/shelves` in [its requirements](../requirements.md).
 study.json            the study's contract with the shell; stage GT
 py/shelves.py         the Python entry: opens the photo (HEIC through pillow-heif), answers view, find and straighten
 py/books.py           the finder (find), its text finder's view of the photo, and the straightening of four corners
-lab/photos.py         the owner's photos from Drive (data/sources.json)
+lab/photos.py         the owner's photos from Drive (data/sources.json), and with --gt the ground truth
 lab/grade.py          the finder and the readers scored against a submitted ground truth
 lab/words.py          the Hebrew word list from FrequencyWords at a pinned commit, into web/words/
 web/shelves.js        the page: Find books, Read titles, the titles in Summary, the ground-truth task and its pictures
@@ -106,8 +106,8 @@ corner at once; what the reader reads is still Python's straightening of the fil
 never covered. Flip reads the book again at that turn alone, in both languages. The submitted `<photo>_books_gt.json` keeps, for each found book, what the
 finder and the reader proposed beside the corrected values, so one file scores both the finder (corners, view) and
 each reader (text), which `lab/grade.py` does. The ground truth is in the study's GT folder on Drive
-(`GT/<photo>__<sha8>/gt_<tagger>.json` under the study's root), fetched by hand for now (`gdown`, as `lab/photos.py`
-does, into `data/raw/gt/`). Two photos so far: `1g4iFN`, re-tagged 2026-11-10 after the task's rework, 13 books right (4 of them added
+(`GT/<photo>__<sha8>/gt_<tagger>.json` under the study's root), fetched by `python3 studies/shelves/lab/photos.py --gt`
+into `data/raw/gt/<photo's drive id>__<tagger>.json`. Two photos so far: `1g4iFN`, re-tagged 2026-11-10 after the task's rework, 13 books right (4 of them added
 as missed) and 1 found box marked no book; `1HyJrL`, tagged 2026-11-10, 19 books right, all found (the book the
 frame cuts at its left edge left untagged).
 
