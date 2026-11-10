@@ -489,8 +489,9 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/shell/ground-truth/pending` Taggers and Study Managers see which images have ground truth, and which have it pending, in two listings.
   <details>
 
-  Set by the owner on 2026-11-05; its calls set by the owner on 2026-11-07. The Drive dialog and Data
-  Management mark an image as having ground truth when the curated folder holds its subfolder: one listing
+  Set by the owner on 2026-11-05; its calls set by the owner on 2026-11-07. The Drive dialog, the image
+  selector's recent images (set by the owner on 2026-11-10; one whose SHA-256 this device never learned carries
+  none) and Data Management mark an image as having ground truth when the curated folder holds its subfolder: one listing
   of curated, no file in it read. To a Ground Truth Tagger and a Study Manager they also mark it pending, or
   rejected, from one listing of submissions: each image subfolder there carries, as public properties, when
   its newest submission landed and when it was last accepted or rejected, which Submit, Accept and Reject

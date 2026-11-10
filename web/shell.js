@@ -821,6 +821,7 @@ async function openBytes(name, bytes, source) {
   tasks.tagging(false);
   study.opening?.(name, source);
   st.sha = await sha256(bytes);
+  if (remote.owns(source)) noteSha(source.id, st.sha);
   page.set({ opening: { name } }); statusBar();
   view.clear();
   busy(true, "Reading the image…", st.peeked && "peek");
@@ -926,7 +927,7 @@ function closeTip(id) {
 $("#image-menu").addEventListener("toggle", () => {
   if (!$("#image-menu").open) return;
   closeTip("recent-files");
-  greyRecents();
+  greyRecents(); markRecentTruth();
   const rows = [...$("#recent").querySelectorAll(".recent")];
   (rows.find((b) => b.getAttribute("aria-selected") === "true") || rows[0])?.focus();
 });
@@ -947,6 +948,24 @@ function remember(id, name, path) {
   const mine = [{ id, name, path, study, at: Date.now() }, ...rest.filter((r) => r.study === study)].slice(0, RECENT_KEEP);
   writeJSON(RECENT, [...mine, ...rest.filter((r) => r.study !== study)]);
   showRecent();
+}
+// the SHA-256 of an image the recents list, which names its ground truth's subfolder
+function noteSha(id, sha) {
+  const all = readJSON(RECENT, []), r = all.find((x) => x.id === id && x.study === manifest.id);
+  if (r && r.sha !== sha) { r.sha = sha; writeJSON(RECENT, all); }
+}
+// the recents' ground-truth tags, as the remote files dialog's (req/shell/ground-truth/pending); an image whose SHA-256
+// this device never learned carries none
+async function markRecentTruth() {
+  if (offlineCopy.offline() || !fromRemote()) return;
+  const shas = Object.fromEntries(Object.values(readJSON(LISTINGS)).flatMap((l) => l.items || []).filter((f) => f.sha).map((f) => [f.id, f.sha]));
+  for (const r of recentHere(readJSON(RECENT, []))) if (r.sha) shas[r.id] = r.sha;
+  let map;
+  try { map = await truth.status(role === "tagger" || role === "data"); } catch (e) { console.warn("ground truth status not read:", e); return; }
+  for (const r of recentAll()) {
+    if (r.local || !shas[r.id]) continue;
+    putTruthTag($("#recent").querySelector(`.recent[data-id="${r.id}"]:not([data-local]) .gt-tag`), map.get(subfolderName(r.name, shas[r.id])));
+  }
 }
 // the browser's references to files from this computer, by id, in IndexedDB: what a page cannot keep anywhere else
 function handles(mode, act) {
@@ -1000,6 +1019,13 @@ function ago(at) {
   const h = (Date.now() - at) / 3600000, d = h / 24;
   return h < 1 ? "<1h" : h < 24 ? `${Math.floor(h)}h` : d < 30 ? `${Math.floor(d)}d` : d < 365 ? `${Math.floor(d / 30)}mo` : `${Math.floor(d / 365)}y`;
 }
+// an image's ground-truth tag, [text, title, state], from its entry in truth.status's map; none without one
+const truthTag = (g) => (!g ? [] : g.pending ? ["GT pending", "A tagger submitted ground truth for it, not curated yet", "pending"]
+  : g.curated ? ["GT", "It has curated ground truth", "curated"] : g.rejected ? ["GT rejected", "Its submitted ground truth was rejected", "rejected"] : []);
+const putTruthTag = (tag, g) => {
+  const [text, title, state] = truthTag(g);
+  if (tag && text) Object.assign(tag, { textContent: text, title }).dataset.state = state;
+};
 const agoTag = (at) => (at == null ? "" : `<span class="age" title="Opened ${esc(new Date(at).toLocaleString())}">${ago(at)}</span>`);
 function showRecent() {
   const list = recentAll(), box = $("#recent"), open = page.get("image")?.source;
@@ -1009,7 +1035,7 @@ function showRecent() {
     b.type = "button"; b.className = "item recent"; b.title = `${where} / ${r.name}`; b.dataset.id = r.id; if (r.local) b.dataset.local = "";
     b.setAttribute("role", "option"); b.setAttribute("aria-selected", String(r.id === on));
     const logo = r.local ? "computer-logo" : remote.logo.id;
-    b.innerHTML = `<svg class="${logo}" aria-hidden="true"><use href="#${logo}"/></svg><span class="what"><span class="name">${esc(r.name)}</span><span class="where">${esc(where)}</span></span>${agoTag(r.at)}`;
+    b.innerHTML = `<svg class="${logo}" aria-hidden="true"><use href="#${logo}"/></svg><span class="what"><span class="name">${esc(r.name)}</span><span class="where">${esc(where)}</span></span>${r.local ? "" : '<span class="gt-tag"></span>'}${agoTag(r.at)}`;
     b.onclick = () => { $("#image-menu").open = false; r.local ? openLocalRecent(r) : openRecent(r); };
     return b;
   }));
@@ -1179,9 +1205,7 @@ function remoteDialog() {
     for (const f of items) {
       const g = !f.folder && f.sha && map.get(subfolderName(f.name, f.sha)), tag = $("#remote-list").querySelector(`.item[data-id="${f.id}"] .gt-tag`);
       if (!g || !tag) continue;
-      const [text, title] = g.pending ? ["GT pending", "A tagger submitted ground truth for it, not curated yet"] : g.curated ? ["GT", "It has curated ground truth"]
-        : g.rejected ? ["GT rejected", "Its submitted ground truth was rejected"] : [];
-      if (text) { tag.textContent = text; tag.title = title; tag.dataset.state = g.pending ? "pending" : g.curated ? "curated" : "rejected"; }
+      putTruthTag(tag, g);
     }
   };
   // the study's own folders to choose from, by name (req/shell/drive/dialog)
