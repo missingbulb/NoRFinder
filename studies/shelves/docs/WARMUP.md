@@ -157,27 +157,8 @@ pixels, R7 gives 18-22 and R8 35-38; the container's own decoding gives R8 41. R
   spines; one runs through a board, one is on the drill. A shelf of thin spines alone stays merged: the spacing is
   measured after the first, wider crowding.
 - **The run:** three ideation routes (fresh lenses, explaining to a child, a transformed view) gave directions A-F,
-  each built and scored separately; then a random sweep of the constants.
-
-  | direction | route | container, tuning (R7 49/92) | verdict |
-  |---|---|---|---|
-  | A colour regions as proposals | child | 59/92 (57 added only where no box) | **kept** |
-  | B lean read from the text strokes, a seed per stroke | child | 46-48/92 | rejected: the misses fail at the seam on dark, cluttered books, not at the lean |
-  | C cabinets split at their uprights, the board as the floor | child, view | 53/92, loses 3 R7 books | not kept: what it gains, D gains; thresholds set on `1zktX1` alone |
-  | D crowding at the shelf's own spacing | lenses | 59/92 | **kept** |
-  | E a scored objective in place of `most_books` | lenses | perfect selection over R7's candidates: 49/92 | killed by its test: generation is the wall, not selection |
-  | F lean ridge: a signed colour derivative along each lean, a Viterbi ridge, persistent peaks | view | 69/92, gated | not kept (below) |
-  | A+D+F | fusion | 72/92, loses `1zktX1` #2 | not kept: +2 over A+D for 7 settings fit to one photo, a gate between 0.045 and 0.066, twice the time |
-  | 60 random constant mutations | mutation | best 51/92 (`WORK` 1440, loses one on `1g4iFN`); 16 worse; no-op mutants exactly R7 | no constant change comes near |
-
-  F, the lean ridge, runs only where the shelf's spacing over its height is under 0.055 (without the gate `1HyJrL`
-  falls to 11/19); untuned it gives 65/92 with A+D. It is the route to revisit once more photos of thin packed spines
-  are tagged. Its prototype found both sides of 52 of `1zktX1`'s 59 books.
-- **Untried, from the routes:** a foot line fitted through a cell's boxes, capping the rest (taller-through-board, up
-  to 8 of 16; kill: clamping feet to the median foot offline gains under 3); verifying each side by its 8-band
-  barcode, dropping a line whose flanks match (wider merges; kill: fewer false boxes with no loss); a neighbour's
-  height and lean to fill a plain spine between two found ones (14, 15, 31, 34); a learned verifier over the
-  candidates with leave-one-photo-out (once more photos are tagged).
+  each built and scored separately, then a random sweep of the constants; each is a row of
+  [Directions tried](#directions-tried).
 
 ### R7 — no box over another; a line the books cross is no shelf; readings spelled (2026-11-10)
 
@@ -420,6 +401,27 @@ number below is a score.
   languages under one address. Tesseract.js core 6.1.2 lacks the build tesseract.js 7 asks for; 7.0.0 it is.
   Community Hebrew models for ONNX on Hugging Face (a few months old, unlicensed or with no downloads) were not
   taken.
+
+## Directions tried
+
+Every direction built and scored, kept or not, in brief enough to rebuild, with what would make it worth another
+try. Scores are matched books on the tuning photos at the time (container path for R8's rows; R7 then stood at
+49/92). The untried ones from the same routes follow.
+
+| id | direction (how it works) | result | verdict | revisit if |
+|---|---|---|---|---|
+| R8-A | **Colour regions as proposals**: the shelf at 500 px wide cut into Felzenszwalb regions (scales 50, 150); a region long, thin, within 50° of upright and filling 60% of its PCA rectangle gives two side lines, each moved onto the strongest seam within a quarter of its width and 3°, checked by `spine` | +8 to +10 | **kept** (`books.regions`) | - |
+| R8-B | **Lean from the text strokes**: text-map components' PCA axes (0.7° median error against the book's lean) narrow the side-line scan to the local lean ± 3°, and a line is seeded beside each stroke | -1 to -3 | rejected: the misses fail at the seam test on dark, cluttered spines, not at the lean | a seam test that holds on dark books exists, or text strokes are found on most spines (24 of 60 on `1zktX1`) |
+| R8-C | **Cabinets and floors**: uprights are column runs of board colour with no horizontal edges through the band; each shelf split into cells at them, `shelf_books` per cell, feet clamped at the cell's board | +4, loses 3 | not kept: what it gains, R8-D gains; its thresholds were set on `1zktX1` alone | more photos of multi-cabinet bookcases are tagged, or boxes through boards dominate the false ones |
+| R8-D | **Crowding at the shelf's own spacing**: two edges between books are one when closer than 0.7 of the shelf's 25th-percentile spacing (floor: twice the narrowest book) | +10 | **kept** (`CROWD`) | - |
+| R8-E | **A scored objective in place of `most_books`**: a DP over candidate intervals scored by fit, end steps, text column and colour uniformity | oracle over R7's candidates: +0 (+3 with the inner-line veto soft) | killed before building: selection is not the wall | candidate generation improves enough that the oracle ceiling rises above the score |
+| R8-F | **Lean ridge**: per shelf, a signed colour derivative across a line integrated along leans -42° to 42° gives an (x, lean) map; a Viterbi ridge through it with a penalty per degree; each x scored by the 5th smallest of 8 height bands (persistence), peaks by prominence 0.1; lines added with their own crowding gap, `REACH` 2, only on shelves whose spacing is under 0.055 of their height | +20 alone, +2 over A+D | not kept: 7 settings fit to one photo, a gate with a thin margin, twice the time, loses `1zktX1` #2; untuned +16 with A+D | photos of thin packed spines beyond `1zktX1` are tagged; also a ready generator for searching a gap between found books |
+| R8-sweep | **60 random constant mutations** (1-3 constants ×0.6-1.6 each) | best +2 (`WORK` 1440, loses one on `1g4iFN`), 16 worse | no constant change comes near a structural one | - |
+
+Untried, from the same routes: a foot line fitted through a shelf's boxes, capping the rest (boxes through the
+board; kill: clamping feet to the median foot offline gains under 3); each side verified by its 8-band barcode, a
+line whose flanks match dropped (boxes over two books; kill: fewer false boxes with no loss); a learned verifier over
+the candidates, leave-one-photo-out (once more photos are tagged).
 
 ## Domain assumptions
 
