@@ -127,7 +127,7 @@ export function viewer(shell) {
     st.img = null; st.plain = null; st.peeked = false; st.W = st.H = 0;
     asBuilt();
     ruler.reset(); clear();
-    const c = $("#base"); c.width = c.height = 0;
+    const c = $("#base"); c.width = c.height = 0; shrinkLater();
     $("#empty").hidden = false; $("#stage").hidden = true;
     choose(declared.length, null); tools();
   }
@@ -152,8 +152,23 @@ export function viewer(shell) {
     // for its own crops
     if (!st.plain) st.plain = composite(atFirst((ch) => ch.shown));
     minimap.draw(c);
+    shrinkLater();
     for (const fn of drawnHeard) fn();
   }
+  // Below 100% the screen shows the image averaged down to the pixels it has there, over the base: the browser's own
+  // scaling of a canvas picks a few of the pixels under each screen pixel rather than averaging them all
+  let shrinking = 0;
+  function shrink() {
+    shrinking = 0;
+    const s = $("#shrunk"), base = $("#base");
+    s.hidden = !st.img || st.zoom >= 1;
+    if (s.hidden) { s.width = s.height = 0; return; }
+    const k = Math.min(1, st.zoom * devicePixelRatio);
+    s.width = Math.max(1, Math.round(st.W * k)); s.height = Math.max(1, Math.round(st.H * k));
+    const g = s.getContext("2d"); g.imageSmoothingQuality = "high"; g.drawImage(base, 0, 0, s.width, s.height);
+    Object.assign(s.style, { width: base.style.width, height: base.style.height });
+  }
+  const shrinkLater = () => { shrinking ||= requestAnimationFrame(shrink); };
   // every channel at its first points, for a picture of the image
   const picture = () => composite(atFirst(() => true));
 
@@ -252,7 +267,7 @@ export function viewer(shell) {
     svg.style.fontSize = 12 / st.zoom + "px";
     sc.scrollLeft = ix * st.zoom - ax; sc.scrollTop = iy * st.zoom - ay;
     $("#zoom-label").textContent = Math.round(st.zoom * 100) + "%";
-    ruler.draw(); grid.draw(); hooks.zoomed?.(); minimap.place();
+    ruler.draw(); grid.draw(); hooks.zoomed?.(); minimap.place(); shrinkLater();
   }
   // the whole image in view
   function fit() {

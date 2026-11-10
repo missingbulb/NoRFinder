@@ -343,6 +343,7 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
 #empty { color: var(--dim); padding: 40px; text-align: center; }
 #stage { position: relative; }
 #base { image-rendering: pixelated; display: block; }
+#shrunk { position: absolute; left: 0; top: 0; pointer-events: none; }
 #overlay { position: absolute; left: 0; top: 0; }
 #grid { position: absolute; left: 0; top: 0; pointer-events: none; }
 #grid-pop { position: fixed; inset: auto; padding: 10px 14px; flex-direction: column; gap: 8px; font-size: 13px;

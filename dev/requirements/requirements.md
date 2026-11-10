@@ -720,6 +720,15 @@ nobody has decided: what the page does there is not a requirement yet.
   A crop or picture narrower than its box shrinks as a whole (`studies/nor/tests/test_page_layout.py`).
   </details>
 
+- `req/shell/image/scaling` Zoomed out, the 2D viewer shows the image averaged down, as a photo viewer does; from 100% up, its pixels as sharp squares.
+  <details>
+
+  Set by the owner on 2026-11-10, in every study. Below 100% each screen pixel shows the average of the image
+  pixels under it, so fine detail, a node or a book's title, neither breaks into scattered dots nor speckles,
+  even a phone photo shrunk six times to fit; from 100% up each image pixel is a sharp square. Test:
+  `web-tests/test_image_scaling_page.py`.
+  </details>
+
 - `req/shell/image/toolbar` The toolbar's left is the study's, how its results show over the image; its right is the viewer's.
   <details>
 

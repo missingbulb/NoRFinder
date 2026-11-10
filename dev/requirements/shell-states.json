@@ -439,7 +439,10 @@
                         {"when": {"image": ["none"]}, "is": "hidden"}
                       ],
                       "children": [
-                        {"name": "Image's canvas", "select": "#base", "req": "req/shell/image/minimap"}
+                        {"name": "Image's canvas", "select": "#base", "req": "req/shell/image/minimap"},
+                        {"name": "Image zoomed out", "select": "#shrunk", "req": "req/shell/image/scaling",
+                          "steady": "shown only below 100% zoom, which no state here reaches",
+                          "rule": [{"when": {}, "is": "hidden"}]}
                       ]
                     }
                   ]
