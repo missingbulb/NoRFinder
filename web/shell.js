@@ -645,6 +645,9 @@ async function start() {
   if ("serviceWorker" in navigator) {
     try {
       await navigator.serviceWorker.register("sw.js");
+      // the same worker for the app's address with no slash, which its own scope stops short of, so it opens offline too
+      const app = new URL(".", new URL("sw.js", location.href)).pathname.replace(/\/$/, "");
+      navigator.serviceWorker.register("sw.js", { scope: app }).catch((e) => console.info(`no service worker at ${app}:`, e.message));
       await navigator.serviceWorker.ready;
       if (!navigator.serviceWorker.controller) {
         // first visit: wait for the cache to take control so the downloads below are kept

@@ -1,13 +1,20 @@
-"""Serves the built site (dev/build/site/) on this computer the way Cloudflare does: /app/nor is app/nor.html.
+"""Serves the built site (dev/build/site/) on this computer the way Cloudflare does: /app/nor is app/nor.html, with the headers _headers names.
 
   python3 dev/tools/build/serve.py [port]        then open http://localhost:8000/
 """
-import functools, http.server, os, sys
+import functools, http.server, os, re, sys
 
 SITE = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'build', 'site'))
+HEADERS = open(os.path.join(SITE, '_headers')).read() if os.path.isfile(os.path.join(SITE, '_headers')) else ''
 
 
 class Site(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        for at, name, value in re.findall(r'^(/\S*)\n[ \t]+([\w-]+):\s*(.*)$', HEADERS, re.M):
+            if self.path.split('?')[0] == at:
+                self.send_header(name, value)
+        super().end_headers()
+
     def translate_path(self, path):
         f = super().translate_path(path)
         return f + '.html' if not os.path.exists(f) and os.path.isfile(f + '.html') else f

@@ -12,7 +12,7 @@ ship, each study's python.wheels) into web/vendor/, so the page never depends on
 writes the version history the page shows (version_history.py) and the studies its header offers
 (studies.json); writes the files each study's generated names, from its own scripts; publishes the page again as app/<id>.html for each of them, which Cloudflare serves at
 /app/<id>, carrying the study's own icon and poster (req/shell/site/icons); lists the studies on the landing
-page (req/shell/site/landing); writes sitemap.xml and robots.txt (req/shell/site/crawlers); and writes the deployment's
+page (req/shell/site/landing); writes sitemap.xml and robots.txt (req/shell/site/crawlers) and the headers Cloudflare adds (_headers); and writes the deployment's
 settings into the published web/config.js from the repository variables: GOOGLE_API_KEY turns on
 loading from Google Drive, GOOGLE_CLIENT_ID signing in with Google. The folder its dialog opens on is each study's own (the first of files.folders in its study.json).
 """
@@ -187,6 +187,8 @@ def assemble(root, out, env):
         f.write(sitemap(out))
     with open(os.path.join(out, 'robots.txt'), 'w') as f:
         f.write(robots())
+    with open(os.path.join(out, '_headers'), 'w') as f:
+        f.write(headers())
     text = config_js(env)
     if text:
         with open(os.path.join(app, 'config.js'), 'w') as f:
@@ -261,6 +263,12 @@ def sitemap(out):
 def robots():
     """Crawlers kept off the app, every study's address in it included (req/shell/site/crawlers)."""
     return f'User-agent: *\nDisallow: /{APP}/\n\nSitemap: {SITE_URL}/sitemap.xml\n'
+
+
+def headers():
+    """Cloudflare's _headers: the app's service worker allowed to serve the app's address with no slash too, which
+    the site redirects to the app's own (req/shell/offline/default)."""
+    return f'/{APP}/sw.js\n  Service-Worker-Allowed: /{APP}\n'
 
 
 def offline_list(out):

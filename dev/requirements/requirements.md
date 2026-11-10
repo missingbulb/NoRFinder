@@ -859,7 +859,8 @@ nobody has decided: what the page does there is not a requirement yet.
   a copy of the whole site's own files on this device, the one release the build lists in
   `offline.json` with each file's SHA-256, each checked against that list and refetched only when it
   changed. With no network the page then opens at its own address and at every study's, from that
-  copy. A study whose Python is already on this device runs; one whose Python is not says so: it
+  copy, in each form the site answers online: `/app` and a study's address with a trailing slash lead where
+  the site redirects them (set by the owner on 2026-11-10). A study whose Python is already on this device runs; one whose Python is not says so: it
   needs the internet once, or Make Available Offline (`req/shell/offline/per-study`). It says so plainly, not as an error
   and with no traceback, the spinner stopping, the network dropping as the study's own modules load too (set by the owner on 2026-11-03). An image kept on this device (`req/shell/drive/kept-images`,
   `req/shell/offline/per-study`) opens: offline, the Google Drive dialog shows its folders as last listed (`req/shell/drive/offline-listing`),

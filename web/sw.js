@@ -83,16 +83,21 @@ async function cached(req, id) {
 }
 
 // one of the site's own files: the network's, else the site's copy. The copy is the whole release, so a file it
-// lacks is not on the site: an address opens the page, which tells a study's address from any other, and any
-// other file is not found, as Python's importer asks of every module name it lacks
+// lacks is not on the site: an address the copy holds with its trailing slash added or taken away is redirected
+// there, as the site does; any other address opens the page, which tells a study's address from any other; and
+// any other file is not found, as Python's importer asks of every module name it lacks
 async function fresh(req, id) {
   try {
     return await download(req, id, { cache: "no-cache" });
   } catch (err) {
     const site = (await siteCopy())?.cache;
     if (!site) throw err;
-    return (await site.match(keyOf(req.url))) || (req.mode === "navigate" && (await site.match(keyOf(self.registration.scope))))
-      || new Response("", { status: 404, statusText: "Not Found" });
+    const hit = await site.match(keyOf(req.url));
+    if (hit || req.mode !== "navigate") return hit || new Response("", { status: 404, statusText: "Not Found" });
+    const u = new URL(req.url);
+    u.pathname = u.pathname.endsWith("/") ? u.pathname.slice(0, -1) : u.pathname + "/";
+    if (await site.match(keyOf(u.href))) return Response.redirect(u.href, 307);
+    return (await site.match(keyOf(new URL(".", self.location.href).href))) || new Response("", { status: 404, statusText: "Not Found" });
   }
 }
 // the address a file is kept under: as the site serves it, an .html page by its name alone, with no query
