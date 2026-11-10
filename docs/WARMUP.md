@@ -29,6 +29,10 @@ A study is a folder with a `study.json`, and a `requirements.md` for what its pa
 - `visibility` — who the page shows it to: `"listed"` (the header's study switcher and the landing page offer it),
   `"unlisted"` (only by its address; the fixture) or `{"accounts": [email, …]}` (the switcher offers it only while one
   of those Google accounts is signed in). It hides a study from the page, not its files from the network.
+- `icon`, `poster` and `description` — its tab icon (an SVG), its shared link's preview (a 1200 × 630 JPEG), both
+  under its `web/`, and one line of at most 160 characters for that preview. Required of every study but an
+  unlisted one (`req/shell/site/icons`); a poster is a screenshot of the study's page at work under a banner with
+  its icon, title and a tagline, as NoR's.
 - `viewer` — the viewer it is shown in (`image2d`, or `image3d` for z-stacks: the stack in 3D
   only, no switch to a flat view), and optionally `view`, how an image opens: `upper` (the quantile each
   channel's contrast tops out at, 0.998 when it says none), `stretch` (`false` to show an 8-bit image as stored, a

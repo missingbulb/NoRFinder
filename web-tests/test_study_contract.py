@@ -65,13 +65,20 @@ def test_a_study_names_files_that_exist(path):
     assert isinstance(places, list) and places and set(places) <= {'local', 'drive'}, 'files.from lists where the study opens images from: local, drive or both'
     if 'driveThumbs' in m:
         assert os.path.isdir(os.path.join(base, m['driveThumbs']))
-    # req/shell/site/icons: its own tab icon and link-preview poster, published with its page part
+    # req/shell/site/icons: its own tab icon, link-preview poster and description, published with its page part;
+    # required of every study a person can open
+    if v != 'unlisted':
+        for key in ('icon', 'poster', 'description'):
+            assert key in m, f'a study a person can open names its own {key}'
     if 'icon' in m:
         assert m['icon'].startswith('web/') and m['icon'].endswith('.svg') and os.path.isfile(os.path.join(base, m['icon'])), m['icon']
     if 'poster' in m:
-        assert m['poster'].startswith('web/') and m['poster'].endswith('.png'), m['poster']
+        assert m['poster'].startswith('web/') and m['poster'].endswith('.jpg'), m['poster']
         im = Image.open(os.path.join(base, m['poster']))
-        assert (im.format, im.size) == ('PNG', (1200, 630)), m['poster']
+        assert (im.format, im.size) == ('JPEG', (1200, 630)), m['poster']
+    if 'description' in m:
+        d = m['description']
+        assert isinstance(d, str) and d.strip() == d and '\n' not in d and 0 < len(d) <= 160, d
 
 
 @pytest.mark.parametrize('path', STUDIES, ids=lambda p: os.path.basename(os.path.dirname(p)))

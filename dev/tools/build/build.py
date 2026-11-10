@@ -206,7 +206,7 @@ def attr(html, tag, value):
 
 
 def study_head(index, m):
-    """The page as a study's own address serves it: its title, and its icon and poster where its study.json names
+    """The page as a study's own address serves it: its title, and its icon, poster and description where its study.json names
     them (req/shell/site/icons), each relative to the page, as the shell names them."""
     base = f'../studies/{m["id"]}/'
     html = re.sub(r'<title>[^<]*</title>', lambda _: f'<title>{escape(m["title"])}</title>', index, count=1)
@@ -216,6 +216,9 @@ def study_head(index, m):
         html = attr(html, '<link rel="icon"', base + m['icon'])
     if 'poster' in m:
         html = attr(html, '<meta property="og:image"', base + m['poster'])
+    if 'description' in m:
+        html = attr(html, '<meta name="description"', escape(m['description']))
+        html = attr(html, '<meta property="og:description"', escape(m['description']))
     return html
 
 

@@ -96,7 +96,7 @@ def test_research_files_stay_home():
 def test_the_shell_ships_its_page_and_not_its_tooling():
     got = published()
     for page in ('web/index.html', 'web/shell.js', 'web/worker.js', 'web/sw.js', 'web/config.js', 'web/logo.svg',
-                 'web/icon.svg', 'web/poster.png'):
+                 'web/icon.svg', 'web/poster.jpg'):
         assert page in got, page
     assert 'web/version_history.md' not in got
 
@@ -253,17 +253,17 @@ def test_the_site_and_the_app_each_carry_their_own_icon_and_poster(tmp_path):
     landing, app = (tmp_path / 'index.html').read_text(), (tmp_path / 'app' / 'index.html').read_text()
     assert icon_of(app) == 'icon.svg'
     assert (tmp_path / 'favicon.svg').read_bytes() != (tmp_path / 'app' / 'icon.svg').read_bytes()
-    assert meta(landing, 'og:image') == site + '/poster.png' and meta(app, 'og:image') == site + '/app/poster.png'
+    assert meta(landing, 'og:image') == site + '/poster.jpg' and meta(app, 'og:image') == site + '/app/poster.jpg'
     assert meta(landing, 'og:url') == site + '/' and meta(app, 'og:url') == site + '/app/'
     for html in (landing, app):
         assert meta(html, 'og:title') and meta(html, 'og:description') and meta(html, 'twitter:card') == 'summary_large_image'
-    assert poster(tmp_path / 'poster.png') == ('PNG', (1200, 630)) and poster(tmp_path / 'app' / 'poster.png') == ('PNG', (1200, 630))
-    assert (tmp_path / 'poster.png').read_bytes() != (tmp_path / 'app' / 'poster.png').read_bytes()
+    assert poster(tmp_path / 'poster.jpg') == ('JPEG', (1200, 630)) and poster(tmp_path / 'app' / 'poster.jpg') == ('JPEG', (1200, 630))
+    assert (tmp_path / 'poster.jpg').read_bytes() != (tmp_path / 'app' / 'poster.jpg').read_bytes()
     assert Image.open(tmp_path / 'favicon.ico').format == 'ICO'
 
 
 def test_a_studys_address_carries_its_own_icon_and_poster_or_the_apps(tmp_path):
-    """req/shell/site/icons: study.json's icon and poster, under its web/, reach its address; a study naming none keeps the app's."""
+    """req/shell/site/icons: study.json's icon, poster and description, under its web/, reach its address; a study naming none keeps the app's."""
     build.assemble(ROOT, str(tmp_path), {})
     site, own = build.SITE_URL, 0
     assert len(build.studies(ROOT)) >= 3
@@ -273,11 +273,13 @@ def test_a_studys_address_carries_its_own_icon_and_poster_or_the_apps(tmp_path):
         assert meta(html, 'og:title') == s['title'] and re.search(rf'<title>{re.escape(s["title"])}</title>', html)
         assert meta(html, 'og:url') == f'{site}/app/{s["id"]}'
         assert icon_of(html) == (f'../studies/{s["id"]}/{m["icon"]}' if 'icon' in m else 'icon.svg'), s
-        assert meta(html, 'og:image') == (f'{site}/studies/{s["id"]}/{m["poster"]}' if 'poster' in m else f'{site}/app/poster.png'), s
+        assert meta(html, 'og:image') == (f'{site}/studies/{s["id"]}/{m["poster"]}' if 'poster' in m else f'{site}/app/poster.jpg'), s
         if 'poster' in m:
-            assert poster(tmp_path / 'studies' / s['id'] / m['poster']) == ('PNG', (1200, 630)), s
-        own += 'icon' in m and 'poster' in m
-    assert own >= 1, 'no study sets its own icon and poster: the substitution is not exercised'
+            assert poster(tmp_path / 'studies' / s['id'] / m['poster']) == ('JPEG', (1200, 630)), s
+        if 'description' in m:
+            assert meta(html, 'og:description') == m['description'] and meta(html, 'description') == m['description'], s
+        own += 'icon' in m and 'poster' in m and 'description' in m
+    assert own >= 1, 'no study sets its own icon, poster and description: the substitution is not exercised'
 
 
 def test_the_sitemap_lists_the_sites_own_pages_never_the_app_or_a_study(tmp_path):

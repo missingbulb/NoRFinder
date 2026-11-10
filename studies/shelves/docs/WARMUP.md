@@ -13,7 +13,7 @@ py/shelves.py         the Python entry: opens the photo (HEIC through pillow-hei
 py/books.py           the finder (find) and the straightening of four corners into an upright crop
 web/shelves.js        the page: Find books, Read titles, the titles in Summary, the ground-truth task and its pictures
 web/reading.js        the three readers, the same module in the page and in the sandbox
-web/tessdata/         Tesseract's Hebrew and English (4.0.0_best_int, from @tesseract.js-data/*@1.0.0, MIT)
+web/tessdata/         Tesseract's Hebrew and English (4.0.0_best_int, from @tesseract.js-data/*@1.0.0, MIT): served by the site, pinned
 reading/              the sandbox: read.mjs and the pinned engine builds (package.json)
 tests/                test_books.py (fast), test_reading.py and test_shelves_page.py (full)
 ```
@@ -41,9 +41,20 @@ tests/                test_books.py (fast), test_reading.py and test_shelves_pag
    - `lines`: PaddleOCR's PP-OCRv4 text finder (ONNX on onnxruntime-web 1.31.1) marks each line, Tesseract reads it;
    - `ppocr`: PP-OCRv4 finds and reads (its reader is Chinese and English: **no Hebrew**).
 
-The page loads the engines from jsDelivr at those pinned versions and only when a reader first needs them; the two
-languages come from the site itself, since tesseract.js takes one base address for every language and the packages
-on jsDelivr put each language at its own.
+The page loads the engines and PaddleOCR's models from jsDelivr at those pinned versions, only when a reader first
+needs them. The two languages are the one exception: `web/tessdata/` holds them, and the site serves them, so that
+the readings stay pinned:
+
+- tesseract.js's own default, with no `langPath`, fetches each language from jsDelivr *unversioned*
+  (`@tesseract.js-data/<lang>/4.0.0_best_int`), so a new upload there would change the readings silently;
+- a pinned jsDelivr address cannot stand in: `langPath` is one base address for every language, and each
+  language's package sits at its own, so one worker could not take both, and mixed spines would lose their one pass;
+- handing the data in directly (`{code, data}`) is broken in tesseract.js 5 to 7 (R0).
+
+To add a language, add its `<code>.traineddata.gz` from `@tesseract.js-data/<code>@1.0.0/4.0.0_best_int/` and its
+code to `createWorker` in `reading.js`. Unchanged, the files cost a release nothing (the upload skips every file whose
+hash it already holds) and a return visit only a revalidation; as the site's own files they are revalidated on each
+load rather than kept 30 days as the CDN's are (`req/shell/site/caching`).
 
 ## Run
 

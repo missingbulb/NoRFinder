@@ -74,7 +74,7 @@ let picture = true;
 async function open() {
   const ctx = await browser.newContext({ viewport: { width: 1200, height: 700 } });
   await ctx.route(offSite(origin), (r) => r.abort());
-  if (picture) await ctx.route("https://acme.example/dog.jpg", (r) => r.fulfill({ contentType: "image/png", body: fs.readFileSync(path.join(repo, "web", "poster.png")) }));
+  if (picture) await ctx.route("https://acme.example/dog.jpg", (r) => r.fulfill({ contentType: "image/jpeg", body: fs.readFileSync(path.join(repo, "web", "poster.jpg")) }));
   await asTagger(ctx); // ground truth is made by a Ground Truth Tagger (req/shell/account/role)
   await ctx.addInitScript(() => { delete Navigator.prototype.serviceWorker; });
   await ctx.addInitScript(([k, m]) => localStorage.setItem(k, JSON.stringify(m)), ["nor-mask-v1:" + path.basename(image), MASKED]);
