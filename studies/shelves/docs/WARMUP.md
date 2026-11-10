@@ -9,9 +9,9 @@ page must do is `req/shelves` in [its requirements](../requirements.md).
 
 ```
 study.json            the study's contract with the shell; stage GT
-py/shelves.py         the Python entry: opens the photo, answers find and straighten
+py/shelves.py         the Python entry: opens the photo (HEIC through pillow-heif), answers find and straighten
 py/books.py           the finder (find) and the straightening of four corners into an upright crop
-web/shelves.js        the page: Find books, Read titles, the titles in Summary, the ground-truth task
+web/shelves.js        the page: Find books, Read titles, the titles in Summary, the ground-truth task and its pictures
 web/reading.js        the three readers, the same module in the page and in the sandbox
 web/tessdata/         Tesseract's Hebrew and English (4.0.0_best_int, from @tesseract.js-data/*@1.0.0, MIT)
 reading/              the sandbox: read.mjs and the pinned engine builds (package.json)
@@ -32,7 +32,9 @@ tests/                test_books.py (fast), test_reading.py and test_shelves_pag
    whose sides end at their corners, searched outside every band whose edges between books stand barcode-close
    (`books.barcode_bands`).
 2. **Straighten** (`books.straighten`, Python): the four corners pulled through a homography into an upright
-   rectangle, as wide as the box's top and bottom edges on average and as tall as its sides.
+   rectangle, as wide as the box's top and bottom edges on average and as tall as its sides. It samples only the
+   photo's pixels around the box (bit-identical to sampling the whole photo, 300 random boxes on a 12 MP photo, and
+   about 70 ms a book instead of 120), and a corner may lie outside the photo: what falls outside is black.
 3. **Read** (`reading.js`, JavaScript): the crop at each turn its shape allows (a tall crop turned a quarter either
    way, a wide one as is or upside down), the most confident kept, by one of three readers:
    - `tesseract`: Tesseract 5 (tesseract.js 7.0.0, core 7.0.0), Hebrew and English, on the whole crop;
@@ -67,8 +69,12 @@ With Pyodide on both sides the page and the sandbox gave the same text for every
 
 ## Ground truth
 
-One task, as NoR's (`req/shelves/truth/task`): each found book's corners, view and text set right or the book
-dropped, then the missed ones drawn in. The submitted `<photo>_books_gt.json` keeps, for each found book, what the
+One task, as NoR's (`req/shelves/truth/task`): each found book's corners, turn and text set right or the book
+dropped, then the missed ones added (the photo's right-click menu, or Draw a book). The book's picture in the task is
+the page's own, warped in JS from the photo the viewer shows (`picture` in `shelves.js`), so it follows a dragged
+corner at once; what the reader reads is still Python's straightening of the file, run behind it with the photo
+never covered. Flip, Turn 90° and the Hebrew / English / Both choice read the book again at that turn and in that
+language alone. The submitted `<photo>_books_gt.json` keeps, for each found book, what the
 finder and the reader proposed beside the corrected values, so one file scores both the finder (corners, view) and
 each reader (text). No grader is written yet: it waits for the first ground truth.
 

@@ -1,8 +1,10 @@
 // Drives the Bookshelf Reader's page in headless Chromium against stand-ins: a worker that answers Find books with three
 // books and straightens each into a crop as big as its box, and a Tesseract that reads each crop as "Title <w>x<h>",
 // surest when the crop is wider than tall. Checks req/shelves/books/find (the books drawn), req/shelves/read/readers
-// (each read at the turn that reads across, the reader kept), req/shelves/matcher/export (the matcher's file) and
-// req/shelves/truth/task (one book at a time, Back, a corner dragged, a missed book drawn, Submit's export). The real
+// (each read at the turn that reads across, the reader kept), req/shelves/matcher/export (the matcher's file),
+// req/shelves/truth/task (one book at a time, Back, a corner dragged past the photo, a book flipped and its language
+// set, books added and deleted from the right-click menu, a missed book drawn, Submit's export) and
+// req/shell/waiting/visible (the light sweeping the photo while the study works). The real
 // engines' readings are test_reading.py's. Exits 1 on a failed check, 2 when it cannot run.
 //   node studies/shelves/tests/shelves_page_driver.mjs STUDIES
 import { noisePng } from "../../../web-tests/png_fixture.mjs";
@@ -89,8 +91,14 @@ try {
   let page = await open("viewer", KEPT);
   check(await page.evaluate(() => $("#bs-reader").value) === "tesseract" && await page.$$eval("#bs-reader option", (o) => o.length) === 3,
     "the three readers are offered, the one last chosen kept");
+  await page.evaluate(() => { window.looks = []; new MutationObserver(() => { if (!$("#busy").hidden) looks.push($("#busy").className); }).observe($("#busy"), { attributes: true }); });
   await page.click("#bs-find");
   await page.waitForFunction(() => $("#status").textContent.startsWith("Titles read"));
+  const looks = await page.evaluate(() => looks);
+  check(looks.length && looks.every((c) => c.includes("scan")),
+    "while the study works, the shell sweeps its light over the photo, without the study asking (req/shell/waiting/visible)", looks);
+  const lines = await page.$eval('#overlay g.bs-book .over', (p) => { const s = getComputedStyle(p); return { effect: s.vectorEffect, width: parseFloat(s.strokeWidth) }; });
+  check(lines.effect === "non-scaling-stroke" && lines.width >= 2, "a book's outline keeps its screen width at any zoom, thick enough to see", lines);
   const drawn = await books(page);
   check(drawn.length === 3 && drawn.filter((c) => c.includes("cover")).length === 1, "Find books draws each book on the photo, the cover marked as one", drawn);
   const titles = await page.$$eval("#bs-list li", (l) => l.map((x) => x.textContent));
@@ -115,7 +123,21 @@ try {
   await page.click("#gt-start");
   check(await page.evaluate(() => $(".bs-item input").value) === "Title 260x40" && await page.$$eval(".bs-item canvas", (c) => c[0].width) === 260,
     "the first book shows upright with what the reader read, to correct");
-  await page.click('.bs-views [data-view="cover"]');
+  check(await page.evaluate(() => !document.querySelector(".bs-item [data-view]")), "the task asks no spine or cover");
+  // the stand-in worker's crops are flat grey: a picture with the photo's noise in it is drawn by the page itself
+  check(await page.$eval(".bs-item canvas", (c) => { const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; return new Set(Array.from(d.filter((_, i) => i % 4 === 0))).size > 10; }),
+    "the book's picture is drawn by the page from the photo it shows, not by Python");
+  // flipped upside down: drawn so, and read again at that turn alone; then read again as Hebrew alone
+  let reads = await page.evaluate(() => tess.reads);
+  await page.click('.bs-item [data-do="flip"]');
+  await page.waitForFunction((n) => tess.reads > n, reads);
+  await page.waitForTimeout(100);
+  check(await page.evaluate((n) => tess.reads - n, reads) === 1, "Flip turns the book upside down and reads it again at that turn alone");
+  reads = await page.evaluate(() => tess.reads);
+  await page.click('.bs-item [data-lang="heb"]');
+  await page.waitForFunction((n) => tess.reads > n, reads);
+  check(await page.evaluate(() => tess.langs.at(-1)) === "heb" && await page.$eval('.bs-item [data-lang="heb"]', (b) => b.getAttribute("aria-pressed")) === "true",
+    "Hebrew reads the book again with the Hebrew reader alone", await page.evaluate(() => tess.langs));
   await page.fill(".bs-item input", "הארי פוטר");
   await page.click('.bs-verdicts [data-do="right"]');
   await page.click('.bs-verdicts [data-do="wrong"]');
@@ -123,22 +145,37 @@ try {
   await page.click('.bs-tools [data-do="back"]');
   check((await rows())[0] === "1/3 Books" && await page.evaluate(() => $(".bs-item input").value) === "Title 240x35", "Back returns to the book before, its verdict undone", await rows());
   await page.click('.bs-verdicts [data-do="right"]');
-  // the cover's top-right corner dragged 40 px to the right, the photo zoomed in so it could pan: the book is
-  // straightened and read again, and the photo stays where it was (req/shell/image/minimap)
+  // the cover's top-right corner dragged 120 px to the right, past the photo's edge, the photo zoomed in so it could
+  // pan: the picture follows while dragging, the book is straightened and read again with the photo never covered,
+  // and the photo stays where it was (req/shell/image/minimap)
   for (let i = 0; i < 3; i++) await page.click("#zoom-in");
   await page.evaluate(() => { const sc = $("#scroller"); sc.scrollLeft = 300 * st.zoom - sc.clientWidth / 2; sc.scrollTop = 100 * st.zoom - sc.clientHeight / 2; });
   const scrolled = () => page.evaluate(() => [$("#scroller").scrollLeft, $("#scroller").scrollTop]);
   const before = await scrolled();
   const knob = await page.$$eval("#overlay .bs-corner", (cs) => { const r = cs[1].getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; });
   const zoom = await page.evaluate(() => st.zoom);
-  await page.mouse.move(...knob); await page.mouse.down(); await page.mouse.move(knob[0] + 40 * zoom, knob[1], { steps: 4 }); await page.mouse.up();
+  await page.evaluate(() => { window.covered = false; new MutationObserver(() => { if (!$("#busy").hidden) covered = true; }).observe($("#busy"), { attributes: true }); });
+  await page.mouse.move(...knob); await page.mouse.down(); await page.mouse.move(knob[0] + 120 * zoom, knob[1], { steps: 6 });
+  const live = await page.$eval(".bs-item canvas", (c) => c.width);
+  check(live === 240, "the book's picture follows the corner while it is dragged", live);
+  await page.mouse.up();
   const after = await scrolled();
   check(before[0] > 0 && after.join() === before.join(), "dragging a corner moves the corner alone, never the photo under it", { before, after });
-  await page.waitForFunction(() => $(".bs-item input")?.value === "Title 220x180");
-  check(true, "a corner dragged on the photo re-straightens and re-reads the book");
+  await page.waitForFunction(() => $(".bs-item input")?.value === "Title 300x180");
+  check(!(await page.evaluate(() => covered)), "a corner dragged on the photo re-straightens and re-reads the book, the photo never covered");
   for (let i = 0; i < 3; i++) await page.click("#zoom-out");
   await page.click('.bs-verdicts [data-do="right"]');
   check((await rows())[0] === "3/3 Books" && await page.evaluate(() => $("#gt-submit").disabled), "every book reviewed, Submit waits for the missed books", await rows());
+  // right-click on the photo: a book added where no box is, sized as the books found, and one deleted from inside it
+  const toScreen = (x, y) => page.evaluate(([x, y]) => { const r = $("#base").getBoundingClientRect(); return [r.left + x * st.zoom, r.top + y * st.zoom]; }, [x, y]);
+  await page.mouse.click(...(await toScreen(390, 250)), { button: "right" });
+  check(await page.$$eval("#bs-menu:not([hidden]) button:not([hidden])", (b) => b.map((x) => x.dataset.do).join()) === "add", "right-click off every book offers only Add a book");
+  await page.click('#bs-menu [data-do="add"]');
+  await page.waitForFunction(() => $(".bs-item input")?.value === "Title 240x40");
+  check((await books(page)).length === 4, "Add a book here boxes a book at the click, sized as the books found, and reads it");
+  await page.mouse.click(...(await toScreen(390, 250)), { button: "right" });
+  await page.click('#bs-menu [data-do="delete"]');
+  check((await books(page)).length === 3 && !(await page.evaluate(() => document.querySelector(".bs-item"))), "Delete this book takes an added book away");
   await page.click('[data-do="draw"]');
   for (const [x, y] of [[330, 60], [380, 60], [380, 280], [330, 280]]) {
     const at = await page.evaluate(([x, y]) => { const r = $("#base").getBoundingClientRect(); return [r.left + x * st.zoom, r.top + y * st.zoom]; }, [x, y]);
@@ -152,9 +189,9 @@ try {
   await page.click("#gt-submit");
   const gt = await saved(page, "#gt-export");
   const [b1, b2, b3, b4] = gt.doc.books;
-  check(gt.name === "shelf_books_gt.json" && gt.doc.books.length === 4 && b1.view === "cover" && b1.text === "הארי פוטר" && b1.proposed.view === "spine" && b1.proposed.text === "Title 260x40"
-    && b2.verdict === "right" && b3.corners[1][0] === 340 && b3.proposed.corners[1][0] === 300 && b4.source === "missed" && b4.corners[0].join() === "330,60" && !b4.proposed,
-  "Submit's file carries each book's verdict, corners, view and text, and what the finder and the reader proposed", gt.doc);
+  check(gt.name === "shelf_books_gt.json" && gt.doc.books.length === 4 && !("view" in b1) && b1.text === "הארי פוטר" && b1.turn === 3 && b1.proposed.text === "Title 260x40"
+    && !("view" in b1.proposed) && b2.verdict === "right" && b3.corners[1][0] === 420 && b3.proposed.corners[1][0] === 300 && b4.source === "missed" && b4.corners[0].join() === "330,60" && !b4.proposed,
+  "Submit's file carries each book's verdict, corners (past the photo's edge where dragged there), turn and text, and what the finder and the reader proposed", gt.doc);
   await page.context().close();
 } catch (e) { failed = true; console.error(e); }
 await browser.close(); server.close();

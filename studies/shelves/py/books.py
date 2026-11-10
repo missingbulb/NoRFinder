@@ -684,7 +684,8 @@ def homography(src, dst):
 
 def straighten(rgb, corners):
     """The book's four corners as an upright rectangle, RGBA, as wide as its top and bottom edges and as tall as its
-    sides, on average; the first corner at the top left."""
+    sides, on average; the first corner at the top left. Corners may lie outside the photo, for a book the camera cut
+    off: what falls outside it is black."""
     c = np.asarray(corners, np.float64)
     side = lambda a, b: float(np.hypot(*(c[a] - c[b])))
     w = max(1, round((side(0, 1) + side(3, 2)) / 2))
@@ -694,8 +695,17 @@ def straighten(rgb, corners):
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float64) + 0.5
     p = M @ np.stack([xx.ravel(), yy.ravel(), np.ones(xx.size)])
     X, Y = p[0] / p[2] - 0.5, p[1] / p[2] - 0.5
-    out = np.empty((h, w, 4), np.uint8)
-    for k in range(3):
-        out[..., k] = np.clip(ndi.map_coordinates(rgb[..., k].astype(np.float32), [Y, X], order=1, mode='nearest'), 0, 255).round().reshape(h, w)
+    H, W = rgb.shape[:2]
+    off = (X < -0.5) | (X > W - 0.5) | (Y < -0.5) | (Y > H - 0.5)
+    out = np.zeros((h, w, 4), np.uint8)
     out[..., 3] = 255
+    if off.all():
+        return out
+    # only the photo's pixels around the box, with a margin for the interpolation
+    x0, y0 = max(0, int(np.floor(X[~off].min())) - 1), max(0, int(np.floor(Y[~off].min())) - 1)
+    x1, y1 = min(W, int(np.ceil(X[~off].max())) + 2), min(H, int(np.ceil(Y[~off].max())) + 2)
+    at = [Y - y0, X - x0]
+    for k in range(3):
+        v = ndi.map_coordinates(rgb[y0:y1, x0:x1, k].astype(np.float32), at, order=1, mode='nearest')
+        out[..., k] = np.where(off, 0, np.clip(v, 0, 255).round()).reshape(h, w)
     return out
