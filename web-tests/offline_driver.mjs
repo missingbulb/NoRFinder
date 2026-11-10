@@ -47,11 +47,22 @@ const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/cs
 let down = false, pyDown = false; // pyDown: the network gone for the study's Python modules alone
 // release: a release landed while the page was offline, one of its files slow to arrive
 let release = false;
-// as Cloudflare serves the site: /<name> is <name>.html, a folder its index.html; and an unlisted study's address in
-// the app the app's page too, as the tests' repo server serves it, so the fixture study runs
+// as Cloudflare serves the site: /<name> is <name>.html, a folder its index.html, a folder's address with no slash
+// redirected to it with one and a file's with one to it without, the headers _headers names added; and an unlisted
+// study's address in the app the app's page too, as the tests' repo server serves it, so the fixture study runs
+const HEADERS = {};
+const headersFile = path.join(site, "_headers");
+for (const [, at, lines] of (fs.existsSync(headersFile) ? fs.readFileSync(headersFile, "utf8") : "").matchAll(/^(\/\S*)\n((?:[ \t]+.*\n?)*)/gm))
+  HEADERS[at] = Object.fromEntries(lines.split("\n").filter((l) => l.trim()).map((l) => l.trim().split(/:\s*/, 2)));
 const server = http.createServer((q, r) => {
-  let u = decodeURIComponent(new URL(q.url, "http://x").pathname);
+  const url = new URL(q.url, "http://x");
+  let u = decodeURIComponent(url.pathname);
   if (down || (pyDown && u.endsWith(".py"))) return q.socket.destroy();
+  const at = path.join(site, u), folder = fs.existsSync(at) && fs.statSync(at).isDirectory();
+  if (folder !== u.endsWith("/") && (folder || fs.existsSync(at.replace(/\/$/, "") + ".html") || /^\/app\/[\w-]+\/$/.test(u))) {
+    r.writeHead(307, { location: (folder ? u + "/" : u.replace(/\/$/, "")) + url.search });
+    return r.end();
+  }
   if (release && u === "/app/offline.json") {
     const list = JSON.parse(fs.readFileSync(path.join(site, "app", "offline.json")));
     list.files.push({ path: "slow.js", sha256: "0".repeat(64) });
@@ -64,7 +75,7 @@ const server = http.createServer((q, r) => {
   else if (!fs.existsSync(f) && fs.existsSync(f + ".html")) f += ".html";
   else if (/^\/app\/[\w-]+$/.test(u) && fs.existsSync(path.join(site, "studies", u.slice(5), "study.json"))) f = path.join(site, "app", "index.html");
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end(); }
-  r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream", "content-length": fs.statSync(f).size });
+  r.writeHead(200, { "content-type": TYPES[path.extname(f)] || "application/octet-stream", "content-length": fs.statSync(f).size, ...HEADERS[u] });
   if (q.method === "HEAD") return r.end();
   fs.createReadStream(f).pipe(r);
 });
@@ -247,6 +258,14 @@ try {
   check(!(await popup), "offline, Submit New Study Request opens nothing");
   await shot(page, "offline-page");
 
+  // the addresses the site redirects online lead where it would: the app's with no slash, a study's with one
+  for (const [from, to] of [["/app", "/app/"], ["/app/vascular/", "/app/vascular"]]) {
+    await page.goto(origin + from).catch(() => {});
+    await page.waitForFunction(() => window.$ && $("#title").textContent, null, { timeout: 10000 }).catch(() => {});
+    const at = new URL(page.url()), styled = await page.evaluate(() => [...document.styleSheets].some((s) => s.cssRules.length)).catch(() => false);
+    check(at.origin === origin && at.pathname === to && styled && !!(await page.textContent("#title").catch(() => "")),
+      `offline, ${from} opens at ${to}, styled and running: ${page.url()}`);
+  }
   await page.goto(origin + "/app/vascular");
   await page.waitForFunction(() => window.$ && /^Ready/.test($("#status").textContent), null, { timeout: 60000 });
   check(true, "offline, the prepared study opens");
