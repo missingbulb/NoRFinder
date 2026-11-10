@@ -104,8 +104,13 @@ def text(said, meant):
 
 
 def readings(gt, read):
-    """{cer, words, books}: the means over the right books with a text, read on their own corners in that order."""
-    pairs = [(r['text'], b['text']) for b, r in zip(truth(gt), read['books']) if b['text']]
+    """{cer, words, books}: the means over the right books with a text, each read on its own corners: the reading
+    carrying them, or with none carried, the right books' readings in their order."""
+    if all('corners' in r for r in read['books']):
+        said = {json.dumps(r['corners']): r['text'] for r in read['books']}
+        pairs = [(said[json.dumps(b['corners'])], b['text']) for b in truth(gt) if b['text']]
+    else:
+        pairs = [(r['text'], b['text']) for b, r in zip(truth(gt), read['books']) if b['text']]
     scores = [text(s, m) for s, m in pairs]
     ws = [w for _, w in scores if w is not None]
     return dict(cer=float(np.mean([c for c, _ in scores])) if scores else None, words=float(np.mean(ws)) if ws else None, books=len(scores))
