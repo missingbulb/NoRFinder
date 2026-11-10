@@ -106,7 +106,7 @@ export function mount(shell) {
   // the tagger tags now: a book is open, framed and its corners dragged only then (req/shell/ground-truth/tagging)
   const tagging = () => truth() && shell.tasks.tagging();
   // one task: every book, found or added, decided, and none left missed
-  if (truth()) shell.tasks.list([{ key: "books", name: "Books", title: "Every book on the photo, each checked, the missed ones added" }], { submit, pick: () => { if (!cur) next(null); else draw(); },
+  if (truth()) shell.tasks.list([{ key: "books", name: "Books", title: "Every book on the photo, each checked, the missed ones added" }], { submit, resume: (d) => resume(d), pick: () => { if (!cur) next(null); else draw(); },
     tagging: (on) => { if (on && cur === null) next(); else { if (on) focus(cur); draw(); } } });
   const ocrNow = () => (ocr ||= reader(engines()));
 
@@ -115,31 +115,20 @@ export function mount(shell) {
   choice.value = shell.readJSON(READER, "lines") in READERS ? shell.readJSON(READER, "lines") : "lines";
   choice.onchange = () => shell.writeJSON(READER, choice.value);
 
-  // ---------- the draft: the tagger's work on a photo, kept on this device until they clear it ----------
-  const DRAFT = "shelves-draft|";
-  const draftKey = () => DRAFT + st.fileName + "|" + st.sha;
+  // ---------- the draft: the tagger's work on a photo, as data the shell keeps and hands back (req/shell/ground-truth/draft) ----------
   const KEEP = ["corners", "view", "text", "confidence", "reader", "turn", "turnSet", "typed", "source", "verdict", "proposed"];
   function save() {
     if (!truth() || !opened) return;
-    shell.writeJSON(draftKey(), { books: books.map((b) => Object.fromEntries(KEEP.filter((k) => k in b).map((k) => [k, b[k]]))), noneMissed });
+    shell.tasks.draft({ books: books.map((b) => Object.fromEntries(KEEP.filter((k) => k in b).map((k) => [k, b[k]]))), noneMissed });
   }
-  const draft = () => { const d = shell.readJSON(draftKey(), null); return d && Array.isArray(d.books) && d.books.length ? d : null; };
-  function offerDraft() {
-    const c = $("#bs-continue"), d = truth() && opened ? draft() : null;
-    c.hidden = !truth() || !opened; c.disabled = !d;
-    c.title = d ? `Back to the ${d.books.length} books drafted on this photo on this device` : "No ground truth drafted for this photo on this device yet";
-  }
-  $("#bs-continue").onclick = () => {
-    const d = draft();
-    if (!d) return offerDraft();
-    books = d.books.map((b) => ({ ...b })); noneMissed = !!d.noneMissed; cur = null; drawing = null;
+  function resume(d) {
+    books = (d.books || []).map((b) => ({ ...b })); noneMissed = !!d.noneMissed; cur = null; drawing = null;
     shell.step("find", true, `${books.length} books drafted`); shell.boxDone($("#bs-box"), `${books.length} books`);
     shell.step("read", true, `${books.filter((b) => b.text).length} of ${books.length} titles`);
-    $("#bs-read").disabled = false;
-    if (shell.tasks.tagging()) next(null); else shell.tasks.tagging(true);
-    draw();
-  };
-  shell.clearable("drafted books", () => { try { localStorage.removeItem(draftKey()); } catch { /* no storage */ } });
+    $("#bs-read").disabled = !books.length;
+    if (tagging()) next(null); else draw();
+  }
+  shell.clearable("books drafted", () => {});
 
   // ---------- Python: finding and straightening ----------
   $("#bs-find").onclick = async () => {
@@ -426,11 +415,11 @@ export function mount(shell) {
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (drawing) endDrawing(); hideMenu(); } }, here);
 
   return {
-    ready() { $("#bs-find").disabled = !opened; offerDraft(); },
+    ready() { $("#bs-find").disabled = !opened; },
     opened() {
       opened = true; books = []; cur = null; noneMissed = false; drawing = null; selectFor = null; hideMenu();
       $("#bs-find").disabled = false; $("#bs-read").disabled = true; $("#bs-export").disabled = true;
-      shell.viewer.layer("bs").replaceChildren(); draw(); offerDraft();
+      shell.viewer.layer("bs").replaceChildren(); draw();
     },
     result(action, meta) {
       if (action === "find") {
@@ -456,12 +445,5 @@ export function mount(shell) {
     // a book clicked on the photo opens in the task, whatever its verdict
     pick(b) { if (!b || drawing) return; if (truth() && !tagging()) return; if (truth()) show(b); else { cur = b; draw(); } },
     zoomed: () => drawBoxes(),
-    // the drafts in Manage storage, by the photo each is of
-    stored(key) {
-      if (key === READER) return { group: "settings", what: "the reader last chosen" };
-      if (!key.startsWith(DRAFT)) return null;
-      const rest = key.slice(DRAFT.length);
-      return { group: "images", image: rest.slice(0, rest.lastIndexOf("|")), what: "drafted books" };
-    },
   };
 }

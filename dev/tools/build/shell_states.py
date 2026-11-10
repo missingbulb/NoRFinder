@@ -263,6 +263,9 @@ def graft(rules, study):
         el = [n for n, _, _ in nodes(rules['tree']) if n['name'] == name]
         assert el, f"no element {name!r} to differ"
         assert set(fields) <= {'rule', 'steady', 'unwalked'}, f"{name}: a study's element differs in its rule alone"
+        # a rule of the study's own says for itself whether it is steady there
+        if 'rule' in fields and 'steady' not in fields:
+            el[0].pop('steady', None)
         el[0].update(fields)
     for g in study.get('grafts', []):
         under = [n for n, _, _ in nodes(rules['tree']) if n['name'] == g['under']]

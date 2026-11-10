@@ -11,7 +11,6 @@
 .bs-item .bs-row { flex-wrap: wrap; justify-content: space-between; }
 .bs-reading { margin: 2px 0; font-size: 0.9em; }
 .bs-verdicts button[aria-pressed="true"] { outline: 2px solid var(--accent, #2f81f7); outline-offset: 1px; }
-#bs-continue { width: 100%; margin-top: 4px; }
 .bs-verdicts { display: flex; gap: 8px; margin-top: 6px; }
 .bs-verdicts button { flex: 1; padding: 8px; }
 .bs-hint { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); background: #000c; color: #fff; padding: 4px 10px; border-radius: 6px; }

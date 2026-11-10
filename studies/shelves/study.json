@@ -83,6 +83,9 @@
   },
   "view": {
     "stretch": false,
-    "measure": false
+    "hide": [
+      "ruler",
+      "grid"
+    ]
   }
 }

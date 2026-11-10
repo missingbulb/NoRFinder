@@ -451,6 +451,18 @@ nobody has decided: what the page does there is not a requirement yet.
   `web-tests/test_gt_drive_page.py`.
   </details>
 
+- `req/shell/ground-truth/draft` Continue tagging brings back a tagger's draft of the image open, where the study takes drafts.
+  <details>
+
+  Set by the owner on 2026-11-10, a shell feature, not a study's. A study that takes drafts hands the shell its
+  progress on the image open as data each time the tagger changes something, and the shell keeps it in the browser
+  by the study, the image's name and its SHA-256. Beside Start GT tagging, Continue tagging shows while an image is
+  open in such a study, and is on only while a draft of that image is kept, the box then open as the image opens: it hands the draft back to the study,
+  which puts its results and the tagger's progress back with no step run again, and starts tagging. Manage storage
+  lists a draft among its image's selections, and Clear progress forgets it with the rest. Test:
+  `studies/shelves/tests/test_shelves_page.py`.
+  </details>
+
 - `req/shell/ground-truth/folders` A study's ground truth lives in a submissions folder and a curated folder under its root; one folder for both is free submission.
   <details>
 
@@ -705,8 +717,8 @@ nobody has decided: what the page does there is not a requirement yet.
   Set by the owner on 2026-11-07. At the toolbar's left the study chooses how what it extracted is drawn over the raw
   image (what to show, how wide, how faint); the left bar holds none of those. At its right, beside Zoom, are the
   viewer's own tools (the ruler, the grid, the minimap, the 3D view's Look from). Set by the owner on 2026-11-10, a
-  study whose images have no scale to measure (its `view.measure` false, the Bookshelf Reader's photos) shows no ruler
-  and no grid. Test: `studies/vascular/tests/test_model_page.py`, `web-tests/test_viewer3d_page.py`,
+  study says, as data in its `study.json` (`view.hide`, naming `ruler` and `grid`), which of the viewer's tools it
+  does not show, and the shell reads it there: the Bookshelf Reader's photos have no scale, so it hides both. Test: `studies/vascular/tests/test_model_page.py`, `web-tests/test_viewer3d_page.py`,
   `studies/shelves/tests/test_shelves_page.py`.
   </details>
 

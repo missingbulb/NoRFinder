@@ -82,8 +82,8 @@ With Pyodide on both sides the page and the sandbox gave the same text for every
 
 One task, Books (`req/shelves/truth/task`): every book, found or added, its corners, turn and text set right or
 the book dropped, walked in the order the books stand (`inPlace` in `shelves.js`), then the missed ones added (the
-photo's right-click menu, or Draw a book), each one more book to review. The tagger's work is a draft in the browser
-(`shelves-draft|<name>|<sha256>`) that Continue tagging brings back; the approved books are cut out of the photo by
+photo's right-click menu, or Draw a book), each one more book to review. The tagger's work is the draft the shell keeps
+(`shell.tasks.draft`, `resume`) and Continue tagging brings back; the approved books are cut out of the photo by
 the viewer (`viewer.doneMask`). The book's picture in the task is
 the page's own, warped in JS from the photo the viewer shows (`picture` in `shelves.js`), so it follows a dragged
 corner at once; what the reader reads is still Python's straightening of the file, run behind it with the photo

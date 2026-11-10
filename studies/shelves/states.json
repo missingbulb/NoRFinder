@@ -11,12 +11,6 @@
               {"when": {"counted": [false]}, "is": "disabled"}
             ]
           },
-          {"name": "Continue tagging", "select": "#bs-continue", "control": true, "req": "req/shelves/truth/task",
-            "rule": [
-              {"when": {"role": ["viewer"]}, "is": "hidden"},
-              {"is": "disabled", "about": "until a draft of the photo is kept on this device, which no path leaves"}
-            ]
-          },
           {"name": "Books found", "select": "#bs-found", "req": "req/shelves/books/find"}
         ]
       }
@@ -48,16 +42,21 @@
   "samples": "tests/state_samples.py",
   "standIn": "tests/reader_stand_in.mjs",
   "differ": {
+    "Continue tagging": {
+      "rule": [
+        {"is": "disabled", "req": "req/shell/ground-truth/draft", "about": "until a draft of the photo is kept on this device, which no path leaves"}
+      ]
+    },
     "Ruler": {
       "steady": "hidden in every state of this study",
       "rule": [
-        {"is": "hidden", "req": "req/shell/image/toolbar", "about": "a photo has no scale to measure: the study's view.measure is false"}
+        {"is": "hidden", "req": "req/shell/image/toolbar", "about": "the study hides them: its view.hide names them"}
       ]
     },
     "Grid": {
       "steady": "hidden in every state of this study",
       "rule": [
-        {"is": "hidden", "req": "req/shell/image/toolbar", "about": "a photo has no scale to measure: the study's view.measure is false"}
+        {"is": "hidden", "req": "req/shell/image/toolbar", "about": "the study hides them: its view.hide names them"}
       ]
     },
     "Submit Ground Truth": {

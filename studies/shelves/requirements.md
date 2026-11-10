@@ -118,10 +118,8 @@ read for a title matcher; matching the titles is not part of it.
   - Flip alone turns the picture: no Turn 90°, and no language choice, the title's language being plain from what is
     typed; a book read again is read in Hebrew and English.
   - The approved books are cut out of the photo while tagging (`req/shell/ground-truth/tagging`).
-  - The tagger's work on a photo (each book's corners, turn, text, verdict and what was proposed) is a draft kept on
-    this device, keyed by the photo's name and SHA-256, until Clear progress forgets it. Continue tagging, in the
-    processing box, is shown to a tagger with a photo open and is on only while a draft of that photo is kept: it
-    brings back every book and verdict and starts tagging, with no Find books.
+  - The tagger's work on a photo (each book's corners, turn, text, verdict and what was proposed) is the draft the
+    shell keeps and Continue tagging brings back (`req/shell/ground-truth/draft`).
   - The file lists the books in the walk's order.
 
   Test: `studies/shelves/tests/test_shelves_page.py`.

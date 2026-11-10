@@ -111,7 +111,7 @@ try {
   // a tall spine reads across once turned a quarter, so its crop is read as its height by its width
   check(titles.join() === "Title 240x35,Title 260x40,Title 180x180", "each book is read at the turn that reads across, listed in the order found", titles);
   check(await page.evaluate(() => $("#tasks-box").hidden && !$("#summary-box").hidden), "a viewer has no ground-truth box: Summary lists the titles");
-  check(await page.evaluate(() => $("#bs-continue").hidden), "a viewer is offered no ground truth to continue");
+  check(await page.evaluate(() => !document.querySelector("#bs-continue") && !$("#gt-continue").checkVisibility()), "a viewer is offered no ground truth to continue");
   check(await page.evaluate(() => ["#ruler-btn", "#grid-btn"].every((s) => getComputedStyle($(s)).display === "none") && getComputedStyle($("#zoom-in")).display !== "none"),
     "a photo has no ruler or grid in the toolbar, its zoom kept (req/shell/image/toolbar)");
   const m = await saved(page, "#bs-export");
@@ -123,7 +123,7 @@ try {
 
   // a tagger: one book at a time, in the order the books stand, the missed ones added, then Submit
   page = await open("tagger", KEPT);
-  check(await page.evaluate(() => !$("#bs-continue").hidden && $("#bs-continue").disabled), "Continue tagging is offered, off while no draft is kept for the photo");
+  check(await page.evaluate(() => !$("#gt-continue").hidden && $("#gt-continue").disabled), "the shell offers Continue tagging beside Start GT tagging, off while no draft is kept for the photo");
   await page.click("#bs-find");
   await page.waitForFunction(() => $("#status").textContent.startsWith("Titles read"));
   const rows = () => page.$$eval("#gt-tasks > li .t", (h) => h.map((x) => x.textContent.trim()));
@@ -229,18 +229,18 @@ try {
   await page.reload();
   await page.waitForFunction(() => window.$ && /^Ready/.test($("#status").textContent));
   await load(page);
-  check(await page.evaluate(() => !$("#bs-continue").disabled), "with a draft kept for the photo, Continue tagging is on");
-  await page.click("#bs-continue");
+  check(await page.evaluate(() => !$("#gt-continue").disabled), "with a draft kept for the photo, Continue tagging is on");
+  await page.click("#gt-continue");
   await page.waitForFunction(() => document.querySelector("#gt-tasks > li.now"));
   check((await rows()).join() === "4/4 Books" && (await books(page)).length === 4 && await page.evaluate(() => $("#gt-start").textContent === "Stop tagging" && !$("#gt-submit").disabled),
     "Continue tagging brings back every book, verdict and title, and tagging, with no Find books", await rows());
   await page.click("#user-menu summary"); await page.click("#manage-storage");
   await page.waitForFunction(() => $("#usage-dlg").open && !/Reading/.test($("#storage-list").textContent));
   const kept = await page.$$eval('#storage-list .entry[data-kind="selections"]', (es) => es.map((e) => [e.querySelector(".name").textContent, e.querySelector(".what").textContent]));
-  check(kept.length === 1 && kept[0][0] === "shelf.png" && /drafted books/.test(kept[0][1]), "Manage storage lists the draft under its photo", kept);
+  check(kept.length === 1 && kept[0][0] === "shelf.png" && /ground-truth draft/.test(kept[0][1]), "Manage storage lists the draft under its photo", kept);
   await page.keyboard.press("Escape");
   await load(page, "other.png");
-  check(await page.evaluate(() => $("#bs-continue").disabled), "another photo has no draft to continue");
+  check(await page.evaluate(() => $("#gt-continue").disabled), "another photo has no draft to continue");
   await page.context().close();
 } catch (e) { failed = true; console.error(e); }
 await browser.close(); server.close();

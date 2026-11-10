@@ -34,6 +34,9 @@ export function hoverPop(btn, pop, fill) {
   return { show, refill: () => { if (pop.matches(":popover-open")) fill(); } };
 }
 
+// the viewer's tools a study may hide, by the names its study.json's view.hide gives them
+const HIDEABLE = { ruler: "#ruler-btn", grid: "#grid-btn" };
+
 export function viewer(shell) {
   const { $, state: st, page } = shell;
   // what an image changes on the page, as it loaded: put back when none is open
@@ -153,11 +156,11 @@ export function viewer(shell) {
   const picture = () => composite(atFirst(() => true));
 
   // the toolbar's tools wait for an image
-  // and a study whose images have no scale to measure (its view.measure false) has no ruler or grid
+  // and the ones the study names in its view.hide are not shown
   function tools() {
     for (const id of ["#ruler-btn", "#grid-btn", "#minimap-btn", "#zoom-in", "#zoom-out"]) $(id).disabled = !st.img;
-    const measure = shell.study?.view?.measure !== false;
-    $("#ruler-btn").hidden = $("#grid-btn").hidden = !measure;
+    const hide = shell.study?.view?.hide || [];
+    for (const [name, id] of Object.entries(HIDEABLE)) $(id).hidden = hide.includes(name);
     minimap.place();
   }
 
