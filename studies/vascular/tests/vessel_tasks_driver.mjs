@@ -138,20 +138,20 @@ try {
     const cv = $("#gt-mini-image"), v = window.shellForTests.viewer.three;
     if (!cv) return null;
     const [Z, Y, X] = v.meta.shape, vol = v.volume(), d = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data;
-    let worst = 0, lit = 0;
+    let worst = 0, lit = 0, n = 0;
     for (let cy = 0; cy < cv.height; cy += 7) for (let cx = 0; cx < cv.width; cx += 5) {
       let mv = -1, mz = 0;
       for (let y = Math.floor(cy * Y / cv.height); y < Math.max(Math.floor((cy + 1) * Y / cv.height), Math.floor(cy * Y / cv.height) + 1); y++)
         for (let x = Math.floor(cx * X / cv.width); x < Math.max(Math.floor((cx + 1) * X / cv.width), Math.floor(cx * X / cv.width) + 1); x++)
           for (let z = 0; z < Z; z++) { const val = vol[(z * Y + y) * X + x]; if (val > mv) { mv = val; mz = z; } }
       const want = v.lut2d(mv, mz / Math.max(Z - 1, 1)), o = 4 * (cy * cv.width + cx);
-      worst = Math.max(worst, ...want.map((w, k) => Math.abs(w - d[o + k])));
+      n++; worst = Math.max(worst, ...want.map((w, k) => Math.abs(w - d[o + k])));
       if (d[o] + d[o + 1] + d[o + 2] > 60) lit++;
     }
     const img = cv.getBoundingClientRect(), areas = $("#gt-mini-areas").getBoundingClientRect();
-    return { worst, lit, aspect: cv.width / cv.height, want: X / Y, covers: Math.abs(img.width - areas.width) < 2 && Math.abs(img.height - areas.height) < 2 };
+    return { n, worst, lit, aspect: cv.width / cv.height, want: X / Y, covers: Math.abs(img.width - areas.width) < 2 && Math.abs(img.height - areas.height) < 2 };
   });
-  check(under && under.worst <= 2 && under.lit > 0 && Math.abs(under.aspect - under.want) < 0.05 && under.covers,
+  check(under && under.n >= 100 && under.worst <= 2 && under.lit > 0 && Math.abs(under.aspect - under.want) < 0.05 && under.covers,
     `the map shows the stack under its areas, every slice flattened, in the image box's colours: ${JSON.stringify(under)}`);
   check(await page.evaluate(() => !!$("#gt-tasks li.now #task-card canvas") && $("#task-card .verdict").children.length === 2), "the area's current junction is pictured in the box, its two verdicts under it");
 
