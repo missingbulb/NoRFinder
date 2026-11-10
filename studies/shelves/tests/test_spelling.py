@@ -7,6 +7,8 @@ import subprocess
 
 import pytest
 
+pytestmark = pytest.mark.full
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 READING_JS = os.path.join(HERE, '..', 'web', 'reading.js')
 WORDS = os.path.join(HERE, '..', 'web', 'words', 'heb.txt')
