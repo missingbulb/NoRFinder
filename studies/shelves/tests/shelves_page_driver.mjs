@@ -86,6 +86,8 @@ async function open(role, seed = {}) {
   await page.goto(origin + "/web/shelves");
   await page.waitForFunction(() => window.$ && /^Ready/.test($("#status").textContent));
   await load(page);
+  const found = await page.evaluate(() => $("#bs-found").textContent);
+  check(found === "", "before Find books, the box says nothing of books not found yet", found);
   return page;
 }
 const saved = async (page, click) => { const [d] = await Promise.all([page.waitForEvent("download"), page.click(click)]); return { name: d.suggestedFilename(), doc: JSON.parse(fs.readFileSync(await d.path(), "utf8")) }; };
@@ -114,6 +116,7 @@ try {
   check(await page.evaluate(() => !document.querySelector("#bs-continue") && !$("#gt-continue").checkVisibility()), "a viewer is offered no ground truth to continue");
   check(await page.evaluate(() => ["#ruler-btn", "#grid-btn"].every((s) => getComputedStyle($(s)).display === "none") && getComputedStyle($("#zoom-in")).display !== "none"),
     "a photo has no ruler or grid in the toolbar, its zoom kept (req/shell/image/toolbar)");
+  check(await page.evaluate(() => $("#channels").children.length === 0), "a photo shows no channel rows (req/shell/channels/rows)");
   const m = await saved(page, "#bs-export");
   const [m1, m2, m3] = m.doc.books;
   check(m.name === "shelf_books.json" && m.doc.books.length === 3 && m1.id === 1 && m1.text === "Title 240x35" && m1.confidence === 0.9 && m1.reader === "tesseract"

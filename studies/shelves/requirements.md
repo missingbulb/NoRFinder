@@ -14,7 +14,7 @@ read for a title matcher; matching the titles is not part of it.
   <details>
 
   Find books runs the study's finder over the photo and draws each book it finds as four corners
-  joined, two strokes (dark under light) that show over any colour a book carries, a cover's dashed.
+  joined; until it has run, its box says nothing of books not found (set by the owner on 2026-11-10), two strokes (dark under light) that show over any colour a book carries, a cover's dashed.
   A book is a spine (its narrow face, standing upright or lying flat in a pile) or a cover (facing
   the camera); one shelf can hold all three. Its corners go clockwise from the one nearest the
   photo's top left. Set by the owner on 2026-11-04, a book leaning on its neighbours is boxed

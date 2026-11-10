@@ -185,7 +185,6 @@ body.resizing #layout { transition: none; }
 #file-info { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 6px 0 0 13px; font-size: 12px; }
 #file-info dt { color: var(--dim); }
 #file-info dd { margin: 0; overflow-wrap: anywhere; }
-#file-info dd.none { grid-column: 1 / -1; margin-top: 2px; }
 /* a row per channel, on one line: its checkbox, its name, its description behind a (?), the file's own name
    for it, one slider holding its black and white points over a ramp from black to white, and its colour
    picker, the one part in the channel's colour */
@@ -951,10 +950,10 @@ html:not(.offline) #welcome-offline { display: none; }
 .curate-list .who { font-weight: 600; }
 .curate-list .grow { flex: 1; }
 /* an image's ground truth in the remote files dialog's rows (req/shell/ground-truth/pending) */
-#remote-list .gt-tag:empty { display: none; }
-#remote-list .gt-tag { font-size: 10.5px; padding: 0 5px; border-radius: 8px; border: 1px solid currentColor; color: var(--yes); }
-#remote-list .gt-tag[data-state="pending"] { color: var(--accent); }
-#remote-list .gt-tag[data-state="rejected"] { color: var(--warn); }
+#remote-list .gt-tag:empty, #recent .gt-tag:empty { display: none; }
+#remote-list .gt-tag, #recent .gt-tag { font-size: 10.5px; padding: 0 5px; border-radius: 8px; border: 1px solid currentColor; color: var(--yes); }
+#remote-list .gt-tag[data-state="pending"], #recent .gt-tag[data-state="pending"] { color: var(--accent); }
+#remote-list .gt-tag[data-state="rejected"], #recent .gt-tag[data-state="rejected"] { color: var(--warn); }
 
 /* the study's ground-truth tasks (req/shell/ground-truth/tasks): a bar of a part per task, then a row per task, the
    open one bold, a done one checked, and Submit Ground Truth last */
