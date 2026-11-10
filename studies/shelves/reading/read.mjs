@@ -26,6 +26,7 @@ const assets = path.join(here, "node_modules", "@gutenye", "ocr-models", "assets
 const r = reader({
   Tesseract: async () => require("tesseract.js"), ort: async () => require("onnxruntime-web"), langPath: path.join(here, "..", "web", "tessdata"), tesseract: {},
   model: async (name) => fs.readFileSync(path.join(assets, name)), keys: async () => fs.readFileSync(path.join(assets, "ppocr_keys_v1.txt"), "utf8"),
+  words: async () => fs.readFileSync(path.join(here, "..", "web", "words", "heb.txt"), "utf8"),
 });
 // found as the page finds them: the text finder over Python's view of the photo, its map handed to the finder
 let books;

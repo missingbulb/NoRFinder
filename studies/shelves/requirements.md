@@ -74,7 +74,12 @@ read for a title matcher; matching the titles is not part of it.
   most confident kept. The page loads pinned builds of the engines from jsDelivr (the text finder already on Find books) and the two
   languages from the site; the sandbox (`studies/shelves/reading/read.mjs`) runs the same builds on
   the same straightened crops, so a reading there is the page's. The reader last chosen is kept in
-  the browser. Test: `studies/shelves/tests/test_reading.py`, `studies/shelves/tests/test_shelves_page.py`.
+  the browser. Set by the owner on 2026-11-10, a dictionary sets each reading's Hebrew words right: a word of three
+  letters or more that is not in it, nor is once a prefix letter or two (ו, ה, ב, כ, ל, מ, ש) is taken off, becomes the most
+  frequent word in it that differs by one letter for a letter print makes look alike (ב כ נ, ד ר ך, ה ח ת, ו ז ן י,
+  ס ם ט, ג נ, ע צ), and stays as read when none is. The word list is the site's own file, so reading needs no network
+  for it. Test: `studies/shelves/tests/test_reading.py`, `studies/shelves/tests/test_spelling.py`,
+  `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
 - `req/shelves/truth/task` One ground-truth task: each book in turn, in the order they stand, has its corners, turn and title set right, and the missed books are added.

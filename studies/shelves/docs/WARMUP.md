@@ -13,8 +13,10 @@ py/shelves.py         the Python entry: opens the photo (HEIC through pillow-hei
 py/books.py           the finder (find), its text finder's view of the photo, and the straightening of four corners
 lab/photos.py         the owner's photos from Drive (data/sources.json)
 lab/grade.py          the finder and the readers scored against a submitted ground truth
+lab/words.py          the Hebrew word list from FrequencyWords at a pinned commit, into web/words/
 web/shelves.js        the page: Find books, Read titles, the titles in Summary, the ground-truth task and its pictures
 web/reading.js        the three readers, the same module in the page and in the sandbox
+web/words/heb.txt     the Hebrew word list the readings are spelled by (CC BY-SA 4.0, written by lab/words.py)
 web/tessdata/         Tesseract's Hebrew and English (4.0.0_best_int, from @tesseract.js-data/*@1.0.0, MIT): served by the site, pinned
 reading/              the sandbox: read.mjs and the pinned engine builds (package.json)
 tests/                test_books.py and test_grade.py (fast), test_reading.py and test_shelves_page.py (full)
@@ -46,6 +48,9 @@ tests/                test_books.py and test_grade.py (fast), test_reading.py an
    - `tesseract`: Tesseract 5 (tesseract.js 7.0.0, core 7.0.0), Hebrew and English, on the whole crop;
    - `lines`: PaddleOCR's PP-OCRv4 text finder (ONNX on onnxruntime-web 1.31.1) marks each line, Tesseract reads it;
    - `ppocr`: PP-OCRv4 finds and reads (its reader is Chinese and English: **no Hebrew**).
+
+   Each reading's Hebrew words are then spelled by the site's word list (`spelling` in `reading.js`, R7): a word not
+   on it becomes the most frequent listed word one look-alike letter away.
 
 The page loads the engines and PaddleOCR's models from jsDelivr at those pinned versions when first needed: the text
 finder (onnxruntime-web and the PP-OCRv4 finding model) on Find books, the rest when a reader first needs them. The
@@ -108,7 +113,7 @@ frame cuts at its left edge left untagged).
 
 ## Iterations
 
-### R7 — no box over another; a line the books cross is no shelf (2026-11-10)
+### R7 — no box over another; a line the books cross is no shelf; readings spelled (2026-11-10)
 
 The second ground truth, `1HyJrL` (19 books). **Two photos, nothing held out**: every number is indicative. The
 other 12 photos were checked base against R7 for what moved.
@@ -139,6 +144,23 @@ other 12 photos were checked base against R7 for what moved.
   (`1HyJrL`), 0.69 / 0.15 (`1g4iFN`); `lines` 0.37 / 0.18, 0.78 / 0.08. The grader paired readings to books in
   order and so, on a file holding a box marked no book (`1g4iFN`), scored each against the next book's title: it
   now pairs them by corners.
+- **The readings spelled by a dictionary, the owner's idea (`spelling` in `reading.js`):** tesseract.js reports no
+  dictionary of its own, so the site serves a Hebrew word list (FrequencyWords' 50,000 most frequent subtitle words,
+  `lab/words.py`), loaded with no network. A word of three letters or more not on it, even with one or two prefix
+  letters off (ו ה ב כ ל מ ש), becomes the most frequent listed word one letter away, that letter one print makes
+  look alike (`[look-alike]`). On the tagged books' corners, CER / words before → after:
+
+  | | `tesseract` | `lines` |
+  |---|---|---|
+  | `1HyJrL` | 0.389 / 0.35 → 0.387 / 0.38 | 0.373 / 0.18 → 0.365 / 0.23 |
+  | `1g4iFN` | 0.689 / 0.15 → 0.684 / 0.19 | 0.785 / 0.08 → unchanged |
+
+  It sets `רוכרט`, `הרכרט`, `הבדרסון`, `מרובינטון` right; a name off the list it leaves, or turns into a listed word
+  (`גאלויה` → `גלויה`, `חולית` → `חולי`). Rejected on the way: any one-letter edit (fixes names into wrong words:
+  `קריספין` → `קריסטין`; `lines` words on `1g4iFN` 0.08 → 0.05); letting a letter be dropped too (the same loss);
+  choosing a reading's turn by the dictionary (the wrong turn reads as short common words, `שש`, `זו`, and won:
+  `tesseract` CER 0.39 → 0.72 by share of known words, 0.39 → 0.42 at best by known letters added to confidence).
+  English is not spelled: no tagged title is English, so nothing could measure it.
 - **Tried and rejected, the owner's one-language idea:** reading each book in Hebrew alone and in English alone at
   each turn and keeping the surest (twice the passes): `lines` 0.37 → 0.34 on `1HyJrL` but words 0.08 → 0.05 on
   `1g4iFN`, `tesseract` unchanged. Dropping the words of the minority script from a reading: within 0.02 everywhere.
@@ -348,6 +370,9 @@ number below is a score.
   ten photos.
 - `[cover-shape]` A cover is a quadrilateral of one cover's size whose edges end at its corners (`books.covers`). Fails on
   covers that touch or overlap, whose sides run on into the next one's.
+- `[look-alike]` (R7) A reader's slip on a Hebrew word is one letter for one print makes look alike
+  (`LOOK_ALIKE` in `reading.js`, set from the letters' shapes, not from the photos). Fails on a name or a rare word the
+  word list lacks that is one such letter from a listed word, which it turns into that word.
 - `[text-lines]` A book's title is a line of text along its spine, and no text runs across the edge between two books
   (`books.TEXT_*`). Fails on a spine with no lettering, a title printed across two spines, a sticker spanning a gap,
   and a photo the text finder reads poorly (dark, blurred); calibrated on one tagged photo.
@@ -358,8 +383,8 @@ number below is a score.
 
 - More ground truth: two tagged photos are too few to hold any out. A book split at its lettering beside a dark
   gap (`1HyJrL`'s Henderson): `most_books` prefers more boxes.
-- A dictionary to choose among the readers' candidates (the owner's idea, 2026-11-10): needs a word list the page
-  would fetch, the owner's call.
+- The word list holds few names, and most titles carry their author's: a list of authors' names would spare them.
+  English is not spelled yet (no English ground truth).
 - Books the frame cuts at a photo's edge (both of
   `1g4iFN`'s misses).
 - The readers: `tesseract` reads best but most spines come back noisy; what to try next is the owner's call.

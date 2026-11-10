@@ -17,6 +17,7 @@ function engines() {
     ort: () => import(ORT + "ort.wasm.min.mjs").then((o) => { o.env.wasm.wasmPaths = ORT; return o; }), langPath: new URL("tessdata", import.meta.url).href,
     tesseract: { workerPath: TESSERACT + "worker.min.js", corePath: CORE },
     model: (name) => bytes(MODEL_FILES + name), keys: async () => new TextDecoder().decode(await bytes(MODEL_FILES + MODELS.keys)),
+    words: async () => new TextDecoder().decode(await bytes(new URL("words/heb.txt", import.meta.url).href)),
   };
 }
 
