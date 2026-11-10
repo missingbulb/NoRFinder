@@ -958,7 +958,8 @@ html:not(.offline) #welcome-offline { display: none; }
 /* the study's ground-truth tasks (req/shell/ground-truth/tasks): a bar of a part per task, then a row per task, the
    open one bold, a done one checked, and Submit Ground Truth last */
 #gt-list[hidden] { display: none; }
-#gt-start { display: block; width: 100%; margin: 0 0 10px; }
+#gt-start, #gt-continue { display: block; width: 100%; margin: 0 0 10px; }
+#gt-start[hidden], #gt-continue[hidden] { display: none; }
 #gt-bar { display: flex; gap: 3px; height: 8px; margin-bottom: 10px; }
 #gt-bar > span { flex: 1 1 0; min-width: 6px; border-radius: 4px; --done: 0;
   background: linear-gradient(to right, var(--yes) calc(var(--done) * 100%), var(--line) calc(var(--done) * 100%)); }

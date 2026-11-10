@@ -23,9 +23,6 @@
 .bs-book.cover .over { stroke-dasharray: 6 3; }
 .bs-book.done .over { stroke: #fffc; }
 .bs-book.done .under { stroke: #000a; }
-/* a box marked as no book, kept faint while tagging so it can be picked and decided again */
-.bs-book.wrong .over { stroke: #fff9; stroke-width: 1.5; stroke-dasharray: 3 4; }
-.bs-book.wrong .under { stroke: #0006; stroke-width: 3; }
 .bs-book.current .under { stroke-width: 7; }
 .bs-book.current .over { stroke: #ffd400; stroke-width: 3.5; }
 /* a corner may be dragged past the photo's edge, and is still drawn there */

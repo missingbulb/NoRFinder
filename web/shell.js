@@ -757,7 +757,7 @@ function imageOpened(m) {
   log.add(`Opened an image from ${from}, ${m.meta.W} × ${m.meta.H} px, ${m.meta.Z || 1} slice(s)`);
   status("Image loaded."); // the study's opened hook says what comes next, if anything
   study.opened?.(m.meta);
-  // a draft to continue opens Ground Truth Tasks with the image, Continue tagging in view
+  // a draft to continue opens Ground Truth Tasks with the image, Continue GT tagging in view
   if (tasks.offer() && makesTruth()) { $("#tasks-box").classList.remove("folded"); retitle(); }
   truth.paint(); offerTruth();
   if (st.source && st.source.kind === "local" && makesTruth()) notice(LOCAL_GT(remote));
