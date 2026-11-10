@@ -122,6 +122,11 @@ read for a title matcher; matching the titles is not part of it.
     shell keeps and Continue tagging brings back (`req/shell/ground-truth/draft`).
   - The file lists the books in the walk's order.
 
+  Changed by the owner on 2026-11-10, replacing what is above where the two differ: Not a book, and Delete this
+  book, take a box off the photo and out of the walk, found or added alike; nothing is left faint on the photo,
+  and Back no longer brings it back. The file keeps only the books marked right. Continue GT tagging opens the
+  book the tagger last had open.
+
   Test: `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
