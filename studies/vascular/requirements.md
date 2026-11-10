@@ -157,7 +157,9 @@ owner's decisions on the stacks and the vessel model, are
 
   While tagging, and only then, the areas float as a small map at the main view's top left, the shell's minimap's
   size (`req/shell/image/minimap`), on the whole stack and in an area alike: each area done, partly judged or not
-  started, the current one marked; clicking one opens it.
+  started, the current one marked; clicking one opens it. Under the areas the map shows the stack, never in 3D but
+  every slice flattened, each pixel its brightest, in the colours the image box paints it, so the person sees where to
+  go next; an area's mark is a tint the stack shows through (owner, 2026-11-10).
 
   The open area's row holds its cogwheel and Skip, and under it the area's work, all in one pass: the main view shows
   the area alone, opening from straight above, the model's lines over the stack with a handle on every point and a

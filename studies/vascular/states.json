@@ -72,6 +72,7 @@
           {"is": "hidden", "approval": "tentative"}
         ],
         "children": [
+          {"name": "The flattened stack", "select": "#gt-mini-image", "req": "req/vascular/truth/tasks"},
           {"name": "The areas", "select": "#gt-mini-areas", "req": "req/vascular/truth/tasks"}
         ]
       }

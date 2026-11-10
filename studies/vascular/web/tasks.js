@@ -126,13 +126,51 @@ function progress(m, a) {
   const js = junctionsIn(m, a), d = done(m, a);
   return { did: js.filter((j) => j.done).length + (d ? 1 : 0), of: js.length + 1, done: d };
 }
-// the areas as a map floating over the view while tagging, as the field is laid out: each done, partly judged or not
-// started, the current one marked; a click opens it
+// the stack flattened through every slice, each pixel its brightest and coloured at that depth as the image box paints
+// it, at w × h: kept per stack, since a pass through every slice is too slow to make on every change
+const flats = new WeakMap();
+function flatten(vol, w, h) {
+  const key = `${w}x${h}`, kept = flats.get(vol);
+  if (kept?.key === key) return kept;
+  const [Z, Y, X] = V.meta.shape, n = X * Y, top = new Float64Array(w * h).fill(-1), depth = new Uint16Array(w * h);
+  const span = (c, len, of) => [Math.floor((c * of) / len), Math.max(Math.floor(((c + 1) * of) / len), Math.floor((c * of) / len) + 1)];
+  for (let cy = 0; cy < h; cy++) {
+    const [y0, y1] = span(cy, h, Y);
+    for (let cx = 0; cx < w; cx++) {
+      const [x0, x1] = span(cx, w, X), o = cy * w + cx;
+      let mv = -1, mz = 0;
+      for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) for (let z = 0; z < Z; z++) { const v = vol[z * n + y * X + x]; if (v > mv) { mv = v; mz = z; } }
+      top[o] = mv; depth[o] = mz;
+    }
+  }
+  const f = { key, top, depth, lut: null, img: null };
+  flats.set(vol, f);
+  return f;
+}
+// the colours the image box paints, told apart by a few of them: the flattened stack is coloured again only when they move
+const lutKey = () => [0, 64, 128, 255, 4095].flatMap((v) => [0, .5, 1].map((z) => V.lut2d(v, z).join())).join(';');
+function underMap(body) {
+  const cv = $('gt-mini-image'), vol = V.meta && V.volume();
+  if (!vol) { cv.width = cv.height = 1; return; }
+  const [Z, Y, X] = V.meta.shape, px = Math.round(body.clientWidth * (window.devicePixelRatio || 1)) || X;
+  const w = Math.max(1, Math.min(X, px)), h = Math.max(1, Math.round((w * Y) / X)), f = flatten(vol, w, h), lut = lutKey();
+  if (f.lut === lut && cv.width === w && cv.height === h) return;
+  const c = (cv.width = w, cv.height = h, cv.getContext('2d')), img = c.createImageData(w, h), d = img.data;
+  for (let i = 0; i < w * h; i++) {
+    const [r, g, b] = V.lut2d(f.top[i], f.depth[i] / Math.max(Z - 1, 1));
+    d[4 * i] = r; d[4 * i + 1] = g; d[4 * i + 2] = b; d[4 * i + 3] = 255;
+  }
+  c.putImageData(img, 0, 0);
+  f.lut = lut;
+}
+// the areas as a map floating over the view while tagging, as the field is laid out, over the stack flattened: each
+// done, partly judged or not started, the current one marked; a click opens it
 function map(m, on) {
   const el = $('gt-mini'); el.hidden = !on;
   if (!on) return;
   const body = $('gt-mini-areas'), [W, H] = size(m);
   body.style.gridTemplateColumns = `repeat(${n}, 1fr)`; body.style.aspectRatio = `${W} / ${H}`;
+  underMap(body);
   const cells = [];
   for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) {
     const a = r * n + (r % 2 ? n - 1 - k : k), p = progress(m, a), b = document.createElement('button');

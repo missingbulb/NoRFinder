@@ -2,7 +2,7 @@
 // (stand_in.mjs) whose Execute answers with a model fixture. Checks req/vascular/model/run: Processing lists the
 // algorithms with their icons, precision and recall, the default first, says how the chosen one works and how well, and Execute runs it with the spacing shown, opening
 // its model; req/vascular/truth/tasks and req/vascular/truth/order: how many areas chosen first, a row per area, the
-// areas' map floating over the view while tagging, req/shell/ground-truth/tagging: nothing opens until Start GT tagging,
+// areas' map floating over the view while tagging, the stack flattened under it, req/shell/ground-truth/tagging: nothing opens until Start GT tagging,
 // Stop tagging gives the stack back; an area opening from above, turning in 3D, its handles kept in depth from above, a
 // tip dropped on a vessel attached there, a right-click on the image drawing a missed vessel, its junctions judged one at
 // a time and picked on the view, Area is right, Ctrl or the Model label showing the model alone, Back to image and Back to task, a file of
@@ -133,6 +133,26 @@ try {
       mm: parseFloat(mm), over: $("#image-view").contains(el) }; });
   let mm = await mini();
   check(mm?.shown && mm.over && mm.cells === 16 && mm.now === 0 && mm.width === mm.mm, `while tagging the areas float as a map over the view, the minimap's width, the current one marked: ${JSON.stringify(mm)}`);
+  // under the areas, the stack flattened through every slice, in the colours the image box paints it
+  const under = await page.evaluate(() => {
+    const cv = $("#gt-mini-image"), v = window.shellForTests.viewer.three;
+    if (!cv) return null;
+    const [Z, Y, X] = v.meta.shape, vol = v.volume(), d = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data;
+    let worst = 0, lit = 0, n = 0;
+    for (let cy = 0; cy < cv.height; cy += 7) for (let cx = 0; cx < cv.width; cx += 5) {
+      let mv = -1, mz = 0;
+      for (let y = Math.floor(cy * Y / cv.height); y < Math.max(Math.floor((cy + 1) * Y / cv.height), Math.floor(cy * Y / cv.height) + 1); y++)
+        for (let x = Math.floor(cx * X / cv.width); x < Math.max(Math.floor((cx + 1) * X / cv.width), Math.floor(cx * X / cv.width) + 1); x++)
+          for (let z = 0; z < Z; z++) { const val = vol[(z * Y + y) * X + x]; if (val > mv) { mv = val; mz = z; } }
+      const want = v.lut2d(mv, mz / Math.max(Z - 1, 1)), o = 4 * (cy * cv.width + cx);
+      n++; worst = Math.max(worst, ...want.map((w, k) => Math.abs(w - d[o + k])));
+      if (d[o] + d[o + 1] + d[o + 2] > 60) lit++;
+    }
+    const img = cv.getBoundingClientRect(), areas = $("#gt-mini-areas").getBoundingClientRect();
+    return { n, worst, lit, aspect: cv.width / cv.height, want: X / Y, covers: Math.abs(img.width - areas.width) < 2 && Math.abs(img.height - areas.height) < 2 };
+  });
+  check(under && under.n >= 100 && under.worst <= 2 && under.lit > 0 && Math.abs(under.aspect - under.want) < 0.05 && under.covers,
+    `the map shows the stack under its areas, every slice flattened, in the image box's colours: ${JSON.stringify(under)}`);
   check(await page.evaluate(() => !!$("#gt-tasks li.now #task-card canvas") && $("#task-card .verdict").children.length === 2), "the area's current junction is pictured in the box, its two verdicts under it");
 
   // how many areas is the person's to choose
@@ -375,6 +395,11 @@ try {
   check((await doneRows()).join() === "a0", `the first area's row is done: ${await doneRows()}`);
   mm = await mini();
   check(mm.done === 1 && mm.now === 1, `the map shows the area done and the next current: ${JSON.stringify(mm)}`);
+  check(await page.evaluate(() => { const b = $("#gt-mini-areas button.done"); if (!b) return false;
+    // its colour laid on a clear pixel: how opaque it is, whatever the notation it is computed in
+    const c = document.createElement("canvas").getContext("2d"); c.fillStyle = getComputedStyle(b).backgroundColor; c.fillRect(0, 0, 1, 1);
+    const a = c.getImageData(0, 0, 1, 1).data[3]; return a > 0 && a < 0.8 * 255; }),
+    "an area done is tinted, the stack still seen through it");
   check(await page.evaluate(() => { const ps = [...$("#gt-bar").children]; return ps.length === 4 && parseFloat(ps[0].style.getPropertyValue("--done")) === 1; }), "the bar's first part is full");
 
   // a finer choice keeps what was done over the areas it covers
