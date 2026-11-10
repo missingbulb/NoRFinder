@@ -1510,7 +1510,9 @@ nobody has decided: what the page does there is not a requirement yet.
 
   While an image is read, the page shows a spinner and the elapsed time; while a study's
   action runs (for NoR, a finder), a photocopier's light sweeps back and forth over the image, with
-  what it is doing and the elapsed time below.
+  what it is doing and the elapsed time below. Set by the owner on 2026-11-10, the light is the shell's: a
+  study says only that it works and what it is doing, and over an image the shell sweeps it, in every study
+  alike. Test: `web-tests/test_status_bar_page.py`, `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
 ## `req/checks` The repo's checks

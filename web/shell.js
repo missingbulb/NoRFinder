@@ -206,6 +206,8 @@ function busy(on, text, look) {
   $("#busy-text").textContent = text || $("#status").textContent; $("#busy-time").textContent = "";
   st.busyTimer = setInterval(() => { $("#busy-time").textContent = ((Date.now() - st.busySince) / 1000).toFixed(0) + " s"; }, 500);
 }
+// a study's own work: over an image the light sweeps it, whatever the study is doing (req/shell/waiting/visible)
+const studyBusy = (on, text) => busy(on, text, st.img ? "scan" : null);
 // the memory the tab holds: Python's (the bulk, and it never shrinks), its files and, in Chrome and Edge, the
 // page's own scripts, plus an estimate of what a page cannot read
 function statusBar() {
@@ -2189,7 +2191,7 @@ function leaveStudy() {
 }
 
 const shell = {
-  $, state: st, page, still, status, busy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, remote,
+  $, state: st, page, still, status, busy: studyBusy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, remote,
   clearable: (what, fn) => truth.clearable(what, fn), showImage, boxDone, outline,
   views: { show: (v) => views.show(v), on: (fn) => views.on(fn), count: (total) => views.count(total), get now() { return views.now; } },
   tasks,
