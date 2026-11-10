@@ -68,7 +68,7 @@ async function browserPixels(b) {
 export async function readImage(bytes) {
   const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   if (isTiff(b)) return readTiff(b);
-  const { W, H, rgba } = await browserPixels(b), n = W * H, planes = [0, 1, 2].map(() => new Uint8Array(n));
+  const { W, H, rgba } = await (isHeif(b) ? heifPixels(b) : browserPixels(b)), n = W * H, planes = [0, 1, 2].map(() => new Uint8Array(n));
   for (let i = 0; i < n; i++) for (let j = 0; j < 3; j++) planes[j][i] = rgba[4 * i + j];
   return fromPlanes(W, H, planes);
 }
