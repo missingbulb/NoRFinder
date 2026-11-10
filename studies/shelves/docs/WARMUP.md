@@ -24,18 +24,22 @@ tests/                test_books.py and test_grade.py (fast), test_reading.py an
 
 ## The pipeline
 
-1. **Find** (`books.find`, Python, R6, req/shelves/books/find): first the page runs PaddleOCR's text finder
+1. **Find** (`books.find`, Python, R8, req/shelves/books/find): first the page runs PaddleOCR's text finder
    (`reading.textMap`, the `lines` reader's own) over Python's view of the photo (`books.text_view`, long side 1280)
    and hands the finder its map of where text is. Shelves are rows a horizontal edge crosses at least half
    the photo on, each looked at with a margin. Within a shelf, the edges between books are lines found as Osef does
    (unblurred Sobel, 80% of the rows every book crosses, strongest first, none crossing, wide gaps searched again),
-   at leans up to 30°. Between two neighbouring lines, the book's top and foot are its own: where its texture stops,
+   at leans up to 30°, two of them one when closer at both ends than 0.7 of the shelf's own spacing between its
+   edges (its 25th percentile, `CROWD`), never under twice the narrowest book. Between two neighbouring lines, the book's top and foot are its own: where its texture stops,
    then the first colour change across its strip, square to its sides give or take 12°, past which hardly any of the
    strip is the book's colour. With the text map, a line crossing text is lettering, and a strip holding two
    columns of text side by side is searched again for the edge between them (`books.text_columns`). A box is kept
    only once it checks out as a readable spine (`books.spine`) and carries a book's texture or a text line along
    it (`books.text_along`); a wide box whose marks repeat further across is two books of one series
-   (`books.series_split`); a shelf of fewer than three spines is no shelf. With no text map (the text finder out of
+   (`books.series_split`); a shelf of fewer than three spines is no shelf. Where no box stands, a region of one
+   colour boxes a book (`books.regions`, R8): the shelf cut into Felzenszwalb regions at 500 px wide, each long, thin,
+   within 50° of upright and filling its rectangle, its sides moved onto the strongest edge near them, then checked
+   as any spine is. With no text map (the text finder out of
    reach) Find runs as R5 did, less the perspective check, and its step says so. Then the covers lying outside the shelves (`books.covers`): quadrilaterals of straight edges
    whose sides end at their corners, searched outside every band whose edges between books stand barcode-close
    (`books.barcode_bands`).
@@ -110,11 +114,70 @@ never covered. Flip reads the book again at that turn alone, in both languages. 
 finder and the reader proposed beside the corrected values, so one file scores both the finder (corners, view) and
 each reader (text), which `lab/grade.py` does. The ground truth is in the study's GT folder on Drive
 (`GT/<photo>__<sha8>/gt_<tagger>.json` under the study's root), fetched by `python3 studies/shelves/lab/photos.py --gt`
-into `data/raw/gt/<photo's drive id>__<tagger>.json`. Two photos so far: `1g4iFN`, re-tagged 2026-11-10 after the task's rework, 13 books right (4 of them added
+into `data/raw/gt/<photo's drive id>__<tagger>.json`. Four photos so far: `1g4iFN`, re-tagged 2026-11-10 after the task's rework, 13 books right (4 of them added
 as missed) and 1 found box marked no book; `1HyJrL`, tagged 2026-11-10, 19 books right, all found (the book the
-frame cuts at its left edge left untagged).
+frame cuts at its left edge left untagged); and, new for R8, `1zktX1`, 60 books right (24 added as missed), a
+bookcase of two cabinets side by side, and `16w5nW`, 8 books right (2 added as missed), **held out** since R8:
+scored once per iteration, never tuned on.
+
+A score is the page's: `node studies/shelves/reading/read.mjs PHOTO find lines OUT.json`, then
+`python3 studies/shelves/lab/grade.py GT.json --found OUT.json`. `grade.py --photo` runs the finder without the
+text map, and the container's own JPEG decoding moves R8 by up to 6 books on `1zktX1` (below).
 
 ## Iterations
+
+### R8 — the shelf's own spacing tells two edges apart; a region of one colour boxes a book (2026-11-10)
+
+Two new ground truths, `1zktX1` (60 books) and `16w5nW` (8, held out). Scores on the page's path (Pyodide's
+decoding, the page's text map); **indicative**: three tuning photos, and the gain is all one of them.
+
+| | R7 matched / found | R8 matched / found | R8 precision / recall |
+|---|---|---|---|
+| `1HyJrL` | 18/19, 21 | 18/19, 21 | 0.86 / 0.95 |
+| `1g4iFN` | 11/13, 12 | 11/13, 13 | 0.85 / 0.85 |
+| `1zktX1` | 19/60, 39 | 35/60, 55 | 0.64 / 0.58 |
+| tuning, all | 48/92, 72 (F1 0.59) | 64/92, 89 (F1 0.71) | 0.72 / 0.70 |
+| `16w5nW` (held out) | 5/8, 7 | 5/8, 7 | 0.71 / 0.62 |
+
+No book R7 boxed is lost on any photo. **How far to trust `1zktX1`'s number:** under a ±1 level of noise on its
+pixels, R7 gives 18-22 and R8 35-38; the container's own decoding gives R8 41. Read it as 35 ± 3.
+
+- **What was wrong (R7 on `1zktX1`):** of 41 books missed, 17 never proposed, 16 inside a box over two books or
+  running through the board, 7 misaligned; 18 false boxes. Two causes measured: the crowding distance between two
+  edges (twice `MIN_WIDTH`, 14 px at the working size) is wider than most of its spines (8-15 px), so the second of
+  two close edges went; and leaning, low-contrast books in its lower right gave no edge line at all.
+- **What changed:** (1) `CROWD`: the crowding distance is 0.7 of the shelf's own 25th-percentile spacing (flat from
+  0.7 to 0.8), alone 59/92 in the container. (2) `books.regions` `[spine-colour]`: Felzenszwalb regions shaped like a spine,
+  verified by `books.spine`, added only where no line-found box overlaps them; alone 57/92. Together 70/92 in the
+  container. The text map's plain-spine keep still holds with the regions off
+  (`test_without_its_text_a_plain_spine_is_boxed_only_by_its_colour`).
+- **Still missed on `1zktX1`:** dark, plain spines against the dark wood (14, 31, 34), the top right's steep leaners
+  (18-22), and its stacked books. False boxes: wedges over two or three books on the top shelves, some through the
+  board, and slivers on the frame's posts. On `1TmVNx` (untagged, 59 → 78 boxes) most new boxes are single thin
+  spines; one runs through a board, one is on the drill. A shelf of thin spines alone stays merged: the spacing is
+  measured after the first, wider crowding.
+- **The run:** three ideation routes (fresh lenses, explaining to a child, a transformed view) gave directions A-F,
+  each built and scored separately; then a random sweep of the constants.
+
+  | direction | route | container, tuning (R7 49/92) | verdict |
+  |---|---|---|---|
+  | A colour regions as proposals | child | 59/92 (57 added only where no box) | **kept** |
+  | B lean read from the text strokes, a seed per stroke | child | 46-48/92 | rejected: the misses fail at the seam on dark, cluttered books, not at the lean |
+  | C cabinets split at their uprights, the board as the floor | child, view | 53/92, loses 3 R7 books | not kept: what it gains, D gains; thresholds set on `1zktX1` alone |
+  | D crowding at the shelf's own spacing | lenses | 59/92 | **kept** |
+  | E a scored objective in place of `most_books` | lenses | perfect selection over R7's candidates: 49/92 | killed by its test: generation is the wall, not selection |
+  | F lean ridge: a signed colour derivative along each lean, a Viterbi ridge, persistent peaks | view | 69/92, gated | not kept (below) |
+  | A+D+F | fusion | 72/92, loses `1zktX1` #2 | not kept: +2 over A+D for 7 settings fit to one photo, a gate between 0.045 and 0.066, twice the time |
+  | 60 random constant mutations | mutation | best 51/92 (`WORK` 1440, loses one on `1g4iFN`); 16 worse; no-op mutants exactly R7 | no constant change comes near |
+
+  F, the lean ridge, runs only where the shelf's spacing over its height is under 0.055 (without the gate `1HyJrL`
+  falls to 11/19); untuned it gives 65/92 with A+D. It is the route to revisit once more photos of thin packed spines
+  are tagged. Its prototype found both sides of 52 of `1zktX1`'s 59 books.
+- **Untried, from the routes:** a foot line fitted through a cell's boxes, capping the rest (taller-through-board, up
+  to 8 of 16; kill: clamping feet to the median foot offline gains under 3); verifying each side by its 8-band
+  barcode, dropping a line whose flanks match (wider merges; kill: fewer false boxes with no loss); a neighbour's
+  height and lean to fill a plain spine between two found ones (14, 15, 31, 34); a learned verifier over the
+  candidates with leave-one-photo-out (once more photos are tagged).
 
 ### R7 — no box over another; a line the books cross is no shelf; readings spelled (2026-11-10)
 
@@ -384,12 +447,17 @@ number below is a score.
 - `[text-lines]` A book's title is a line of text along its spine, and no text runs across the edge between two books
   (`books.TEXT_*`). Fails on a spine with no lettering, a title printed across two spines, a sticker spanning a gap,
   and a photo the text finder reads poorly (dark, blurred); calibrated on one tagged photo.
+- `[spine-colour]` (R8) A book's face is one region of colour, long and thin, its sides on edges (`books.regions`,
+  `REGION_*`). Fails on a spine patterned across its width, and on two like-coloured neighbours read as one region,
+  which `books.spine`'s check on the edge between them must then reject; calibrated on one photo's gains.
 - `[work-size]` The finder works at a long side of 900 px (`books.WORK`), and the text finder reads the photo at
   1280 (`books.TEXT_LONG`): scale-dependent, the first constants to revisit on photos of another scale.
 
 ## Open items
 
-- More ground truth: two tagged photos are too few to hold any out. A book split at its lettering beside a dark
+- More ground truth: four tagged photos, one held out; every R8 gain is on one photo (`1zktX1`). Photos of thin
+  packed spines would decide the lean ridge (R8's F).
+- `1zktX1`'s dark plain spines, steep leaners and the boxes through its boards (R8). A book split at its lettering beside a dark
   gap (`1HyJrL`'s Henderson): `most_books` prefers more boxes.
 - Names the Wikipedia titles miss (`אולדיס`, `גאלויה`, `וונגרין`), and the geresh of foreign names (`ג'ון`).
   English is not spelled yet (no English ground truth).
