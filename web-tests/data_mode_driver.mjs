@@ -9,9 +9,11 @@ import { createHash } from "node:crypto";
 import { standIn } from "./stand_in_drive.mjs";
 
 const [answers, studies, rootDir, out, shots] = process.argv.slice(2);
-const { FILES, GT, writes, open, role, check, done } = await standIn({ answers, studies, rootDir, uploaded: (f) => { if (f.name === "rauntruth-previews.tiff") fs.writeFileSync(out, f.bytes); } });
+const { FILES, GT, approved, writes, open, role, check, done } = await standIn({ answers, studies, rootDir, uploaded: (f) => { if (f.name === "rauntruth-previews.tiff") fs.writeFileSync(out, f.bytes); } });
 // an image's Needs GT marker, in the curated folder, named as its ground-truth subfolder
 const neededOf = (name) => { const f = FILES.find((g) => g.name === name); return `${name.replace(/\.[^.]*$/, "")}__${createHash("sha256").update(f.bytes).digest("hex").slice(0, 8)}.needs_gt`; };
+// the curated folder approved for the site, as the study manager does from the tree's head, so the page may write its markers
+approved.add(GT.curated);
 // someone else marked the stack as needing ground truth
 FILES.push({ id: "dmmarker000000000001", name: neededOf("b stack.tif"), parent: GT.curated, folder: false, bytes: Buffer.alloc(0), mine: false, props: {}, modified: "2026-11-05T07:00:00Z" });
 const shot = (name) => shots && page.screenshot({ path: path.join(shots, name + ".png") });

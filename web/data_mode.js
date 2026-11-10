@@ -24,7 +24,6 @@ const ACCESS = {
   none: ["Not approved", "Not yet open to this site: approve it to add files here."],
   unknown: ["Checking…", "Your sign-in is being renewed."],
 };
-export const truthMarker = (name) => stemOf(name) + ".ground_truth.MISSING";
 
 // a preview as an ImageJ TIFF a study's Python opens: a flat image's three colour planes, a stack's slices
 export function previewTiff(e, pages) {
@@ -244,13 +243,13 @@ export function dataMode(ctx) {
     if (!src) { pic.classList.add("none"); return; }
     const i = new Image(); i.alt = ""; i.src = src; pic.replaceChildren(i);
   }
-  // each image's state in the folder: {f, entry, stale, truth, pending, rejected, marker}, its ground truth as gts
+  // each image's state in the folder: {f, entry, stale, truth, pending, rejected, marker (its Needs GT marker's id)}, its ground truth as gts
   // (truth_folders.js status) has it
   function states(n, pv, gts) {
     return imagesOf(n).map((f) => {
       const entry = pv?.entry(f.name, f.sha) || null, g = (f.sha && gts.get(tf.subfolderName(f.name, f.sha))) || {};
       return { f, entry, stale: !entry && !!pv?.index.images.some((e) => e.name === f.name),
-        truth: !!g.curated, pending: !!g.pending, rejected: !!g.rejected, marker: n.files.find((x) => x.name === truthMarker(f.name)) || null };
+        truth: !!g.curated, pending: !!g.pending, rejected: !!g.rejected, marker: g.needed || null };
     });
   }
   // the ground truth of every image either folder holds, an empty Map while the study names none
@@ -301,12 +300,16 @@ export function dataMode(ctx) {
         `<span class="tags">${tag ? `<span class="tag warn">${tag}</span>` : ""}${s.truth ? '<span class="tag yes">Ground truth</span>' : ""}` +
         `${s.pending ? '<span class="tag pending">GT pending</span>' : ""}${s.rejected ? '<span class="tag warn">GT rejected</span>' : ""}</span>` +
         (s.pending ? `<button type="button" class="review-gt" data-needs-network title="See the taggers' submissions, and accept or reject each">Review GT</button>` : "") +
-        `<button type="button" class="mark-gt" data-needs-network aria-pressed="${!!s.marker}" title="Mark it as needing ground truth: a ${esc(truthMarker(s.f.name))} file beside it">Needs GT</button>`;
+        `<button type="button" class="mark-gt" data-needs-network aria-pressed="${!!s.marker}">Needs GT</button>`;
       cell.onclick = (e) => { if (!e.target.closest(".mark-gt, .review-gt")) chooseImage(n, s.f); };
       cell.querySelector(".review-gt")?.addEventListener("click", () => review(n, s.f));
       cell.onkeydown = (e) => { if (e.key === "Enter" && e.target === cell) chooseImage(n, s.f); };
       const mark = cell.querySelector(".mark-gt");
-      mark.disabled = n.access !== "write" || s.truth; mark.onclick = () => markTruth(n, s, mark);
+      const why = !gt.curated ? "Set up ground truth first: the mark is kept in its curated folder"
+        : ["view", "none"].includes(gtNodes.find((g) => g.id === gt.curated)?.access) ? "The mark is kept in the curated ground-truth folder: " + ACCESS[gtNodes.find((g) => g.id === gt.curated).access][1]
+        : !s.f.sha ? "The store does not say this image's SHA-256, which names its mark" : s.truth ? "It has ground truth" : "";
+      mark.disabled = !!why; mark.title = why || "Mark it as needing ground truth: a file in the curated ground-truth folder";
+      mark.onclick = () => markTruth(n, s, mark);
       picture(cell.querySelector(".pic"), pv, s.f);
       return cell;
     }));
@@ -328,8 +331,8 @@ export function dataMode(ctx) {
   async function markTruth(n, s, b) {
     b.disabled = true;
     try {
-      if (!s.marker) await sd.create(n.id, truthMarker(s.f.name), new Blob([], { type: "text/plain" }));
-      else if (await sd.ours(s.marker.id)) await sd.trash(s.marker.id);
+      if (!s.marker) await tf.markNeeded({ writer, curated: gt.curated, image: { name: s.f.name, sha256: s.f.sha } });
+      else if (await sd.ours(s.marker)) await sd.trash(s.marker);
       else throw new Error("Someone else marked it; whoever adds its ground truth drops the marker.");
       await relist(n);
     } catch (e) { msg($("#folder-msg"), e.message || String(e), true); b.disabled = false; }

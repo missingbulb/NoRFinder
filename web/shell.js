@@ -1020,7 +1020,8 @@ function ago(at) {
 }
 // an image's ground-truth tag, [text, title, state], from its entry in truth.status's map; none without one
 const truthTag = (g) => (!g ? [] : g.pending ? ["GT pending", "A tagger submitted ground truth for it, not curated yet", "pending"]
-  : g.curated ? ["GT", "It has curated ground truth", "curated"] : g.rejected ? ["GT rejected", "Its submitted ground truth was rejected", "rejected"] : []);
+  : g.curated ? ["GT", "It has curated ground truth", "curated"] : g.rejected ? ["GT rejected", "Its submitted ground truth was rejected", "rejected"]
+  : g.needed ? ["GT wanted", "A study manager marked it as needing ground truth", "wanted"] : []);
 const putTruthTag = (tag, g) => {
   const [text, title, state] = truthTag(g);
   if (tag && text) Object.assign(tag, { textContent: text, title }).dataset.state = state;

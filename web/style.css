@@ -955,6 +955,7 @@ html:not(.offline) #welcome-offline { display: none; }
 #remote-list .gt-tag, #recent .gt-tag { font-size: 10.5px; padding: 0 5px; border-radius: 8px; border: 1px solid currentColor; color: var(--yes); }
 #remote-list .gt-tag[data-state="pending"], #recent .gt-tag[data-state="pending"] { color: var(--accent); }
 #remote-list .gt-tag[data-state="rejected"], #recent .gt-tag[data-state="rejected"] { color: var(--warn); }
+#remote-list .gt-tag[data-state="wanted"], #recent .gt-tag[data-state="wanted"] { color: var(--warn); border-style: dashed; }
 
 /* the study's ground-truth tasks (req/shell/ground-truth/tasks): a bar of a part per task, then a row per task, the
    open one bold, a done one checked, and Submit Ground Truth last */
