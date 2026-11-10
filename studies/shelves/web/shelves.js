@@ -1,6 +1,6 @@
 // The Bookshelf Reader's page: the books found on a photo of shelves, each a four-cornered box with its view (spine or
-// cover) and the title read from it, and, while ground truth is made, one task that takes each book in turn: its
-// corners, its turn and its text set right, then the books the finder missed added.
+// cover) and the title read from it, and, while ground truth is made, one task that takes each book in turn, in the
+// order they stand, its corners, its turn and its text set right, and adds the books the finder missed.
 import { reader, rotate, READERS, MODELS } from "./reading.js";
 
 const CDN = "https://cdn.jsdelivr.net/npm/";
@@ -74,6 +74,18 @@ function clockwise(pts) {
   const first = round.reduce((k, p, i) => (p[0] + p[1] < round[k][0] + round[k][1] ? i : k), 0);
   return [...round.slice(first), ...round.slice(0, first)].map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10]);
 }
+// the books in the order they stand on the photo: shelf by shelf from the top, each shelf left to right. A book is on
+// the shelf of the first book there while the two overlap in height by half the shorter's
+export function inPlace(list) {
+  const span = (b) => { const ys = b.corners.map((p) => p[1]); return [Math.min(...ys), Math.max(...ys)]; };
+  const mid = (b, k) => b.corners.reduce((a, p) => a + p[k], 0) / 4;
+  const rows = [];
+  for (const b of [...list].sort((a, c) => mid(a, 1) - mid(c, 1))) {
+    const [t, f] = span(b), row = rows.find((r) => Math.min(f, r.f) - Math.max(t, r.t) > 0.5 * Math.min(f - t, r.f - r.t));
+    if (row) row.books.push(b); else rows.push({ t, f, books: [b] });
+  }
+  return rows.flatMap((r) => r.books.sort((a, c) => mid(a, 0) - mid(c, 0)));
+}
 function inside([x, y], poly) {
   let yes = false;
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -87,15 +99,14 @@ export function mount(shell) {
   const $ = shell.$, st = shell.state, here = { signal: shell.signal };
   // books: [{corners, view, text, confidence, reader, turn, source: "found" | "missed", verdict: null | "right" | "wrong",
   // proposed: what the finder and the reader said, kept for scoring; while tagged, turnSet: the tagger set the turn,
-  // lang: the language the tagger says the title is in (a key of LANGS), typed: the tagger typed its text}]
-  let books = [], cur = null, back = [], drawing = null, dragging = null, missedDone = false, opened = false;
+  // typed: the tagger typed its text}]
+  let books = [], cur = null, drawing = null, dragging = null, noneMissed = false, opened = false, selectFor = null;
   let ocr = null;
   const truth = () => shell.makesTruth;
   // the tagger tags now: a book is open, framed and its corners dragged only then (req/shell/ground-truth/tagging)
   const tagging = () => truth() && shell.tasks.tagging();
-  // its tasks in the shell's list: each book found checked, then the missed ones added
-  if (truth()) shell.tasks.list([{ key: "books", name: "Books", title: "The books the finder found, each checked" },
-    { key: "missed", name: "Missed books", title: "The books the finder missed, added" }], { submit, pick: (k) => { if (k === "books") next(null); },
+  // one task: every book, found or added, decided, and none left missed
+  if (truth()) shell.tasks.list([{ key: "books", name: "Books", title: "Every book on the photo, each checked, the missed ones added" }], { submit, pick: () => { if (!cur) next(null); else draw(); },
     tagging: (on) => { if (on && cur === null) next(); else { if (on) focus(cur); draw(); } } });
   const ocrNow = () => (ocr ||= reader(engines()));
 
@@ -103,6 +114,32 @@ export function mount(shell) {
   choice.replaceChildren(...Object.entries(READERS).map(([k, name]) => Object.assign(document.createElement("option"), { value: k, textContent: name })));
   choice.value = shell.readJSON(READER, "lines") in READERS ? shell.readJSON(READER, "lines") : "lines";
   choice.onchange = () => shell.writeJSON(READER, choice.value);
+
+  // ---------- the draft: the tagger's work on a photo, kept on this device until they clear it ----------
+  const DRAFT = "shelves-draft|";
+  const draftKey = () => DRAFT + st.fileName + "|" + st.sha;
+  const KEEP = ["corners", "view", "text", "confidence", "reader", "turn", "turnSet", "typed", "source", "verdict", "proposed"];
+  function save() {
+    if (!truth() || !opened) return;
+    shell.writeJSON(draftKey(), { books: books.map((b) => Object.fromEntries(KEEP.filter((k) => k in b).map((k) => [k, b[k]]))), noneMissed });
+  }
+  const draft = () => { const d = shell.readJSON(draftKey(), null); return d && Array.isArray(d.books) && d.books.length ? d : null; };
+  function offerDraft() {
+    const c = $("#bs-continue"), d = truth() && opened ? draft() : null;
+    c.hidden = !truth() || !opened; c.disabled = !d;
+    c.title = d ? `Back to the ${d.books.length} books drafted on this photo on this device` : "No ground truth drafted for this photo on this device yet";
+  }
+  $("#bs-continue").onclick = () => {
+    const d = draft();
+    if (!d) return offerDraft();
+    books = d.books.map((b) => ({ ...b })); noneMissed = !!d.noneMissed; cur = null; drawing = null;
+    shell.step("find", true, `${books.length} books drafted`); shell.boxDone($("#bs-box"), `${books.length} books`);
+    shell.step("read", true, `${books.filter((b) => b.text).length} of ${books.length} titles`);
+    $("#bs-read").disabled = false;
+    if (shell.tasks.tagging()) next(null); else shell.tasks.tagging(true);
+    draw();
+  };
+  shell.clearable("drafted books", () => { try { localStorage.removeItem(draftKey()); } catch { /* no storage */ } });
 
   // ---------- Python: finding and straightening ----------
   $("#bs-find").onclick = async () => {
@@ -149,19 +186,20 @@ export function mount(shell) {
     if (tagging() && cur === null) next();
     draw();
   }
-  // one book read again while it is tagged, the photo left in view: at the turn the tagger set and in the language
-  // they chose; a later reading of the same book replaces one still under way
+  // one book read again while it is tagged, the photo left in view: at the turn the tagger set; a later reading of
+  // the same book replaces one still under way
   async function reread(b) {
     const gen = (b.gen = (b.gen || 0) + 1), how = choice.value;
     b.reading = true; draw(); shell.status("Reading the book again…");
     try {
       const [crop] = await straighten([b]);
       if (gen !== b.gen) return;
-      const r = await ocrNow().read(crop, how, { turn: b.turnSet ? b.turn : null, lang: b.lang || "both" });
+      const r = await ocrNow().read(crop, how, { turn: b.turnSet ? b.turn : null });
       if (gen !== b.gen) return;
       const typed = b.typed ? b.text : null;
       Object.assign(b, r, { reader: how });
       if (typed !== null) b.text = typed;
+      save();
       shell.status("Book read again.");
     } finally { if (gen === b.gen) { b.reading = false; draw(); } }
   }
@@ -169,16 +207,19 @@ export function mount(shell) {
   // ---------- drawing on the photo ----------
   const layer = () => shell.viewer.layer("bs");
   const el = (tag, attrs) => { const n = document.createElementNS(SVG, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); return n; };
-  const shown = () => books.filter((b) => b.verdict !== "wrong");
+  // the books on the photo: outside tagging, the ones not marked as no book
+  const shown = () => (tagging() ? books : books.filter((b) => b.verdict !== "wrong"));
   function drawBoxes() {
     const g = layer(), pts = (b) => b.corners.map((p) => p.join(",")).join(" ");
     g.replaceChildren(...shown().map((b) => {
-      const k = el("g", { class: `bs-book ${b.view}${b === cur && (tagging() || !truth()) ? " current" : ""}${b.verdict ? " done" : ""}` });
+      const k = el("g", { class: `bs-book ${b.view}${b === cur && (tagging() || !truth()) ? " current" : ""}${b.verdict ? " done" : ""}${b.verdict === "wrong" ? " wrong" : ""}` });
       k.append(el("polygon", { class: "under", points: pts(b) }), el("polygon", { class: "over", points: pts(b) }));
       return k;
     }));
     if (cur && tagging()) g.append(...cur.corners.map((p, i) => el("circle", { class: "bs-corner", cx: p[0], cy: p[1], r: 7 / st.zoom, "data-corner": i })));
     if (drawing?.pts.length) g.append(el("polyline", { class: "bs-book current", points: drawing.pts.map((p) => p.join(",")).join(" "), fill: "none", stroke: "#ffd400" }));
+    // what is approved, cut out of the photo by the viewer while the tagger tags
+    if (truth()) shell.viewer.doneMask?.(books.filter((b) => b.verdict === "right").map((b) => b.corners));
   }
   function draw() { drawBoxes(); list(); tasks(); }
 
@@ -201,7 +242,7 @@ export function mount(shell) {
   };
   // what the database matcher is sent: each book's text, where it is, and how sure the reading is
   const matcherDoc = () => ({ image: st.fileName, W: st.W, H: st.H,
-    books: shown().map((b, i) => ({ id: i + 1, view: b.view, text: b.text ?? "", confidence: b.confidence ?? null, reader: b.reader ?? null, corners: b.corners })) });
+    books: books.filter((b) => b.verdict !== "wrong").map((b, i) => ({ id: i + 1, view: b.view, text: b.text ?? "", confidence: b.confidence ?? null, reader: b.reader ?? null, corners: b.corners })) });
   // the book framed in the view: zoomed to fill most of it, unless already close to that, and in its middle
   function focus(b) {
     const xs = b.corners.map((p) => p[0]), ys = b.corners.map((p) => p[1]), sc = $("#scroller");
@@ -211,33 +252,45 @@ export function mount(shell) {
     shell.viewer.focus((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2);
   }
 
-  // ---------- the ground truth: one book at a time, then the missed ones, then Submit ----------
-  const found = () => books.filter((b) => b.source === "found");
-  const open = () => found().filter((b) => !b.verdict);
+  // ---------- the ground truth: every book in the order they stand, then the missed ones, then Submit ----------
+  const walk = () => inPlace(books);
+  const open = () => books.filter((b) => !b.verdict);
+  // a book made the open one: a title not yet approved is selected, to retype
+  function show(b) { cur = b; selectFor = b && b.verdict !== "right" ? b : null; if (b) focus(b); draw(); }
+  // the next book still open along the shelves after this one, round to the first; none once every book is decided
   function next(after = cur) {
-    const all = found(), from = all.indexOf(after);
-    cur = [...all.slice(from + 1), ...all.slice(0, from + 1)].find((b) => !b.verdict) || null;
-    if (cur) focus(cur);
-    draw();
+    const all = walk(), from = all.indexOf(after);
+    show([...all.slice(from + 1), ...all.slice(0, from + 1)].find((b) => !b.verdict) || null);
   }
-  // after a missed book, back to the found ones still open, if any
-  const onward = () => { cur = null; if (open().length) next(null); else draw(); };
+  // Back and Next: the book beside this one along the shelves, whatever its verdict
+  function step(by) {
+    const all = walk();
+    if (!all.length) return;
+    const at = cur ? all.indexOf(cur) : by > 0 ? -1 : 0;
+    show(all[(at + by + all.length) % all.length]);
+  }
   function verdict(v) {
     if (!cur) return;
-    back.push(cur); cur.verdict = v;
-    if (cur.source === "missed") return onward();
+    cur.verdict = v; save();
     next();
   }
   function tasks() {
     if (!truth()) return;
-    const all = found(), reviewed = all.length - open().length, missed = books.filter((b) => b.source === "missed" && b.verdict !== "wrong").length;
-    const reviewing = cur && (cur.source === "missed" || !cur.verdict);
-    shell.tasks.count("books", reviewed, all.length, all.length > 0 && !open().length);
-    shell.tasks.count("missed", missed, null, missedDone);
-    const now = reviewing && cur.source === "found" ? "books" : !open().length || cur?.source === "missed" ? "missed" : null;
-    for (const k of ["books", "missed"]) shell.tasks.row(k).querySelector(".task-body").replaceChildren();
-    shell.tasks.open(now)?.querySelector(".task-body").append(now === "books" ? item(cur) : missedTools());
-    shell.tasks.ready(!!(all.length && !open().length && missedDone && !(cur && cur.source === "missed" && !cur.verdict)));
+    const all = books, decided = all.length - open().length;
+    shell.tasks.count("books", decided, all.length, all.length > 0 && !open().length && noneMissed);
+    const row = shell.tasks.row("books")?.querySelector(".task-body");
+    // the title being typed keeps its place while the book is drawn again
+    const typing = document.activeElement?.closest?.(".bs-item input") ? { s: document.activeElement.selectionStart, e: document.activeElement.selectionEnd } : null;
+    row?.replaceChildren();
+    const now = shell.tasks.open(tagging() ? "books" : null);
+    if (now) {
+      const box = cur ? item(cur) : missedTools();
+      now.querySelector(".task-body").append(box);
+      const t = box.querySelector("input");
+      if (t && selectFor === cur) { selectFor = null; requestAnimationFrame(() => { if (t.isConnected) { t.focus({ preventScroll: true }); t.select(); } }); }
+      else if (t && typing) { t.focus({ preventScroll: true }); t.setSelectionRange(typing.s, typing.e); }
+    }
+    shell.tasks.ready(!!(all.length && !open().length && noneMissed));
   }
   // the book's picture in the task, drawn here from the photo the viewer shows, at the book's turn
   function paint(cv, b) {
@@ -250,88 +303,88 @@ export function mount(shell) {
     cancelAnimationFrame(painting);
     painting = requestAnimationFrame(() => { const cv = document.querySelector(".bs-item canvas"); if (cv && cur) paint(cv, cur); });
   };
-  function turnBy(b, k) { b.turn = ((b.turn || 0) + k) % 4; b.turnSet = true; draw(); reread(b); }
-  // the book on show: its picture, its turn, its language, its text and the verdict
+  function flip(b) { b.turn = ((b.turn || 0) + 2) % 4; b.turnSet = true; save(); draw(); reread(b); }
+  // the book on show: its picture, Flip, its text and the verdict
   function item(b) {
     const box = document.createElement("div"); box.className = "bs-item";
-    box.innerHTML = `<div class="bs-tools"><a data-do="back">Back</a><a data-do="skip">Skip</a></div><canvas></canvas>
-      <div class="bs-row"><div class="bs-views" role="group" aria-label="Turn"><button type="button" data-do="flip" title="Turn the picture upside down">Flip</button><button type="button" data-do="turn" title="Turn the picture a quarter clockwise">Turn 90°</button></div>
-      <div class="bs-views" role="group" aria-label="Language"><button type="button" data-lang="heb">Hebrew</button><button type="button" data-lang="eng">English</button><button type="button" data-lang="both">Both</button></div></div>
+    box.innerHTML = `<div class="bs-tools"><a data-do="back">Back</a><a data-do="next">Next</a></div><canvas></canvas>
+      <div class="bs-row"><button type="button" data-do="flip" title="Turn the picture upside down">Flip</button></div>
       <input type="text" dir="auto" placeholder="The title, as printed" aria-label="Title"><p class="bs-reading dim" hidden>Reading again…</p>
       <div class="bs-verdicts"><button type="button" class="primary" data-do="right">Right</button><button type="button" data-do="wrong">Not a book</button></div>`;
     paint(box.querySelector("canvas"), b);
-    box.querySelector('[data-do="flip"]').onclick = () => turnBy(b, 2);
-    box.querySelector('[data-do="turn"]').onclick = () => turnBy(b, 1);
-    for (const v of box.querySelectorAll("[data-lang]")) {
-      v.setAttribute("aria-pressed", String((b.lang || "both") === v.dataset.lang));
-      v.onclick = () => { b.lang = v.dataset.lang; draw(); reread(b); };
-    }
+    box.querySelector('[data-do="flip"]').onclick = () => flip(b);
     box.querySelector(".bs-reading").hidden = !b.reading;
-    const t = box.querySelector("input"); t.value = b.text || ""; t.oninput = () => { b.text = t.value; b.typed = true; };
-    box.querySelector('[data-do="right"]').onclick = () => verdict("right");
-    box.querySelector('[data-do="wrong"]').onclick = () => verdict("wrong");
-    box.querySelector('[data-do="skip"]').onclick = () => next();
-    box.querySelector('[data-do="back"]').onclick = () => { const p = back.pop(); if (p) { p.verdict = null; cur = p; focus(p); draw(); } };
+    const t = box.querySelector("input"); t.value = b.text || ""; t.oninput = () => { b.text = t.value; b.typed = true; save(); };
+    for (const v of ["right", "wrong"]) {
+      const k = box.querySelector(`[data-do="${v}"]`);
+      k.setAttribute("aria-pressed", String(b.verdict === v)); k.onclick = () => verdict(v);
+    }
+    box.querySelector('[data-do="next"]').onclick = () => step(1);
+    box.querySelector('[data-do="back"]').onclick = () => step(-1);
     return box;
   }
   function missedTools() {
     const box = document.createElement("div");
-    if (cur?.source === "missed" && !cur.verdict) return item(cur);
     box.innerHTML = `<p class="hint">Right-click the photo where a book was missed: Add a book here.</p>
-      <div class="bs-verdicts"><button type="button" data-do="draw">Draw a book</button><button type="button" data-do="none">${missedDone ? "Done" : "None missed"}</button></div>`;
+      <div class="bs-verdicts"><button type="button" data-do="draw">Draw a book</button><button type="button" data-do="none">${noneMissed ? "Done" : "None missed"}</button></div>`;
     box.querySelector('[data-do="draw"]').onclick = startDrawing;
-    box.querySelector('[data-do="none"]').onclick = () => { missedDone = true; draw(); };
+    box.querySelector('[data-do="none"]').onclick = () => { noneMissed = true; save(); draw(); };
     return box;
   }
   function startDrawing() {
-    drawing = { pts: [] }; missedDone = false;
+    drawing = { pts: [] };
     $("#scroller").classList.add("bs-drawing"); $("#bs-draw-hint").hidden = false; draw();
   }
   function endDrawing() { drawing = null; $("#scroller").classList.remove("bs-drawing"); $("#bs-draw-hint").hidden = true; draw(); }
   const shape = (corners) => { const [a, b, , d] = corners; return Math.hypot(d[0] - a[0], d[1] - a[1]) > Math.hypot(b[0] - a[0], b[1] - a[1]) ? "spine" : "cover"; };
+  // a book the finder missed: one more book on the photo, open now and read
   function added(corners) {
     const b = { corners: clockwise(corners), source: "missed", verdict: null, proposed: null };
-    b.view = shape(b.corners); missedDone = false;
-    books.push(b); cur = b; draw(); reread(b);
+    b.view = shape(b.corners); noneMissed = false;
+    books.push(b); save(); show(b); reread(b);
   }
   function drew(pts) { endDrawing(); added(pts); }
   // a book added at a point of the photo: upright, as wide and as tall as the books kept so far, in the middle
   function addAt([x, y]) {
     const side = (b, i, j) => Math.hypot(b.corners[i][0] - b.corners[j][0], b.corners[i][1] - b.corners[j][1]);
     const median = (v) => { const s = [...v].sort((a, b) => a - b); return s[Math.floor((s.length - 1) / 2)]; };
-    const kept = shown(), w = kept.length ? median(kept.map((b) => side(b, 0, 1))) : st.W / 15, h = kept.length ? median(kept.map((b) => side(b, 0, 3))) : st.H / 3;
+    const kept = books.filter((b) => b.verdict !== "wrong"), w = kept.length ? median(kept.map((b) => side(b, 0, 1))) : st.W / 15, h = kept.length ? median(kept.map((b) => side(b, 0, 3))) : st.H / 3;
     added([[x - w / 2, y - h / 2], [x + w / 2, y - h / 2], [x + w / 2, y + h / 2], [x - w / 2, y + h / 2]]);
   }
-  // a book taken off the photo: an added one gone, a found one marked not a book, which Back undoes
+  // a book taken off the photo: an added one gone, a found one marked not a book
   function remove(b) {
-    if (b.source === "missed") { books = books.filter((x) => x !== b); back = back.filter((x) => x !== b); if (cur === b) return onward(); return draw(); }
-    back.push(b); b.verdict = "wrong";
+    if (b.source === "missed") {
+      const after = walk()[walk().indexOf(b) - 1] ?? null;
+      books = books.filter((x) => x !== b); save();
+      if (cur === b) return next(after);
+      return draw();
+    }
+    b.verdict = "wrong"; save();
     if (cur === b) next(); else draw();
   }
   function submit() {
     const name = st.fileName.replace(/\.[^.]*$/, ""), kept = books.filter((b) => b.verdict === "right");
     const doc = { image: st.fileName, W: st.W, H: st.H, reader: choice.value,
-      books: books.filter((b) => b.verdict).map((b) => ({ source: b.source, verdict: b.verdict, corners: b.corners, turn: b.turn || 0, text: b.text ?? "",
+      books: walk().filter((b) => b.verdict).map((b) => ({ source: b.source, verdict: b.verdict, corners: b.corners, turn: b.turn || 0, text: b.text ?? "",
         ...(b.proposed ? { proposed: { corners: b.proposed.corners, text: b.proposed.text } } : {}) })) };
-    const items = [{ ok: true, text: `${found().length} books the finder proposed, each reviewed` },
+    const items = [{ ok: true, text: `${books.filter((b) => b.source === "found").length} books the finder proposed, each reviewed` },
       { ok: true, text: `${books.filter((b) => b.source === "missed" && b.verdict === "right").length} missed books added` },
       ...(kept.some((b) => !b.text) ? [{ ok: false, level: "warning", text: `${kept.filter((b) => !b.text).length} books with no title typed` }] : [])];
     shell.submitTruth({ doc, count: kept.length, file: name + "_books_gt.json", items, empty: "No book marked right yet." });
   }
-  // the tagger's progress on the photo is kept nowhere but the page (req/shell/ground-truth/clear)
-  shell.clearable("book marks", () => {});
 
-  // ---------- the right-click menu: a book added where none is boxed, a book flipped or deleted ----------
+  // ---------- the right-click menu: a book added anywhere, a book flipped or deleted ----------
   const menu = $("#bs-menu");
   let menuAt = null;
-  const bookAt = (p) => [...shown()].reverse().find((b) => inside(p, b.corners)) || null;
+  // the book under a point: of several, one still counted as a book first, then the last drawn
+  const bookAt = (p) => { const under = shown().filter((b) => inside(p, b.corners)).reverse(); return under.find((b) => b.verdict !== "wrong") || under[0] || null; };
   const hideMenu = () => { menu.hidden = true; menuAt = null; };
   $("#scroller").addEventListener("contextmenu", (e) => {
     if (!opened || !tagging() || drawing) return;
     e.preventDefault();
     const p = at(e), b = bookAt(p), r = $("#image-view").getBoundingClientRect();
     menuAt = { p, b };
-    menu.querySelector('[data-do="add"]').hidden = !!b;
+    // a box drawn over two books hides one of them: a book may be added on a box too
     for (const k of ["flip", "delete"]) menu.querySelector(`[data-do="${k}"]`).hidden = !b;
     Object.assign(menu.style, { left: e.clientX - r.left + "px", top: e.clientY - r.top + "px" });
     menu.hidden = false;
@@ -342,7 +395,7 @@ export function mount(shell) {
     if (!m || !k) return;
     if (k === "add") addAt(m.p);
     if (k === "delete") remove(m.b);
-    if (k === "flip") { if (!(m.b.source === "found" && m.b.verdict)) { cur = m.b; focus(m.b); } turnBy(m.b, 2); }
+    if (k === "flip") { show(m.b); flip(m.b); }
   };
   document.addEventListener("pointerdown", (e) => { if (!menu.hidden && !menu.contains(e.target)) hideMenu(); }, { ...here, capture: true });
 
@@ -364,7 +417,7 @@ export function mount(shell) {
   }, here);
   const drop = () => {
     if (dragging === null) return;
-    dragging = null; cur.corners = clockwise(cur.corners);
+    dragging = null; cur.corners = clockwise(cur.corners); save();
     // the reading follows the corners
     reread(cur);
   };
@@ -373,16 +426,16 @@ export function mount(shell) {
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (drawing) endDrawing(); hideMenu(); } }, here);
 
   return {
-    ready() { $("#bs-find").disabled = !opened; },
+    ready() { $("#bs-find").disabled = !opened; offerDraft(); },
     opened() {
-      opened = true; books = []; cur = null; back = []; missedDone = false; drawing = null; hideMenu();
+      opened = true; books = []; cur = null; noneMissed = false; drawing = null; selectFor = null; hideMenu();
       $("#bs-find").disabled = false; $("#bs-read").disabled = true; $("#bs-export").disabled = true;
-      shell.viewer.layer("bs").replaceChildren(); draw();
+      shell.viewer.layer("bs").replaceChildren(); draw(); offerDraft();
     },
     result(action, meta) {
       if (action === "find") {
         books = meta.books.map((b) => ({ ...b, source: "found", verdict: null }));
-        cur = null; back = []; shell.busy(false);
+        cur = null; noneMissed = false; shell.busy(false);
         shell.step("find", true, `${books.length} books found`);
         shell.boxDone($("#bs-box"), `${books.length} books`);
         $("#bs-read").disabled = !books.length;
@@ -400,7 +453,15 @@ export function mount(shell) {
     error() { shell.busy(false); },
     capturesPointer: () => !!drawing || dragging !== null,
     pickAt(e) { return bookAt(at(e)); },
-    pick(b) { if (!b || drawing) return; if (truth() && (!tagging() || (b.source === "found" && b.verdict))) return; cur = b; draw(); },
+    // a book clicked on the photo opens in the task, whatever its verdict
+    pick(b) { if (!b || drawing) return; if (truth() && !tagging()) return; if (truth()) show(b); else { cur = b; draw(); } },
     zoomed: () => drawBoxes(),
+    // the drafts in Manage storage, by the photo each is of
+    stored(key) {
+      if (key === READER) return { group: "settings", what: "the reader last chosen" };
+      if (!key.startsWith(DRAFT)) return null;
+      const rest = key.slice(DRAFT.length);
+      return { group: "images", image: rest.slice(0, rest.lastIndexOf("|")), what: "drafted books" };
+    },
   };
 }

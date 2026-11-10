@@ -3480,9 +3480,10 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reader | ⋯ | ● | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Find books | ⋯ | ● | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Read titles | ⋯ | ◐ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Continue tagging | ⋯ | ○ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Books found | ⋯ | ● | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Ground Truth Tasks | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;What the tasks are | ⊘ | ⊘ | ⊘ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The books' task | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tasks' list | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Start GT tagging | ⊘ | ⊘ | ⊘ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tasks' bar | ⊘ | ⊘ | ⊘ |
@@ -3495,8 +3496,8 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Left bar gutter | ● | ● | ● |
 | &nbsp;&nbsp;Main view | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Tasks/Items switch | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ● | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ○ | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Grid | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Reset view group | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset view to top | ⊘ | ⊘ | ⊘ |
@@ -3640,9 +3641,10 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reader | ⋯ | ● | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Find books | ⋯ | ● | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Read titles | ⋯ | ◐ | ⋯ |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Continue tagging | ⋯ | ◐ | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Books found | ⋯ | ● | ⋯ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Ground Truth Tasks | ▸ | ▸ | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;What the tasks are | ⋯ | ⋯ | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The books' task | ⋯ | ⋯ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tasks' list | ⋯ | ⋯ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Start GT tagging | ⋯ | ⋯ | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tasks' bar | ⋯ | ⋯ | ● |
@@ -3655,8 +3657,8 @@ Each table is one path: the study it opens, a root (the study's stage, who is si
 | &nbsp;&nbsp;Left bar gutter | ● | ● | ● |
 | &nbsp;&nbsp;Main view | ● | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Tasks/Items switch | ○ | ○ | ○ |
-| &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ◐ | ● | ● |
-| &nbsp;&nbsp;&nbsp;&nbsp;Grid | ◐ | ● | ● |
+| &nbsp;&nbsp;&nbsp;&nbsp;Ruler | ○ | ○ | ○ |
+| &nbsp;&nbsp;&nbsp;&nbsp;Grid | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;Minimap button | ◐ | ● | ● |
 | &nbsp;&nbsp;&nbsp;&nbsp;Reset view group | ○ | ○ | ○ |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Reset view to top | ⊘ | ⊘ | ⊘ |

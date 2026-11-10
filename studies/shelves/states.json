@@ -11,12 +11,18 @@
               {"when": {"counted": [false]}, "is": "disabled"}
             ]
           },
+          {"name": "Continue tagging", "select": "#bs-continue", "control": true, "req": "req/shelves/truth/task",
+            "rule": [
+              {"when": {"role": ["viewer"]}, "is": "hidden"},
+              {"is": "disabled", "about": "until a draft of the photo is kept on this device, which no path leaves"}
+            ]
+          },
           {"name": "Books found", "select": "#bs-found", "req": "req/shelves/books/find"}
         ]
       }
     ]},
     {"under": "Ground Truth Tasks", "tree": [
-      {"name": "What the tasks are", "select": "#bs-tasks", "req": "req/shelves/truth/task"}
+      {"name": "The books' task", "select": "#bs-tasks", "req": "req/shelves/truth/task"}
     ]},
     {"under": "Summary", "tree": [
       {"name": "Titles", "select": "#bs-titles", "req": "req/shelves/read/readers",
@@ -42,10 +48,22 @@
   "samples": "tests/state_samples.py",
   "standIn": "tests/reader_stand_in.mjs",
   "differ": {
+    "Ruler": {
+      "steady": "hidden in every state of this study",
+      "rule": [
+        {"is": "hidden", "req": "req/shell/image/toolbar", "about": "a photo has no scale to measure: the study's view.measure is false"}
+      ]
+    },
+    "Grid": {
+      "steady": "hidden in every state of this study",
+      "rule": [
+        {"is": "hidden", "req": "req/shell/image/toolbar", "about": "a photo has no scale to measure: the study's view.measure is false"}
+      ]
+    },
     "Submit Ground Truth": {
       "rule": [
         {"is": "disabled", "req": "req/shelves/truth/task",
-          "about": "until every book found is checked and the missed ones drawn, which no path does"}
+          "about": "until every book is decided and none is left missed, which no path does"}
       ]
     }
   },

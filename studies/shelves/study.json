@@ -82,6 +82,7 @@
   "groundTruth": {
   },
   "view": {
-    "stretch": false
+    "stretch": false,
+    "measure": false
   }
 }
