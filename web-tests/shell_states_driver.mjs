@@ -4,7 +4,7 @@
 // the rules expect; after its last state, it goes to another study and back, each page then compared with a fresh
 // load of its address (req/shell/study/switch-in-place). Every difference is reported, then the run fails. Optional RENDERS: a directory for a picture of
 // every state, arrows pointing at the elements that changed there, and an index.html of them all (req/checks/shell-states/renders).
-// STACK is the z-stack a path loads with its stack action; ANSWERS' files[study] may name a study's own image and stack. Exits 1 on a difference, 2 when it cannot run.
+// STACK is the z-stack a path loads with its stack action; ANSWERS' files[study] may name a study's own image and stack, and names the large image of the large action. Exits 1 on a difference, 2 when it cannot run.
 //   node web-tests/shell_states_driver.mjs ANSWERS STUDIES ROOT IMAGE STACK EXPECT [RENDERS]
 import fs from "node:fs";
 import path from "node:path";
@@ -61,6 +61,11 @@ const previewOf = async (page, z) => {
 const ACTIONS = {
   async load(page, first, files) {
     await page.setInputFiles("#file", files.image ?? image);
+    await page.waitForFunction(opened, first?.button);
+  },
+  // an image larger than the view
+  async large(page, first, files) {
+    await page.setInputFiles("#file", files.large);
     await page.waitForFunction(opened, first?.button);
   },
   // the stack shown in 3D, the 2D view stepped aside
