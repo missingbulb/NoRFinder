@@ -123,6 +123,16 @@ const dialogTag = async () => {
 };
 let tag = await dialogTag();
 await check(tag === "GT pending", "to the tagger, the Drive dialog marks the submitted image GT pending", tag);
+// and so does the image selector's list of recent images
+const recentTag = async () => {
+  await page.evaluate(() => { $("#image-menu").open = true; });
+  const row = `#recent .recent[data-id="${png.id}"] .gt-tag`;
+  const tag = await page.waitForFunction((r) => document.querySelector(r)?.textContent || null, row, { timeout: 5000 }).then((h) => h.jsonValue(), () => "");
+  await page.evaluate(() => { $("#image-menu").open = false; });
+  return tag;
+};
+tag = await recentTag();
+await check(tag === "GT pending", "to the tagger, the image selector marks the submitted image GT pending", tag);
 
 // req/shell/ground-truth/curate: the study manager sees it pending, reviews it and accepts it into the curated folder
 await role(page, "Study Manager");
@@ -154,6 +164,8 @@ await check(s.truth === 1 && s.pending === 0 && !(await page.$(cell + " .review-
 await check(await page.isDisabled(cell + " .mark-gt"), "an image with ground truth needs no marker");
 await page.waitForFunction(() => /1 image has ground truth/.test($("#gt-box").textContent), null, { timeout: 5000 }).catch(() => {});
 await check(/1 image has ground truth/.test(await page.textContent("#gt-box")), "accepted, the Ground Truth box counts it", await page.textContent("#gt-box"));
+tag = await recentTag();
+await check(tag === "GT", "accepted, the image selector marks the image GT", tag);
 
 // req/shell/ground-truth/switch: nothing pending, the study switches to unreviewed, nothing moved or deleted
 await page.waitForFunction(() => !$("#gt-switch").disabled);

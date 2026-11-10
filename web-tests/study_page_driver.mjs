@@ -194,7 +194,7 @@ try {
   if (!inViewer.stayed) problems.push("switching study reloaded the page");
   if (!inViewer.icon.endsWith("/studies/viewer/web/icon.svg")) problems.push("switching to the Image Viewer did not swap in its icon: " + inViewer.icon);
   if (inViewer.path !== "/web/") problems.push("the Image Viewer's address is not the bare one: " + inViewer.path);
-  if (inViewer.image || inViewer.file !== "No image loaded" || inViewer.unload || inViewer.loaded) problems.push("switching study did not unload the image: " + JSON.stringify(inViewer));
+  if (inViewer.image || inViewer.file !== "" || inViewer.unload || inViewer.loaded) problems.push("switching study did not unload the image: " + JSON.stringify(inViewer));
   if (inViewer.fixture || inViewer.css.length) problems.push("the fixture left its panels or stylesheet behind: " + inViewer.css);
   // the Image Viewer names no channels, and no image is open to give any: none are listed
   if (inViewer.channels !== "" || !inViewer.noHelp) problems.push("the channels are still the old study's: " + inViewer.channels);
@@ -219,7 +219,7 @@ try {
   const inNor = await shown();
   console.log(JSON.stringify(inNor), "listeners", await listeners());
   if (!inNor.stayed || inNor.path !== "/web/nor" || inNor.title !== "NoR Finder") problems.push("choosing NoR Finder did not swap it in at /web/nor: " + JSON.stringify(inNor));
-  if (inNor.image || inNor.file !== "No image loaded") problems.push("an image opened in NoR Finder after the switch: " + JSON.stringify(inNor));
+  if (inNor.image || inNor.file !== "") problems.push("an image opened in NoR Finder after the switch: " + JSON.stringify(inNor));
   if (!inNor.icon.endsWith("/studies/nor/web/icon.svg")) problems.push("switching to NoR Finder did not swap in its icon: " + inNor.icon);
   await headIcon("/studies/nor/web/icon.svg");
   await page.goBack();

@@ -34,7 +34,8 @@ export function hoverPop(btn, pop, fill) {
   return { show, refill: () => { if (pop.matches(":popover-open")) fill(); } };
 }
 
-// the viewer's tools a study may hide, by the names its study.json's view.hide gives them
+// the viewer's tools a study may hide, by the names its study.json's view.hide gives them; "channels" there hides the
+// channel rows
 const HIDEABLE = { ruler: "#ruler-btn", grid: "#grid-btn" };
 
 export function viewer(shell) {
@@ -56,7 +57,8 @@ export function viewer(shell) {
   let added = [], withRow = null;
   // none before an image shows (req/shell/channels/rows)
   function rows() {
-    $("#channels").replaceChildren(...(st.img || st.peeked ? chans : []).flatMap((c, k) => {
+    const hidden = (shell.study?.view?.hide || []).includes("channels");
+    $("#channels").replaceChildren(...(!hidden && (st.img || st.peeked) ? chans : []).flatMap((c, k) => {
       const row = html("div", { className: "channel" + (c.on ? "" : " off") });
       row.dataset.colour = c.colour; row.style.setProperty("--ch", c.colour);
       const box = html("input", { type: "checkbox", id: "show-" + k, checked: c.on });

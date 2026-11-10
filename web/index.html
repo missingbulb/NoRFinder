@@ -90,7 +90,7 @@
         <button id="unload" type="button" hidden title="Close the image and clear the page" aria-label="Unload"><span class="word">Unload</span><svg class="x-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
         <button id="load-remote" type="button"><svg class="remote-logo" aria-hidden="true"><use href="#remote-logo"/></svg></button>
       </div>
-      <details id="file-box" class="empty"><summary id="file-name" class="dim" data-log-as="the image's name">No image loaded</summary><dl id="file-info"></dl></details>
+      <details id="file-box" class="empty" hidden><summary id="file-name" data-log-as="the image's name"></summary><dl id="file-info"></dl></details>
       <div id="channels"></div>
       <div id="image-foot">
         <button id="load-original" class="primary" type="button" hidden>Load Original</button>
@@ -144,7 +144,7 @@
       <slot-here data-slot-for="tasks"></slot-here>
       <div id="gt-list" hidden>
         <button id="gt-start" type="button" class="primary" title="Work through the tasks, one item at a time">Start GT tagging</button>
-        <button id="gt-continue" type="button" hidden disabled title="No ground truth drafted for this image on this device yet">Continue tagging</button>
+        <button id="gt-continue" type="button" class="primary" hidden title="Back to your ground truth drafted on this image on this device">Continue GT tagging</button>
         <div id="gt-bar"></div>
         <ol id="gt-tasks"><li data-task="submit"><div class="task-head"><button id="gt-submit" type="button" disabled><span class="gt-ico" aria-hidden="true"></span>Submit Ground Truth</button><span class="gt-clear-slot"></span></div></li></ol>
       </div>

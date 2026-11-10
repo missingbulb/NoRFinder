@@ -157,6 +157,9 @@ nobody has decided: what the page does there is not a requirement yet.
   is named for its colour. The rows start over with every image, and before any image there are none (set by
   the owner on 2026-11-04). Test:
   `web-tests/test_image_box_page.py`, `studies/viewer/tests/test_viewer.py`.
+  Set by the owner on 2026-11-10, a study may show no channel rows at all, naming `channels` in its
+  `study.json`'s `view.hide`: the Bookshelf Reader's photos are the camera's colours, nothing to unmix
+  (`studies/shelves/tests/test_shelves_page.py`).
   </details>
 
 - `req/shell/data/drive-access` A study manager is offered, in the folder tree, to let the site into the study's folders, just those, and sees which it may write.
@@ -459,8 +462,11 @@ nobody has decided: what the page does there is not a requirement yet.
   by the study, the image's name and its SHA-256. Beside Start GT tagging, Continue tagging shows while an image is
   open in such a study, and is on only while a draft of that image is kept, the box then open as the image opens: it hands the draft back to the study,
   which puts its results and the tagger's progress back with no step run again, and starts tagging. Manage storage
-  lists a draft among its image's selections, and Clear progress forgets it with the rest. Test:
-  `studies/shelves/tests/test_shelves_page.py`.
+  lists a draft among its image's selections, and Clear progress forgets it with the rest. Changed by the owner on
+  2026-11-10: in such a study the box offers one of three, never two at once. Start GT tagging, while no draft
+  of the image is kept, before the study's algorithm has run or after; Continue GT tagging, once one is, which
+  goes back to the item the tagger last had open; and Stop tagging while the tagger tags. Clear progress
+  brings back Start GT tagging. Test: `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
 - `req/shell/ground-truth/folders` A study's ground truth lives in a submissions folder and a curated folder under its root; one folder for both is free submission.
@@ -489,8 +495,9 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/shell/ground-truth/pending` Taggers and Study Managers see which images have ground truth, and which have it pending, in two listings.
   <details>
 
-  Set by the owner on 2026-11-05; its calls set by the owner on 2026-11-07. The Drive dialog and Data
-  Management mark an image as having ground truth when the curated folder holds its subfolder: one listing
+  Set by the owner on 2026-11-05; its calls set by the owner on 2026-11-07. The Drive dialog, the image
+  selector's recent images (set by the owner on 2026-11-10; one whose SHA-256 this device never learned carries
+  none) and Data Management mark an image as having ground truth when the curated folder holds its subfolder: one listing
   of curated, no file in it read. To a Ground Truth Tagger and a Study Manager they also mark it pending, or
   rejected, from one listing of submissions: each image subfolder there carries, as public properties, when
   its newest submission landed and when it was last accepted or rejected, which Submit, Accept and Reject
@@ -634,8 +641,10 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Folded at first: the field in µm and px, the pixel size, the bit depth, the ImageJ series, the
-  microscope and date when the file names them (the lab's ImageJ exports never do, and the box says
-  so), and the software that saved it (`web-tests/test_file_info.py`).
+  microscope and date when the file names them (the lab's ImageJ exports never do), and the software that saved
+  it (`web-tests/test_file_info.py`). What the file does not carry goes unsaid: set by the owner on 2026-11-10, no
+  line says the microscope or acquisition is missing, and with no image open the box names none and shows no
+  details line, the empty viewer saying it already (`web-tests/test_image_box_page.py`).
   </details>
 
 - `req/shell/image/minimap` A minimap hovers over the image, showing the part in view; drag, zoom and step by mouse.
