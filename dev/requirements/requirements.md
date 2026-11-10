@@ -401,8 +401,8 @@ nobody has decided: what the page does there is not a requirement yet.
   and its pages. A flat image has one colour page; a stack has a mini-volume, one 8-bit page per
   slice and channel. The dialog never lists the file; when a folder has one it downloads it at
   once, in one request, and keeps it in the browser until Drive gives the file a different SHA-256.
-  An image the index names with the SHA-256 Drive gives for it now shows its preview and what it
-  holds (`req/shell/drive/stacks`) with no read of its own: a flat image's colour picture, a stack's mini-volume drawn
+  An image the index names with the SHA-256 Drive gives for it now shows its preview and, a TIFF, what it
+  holds (`req/shell/drive/stacks`; a PNG or JPEG shows no 2D or channel tags) with no read of its own: a flat image's colour picture, a stack's mini-volume drawn
   turned a little, its channels in their own colours, and turning while the pointer is over its row.
   An image the index lacks, or names with another SHA-256 (it changed since the file was made), is
   read as without the file (`req/shell/drive/dialog`, `req/shell/drive/stacks`). The download waits, like every other, while Drive
@@ -791,8 +791,8 @@ nobody has decided: what the page does there is not a requirement yet.
   drawer's title describes its task while the task waits, open or folded; once it is done, the
   folded title sums up what was done and the open one names the drawer. The Image box, titled Load
   Image while no image is open (and again after Unload), folds once done (in a study with a step after Load) to
-  a small preview of the image, its name and what it holds ("2D", "3 channels", from the file;
-  only "2D" when the file does not say), and opens as "Loaded Image". A study's drawer is done
+  a small preview of the image, its name and, for a TIFF, what it holds ("2D", "3 channels", from the file;
+  only "2D" when the file does not say; a PNG or JPEG shows no such tags, set by the owner on 2026-11-10), and opens as "Loaded Image". A study's drawer is done
   when the study gives it a summary, and waits again when the study takes it back. A drawer opening or
   folding slides open or shut, and the drawers below it slide to their new places (set by the owner on
   2026-10-31). Changed by the owner on 2026-11-03: a folded drawer opens from a click anywhere on it,

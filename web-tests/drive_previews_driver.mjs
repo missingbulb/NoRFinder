@@ -125,6 +125,8 @@ try {
     `a flat image it covers shows its preview and what it holds, with no read of its own: ${JSON.stringify(row(all, "a flat.tif"))}, reads ${readsOf("a flat.tif")}`);
   check(row(all, "b stack.tif").pic && row(all, "b stack.tif").shape === "3D · 12 slices · 2 channels" && !readsOf("b stack.tif"),
     `so does a stack: ${JSON.stringify(row(all, "b stack.tif"))}, reads ${readsOf("b stack.tif")}`);
+  check(row(all, "f covered.png").pic && row(all, "f covered.png").shape === "" && !readsOf("f covered.png"),
+    `a PNG it covers shows its preview but no 2D or channel tags, which only a TIFF's header tells: ${JSON.stringify(row(all, "f covered.png"))}`);
   check(readsOf("c changed.tif") === "piece" && readsOf("d new.tif") === "piece",
     `an image changed since the file was made, and one it lacks, are read as without it: ${readsOf("c changed.tif")} / ${readsOf("d new.tif")}`);
   check(row(all, "e photo.jpg").pic && JSON.stringify(driveThumbs) === JSON.stringify(["e photo.jpg"]),
