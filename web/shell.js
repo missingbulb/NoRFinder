@@ -1172,10 +1172,14 @@ function remoteDialog() {
     const kept = await keptIds();
     if (asked !== listing) return;
     // an image an edit replaced is not listed: the folder of its edits stands in its place
-    const file = all.find((f) => !f.folder && f.name === PREVIEWS), edited = replacedBy(all), items = all.filter((f) => f !== file && !edited(f));
+    const beside = all.find((f) => !f.folder && f.name === PREVIEWS), edited = replacedBy(all), items = all.filter((f) => f !== beside && !edited(f));
     const opened = Object.fromEntries(recentHere(readJSON(RECENT, [])).map((r) => [r.id, r.at])), listings = readJSON(LISTINGS);
     $("#remote-list").replaceChildren(); choose(null); thumbs.reset();
-    thumbs.cover(file ? folderPreviews(at, file) : null);
+    // a study with a root keeps each folder's previews in the root's Previews folder; one with none, beside its images
+    thumbs.cover((async () => {
+      const file = place.root() ? await place.previewsOf(at.id) : beside;
+      return file === undefined ? keptPreviews(at) : file ? folderPreviews(at, file) : null;
+    })());
     msg(items.length ? "" : "No TIFF or PNG images here.");
     for (const [k, f] of items.entries()) {
       const b = document.createElement("button"); b.type = "button"; b.className = "item" + (f.folder ? " folder" : "");
@@ -1419,10 +1423,11 @@ function picture(id, name, bytes) {
   if (url) { keepThumb(id, name, url); st.pictured = id; }
 }
 
-// a folder's rauntruth-previews.tiff, read: the copy kept on this device while the store gives the file the same
-// SHA-256, else downloaded and kept; null when there is none to read
+const keptPreviewsUrl = (folder) => new URL(PREVIEWS_PATH + encodeURIComponent(folder.id), location.href).href;
+// a folder's previews file (req/shell/drive/previews), read: the copy kept on this device while the store gives the
+// file the same SHA-256, else downloaded and kept; null when there is none to read
 async function folderPreviews(folder, f) {
-  const url = new URL(PREVIEWS_PATH + encodeURIComponent(folder.id), location.href).href;
+  const url = keptPreviewsUrl(folder);
   try {
     const cache = await caches.open(FOLDER_PREVIEWS), kept = await cache.match(url);
     if (kept && f.sha && kept.headers.get(PREVIEWS_SHA) === f.sha) return readPreviews(await kept.arrayBuffer());
@@ -1436,6 +1441,10 @@ async function folderPreviews(folder, f) {
     else console.warn("no previews for this folder:", e);
     return null;
   }
+}
+// the copy of a folder's previews kept on this device, while the store cannot say which file is current (offline)
+async function keptPreviews(folder) {
+  try { const kept = await (await caches.open(FOLDER_PREVIEWS)).match(keptPreviewsUrl(folder)); return kept ? readPreviews(await kept.arrayBuffer()) : null; } catch { return null; }
 }
 // a stack's row turns its volume while the pointer is over it, and shows its still again after
 function turning(row, pic, volume) {
