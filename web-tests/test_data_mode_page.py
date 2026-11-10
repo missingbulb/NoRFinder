@@ -12,6 +12,7 @@ import pytest
 import tifffile
 from PIL import Image
 
+from test_drive_previews_page import with_photo
 from test_study_runs import NODE, answers, png, run  # noqa: F401  (fixtures)
 
 pytestmark = pytest.mark.full
@@ -28,11 +29,12 @@ def folder(path):
     for z in range(10):
         stack[z, 0, 30:50, 5 + 6 * z:15 + 6 * z] = 3000
     tifffile.imwrite(path / 'b stack.tif', stack, imagej=True, metadata={'axes': 'ZCYX'})
+    Image.fromarray(np.stack([x * 1.5, y * 2, x + y], -1).astype(np.uint8)).save(path / 'd photo.jpg')  # a kind the study opens beside TIFFs
     subprocess.run([sys.executable, os.path.join(HERE, '..', 'dev', 'tools', 'previews', 'make_previews.py'), str(path)], check=True)
+    with_photo(path / 'rauntruth-previews.tiff', path / 'd photo.jpg')  # as a previews file made before photos were left to Drive
     with open(path / 'b stack.tif', 'ab') as f:  # changed since its preview was made
         f.write(b'\0')
     tifffile.imwrite(path / 'e plain.tif', flat[1:2], imagej=True, metadata={'axes': 'CYX'})  # made after the previews
-    Image.fromarray(np.stack([x * 1.5, y * 2, x + y], -1).astype(np.uint8)).save(path / 'd photo.jpg')  # a kind the study opens beside TIFFs
     Image.fromarray(np.zeros((20, 20, 3), np.uint8)).save(path / 'sub' / 'c.png')
 
 
@@ -44,7 +46,7 @@ def test_data_management(answers, tmp_path):
     run('data_mode_driver.mjs', answers[0], answers[1], str(root), str(out))
     with tifffile.TiffFile(out) as t:
         index = json.loads(t.pages[0].description)
-    assert [(e['name'], e['kind']) for e in index['images']] == [('a flat.tif', 'flat'), ('b stack.tif', 'stack'), ('d photo.jpg', 'flat'), ('e plain.tif', 'flat')]
+    assert [(e['name'], e['kind']) for e in index['images']] == [('a flat.tif', 'flat'), ('b stack.tif', 'stack'), ('e plain.tif', 'flat')]
     # the preview opens as a three-channel image in the page's own reader
     with tifffile.TiffFile(str(out) + '.preview.tif') as t:
         assert t.series[0].shape == (3, 120, 150), t.series[0].shape

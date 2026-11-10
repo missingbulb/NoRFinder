@@ -220,7 +220,9 @@ nobody has decided: what the page does there is not a requirement yet.
   Set by the owner on 2026-11-02. Choosing a folder in the tree fills the main area with its images,
   a grid of previews or a list, a button switching them with a slide. A folder's images, in the tree and the
   folder view, are the kinds the study opens, those its `files.accept` names (set by the owner on 2026-11-07:
-  the Bookshelf Reader's JPEG photos among them). The left bar's Selected Folder
+  the Bookshelf Reader's JPEG photos among them). A photo's preview, in the tree and the folder view, is Drive's own
+  small picture of it, linked from the folder's listing; only a TIFF's comes from the folder's previews file (set by
+  the owner on 2026-11-10: the page's stretch, made for fluorescence, darkened photos). The left bar's Selected Folder
   box replaces the Image box and counts its images, how many have a preview, how many previews are
   out of date (the image's SHA-256 differs from the preview's), how many have ground truth beside
   them (`<name>.ground_truth.*`, `<name>` the image's name without its extension) and how many are
@@ -282,11 +284,10 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/shell/data/update-previews` Update previews makes the folder's previews for the images that lack one or changed, and keeps the rest.
   <details>
 
-  Set by the owner on 2026-11-02. Under the folder's summary, Update previews is on while an image
-  lacks a preview or has an out-of-date one. It downloads only those images, makes their previews in
+  Set by the owner on 2026-11-02. Under the folder's summary, Update previews is on while a TIFF
+  lacks a preview or has an out-of-date one. It downloads only those TIFFs, makes their previews in
   the browser as `dev/tools/previews/make_previews.py` does (`req/shell/drive/previews`; a flat image at
-  most 256 px a side, a photo that is not a TIFF (a PNG, JPEG, WebP or BMP) a flat colour image, a stack at most
-  96 px and 24 slices), keeps every still-valid preview as it was,
+  most 256 px a side, a stack at most 96 px and 24 slices), keeps every still-valid preview of a TIFF as it was,
   and writes the folder's previews file (`req/shell/drive/previews`) into the study root's `Previews` folder, made
   there when the root has none: a new file, or the page's own one replaced. Nothing is written into the data
   folder, which may be one no study participant can write to (set by the owner on 2026-11-10). A previews file the
@@ -396,10 +397,11 @@ nobody has decided: what the page does there is not a requirement yet.
   `rauntruth-previews.tiff` inside a data folder, where previews were kept before, is no longer read). The
   `Previews` folder is found in the root's listing the page already reads, and listed once a minute at most.
   The file is made by Update previews (`req/shell/data/update-previews`), or by `dev/tools/previews/make_previews.py`
-  on a computer that has the folder's images (its TIFFs, and the photos Pillow opens) and uploaded under that name: a multi-page TIFF, its pages
+  on a computer that has the folder's TIFFs and uploaded under that name: a multi-page TIFF, its pages
   deflate-compressed, whose first page's description is a JSON index naming each image, its SHA-256
   and its pages. A flat image has one colour page; a stack has a mini-volume, one 8-bit page per
-  slice and channel. The dialog never lists the file; when a folder has one it downloads it at
+  slice and channel. Only TIFFs have one: a photo is shown by Drive's own small picture of it, and a picture of
+  one in an older file is ignored (set by the owner on 2026-11-10). The dialog never lists the file; when a folder has one it downloads it at
   once, in one request, and keeps it in the browser until Drive gives the file a different SHA-256.
   An image the index names with the SHA-256 Drive gives for it now shows its preview and, a TIFF, what it
   holds (`req/shell/drive/stacks`; a PNG or JPEG shows no 2D or channel tags) with no read of its own: a flat image's colour picture, a stack's mini-volume drawn
