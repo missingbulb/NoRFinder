@@ -12,6 +12,9 @@ const time = (s) => { const t = Date.parse(s); return Number.isNaN(t) ? null : t
 
 // the image's subfolder: its stem and the first 8 hex of its SHA-256
 export const subfolderName = (name, sha) => `${stem(name)}__${sha.slice(0, 8)}`;
+// the empty file in the curated folder marking the image as needing ground truth
+const NEEDED = ".needs_gt";
+export const neededName = (name, sha) => subfolderName(name, sha) + NEEDED;
 // the tagger's file in it
 export const taggerFile = (email) => `gt_${email.toLowerCase()}.json`;
 
@@ -52,16 +55,25 @@ export async function current(reader, folder, image) {
 // pending, its submissions subfolder was stamped submitted after its last acceptance and rejection; rejected, its last
 // submission was rejected and nothing is curated
 export async function status({ all }, { submissions, curated, same }) {
-  const cur = new Set((await all(curated)).filter((f) => f.folder).map((f) => f.name)), out = new Map();
+  const listed = await all(curated), cur = new Set(listed.filter((f) => f.folder).map((f) => f.name)), out = new Map();
   for (const name of cur) out.set(name, { curated: true, pending: false, rejected: false });
-  if (same) return out;
-  for (const sub of (await all(submissions)).filter((f) => f.folder)) {
+  if (!same) for (const sub of (await all(submissions)).filter((f) => f.folder)) {
     const p = sub.properties || {}, put = time(p.submitted);
     if (put === null) continue;
     const isCurated = cur.has(sub.name), last = Math.max(time(p.accepted) ?? -Infinity, time(p.rejected) ?? -Infinity);
     out.set(sub.name, { curated: isCurated, pending: put > last, rejected: !isCurated && (time(p.rejected) ?? -Infinity) >= put });
   }
+  // needed: the id of the image's marker, when the curated folder holds one
+  for (const f of listed) if (!f.folder && f.name.endsWith(NEEDED)) {
+    const name = f.name.slice(0, -NEEDED.length);
+    out.set(name, { ...(out.get(name) || { curated: false, pending: false, rejected: false }), needed: f.id });
+  }
   return out;
+}
+
+// the image marked as needing ground truth: its empty marker created in the curated folder
+export function markNeeded({ writer, curated, image }) {
+  return writer.create(curated, neededName(image.name, image.sha256), new Blob([], { type: "text/plain" }));
 }
 
 // the subfolder for the image in folder, made when it has none: its id

@@ -5,10 +5,23 @@
 //   node web-tests/data_mode_driver.mjs ANSWERS STUDIES ROOT OUT [SHOTS]
 import fs from "node:fs";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { standIn } from "./stand_in_drive.mjs";
 
 const [answers, studies, rootDir, out, shots] = process.argv.slice(2);
-const { FILES, writes, open, role, check, done } = await standIn({ answers, studies, rootDir, uploaded: (f) => { if (f.name === "rauntruth-previews.tiff") fs.writeFileSync(out, f.bytes); } });
+const PREVIEWS_DIR = "dmpreviewsfolder00001";
+const { ROOT, FILES, GT, approved, writes, open, role, check, done } = await standIn({ answers, studies, rootDir, uploaded: (f) => { if (f.parent === PREVIEWS_DIR) fs.writeFileSync(out, f.bytes); } });
+// the data folder's previews file (req/shell/drive/previews): in the root's Previews folder, which the page made, under the
+// data folder's id, a file someone else put there; the copy the tool left beside the images is never read
+const OURS = `${ROOT}.tiff`;
+FILES.push({ id: PREVIEWS_DIR, name: "Previews", parent: ROOT, folder: true, bytes: null, mine: true, props: {}, modified: "2026-11-05T07:00:00Z" },
+  { id: "dmpreviewsfile000001", name: OURS, parent: PREVIEWS_DIR, folder: false, bytes: FILES.find((f) => f.name === "rauntruth-previews.tiff").bytes, mine: false, props: {}, modified: "2026-11-05T07:00:00Z" });
+// an image's Needs GT marker, in the curated folder, named as its ground-truth subfolder
+const neededOf = (name) => { const f = FILES.find((g) => g.name === name); return `${name.replace(/\.[^.]*$/, "")}__${createHash("sha256").update(f.bytes).digest("hex").slice(0, 8)}.needs_gt`; };
+// the curated folder approved for the site, as the study manager does from the tree's head, so the page may write its markers
+approved.add(GT.curated);
+// someone else marked the stack as needing ground truth
+FILES.push({ id: "dmmarker000000000001", name: neededOf("b stack.tif"), parent: GT.curated, folder: false, bytes: Buffer.alloc(0), mine: false, props: {}, modified: "2026-11-05T07:00:00Z" });
 const shot = (name) => shots && page.screenshot({ path: path.join(shots, name + ".png") });
 
 // not signed in: the drawers numbered as a viewer's, with no Preprocessing
@@ -54,13 +67,14 @@ await check(true, "the list button lays the images out as a list");
 await page.click("#update-previews");
 await page.waitForFunction(() => /Delete it/.test($("#folder-msg").textContent));
 await check(!writes.length, "a previews file the page did not make is left alone", writes);
-// the user deletes it in Drive
-FILES.splice(FILES.findIndex((f) => f.name === "rauntruth-previews.tiff"), 1);
+// the user deletes it in Drive; the old file beside the images stays, unread
+FILES.splice(FILES.findIndex((f) => f.name === OURS), 1);
 await page.click("#data-tree .tree-folder .name");
 await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="previews"]')?.textContent === "0");
 await page.click("#update-previews");
 await page.waitForFunction(() => /4 previews made/.test($("#folder-msg").textContent), null, { timeout: 30000 });
-await check(JSON.stringify(writes) === JSON.stringify([["create", "rauntruth-previews.tiff"]]), "Update previews creates the file", writes);
+await check(JSON.stringify(writes) === JSON.stringify([["create", OURS]]) && FILES.find((f) => f.name === OURS)?.parent === PREVIEWS_DIR,
+  "Update previews creates the file in the root's Previews folder, named by the data folder's id, and writes nothing into the data folder", writes);
 await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="previews"]')?.textContent === "4");
 await check(JSON.stringify(await summary()) === JSON.stringify({ images: 4, previews: 4, stale: 0, truth: 0, pending: 0, missing: 1 }), "then every image has a preview, the photo's too", await summary());
 await page.waitForFunction(() => document.querySelectorAll("#folder-items .pic img").length === 4);
@@ -77,19 +91,21 @@ await page.click("#data-tree .tree-folder .name");
 await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="stale"]')?.textContent === "1");
 await page.click("#update-previews");
 await page.waitForFunction(() => /1 preview made, 3 kept/.test($("#folder-msg").textContent), null, { timeout: 30000 });
-await check(JSON.stringify(writes.at(-1)) === JSON.stringify(["replace", "rauntruth-previews.tiff"]), "a changed image: the page's own file is replaced, the rest kept", writes);
-fs.writeFileSync(out, FILES.find((f) => f.name === "rauntruth-previews.tiff").bytes);
+await check(JSON.stringify(writes.at(-1)) === JSON.stringify(["replace", OURS]), "a changed image: the page's own file is replaced, the rest kept", writes);
+fs.writeFileSync(out, FILES.find((f) => f.name === OURS).bytes);
 
 const cell = (name) => `#folder-items .cell:has(.name:text-is("${name}"))`;
 await page.click(cell("e plain.tif") + " .mark-gt");
 await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="missing"]')?.textContent === "2");
-await check(JSON.stringify(writes.at(-1)) === JSON.stringify(["create", "e plain.ground_truth.MISSING"]), "marking an image creates its marker", writes);
+const eMarker = neededOf("e plain.tif");
+await check(JSON.stringify(writes.at(-1)) === JSON.stringify(["create", eMarker]) && FILES.find((f) => f.name === eMarker)?.parent === GT.curated,
+  "marking an image creates its marker in the curated folder, not beside the image", writes);
 await page.click(cell("e plain.tif") + " .mark-gt");
 await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="missing"]')?.textContent === "1");
-await check(JSON.stringify(writes.at(-1)) === JSON.stringify(["trash", "e plain.ground_truth.MISSING"]), "unmarking trashes the page's own marker", writes);
+await check(JSON.stringify(writes.at(-1)) === JSON.stringify(["trash", eMarker]), "unmarking trashes the page's own marker", writes);
 await page.click(cell("b stack.tif") + " .mark-gt");
 await page.waitForFunction(() => /Someone else/.test($("#folder-msg").textContent));
-await check(writes.at(-1)[1] !== "b stack.ground_truth.MISSING", "a marker someone else made is left alone");
+await check(writes.at(-1)[1] !== neededOf("b stack.tif"), "a marker someone else made is left alone");
 
 await page.click("#data-tree .tree-folder .count");
 await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder .tree-image").length === 4);
@@ -165,7 +181,7 @@ const damage = (bytes) => {
   }
   return bytes;
 };
-const kept = FILES.find((f) => f.name === "rauntruth-previews.tiff");
+const kept = FILES.find((f) => f.name === OURS);
 kept.bytes = damage(Buffer.from(kept.bytes));
 await role(page, "Study Manager");
 await page.click("#data-tree .tree-folder .name");

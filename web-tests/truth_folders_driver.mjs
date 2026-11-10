@@ -87,6 +87,22 @@ out.folders = {
   out.pending = { a: pick(s, A), b: pick(s, B), c: pick(s, C), bAgain: pick(again, B), sameA: pick(same, A), missing: pick(s, im("z", "9")), listed };
 }
 
+// needing ground truth: a marker in the curated folder named as the image's subfolder, read from curated's listing;
+// two images of one name marked apart
+{
+  const d = memoryDrive(), F = { submissions: "S", curated: "C", same: false };
+  const A = { name: "a.jpg", sha256: "1".repeat(64) }, B = { name: "b.jpg", sha256: "2".repeat(64) };
+  const D1 = { name: "dup.jpg", sha256: "3".repeat(64) }, D2 = { name: "dup.jpg", sha256: "4".repeat(64) };
+  for (const x of [A, B, D1]) await tf.markNeeded({ writer: d.writer, curated: "C", image: x });
+  d.add({ parent: "C", name: tf.subfolderName(B.name, B.sha256), folder: true });
+  d.lists.length = 0;
+  const s = await tf.status(d.reader, F), listed = [...d.lists];
+  const pick = (x) => s.get(tf.subfolderName(x.name, x.sha256)) ?? null;
+  const id = (x) => d.files.find((f) => f.name === tf.neededName(x.name, x.sha256))?.id ?? null;
+  out.needed = { name: tf.neededName(A.name, A.sha256), writes: d.writes, parents: [...new Set(d.files.filter((f) => !f.folder).map((f) => f.parent))],
+    a: pick(A), aId: id(A), b: pick(B), bId: id(B), d1: pick(D1), d1Id: id(D1), d2: pick(D2), listed };
+}
+
 // accepting copies into curated under the same name, recording where from; rejecting marks the submission
 {
   const d = memoryDrive();

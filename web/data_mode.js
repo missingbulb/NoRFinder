@@ -14,7 +14,7 @@ import { asLoaded } from "./as_loaded.js";
 import { accepts } from "./accepts.js";
 import { replacedBy, stemOf } from "./edit.js";
 import * as tf from "./truth_folders.js";
-import { setup as setUp, switchMode } from "./study_root.js";
+import { setup as setUp, switchMode, previewsFolder, previewsName } from "./study_root.js";
 
 const MAX_FOLDERS = 200;
 // what each access means beside a folder
@@ -24,7 +24,6 @@ const ACCESS = {
   none: ["Not approved", "Not yet open to this site: approve it to add files here."],
   unknown: ["Checking…", "Your sign-in is being renewed."],
 };
-export const truthMarker = (name) => stemOf(name) + ".ground_truth.MISSING";
 
 // a preview as an ImageJ TIFF a study's Python opens: a flat image's three colour planes, a stack's slices
 export function previewTiff(e, pages) {
@@ -52,7 +51,9 @@ export function dataMode(ctx) {
   let nodes = new Map(), roots = [], manifest = null, who = null, epoch = 0, loaded = null, chosen = null, layout = "grid";
   const on = () => root.dataset.mode === "data";
   // the study's ground-truth folders are not its data: the tree leaves them out
-  const isTruth = (id) => id === gt.curated || id === gt.submissions;
+  // the root's Previews folder, left out of the tree like the ground-truth folders
+  let previewsId = null;
+  const isTruth = (id) => id === gt.curated || id === gt.submissions || id === previewsId;
   const offline = () => root.classList.contains("offline");
   const msg = (el, text, err) => { el.textContent = text; el.classList.toggle("err", !!err); };
   // what a study's folders change on the page, as it loaded: put back when another study comes in
@@ -71,7 +72,7 @@ export function dataMode(ctx) {
       if (of !== epoch) return;
       const top = place.root();
       roots = top ? [s?.data || top] : [];
-      gt = tf.folders(s);
+      gt = tf.folders(s); previewsId = s?.previews || null;
       gtNodes = [...new Set([gt.curated, gt.submissions].filter(Boolean))].map((id) => ({ id, name: "Ground truth", access: null }));
       drawSetup(s); drawTruthBox(null); truthStatus();
       const queue = roots.map((id) => ({ id, parent: null, name: null }));
@@ -235,8 +236,10 @@ export function dataMode(ctx) {
   }
 
   // ---------- a folder's previews and sums ----------
-  const previewsFile = (n) => n.files.find((f) => f.name === PREVIEWS);
-  const previewsOf = async (n) => { const f = previewsFile(n); return f ? ctx.folderPreviews(n, f) : null; };
+  // the folder's previews file in the root's Previews folder (req/shell/drive/previews), null for none, undefined unknown
+  // fresh: read past the minute's copy, as choosing a folder does
+  const previewsFile = (n, fresh = false) => place.previewsOf(n.id, { fresh });
+  const previewsOf = async (n, fresh = false) => { const f = await previewsFile(n, fresh); return f ? ctx.folderPreviews(n, f) : null; };
   async function picture(pic, pv, f) {
     const e = pv?.entry(f.name, f.sha);
     let src = null;
@@ -244,13 +247,13 @@ export function dataMode(ctx) {
     if (!src) { pic.classList.add("none"); return; }
     const i = new Image(); i.alt = ""; i.src = src; pic.replaceChildren(i);
   }
-  // each image's state in the folder: {f, entry, stale, truth, pending, rejected, marker}, its ground truth as gts
+  // each image's state in the folder: {f, entry, stale, truth, pending, rejected, marker (its Needs GT marker's id)}, its ground truth as gts
   // (truth_folders.js status) has it
   function states(n, pv, gts) {
     return imagesOf(n).map((f) => {
       const entry = pv?.entry(f.name, f.sha) || null, g = (f.sha && gts.get(tf.subfolderName(f.name, f.sha))) || {};
       return { f, entry, stale: !entry && !!pv?.index.images.some((e) => e.name === f.name),
-        truth: !!g.curated, pending: !!g.pending, rejected: !!g.rejected, marker: n.files.find((x) => x.name === truthMarker(f.name)) || null };
+        truth: !!g.curated, pending: !!g.pending, rejected: !!g.rejected, marker: g.needed || null };
     });
   }
   // the ground truth of every image either folder holds, an empty Map while the study names none
@@ -273,7 +276,7 @@ export function dataMode(ctx) {
     if (of !== epoch || chosen?.id !== n.id) return;
     if (n.el) n.el.querySelector(".tree-images").replaceChildren();
     drawTree();
-    const [pv, gts] = await Promise.all([previewsOf(n), truthStatus()]);
+    const [pv, gts] = await Promise.all([previewsOf(n, true), truthStatus()]);
     if (of !== epoch || chosen?.id !== n.id) return;
     const all = states(n, pv, gts), count = (p) => all.filter(p).length;
     const rows = [["images", "Images", all.length], ["previews", "With a preview", count((s) => s.entry)], ["stale", "Preview out of date", count((s) => s.stale)],
@@ -301,12 +304,16 @@ export function dataMode(ctx) {
         `<span class="tags">${tag ? `<span class="tag warn">${tag}</span>` : ""}${s.truth ? '<span class="tag yes">Ground truth</span>' : ""}` +
         `${s.pending ? '<span class="tag pending">GT pending</span>' : ""}${s.rejected ? '<span class="tag warn">GT rejected</span>' : ""}</span>` +
         (s.pending ? `<button type="button" class="review-gt" data-needs-network title="See the taggers' submissions, and accept or reject each">Review GT</button>` : "") +
-        `<button type="button" class="mark-gt" data-needs-network aria-pressed="${!!s.marker}" title="Mark it as needing ground truth: a ${esc(truthMarker(s.f.name))} file beside it">Needs GT</button>`;
+        `<button type="button" class="mark-gt" data-needs-network aria-pressed="${!!s.marker}">Needs GT</button>`;
       cell.onclick = (e) => { if (!e.target.closest(".mark-gt, .review-gt")) chooseImage(n, s.f); };
       cell.querySelector(".review-gt")?.addEventListener("click", () => review(n, s.f));
       cell.onkeydown = (e) => { if (e.key === "Enter" && e.target === cell) chooseImage(n, s.f); };
       const mark = cell.querySelector(".mark-gt");
-      mark.disabled = n.access !== "write" || s.truth; mark.onclick = () => markTruth(n, s, mark);
+      const why = !gt.curated ? "Set up ground truth first: the mark is kept in its curated folder"
+        : ["view", "none"].includes(gtNodes.find((g) => g.id === gt.curated)?.access) ? "The mark is kept in the curated ground-truth folder: " + ACCESS[gtNodes.find((g) => g.id === gt.curated).access][1]
+        : !s.f.sha ? "The store does not say this image's SHA-256, which names its mark" : s.truth ? "It has ground truth" : "";
+      mark.disabled = !!why; mark.title = why || "Mark it as needing ground truth: a file in the curated ground-truth folder";
+      mark.onclick = () => markTruth(n, s, mark);
       picture(cell.querySelector(".pic"), pv, s.f);
       return cell;
     }));
@@ -328,8 +335,8 @@ export function dataMode(ctx) {
   async function markTruth(n, s, b) {
     b.disabled = true;
     try {
-      if (!s.marker) await sd.create(n.id, truthMarker(s.f.name), new Blob([], { type: "text/plain" }));
-      else if (await sd.ours(s.marker.id)) await sd.trash(s.marker.id);
+      if (!s.marker) await tf.markNeeded({ writer, curated: gt.curated, image: { name: s.f.name, sha256: s.f.sha } });
+      else if (await sd.ours(s.marker)) await sd.trash(s.marker);
       else throw new Error("Someone else marked it; whoever adds its ground truth drops the marker.");
       await relist(n);
     } catch (e) { msg($("#folder-msg"), e.message || String(e), true); b.disabled = false; }
@@ -383,8 +390,9 @@ export function dataMode(ctx) {
     if (!n) return;
     const say = (t, err) => msg($("#folder-msg"), t, err);
     try {
-      const f = previewsFile(n);
-      if (f && !(await sd.ours(f.id))) return say(`This folder's ${PREVIEWS} was not made by this page, so the page leaves it alone. Delete it in ${remote.label} to let the page make and update it.`, true);
+      const f = await previewsFile(n, true);
+      if (f === undefined) return say(`The study's Previews folder could not be read from ${remote.label}. Try again.`, true);
+      if (f && !(await sd.ours(f.id))) return say(`This folder's previews file, ${f.name} in the study's Previews folder, was not made by this page, so the page leaves it alone. Delete it in ${remote.label} to let the page make and update it.`, true);
       const pv = f ? await ctx.folderPreviews(n, f) : null, all = states(n, pv, new Map()), kept = [], made = [];
       for (const s of all) if (s.entry) kept.push({ entry: s.entry, pages: await pv.pages(s.entry) });
       const todo = all.filter((s) => !s.entry);
@@ -396,7 +404,9 @@ export function dataMode(ctx) {
       }
       say(`Saving the previews to ${remote.label}…`);
       const blob = new Blob([await buildPreviews(kept, made)], { type: "image/tiff" });
-      if (f) await sd.replace(f.id, blob); else await sd.create(n.id, PREVIEWS, blob);
+      if (f) await sd.replace(f.id, blob);
+      else await sd.create(await previewsFolder({ reader, writer, root: place.root() }), previewsName(n.id), blob);
+      place.forgetPreviews();
       await relist(n);
       say(`${made.length} preview${made.length === 1 ? "" : "s"} made, ${kept.length} kept.`);
     } catch (e) {

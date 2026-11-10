@@ -1,5 +1,5 @@
 """req/shell/ground-truth/folders, req/shell/ground-truth/layout, req/shell/ground-truth/submit,
-req/shell/ground-truth/pending, req/shell/ground-truth/curate: the study's ground-truth folders (web/truth_folders.js,
+req/shell/ground-truth/pending, req/shell/ground-truth/curate, req/shell/data/folder (Needs GT): the study's ground-truth folders (web/truth_folders.js,
 under Node by truth_folders_driver.mjs against an in-memory Drive). The in-memory Drive stands in for Google's, so
 these cases cannot catch Drive refusing a write the page sends; the page tests against the stand-in Drive do."""
 import json
@@ -71,3 +71,18 @@ def test_accepting_copies_into_curated_and_rejecting_marks_the_submission(out):
     assert c['name'] == 'gt_jane@lab.org.json'
     assert c['accepted'] == {'by': 'dm@lab.org', 'from': 64}
     assert c['rejected'] is True and c['reason'] == 'test run'
+
+
+def test_needing_ground_truth_is_a_marker_in_curated_named_as_the_images_subfolder(out):
+    n = out['needed']
+    assert n['name'] == 'a__11111111.needs_gt'
+    assert n['writes'] == [['create', 'a__11111111.needs_gt'], ['create', 'b__22222222.needs_gt'], ['create', 'dup__33333333.needs_gt']]
+    # nothing written anywhere but the curated folder
+    assert n['parents'] == ['C']
+    # read from the listings status already makes, no other
+    assert n['listed'] == ['C', 'S']
+    assert n['a'] == {'curated': False, 'pending': False, 'rejected': False, 'needed': n['aId']} and n['aId']
+    # its ground truth landed: still curated, the marker still named
+    assert n['b'] == {'curated': True, 'pending': False, 'rejected': False, 'needed': n['bId']}
+    # two images of one name: only the one marked
+    assert n['d1']['needed'] == n['d1Id'] and n['d2'] is None

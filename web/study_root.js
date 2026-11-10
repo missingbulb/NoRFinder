@@ -8,9 +8,9 @@
 export const SETTINGS = "rauntruth-study.json";
 export const FORMAT = "rauntruth-study/1";
 // the names a folder is found by, lower-cased, best first, while the settings file does not name it
-const NAMES = { data: ["data"], curated: ["gt curated", "gt"], submissions: ["gt submissions", "gt"] };
-// the names setup() gives the folders it makes
-const MADE = { curated: "GT curated", submissions: "GT submissions", both: "GT" };
+const NAMES = { data: ["data"], curated: ["gt curated", "gt"], submissions: ["gt submissions", "gt"], previews: ["previews"] };
+// the names setup() and previewsFolder() give the folders they make
+const MADE = { curated: "GT curated", submissions: "GT submissions", both: "GT", previews: "Previews" };
 const KEEP_MS = 60e3;
 const known = new Map();
 
@@ -22,7 +22,7 @@ const byName = (items, names) => {
   return null;
 };
 
-// {root, data, curated, submissions, same, review, set, file}: the folders under root by id, each null while there is
+// {root, data, curated, submissions, previews, same, review, set, file}: the folders under root by id, each null while there is
 // none; set whether the settings file named them; file its id or null. fresh: read past the minute's copy.
 export async function read(reader, root, { fresh = false } = {}) {
   const kept = known.get(root);
@@ -33,7 +33,7 @@ export async function read(reader, root, { fresh = false } = {}) {
   // the file names a folder by id, wherever it now lives; the names count only where it names none
   const pick = (k) => doc?.[k] || byName(items, NAMES[k]);
   const curated = pick("curated"), submissions = pick("submissions");
-  const value = { root, data: pick("data"), curated, submissions, same: !!curated && curated === submissions,
+  const value = { root, data: pick("data"), curated, submissions, previews: pick("previews"), same: !!curated && curated === submissions,
     review: doc ? !!doc.review : !!curated && curated !== submissions, set: !!doc?.curated, file: file?.id ?? null };
   known.set(root, { at: Date.now(), value });
   return value;
@@ -81,14 +81,40 @@ export async function switchMode({ reader, writer, root, review, by, at = new Da
   return read(reader, root, { fresh: true });
 }
 
+// a data folder's previews file, in the root's Previews folder, named by the data folder's id
+export const previewsName = (folder) => `${folder}.tiff`;
+
+// the root's Previews folder, made when it has none: its id
+export async function previewsFolder({ reader, writer, root }) {
+  const was = await read(reader, root, { fresh: true });
+  if (was.previews) return was.previews;
+  const id = await writer.folder(root, MADE.previews);
+  known.delete(root);
+  return id;
+}
+
 // The study on show's place in the remote store, for the page: remote the store, manifest() the study.
 // Its reads are the store's own, as the signed-in user where anyone is (req/shell/drive/credentials).
 export function studyPlace(remote, manifest) {
   const reader = { all: (id) => remote.all(id), text: async (id) => new TextDecoder().decode((await remote.file(id, SETTINGS)).bytes) };
   const root = () => remote.study(manifest()).root;
   const settings = async ({ fresh = false } = {}) => (root() ? read(reader, root(), { fresh }) : null);
+  // the Previews folder's listing, once a minute at most: {at, folder, items}
+  let previews = null;
   return {
     reader, root, settings,
+    // the store's entry for a data folder's previews file, null for none, undefined when the store could not say;
+    // fresh: read past the minute's copy
+    async previewsOf(folder, { fresh = false } = {}) {
+      try {
+        const s = await settings({ fresh });
+        if (!s?.previews) return null;
+        if (fresh || !previews || previews.folder !== s.previews || Date.now() - previews.at >= KEEP_MS) previews = { at: Date.now(), folder: s.previews, items: await reader.all(s.previews) };
+        return previews.items.find((f) => !f.folder && f.name === previewsName(folder)) || null;
+      } catch (e) { console.warn("the study's previews could not be listed:", e); return undefined; }
+    },
+    // what was written into the root or its Previews folder, read afresh next time
+    forgetPreviews() { previews = null; if (root()) known.delete(root()); },
     // the folders Load browses: the data folder, else the root while the root names none; [] for a study with no root
     async dataFolders() {
       if (!root()) return [];

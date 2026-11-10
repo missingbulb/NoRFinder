@@ -1,5 +1,6 @@
 # Makes rauntruth-previews.tiff for a Drive folder from its images, TIFFs and the pictures Pillow opens (req/shell/drive/previews): run it
-# where the folder's images are, then upload the file beside them. Each page is deflate-compressed.
+# where the folder's images are, then upload the file to the study root's Previews folder as <the folder's Drive id>.tiff
+# (beside the images, for a study with no root). Each page is deflate-compressed.
 #   python3 dev/tools/previews/make_previews.py IMAGES_DIR [OUT_DIR]   (OUT_DIR defaults to IMAGES_DIR)
 # A flat image is one RGB page at most FLAT pixels a side; a stack is a mini-volume of at most
 # VOL pixels a side and at most SLICES slices, one 8-bit page per slice and channel (slice-major).

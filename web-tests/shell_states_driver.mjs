@@ -232,8 +232,8 @@ if (renders) fs.mkdirSync(renders, { recursive: true });
 for (const [k, p] of paths.entries()) {
   const elements = trees[p.study];
   // each path finds the folder as it started: no previews made by an earlier one
-  const made = FILES.findIndex((f) => f.name === "rauntruth-previews.tiff");
-  if (made >= 0) FILES.splice(made, 1);
+  const made = new Set(FILES.filter((f) => f.folder && f.name === "Previews").map((f) => f.id));
+  for (let i = FILES.length - 1; i >= 0; i--) if (made.has(FILES[i].id) || made.has(FILES[i].parent)) FILES.splice(i, 1);
   // a study shown only to the accounts it names is opened by the first of them
   const { visibility, phases, files } = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "studies", p.study, "study.json"), "utf8"));
   // Data Management lists the kinds a study opens: the fixture, opening PNGs alone, is given the folder's TIFFs too

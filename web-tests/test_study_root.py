@@ -74,3 +74,10 @@ def test_switching_back_to_review_finds_the_old_submissions_folder_by_name(out):
 def test_switching_one_folder_to_review_makes_only_gt_submissions(out):
     assert out['oneToTwo'] == {'writes': [['folder', 'GT submissions'], ['replace', 'rauntruth-study.json']],
                                'curatedKept': True, 'same': False, 'review': True}
+
+
+def test_the_previews_folder_is_found_by_name_and_made_once(out):
+    p = out['previews']
+    assert p['none'] is None and p['made'] and p['found']
+    assert p['folders'] == [['folder', 'Previews']]
+    assert p['name'] == '1AbCdataFolderId.tiff'
