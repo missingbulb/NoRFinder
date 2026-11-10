@@ -70,7 +70,7 @@ await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort()
 const driveThumbs = [];
 await ctx.route(DRIVE_THUMB + "*", (route) => {
   driveThumbs.push(FILES.find((f) => route.request().url().endsWith(f.id)).name);
-  return route.fulfill({ status: 200, headers: cors, contentType: "image/png", path: path.join(repo, "web", "poster.png") });
+  return route.fulfill({ status: 200, headers: cors, contentType: "image/jpeg", path: path.join(repo, "web", "poster.jpg") });
 });
 await ctx.route("**/studies/viewer/study.json", async (route) => {
   const own = await (await route.fetch()).json();

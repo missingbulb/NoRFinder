@@ -1,6 +1,7 @@
 {
   "id": "viewer",
   "title": "Image Viewer",
+  "description": "Microscopy images and z-stacks opened in the browser, each channel in its own colour, in 2D and 3D.",
   "visibility": "listed",
   "icon": "web/icon.svg",
   "stage": null,
