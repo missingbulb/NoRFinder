@@ -21,35 +21,37 @@ EXPECT = os.path.join(ROOT, 'web-tests', 'shell-states.GENERATED.json')
 
 # what each action leaves changed; the browser test does the same action on the page
 ACTIONS = {
-    'load': ('Load', {'image': 'local', 'stack': False, 'counted': False, 'view': 'image'}),
-    'stack': ('Load a stack', {'image': 'local', 'stack': True, 'counted': False, 'view': 'image'}),
+    'load': ('Load', {'image': 'local', 'stack': False, 'counted': False, 'view': 'image', 'imageLarge': False}),
+    'stack': ('Load a stack', {'image': 'local', 'stack': True, 'counted': False, 'view': 'image', 'imageLarge': False}),
+    # an image larger than the view, which opens below 100% (req/shell/image/opens-fitted)
+    'large': ('Load a large image', {'image': 'local', 'imageLarge': True, 'stack': False, 'counted': False, 'view': 'image'}),
     'count': ('Count', {'counted': True}),
     'items': ('Items', {'view': 'items'}),
     'image': ('Image', {'view': 'image'}),
     # a role chosen: to or from Ground Truth Tagger, the study opens afresh on the same image (req/shell/account/role)
     'tagger': ('→ Tagger', {'role': 'tagger'}),
     'folder': ('Folder', {'selected': 'folder'}),
-    'preview': ('Preview', {'selected': 'image', 'image': 'preview', 'stack': False, 'counted': False}),
-    'zpreview': ('Preview a z-stack', {'selected': 'image', 'image': 'preview', 'stack': True, 'counted': False}),
+    'preview': ('Preview', {'selected': 'image', 'image': 'preview', 'stack': False, 'counted': False, 'imageLarge': False}),
+    'zpreview': ('Preview a z-stack', {'selected': 'image', 'image': 'preview', 'stack': True, 'counted': False, 'imageLarge': False}),
     'original': ('Load Original', {'image': 'original'}),
     # from a preview, Edit Image opens the image itself (req/shell/data/edit)
     'edit': ('Edit Image', {'editing': True, 'image': 'original'}),
     'done': ('Done', {'editing': False}),
     'offline': ('Offline', {'online': False}),
     'online': ('Online', {'online': True}),
-    'unload': ('Unload', {'image': 'none', 'stack': False, 'counted': False, 'view': 'image'}),
+    'unload': ('Unload', {'image': 'none', 'stack': False, 'counted': False, 'view': 'image', 'imageLarge': False}),
     # the study's images in its Drive folder, the one a user of a study that opens none from the computer takes
-    'drive': ('Load from Drive', {'image': 'original', 'stack': False, 'counted': False, 'view': 'image'}),
+    'drive': ('Load from Drive', {'image': 'original', 'stack': False, 'counted': False, 'view': 'image', 'imageLarge': False}),
     'viewer': ('→ Viewer', {'role': 'viewer'}),
     'data': ('→ Study Manager', {'role': 'data'}),
     # to another study and Back to this one, which opens afresh, with no image
-    'restudy': ('Away and back', {'image': 'none', 'stack': False, 'counted': False, 'view': 'image'}),
+    'restudy': ('Away and back', {'image': 'none', 'stack': False, 'counted': False, 'view': 'image', 'imageLarge': False}),
     'ok': ('OK', {'notice': False}),
     'zoom': ('Zoom in', {'imageFits': False}),
 }
 ROLES = ('tagger', 'viewer', 'data')
 START = {'image': 'none', 'counted': False, 'view': 'image', 'selected': 'nothing', 'online': True, 'editing': False, 'stack': False,
-         'notice': False, 'imageFits': True}
+         'notice': False, 'imageFits': True, 'imageLarge': False}
 STATES = ('shown', 'disabled', 'held', 'folded', 'hidden')
 # what the page shows of an element, as the browser reads it: on (shown, usable, a box open), off (shown, disabled),
 # held (shown, saying it needs the internet, req/shell/offline/default), folded (a box shown folded), gone (not
@@ -115,7 +117,7 @@ def walk(study, roots, paths):
             s = {**s, **change, **({'counted': False, 'view': 'image'} if afresh else {})}
             # an image from the computer, open for whoever makes ground truth, is told it cannot be submitted
             # (req/shell/ground-truth/submit); the study opening afresh for a new tagger tells it again
-            if a in ('load', 'stack', 'drive', 'unload', 'restudy') or afresh:
+            if a in ('load', 'large', 'stack', 'drive', 'unload', 'restudy') or afresh:
                 s['notice'] = derived(s)['makesTruth'] and s['image'] == 'local'
             states.append((label, dict(s)))
         out.append((p, states))

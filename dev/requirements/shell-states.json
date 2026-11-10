@@ -17,6 +17,7 @@
     "itemView": [false, true],
     "notice": [false, true],
     "imageFits": [true, false],
+    "imageLarge": [false, true],
     "shows3d": [false, true]
   },
   "roots": {
@@ -49,7 +50,8 @@
     {"root": "GT, Tagger", "actions": ["load", "count", "restudy"]},
     {"root": "GT, Tagger", "actions": ["drive", "count"]},
     {"root": "GT, Study Manager", "actions": ["viewer", "load", "data"]},
-    {"root": "GT, Viewer", "actions": ["load", "zoom"]}
+    {"root": "GT, Viewer", "actions": ["load", "zoom"]},
+    {"root": "GT, Viewer", "actions": ["large"]}
   ],
   "tree": [
     {"name": "Header", "select": "header", "req": "req/shell/header", "steady": "always shown",
@@ -441,8 +443,7 @@
                       "children": [
                         {"name": "Image's canvas", "select": "#base", "req": "req/shell/image/minimap"},
                         {"name": "Image zoomed out", "select": "#shrunk", "req": "req/shell/image/scaling",
-                          "steady": "shown only below 100% zoom, which no state here reaches",
-                          "rule": [{"when": {}, "is": "hidden"}]}
+                          "rule": [{"when": {"imageLarge": [false]}, "is": "hidden"}]}
                       ]
                     }
                   ]

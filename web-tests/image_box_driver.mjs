@@ -105,7 +105,7 @@ await check((await box("#unload")).x > (await box("#load")).x && Math.abs((await
 await shot("image_box", "#image-box");
 
 await check(!(await visible("#minimap")) && (await page.getAttribute("#minimap-btn", "aria-pressed")) === "true", "the whole image in view: no minimap, nothing to navigate, its button still pressed");
-for (let k = 0; k < 10; k++) await page.click("#zoom-in"); // the fixture is small: as near as it goes, so the view scrolls
+for (let k = 0; k < 13; k++) await page.click("#zoom-in"); // the fixture is small: as near as it goes, so the view scrolls
 await check(await visible("#minimap"), "zoomed past the view, the minimap shows");
 const mm = await box("#minimap"), sc = await box("#scroller");
 await check(mm && mm.x >= sc.x && mm.y >= sc.y && mm.x + mm.w <= sc.x + sc.w && mm.y + mm.h <= sc.y + sc.h, "the minimap hovers over the image", [mm, sc]);

@@ -112,14 +112,16 @@ export function viewer(shell) {
   // one after another; channels what the file says of each, [{name, colour}], when the study's Python says it.
   // There are as many channels as those, else as the study names; bytes past them are the study's own.
   function show(im) {
-    const fit = Math.floor(im.planes.length / (im.W * im.H));
-    const n = Math.min(fit, im.channels ? im.channels.length : declared.length || fit);
+    const held = Math.floor(im.planes.length / (im.W * im.H));
+    const n = Math.min(held, im.channels ? im.channels.length : declared.length || held);
     st.peek?.stop?.();
+    const previewed = st.peeked && st.W === im.W && st.H === im.H;
     st.W = im.W; st.H = im.H; st.img = { planes: im.planes, n, file: im.channels || null }; st.plain = null; st.peeked = false;
     choose(n, st.img.file);
     ruler.reset(); draw();
     $("#empty").hidden = true; $("#stage").hidden = false;
-    setZoom(st.zoom); tools();
+    if (previewed) setZoom(st.zoom); else fit();
+    tools();
   }
   // no image: the page as before any
   function blank() {
@@ -260,7 +262,7 @@ export function viewer(shell) {
     const sc = $("#scroller"), old = st.zoom, r = sc.getBoundingClientRect();
     st.zoom = Math.max(0.1, Math.min(16, z));
     const ax = at ? at.clientX - r.left : sc.clientWidth / 2, ay = at ? at.clientY - r.top : sc.clientHeight / 2;
-    const ix = (sc.scrollLeft + ax) / old, iy = (sc.scrollTop + ay) / old;
+    const b = $("#base").getBoundingClientRect(), ix = (ax - b.left + r.left) / old, iy = (ay - b.top + r.top) / old;
     const w = st.W * st.zoom, h = st.H * st.zoom;
     Object.assign($("#base").style, { width: w + "px", height: h + "px" });
     const svg = $("#overlay"); svg.setAttribute("width", w); svg.setAttribute("height", h);
@@ -269,10 +271,18 @@ export function viewer(shell) {
     $("#zoom-label").textContent = Math.round(st.zoom * 100) + "%";
     ruler.draw(); grid.draw(); hooks.zoomed?.(); minimap.place(); shrinkLater();
   }
-  // the whole image in view
+  // the whole image in view, at most at 100%; a view another one covers (the 3D view, say) has no size, and the
+  // image is fitted once it has
+  let sized = null;
   function fit() {
     const sc = $("#scroller");
-    setZoom(Math.min(sc.clientWidth / st.W, sc.clientHeight / st.H));
+    sized?.disconnect(); sized = null;
+    if (!sc.clientWidth || !sc.clientHeight) {
+      setZoom(1);
+      sized = new ResizeObserver(() => { if (sc.clientWidth && sc.clientHeight && st.W) fit(); });
+      return sized.observe(sc);
+    }
+    setZoom(Math.min(1, sc.clientWidth / st.W, sc.clientHeight / st.H));
     sc.scrollTo(0, 0);
   }
   function focus(x, y) {
@@ -420,7 +430,7 @@ export function viewer(shell) {
     return (st.peek = painter($("#base"), shown, (W, H) => {
       st.img = null; st.plain = null; st.W = W; st.H = H; st.peeked = true; ruler.reset(); rows();
       $("#overlay").innerHTML = ""; $("#empty").hidden = true; $("#stage").hidden = false;
-      setZoom(st.zoom); tools();
+      fit(); tools();
     }));
   }
   function clear() { $("#overlay").innerHTML = ""; done = []; }

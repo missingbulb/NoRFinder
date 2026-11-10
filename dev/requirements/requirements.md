@@ -702,6 +702,14 @@ nobody has decided: what the page does there is not a requirement yet.
   status line. Test: `web-tests/test_image_open.py`.
   </details>
 
+- `req/shell/image/opens-fitted` Every image opens whole in the view, never above 100%.
+  <details>
+
+  Set by the owner on 2026-11-10, in every study and the 2D viewer. An image larger than the view opens shrunk to
+  fit it; one smaller opens at 100%, centred in the view. The next image opens the same way, whatever the last one
+  was zoomed to. Test: `web-tests/test_image_fit_page.py`.
+  </details>
+
 - `req/shell/image/progressive` An image shows while it downloads.
   <details>
 
@@ -1598,13 +1606,13 @@ nobody has decided: what the page does there is not a requirement yet.
   open the study the file names, the fixture; a study's own paths open it, on the shell's tree with its own elements
   alone grafted in. Each element gives only what differs from its parent: cases over the state (the
   study's stage, who is signed in, the role, the image open and whether it is a z-stack, the study's step done, the view, what Data Management
-  has selected, whether the page is online, whether Edit Image is open, whether the image fits the view, whether a
-  notice shows, and what the study says of itself in its
+  has selected, whether the page is online, whether Edit Image is open, whether the image fits the view, whether it is larger than the view,
+  whether a notice shows, and what the study says of itself in its
   `study.json` and panels: whether it opens images from the computer, has steps after Load, and has an item view,
   never shown when shelved, `req/shell/views/second`), each citing the requirement that decides it and marked tentative or undecided where the owner has
   not decided (an undecided case is shown and not checked). Its paths start from a few roots (a study's stage and a
-  role) and take actions one after another, each state one more action on the one before: loading an image, a
-  z-stack or a file from the study's Drive folder, Unload, the study's first step, the view switched, a role chosen
+  role) and take actions one after another, each state one more action on the one before: loading an image, one
+  larger than the view, a z-stack or a file from the study's Drive folder, Unload, the study's first step, the view switched, a role chosen
   (to or from Ground Truth Tagger the study opens afresh), another study and Back, the notice's OK, zooming in until
   the image no longer fits, Data Management's folder, preview and Edit Image, and
   the network lost and back.

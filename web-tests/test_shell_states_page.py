@@ -35,6 +35,15 @@ def samples(i, d, out):
     return {k: getattr(m, k)(str(out)) for k in ('image', 'stack') if hasattr(m, k)}
 
 
+def large(out):
+    """An image wider and taller than the view: it opens below 100%."""
+    import numpy as np
+    from PIL import Image
+    path = str(out / 'large.png')
+    Image.fromarray(np.random.default_rng(2).integers(0, 256, (1500, 2400), np.uint8)).save(path)
+    return path
+
+
 def own_answers(answers, png, tif, stack, out):
     """The answers, with what each study walked other than the fixture says on loading, from its own Python as its
     study.json names it, and the files each loads (the page reads them itself): its own samples where its states.json
@@ -48,7 +57,7 @@ def own_answers(answers, png, tif, stack, out):
     zfixture = any(p['study'] == 'fixture' and 'zpreview' in p['actions'] for p in paths)
     walked = sorted({p['study'] for p in paths} - {'fixture'} | ({'viewer'} if zfixture else set()))
     stacked = {p['study'] for p in paths if 'stack' in p['actions']} | ({'viewer'} if zfixture else set())
-    a['studies'], a['files'] = {}, {'fixture': {'image': png, 'stack': stack}}
+    a['studies'], a['files'] = {}, {'fixture': {'image': png, 'stack': stack, 'large': large(out.parent)}}
     # what they do after loading, their own Python answers as the page asks
     a['live'] = sorted({p['study'] for p in paths if 'count' in p['actions']} - {'fixture'})
     for i in walked:
