@@ -20,19 +20,26 @@ await py.loadPackage(study.python.packages, { messageCallback: () => {} });
 for (const dir of study.python.paths) for (const f of fs.readdirSync(path.join(here, "..", dir)).filter((f) => f.endsWith(".py")))
   py.FS.writeFile("/home/pyodide/" + f, fs.readFileSync(path.join(here, "..", dir, f)));
 py.FS.writeFile("/home/pyodide/photo" + path.extname(image), fs.readFileSync(image));
-py.runPython(`import shelves; session = shelves.Session('photo${path.extname(image)}')`);
-const books = booksFile === "find" ? JSON.parse(py.runPython("session.call('find', {})[0]")).books : JSON.parse(fs.readFileSync(booksFile, "utf8")).books;
-py.globals.set("corners", JSON.stringify(books.map((b) => b.corners)));
-const [meta, bytes] = py.runPython("import json; session.call('straighten', dict(corners=json.loads(corners)))").toJs();
-const { sizes } = JSON.parse(meta);
-let at = 0;
-const crops = sizes.map(([width, height]) => { const data = new Uint8ClampedArray(bytes.subarray(at, at + width * height * 4)); at += width * height * 4; return { width, height, data }; });
+py.runPython(`import json, shelves; session = shelves.Session('photo${path.extname(image)}')`);
 
 const assets = path.join(here, "node_modules", "@gutenye", "ocr-models", "assets");
 const r = reader({
   Tesseract: async () => require("tesseract.js"), ort: async () => require("onnxruntime-web"), langPath: path.join(here, "..", "web", "tessdata"), tesseract: {},
   model: async (name) => fs.readFileSync(path.join(assets, name)), keys: async () => fs.readFileSync(path.join(assets, "ppocr_keys_v1.txt"), "utf8"),
 });
+// found as the page finds them: the text finder over Python's view of the photo, its map handed to the finder
+let books;
+if (booksFile === "find") {
+  const [vm, vb] = py.runPython("session.call('view', {})").toJs();
+  const { width, height } = JSON.parse(vm);
+  py.globals.set("text", JSON.stringify(await r.textMap({ width, height, data: vb })));
+  books = JSON.parse(py.runPython("session.call('find', dict(text=json.loads(text)))[0]")).books;
+} else books = JSON.parse(fs.readFileSync(booksFile, "utf8")).books;
+py.globals.set("corners", JSON.stringify(books.map((b) => b.corners)));
+const [meta, bytes] = py.runPython("session.call('straighten', dict(corners=json.loads(corners)))").toJs();
+const { sizes } = JSON.parse(meta);
+let at = 0;
+const crops = sizes.map(([width, height]) => { const data = new Uint8ClampedArray(bytes.subarray(at, at + width * height * 4)); at += width * height * 4; return { width, height, data }; });
 const read = [];
 for (const [i, c] of crops.entries()) read.push({ ...books[i], ...(await r.read(c, how)), reader: how });
 await r.close();

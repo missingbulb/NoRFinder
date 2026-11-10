@@ -8,6 +8,7 @@ import sys
 import numpy as np
 import pytest
 from PIL import Image
+from scipy import ndimage as ndi
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'py'))
 import books
@@ -248,6 +249,55 @@ def test_two_books_of_one_series_are_two_boxes():
     assert on_wall == 0
     assert matched == len(truth), (matched, len(truth))
     assert found == len(truth), found
+
+
+def titled_shelf(step=8):
+    """Five books against each other, each with its title down its middle: a red one, two narrow dark ones of nearly one
+    colour (the second lighter by step), parted by no rim, then a red one and a pale one whose lettering is faint.
+    (photo, each book's corners clockwise, the text a text finder marks: each title's lines, as 0 to 1)."""
+    rng = np.random.default_rng(5)
+    H, W = 400, 300
+    a = np.full((H, W, 3), 214, np.float32)
+    a[372:392] = 150
+    text = np.zeros((H, W))
+    truth, x = [], 40
+    for k, w in enumerate([40, 28, 28, 40, 40]):
+        a[90:372, x:x + w] = (150, 60, 40) if k in (0, 3) else (200, 196, 186) if k == 4 else (30 + step * (k == 2),) * 3
+        if k not in (1, 2):
+            a[90:372, x] *= 0.6
+            a[90:372, x + w - 1] *= 0.6
+        for y in range(110 + 7 * k, 340, 22):
+            mw = 6 + (y * 7 + k) % (w // 2 - 6)
+            a[y:y + 9, x + (w - mw) // 2:x + (w + mw) // 2] = 205 if k == 4 else 235
+        text[110 + 7 * k:340, x + w // 4:x + w - w // 4] = 1
+        truth.append([[x, 90], [x + w, 90], [x + w, 372], [x, 372]])
+        x += w
+    a += rng.normal(0, 3, a.shape)
+    return np.clip(a, 0, 255).astype(np.uint8), truth, text
+
+
+def test_two_titles_side_by_side_put_the_edge_between_their_books():
+    """req/shelves/books/find (2026-11-10): text lines the page's text finder marks place the edges between books: a
+    strip holding two titles side by side is searched again for the faint edge between their books, which is found
+    then and not without the titles."""
+    a, truth, text = titled_shelf()
+    g = ndi.gaussian_filter(books.grey(a.astype(np.float32)), 1.0)
+    e = books.Edges(g, a.astype(np.float32))
+    top, bottom = books.book_rows(e)
+    seam = truth[2][0][0]
+    at_seam = lambda t: any(abs(x - seam) < 5 for x, _ in books.side_lines(e, top, bottom, t))
+    assert not at_seam(None)
+    assert at_seam(text)
+
+
+def test_a_plain_spine_whose_title_the_text_finder_marks_is_boxed():
+    """req/shelves/books/find (2026-11-10): a spine whose face carries little texture is still a book's face when a
+    text line runs along it."""
+    a, truth, text = titled_shelf()
+    pale = np.array(truth[4])
+    hit = lambda found: any(np.abs(np.array(b['corners']) - pale).max() <= 10 for b in found)
+    assert not hit(books.find(a))
+    assert hit(books.find(a, text))
 
 
 def covers_on_a_bench():

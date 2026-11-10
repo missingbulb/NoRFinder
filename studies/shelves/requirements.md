@@ -21,9 +21,7 @@ read for a title matcher; matching the titles is not part of it.
   leaning with it: its box's long sides follow the spine's own edges, at the angle they run.
   Set by the owner on 2026-11-07, each box is that book's spine by itself, whatever the shelf, the camera angle or
   the books beside it: its top and foot are the book's own, at the angle they run, not a line the shelf's books
-  share, with the books packed against each other and the photo taken from the front or from a side. One camera
-  took the whole photo, so its perspective is one for every book: a box whose ends turn otherwise than the surest
-  boxes say the camera saw them is not a book's. A box is kept only once it checks out as a readable spine: its long sides lie on edges along the book's
+  share, with the books packed against each other and the photo taken from the front or from a side. A box is kept only once it checks out as a readable spine: its long sides lie on edges along the book's
   length, its ends on edges across it, it is convex and spine-shaped, and its inside carries a book's texture rather
   than a wall's, a board's or a gap's; a book that fails is left for the ground truth to draw in, never boxed
   wrong. Set by the owner on 2026-11-07, two books of one series standing together, one colour and parted by no
@@ -31,7 +29,14 @@ read for a title matcher; matching the titles is not part of it.
   holds a mark and its repeat further across is two books. Set by the owner on 2026-11-07, books lying cover-up (on a
   ledge, a bench, a table) are boxed as covers, view `cover`, their four corners on the cover's own edges as the camera
   sees them, at a slant or not; a cover is kept only once its four sides lie on edges with the cover on one side and
-  something else on the other, so the long lines of a bench's planks or a ledge's rim box nothing. Test: `studies/shelves/tests/test_books.py`,
+  something else on the other, so the long lines of a bench's planks or a ledge's rim box nothing.
+  Set by the owner on 2026-11-10, the text lines on the photo place the books: Find books first runs PaddleOCR's text
+  finder over the photo (finding where text is, reading none of it), and an edge between books never runs through a
+  line of text, a strip holding two titles side by side holds two books, and a box a text line runs along is a book's
+  face, however plain. The text finder's files are fetched at pinned versions from jsDelivr on Find books' first run,
+  and kept offline with the study's Python; when they cannot be reached, Find books finds without them and says so.
+  The same day the owner dropped the rule that one camera's perspective must turn every book's ends alike: on the
+  photos it removed real books. Test: `studies/shelves/tests/test_books.py`,
   `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
@@ -63,7 +68,7 @@ read for a title matcher; matching the titles is not part of it.
   each line of text and Tesseract reading each line, and PP-OCR finding and reading the lines itself
   (English only: it has no Hebrew, and on Hebrew it reads Latin letters with high confidence). Each
   book is straightened to an upright rectangle first and read at each turn its shape allows, the
-  most confident kept. The page loads pinned builds of the engines from jsDelivr and the two
+  most confident kept. The page loads pinned builds of the engines from jsDelivr (the text finder already on Find books) and the two
   languages from the site; the sandbox (`studies/shelves/reading/read.mjs`) runs the same builds on
   the same straightened crops, so a reading there is the page's. The reader last chosen is kept in
   the browser. Test: `studies/shelves/tests/test_reading.py`, `studies/shelves/tests/test_shelves_page.py`.
