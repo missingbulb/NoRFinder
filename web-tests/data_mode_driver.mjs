@@ -10,7 +10,7 @@ import { standIn } from "./stand_in_drive.mjs";
 
 const [answers, studies, rootDir, out, shots] = process.argv.slice(2);
 const PREVIEWS_DIR = "dmpreviewsfolder00001";
-const { ROOT, FILES, GT, approved, writes, open, role, check, done } = await standIn({ answers, studies, rootDir, uploaded: (f) => { if (f.parent === PREVIEWS_DIR) fs.writeFileSync(out, f.bytes); } });
+const { ROOT, FILES, GT, approved, writes, thumbs, open, role, check, done } = await standIn({ answers, studies, rootDir, uploaded: (f) => { if (f.parent === PREVIEWS_DIR) fs.writeFileSync(out, f.bytes); } });
 // the data folder's previews file (req/shell/drive/previews): in the root's Previews folder, which the page made, under the
 // data folder's id, a file someone else put there; the copy the tool left beside the images is never read
 const OURS = `${ROOT}.tiff`;
@@ -59,7 +59,7 @@ const summary = () => page.evaluate(() => Object.fromEntries([...document.queryS
 const folderMsg = () => page.textContent("#folder-msg");
 await page.click("#data-tree .tree-folder .name");
 await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell").length === 4);
-await check(JSON.stringify(await summary()) === JSON.stringify({ images: 4, previews: 1, stale: 1, truth: 0, pending: 0, missing: 1 }), "the folder's sums, its photo among its images", await summary());
+await check(JSON.stringify(await summary()) === JSON.stringify({ images: 4, previews: 2, stale: 1, truth: 0, pending: 0, missing: 1 }), "the folder's sums, its photo among its images and pictured by Drive", await summary());
 await page.click('#folder-layout button[data-layout="list"]');
 await page.waitForFunction(() => $("#folder-items").dataset.layout === "list");
 await check(true, "the list button lays the images out as a list");
@@ -70,14 +70,17 @@ await check(!writes.length, "a previews file the page did not make is left alone
 // the user deletes it in Drive; the old file beside the images stays, unread
 FILES.splice(FILES.findIndex((f) => f.name === OURS), 1);
 await page.click("#data-tree .tree-folder .name");
-await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="previews"]')?.textContent === "0");
+await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="previews"]')?.textContent === "1");
 await page.click("#update-previews");
-await page.waitForFunction(() => /4 previews made/.test($("#folder-msg").textContent), null, { timeout: 30000 });
+await page.waitForFunction(() => /3 previews made/.test($("#folder-msg").textContent), null, { timeout: 30000 });
 await check(JSON.stringify(writes) === JSON.stringify([["create", OURS]]) && FILES.find((f) => f.name === OURS)?.parent === PREVIEWS_DIR,
   "Update previews creates the file in the root's Previews folder, named by the data folder's id, and writes nothing into the data folder", writes);
 await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="previews"]')?.textContent === "4");
-await check(JSON.stringify(await summary()) === JSON.stringify({ images: 4, previews: 4, stale: 0, truth: 0, pending: 0, missing: 1 }), "then every image has a preview, the photo's too", await summary());
+await check(JSON.stringify(await summary()) === JSON.stringify({ images: 4, previews: 4, stale: 0, truth: 0, pending: 0, missing: 1 }), "then every image has a preview, the TIFFs from the file and the photo from Drive", await summary());
 await page.waitForFunction(() => document.querySelectorAll("#folder-items .pic img").length === 4);
+const photoPic = await page.evaluate(() => [...document.querySelectorAll("#folder-items .cell")].find((c) => c.querySelector(".name").textContent === "d photo.jpg")?.querySelector(".pic img")?.src || "");
+await check(photoPic.startsWith("https://lh3.googleusercontent.com/") && thumbs.includes("d photo.jpg") && thumbs.every((n) => n === "d photo.jpg"),
+  "the photo shows Drive's own small picture, and no TIFF asks Drive for one", { photoPic, thumbs });
 await shot("3-list");
 await page.click('#folder-layout button[data-layout="grid"]');
 await page.waitForFunction(() => $("#folder-items").dataset.layout === "grid" && !document.getAnimations().some((a) => a.playState === "running"));
@@ -90,7 +93,7 @@ FILES.find((f) => f.name === "e plain.tif").bytes = Buffer.concat([FILES.find((f
 await page.click("#data-tree .tree-folder .name");
 await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="stale"]')?.textContent === "1");
 await page.click("#update-previews");
-await page.waitForFunction(() => /1 preview made, 3 kept/.test($("#folder-msg").textContent), null, { timeout: 30000 });
+await page.waitForFunction(() => /1 preview made, 2 kept/.test($("#folder-msg").textContent), null, { timeout: 30000 });
 await check(JSON.stringify(writes.at(-1)) === JSON.stringify(["replace", OURS]), "a changed image: the page's own file is replaced, the rest kept", writes);
 fs.writeFileSync(out, FILES.find((f) => f.name === OURS).bytes);
 
@@ -185,8 +188,8 @@ const kept = FILES.find((f) => f.name === OURS);
 kept.bytes = damage(Buffer.from(kept.bytes));
 await role(page, "Study Manager");
 await page.click("#data-tree .tree-folder .name");
-await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell .pic.none").length === 4, null, { timeout: 5000 }).catch(() => {});
-await check(await page.evaluate(() => document.querySelectorAll("#folder-items .cell .pic.none").length === 4), "a previews file that cannot be read: each image shows no preview");
+await page.waitForFunction(() => document.querySelectorAll("#folder-items .cell .pic.none").length === 3, null, { timeout: 5000 }).catch(() => {});
+await check(await page.evaluate(() => document.querySelectorAll("#folder-items .cell .pic.none").length === 3), "a previews file that cannot be read: each TIFF shows no preview, the photo still Drive's");
 await page.click(cell("a flat.tif"));
 await page.waitForFunction(() => st.fileName === "a flat.tif", null, { timeout: 5000 }).catch(() => {});
 await check(await page.evaluate(() => st.fileName === "a flat.tif"), "and an image chosen opens itself");

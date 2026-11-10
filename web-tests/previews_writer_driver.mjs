@@ -1,5 +1,5 @@
 // Makes a folder's rauntruth-previews.tiff with the page's writer (web/previews_writer.js) under Node: the images
-// in IMAGES (TIFFs and HEIC photos, whatever their names say) each read by the reader Data Management reads them with, the ones the OLD previews file already covers with the
+// in IMAGES (its TIFFs, the only images given one) each read by the reader Data Management reads them with, the ones the OLD previews file already covers with the
 // same SHA-256 kept from it as they were, written to OUT. With TIFFS, each image's preview is also written there as
 // the TIFF Data Management hands a study's Python (NAME.preview.tif). Prints {kept, made} names as JSON.
 //   node web-tests/previews_writer_driver.mjs IMAGES OUT [OLD|-] [TIFFS]
@@ -14,11 +14,12 @@ const { makePreview, buildPreviews } = await import(path.join(repo, "web", "prev
 const { readPreviews } = await import(path.join(repo, "web", "previews.js"));
 const { previewTiff } = await import(path.join(repo, "web", "data_mode.js"));
 const { readImage } = await import(path.join(repo, "web", "image_open.js"));
+const { isTiff } = await import(path.join(repo, "web", "accepts.js"));
 const [images, out, oldArg, tiffs] = process.argv.slice(2), old = oldArg === "-" ? null : oldArg;
 const pv = old ? readPreviews(new Uint8Array(fs.readFileSync(old)).buffer) : null;
 const kept = [], made = [];
 for (const name of fs.readdirSync(images).sort()) {
-  if (!/\.(tiff?|heic|jpe?g)$/i.test(name) || name.startsWith("rauntruth-previews")) continue;
+  if (!isTiff(name) || name.startsWith("rauntruth-previews")) continue;
   const bytes = new Uint8Array(fs.readFileSync(path.join(images, name))), sha256 = createHash("sha256").update(bytes).digest("hex");
   const e = pv?.entry(name, sha256);
   if (e) { kept.push({ entry: e, pages: await pv.pages(e) }); continue; }

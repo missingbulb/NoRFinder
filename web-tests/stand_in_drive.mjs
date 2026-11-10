@@ -26,7 +26,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {}, 
     try { pw = require(path.join(execSync("npm root -g").toString().trim(), "playwright")); } catch { console.error("no playwright: npm i -g playwright"); process.exit(2); }
   }
   const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-  const ROOT = "dmrootfolder00000001", EMAIL = "tester@example.com";
+  const ROOT = "dmrootfolder00000001", EMAIL = "tester@example.com", DRIVE_THUMB = "https://lh3.googleusercontent.com/drive-thumb/";
   const sha = (b) => createHash("sha256").update(b).digest("hex");
 
   // the stand-in Drive: {id, name, parent, folder, bytes, mine, props, modified}; Drive's clock moves a second each write
@@ -63,6 +63,8 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {}, 
   // what the token may write in: the folders approved, and the ones the page made
   const may = (id) => approved.has(id) || !!FILES.find((f) => f.id === id && f.folder && f.mine);
   const writes = [];
+  // Drive's own small pictures, the name of each file one was asked of, in order
+  const thumbs = [];
   // the names of files replaced asking Drive to keep the version they replace forever
   const keptForever = [];
 
@@ -134,8 +136,9 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {}, 
   // a page or a check gone wrong ends the run
 
   const json = (route, body, status = 200) => route.fulfill({ status, headers: { "access-control-allow-origin": "*" }, contentType: "application/json", body: JSON.stringify(body) });
-  const meta = (f) => ({ id: f.id, name: f.name, mimeType: f.folder ? "application/vnd.google-apps.folder" : /\.json$/.test(f.name) ? "application/json" : "image/tiff",
-    modifiedTime: f.modified, properties: { ...f.props }, ...(f.folder ? {} : { size: String(f.bytes.length), sha256Checksum: sha(f.bytes) }) });
+  const meta = (f, fields = "") => ({ id: f.id, name: f.name, mimeType: f.folder ? "application/vnd.google-apps.folder" : /\.json$/.test(f.name) ? "application/json" : "image/tiff",
+    modifiedTime: f.modified, properties: { ...f.props }, ...(f.folder ? {} : { size: String(f.bytes.length), sha256Checksum: sha(f.bytes) }),
+    ...(!f.folder && fields.includes("thumbnailLink") ? { thumbnailLink: DRIVE_THUMB + f.id } : {}) });
   // a multipart body's metadata and file bytes
   function parts(req) {
     const body = req.postDataBuffer(), boundary = "--" + req.headers()["content-type"].match(/boundary=(.+)$/)[1];
@@ -185,7 +188,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {}, 
     if (!id) {
       if (u.searchParams.get("spaces") === "appDataFolder") return json(route, { files: [] });
       const parent = u.searchParams.get("q").match(/'([^']+)' in parents/)[1];
-      return json(route, { files: FILES.filter((f) => f.parent === parent).map(meta) });
+      return json(route, { files: FILES.filter((f) => f.parent === parent).map((f) => meta(f, fields)) });
     }
     if (auth) {
       // the signed-in user's token: the page's own files and the folders approved for it
@@ -224,7 +227,11 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {}, 
   async function open(signedIn, { scopes, email, seed = {}, id = "fixture", study, prepare } = {}) {
     const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
     await ctx.route("https://www.googleapis.com/**", google);
-    await ctx.route(offSite(origin, "https://www.googleapis.com/"), (r) => r.abort());
+    await ctx.route(DRIVE_THUMB + "*", (r) => {
+      thumbs.push(FILES.find((f) => r.request().url().endsWith(f.id))?.name);
+      return r.fulfill({ status: 200, headers: { "access-control-allow-origin": "*" }, contentType: "image/jpeg", path: path.join(repo, "web", "poster.jpg") });
+    });
+    await ctx.route(offSite(origin, "https://www.googleapis.com/", DRIVE_THUMB), (r) => r.abort());
     const own = id === "fixture" ? fixture : rooted(JSON.parse(fs.readFileSync(path.join(repo, "studies", id, "study.json"), "utf8")));
     if (study) await ctx.route(`**/studies/${id}/study.json`, (r) => r.fulfill({ json: { ...own, ...study } }));
     if (prepare) await prepare(ctx);
@@ -251,5 +258,5 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {}, 
     await page.waitForFunction((n) => document.querySelector("#role-name").textContent.trim() === n, name);
   }
 
-  return { ROOT, FILES, SUB, GT, writers, writes, keptForever, approved, viewOnly, shared, sharedOut, open, role, check, done, origin, calls: () => calls };
+  return { ROOT, FILES, SUB, GT, writers, writes, keptForever, approved, viewOnly, shared, sharedOut, thumbs, open, role, check, done, origin, calls: () => calls };
 }

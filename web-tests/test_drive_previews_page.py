@@ -33,6 +33,22 @@ def folder(path):
         tifffile.imwrite(os.path.join(path, name), flat[:1], imagej=True, metadata={'axes': 'CYX'})
 
 
+def with_photo(previews, photo):
+    """The previews file with a dark picture of the photo added, as files made before photos were left to Drive's own
+    small picture carry one."""
+    import hashlib
+    with tifffile.TiffFile(previews) as t:
+        index, pages = json.loads(t.pages[0].description), [p.asarray() for p in t.pages]
+    sha = hashlib.sha256(open(photo, 'rb').read()).hexdigest()
+    index['images'].append({'name': os.path.basename(photo), 'sha256': sha, 'page': len(pages), 'pages': 1, 'kind': 'flat', 'channels': 3,
+                            'colours': [[1, 0, 0], [0, 1, 0], [0, 0, 1]]})
+    index['images'].sort(key=lambda e: e['name'])
+    pages.append(np.zeros((8, 8, 3), np.uint8))
+    with tifffile.TiffWriter(previews) as w:
+        for i, p in enumerate(pages):
+            w.write(p, photometric='rgb' if p.ndim == 3 else 'minisblack', metadata=None, description=json.dumps(index) if i == 0 else None)
+
+
 def test_previews_keep_the_files_colours(tmp_path):
     """Each channel in the colour its ImageJ LUT shows it in; red, green and blue in order without LUTs."""
     sys.path.insert(0, os.path.join(REPO, 'dev', 'tools', 'previews'))
@@ -56,22 +72,20 @@ def test_previews_keep_the_files_colours(tmp_path):
     assert lit['plain.tif'][0] > 200 and lit['plain.tif'][1] < 50
 
 
-def test_previews_cover_photos(tmp_path):
-    """A JPEG, the photo a study may open beside TIFFs and PNGs, is a flat colour preview; a file no image reader opens is left out."""
+def test_previews_leave_photos_to_drive(tmp_path):
+    """A JPEG, the photo a study may open beside TIFFs and PNGs, gets no preview, Drive's own small picture showing it; nor does
+    a file no image reader opens."""
     sys.path.insert(0, os.path.join(REPO, 'dev', 'tools', 'previews'))
     import make_previews
     images = tmp_path / 'images'
     images.mkdir()
-    rgb = np.zeros((30, 50, 3), np.uint8)
-    rgb[:, :25, 0] = 250
-    Image.fromarray(rgb).save(images / 'photo.jpg')
+    Image.fromarray(np.zeros((30, 50, 3), np.uint8)).save(images / 'photo.jpg')
     (images / 'photo.ground_truth.json').write_text('{}')
+    tifffile.imwrite(images / 'flat.tif', np.zeros((1, 20, 20), np.uint16), imagej=True, metadata={'axes': 'CYX'})
     make_previews.main(str(images))
     with tifffile.TiffFile(images / 'rauntruth-previews.tiff') as t:
         index = json.loads(t.pages[0].description)
-        page = t.pages[0].asarray()
-    assert [(e['name'], e['kind'], e['channels']) for e in index['images']] == [('photo.jpg', 'flat', 3)]
-    assert page.shape == (30, 50, 3) and page[15, 5, 0] > 200 and page[15, 40, 0] < 50
+    assert [e['name'] for e in index['images']] == ['flat.tif']
 
 
 @pytest.mark.skipif(not NODE, reason='node missing')
@@ -86,6 +100,7 @@ def test_drive_previews(tmp_path):
     with open(images / 'c changed.tif', 'ab') as f:
         f.write(b'\0')
     Image.fromarray(np.full((40, 60, 3), 90, np.uint8)).save(images / 'e photo.jpg')
+    with_photo(images / 'rauntruth-previews.tiff', images / 'e photo.jpg')
     r = subprocess.run([NODE, os.path.join(HERE, 'drive_previews_driver.mjs'), str(images)], capture_output=True, text=True, timeout=90)
     print(r.stdout, r.stderr)
     if r.returncode == 2:
