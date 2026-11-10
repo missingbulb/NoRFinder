@@ -19,7 +19,7 @@ NODE = shutil.which('node')
 
 
 def folder(path):
-    """A flat three-channel image, a two-channel stack with a tube crossing its slices, and two more images."""
+    """A flat three-channel image, a two-channel stack with a tube crossing its slices, two more TIFFs and a PNG."""
     os.makedirs(path)
     y, x = np.mgrid[0:200, 0:200]
     flat = np.stack([(x * 20).astype(np.uint16), (y * 20).astype(np.uint16), ((x + y) * 10).astype(np.uint16)])
@@ -31,6 +31,7 @@ def folder(path):
     tifffile.imwrite(os.path.join(path, 'b stack.tif'), stack, imagej=True, metadata={'axes': 'ZCYX'})
     for name in ('c changed.tif', 'd new.tif'):
         tifffile.imwrite(os.path.join(path, name), flat[:1], imagej=True, metadata={'axes': 'CYX'})
+    Image.fromarray(np.full((40, 60, 3), 160, np.uint8)).save(os.path.join(path, 'f covered.png'))
 
 
 def test_previews_keep_the_files_colours(tmp_path):

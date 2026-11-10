@@ -95,8 +95,9 @@ const bars = () => page.evaluate(() => [...document.querySelectorAll("#left > .b
 await boxes(["1 Load Image open", "2 Processing folded", "3 Ground Truth Tasks folded"], "before an image only Load Image is open, each drawer numbered");
 await check((await bars()).join() === "true,false,false", "the open drawer, and only it, carries the accent bar", await bars());
 await loadImage();
-await boxes(["✓ [img] " + name + "2D folded", "2 Processing open", "3 Ground Truth Tasks folded"],
-  "an image open: Load Image folds to its preview, name and what it holds, checked, and Processing opens");
+await boxes(["✓ [img] " + name + " folded", "2 Processing open", "3 Ground Truth Tasks folded"],
+  "an image open: Load Image folds to its preview and name, checked, and Processing opens");
+await check(!(await page.locator("#image-box .loaded .tag").count()), "a PNG shows no 2D or channel tags, which only a TIFF's header tells");
 // a drawer slides open or shut, and the drawers below slide to their new places: the slide starts and ends
 const before = await begun(page);
 await title(0);
@@ -106,26 +107,26 @@ const slid = slides ? await moved(page, before, /^drawer-/) : null;
 await check(!slides || (!slid.missing && slid.groups.filter((g) => g.startsWith("drawer-")).length >= 2), slides ? "a drawer slides open, and the drawers below it slide down" : "a browser without the view transitions the slide takes: the drawers change at once", slid);
 await boxes(["✓ Loaded Image open", "2 Processing open", "3 Ground Truth Tasks folded"], "its title opens a folded drawer, done: Loaded Image");
 await title(0);
-await boxes(["✓ [img] " + name + "2D folded", "2 Processing open", "3 Ground Truth Tasks folded"], "and folds it again");
+await boxes(["✓ [img] " + name + " folded", "2 Processing open", "3 Ground Truth Tasks folded"], "and folds it again");
 // a folded drawer opens from anywhere on it, not only its title: a click at the far end of its row; an open one folds
 // only from its title
 const rowEnd = async (k) => { const r = await page.locator("#left > .box.foldable:visible > .sec-head").nth(k).boundingBox();
   await page.mouse.click(r.x + r.width - 4, r.y + r.height / 2); await page.waitForFunction(() => !document.documentElement.hasAttribute("data-drawers")); };
 await rowEnd(2);
-await boxes(["✓ [img] " + name + "2D folded", "2 Processing open", "3 Ground Truth Tasks open"], "a click anywhere on a folded drawer opens it");
+await boxes(["✓ [img] " + name + " folded", "2 Processing open", "3 Ground Truth Tasks open"], "a click anywhere on a folded drawer opens it");
 await rowEnd(2);
-await boxes(["✓ [img] " + name + "2D folded", "2 Processing open", "3 Ground Truth Tasks open"], "a click beside an open drawer's title leaves it open");
+await boxes(["✓ [img] " + name + " folded", "2 Processing open", "3 Ground Truth Tasks open"], "a click beside an open drawer's title leaves it open");
 await title(2);
 await page.evaluate(() => { document.querySelector("#fx-threshold").value = 100; });
 await page.click("#fx-count");
 await page.waitForFunction(() => /pixels/.test(document.querySelector("#fx-result").textContent));
-await boxes(["✓ [img] " + name + "2D folded", "✓ Counted at 100 folded", "3 Ground Truth Tasks open"],
+await boxes(["✓ [img] " + name + " folded", "✓ Counted at 100 folded", "3 Ground Truth Tasks open"],
   "Count done: Processing folds to the study's summary of it, and Ground Truth Tasks opens");
 await title(1);
-await boxes(["✓ [img] " + name + "2D folded", "✓ Processing open", "3 Ground Truth Tasks open"], "a done drawer open names itself");
+await boxes(["✓ [img] " + name + " folded", "✓ Processing open", "3 Ground Truth Tasks open"], "a done drawer open names itself");
 await title(1);
 await loadImage();
-await boxes(["✓ [img] " + name + "2D folded", "2 Processing open", "3 Ground Truth Tasks folded"], "another image starts over: the study's drawers wait again");
+await boxes(["✓ [img] " + name + " folded", "2 Processing open", "3 Ground Truth Tasks folded"], "another image starts over: the study's drawers wait again");
 await title(0); await page.click("#unload");
 await page.waitForFunction(() => document.querySelector("#unload").hidden && [...document.querySelectorAll("#left > .box.foldable")].filter((b) => b.checkVisibility()).length === 3);
 await boxes(["1 Load Image open", "2 Processing folded", "3 Ground Truth Tasks folded"], "Unload: every drawer waits again, as at first");
