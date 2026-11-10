@@ -5,7 +5,8 @@
 // req/shell/ground-truth/submit and req/shell/ground-truth/layout (Submit writes the tagger's file into the image's
 // subfolder, and submitting again replaces it keeping the old version), req/shell/ground-truth/clear,
 // req/shell/ground-truth/pending, req/shell/ground-truth/curate, req/shell/ground-truth/summary (the Ground Truth box),
-// req/shell/ground-truth/switch and req/shell/ground-truth/view. Exits 1 on a failed
+// req/shell/ground-truth/switch, req/shell/ground-truth/view and req/shell/data/folder's Needs GT (a marker in the
+// curated folder, in either mode, shown GT wanted in the Drive dialog). Exits 1 on a failed
 // check, 2 when it cannot run.
 //   node web-tests/gt_drive_driver.mjs ANSWERS STUDIES ROOT
 import { createHash } from "node:crypto";
@@ -18,6 +19,22 @@ const id = (name) => FILES.find((f) => f.folder && f.name === name)?.id;
 // the access line once read: what it says, and whether it takes any room
 const line = (page) => page.waitForFunction(() => { const e = document.querySelector("#left .gt-access"); return e?.dataset.access ? { access: e.dataset.access, text: e.textContent.trim(), room: e.getClientRects().length > 0 && e.offsetHeight > 0 } : null; }).then((h) => h.jsonValue());
 const asTagger = async (page) => { await role(page, "Ground Truth Tagger"); return line(page); };
+// an image's ground-truth subfolder, and what Needs GT writes for it
+const subOf = (f) => `${f.name.replace(/\.[^.]*$/, "")}__${createHash("sha256").update(f.bytes).digest("hex").slice(0, 8)}`;
+const neededOf = (f) => subOf(f) + ".needs_gt";
+const [png, beta] = FILES.filter((f) => /\.png$/.test(f.name));
+// Needs GT pressed on an image in Data Management's folder view, the marker's write landed
+const markNeeded = async (page, f) => {
+  await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder").length >= 1);
+  await page.click("#data-tree .tree-folder .name");
+  const b = `#folder-items .cell[data-id="${f.id}"] .mark-gt`;
+  await page.waitForSelector(b + ":not([disabled])");
+  const n = writes.length;
+  await page.click(b);
+  await page.waitForFunction((b) => document.querySelector(b)?.getAttribute("aria-pressed") === "true", b, { timeout: 10000 }).catch(() => {});
+  return writes.slice(n);
+};
+const pressed = (page) => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#folder-items .cell")].map((c) => [c.dataset.id, c.querySelector(".mark-gt").getAttribute("aria-pressed")])));
 const offered = (page) => page.evaluate(() => [...document.querySelectorAll("#role-list .item")].map((b) => b.textContent));
 
 // not set up: nobody is offered Ground Truth Tagger, and the study manager is offered Set up ground truth
@@ -44,6 +61,13 @@ await check(await page.isHidden("#gt-setup"), "set up, nothing offers to set it 
 await page.waitForFunction(() => /No image/.test($("#gt-box").textContent));
 const box = await page.evaluate(() => ({ text: $("#gt-box").textContent, above: !!($("#gt-box").compareDocumentPosition($("#data-tree")) & Node.DOCUMENT_POSITION_FOLLOWING) }));
 await check(box.above && /review/i.test(box.text), "a Ground Truth box above the folders says submissions are reviewed and that no image has ground truth yet", box);
+// Needs GT, with review: a marker in the curated folder named as the image's subfolder, nothing written beside the image
+let marked = await markNeeded(page, png);
+const marker = FILES.find((f) => f.name === neededOf(png));
+await check(JSON.stringify(marked) === JSON.stringify([["create", neededOf(png)]]) && marker?.parent === CUR,
+  "with review, Needs GT creates the image's marker in the curated folder, and nothing else", { marked, parent: marker?.parent });
+let on = await pressed(page);
+await check(on[png.id] === "true" && on[beta.id] === "false", "only the image marked shows Needs GT pressed", on);
 await page.context().close();
 
 // a user the store lets only view the submissions folder is not offered Ground Truth Tagger
@@ -57,7 +81,13 @@ viewOnly.delete(SUBS);
 page = await open(true);
 let said = await asTagger(page);
 await check(said.access === "write" && !said.text && !said.room, "writable: the line says nothing and takes no room", said);
-const png = FILES.find((f) => /\.png$/.test(f.name));
+// req/shell/ground-truth/pending: before any ground truth, the Drive dialog tags the marked image GT wanted, the other nothing
+await page.click("#load-remote");
+await page.waitForFunction(() => document.querySelector("#remote-dlg").open);
+const wanted = await page.waitForFunction((id) => document.querySelector(`#remote-list .item[data-id="${id}"] .gt-tag`)?.textContent || null, png.id, { timeout: 5000 }).then((h) => h.jsonValue(), () => "");
+const other = await page.evaluate((id) => document.querySelector(`#remote-list .item[data-id="${id}"] .gt-tag`)?.textContent || "", beta.id);
+await check(wanted === "GT wanted" && !other, "to the tagger, the Drive dialog tags the marked image GT wanted, the other nothing", { wanted, other });
+await page.keyboard.press("Escape");
 await page.click("#load-remote");
 await page.waitForFunction(() => document.querySelector("#remote-dlg").open);
 await page.dblclick(`#remote-list .item[data-id="${png.id}"]`);
@@ -90,7 +120,7 @@ const submit = async () => {
   return msg;
 };
 let msg = await submit();
-const sub = `${png.name.replace(/\.[^.]*$/, "")}__${createHash("sha256").update(png.bytes).digest("hex").slice(0, 8)}`;
+const sub = subOf(png);
 await check(/Submitted/.test(msg), "Submit says the file landed", msg);
 const folder = FILES.find((f) => f.folder && f.name === sub);
 await check(!!folder && folder.parent === SUBS, "Submit makes the image's subfolder in the submissions folder", sub);
@@ -181,6 +211,12 @@ await check(switched.curated === CUR && switched.submissions === CUR && switched
   "switched, GT curated serves as both, GT submissions stays, and the settings file records the mode before and who switched", { switched, msg: await page.textContent("#switch-msg") });
 await page.waitForFunction(() => /One folder/.test($("#gt-mode").textContent) && /1 image has ground truth/.test($("#gt-counts").textContent), null, { timeout: 5000 }).catch(() => {});
 await check(/One folder/.test(await page.textContent("#gt-mode")) && /1 image has ground truth/.test(await page.textContent("#gt-counts")), "the Ground Truth box now says one folder, its ground truth still counted", await page.textContent("#gt-box"));
+// Needs GT, one folder for both: the marker lands in that one folder too
+marked = await markNeeded(page, beta);
+await check(JSON.stringify(marked) === JSON.stringify([["create", neededOf(beta)]]) && FILES.find((f) => f.name === neededOf(beta))?.parent === CUR,
+  "with one folder, Needs GT creates the marker in it, and nothing else", marked);
+on = await pressed(page);
+await check(on[beta.id] === "true" && FILES.some((f) => f.name === neededOf(png)), "the image with ground truth keeps its marker, no longer shown", on);
 await page.context().close();
 
 // req/shell/ground-truth/view: a viewer, not signed in, loads the image and its curated ground truth, with no algorithm run

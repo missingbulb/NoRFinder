@@ -5,10 +5,15 @@
 //   node web-tests/data_mode_driver.mjs ANSWERS STUDIES ROOT OUT [SHOTS]
 import fs from "node:fs";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { standIn } from "./stand_in_drive.mjs";
 
 const [answers, studies, rootDir, out, shots] = process.argv.slice(2);
-const { FILES, writes, open, role, check, done } = await standIn({ answers, studies, rootDir, uploaded: (f) => { if (f.name === "rauntruth-previews.tiff") fs.writeFileSync(out, f.bytes); } });
+const { FILES, GT, writes, open, role, check, done } = await standIn({ answers, studies, rootDir, uploaded: (f) => { if (f.name === "rauntruth-previews.tiff") fs.writeFileSync(out, f.bytes); } });
+// an image's Needs GT marker, in the curated folder, named as its ground-truth subfolder
+const neededOf = (name) => { const f = FILES.find((g) => g.name === name); return `${name.replace(/\.[^.]*$/, "")}__${createHash("sha256").update(f.bytes).digest("hex").slice(0, 8)}.needs_gt`; };
+// someone else marked the stack as needing ground truth
+FILES.push({ id: "dmmarker000000000001", name: neededOf("b stack.tif"), parent: GT.curated, folder: false, bytes: Buffer.alloc(0), mine: false, props: {}, modified: "2026-11-05T07:00:00Z" });
 const shot = (name) => shots && page.screenshot({ path: path.join(shots, name + ".png") });
 
 // not signed in: the drawers numbered as a viewer's, with no Preprocessing
@@ -83,13 +88,15 @@ fs.writeFileSync(out, FILES.find((f) => f.name === "rauntruth-previews.tiff").by
 const cell = (name) => `#folder-items .cell:has(.name:text-is("${name}"))`;
 await page.click(cell("e plain.tif") + " .mark-gt");
 await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="missing"]')?.textContent === "2");
-await check(JSON.stringify(writes.at(-1)) === JSON.stringify(["create", "e plain.ground_truth.MISSING"]), "marking an image creates its marker", writes);
+const eMarker = neededOf("e plain.tif");
+await check(JSON.stringify(writes.at(-1)) === JSON.stringify(["create", eMarker]) && FILES.find((f) => f.name === eMarker)?.parent === GT.curated,
+  "marking an image creates its marker in the curated folder, not beside the image", writes);
 await page.click(cell("e plain.tif") + " .mark-gt");
 await page.waitForFunction(() => document.querySelector('#folder-summary dd[data-k="missing"]')?.textContent === "1");
-await check(JSON.stringify(writes.at(-1)) === JSON.stringify(["trash", "e plain.ground_truth.MISSING"]), "unmarking trashes the page's own marker", writes);
+await check(JSON.stringify(writes.at(-1)) === JSON.stringify(["trash", eMarker]), "unmarking trashes the page's own marker", writes);
 await page.click(cell("b stack.tif") + " .mark-gt");
 await page.waitForFunction(() => /Someone else/.test($("#folder-msg").textContent));
-await check(writes.at(-1)[1] !== "b stack.ground_truth.MISSING", "a marker someone else made is left alone");
+await check(writes.at(-1)[1] !== neededOf("b stack.tif"), "a marker someone else made is left alone");
 
 await page.click("#data-tree .tree-folder .count");
 await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder .tree-image").length === 4);

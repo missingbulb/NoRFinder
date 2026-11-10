@@ -258,9 +258,11 @@ nobody has decided: what the page does there is not a requirement yet.
   in the study's viewer, a stack in 3D, quick and the same for everyone; the Image box's Load, or its
   top line (`req/shell/load/selector`), gives way to Load Original, which opens the image itself from the copy kept on this device when it has one,
   else from Drive. A preview that cannot be read (a damaged previews file) shows as no preview, and the image,
-  chosen, opens itself instead. A study manager can mark an image as needing ground truth: the page creates an
-  empty `<name>.ground_truth.MISSING` beside it, and unmarking trashes only a marker the page made.
-  Whoever makes the ground truth adds its file and drops the marker. Test:
+  chosen, opens itself instead. A study manager can mark an image as needing ground truth (Needs GT), once the study's ground
+  truth is set up: the page creates an empty `<stem>__<sha8>.needs_gt`, named as the image's ground-truth subfolder
+  (`req/shell/ground-truth/layout`), in the curated folder, the one `GT` folder when submissions need no review,
+  never in the data folder (set by the owner on 2026-11-10); unmarking trashes only a marker the page made. Two
+  images of one name are marked apart. Once the image has ground truth the marker stays and is no longer shown. Test:
   `web-tests/test_data_mode_page.py`, `web-tests/test_previews_writer.py`.
   </details>
 
@@ -501,9 +503,10 @@ nobody has decided: what the page does there is not a requirement yet.
   of curated, no file in it read. To a Ground Truth Tagger and a Study Manager they also mark it pending, or
   rejected, from one listing of submissions: each image subfolder there carries, as public properties, when
   its newest submission landed and when it was last accepted or rejected, which Submit, Accept and Reject
-  stamp on it. Pending: submitted after the last acceptance and the last rejection. Nothing is cached. Data
-  Management's summary counts the folder's images with ground truth, pending, and marked as needing it
-  (the `<name>.ground_truth.MISSING` marker, `req/shell/data/folder`). A viewer sees only curated ground
+  stamp on it. Pending: submitted after the last acceptance and the last rejection. Nothing is cached. From the same listing
+  of curated, an image without ground truth whose `.needs_gt` marker is there (`req/shell/data/folder`) is tagged
+  GT wanted in the Drive dialog and the recent images (set by the owner on 2026-11-10). Data
+  Management's summary counts the folder's images with ground truth, pending, and marked as needing it. A viewer sees only curated ground
   truth. Tests: `web-tests/test_truth_folders.py`, `web-tests/test_gt_drive_page.py`.
   </details>
 
