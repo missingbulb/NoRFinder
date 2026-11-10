@@ -19,6 +19,7 @@
 //   node web-tests/offline_driver.mjs SITE TIFF [SHOTS]
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
@@ -39,6 +40,12 @@ const shot = async (page, name) => { if (shots) await page.screenshot({ path: pa
 
 // the vascular study's root, from its study.json, holding an image and a subfolder with another, and no data folder
 const vascular = JSON.parse(fs.readFileSync(path.join(site, "studies/vascular/study.json")));
+// and, served to the page, naming a file its page fetches beyond Python to keep offline (web.offline), as the
+// Bookshelf Reader names its text finder: a small one, pinned on jsDelivr
+const BEYOND = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/ort-wasm-simd-threaded.mjs";
+const vascularServed = JSON.stringify({ ...vascular, web: { ...vascular.web, offline: [BEYOND] } });
+// the site's list of its own files names it by what is served
+const servedList = (list) => ({ ...list, files: list.files.map((f) => f.path === "../studies/vascular/study.json" ? { ...f, sha256: crypto.createHash("sha256").update(vascularServed).digest("hex") } : f) });
 const ROOT = vascular.root.match(/folders\/([\w-]+)/)[1];
 const SUB = "acmefolder0000000002";
 const FILES = { [ROOT]: [{ id: "acmestack00000000001", name: "stack one.tif" }, { id: SUB, name: "sub", folder: true }], [SUB]: [{ id: "acmestack00000000002", name: "stack two.tif" }] };
@@ -63,13 +70,15 @@ const server = http.createServer((q, r) => {
     r.writeHead(307, { location: (folder ? u + "/" : u.replace(/\/$/, "")) + url.search });
     return r.end();
   }
-  if (release && u === "/app/offline.json") {
-    const list = JSON.parse(fs.readFileSync(path.join(site, "app", "offline.json")));
+  if (u === "/app/offline.json") {
+    const list = servedList(JSON.parse(fs.readFileSync(path.join(site, "app", "offline.json"))));
+    if (!release) { r.writeHead(200, { "content-type": "application/json", ...HEADERS[u] }); return r.end(JSON.stringify(list)); }
     list.files.push({ path: "slow.js", sha256: "0".repeat(64) });
     r.writeHead(200, { "content-type": "application/json" });
     return r.end(JSON.stringify(list));
   }
   if (release && u === "/app/slow.js") return setTimeout(() => { r.writeHead(200, { "content-type": "text/javascript" }); r.end(""); }, 60000);
+  if (u === "/studies/vascular/study.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end(vascularServed); }
   let f = path.join(site, u);
   if (u.endsWith("/")) f = path.join(f, "index.html");
   else if (!fs.existsSync(f) && fs.existsSync(f + ".html")) f += ".html";
@@ -184,6 +193,7 @@ try {
   await page.waitForFunction(() => /\d/.test(document.querySelector("#offline-go").textContent));
   const py = await page.$eval("#offline-dlg .file-row", (r) => ({ python: r.classList.contains("python"), text: r.textContent, on: r.querySelector("input").checked, held: r.querySelector("input").disabled }));
   check(py.python && /Python/.test(py.text) && /MB/.test(py.text) && py.on && py.held, "its first row is the study's Python, ticked and greyed, with its size: " + JSON.stringify(py));
+  check(/^Python and models/.test(py.text), "a study naming files beyond Python to keep offline says so in that row: " + JSON.stringify(py.text));
   const go = await page.evaluate(() => {
     const row = document.querySelector("#offline-go").parentElement, shown = [...row.querySelectorAll("button")].filter((b) => b.offsetParent);
     const extra = [...document.querySelectorAll("#offline-dlg > :not(h2, .python, #offline-files, .dlg-row, progress)")].filter((e) => e.offsetParent && e.textContent.trim()).map((e) => e.textContent);
@@ -205,6 +215,7 @@ try {
   await page.waitForFunction(() => /available offline/i.test(document.querySelector("#offline-msg").textContent) || /could not/i.test(document.querySelector("#offline-msg").textContent), null, { timeout: 240000 });
   check(/available offline/i.test(await page.textContent("#offline-msg")), "Download ends saying what is on this device: " + (await page.textContent("#offline-msg")));
   check(driveDownloads === 2, `it downloads the two ticked images (${driveDownloads})`);
+  check(await page.evaluate((u) => caches.match(u).then((r) => !!r), BEYOND), "and, with its Python, the files beyond it the study names, kept on this device");
   await page.click("#offline-close");
   await page.waitForFunction(() => document.querySelector('#storage-list .group[data-group="study:vascular"] summary .offline-mark'), null, { timeout: 10000 }).catch(() => {});
   check(!!(await page.$('#storage-list .group[data-group="study:vascular"] summary .offline-mark')) && !!(await page.$('#storage-list .group[data-group="study:vascular"] .make-offline')),
