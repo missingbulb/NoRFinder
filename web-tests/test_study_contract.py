@@ -42,6 +42,10 @@ def test_a_study_names_files_that_exist(path):
     for key in ('module', 'panels', 'style'):
         if key in m['web']:
             assert os.path.isfile(os.path.join(base, m['web'][key])), m['web'][key]
+    # req/shell/offline/per-study: what its page fetches beyond Python, kept offline with it, each file at a pinned
+    # version on jsDelivr, whose files the site's service worker keeps
+    for u in m['web'].get('offline', []):
+        assert re.fullmatch(r'https://cdn\.jsdelivr\.net/npm/(@[\w.-]+/)?[\w.-]+@\d+\.\d+\.\d+/[\w./-]+\.\w+', u), u
     py = m['python']
     assert any(os.path.isfile(os.path.join(base, d, py['entry'] + '.py')) for d in py['paths']), py
     for c in m['channels']:

@@ -41,7 +41,14 @@ const size = (c) => [Math.round(Math.hypot(c[1][0] - c[0][0], c[1][1] - c[0][1])
 onmessage = ({ data: m }) => {
   if (m.type === "study") postMessage({ type: "ready", info: {} });
   else if (m.type === "open") postMessage({ type: "held" });
-  else if (m.type === "call" && m.action === "find") postMessage({ type: "result", action: "find", meta: { books: BOOKS }, bytes: null });
+  else if (m.type === "call" && m.action === "view") {
+    // the photo as the text finder reads it: 64×32, RGB
+    const bytes = new Uint8Array(64 * 32 * 3).fill(120);
+    postMessage({ type: "result", action: "view", meta: { width: 64, height: 32 }, bytes }, [bytes.buffer]);
+  }
+  // a text map of any other size than the view's is no map of it: no books then
+  else if (m.type === "call" && m.action === "find") postMessage({ type: "result", action: "find", bytes: null,
+    meta: { books: !m.args.text || (m.args.text.width === 64 && m.args.text.height === 32 && atob(m.args.text.data).length === 64 * 32) ? BOOKS : [] } });
   else if (m.type === "call" && m.action === "straighten") {
     const sizes = m.args.corners.map(size), bytes = new Uint8Array(sizes.reduce((a, [w, h]) => a + w * h * 4, 0)).fill(200);
     postMessage({ type: "result", action: "straighten", meta: { sizes }, bytes }, [bytes.buffer]);
@@ -71,11 +78,11 @@ async function load(page, name = "shelf.png") {
   await page.waitForFunction(() => !$("#bs-find").disabled);
   await page.evaluate(() => { $("#notice").hidden = true; });
 }
-async function open(role, seed = {}) {
+async function open(role, seed = {}, finder = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
   await asTagger(ctx);
   await ctx.route(offSite(origin), (r) => r.abort());
-  await prepare(ctx);
+  await prepare(ctx, finder);
   await ctx.addInitScript(([role, seed]) => {
     delete Navigator.prototype.serviceWorker; localStorage.setItem("nor-role", role);
     for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v);
@@ -109,6 +116,9 @@ try {
   check(lines.effect === "non-scaling-stroke" && lines.width >= 2, "a book's outline keeps its screen width at any zoom, thick enough to see", lines);
   const drawn = await books(page);
   check(drawn.length === 3 && drawn.filter((c) => c.includes("cover")).length === 1, "Find books draws each book on the photo, the cover marked as one", drawn);
+  const found = () => page.evaluate(() => [...document.querySelectorAll("[data-help]")].map((e) => e.dataset.help).find((h) => /books found/.test(h)) || "");
+  check(await page.evaluate(() => window.textRuns) === 1 && !/without the text finder/.test(await found()),
+    "Find books runs the text finder over Python's view of the photo and hands the finder its map", [await page.evaluate(() => window.textRuns), await found()]);
   const titles = await page.$$eval("#bs-list li", (l) => l.map((x) => x.textContent));
   // a tall spine reads across once turned a quarter, so its crop is read as its height by its width
   check(titles.join() === "Title 240x35,Title 260x40,Title 180x180", "each book is read at the turn that reads across, listed in the order found", titles);
@@ -122,6 +132,14 @@ try {
   check(m.name === "shelf_books.json" && m.doc.books.length === 3 && m1.id === 1 && m1.text === "Title 240x35" && m1.confidence === 0.9 && m1.reader === "tesseract"
     && m3.view === "cover" && m2.corners.length === 4 && m.doc.W === W,
   "Download for the matcher saves each book's id, view, text, confidence, reader and corners", m);
+  await page.context().close();
+
+  // the text finder out of reach: the books are found without it, and Find says so
+  page = await open("viewer", KEPT, { textFinder: false });
+  await page.click("#bs-find");
+  await page.waitForFunction(() => $("#status").textContent.startsWith("Titles read"));
+  const without = await page.evaluate(() => [...document.querySelectorAll("[data-help]")].map((e) => e.dataset.help).find((h) => /books found/.test(h)) || "");
+  check((await books(page)).length === 3 && /without the text finder/.test(without), "with the text finder out of reach, Find books finds without it and says so", without);
   await page.context().close();
 
   // the box's one tagging button: Start GT tagging with no draft kept, Continue GT tagging with one, Stop tagging

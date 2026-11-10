@@ -1,5 +1,6 @@
 """The Bookshelf Reader's Python: a photo of shelves opened, its books found, and each book straightened for the
 page's readers (reading.js) to read. Any single 2D image Pillow opens: JPEG, PNG, WebP, a one-page TIFF, and HEIC."""
+import base64
 import json
 
 import numpy as np
@@ -34,8 +35,16 @@ class Session:
         self.rgb = load(path)
 
     def call(self, action, args):
+        if action == 'view':
+            # the photo as the page's text finder reads it, RGB
+            v = books.text_view(self.rgb)
+            return json.dumps(dict(width=int(v.shape[1]), height=int(v.shape[0]))), v.tobytes()
         if action == 'find':
-            return json.dumps(dict(books=books.find(self.rgb))), b''
+            # the text finder's map over that view, if the page found the text: {width, height, data}, data its
+            # probability as base64 bytes, 255 for 1
+            t = args.get('text')
+            text = None if t is None else np.frombuffer(base64.b64decode(t['data']), np.uint8).reshape(t['height'], t['width']) / 255
+            return json.dumps(dict(books=books.find(self.rgb, text))), b''
         if action == 'straighten':
             # each book's crop, RGBA, one after the other in the order asked
             crops = [books.straighten(self.rgb, c) for c in args['corners']]

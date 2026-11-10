@@ -938,7 +938,9 @@ nobody has decided: what the page does there is not a requirement yet.
   that is not available offline (`req/shell/offline/mark`), and each with a Google Drive folder of its own (`files.drive`),
   has **Make Available Offline**, which opens the **Prepare for Offline** popup, a list of what that takes: first its
   Python, a row ticked and greyed, since the study cannot run without it, with the size still missing (Python itself
-  counted when it is) or saying it is already on this device; then every image reachable from its Google Drive folder,
+  counted when it is) or saying it is already on this device; set by the owner on 2026-11-10, the files its page fetches
+  beyond Python that its `study.json` names to keep offline (`web.offline`, pinned addresses, such as the Bookshelf
+  Reader's text finder) go with it, the row then named **Python and models**; then every image reachable from its Google Drive folder,
   its subfolders included, each with its folder and size, ticked, to untick one by one or all at once. Below the list
   the popup carries no text of its own (set by the owner on 2026-11-07); its button at the right says what the choice
   downloads, **Download 320 MB Now**. A choice larger than how much more the browser lets the site keep is refused,

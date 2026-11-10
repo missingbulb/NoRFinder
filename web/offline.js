@@ -150,7 +150,8 @@ export function offline({ $, esc, sizeText, remote, kept, keptIn, keep, throttle
       .map(async (u) => { const r = await fetch(u); if (!r.ok) throw new Error(`${u}: HTTP ${r.status}`); return r.json(); }));
     return Promise.all(listed.map(async (s) => {
       const m = await (await fetch(new URL(`../studies/${s.id}/study.json`, import.meta.url))).json();
-      return { ...s, manifest: m, python: packagesOf(m.python, lock, vendored, new URL("vendor/", import.meta.url).href).map((w) => w.url) };
+      // with the files its page fetches beyond Python that it names to keep offline (web.offline), such as a model
+      return { ...s, manifest: m, python: [...packagesOf(m.python, lock, vendored, new URL("vendor/", import.meta.url).href).map((w) => w.url), ...(m.web.offline || [])] };
     }));
   })().catch((e) => { listing = null; throw e; }));
   // the ids of the studies available offline: their Python all on this device and, with a remote folder of their
@@ -205,6 +206,7 @@ export function offline({ $, esc, sizeText, remote, kept, keptIn, keep, throttle
     const s = (await studyFiles()).find((x) => x.id === id);
     if (!s) return;
     for (const el of ["#offline-python", "#offline-warn"]) $(el).textContent = "";
+    $("#offline-dlg .file-row.python .name").textContent = s.manifest.web.offline?.length ? "Python and models" : "Python";
     $("#offline-files").textContent = `Reading its ${remote.label} folder…`; msg(""); $("#offline-go").disabled = true; $("#offline-go").hidden = false;
     $("#offline-go").textContent = "Download Now";
     $("#offline-close").onclick = () => dlg.close();

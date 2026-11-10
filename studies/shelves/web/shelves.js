@@ -136,9 +136,25 @@ export function mount(shell) {
   shell.clearable("books drafted", () => {});
 
   // ---------- Python: finding and straightening ----------
+  // why the last Find ran without the text finder, or null when it ran with it
+  let textless = null;
+  // the photo's text, as the finder takes it: the text finder run on Python's own view of the photo
+  async function textOf() {
+    const run = python.then(async () => {
+      const done = shell.until("result:view");
+      shell.call("view", {});
+      const m = await done;
+      return { width: m.meta.width, height: m.meta.height, data: m.bytes };
+    });
+    python = run.catch(() => {});
+    return ocrNow().textMap(await run);
+  }
   $("#bs-find").onclick = async () => {
+    shell.busy(true, "Finding the text…");
+    let text = null;
+    try { text = await textOf(); textless = null; } catch (e) { textless = String(e.message || e); console.warn("Find books without the text finder:", e); }
     const done = shell.until("result:find");
-    shell.busy(true, "Finding the books…"); shell.call("find", {});
+    shell.busy(true, "Finding the books…"); shell.call("find", text ? { text } : {});
     await done;
     await readAll();
   };
@@ -426,7 +442,7 @@ export function mount(shell) {
       if (action === "find") {
         books = meta.books.map((b) => ({ ...b, source: "found", verdict: null }));
         cur = null; noneMissed = false; shell.busy(false);
-        shell.step("find", true, `${books.length} books found`);
+        shell.step("find", true, `${books.length} books found` + (textless ? `, without the text finder (${textless})` : ""));
         shell.boxDone($("#bs-box"), `${books.length} books`);
         $("#bs-read").disabled = !books.length;
         draw();

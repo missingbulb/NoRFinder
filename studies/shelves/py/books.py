@@ -82,11 +82,15 @@ BAND_LEAST = 0.1
 # way past it lies on edges
 SEGMENT, COVER_LINES, COVER_PARALLEL, COVER_CROSS = 0.05, 70, 20, 40
 COVER_AREA, COVER_ASPECT, COVER_ON, COVER_CONTRAST, COVER_SIDE = (0.01, 0.6), 2.6, 0.7, 0.12, 0.6
-# [camera-uniform] the perspective is read from at least this many boxes; a box whose ends turn more than this many
-# degrees otherwise than it has them turn there is dropped
-SURE_MIN, PERSPECTIVE_TOL = 4, 15
-# a perspective that disagrees with more than this share of the boxes it was read from is not the photo's
-PERSPECTIVE_TRUST = 2 / 3
+# [text-lines] the page's text finder (PaddleOCR's, reading.js) marks the photo's text: a point is text at this
+# probability. An edge between books crosses text along at most this share of its rows; a strip between two edges
+# whose text, read across it, stands in this many separate columns is searched again for the edge between them; and a
+# box a text line runs along this share of is a book's face whatever its texture
+TEXT_ON, TEXT_CROSS, TEXT_COLUMNS, TEXT_ALONG = 0.3, 0.12, 2, 0.3
+# the share of a strip's width read across it for its text columns, and how much of a column's rows are text
+TEXT_STEPS, TEXT_COLUMN = 24, 0.15
+# scale-dependent: the long side the text finder reads the photo at (a multiple of 32, as the finder needs)
+TEXT_LONG = 1280
 # and how far beyond it, as a share of the shelf's height, a plain end of the book is followed to the edge it ends on
 REACH_OUT = 0.3
 
@@ -172,12 +176,14 @@ def core_rows(gray):
     return (int(on[0]), int(on[-1]) + 1) if len(on) else None
 
 
-def side_lines(e, top, bottom):
+def side_lines(e, top, bottom, text=None):
     """[(x at the rows' middle, lean as tan)] of the edges between books, left to right: lines that lie on a seam
     along BOUNDARY of the rows nearly every book crosses, at leans up to LEAN, kept strongest first and none crossing
     one already kept or close to it along its length, since two books' edges never cross; a gap far wider than the
     shelf's usual spine is searched again with a lower bar, for the one weak edge, a pale book against a pale wall. A
-    spine's lettering runs along part of its length, a gap between two books along all of it."""
+    spine's lettering runs along part of its length, a gap between two books along all of it. Given the text map, a
+    line that crosses text is lettering, and a strip holding text in separate columns is searched again with the
+    lower bar: two books of one colour, each with its own title."""
     core = core_rows(e.gray[top:bottom])
     if not core:
         return []
@@ -194,6 +200,9 @@ def side_lines(e, top, bottom):
             xs = np.round(x0 + (ys[None] - yc) * tans[:, None]).astype(int)
             ok = (xs >= 0) & (xs < e.w)
             cover = np.where(ok, on[ys[None], np.clip(xs, 0, e.w - 1)], False).mean(axis=1)
+            if text is not None:
+                crossed = np.where(ok, text[ys[None], np.clip(xs, 0, e.w - 1)] > TEXT_ON, False).mean(axis=1)
+                cover = np.where(crossed > TEXT_CROSS, 0, cover)
             k = int(np.argmax(cover))
             if cover[k] >= BOUNDARY:
                 found.append((float(cover[k]), float(x0), float(tans[k])))
@@ -217,6 +226,10 @@ def side_lines(e, top, bottom):
         usual = float(np.median(spans))
         for (_, xa, _), (_, xb, _) in zip(list(kept), list(kept)[1:]):
             if xb - xa > WIDE * usual:
+                kept = keep(scan(range(int(xa + gap), int(xb - gap)), False), kept)
+    if text is not None:
+        for (_, xa, ta), (_, xb, tb) in zip(list(kept), list(kept)[1:]):
+            if text_columns(text, Line(xa, -ta, yc), Line(xb, -tb, yc), c0, c1) >= TEXT_COLUMNS:
                 kept = keep(scan(range(int(xa + gap), int(xb - gap)), False), kept)
     # in this module's terms: x at the rows' middle, and the lean as x falling going down
     return [(x + (mid - yc) * t, -t) for _, x, t in kept]
@@ -243,6 +256,35 @@ def on_line(mask, line, y0, y1):
     xs = np.round(line.x(ys)).astype(int)
     ok = (xs >= 0) & (xs < mask.shape[1]) & (ys >= 0) & (ys < mask.shape[0])
     return float(mask[ys[ok], xs[ok]].mean()) if ok.any() else 0.0
+
+
+def text_columns(text, la, lb, y0, y1):
+    """[text-lines] How many separate columns of text stand between two lines over rows y0..y1, read across the strip
+    along its lean."""
+    ys = np.arange(int(y0), int(y1))
+    xa, xb = la.x(ys), lb.x(ys)
+    across = np.zeros(TEXT_STEPS)
+    for k in range(TEXT_STEPS):
+        xs = np.round(xa + (xb - xa) * (k + 0.5) / TEXT_STEPS).astype(int)
+        ok = (xs >= 0) & (xs < text.shape[1])
+        across[k] = (text[ys[ok], xs[ok]] > TEXT_ON).mean() if ok.any() else 0.0
+    return ndi.label(across > TEXT_COLUMN)[1]
+
+
+def text_along(text, c):
+    """[text-lines] The share of a box's length a text line runs along: of the rows across its inner strip (corners
+    clockwise from the top left), those with text on them."""
+    tl, tr, br, bl = np.asarray(c, float)
+    rows = 40
+    hits = 0
+    for k in range(rows):
+        f = (k + 0.5) / rows
+        a, b = tl + (bl - tl) * f, tr + (br - tr) * f
+        xs, ys = np.linspace(a[0], b[0], 12)[2:-2], np.linspace(a[1], b[1], 12)[2:-2]
+        xi = np.clip(np.round(xs).astype(int), 0, text.shape[1] - 1)
+        yi = np.clip(np.round(ys).astype(int), 0, text.shape[0] - 1)
+        hits += bool((text[yi, xi] > TEXT_ON).any())
+    return hits / rows
 
 
 def extent(e, la, lb, top, bottom):
@@ -345,16 +387,6 @@ def texture(e, la, lb, y0, y1):
     return tot / n if n else 0.0
 
 
-def slant(c, end):
-    """How far, in degrees, an end of the box (0 its top, 1 its foot) turns from square to its sides."""
-    c = np.asarray(c, float)
-    side = (c[3] - c[0]) + (c[2] - c[1])
-    edge = c[1] - c[0] if end == 0 else c[2] - c[3]
-    square = np.arctan2(-side[0], side[1])
-    d = np.arctan2(edge[1], edge[0]) - square
-    return float(np.degrees((d + np.pi / 2) % np.pi - np.pi / 2))
-
-
 def spine(e, lines, i, j, top, bottom):
     """The book between side lines i and j as {corners, texture, fit, steps}, or None when it does not check out as a
     readable spine."""
@@ -434,7 +466,7 @@ def series_split(crop):
     return float(np.median(shifts[np.abs(shifts - best) <= SPLIT_AGREE])) if near(best) >= REPEATS else None
 
 
-def shelf_books(g, rgb):
+def shelf_books(g, rgb, text=None):
     """Every pair of neighbouring side lines on a shelf that checks out as a spine: {(i, j): spine}, the lines, and the
     rows the books stand in (None when there are none). A
     box far wider than the shelf's usual one whose marks repeat further across is two books of one series: a line goes
@@ -444,7 +476,7 @@ def shelf_books(g, rgb):
     if not rows:
         return {}, [], None
     top, bottom = rows
-    lines = [Line(xm, t, (top + bottom) / 2) for xm, t in side_lines(e, top, bottom)]
+    lines = [Line(xm, t, (top + bottom) / 2) for xm, t in side_lines(e, top, bottom, text)]
 
     def all_found():
         found = {}
@@ -452,6 +484,8 @@ def shelf_books(g, rgb):
             for j in range(i + 1, min(len(lines), i + 1 + REACH)):
                 b = spine(e, lines, i, j, top, bottom)
                 if b:
+                    if text is not None:
+                        b['text'] = text_along(text, b['corners'])
                     found[i, j] = b
         return found
 
@@ -489,37 +523,6 @@ def most_books(found, n):
             out.append((i, j))
         j = i
     return out[::-1]
-
-
-def perspective(boxes):
-    """[camera-uniform] The photo's perspective, from the boxes found surest (their sides and their ends both on edges as
-    much as the median box's or more): per end (top, foot), how its turn from
-    square to the sides varies across the photo, a line over x fitted to them (along a shelf the camera's angle on
-    each book changes with where it stands); None while too few are sure."""
-    if len(boxes) < SURE_MIN:
-        return None
-    fit, steps = (np.median([b[k] for _, b in boxes]) for k in ('fit', 'steps'))
-    sure = [c for c, b in boxes if b['fit'] >= fit and b['steps'] >= steps]
-    if len(sure) < SURE_MIN:
-        return None
-    X = np.array([[1, np.mean(c, axis=0)[0]] for c in sure])
-    fits = []
-    for end in (0, 1):
-        y = np.array([slant(c, end) for c in sure])
-        coef = np.linalg.lstsq(X, y, rcond=None)[0]
-        # once more without the surest boxes that still disagree most
-        r = np.abs(X @ coef - y)
-        keep = r <= max(PERSPECTIVE_TOL, np.median(r) * 2)
-        if keep.sum() >= SURE_MIN:
-            coef = np.linalg.lstsq(X[keep], y[keep], rcond=None)[0]
-        fits.append(coef)
-    return fits
-
-
-def agrees(c, fits):
-    """Whether a box's top and foot turn as the photo's perspective has every end there turn."""
-    p = np.array([1, np.mean(c, axis=0)[0]])
-    return all(abs(slant(c, end) - p @ fits[end]) <= PERSPECTIVE_TOL for end in (0, 1))
 
 
 def straight_lines(e, keep):
@@ -624,16 +627,29 @@ def clockwise(c):
     return np.roll(c, -int(np.argmin(c.sum(axis=1))), axis=0)
 
 
-def find(rgb):
+def text_view(rgb):
+    """[text-lines] The photo as the text finder reads it: RGB, its long side TEXT_LONG, each side a multiple of 32."""
+    from PIL import Image
+    H, W = rgb.shape[:2]
+    s = TEXT_LONG / max(H, W)
+    size = (max(32, round(W * s / 32) * 32), max(32, round(H * s / 32) * 32))
+    return np.asarray(Image.fromarray(np.ascontiguousarray(rgb[..., :3])).resize(size, Image.BILINEAR))
+
+
+def find(rgb, text=None):
     """The books in an RGB photo, [{corners, view}]: the spines shelf by shelf from the top, left to right, then the
-    covers lying outside the shelves."""
+    covers lying outside the shelves. text: the text finder's probability (0 to 1) over the photo, at any size, or
+    None to find without it."""
     H, W = rgb.shape[:2]
     s = min(1.0, WORK / max(H, W))
     small = np.stack([ndi.zoom(rgb[..., k].astype(np.float32), s, order=1) if s < 1 else rgb[..., k].astype(np.float32) for k in range(3)], -1)
     g = ndi.gaussian_filter(grey(small), 1.0)
+    if text is not None:
+        text = ndi.zoom(np.asarray(text, np.float32), (g.shape[0] / text.shape[0], g.shape[1] / text.shape[1]), order=1)
     # each shelf with a margin: a book standing on its board ends past the board's edge
     m = int(MARGIN * g.shape[0])
-    per_shelf = [(max(0, top - m), *shelf_books(g[max(0, top - m):bottom + m], small[max(0, top - m):bottom + m]))
+    per_shelf = [(max(0, top - m), *shelf_books(g[max(0, top - m):bottom + m], small[max(0, top - m):bottom + m],
+                                             None if text is None else text[max(0, top - m):bottom + m]))
                  for top, bottom in shelves(g)]
     h, w = g.shape
     shelf = np.zeros((h, w), bool)
@@ -644,14 +660,9 @@ def find(rgb):
     spines = []
     if textures:
         least = TEXTURE * float(np.median(textures))
-        per_shelf = [(top, {k: b for k, b in found.items() if b['texture'] >= least}, lines) for top, found, lines in per_shelf]
-        at = lambda top, c: [(x, y + top) for x, y in c]
-        # [camera-uniform] one camera took the whole photo: the books first chosen, the surest of them, say how it looked
-        # at the shelves, and a box whose ends turn otherwise is not a book's
-        first = [(at(top, found[k]['corners']), found[k]) for top, found, lines in per_shelf for k in most_books(found, len(lines))]
-        fits = perspective(first)
-        if fits is not None and np.mean([agrees(c, fits) for c, _ in first]) >= PERSPECTIVE_TRUST:
-            per_shelf = [(top, {k: b for k, b in found.items() if agrees(at(top, b['corners']), fits)}, lines) for top, found, lines in per_shelf]
+        # a wall, a board or a gap carries next to no texture, and no text
+        per_shelf = [(top, {k: b for k, b in found.items() if b['texture'] >= least or b.get('text', 0) >= TEXT_ALONG}, lines)
+                     for top, found, lines in per_shelf]
         for top, found, lines in per_shelf:
             chosen = most_books(found, len(lines))
             # [barcode] books on a shelf stand packed, several together: a lone strip or two is a gap between other things

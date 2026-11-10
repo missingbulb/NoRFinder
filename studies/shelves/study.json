@@ -42,7 +42,13 @@
   "web": {
     "module": "web/shelves.js",
     "panels": "web/shelves.html",
-    "style": "web/shelves.css"
+    "style": "web/shelves.css",
+    "offline": [
+      "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/ort.wasm.min.mjs",
+      "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/ort-wasm-simd-threaded.mjs",
+      "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/ort-wasm-simd-threaded.wasm",
+      "https://cdn.jsdelivr.net/npm/@gutenye/ocr-models@1.4.2/assets/ch_PP-OCRv4_det_infer.onnx"
+    ]
   },
   "root": "https://drive.google.com/drive/folders/10IrHmFgIdTlhwcZM0gGlfmw4TCM6_gwj",
   "files": {
@@ -76,6 +82,7 @@
     "install": "Installing numpy, scipy, scikit-image, Pillow, pillow-heif…",
     "load": "Loading the book finder…",
     "open": "Reading the photo…",
+    "view": "Getting the photo ready for the text finder…",
     "find": "Finding the books…",
     "straighten": "Straightening each book…"
   },

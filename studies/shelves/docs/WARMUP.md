@@ -9,26 +9,32 @@ page must do is `req/shelves` in [its requirements](../requirements.md).
 
 ```
 study.json            the study's contract with the shell; stage GT
-py/shelves.py         the Python entry: opens the photo (HEIC through pillow-heif), answers find and straighten
-py/books.py           the finder (find) and the straightening of four corners into an upright crop
+py/shelves.py         the Python entry: opens the photo (HEIC through pillow-heif), answers view, find and straighten
+py/books.py           the finder (find), its text finder's view of the photo, and the straightening of four corners
+lab/photos.py         the owner's photos from Drive (data/sources.json)
+lab/grade.py          the finder and the readers scored against a submitted ground truth
 web/shelves.js        the page: Find books, Read titles, the titles in Summary, the ground-truth task and its pictures
 web/reading.js        the three readers, the same module in the page and in the sandbox
 web/tessdata/         Tesseract's Hebrew and English (4.0.0_best_int, from @tesseract.js-data/*@1.0.0, MIT): served by the site, pinned
 reading/              the sandbox: read.mjs and the pinned engine builds (package.json)
-tests/                test_books.py (fast), test_reading.py and test_shelves_page.py (full)
+tests/                test_books.py and test_grade.py (fast), test_reading.py and test_shelves_page.py (full)
 ```
 
 ## The pipeline
 
-1. **Find** (`books.find`, Python, R5, req/shelves/books/find): shelves are rows a horizontal edge crosses at least half
+1. **Find** (`books.find`, Python, R6, req/shelves/books/find): first the page runs PaddleOCR's text finder
+   (`reading.textMap`, the `lines` reader's own) over Python's view of the photo (`books.text_view`, long side 1280)
+   and hands the finder its map of where text is. Shelves are rows a horizontal edge crosses at least half
    the photo on, each looked at with a margin. Within a shelf, the edges between books are lines found as Osef does
    (unblurred Sobel, 80% of the rows every book crosses, strongest first, none crossing, wide gaps searched again),
    at leans up to 30°. Between two neighbouring lines, the book's top and foot are its own: where its texture stops,
    then the first colour change across its strip, square to its sides give or take 12°, past which hardly any of the
-   strip is the book's colour. A box is kept only once it checks out as a readable spine (`books.spine`); a wide box
-   whose marks repeat further across is two books of one series (`books.series_split`); the photo's perspective, read
-   from the surest boxes, drops a box whose ends turn otherwise (`books.perspective`); a shelf of fewer than three
-   spines is no shelf. Then the covers lying outside the shelves (`books.covers`): quadrilaterals of straight edges
+   strip is the book's colour. With the text map, a line crossing text is lettering, and a strip holding two
+   columns of text side by side is searched again for the edge between them (`books.text_columns`). A box is kept
+   only once it checks out as a readable spine (`books.spine`) and carries a book's texture or a text line along
+   it (`books.text_along`); a wide box whose marks repeat further across is two books of one series
+   (`books.series_split`); a shelf of fewer than three spines is no shelf. With no text map (the text finder out of
+   reach) Find runs as R5 did, less the perspective check, and its step says so. Then the covers lying outside the shelves (`books.covers`): quadrilaterals of straight edges
    whose sides end at their corners, searched outside every band whose edges between books stand barcode-close
    (`books.barcode_bands`).
 2. **Straighten** (`books.straighten`, Python): the four corners pulled through a homography into an upright
@@ -41,15 +47,20 @@ tests/                test_books.py (fast), test_reading.py and test_shelves_pag
    - `lines`: PaddleOCR's PP-OCRv4 text finder (ONNX on onnxruntime-web 1.31.1) marks each line, Tesseract reads it;
    - `ppocr`: PP-OCRv4 finds and reads (its reader is Chinese and English: **no Hebrew**).
 
-The page loads the engines and PaddleOCR's models from jsDelivr at those pinned versions, only when a reader first
-needs them. The two languages are the one exception: `web/tessdata/` holds them, and the site serves them, so that
-the readings stay pinned:
+The page loads the engines and PaddleOCR's models from jsDelivr at those pinned versions when first needed: the text
+finder (onnxruntime-web and the PP-OCRv4 finding model) on Find books, the rest when a reader first needs them. The
+text finder's four files are in `study.json`'s `web.offline`, so Make Available Offline keeps them with the Python
+(`req/shell/offline/per-study`). The two languages are the one exception: `web/tessdata/` holds them, and the site
+serves them, so that the readings stay pinned:
 
 - tesseract.js's own default, with no `langPath`, fetches each language from jsDelivr *unversioned*
   (`@tesseract.js-data/<lang>/4.0.0_best_int`), so a new upload there would change the readings silently;
 - a pinned jsDelivr address cannot stand in: `langPath` is one base address for every language, and each
   language's package sits at its own, so one worker could not take both, and mixed spines would lose their one pass;
 - handing the data in directly (`{code, data}`) is broken in tesseract.js 5 to 7 (R0).
+
+Fetching the text finder from jsDelivr does not change this: the page fetches that model itself, by one exact pinned
+address, while Tesseract builds every language's address from one `langPath` (the owner asked, 2026-11-10).
 
 To add a language, add its `<code>.traineddata.gz` from `@tesseract.js-data/<code>@1.0.0/4.0.0_best_int/` and its
 code to `createWorker` in `reading.js`. Unchanged, the files cost a release nothing (the upload skips every file whose
@@ -73,7 +84,7 @@ npm ci --prefix studies/shelves/reading
 node studies/shelves/reading/read.mjs PHOTO find lines out.json
 ```
 
-`find` runs the study's finder; a ground-truth file in its place reads its own boxes. `read.mjs` runs the study's
+`find` runs the study's finder as the page does, the text finder first; a ground-truth file in its place reads its own boxes. `read.mjs` runs the study's
 Python on the npm build of the page's Pyodide (314.0.7), not the container's Python: the container's Pillow decodes
 a JPEG to slightly different pixels than Pyodide's, and on the R0 smoke test that changed four books' readings.
 With Pyodide on both sides the page and the sandbox gave the same text for every book.
@@ -89,10 +100,49 @@ the page's own, warped in JS from the photo the viewer shows (`picture` in `shel
 corner at once; what the reader reads is still Python's straightening of the file, run behind it with the photo
 never covered. Flip reads the book again at that turn alone, in both languages. The submitted `<photo>_books_gt.json` keeps, for each found book, what the
 finder and the reader proposed beside the corrected values, so one file scores both the finder (corners, view) and
-each reader (text). No grader is written yet. The first ground truth (`1g4iFN`, 2026-11-10) came from the task before its rework that day,
-which lost the titles of books added over a box already drawn; the owner is tagging it again.
+each reader (text), which `lab/grade.py` does. The ground truth is in the study's GT folder on Drive
+(`GT/<photo>__<sha8>/gt_<tagger>.json` under the study's root), fetched by hand for now (`gdown`, as `lab/photos.py`
+does). One photo so far: `1g4iFN`, re-tagged 2026-11-10 after the task's rework, 13 books right (4 of them added
+as missed) and 1 found box marked no book.
 
 ## Iterations
+
+### R6 — text lines place the books; the perspective check dropped (2026-11-10)
+
+The first iteration scored against ground truth: `1g4iFN`, 13 books. **One photo, nothing held out**: every number
+below is indicative, and the thresholds were set on that photo. The other 13 photos (four HEIC new from the owner)
+were checked by eye, base against R6, for what moved.
+
+| `1g4iFN` | precision | recall | matched | mean IoU |
+|---|---|---|---|---|
+| R5 (base) | 0.80 | 0.62 | 8/13 | 0.80 |
+| R6 | 0.92 | 0.85 | 11/13 | 0.82 |
+
+The same in the container's Python and in the page's Pyodide (`read.mjs`).
+
+- **What was wrong (R5 on `1g4iFN`):** two boxes each took in two books, Wangerin with Pohl and "הנוסע השמיני" with
+  le Carré: dark spines whose seam the strict pass misses, in gaps too narrow for the wide-gap rescan. The two the
+  frame cuts at either edge were missed (still are).
+- **What changed, on the owner's idea (the text lines' parallel sides bound a book):** PaddleOCR's text finder,
+  already the `lines` reader's, runs over the whole photo first. A strip whose text stands in two columns is searched
+  again with the relaxed bar (what split both pairs), an edge line crossing text is dropped, and a box with a text line
+  along 30% of it is a book's face whatever its texture (what kept le Carré, whose plain brown face is under the bar
+  alone). Ablated on `1g4iFN`: without the rescan 8/13, without the text keep 10/13, without the veto 11/13 but
+  mean IoU 0.80; on `1TmVNx` the veto adds four real spines.
+- **The perspective check, dropped (the owner's call, 2026-11-10):** with more boxes found it was trusted on more
+  photos, and by eye nearly every box it removed was a real book: `1sdDdH`'s rightmost, 11 on `1HyJrL`, 15 on
+  `1aip0u`. It never fired on `1g4iFN`.
+- **On the other photos, by eye:** `1gvNWf` two merged boxes split into single books; `1tsK-N`, `1yTHiP` one book
+  more each; `1TmVNx` several bottom-shelf spines more, one new box wide over a book and the drill beside it;
+  `1zktX1` one box now runs past the board.
+- **The readers, on the 13 books' own corners at the tagger's turn (`lab/grade.py --read`):** `tesseract` CER 0.69,
+  words 0.15; `lines` 0.82, 0.11; `ppocr` 1.00, 0 (no Hebrew: this ground truth was tagged with it, so every
+  proposed text is Latin letters). Many titles come through nearly whole; noise characters, run-together words and
+  missed lines sink the scores.
+- **Tried and rejected:** grayscale before the readers (the owner's idea): `tesseract` words 0.15 → 0.09, `lines`
+  0.11 → 0.07; a contrast stretch, Otsu binarising with the ink set dark, and 2× upscaling, alone and together, none
+  better than colour on both measures (best: `tesseract` stretched at 2×, CER 0.69, words 0.14, at four times the
+  time). The page's reading is unchanged.
 
 ### R5 — covers lying cover-up, searched outside the shelves (2026-11-07)
 
@@ -258,17 +308,18 @@ number below is a score.
   ten photos.
 - `[cover-shape]` A cover is a quadrilateral of one cover's size whose edges end at its corners (`books.covers`). Fails on
   covers that touch or overlap, whose sides run on into the next one's.
-- `[camera-uniform]` One camera took the photo, so every book's ends turn as one perspective says (`books.perspective`).
-  Fails on a stitched panorama; thinly supported: never trusted yet on a real photo.
-- `[work-size]` The finder works at a long side of 900 px (`books.WORK`): scale-dependent, the first constant to
-  revisit when photos arrive.
+- `[text-lines]` A book's title is a line of text along its spine, and no text runs across the edge between two books
+  (`books.TEXT_*`). Fails on a spine with no lettering, a title printed across two spines, a sticker spanning a gap,
+  and a photo the text finder reads poorly (dark, blurred); calibrated on one tagged photo.
+- `[work-size]` The finder works at a long side of 900 px (`books.WORK`), and the text finder reads the photo at
+  1280 (`books.TEXT_LONG`): scale-dependent, the first constants to revisit on photos of another scale.
 
 ## Open items
 
-- The owner's photos are in [the study's Drive folder](https://drive.google.com/drive/folders/1Wt3__aNzVQConuhF8tUx4zmnMtmx-O3w),
-  private for now (missingbulb/RaunTruth#766); once it is shared by link, a `data/sources.json` and its fetch, then the first ground truth, then a grader (`proposed` against the corrected values) and the
-  finder's first real iteration.
+- More ground truth: one tagged photo is too few to hold any out. Books the frame cuts at a photo's edge (both of
+  `1g4iFN`'s misses).
+- The readers: `tesseract` reads best but most spines come back noisy; what to try next is the owner's call.
 - Hebrew word spaces in the `lines` reader.
-- R5's own breaks: several covers on the ledge and the bench missed, two half boxed; pale spines on a pale wall; a perspective trusted on a real photo; piles of books lying flat.
+- R5's own breaks: several covers on the ledge and the bench missed, two half boxed; pale spines on a pale wall; piles of books lying flat.
 - A study pack (`shelves-study`) for its improving-on-ground-truth skill and its ground-truth intake, once there is
   ground truth to take in.

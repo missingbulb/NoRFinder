@@ -58,12 +58,31 @@ export function reader(engines) {
   const tesseract = (lang) => (tess[lang] ||= engines.Tesseract().then((T) => T.createWorker(LANGS[lang], 1, { ...engines.tesseract, langPath: engines.langPath, cacheMethod: "none", gzip: true })
     .then(async (w) => { await w.setParameters({ preserve_interword_spaces: "1" }); return w; })));
   const session = (name) => Promise.all([ort, engines.model(name)]).then(([o, bytes]) => o.InferenceSession.create(bytes, { executionProviders: ["wasm"] }));
-  const paddle = async () => {
+  // the text finder alone, for Find books; and with the PP-OCR reader, for reading
+  const finder = async () => {
     ort ||= engines.ort().then((o) => { o.env.wasm.numThreads = 1; return o; });
-    find ||= session(MODELS.find); read ||= session(MODELS.read);
-    keys ||= engines.keys().then((t) => [...t.replace(/\r/g, "").split("\n").filter((k, i, all) => k || i < all.length - 1), " "]);
-    return { ort: await ort, find: await find, read: await read, keys: await keys };
+    find ||= session(MODELS.find);
+    // either failing, both are asked for afresh the next time
+    try { const [o, f] = await Promise.all([ort, find]); return { ort: o, find: f }; } catch (e) { ort = find = null; throw e; }
   };
+  const paddle = async () => {
+    const f = await finder();
+    read ||= session(MODELS.read);
+    keys ||= engines.keys().then((t) => [...t.replace(/\r/g, "").split("\n").filter((k, i, all) => k || i < all.length - 1), " "]);
+    return { ...f, read: await read, keys: await keys };
+  };
+  // the text finder's probability that each pixel is text, over an image W×H (multiples of 32), sampled from im
+  async function textAt(im, W, H) {
+    const { ort, find } = await finder();
+    const x = new Float32Array(3 * W * H), mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225], n = im.data.length / (im.width * im.height);
+    for (let y = 0; y < H; y++) for (let X = 0; X < W; X++) {
+      const sx = Math.min(im.width - 1, Math.floor(((X + 0.5) * im.width) / W)), sy = Math.min(im.height - 1, Math.floor(((y + 0.5) * im.height) / H)), p = (sy * im.width + sx) * n;
+      // the model was trained on blue, green, red, normalised channel by channel in that order
+      for (let c = 0; c < 3; c++) x[c * W * H + y * W + X] = (im.data[p + 2 - c] / 255 - mean[c]) / std[c];
+    }
+    const out = await find.run({ [find.inputNames[0]]: new ort.Tensor("float32", x, [1, 3, H, W]) });
+    return out[find.outputNames[0]].data;
+  }
 
   async function tesseractAt(im, turn, lang) {
     const w = await tesseract(lang), { data } = await w.recognize(bmp(rotate(im, turn)));
@@ -72,17 +91,9 @@ export function reader(engines) {
 
   // PaddleOCR's text finder over a crop turned so its text reads across: the lines, as boxes in its pixels, top first
   async function lines(im) {
-    const { ort, find } = await paddle();
     const s = Math.min(1, 960 / Math.max(im.width, im.height));
     const W = Math.max(32, Math.round((im.width * s) / 32) * 32), H = Math.max(32, Math.round((im.height * s) / 32) * 32);
-    const x = new Float32Array(3 * W * H), mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225];
-    for (let y = 0; y < H; y++) for (let X = 0; X < W; X++) {
-      const sx = Math.min(im.width - 1, Math.floor(((X + 0.5) * im.width) / W)), sy = Math.min(im.height - 1, Math.floor(((y + 0.5) * im.height) / H)), p = (sy * im.width + sx) * 4;
-      // the model was trained on blue, green, red, normalised channel by channel in that order
-      for (let c = 0; c < 3; c++) x[c * W * H + y * W + X] = (im.data[p + 2 - c] / 255 - mean[c]) / std[c];
-    }
-    const out = await find.run({ [find.inputNames[0]]: new ort.Tensor("float32", x, [1, 3, H, W]) });
-    const prob = out[find.outputNames[0]].data, on = new Uint8Array(W * H);
+    const prob = await textAt(im, W, H), on = new Uint8Array(W * H);
     for (let i = 0; i < on.length; i++) on[i] = prob[i] > 0.3;
     const seen = new Int32Array(W * H).fill(-1), boxes = [];
     for (let i = 0; i < on.length; i++) {
@@ -144,6 +155,15 @@ export function reader(engines) {
   }
 
   return {
+    // the text over a whole photo as Python's view gives it ({width, height, data}, RGB, sides multiples of 32): its
+    // probability per pixel, 255 for 1, base64, as the finder takes it ({width, height, data})
+    async textMap(view) {
+      const p = await textAt(view, view.width, view.height), b = new Uint8Array(p.length);
+      for (let i = 0; i < p.length; i++) b[i] = Math.round(Math.min(1, Math.max(0, p[i])) * 255);
+      let bin = "";
+      for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode(...b.subarray(i, i + 0x8000));
+      return { width: view.width, height: view.height, data: btoa(bin) };
+    },
     // the crop's text by one reader: {text, confidence (0 to 1), turn (quarter turns clockwise that set it upright)};
     // given a turn, it is read upright at that turn alone, and given a lang (a key of LANGS), in those languages alone
     // (PP-OCR reads English whatever it is given)
