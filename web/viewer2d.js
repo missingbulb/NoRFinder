@@ -271,9 +271,17 @@ export function viewer(shell) {
     $("#zoom-label").textContent = Math.round(st.zoom * 100) + "%";
     ruler.draw(); grid.draw(); hooks.zoomed?.(); minimap.place(); shrinkLater();
   }
-  // the whole image in view, at most at 100%
+  // the whole image in view, at most at 100%; a view another one covers (the 3D view, say) has no size, and the
+  // image is fitted once it has
+  let sized = null;
   function fit() {
     const sc = $("#scroller");
+    sized?.disconnect(); sized = null;
+    if (!sc.clientWidth || !sc.clientHeight) {
+      setZoom(1);
+      sized = new ResizeObserver(() => { if (sc.clientWidth && sc.clientHeight && st.W) fit(); });
+      return sized.observe(sc);
+    }
     setZoom(Math.min(1, sc.clientWidth / st.W, sc.clientHeight / st.H));
     sc.scrollTo(0, 0);
   }
