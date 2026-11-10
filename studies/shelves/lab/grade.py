@@ -19,44 +19,16 @@ import sys
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, '..', 'py'))
+from books import area, overlap
 
 
 def truth(gt):
     return [b for b in gt['books'] if b['verdict'] == 'right']
 
 
-def area(c):
-    x, y = np.asarray(c, float).T
-    return abs(float(x @ np.roll(y, -1) - y @ np.roll(x, -1))) / 2
-
-
-def clip(c, by):
-    """The part of polygon c inside convex polygon by, either way round: Sutherland and Hodgman's clipping."""
-    sign = 1 if area_signed(by) > 0 else -1
-    out = [tuple(p) for p in c]
-    for (ax, ay), (bx, by_) in zip(by, list(by[1:]) + [by[0]]):
-        side = lambda p: sign * ((bx - ax) * (p[1] - ay) - (by_ - ay) * (p[0] - ax))
-        pts, out = out, []
-        for p, q in zip(pts, pts[1:] + pts[:1]):
-            sp, sq = side(p), side(q)
-            if sp >= 0:
-                out.append(p)
-            if sp * sq < 0:
-                f = sp / (sp - sq)
-                out.append((p[0] + f * (q[0] - p[0]), p[1] + f * (q[1] - p[1])))
-        if not out:
-            return []
-    return out
-
-
-def area_signed(c):
-    x, y = np.asarray(c, float).T
-    return float(x @ np.roll(y, -1) - y @ np.roll(x, -1)) / 2
-
-
 def iou(a, b):
-    both = clip(a, b)
-    inter = area(both) if len(both) >= 3 else 0.0
+    inter = overlap(a, b)
     return inter / max(1e-9, area(a) + area(b) - inter)
 
 
@@ -129,7 +101,6 @@ def main(argv=None):
         out = readings(gt, json.load(open(a.read)))
     else:
         if a.photo:
-            sys.path.insert(0, os.path.join(HERE, '..', 'py'))
             import shelves
             found = json.loads(shelves.Session(a.photo).call('find', {})[0])['books']
         else:

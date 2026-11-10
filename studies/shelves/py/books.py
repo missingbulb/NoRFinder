@@ -19,6 +19,12 @@ LEAN, LEAN_STEP = 30, 0.5
 SIDES = 6
 # the share of the photo's height a shelf is looked at past its own top and bottom: a board seen slanted crosses rows
 MARGIN = 0.08
+# [shelf-lines] a row the edges between books run on across, on this share of the columns holding one, is no board;
+# an edge runs along a row band where it is on in this share of its rows
+CROSSED, EDGE_ON = 0.3, 0.7
+# no box lies over another: boxes overlapping by under TOUCH of the smaller touch; two overlapping each other alone by
+# MERGE, sharing COLUMN of the narrower's width across, are one book's two halves
+TOUCH, MERGE, COLUMN = 0.1, 0.2, 0.6
 # the edge detector's blur, in work pixels: enough to drop a JPEG's grain, little enough to keep a thin spine's sides
 SIGMA = 2.0
 # an edge piece shorter than this share of the shelf is lettering or grain, not a spine's side
@@ -107,8 +113,21 @@ def shelves(g):
     across = ndi.uniform_filter1d(ndi.maximum_filter1d(vy > np.quantile(vy, 0.9), 5, axis=0).mean(axis=1), 3)
     reach = max(1, h // 15)
     rows = [r for r in range(h // 20, h - h // 20) if across[r] >= 0.5 and across[r] == across[max(0, r - reach):r + reach].max()]
+    # [shelf-lines] a board stops the edges between books: a row they run on across is a line over the books themselves
+    up_down = np.where(gx > 2 * gy, gx, 0)
+    up_down = ndi.maximum_filter1d(up_down > np.quantile(up_down, 0.9), 3, axis=1)
+    near = max(4, h // 25)
+    rows = [r for r in rows if crossed(up_down, r, near) < CROSSED]
     cuts = [0, *rows, h]
     return [(a, b) for a, b in zip(cuts, cuts[1:]) if b - a > h // 6]
+
+
+def crossed(up_down, r, near):
+    """The share of the columns holding an upright edge next to row r where that edge runs on across r: upright edges
+    along most of the rows within near above r and within near below it."""
+    up = up_down[max(0, r - near):r - 2].mean(0) > EDGE_ON
+    down = up_down[r + 3:r + near].mean(0) > EDGE_ON
+    return float((up & down).sum() / max(1, (up | down).sum()))
 
 
 def long_pieces(m, frac):
@@ -619,6 +638,66 @@ def barcode_bands(g, small, top, bottom, shelf):
     barcode_bands(g, small, top + rows[1], bottom, shelf)
 
 
+def area(c):
+    x, y = np.asarray(c, float).T
+    return abs(float(x @ np.roll(y, -1) - y @ np.roll(x, -1))) / 2
+
+
+def clip(c, by):
+    """The part of polygon c inside convex polygon by, either way round: Sutherland and Hodgman's clipping."""
+    x, y = np.asarray(by, float).T
+    sign = 1 if float(x @ np.roll(y, -1) - y @ np.roll(x, -1)) > 0 else -1
+    out = [tuple(p) for p in c]
+    for (ax, ay), (bx, by_) in zip(by, list(by[1:]) + [by[0]]):
+        side = lambda p: sign * ((bx - ax) * (p[1] - ay) - (by_ - ay) * (p[0] - ax))
+        pts, out = out, []
+        for p, q in zip(pts, pts[1:] + pts[:1]):
+            sp, sq = side(p), side(q)
+            if sp >= 0:
+                out.append(p)
+            if sp * sq < 0:
+                f = sp / (sp - sq)
+                out.append((p[0] + f * (q[0] - p[0]), p[1] + f * (q[1] - p[1])))
+        if not out:
+            return []
+    return out
+
+
+def overlap(a, b):
+    """The area two boxes share."""
+    both = clip(a, b)
+    return area(both) if len(both) >= 3 else 0.0
+
+
+def apart(found):
+    """[{corners, fit}] with no box over another, most overlapping first: two boxes that overlap each other alone, by
+    MERGE of the smaller, and stand in one column, are one book's two halves, boxed from the upper's top to the lower's
+    foot; of two overlapping otherwise, the weaker fit goes. Boxes overlapping by under TOUCH of the smaller touch."""
+    n, sizes = len(found), [area(b['corners']) for b in found]
+    share = {}
+    for i in range(n):
+        for j in range(i + 1, n):
+            v = overlap(found[i]['corners'], found[j]['corners']) / max(1e-9, min(sizes[i], sizes[j]))
+            if v >= TOUCH:
+                share[i, j] = v
+    partners = [sum(i in k for k in share) for i in range(n)]
+    xs = [(min(p[0] for p in b['corners']), max(p[0] for p in b['corners'])) for b in found]
+    gone, merged = set(), []
+    for (i, j), v in sorted(share.items(), key=lambda kv: -kv[1]):
+        if i in gone or j in gone:
+            continue
+        (a0, a1), (b0, b1) = xs[i], xs[j]
+        column = (min(a1, b1) - max(a0, b0)) / max(1e-9, min(a1 - a0, b1 - b0))
+        if partners[i] == partners[j] == 1 and v >= MERGE and column >= COLUMN:
+            hi, lo = sorted((found[i], found[j]), key=lambda b: np.mean([p[1] for p in b['corners']]))
+            merged.append(dict(corners=[hi['corners'][0], hi['corners'][1], lo['corners'][2], lo['corners'][3]],
+                               fit=min(hi['fit'], lo['fit'])))
+            gone |= {i, j}
+        else:
+            gone.add(i if found[i]['fit'] < found[j]['fit'] else j)
+    return [b for k, b in enumerate(found) if k not in gone] + merged
+
+
 def clockwise(c):
     """Four corners clockwise in the image (y down), from the one nearest the photo's top left."""
     c = np.asarray(c, float)
@@ -669,7 +748,8 @@ def find(rgb, text=None):
             if len(chosen) < SHELF_BOOKS:
                 continue
             for k in chosen:
-                spines.append([(x, y + top) for x, y in found[k]['corners']])
+                spines.append(dict(corners=[(x, y + top) for x, y in found[k]['corners']], fit=found[k]['fit']))
+    spines = [b['corners'] for b in apart(spines)]
     # [barcode] covers are looked for outside the shelves: the barcode bands, and the spines boxed
     yy, xx = np.mgrid[0:h, 0:w]
     grid = np.stack([xx.ravel(), yy.ravel()], 1)

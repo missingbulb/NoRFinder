@@ -36,7 +36,10 @@ read for a title matcher; matching the titles is not part of it.
   face, however plain. The text finder's files are fetched at pinned versions from jsDelivr on Find books' first run,
   and kept offline with the study's Python; when they cannot be reached, Find books finds without them and says so.
   The same day the owner dropped the rule that one camera's perspective must turn every book's ends alike: on the
-  photos it removed real books. Test: `studies/shelves/tests/test_books.py`,
+  photos it removed real books. Set by the owner on 2026-11-10, no box lies over another: of two boxes overlapping,
+  one is certainly wrong, and two stacked one over the other that overlap each other alone, by a large share, are one
+  book's two halves, boxed as one. A line across the shelf that the edges between books run on across is lettering
+  or a light's edge over the books, not a shelf's board, and cuts no book. Test: `studies/shelves/tests/test_books.py`,
   `studies/shelves/tests/test_shelves_page.py`.
   </details>
 

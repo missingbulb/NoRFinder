@@ -102,10 +102,48 @@ never covered. Flip reads the book again at that turn alone, in both languages. 
 finder and the reader proposed beside the corrected values, so one file scores both the finder (corners, view) and
 each reader (text), which `lab/grade.py` does. The ground truth is in the study's GT folder on Drive
 (`GT/<photo>__<sha8>/gt_<tagger>.json` under the study's root), fetched by hand for now (`gdown`, as `lab/photos.py`
-does). One photo so far: `1g4iFN`, re-tagged 2026-11-10 after the task's rework, 13 books right (4 of them added
-as missed) and 1 found box marked no book.
+does, into `data/raw/gt/`). Two photos so far: `1g4iFN`, re-tagged 2026-11-10 after the task's rework, 13 books right (4 of them added
+as missed) and 1 found box marked no book; `1HyJrL`, tagged 2026-11-10, 19 books right, all found (the book the
+frame cuts at its left edge left untagged).
 
 ## Iterations
+
+### R7 — no box over another; a line the books cross is no shelf (2026-11-10)
+
+The second ground truth, `1HyJrL` (19 books). **Two photos, nothing held out**: every number is indicative. The
+other 12 photos were checked base against R7 for what moved.
+
+| | precision | recall | matched | mean IoU |
+|---|---|---|---|---|
+| `1HyJrL` R6 (base) | 0.38 | 0.68 | 13/19 | 0.60 |
+| `1HyJrL` R7 | 0.86 | 0.95 | 18/19 | 0.79 |
+| `1g4iFN` R6 = R7 | 0.92 | 0.85 | 11/13 | 0.82 |
+
+- **What was wrong (R6 on `1HyJrL`):** the shelf finder cut the photo at a row across the middle of the books (the
+  titles' slashes, a light's edge), so nearly every spine came out as two boxes stacked one over the other, each
+  about half the book: 34 boxes for 19 books.
+- **What changed:** (1) `[shelf-lines]` a shelf's cut is dropped when the edges between books run on across it
+  (`books.crossed`, `CROSSED`): measured on every photo's cuts, 0.53 on `1HyJrL`'s and 0.39 on `1yTHiP`'s (both
+  through standing spines), at most 0.11 on every real board. (2) The owner's rule, no box over another
+  (`books.apart`): two boxes overlapping each other alone, by a fifth of the smaller and in one column, are one
+  book's halves, boxed as one; of others overlapping, the weaker fit goes. Ablated on `1HyJrL`: (2) alone 0.79/0.79,
+  15/19 (where a half was never found the other stays half a book); (1) alone or both 0.86/0.95. With (1) in, (2)
+  fires on no photo here: it is the guard the owner asked for.
+- **On the other photos, by eye:** only `1yTHiP` moved (38 → 41 boxes): its middle shelf's spines are boxed whole,
+  one new box runs down onto the board.
+- **Still missed on `1HyJrL`:** Henderson, split in two at the lettering (the dark gap beside it is the real edge);
+  the leftmost Herbert keeps a sliver box over its right part. Both are the owner's note: books stand apart, a gap's
+  two sides are two books' edges. `books.most_books` maximises the number of boxes, so it always prefers a split;
+  letting a box span one inner line (`REACH` 2) changed nothing for that reason. Its objective is the next lead.
+- **The readers on both photos, at the finder's turn (`lab/grade.py --read`):** `tesseract` CER 0.39 / words 0.35
+  (`1HyJrL`), 0.69 / 0.15 (`1g4iFN`); `lines` 0.37 / 0.18, 0.78 / 0.08. The grader paired readings to books in
+  order and so, on a file holding a box marked no book (`1g4iFN`), scored each against the next book's title: it
+  now pairs them by corners.
+- **Tried and rejected, the owner's one-language idea:** reading each book in Hebrew alone and in English alone at
+  each turn and keeping the surest (twice the passes): `lines` 0.37 → 0.34 on `1HyJrL` but words 0.08 → 0.05 on
+  `1g4iFN`, `tesseract` unchanged. Dropping the words of the minority script from a reading: within 0.02 everywhere.
+  The readings are nearly all one script already; their errors are Hebrew letters confused (`רוכרט` for `רוברט`),
+  which a dictionary would catch and a script rule cannot.
 
 ### R6 — text lines place the books; the perspective check dropped (2026-11-10)
 
@@ -294,6 +332,8 @@ number below is a score.
 
 - `[shelf-lines]` A shelf is a horizontal edge across at least half the photo. Fails on a photo of one shelf seen at an
   angle, or one whose board is out of frame.
+  (R7) A board stops the edges between books: a cut they run on across, on `CROSSED` of the columns, is no shelf.
+  Fails on a board only a few rows thick, and on books standing on books.
 - `[spine-lean]` A spine's edges lean 30° from upright at most (`books.LEAN`). Fails on a book lying flat in a pile,
   whose edges run across the shelf, and on a photo taken turned.
 - `[spine-sides]` A book's two sides lean within 6° of each other (`books.SIDES`). Fails on a spine seen in steep
@@ -316,7 +356,11 @@ number below is a score.
 
 ## Open items
 
-- More ground truth: one tagged photo is too few to hold any out. Books the frame cuts at a photo's edge (both of
+- More ground truth: two tagged photos are too few to hold any out. A book split at its lettering beside a dark
+  gap (`1HyJrL`'s Henderson): `most_books` prefers more boxes.
+- A dictionary to choose among the readers' candidates (the owner's idea, 2026-11-10): needs a word list the page
+  would fetch, the owner's call.
+- Books the frame cuts at a photo's edge (both of
   `1g4iFN`'s misses).
 - The readers: `tesseract` reads best but most spines come back noisy; what to try next is the owner's call.
 - Hebrew word spaces in the `lines` reader.
