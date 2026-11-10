@@ -42,9 +42,15 @@ ledger's "Revisit if" condition now holds.
 The routes differ in where the idea comes from. Run them in parallel where you can: each one is a
 subagent's work or a sweep in the background.
 
+**Splitting the work between models:** each route's ideas come from a Fable subagent, and each
+direction it yields is built, scored and rendered by a Sonnet subagent, one direction per agent. Brief
+the implementer with the lab's score and render commands, the base's per-input numbers, the inputs
+held out, the kill test, and a report capped in words; launch it as soon as its direction arrives,
+without waiting for the other routes.
+
 | Route | Where the idea comes from | Skill |
 |---|---|---|
-| Mutate | Every runnable trick in the repo's trick pool, one per mutant, spliced into the best version and scored for *any* good | [mutating-an-algorithm](../mutating-an-algorithm/SKILL.md) |
+| Mutate | Every trick in the repo's trick pool the study can run, the catalog-only ones built first, one per mutant, spliced into the best version and scored for *any* good | [mutating-an-algorithm](../mutating-an-algorithm/SKILL.md) |
 | Explain to a child | Fresh agents, each under a different constraint, explaining the task step by step without pointing | [explaining-to-a-child](../explaining-to-a-child/SKILL.md) |
 | Transformed view | A vision-capable agent solving the task by eye on images a trick has transformed first | [solving-a-transformed-view](../solving-a-transformed-view/SKILL.md) |
 | Fresh lenses | The lens table below, one line per lens | - |

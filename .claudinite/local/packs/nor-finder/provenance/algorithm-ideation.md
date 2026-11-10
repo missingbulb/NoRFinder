@@ -38,3 +38,13 @@
   the code found missing invocations, rules owned twice and hand-offs the family lacked; applied.
 - **Actor:** @missingbulb (owner), who asked for the review.
 - **Model:** claude-opus-5-5
+
+## 2026-11-10 · reworded · ideation by Fable subagents, builds by Sonnet ones
+- **Source:** the owner, in this session: "Use Fable subagents to ideate, and instruct Sonnet agents
+  to implement, test, and report results needed for the followup trials", repeated mid-run when one
+  round skipped the Fable step.
+- **Reason:** the owner set the split for every improvement run; the skill named subagents but no
+  model per part.
+- **Actor:** @missingbulb (owner), asking that the skills carry this run's lessons for the next
+  "make it better".
+- **Model:** claude-opus-5-5

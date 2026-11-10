@@ -42,7 +42,9 @@ read for a title matcher; matching the titles is not part of it.
   or a light's edge over the books, not a shelf's board, and cuts no book. Set by the owner on 2026-11-10, while
   the study is in its GT stage Find books favours finding every book over boxing nothing wrong: a wrong box costs the
   tagger one click to drop, a missed book a box drawn by hand. Versions are compared by F2, recall weighted twice
-  precision (Claude's default for the weighting and the stage; not yet confirmed by the owner). Test: `studies/shelves/tests/test_books.py`,
+  precision (Claude's default for the weighting and the stage; not yet confirmed by the owner). Set by the owner on
+  2026-11-10, Find books finds the same books in a photo the camera took turned, in one taken with one side of the
+  shelf nearer than the other, and in one where shade cuts across the books. Test: `studies/shelves/tests/test_books.py`,
   `studies/shelves/tests/test_shelves_page.py`.
   </details>
 

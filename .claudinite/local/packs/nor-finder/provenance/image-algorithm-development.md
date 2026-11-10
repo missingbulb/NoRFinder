@@ -69,3 +69,10 @@
   the code found missing invocations, rules owned twice and hand-offs the family lacked; applied.
 - **Actor:** @missingbulb (owner), who asked for the review.
 - **Model:** claude-opus-5-5
+
+## 2026-11-10 · reworded · noise measured by perturbing a deterministic version's input
+- **Reason:** on the shelves finder a re-run was identical while the page's own JPEG decoding moved
+  1zktX1 by 6 of 60 books and a one-level perturbation by 3; the re-run rule gave no floor.
+- **Actor:** @missingbulb (owner), asking that the skills carry this run's lessons for the next
+  "make it better".
+- **Model:** claude-opus-5-5

@@ -51,6 +51,16 @@ It writes `.cache/mutate/sweep.json` (gitignored). For each flagged mutant it al
 `.cache/mutate/<spec with : and @ as _>.png`. `python3 mutate.py list` shows which tricks run in
 this container. A study without an adapter gets one before its first sweep.
 
+**Before the sweep, build the catalog-only tricks the study can run.** Most of the pool has no
+function yet, and a sweep over the runnable ones alone silently skips it. Triage every entry whose
+`runnable` is empty against the study's failure classes and its own runtime (the page's packages, for
+a finder that runs in the page), re-expressing a foreign package's idea in those packages where a few
+lines do. Add each kept one to `tricks.py` with its `runnable` (Growing the pool, below), then sweep.
+
+A sweep over the base's own constants is not this route: it is
+[tuning-parameters](../tuning-parameters/SKILL.md)' work, even when the ask was to mutate the
+algorithm randomly.
+
 The adapter places each trick in three **slots**:
 
 - `pre:<trick>@<chan>` transforms a channel before the base runs.
