@@ -259,13 +259,19 @@ export function mount(shell) {
     if (st.zoom > fit * 1.5 || st.zoom < fit / 1.5) shell.viewer.setZoom(fit);
     shell.viewer.focus((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2);
   }
+  // any part of the book's box on the screen
+  function inView(b) {
+    const v = $("#scroller").getBoundingClientRect(), r = $("#base").getBoundingClientRect();
+    const xs = b.corners.map((p) => r.left + p[0] * st.zoom), ys = b.corners.map((p) => r.top + p[1] * st.zoom);
+    return Math.max(...xs) > v.left && Math.min(...xs) < v.right && Math.max(...ys) > v.top && Math.min(...ys) < v.bottom;
+  }
 
   // ---------- the ground truth: every book in the order they stand, then the missed ones, then Submit ----------
   const walk = () => inPlace(books);
   const open = () => books.filter((b) => !b.verdict);
   // a book made the open one: a title not yet approved is selected, to retype; while tagging, the spot Continue GT
   // tagging comes back to
-  function show(b) { cur = b; selectFor = b && b.verdict !== "right" ? b : null; if (b) focus(b); if (tagging() && books.length) save(); draw(); }
+  function show(b, keepView = false) { cur = b; selectFor = b && b.verdict !== "right" ? b : null; if (b && !keepView) focus(b); if (tagging() && books.length) save(); draw(); }
   // the next book still open along the shelves after this one, round to the first; none once every book is decided
   function next(after = cur) {
     const all = walk(), from = all.indexOf(after);
@@ -459,8 +465,8 @@ export function mount(shell) {
     error() { shell.busy(false); },
     capturesPointer: () => !!drawing || dragging !== null,
     pickAt(e) { return bookAt(at(e)); },
-    // a book clicked on the photo opens in the task, whatever its verdict
-    pick(b) { if (!b || drawing) return; if (truth() && !tagging()) return; if (truth()) show(b); else { cur = b; draw(); } },
+    // a book clicked on the photo opens in the task, whatever its verdict, the view left where it is
+    pick(b) { if (!b || drawing) return; if (truth() && !tagging()) return; if (truth()) show(b, inView(b)); else { cur = b; draw(); } },
     zoomed: () => drawBoxes(),
   };
 }
