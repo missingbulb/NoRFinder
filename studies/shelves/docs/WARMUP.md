@@ -50,7 +50,9 @@ tests/                test_books.py and test_grade.py (fast), test_reading.py an
    - `ppocr`: PP-OCRv4 finds and reads (its reader is Chinese and English: **no Hebrew**).
 
    Each reading's Hebrew words are then spelled by the site's word list (`spelling` in `reading.js`, R7): a word not
-   on it becomes the most frequent listed word one look-alike letter away.
+   on it becomes the most frequent listed word one look-alike letter, or one ו or י, away, and a final letter inside a
+   run of letters ends a word. The problems of Hebrew on spines, their classic fixes and the word sources are in
+   [HEBREW.md](HEBREW.md).
 
 The page loads the engines and PaddleOCR's models from jsDelivr at those pinned versions when first needed: the text
 finder (onnxruntime-web and the PP-OCRv4 finding model) on Find books, the rest when a reader first needs them. The
