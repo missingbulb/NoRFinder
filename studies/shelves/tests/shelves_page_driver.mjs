@@ -130,8 +130,7 @@ try {
   // flipped upside down: drawn so, and read again at that turn alone; then read again as Hebrew alone
   let reads = await page.evaluate(() => tess.reads);
   await page.click('.bs-item [data-do="flip"]');
-  await page.waitForFunction((n) => tess.reads > n, reads);
-  await page.waitForTimeout(100);
+  await page.waitForFunction((n) => tess.reads > n && $("#status").textContent === "Book read again.", reads);
   check(await page.evaluate((n) => tess.reads - n, reads) === 1, "Flip turns the book upside down and reads it again at that turn alone");
   reads = await page.evaluate(() => tess.reads);
   await page.click('.bs-item [data-lang="heb"]');
