@@ -4,7 +4,8 @@
 // (split.js) into the folder named after the image, or downloads it. Done puts the image back as it was opened.
 "use strict";
 import { whole, layout, derive, suggestSlices, maskOf, maskShare, stemOf } from "./edit.js";
-import { readTiff, fromPlanes, evenCuts, gridParts, partName, patternProblem, splitImage, zip } from "./split.js";
+import { evenCuts, gridParts, partName, patternProblem, splitImage, zip } from "./split.js";
+import { readImage } from "./image_open.js";
 import { asLoaded } from "./as_loaded.js";
 import { holdOwns } from "./offline.js";
 
@@ -299,14 +300,7 @@ export function imageEditor(ctx) {
   // the files, from the file's own pixels
   async function files() {
     const f = ctx.original(), data = new Uint8Array(f.bytes);
-    let src;
-    if (/\.tiff?$/i.test(f.name)) src = readTiff(data);
-    else {
-      const bmp = await createImageBitmap(new Blob([data])), c = new OffscreenCanvas(bmp.width, bmp.height), g = c.getContext("2d");
-      g.drawImage(bmp, 0, 0);
-      const px = g.getImageData(0, 0, bmp.width, bmp.height).data, N = bmp.width * bmp.height;
-      src = fromPlanes(bmp.width, bmp.height, Array.from({ length: C() }, (_, k) => { const p = new Uint8Array(N); for (let i = 0; i < N; i++) p[i] = px[i * 4 + Math.min(k, 2)]; return p; }));
-    }
+    const src = await readImage(data);
     const look = ctx.viewer().channelList();
     return splitImage(src, { xs: e.xs, ys: e.ys, parts: gridParts(e.xs, e.ys, e.left), channels: [...e.channels].sort((a, b) => a - b), slices: src.Z > 1 ? e.z : null,
       look, pattern: pattern(), source: { name: f.name, sha256: ctx.state.sha, ...(base.source?.id && ctx.remote.cite(base.source)) }, removed: polygons, mask: e.mask });
