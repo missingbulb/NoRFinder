@@ -82,6 +82,10 @@
   "groundTruth": {
   },
   "view": {
-    "stretch": false
+    "stretch": false,
+    "hide": [
+      "ruler",
+      "grid"
+    ]
   }
 }

@@ -80,14 +80,17 @@ With Pyodide on both sides the page and the sandbox gave the same text for every
 
 ## Ground truth
 
-One task, as NoR's (`req/shelves/truth/task`): each found book's corners, turn and text set right or the book
-dropped, then the missed ones added (the photo's right-click menu, or Draw a book). The book's picture in the task is
+One task, Books (`req/shelves/truth/task`): every book, found or added, its corners, turn and text set right or
+the book dropped, walked in the order the books stand (`inPlace` in `shelves.js`), then the missed ones added (the
+photo's right-click menu, or Draw a book), each one more book to review. The tagger's work is the draft the shell keeps
+(`shell.tasks.draft`, `resume`) and Continue tagging brings back; the approved books are cut out of the photo by
+the viewer (`viewer.doneMask`). The book's picture in the task is
 the page's own, warped in JS from the photo the viewer shows (`picture` in `shelves.js`), so it follows a dragged
 corner at once; what the reader reads is still Python's straightening of the file, run behind it with the photo
-never covered. Flip, Turn 90° and the Hebrew / English / Both choice read the book again at that turn and in that
-language alone. The submitted `<photo>_books_gt.json` keeps, for each found book, what the
+never covered. Flip reads the book again at that turn alone, in both languages. The submitted `<photo>_books_gt.json` keeps, for each found book, what the
 finder and the reader proposed beside the corrected values, so one file scores both the finder (corners, view) and
-each reader (text). No grader is written yet: it waits for the first ground truth.
+each reader (text). No grader is written yet. The first ground truth (`1g4iFN`, 2026-11-10) came from the task before its rework that day,
+which lost the titles of books added over a box already drawn; the owner is tagging it again.
 
 ## Iterations
 

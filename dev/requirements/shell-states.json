@@ -317,6 +317,12 @@
                 {"name": "Tasks' list", "select": "#gt-list", "req": "req/shell/ground-truth/tasks",
                   "children": [
                     {"name": "Start GT tagging", "select": "#gt-start", "control": true, "req": "req/shell/ground-truth/tagging"},
+                    {"name": "Continue tagging", "select": "#gt-continue", "control": true, "req": "req/shell/ground-truth/draft",
+                      "steady": "hidden for a study that takes no drafts, the only kind a path opens",
+                      "rule": [
+                        {"is": "hidden", "about": "for a study that takes no drafts"}
+                      ]
+                    },
                     {"name": "Tasks' bar", "select": "#gt-bar", "req": "req/shell/ground-truth/tasks"},
                     {"name": "Tasks", "select": "#gt-tasks", "req": "req/shell/ground-truth/tasks",
                       "children": [

@@ -69,7 +69,7 @@ read for a title matcher; matching the titles is not part of it.
   the browser. Test: `studies/shelves/tests/test_reading.py`, `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
-- `req/shelves/truth/task` One ground-truth task: each book in turn has its corners, turn and title set right, then the missed books are added.
+- `req/shelves/truth/task` One ground-truth task: each book in turn, in the order they stand, has its corners, turn and title set right, and the missed books are added.
   <details>
 
   Set by the owner on 2026-11-04: boxing and reading are made into ground truth together, as
@@ -102,6 +102,25 @@ read for a title matcher; matching the titles is not part of it.
     book, Flip upside down and Delete this book, which takes an added book away and marks a found one not a
     book (Back undoes it).
   - Each book's outline keeps its width on the screen at any zoom, thick enough to see on any photo.
+
+  Set by the owner on 2026-11-10, replacing what is above where the two differ:
+  - One task, Books ("3/12 Books"): every book on the photo, found or added, decided alike. The task carries no
+    instructions of its own. A book the finder missed, added from the right-click menu or drawn, is one more book
+    to review, open at once; once every book is decided the task asks for the missed ones (Draw a book, None
+    missed), and Submit opens only after None missed.
+  - The books are walked in the order they stand on the photo, shelf by shelf from the top, each shelf left to
+    right, never in the finder's order. Back and Next (no longer Skip) go to the book beside the open one along that
+    order, whatever its verdict; a verdict, changed or new, moves on to the next book still open.
+  - A book clicked on the photo opens in the task whatever its verdict, its verdict shown and changeable; a box
+    marked Not a book stays faint on the photo while tagging, so it can be picked. Add a book here is offered on a
+    book too, since a box drawn over two books hides one of them.
+  - A book not yet approved opens with its title's text box focused and all its text selected, to retype.
+  - Flip alone turns the picture: no Turn 90°, and no language choice, the title's language being plain from what is
+    typed; a book read again is read in Hebrew and English.
+  - The approved books are cut out of the photo while tagging (`req/shell/ground-truth/tagging`).
+  - The tagger's work on a photo (each book's corners, turn, text, verdict and what was proposed) is the draft the
+    shell keeps and Continue tagging brings back (`req/shell/ground-truth/draft`).
+  - The file lists the books in the walk's order.
 
   Test: `studies/shelves/tests/test_shelves_page.py`.
   </details>

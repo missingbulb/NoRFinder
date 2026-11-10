@@ -34,6 +34,9 @@ export function hoverPop(btn, pop, fill) {
   return { show, refill: () => { if (pop.matches(":popover-open")) fill(); } };
 }
 
+// the viewer's tools a study may hide, by the names its study.json's view.hide gives them
+const HIDEABLE = { ruler: "#ruler-btn", grid: "#grid-btn" };
+
 export function viewer(shell) {
   const { $, state: st, page } = shell;
   // what an image changes on the page, as it loaded: put back when none is open
@@ -153,7 +156,13 @@ export function viewer(shell) {
   const picture = () => composite(atFirst(() => true));
 
   // the toolbar's tools wait for an image
-  function tools() { for (const id of ["#ruler-btn", "#grid-btn", "#minimap-btn", "#zoom-in", "#zoom-out"]) $(id).disabled = !st.img; minimap.place(); }
+  // and the ones the study names in its view.hide are not shown
+  function tools() {
+    for (const id of ["#ruler-btn", "#grid-btn", "#minimap-btn", "#zoom-in", "#zoom-out"]) $(id).disabled = !st.img;
+    const hide = shell.study?.view?.hide || [];
+    for (const [name, id] of Object.entries(HIDEABLE)) $(id).hidden = hide.includes(name);
+    minimap.place();
+  }
 
   // ---------- the minimap ----------
   // Over the image's corner, a little see-through until the pointer is on it: the whole image, the part in view
@@ -397,12 +406,44 @@ export function viewer(shell) {
       setZoom(st.zoom); tools();
     }));
   }
-  function clear() { $("#overlay").innerHTML = ""; }
+  function clear() { $("#overlay").innerHTML = ""; done = []; }
+
+  // ---------- what the tagger has done, cut out of the image ----------
+  // The study gives the shapes its tagger has decided ([[x, y], ...] in image pixels); the viewer cuts them out of the
+  // image while the tagger tags, showing there the picture the study links to (study.json's groundTruth.reveal), black
+  // while it names none or it cannot load. Out of tagging the image is whole.
+  let done = [], tagging = false, revealLoaded = null, revealFor = null;
+  const revealReady = (href) => {
+    if (revealFor !== href) { revealFor = href; revealLoaded = null; }
+    return (revealLoaded ||= new Promise((ok) => {
+      if (!href) return ok(false);
+      const im = new Image(); im.onload = () => ok(true); im.onerror = () => ok(false); im.src = href;
+    }));
+  };
+  function drawDone() {
+    const svg = $("#overlay");
+    let g = svg.querySelector(":scope > g.done-mask");
+    if (!done.length || !st.W) { g?.remove(); return; }
+    if (!g) {
+      g = make("g", { class: "done-mask" });
+      const defs = make("defs", {}), clip = make("clipPath", { id: "done-mask-clip" });
+      defs.append(clip);
+      g.append(defs, make("rect", { class: "done-bg", x: 0, y: 0, width: st.W, height: st.H, fill: "#000", "clip-path": "url(#done-mask-clip)" }));
+      svg.prepend(g);
+      const href = shell.study?.groundTruth?.reveal || null, W = st.W, H = st.H;
+      revealReady(href).then((ok) => {
+        if (ok && g.isConnected) g.append(make("image", { class: "done-reveal", href, x: 0, y: 0, width: W, height: H, preserveAspectRatio: "xMidYMid slice", "clip-path": "url(#done-mask-clip)" }));
+      });
+    }
+    g.style.display = tagging ? "" : "none";
+    g.style.pointerEvents = "none";
+    g.querySelector("clipPath").replaceChildren(...done.map((c) => make("polygon", { points: c.map((p) => p.join(",")).join(" ") })));
+  }
 
   page.watch("image", (im) => (im ? show(im) : blank()));
 
   return {
-    use(h) { hooks = h || {}; }, channels: setChannels,
+    use(h) { hooks = h || {}; tools(); }, channels: setChannels,
     // the study leaving, its image gone first: what it drew on the page goes too
     leave: blank,
     // the rows as they stand, [{on, colour, black, white}] in plane order, and a listener for every redraw of them
@@ -410,6 +451,8 @@ export function viewer(shell) {
     // another viewer's rows under the channels' rows, none to take them away, and the zoom buttons taken over by it
     // (fn(factor)) or given back (null)
     rowsAfter(els) { added = els; rows(); }, rowsWith(fn) { withRow = fn; rows(); }, zoomWith(fn) { zoomer = fn; if (!fn && st.img) $("#zoom-label").textContent = Math.round(st.zoom * 100) + "%"; },
+    // the shapes the tagger has decided, cut out of the image while they tag; and whether they tag now, from the shell
+    doneMask(shapes) { done = shapes || []; drawDone(); }, tagged(on) { tagging = !!on; drawDone(); },
     draw, setZoom, fit, focus, toImage, layer, channelList: () => chans.map(({ name, colour }) => ({ name, colour })), minimapView: () => minimap.place(), preview, clear, shown, picture,
     get overlay() { return $("#overlay"); }, get scroller() { return $("#scroller"); },
   };

@@ -68,6 +68,8 @@ const SAVED_THUMB = "nor-drive-thumb:";
 const SAVED_THUMBS = "nor-drive-thumbs-saved";
 // {remote id: file name}: the image each saved thumbnail shows
 const THUMB_NAMES = "nor-drive-thumb-names";
+// a tagger's ground-truth draft of an image, by study, image name and SHA-256 (req/shell/ground-truth/draft)
+const GT_DRAFT = "gt-draft|";
 // {remote id: what the file holds, "3D · 8 slices" or "" when it cannot tell}, oldest first
 const HOLDS = "nor-drive-holds";
 const TIPS = "nor-tips-closed"; // [tip id]: the tips the user closed, never shown again
@@ -755,6 +757,8 @@ function imageOpened(m) {
   log.add(`Opened an image from ${from}, ${m.meta.W} × ${m.meta.H} px, ${m.meta.Z || 1} slice(s)`);
   status("Image loaded."); // the study's opened hook says what comes next, if anything
   study.opened?.(m.meta);
+  // a draft to continue opens Ground Truth Tasks with the image, Continue tagging in view
+  if (tasks.offer() && makesTruth()) { $("#tasks-box").classList.remove("folded"); retitle(); }
   truth.paint(); offerTruth();
   if (st.source && st.source.kind === "local" && makesTruth()) notice(LOCAL_GT(remote));
   if (remote.owns(st.source) && st.pictured !== st.source.id) saveThumb(st.source.id, st.fileName);
@@ -1499,6 +1503,14 @@ async function inventory() {
       continue;
     }
     if (OWN_SETTINGS[k]) { settings += bytesOf(k); continue; }
+    if (k.startsWith(GT_DRAFT)) {
+      const rest = k.slice(GT_DRAFT.length), id = rest.slice(0, rest.indexOf("|")), name = rest.slice(id.length + 1, rest.lastIndexOf("|"));
+      if (id === manifest?.id) {
+        const im = selections.get(name) || { name, whats: new Set(), keys: [], size: 0 };
+        im.whats.add("ground-truth draft"); im.keys.push(k); im.size += bytesOf(k); selections.set(name, im);
+      } else sectionOf(id).entries.push({ kind: "selections", name, what: "Your selections: ground-truth draft", size: bytesOf(k), del: () => drop(k), held: true, ask: true });
+      continue;
+    }
     const s = study.stored?.(k);
     if (s && s.group === "images") {
       const im = selections.get(s.image) || { name: s.image, whats: new Set(), keys: [], size: 0 };
@@ -1664,7 +1676,9 @@ function saveFile(name, text, type) {
 // the shell's icons, by name, as SVG markup: done, part, todo
 const icon = (name) => `<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">${$(`#icons .${name}`).innerHTML}</svg>`;
 // the study's ground-truth tasks in the left bar (req/shell/ground-truth/tasks)
-const tasks = truthTasks({ $, icon, started: () => { const first = manifest?.phases[0]?.key; return !first || !!steps.find((p) => p.key === first)?.done; } });
+const tasks = truthTasks({ $, icon, started: () => { const first = manifest?.phases[0]?.key; return !first || !!steps.find((p) => p.key === first)?.done; },
+  heardBy: (on) => view?.tagged?.(on), readJSON, writeJSON,
+  draftKey: () => (manifest && st.img && st.sha ? GT_DRAFT + manifest.id + "|" + st.fileName + "|" + st.sha : null) });
 // Load GT tagging (req/shell/ground-truth/view): for anyone but a tagger, an image from the remote store with curated ground truth
 // shows it through the study's showTruth(doc), which draws only its final results and returns a line of its counts
 let offered = 0;
@@ -2195,7 +2209,7 @@ function leaveStudy() {
 
 const shell = {
   $, state: st, page, still, status, busy: studyBusy, statusBar, step, notice, slow, until, call, readJSON, writeJSON, esc, saveFile, submitTruth, icon, remote,
-  clearable: (what, fn) => truth.clearable(what, fn), showImage, boxDone, outline,
+  clearable: (what, fn) => truth.clearable(what, () => { tasks.forget(); fn(); }), showImage, boxDone, outline,
   views: { show: (v) => views.show(v), on: (fn) => views.on(fn), count: (total) => views.count(total), get now() { return views.now; } },
   tasks,
   get viewer() { return view; }, get study() { return manifest; }, get signal() { return lifetime.signal; }, get makesTruth() { return makesTruth(); },

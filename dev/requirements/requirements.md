@@ -451,6 +451,18 @@ nobody has decided: what the page does there is not a requirement yet.
   `web-tests/test_gt_drive_page.py`.
   </details>
 
+- `req/shell/ground-truth/draft` Continue tagging brings back a tagger's draft of the image open, where the study takes drafts.
+  <details>
+
+  Set by the owner on 2026-11-10, a shell feature, not a study's. A study that takes drafts hands the shell its
+  progress on the image open as data each time the tagger changes something, and the shell keeps it in the browser
+  by the study, the image's name and its SHA-256. Beside Start GT tagging, Continue tagging shows while an image is
+  open in such a study, and is on only while a draft of that image is kept, the box then open as the image opens: it hands the draft back to the study,
+  which puts its results and the tagger's progress back with no step run again, and starts tagging. Manage storage
+  lists a draft among its image's selections, and Clear progress forgets it with the rest. Test:
+  `studies/shelves/tests/test_shelves_page.py`.
+  </details>
+
 - `req/shell/ground-truth/folders` A study's ground truth lives in a submissions folder and a curated folder under its root; one folder for both is free submission.
   <details>
 
@@ -564,7 +576,9 @@ nobody has decided: what the page does there is not a requirement yet.
   tagging, which closes the open task and gives the image back to viewing. What tagging alone shows, the current
   item's ring, the area's frame and what is cut out of the image, is shown only while tagging, and the Show menu's
   rows for them are off out of it. Tagging stops when another image opens or
-  the study leaves. Test: `web-tests/test_gt_drive_page.py`, `studies/nor/tests/test_truth_tasks_page.py`,
+  the study leaves. Set by the owner on 2026-11-10, what is cut out can be the viewer's: a study gives it the shapes
+  its tagger has decided, and the viewer cuts them out of the image while the tagger tags, showing there the
+  study's `groundTruth.reveal` picture, black while it names none, and gives the image back whole out of tagging. Test: `web-tests/test_gt_drive_page.py`, `studies/nor/tests/test_truth_tasks_page.py`,
   `studies/vascular/tests/test_vessel_tasks_page.py`, `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
@@ -702,8 +716,10 @@ nobody has decided: what the page does there is not a requirement yet.
 
   Set by the owner on 2026-11-07. At the toolbar's left the study chooses how what it extracted is drawn over the raw
   image (what to show, how wide, how faint); the left bar holds none of those. At its right, beside Zoom, are the
-  viewer's own tools (the ruler, the grid, the minimap, the 3D view's Look from). Test:
-  `studies/vascular/tests/test_model_page.py`, `web-tests/test_viewer3d_page.py`.
+  viewer's own tools (the ruler, the grid, the minimap, the 3D view's Look from). Set by the owner on 2026-11-10, a
+  study says, as data in its `study.json` (`view.hide`, naming `ruler` and `grid`), which of the viewer's tools it
+  does not show, and the shell reads it there: the Bookshelf Reader's photos have no scale, so it hides both. Test: `studies/vascular/tests/test_model_page.py`, `web-tests/test_viewer3d_page.py`,
+  `studies/shelves/tests/test_shelves_page.py`.
   </details>
 
 - `req/shell/image-viewer` The Image Viewer: the page with no study's tools, the one it opens on.
