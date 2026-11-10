@@ -3,12 +3,15 @@ page's readers (reading.js) to read. Any single 2D image Pillow opens: JPEG, PNG
 import json
 
 import numpy as np
+import pillow_heif
 from PIL import Image, ImageOps
-from pillow_heif import register_heif_opener
 
 import books
 
-register_heif_opener()
+# a phone's HEIC is in tiles, which libheif otherwise decodes on threads; the page's Python cannot start one, and
+# trying ends that Python for good
+pillow_heif.options.DECODE_THREADS = 0
+pillow_heif.register_heif_opener()
 
 
 def ready():
