@@ -1,35 +1,36 @@
 # Raw confocal data — where it lives and how to get it
 
-The owner's own microscope stacks are **not in this repository**. They live in the owner's Google
-Drive; [`sources.json`](sources.json) names each one, and a fresh session fetches them:
+The owner's own microscope stacks are **not in this repository**. They live in the `Data` folder of the
+study's Google Drive root (`root` in [`study.json`](../study.json)), and the lab fetches each one the
+first time it needs it:
 
 ```
 pip install -r requirements.txt
-python3 analysis/stack_sources.py
+python3 analysis/stacks.py                            # the stacks directly in Data/
+python3 analysis/stacks.py 'Originals uncropped/*'    # the two-channel originals
 ```
 
-They land in `data/raw/` (git-ignored, gone with the container). Every file is checked against the
-SHA-256 in `sources.json`, and a mismatch stops the run: a stack silently replaced on Drive would
-otherwise change every number downstream with nothing here recording why. A checksum is `null`
-until the first fetch; that run uses `--pin` to record it, and the manifest change is committed.
-This follows the image commit rule in
-[`studies/vascular/docs/WORKING-GUIDE.md`](../docs/WORKING-GUIDE.md): real data is worth keeping, but a
-170 MB stack cannot go through git (below). Test: `python3 tests/test_stack_sources.py`.
+They land in `data/raw/` (git-ignored, gone with the container), at their path under `Data/`. The
+lab (`analysis/extraction/lab.py`) fetches the CD31 stacks itself when `data/raw/` lacks them. A stack
+already in `data/raw/` is never downloaded again, so a stack replaced on Drive reaches a session only
+once its local copy is gone. Drive's listing of the root is the record of what exists. This follows
+the image commit rule in [`studies/vascular/docs/WORKING-GUIDE.md`](../docs/WORKING-GUIDE.md): real
+data is worth keeping, but a 170 MB stack cannot go through git (below). Test:
+`python3 -m pytest tests/test_stacks.py`.
 
-**Adding data:** put it in Drive, share it as **"Anyone with the link"**, add an entry to
-`sources.json` (`kind: "file"` with `"sha256": null`, or `kind: "folder"` with `"files": null` and
-optional `skip` globs, matched against file names), run `--pin`, commit. A source marked `"on_demand": true` is fetched only when named on the command line.
+**Adding data:** put the TIFF in the root's `Data` folder. The root is shared as **"Anyone with the
+link"**, so nothing in the repo changes.
 
 ## Sources
 
-All under the owner's shared Drive root
-[`NoR-VascularColoring data`](https://drive.google.com/drive/folders/1HfpSQ4ndHfBeUotSv4FXzoTyYDOeia7F),
-whose `VascularColoring/` subfolder is the one source here.
+The study's Drive root, [`VascularColoring`](https://drive.google.com/drive/folders/1vxDqz4_PjQEZirXMtSsPAc-pyCuEsc2J), `Data/`:
 
-| name | what | status |
-|---|---|---|
-| `owner-stacks` | The working set: the four stacks below cut to **CD31 only** and to the slices that carry vessels, chosen by the owner in the 3D viewer (2026-10-02): `cd31_ca1_x20_r_1_slices13-30`, `cd31_ca1_x20_r_2_slices1-24`, `cd31_frontal_x20_r_1_slices1-12`, `cd31_frontal_x20_r_2_slices6-29` (slice numbers count from 1 in the original). Layout `ZYX`, 16-bit, pixels unchanged, 0.55 µm/px kept; the source and range are in each file's ImageJ `Info`. 35–69 MB each. | **Pinned** 2026-10-02, 4 files, each byte-identical to the file written from the originals. |
-| `owner-stacks-originals` | Four z-stacks from session `4.2.26.sld`, 20×, mouse brain: `cd31_ca1_x20 r 1`/`r 2` (hippocampal CA1) and `cd31_frontal_x20 r 1`/`r 2` (frontal cortex). DAPI + CD31, all 30 slices. ≈165 MB each, in the Drive folder's `Originals uncropped/`. **Fetched only on request:** `python3 analysis/stack_sources.py owner-stacks-originals`. | **Pinned** 2026-09-25, 4 files, checked against Drive's own folder view. |
+| what | where |
+|---|---|
+| The working set: the four stacks below cut to **CD31 only** and to the slices that carry vessels, chosen by the owner in the 3D viewer (2026-10-02): `cd31_ca1_x20_r_1_slices13-30`, `cd31_ca1_x20_r_2_slices1-24`, `cd31_frontal_x20_r_1_slices1-12`, `cd31_frontal_x20_r_2_slices6-29` (slice numbers count from 1 in the original). Layout `ZYX`, 16-bit, pixels unchanged, 0.55 µm/px kept; the source and range are in each file's ImageJ `Info`. 35–69 MB each. | directly in `Data/` |
+| Four z-stacks from session `4.2.26.sld`, 20×, mouse brain: `cd31_ca1_x20 r 1`/`r 2` (hippocampal CA1) and `cd31_frontal_x20 r 1`/`r 2` (frontal cortex). DAPI + CD31, all 30 slices. ≈165 MB each. Fetched only on request (the glob above). | `Data/Originals uncropped/` |
+
+The `rauntruth-previews.tiff` files beside them are the page's previews, not stacks, and are skipped.
 
 ## Why Drive, and not git
 
@@ -50,9 +51,9 @@ Gotchas:
 - A link shared only with named people redirects to `accounts.google.com` (gdown: `status code
   401`) — fix the sharing, not the code.
 - **gdown's folder listing is not reliable on its own** — on 2026-09-25 it dropped one of a
-  sibling folder's 13 files on one call and returned it on the next. `--pin` therefore re-lists
-  every time and only *adds* entries (a recorded checksum is never overwritten); check a fresh pin
-  against Drive's own view, `https://drive.google.com/embeddedfolderview?id=<folder id>`.
+  sibling folder's 13 files on one call and returned it on the next. A stack missing from a
+  listing is fetched on the next run; check against Drive's own view,
+  `https://drive.google.com/embeddedfolderview?id=<folder id>`.
 
 ## The microscope
 
@@ -72,7 +73,7 @@ DAPI here is excited at 405 nm — not the 340–360 nm the lab quoted, which is
   matching the 20× in the names. Read it from each file, per the WORKING-GUIDE's calibration rule,
   rather than from this note.
 - **No z-step is stored**, and no channel names or wavelengths. The owner gave the z-step on
-  2026-10-29: **1 µm** between slices, recorded in `sources.json` (`z_step_um`) and read from there
+  2026-10-29: **1 µm** between slices, recorded in `study.json` (`view.spacing`) and read from there
   when a file carries none.
 
 ## Handling these stacks
@@ -90,6 +91,6 @@ DAPI here is excited at 405 nm — not the 340–360 nm the lab quoted, which is
   vessel segmenter must not count.
 - **Viewing one in 3D:** `analysis/export_stack_view.py`, which still reads the two-channel originals (see [`studies/vascular/docs/3D-STACKS.md`](../docs/3D-STACKS.md)).
 - **A z-stack changes "length".** Centerline length on a max projection under-counts vessels
-  running through z; 3D length uses the 1 µm z-step the owner gave (`sources.json`).
+  running through z; 3D length uses the 1 µm z-step the owner gave (`study.json` `view.spacing`).
 - **The raw `.sld` holds more than these exports** (z-step, channel names, wavelengths). Reading
   `.sld`/`.sldy` needs Bio-Formats (Java) or 3i's tools — use only if a missing piece blocks work.

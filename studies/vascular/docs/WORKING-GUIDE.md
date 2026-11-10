@@ -104,6 +104,6 @@ The owner iterated to this exact style — keep it:
 | `analysis/3D-STACKS.md` | The 3D work on the raw stacks: why flattening is not enough, what the literature does, open questions, ledger. |
 | `analysis/extraction/` | Versioned 3D-stack vessel extractors, their shared score, provisional labels and ledger; `lab.py` runs them all. |
 | `analysis/export_stack_view.py` + `analysis/stack_view/` | One raw stack → a rotatable 3D web viewer for the owner's feedback. |
-| `data/README.md` + `data/sources.json` | The owner's raw confocal stacks: kept in Google Drive, never in git; fetched by `analysis/stack_sources.py` and checked by SHA-256. What is known about the microscope and how to read the stacks. |
+| `data/README.md` | The owner's raw confocal stacks: kept in the study root's `Data` folder on Google Drive, never in git; fetched by `analysis/stacks.py` the first time one is needed. What is known about the microscope and how to read the stacks. |
 
-Setup: `pip install -r requirements.txt` (numpy, scipy, scikit-image, Pillow, gdown, tifffile). Raw stacks: `python3 analysis/stack_sources.py`.
+Setup: `pip install -r requirements.txt` (numpy, scipy, scikit-image, Pillow, gdown, tifffile). Raw stacks: `python3 analysis/stacks.py`.

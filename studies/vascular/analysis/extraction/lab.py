@@ -10,7 +10,8 @@ the graph with score.py; the card goes into the model file as "score".
     python3 analysis/extraction/lab.py render VERSION [VERSION ...] --stack NAME --out OUT.png [--box X0 Y0 X1 Y1]
     python3 analysis/extraction/lab.py grade [VERSION ...] [--json OUT]        # against the provisional labels
 
-Stacks are the CD31 trimmed files in data/raw/ (python3 analysis/stack_sources.py), named by their stem.
+Stacks are the CD31 trimmed files in the study root's Data folder, fetched into data/raw/ the first time one is
+needed (stacks.py), named by their stem.
 Runs are cached in analysis/extraction/runs/ (not committed) by version, stack and the version's source.
 """
 import argparse, glob, hashlib, importlib, json, os, sys, time
@@ -18,6 +19,7 @@ import argparse, glob, hashlib, importlib, json, os, sys, time
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE); sys.path.insert(0, os.path.join(HERE, '..'))
 import score as sc
+import stacks as raw_stacks
 import vessel_model as vm
 
 VERSIONS = {'v1': 'v1_flat_skeleton', 'v2': 'v2_scored_repair', 'v3': 'v3_geodesic_bridges', 'v4': 'v4_line_evidence', 'v5': 'v5_no_short_islands'}
@@ -34,6 +36,8 @@ RUNS = os.path.join(HERE, 'runs')
 
 def stacks(names=None):
     paths = sorted(glob.glob(os.path.join(DATA, 'cd31_*.tif')))
+    if not paths or any(n not in {os.path.basename(p)[:-4] for p in paths} for n in names or ()):
+        paths = sorted(raw_stacks.fetch(['cd31_*.tif'], raw=DATA))
     found = {os.path.basename(p)[:-4]: p for p in paths}
     if names:
         return {n: found[n] for n in names}

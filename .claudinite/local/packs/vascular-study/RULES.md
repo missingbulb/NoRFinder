@@ -13,5 +13,5 @@ on the repo's own `nor-finder` pack, never the reverse.
 - **Needing a fact about the samples or the acquisition that the files do not carry** (the z-step,
   a stain, an objective, which region a stack shows) — ask the owner for it in the thread, as one
   direct question, before treating it as unknown; a listed "open question" is not asking. Record
-  the answer, with who gave it, where the value is read from (`studies/vascular/data/sources.json`
-  for the stacks). (ask-before-unknown)
+  the answer, with who gave it, where the value is read from (`studies/vascular/study.json`
+  for the stacks, the z-step as `view.spacing`). (ask-before-unknown)
