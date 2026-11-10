@@ -104,7 +104,7 @@ async function measure(page, [x1, y1], [x2, y2], during) {
 {
   const page = await open([0.2, 0.5]);
   // in far enough that the image is larger than the view, so a drag that is not a measure would pan it
-  await zoomIn(page, 8);
+  await zoomIn(page, 11);
   await page.click("#ruler-btn");
   await check((await ruler(page)).pressed === "true", "the Ruler button arms the ruler");
   const scroll = await page.evaluate(() => [document.querySelector("#scroller").scrollLeft, document.querySelector("#scroller").scrollTop]);

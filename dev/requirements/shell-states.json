@@ -441,8 +441,7 @@
                       "children": [
                         {"name": "Image's canvas", "select": "#base", "req": "req/shell/image/minimap"},
                         {"name": "Image zoomed out", "select": "#shrunk", "req": "req/shell/image/scaling",
-                          "steady": "shown only below 100% zoom, which no state here reaches",
-                          "rule": [{"when": {}, "is": "hidden"}]}
+                          "rule": [{"is": "hidden", "approval": "undecided", "about": "shown below 100% zoom, where an image larger than the view opens; no state here says the image's size"}]}
                       ]
                     }
                   ]

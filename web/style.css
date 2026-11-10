@@ -337,11 +337,11 @@ button.icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-line
   :root:not([data-theme]) #theme .moon { display: inline; }
 }
 /* a drag anywhere on the image pans it: the labels over it are never selected or dragged as text */
-#scroller { flex: 1; overflow: auto; position: relative; background: var(--bg); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+#scroller { flex: 1; display: grid; overflow: auto; position: relative; background: var(--bg); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
 #scroller canvas, #scroller img { -webkit-user-drag: none; }
 #scroller.dragging, #scroller.dragging #overlay g[data-i] { cursor: grabbing; }
 #empty { color: var(--dim); padding: 40px; text-align: center; }
-#stage { position: relative; }
+#stage { position: relative; margin: auto; }
 #base { image-rendering: pixelated; display: block; }
 #shrunk { position: absolute; left: 0; top: 0; pointer-events: none; }
 #overlay { position: absolute; left: 0; top: 0; }
