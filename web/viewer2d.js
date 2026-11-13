@@ -19,14 +19,25 @@ export const MINIMAP = "nor-minimap";
 // a popup that opens while the pointer is over its button or itself, or the button has the keyboard's focus, and
 // stays while the user is at one of its fields; the button is its anchor, which the stylesheet places it by. The
 // browser's own interest invoker does this where it has one. fill() writes the current values into it as it opens
+// a hover popup closes the stylesheet's moment after the pointer and the focus leave it and what opened it: .leaving
+// waits on its transition, and the end of it closes the popup unless the user came back (keep())
+export function closesOnLeave(pop, keep = () => false) {
+  pop.classList.add("hover-pop");
+  pop.addEventListener("transitionend", (e) => {
+    if (e.target !== pop || e.propertyName !== "opacity" || !pop.classList.contains("leaving")) return;
+    pop.classList.remove("leaving");
+    if (!keep() && pop.matches(":popover-open")) pop.hidePopover();
+  });
+  pop.addEventListener("focusin", () => pop.classList.remove("leaving"));
+  return { stay: () => pop.classList.remove("leaving"), leave: () => pop.classList.add("leaving") };
+}
+
 export function hoverPop(btn, pop, fill) {
   pop.addEventListener("beforetoggle", (e) => { if (e.newState === "open") fill(); });
   const show = () => { if (!pop.matches(":popover-open")) pop.showPopover({ source: btn }); };
   if ("interestForElement" in HTMLButtonElement.prototype) btn.interestForElement = pop;
   else {
-    let leaving = null;
-    const stay = () => clearTimeout(leaving);
-    const leave = () => { stay(); leaving = setTimeout(() => { if (!pop.matches(":hover, :focus-within") && !btn.matches(":hover, :focus-visible")) pop.hidePopover(); }, 300); };
+    const { stay, leave } = closesOnLeave(pop, () => pop.matches(":hover, :focus-within") || btn.matches(":hover, :focus-visible"));
     for (const on of ["mouseenter", "focus"]) btn.addEventListener(on, () => { stay(); show(); });
     for (const off of ["mouseleave", "blur"]) btn.addEventListener(off, leave);
     pop.addEventListener("mouseenter", stay); pop.addEventListener("mouseleave", leave);

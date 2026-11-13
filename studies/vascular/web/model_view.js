@@ -626,7 +626,7 @@ function refreshMask(now) {
   if (!model || (review === 'all' && !cut)) { maskKey = null; return V.setMask(null); }
   const key = [model, reach, V.S.zs, review, !!focused, tagOn, cutOn];
   if (maskKey && key.every((v, k) => v === maskKey.key[k])) return V.setMask(maskKey.mask, maskKey.side);
-  maskTimer = setTimeout(() => {
+  maskTimer = setTimeout(() => { // timed here: a study loads no shell module; a run of edits recomputes the mask once
     const o = { zStepUm: V.S.zs, reachOfWidth: reach }, extra = { points: cut?.points, boxes: cut?.boxes };
     const [side, mask] = review === 'detected' ? ['inside', coverage(model, V.meta.shape, { ...o, which: visible })]
       : review === 'missed' ? ['outside', coverage(model, V.meta.shape, { ...o, which: visible, ...extra })]

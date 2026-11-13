@@ -10,6 +10,7 @@
 // once something is kept.
 import { CORE, packagesOf } from "./python_files.js";
 import { PREVIEWS } from "./previews.js";
+import { every, within } from "./pacing.js";
 import { studyPlace } from "./study_root.js";
 
 // the event each part of the page follows the network by, fired on window as it goes or comes back:
@@ -74,9 +75,9 @@ export function offline({ $, esc, sizeText, remote, kept, keptIn, keep, throttle
   navigator.serviceWorker?.addEventListener("message", (e) => {
     if (e.data?.type === "reach" && e.data.unreached !== unreached) { unreached = e.data.unreached; mark(); }
   });
-  // asked every AGAIN_MS, and every AGAIN_OFF_MS while offline, so coming back shows soon
+  // asked every AGAIN_MS, and every AGAIN_OFF_MS while offline, so coming back shows soon; a hidden tab asks once shown again
   let asked = 0;
-  setInterval(() => { if (isOffline() || Date.now() - asked >= AGAIN_MS) keepSite(); }, AGAIN_OFF_MS);
+  every(AGAIN_OFF_MS, () => { if (isOffline() || Date.now() - asked >= AGAIN_MS) keepSite(); });
   document.addEventListener("click", (e) => {
     if (isOffline() && e.target.closest?.(NEEDS)) { e.preventDefault(); e.stopImmediatePropagation(); }
   }, true);
@@ -100,14 +101,14 @@ export function offline({ $, esc, sizeText, remote, kept, keptIn, keep, throttle
   }
 
   // ---------- Install as an app ----------
-  let installEvent = null;
+  let installEvent = null, offered = () => {};
   const installed = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
   const nameManifest = () => {
     if (document.querySelector("link[rel=manifest]")) return;
     document.head.append(Object.assign(document.createElement("link"), { rel: "manifest", href: new URL("app.webmanifest", import.meta.url).href }));
   };
   try { if (localStorage.getItem(APP_ASKED)) nameManifest(); } catch { /* no storage: asked again next time */ }
-  addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvent = e; showApp(); });
+  addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvent = e; offered(); showApp(); });
   addEventListener("appinstalled", () => { installEvent = null; showApp(); });
   function showApp(text) {
     const b = $("#offline-install"), t = $("#offline-app-text");
@@ -126,7 +127,7 @@ export function offline({ $, esc, sizeText, remote, kept, keptIn, keep, throttle
     }
     if (!installEvent) {
       $("#offline-install").disabled = true; showApp("Getting the app ready…");
-      for (let t = 0; t < 50 && !installEvent; t++) await new Promise((ok) => setTimeout(ok, 100));
+      await within(5000, new Promise((ok) => { offered = ok; }));
       if (!installEvent) return showApp("The browser offers no install now: it may already be installed, or it installs from its own menu.");
     }
     // the browser asks only within the user's click: one that has run out asks for another

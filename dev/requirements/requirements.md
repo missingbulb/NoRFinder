@@ -921,7 +921,8 @@ nobody has decided: what the page does there is not a requirement yet.
   The status bar's online icon (`req/shell/status-bar/online`) shows it, the network's tooltip and its
   Network tab saying the page is offline too. No
   network is the browser saying so, or the site not answering, asked every 30 seconds all session long and every
-  5 seconds while offline, so the network going mid-session shows within 30 seconds and coming back within
+  5 seconds while offline, while the tab is shown: a hidden tab asks nothing, and asks once it is shown again if
+  that long has passed (set by the owner on 2026-11-13), so the network going mid-session shows within 30 seconds and coming back within
   seconds, even with a release that landed meanwhile still being copied (set by the owner on 2026-11-04), the browser saying online or not, and a Wi-Fi's
   sign-in page answering in the site's place counts as no network. What the page is doing follows it, set by the
   owner on 2026-11-03: a study whose Python could not load loads it once the network is back, with no reload;
@@ -934,7 +935,7 @@ nobody has decided: what the page does there is not a requirement yet.
   Request and Data Management (`req/shell/data/mode`). A change to a setting that follows the user (`req/shell/account/sign-in`) waits and is saved once the network is
   back. A visit the browser cannot reach a copy for, never opened online, shows the browser's own
   offline page: no site opens there. Nothing here installs the site as an app or asks the browser
-  for anything. Test: `web-tests/test_offline_page.py`.
+  for anything. Test: `web-tests/test_offline_page.py`, `web-tests/test_background_tab_page.py` (a hidden tab).
   </details>
 
 - `req/shell/offline/mark` What is available offline says so, quietly: a study, and an image from Google Drive.
@@ -1170,8 +1171,9 @@ nobody has decided: what the page does there is not a requirement yet.
 - `req/shell/site/out-of-date` An open page knows when it is out of date.
   <details>
 
-  Every 5 minutes it compares its version with the published one; when a newer one is out, the
-  version box in the status bar lights up and refreshes the page when clicked.
+  Every 5 minutes while the tab is shown it compares its version with the published one, and once a hidden tab is
+  shown again when 5 minutes have passed (set by the owner on 2026-11-13); when a newer one is out, the
+  version box in the status bar lights up and refreshes the page when clicked. Test: `web-tests/test_background_tab_page.py`.
   </details>
 
 - `req/shell/site/policies` The site publishes its privacy policy and terms of service, linked from its landing page and the avatar's menu.

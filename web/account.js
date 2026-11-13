@@ -9,6 +9,7 @@
 "use strict";
 import { CONNECTION } from "./offline.js";
 import { multipart } from "./drive.js";
+import { settle } from "./pacing.js";
 
 const GOOGLE_SCRIPT = "https://accounts.google.com/gsi/client";
 export const DRIVE_READ = "https://www.googleapis.com/auth/drive.readonly";
@@ -32,7 +33,8 @@ export const SIGNED_IN_LABEL = "Who is signed in with Google, and Google's token
 export function account({ keys, menu, clientId = ((window.NOR_CONFIG && window.NOR_CONFIG.google) || {}).clientId || "", applied, changed = () => {} }) {
   const $ = (s) => menu.querySelector(s);
   // waiting: {ok, fail} of a sign-in the popup is waiting on (req/shell/account/welcome)
-  let me = read(), client = null, script = null, saving = null, waiting = null;
+  let me = read(), client = null, script = null, waiting = null;
+  const saving = settle(SAVE_AFTER_MS, () => save().catch((e) => console.warn("settings not saved to Google Drive:", e.message)));
   const answered = (how, why) => { const w = waiting; waiting = null; if (w) w[how](why); };
 
   function read() { try { return JSON.parse(localStorage.getItem(SIGNED_IN)) || null; } catch { return null; } }
@@ -151,7 +153,7 @@ export function account({ keys, menu, clientId = ((window.NOR_CONFIG && window.N
     });
   });
   const signOut = () => {
-    clearTimeout(saving);
+    saving.cancel();
     me = null; keep(); show(); menu.open = false;
   };
   $("#sign-in").onclick = () => { if (client) client.requestAccessToken(); };
@@ -166,7 +168,7 @@ export function account({ keys, menu, clientId = ((window.NOR_CONFIG && window.N
   addEventListener("storage", (e) => {
     if (e.key !== SIGNED_IN && e.key !== null) return;
     me = clientId ? read() : null;
-    if (!me) clearTimeout(saving);
+    if (!me) saving.cancel();
     show();
   });
   // a change made offline waits for the network, then syncs while the token lasts; with none, Google's script
@@ -184,8 +186,7 @@ export function account({ keys, menu, clientId = ((window.NOR_CONFIG && window.N
       if (!me || !keys.includes(key)) return;
       me.changed = [...new Set([...(me.changed || []), key])]; keep();
       if (!live()) return void renew();
-      clearTimeout(saving);
-      saving = setTimeout(() => save().catch((e) => console.warn("settings not saved to Google Drive:", e.message)), SAVE_AFTER_MS);
+      saving();
     },
     signedIn: () => !!(me && me.user),
     // what the welcome popup keeps as the choice of signing in

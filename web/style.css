@@ -450,7 +450,8 @@ html[data-motion=off] :is(#sb-res-items, #statusbar #sb-res-icon) { transition: 
 #sb-res-items { min-width: 0; flex: 0 1 auto; }
 #sb-memory.warn { color: var(--warn); }
 #statusbar .sb-item, #statusbar .sb-item svg { transition: color 1s; }
-#statusbar .sb-item.spike, #statusbar .sb-item.spike svg { color: var(--warn); transition: none; }
+#statusbar .sb-item.spike, #statusbar .sb-item.spike svg { animation: spike 4s; }
+@keyframes spike { 0%, 75% { color: var(--warn); } }
 #statusbar .roll { display: inline-block; clip-path: inset(0); }
 #statusbar .roll > span { display: inline-block; position: relative; animation: roll .4s cubic-bezier(.2, .8, .3, 1.15); }
 #statusbar .roll > span::before { content: attr(data-from); position: absolute; left: 0; bottom: 100%; }
@@ -524,6 +525,12 @@ button.working::after { content: ""; display: inline-block; width: .75em; height
 #busy { position: absolute; inset: 52px 0 0 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: var(--shade); color: var(--text); }
 #busy[hidden] { display: none; }
 #busy-time { color: var(--dim); font-variant-numeric: tabular-nums; }
+/* the seconds the page has been busy, counted while #busy shows: hiding it starts the count over */
+@property --busy-s { syntax: "<integer>"; inherits: false; initial-value: 0; }
+#busy-time::after { counter-reset: s var(--busy-s); content: counter(s) " s"; animation: busy-count 86400s steps(86400) forwards; }
+@keyframes busy-count { from { --busy-s: 0; } to { --busy-s: 86400; } }
+/* a hover popup leaving: the moment the pointer may come back in, which ends in its closing */
+.hover-pop.leaving { opacity: 0; transition: opacity 0s 300ms; }
 /* over an image (work on it, or one painting as it downloads) the text sits in a pill below it, and work on
    it sweeps a copier's light bar back and forth over the image */
 #scan-light { display: none; }

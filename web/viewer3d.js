@@ -185,7 +185,7 @@ function binned(planes, at, C, Z, W, H, bin) {
 export function viewer3d(shell, flat) {
   const { $, page } = shell;
   const html = (tag, props) => Object.assign(document.createElement(tag), props);
-  let active = false, gl = null, U = {}, tex = [], dirty = true, vol = null, mode3d = false;
+  let active = false, gl = null, U = {}, tex = [], frame = 0, vol = null, mode3d = false;
   // clip: [x0, y0, x1, y1] in world units, the part of the stack shown, or null for all; spot: {x, y, r}, the part of the
   // screen kept clear while the rest dims (x and y fractions of the width and height, r of the height), or null;
   // held: a drag neither turns nor pans the view, which only zooms
@@ -316,7 +316,6 @@ export function viewer3d(shell, flat) {
 
   // ---------- drawing ----------
   function render() {
-    dirty = false;
     if (!vol || stage.hidden || !gl) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 1.5) * (S.dragging ? 0.6 : 1);
     const w = Math.round(cv.clientWidth * dpr), h = Math.round(cv.clientHeight * dpr);
@@ -381,9 +380,9 @@ export function viewer3d(shell, flat) {
     for (const [t, , b] of ends) c.fillText(t, b[0] + 3, b[1] - 3);
     c.restore();
   }
-  const redraw = () => { dirty = true; };
-  const loop = () => { if (dirty) render(); requestAnimationFrame(loop); };
-  requestAnimationFrame(loop);
+  // drawn on the next frame after a change, a run of changes drawn once, and no frame drawn with nothing changed
+  const redraw = () => { frame ||= requestAnimationFrame(() => { frame = 0; render(); }); };
+  redraw();
   new ResizeObserver(redraw).observe(stage);
   flat.onDrawn(redraw);
 

@@ -131,7 +131,7 @@ const reach = async (unreached) => {
 };
 const keepSite = () => (keeping ||= keepSiteNow().finally(() => { keeping = null; }));
 async function keepSiteNow() {
-  const res = await fetch(LIST, { cache: "no-cache", signal: AbortSignal.timeout(REACH_MS) }).catch(() => null);
+  const res = await fetch(LIST, { cache: "no-cache", signal: AbortSignal.timeout(REACH_MS) }).catch(() => null); // timed here: the worker is a classic script, which loads no module
   // a Wi-Fi's sign-in page answering in the site's place is no network too
   const unreached = !res || (res.ok && !/json/.test(res.headers.get("content-type") || ""));
   await reach(unreached);
