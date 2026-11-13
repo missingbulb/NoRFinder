@@ -113,7 +113,9 @@ try {
   if (await page.evaluate(() => !!document.createElement("canvas").getContext("webgl2"))) {
     const all = await brightness();
     await page.click(await inMenu('#review-mode [data-v="detected"]'));
-    const detected = await brightness();
+    // the study applies the mask in a task of its own after the click: drawn again until it shows, 60 draws at most
+    let detected = await brightness();
+    for (let n = 0; n < 60 && detected >= all * 0.8; n++) detected = await brightness();
     check(detected < all * 0.8, `Detected keeps only the signal near the model's vessels: ${all.toFixed(2)} → ${detected.toFixed(2)}`);
     await page.click(await inMenu('#review-mode [data-v="all"]'));
   } else console.log(`not checked in this ${ENGINE}: what Detected leaves in the 3D view, which needs the WebGL2 it lacks`);
