@@ -52,3 +52,90 @@ def test_a_png_shows_only_its_size(tmp_path):
     p = str(tmp_path / 'c.png'); Image.new('RGB', (30, 20)).save(p)
     assert open_image(tmp_path, p)[0]['info'] == [['Field', '30 × 20 px'], ['Depth', '8-bit RGB']]
 
+
+
+def exif(make='Acme', model='Acme Phone 9'):
+    """A phone's EXIF: its camera, when it was taken, its exposure, a location, and a maker note (a binary blob)."""
+    from PIL import Image
+    e = Image.Exif()
+    e[0x010f], e[0x0110], e[0x0112] = make, model, 6
+    sub = e.get_ifd(0x8769)
+    sub[0x9003], sub[0x9011], sub[0x829a], sub[0x8827] = '2026:11:05 21:03:05', '+02:00', 0.125, 500
+    sub[0x927c] = bytes(range(256)) * 4
+    gps = e.get_ifd(0x8825)
+    gps[1], gps[2] = 'N', (32.0, 4.0, 30.0)
+    return e
+
+
+def details(got):
+    return dict(got['info']), dict(got['more'])
+
+
+def test_a_heic_photo_pins_its_camera_and_when_it_was_taken(tmp_path):
+    """req/shell/image/file-info: the camera and the time taken up front, the rest folded, GPS among them, no blob."""
+    import numpy as np, pillow_heif
+    from PIL import Image
+    p = tmp_path / 'photo.heic'
+    pillow_heif.from_pillow(Image.fromarray(np.full((20, 30, 3), 90, np.uint8))).save(p, exif=exif().tobytes(), quality=-1)
+    got = open_image(tmp_path, str(p))[0]
+    assert [k for k, _ in got['info']] == ['Field', 'Depth', 'Camera', 'Taken']
+    info, more = details(got)
+    assert info['Camera'] == 'Acme Phone 9'
+    assert info['Taken'] == '2026-11-05 21:03:05 +02:00'
+    assert info['Depth'] == '8-bit RGB'
+    assert more['ExposureTime'] == '1/8' and more['ISOSpeedRatings'] == '500' and more['Orientation'] == '6'
+    assert more['GPSLatitudeRef'] == 'N' and more['GPSLatitude'] == '32, 4, 30'
+    assert more['Images'] == '1'
+    assert 'MakerNote' not in more and not any(len(v) > 600 for v in more.values())
+
+
+def test_a_jpeg_with_no_exif_shows_its_jfif_header_folded(tmp_path):
+    import numpy as np
+    from PIL import Image
+    p = tmp_path / 'chat.jpg'
+    Image.fromarray(np.full((20, 30, 3), 90, np.uint8)).save(p, progressive=True)
+    got = open_image(tmp_path, str(p))[0]
+    assert got['info'] == [['Field', '30 × 20 px'], ['Depth', '8-bit RGB']]
+    more = dict(got['more'])
+    assert more['JFIF version'] == '1.1' and more['Coding'] == 'progressive'
+
+
+def test_a_jpeg_names_a_camera_its_make_spells_once(tmp_path):
+    import numpy as np
+    from PIL import Image
+    p = tmp_path / 'cam.jpg'
+    Image.fromarray(np.full((20, 30, 3), 90, np.uint8)).save(p, exif=exif(make='Acme', model='Phone 9').tobytes())
+    info, more = details(open_image(tmp_path, str(p))[0])
+    assert info['Camera'] == 'Acme Phone 9' and info['Taken'] == '2026-11-05 21:03:05 +02:00'
+    assert more['Make'] == 'Acme' and 'MakerNote' not in more
+
+
+def test_a_png_folds_its_text_and_pixel_density(tmp_path):
+    from PIL import Image, PngImagePlugin
+    p = str(tmp_path / 'e.png')
+    meta = PngImagePlugin.PngInfo(); meta.add_text('Author', 'Lab bench 3')
+    Image.new('L', (30, 20)).save(p, pnginfo=meta, dpi=(254, 254))
+    got = open_image(tmp_path, p)[0]
+    assert got['info'] == [['Field', '30 × 20 px'], ['Depth', '8-bit grey']]
+    more = dict(got['more'])
+    assert more['Author'] == 'Lab bench 3' and more['Pixel density'] == '10000 × 10000 px/m'
+
+
+def test_a_tiff_folds_its_tags_and_imagej_header(tmp_path):
+    p = str(tmp_path / 'f.tif'); write(p)
+    more = dict(open_image(tmp_path, p)[0]['more'])
+    assert more['ImageJ channels'] == '3' and more['ImageJ unit'] == 'micron'
+    assert more['ImageWidth'] == '50'
+    assert 'StripOffsets' not in more and not any(k.startswith('Tag 0xc6') for k in more)
+
+
+def test_a_study_pins_its_own_fields(tmp_path):
+    """view.details names, per format, what is pinned instead; what the format pinned is folded with the rest."""
+    import numpy as np
+    from PIL import Image
+    p = tmp_path / 'cam.jpg'
+    Image.fromarray(np.full((20, 30, 3), 90, np.uint8)).save(p, exif=exif().tobytes())
+    got = open_image(tmp_path, str(p), view={'details': {'jpeg': ['Taken', 'ExposureTime']}})[0]
+    assert got['info'] == [['Taken', '2026-11-05 21:03:05 +02:00'], ['ExposureTime', '1/8']]
+    more = dict(got['more'])
+    assert more['Field'] == '30 × 20 px' and more['Camera'] == 'Acme Phone 9' and 'ExposureTime' not in more
