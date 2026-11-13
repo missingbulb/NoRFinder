@@ -584,8 +584,12 @@ const count = async (page) => { await page.click("#fx-count"); await page.waitFo
   // another study's label speaks of that study
   const other = await hoverStage(page, "nor");
   await check(other[1]?.now && other.filter((x) => x.now).length === 1, "in a PreGT study, hovering NoR Finder's label highlights GT, its own", other);
+  // with animations off, leaving it closes it all the same
+  const was = await page.evaluate(() => { const m = document.documentElement.dataset.motion; document.documentElement.dataset.motion = "off"; return m; });
   await page.mouse.move(700, 600);
-  await page.waitForFunction(() => !document.querySelector("#stage-pop").matches(":popover-open"));
+  const closed = await page.waitForFunction(() => !document.querySelector("#stage-pop").matches(":popover-open"), null, { timeout: 3000 }).then(() => true, () => false);
+  await check(closed, "with animations off, the stage's popup closes once the pointer leaves it");
+  await page.evaluate((m) => { document.documentElement.dataset.motion = m; }, was);
   await page.evaluate(() => { document.querySelector("#study-menu").open = false; });
   await loadImage(page);
   await switchIs(page, "Items", false, "the shell keeps the switch off until the study has counted its items");

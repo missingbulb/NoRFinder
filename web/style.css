@@ -803,6 +803,9 @@ img.avatar { border-radius: 50%; object-fit: cover; }
 /* animations turned off (the CPU tab): nothing moves but a spinner, which says the page is working rather than stuck */
 :root[data-motion="off"] *, :root[data-motion="off"] *::before, :root[data-motion="off"] *::after { animation: none !important; transition: none !important; }
 :root[data-motion="off"] .spin, :root[data-motion="off"] button.working::after, :root[data-motion="off"] #image-pick.working .pick-name::after { animation: spin .8s linear infinite !important; }
+/* the busy time and a hover popup's grace before closing are clocks, not motion: they keep time with animations off */
+:root[data-motion="off"] #busy-time::after { animation: busy-count 86400s steps(86400) forwards !important; }
+:root[data-motion="off"] .hover-pop.leaving { transition: opacity 0s 300ms !important; }
 :root[data-motion="off"] #busy.scan #scan-light { display: none; }
 /* still, a shining button looks plain: a frozen sweep and a halo read as a smudge */
 :root[data-motion="off"] .shine { box-shadow: none; }

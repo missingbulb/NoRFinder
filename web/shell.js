@@ -312,7 +312,7 @@ function showNumber(item, text, spike) {
   if (spike && !still()) {
     if (item.classList.contains("spike")) for (const a of item.getAnimations({ subtree: true })) if (a.animationName === "spike") { a.cancel(); a.play(); }
     item.classList.add("spike");
-    item.onanimationend ??= (e) => { if (e.target === item && e.animationName === "spike") item.classList.remove("spike"); };
+    if (!item.onanimationend) item.onanimationend = item.onanimationcancel = (e) => { if (e.target === item && e.animationName === "spike") item.classList.remove("spike"); };
   }
   const v = item.querySelector(".v"), was = v.textContent;
   if (text === was) return;
