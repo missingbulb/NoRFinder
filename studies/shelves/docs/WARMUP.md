@@ -13,12 +13,13 @@ py/shelves.py         the Python entry: opens the photo (HEIC through pillow-hei
 py/books.py           the finder (find), its text finder's view of the photo, and the straightening of four corners
 lab/photos.py         the owner's photos from Drive (data/sources.json), and with --gt the ground truth
 lab/grade.py          the finder and the readers scored against a submitted ground truth
+lab/perf.py           the performance pass: signature, time and peak of `find` over eight inputs (Performance)
 lab/words.py          the names list from one dated dump of Hebrew Wikipedia's titles, into web/words/
 web/shelves.js        the page: Find books, Read titles, the titles in Summary, the ground-truth task and its pictures
 web/reading.js        the three readers, the same module in the page and in the sandbox
 web/words/names.txt   Hebrew Wikipedia titles' words the readings are spelled by after the subtitle list (CC BY-SA 4.0, lab/words.py)
 web/tessdata/         Tesseract's Hebrew and English (4.0.0_best_int, from @tesseract.js-data/*@1.0.0, MIT): served by the site, pinned
-reading/              the sandbox: read.mjs and the pinned engine builds (package.json)
+reading/              the sandbox: read.mjs, find.mjs, perf_pyodide.mjs and the pinned engine builds (package.json)
 tests/                test_books.py and test_grade.py (fast), test_reading.py and test_shelves_page.py (full)
 ```
 
@@ -153,7 +154,8 @@ level of noise; precision fell (46 more boxes, mostly on `1zktX1`'s top shelves 
   1440 px run added where they overlap nothing (rows R9-G, R9-M2, R9-log, R9-fine), and the roll wrapper (R9-roll).
 - **Rotated (warp.py, truth 91 over `1zktX1`, `1g4iFN`, `16acjV`):** R9 68 / 62 / 69 at -10° / 20° / 90°;
   R8 finds no book at 90° and a fifth of them at 20°.
-- **Time:** the page's Find books on `1zktX1` went from 23 s (R8) to ~100 s; the performance pass follows.
+- **Time:** the page's Find books on `1zktX1` went from 23 s (R8) to ~100 s; the [performance pass](#performance) brought
+  it to 27 s with every box unchanged.
 - **The run:** Fable ideation over fresh lenses, a child's explanation (R9-FFC), transformed views and the whole trick
   pool, each built and scored by a Sonnet agent; every direction is a row of [Directions tried](#directions-tried).
 
@@ -432,6 +434,79 @@ number below is a score.
   languages under one address. Tesseract.js core 6.1.2 lacks the build tesseract.js 7 asks for; 7.0.0 it is.
   Community Hebrew models for ONNX on Hugging Face (a few months old, unlicensed or with no downloads) were not
   taken.
+
+## Performance
+
+A pass that keeps a change only when every box is bit-identical (the `speeding-up-an-algorithm` skill). The inputs are the
+page's decoded pixels and its text map for six photos, and `1g4iFN` turned 20° and 90° (`lab/warp.py`'s own warp, text
+map included), so the roll and quarter-turn paths are covered. `lab/perf.py` hashes every box, all fields, per input:
+
+```
+python3 studies/shelves/lab/perf.py snapshot
+python3 studies/shelves/lab/perf.py check
+python3 studies/shelves/lab/perf.py profile 1zktX1
+```
+
+`SHELVES_PERF_DIR` names the folder of `rgb_<id>.npy` and `tm_<id>.json` (default `lab/.cache/perf/inputs`, not committed);
+`check` exits 1 when any signature moved and prints time (minimum of 3) and tracemalloc peak for `1zktX1` and `1g4iFN`;
+`sigs` is the signatures alone, on 4 processes. The page's Pyodide, which is what the owner waits on:
+
+```
+REPS=1 node studies/shelves/reading/perf_pyodide.mjs PHOTO TEXTMAP.json
+```
+
+It prints load, open, find and the heap after (the page's text finder runs instead when the map is left out). Pyodide
+is 32-bit WebAssembly: an array whose nominal size passes 2 GB raises (the first prefix-sum window view did) and the
+numpy calls of a pure-Python loop cost two to three times what they do natively. Pyodide's own times wander ±10%
+between runs, and a second find in one session is ~8% shorter than the first: quote the first, over several processes.
+
+Times are `1zktX1`, minimum of 3 on the container, peak in MB (R9 at HEAD: 29.05 s, 131 MB). Kept needs identical
+signatures and 5% off the time or the peak, neither worse by 5%; a Python-loop change the container cannot show is judged
+in Pyodide.
+
+| # | change | s before → after | peak | verdict |
+|---|---|---|---|---|
+| P1 | seams of the grey kept per `Edges` (computed 3 times) | 29.05 → 27.33 | 131 → 132 | kept |
+| P2 | edge-line scan by prefix sums down the rows, one stretch per run of rows a column across (`LineScan`) | 27.33 → 23.11 | = | kept |
+| P3 | `points_in_poly` over each box's bounds, not the whole photo's grid | 23.11 → 22.05 | 132 → 98 | kept (peak) |
+| P4 | `end_edge`: the loop over rows and the peak list vectorised | 22.05 → 21.42 (`1g4iFN` -9%) | = | kept (together -5%) |
+| P5 | `extent`: rows grouped by width, one gather and mean each | 21.42 → 18.43 | = | kept |
+| P6 | `book_colour`, `texture`, `face_spread` as gathers | 18.43 → 18.25 | = | reverted, kept in P11 |
+| P7 | `regions`: both sides' turn × shift snapped at once | 18.25 → 17.64 | = | kept (`1g4iFN` -10%) |
+| P8 | `overlap`: bounds apart return 0 before clipping | 17.64 → 16.10 | = | kept |
+| P9 | scan windows by `sliding_window_view` | 16.10 → 13.75 | = | kept, then broken in Pyodide ("array is too big"): see P12 |
+| P10 | edges, shelves, barcode bands and the work-size view made once for the first two runs; the log run reads the plain run's seams | 13.75 → 13.03 | 98 → 100 | kept |
+| P11 | P6 again | 13.03 → 12.22 | = | kept |
+| P12 | the windows in steps of columns that keep the view under 2 GB, `uint16` sums | 12.22 → 11.70 | = | kept (the fix) |
+| P13 | region test against the boxes' areas made once, not per pair | 11.70 → 10.29 | = | kept |
+| P14 | `text_along` as one gather (container: noise); `iou` returns 0 early | 10.29 → 10.59; Pyodide 21.0 → 18.2 | = | kept (Pyodide) |
+| P15 | regions cut once, the log run reads them; one `percentile` call for both axes | 10.59 → 9.33; Pyodide 18.4 → 16.9 | = | kept |
+| P16 | `keep` of `side_lines` as array tests | Pyodide 18.4 → 19.7 | = | reverted (per-line numpy calls cost more than the loop) |
+| P17 | boxes' bounds kept beside them in `apart`, the region test and `find_run` | Pyodide 16.9 → 16.65 | = | reverted (-1.5%) |
+| P18 | `LineScan` made once per `side_lines`, its sums per mask, `argmax` over all columns, text mask once | 9.33 → 9.33; Pyodide 16.9 → 15.4 | = | kept (Pyodide) |
+| P19 | `end_edge` running sums into arrays that start with a zero line, `np.linalg.norm` as `row_norm` | 9.33 → 8.25; Pyodide 15.4 → 15.2 | 101 | kept |
+
+Final, first find per photo, container (minimum of 2) and the page's Pyodide, R9 → now; every box equal in both:
+
+| photo | boxes | container s | Pyodide find s | Pyodide heap after, MB |
+|---|---|---|---|---|
+| `1HyJrL` | 21 | 28.1 → 11.9 | 58.8 → 18.6 | 322 → 269 |
+| `1g4iFN` | 15 | 24.9 → 10.6 | 47.0 → 16.9 | 322 → 269 |
+| `1zktX1` | 92 | 30.7 → 8.3 | 65.7 → 15.2 | 269 → 224 |
+| `16acjV` | 21 | 23.7 → 9.3 | 45.7 → 15.0 | 322 → 322 |
+| `1sdDdH` | 17 | 40.6 → 20.1 | 67.6 → 27.1 | 322 → 269 |
+| `16w5nW` | 9 | 28.2 → 14.8 | 48.5 → 21.3 | 322 → 322 |
+| `1g4iFN` 20° / 90° | 13 / 16 | 23.4 → 9.8 / 79.5 → 39.5 | - | - |
+
+Peak (tracemalloc): `1zktX1` 131 → 101 MB, `1g4iFN` 170 → 143 MB. `node reading/find.mjs` (Pyodide load ~7 s, the photo's
+decoding ~3 s, the text finder ~1.5 s, then find): `1zktX1` 79.6 → 26.5-27.7 s, `1HyJrL` 66.5 → 31.2 s.
+
+What is left (`1zktX1`, 8.3 s): the WORK_FINE run is half of it (4.1 s of 8.0; on `1sdDdH` 14.4 of 20 s), the plain run 2.3 s, the log
+run 1.5 s. By function: `spine`'s checks of ~1500 candidates (`end_edge` a quarter of the run: ~2200 gathers of
+30k pixels), `Edges` (three Canny's per band, 15%), `region_pieces` (3300 small PCAs, 10%), `gap_search`, `side_lines`,
+`covers`' Hough. A 90° photo costs three finds. Not bit-identical, so not made: dropping the WORK_FINE run (about -50%
+on `1zktX1`, -70% on `1sdDdH`, and R9-fine's +4 books), a work size below 900, or `spine` memoised across the runs
+(exact, 20% of its calls repeat, ~5%: not built).
 
 ## Directions tried
 

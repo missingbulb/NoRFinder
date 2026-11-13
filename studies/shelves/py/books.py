@@ -7,6 +7,8 @@ top and foot are where its texture gives way to the plain wall or board, each sn
 at whatever angle that runs. A box is kept only once it checks out as a readable spine (`spine`), and of the boxes kept,
 the most that share no ground are the books. It boxes spines alone: a cover, or a pile of books lying flat, is not told
 apart yet."""
+import copy
+
 import numpy as np
 from scipy import ndimage as ndi
 from skimage.measure import points_in_poly
@@ -198,16 +200,36 @@ class Edges:
         self.rgb = rgb
         self.gray = grey(rgb)
         self.log = log
-        self.sg = 255.0 * np.log1p(np.clip(self.gray, 0, None) / LOG_KNEE) / np.log1p(255 / LOG_KNEE) if log else self.gray
-        self.seam = self.seams(True)
+        self.base = None
+        self.cached = {}
+        self.shared = {}
         self.spread = float(np.subtract(*np.percentile(g, [95, 5]))) or 1.0
+
+    @property
+    def seam(self):
+        return self.seams(True)
+
+    def looked(self, log):
+        """These edges with the seams of the run that does (log) or does not log-stretch the dark shelves: the edges
+        themselves are shared."""
+        if log == self.log:
+            return self
+        assert not self.log
+        other = copy.copy(self)
+        other.log, other.base, other.cached = log, self if log else None, {}
+        return other
 
     def seams(self, strict):
         """The seams of the grey, from the log-stretched grey where the shelf is dark when this is the log run."""
-        if self.log:
-            dark = ndi.uniform_filter(self.gray, LOG_WIN) < LOG_DARK
-            return np.where(dark, seams(self.sg, strict), seams(self.gray, strict))
-        return seams(self.gray, strict)
+        if strict not in self.cached:
+            plain = self.base.seams(strict) if self.base is not None else seams(self.gray, strict)
+            if self.log:
+                sg = 255.0 * np.log1p(np.clip(self.gray, 0, None) / LOG_KNEE) / np.log1p(255 / LOG_KNEE)
+                dark = ndi.uniform_filter(self.gray, LOG_WIN) < LOG_DARK
+                self.cached[strict] = np.where(dark, seams(sg, strict), plain)
+            else:
+                self.cached[strict] = plain
+        return self.cached[strict]
 
 
 def book_rows(e):
@@ -241,6 +263,59 @@ def core_rows(gray):
     return (int(on[0]), int(on[-1]) + 1) if len(on) else None
 
 
+# [lean-scan] the most elements of a window view of the scan's prefix sums, at two bytes each
+LINE_VIEW = 1 << 27
+
+
+class LineScan:
+    """[x0, lean] The share of rows ys that a mask is on along the line through x0 at row yc leaning by each of tans, a
+    point off the mask counting as off, for runs of consecutive columns x0. The mask is read through its prefix sums down
+    the rows, kept for the scan's key."""
+
+    def __init__(self, ys, yc, tans, h, w):
+        self.ys, self.yc, self.tans, self.h, self.w = ys, yc, tans, h, w
+        n = len(ys)
+        self.d = (ys[None] - yc) * tans[:, None]
+        # a line this close to a half pixel could round either way once x0 is added: its points are looked up one by one
+        self.exact = bool((np.abs(self.d - np.floor(self.d) - 0.5) < 1e-6).any())
+        self.pad = int(np.ceil(np.abs(self.d).max())) + 2
+        shift = np.round(self.d).astype(np.intp)
+        self.first, self.span = int(shift.min()), int(shift.max() - shift.min()) + 1
+        # the rows between two cuts lie one column across, so their run of x0s is one stretch of the prefix sums
+        self.cuts = []
+        for k in range(len(tans)):
+            cut = np.flatnonzero(np.diff(shift[k])) + 1
+            top = np.r_[0, cut]
+            self.cuts.append((top, np.r_[cut, n], shift[k][top] - self.first))
+        self.sums = {}
+
+    def cover(self, key, mask, lo, count):
+        ys, n, w = self.ys, len(self.ys), self.w
+        if count == 0:
+            return np.zeros((0, len(self.tans)))
+        if self.exact:
+            out = []
+            for at in range(0, count, 16):
+                xs = np.round(np.arange(lo + at, lo + min(count, at + 16))[:, None, None] + self.d[None]).astype(int)
+                ok = (xs >= 0) & (xs < w)
+                out.append(np.where(ok, mask[ys[None, None], np.clip(xs, 0, w - 1)], False).mean(axis=2))
+            return np.concatenate(out)
+        if key not in self.sums:
+            self.sums[key] = np.zeros((n + 1, w + 2 * self.pad), np.uint16)
+            np.cumsum(np.pad(mask[ys[0]:ys[-1] + 1], ((0, 0), (self.pad, self.pad))), axis=0, out=self.sums[key][1:])
+        sums = self.sums[key]
+        out = np.empty((count, len(self.tans)))
+        # the windows of the sums are read in steps of columns that keep the view under the 2 GB a 32-bit runtime allows
+        step = max(1, min(count, LINE_VIEW // ((n + 1) * self.span)))
+        for at in range(0, count, step):
+            size = min(step, count - at)
+            start = self.pad + lo + at + self.first
+            rows = np.lib.stride_tricks.sliding_window_view(sums[:, start:start + self.span - 1 + size], size, axis=1)
+            for k, (top, bottom, col) in enumerate(self.cuts):
+                out[at:at + size, k] = rows[bottom, col].sum(0, dtype=np.int64) - rows[top, col].sum(0, dtype=np.int64)
+        return out / n
+
+
 def side_lines(e, top, bottom, text=None):
     """[(x at the rows' middle, lean as tan)] of the edges between books, left to right: lines that lie on a seam
     along BOUNDARY of the rows nearly every book crosses, at leans up to LEAN, kept strongest first and none crossing
@@ -258,20 +333,18 @@ def side_lines(e, top, bottom, text=None):
     tans = np.tan(np.deg2rad(np.arange(-LEAN, LEAN + LEAN_STEP / 2, LEAN_STEP)))
     gap = MIN_WIDTH * 2 * e.w
 
+    scanner = LineScan(ys, yc, tans, *e.gray.shape)
+    crossing = None if text is None else text > TEXT_ON
+
     def scan(x0s, strict):
-        on = e.seams(strict)
-        found = []
-        for x0 in x0s:
-            xs = np.round(x0 + (ys[None] - yc) * tans[:, None]).astype(int)
-            ok = (xs >= 0) & (xs < e.w)
-            cover = np.where(ok, on[ys[None], np.clip(xs, 0, e.w - 1)], False).mean(axis=1)
-            if text is not None:
-                crossed = np.where(ok, text[ys[None], np.clip(xs, 0, e.w - 1)] > TEXT_ON, False).mean(axis=1)
-                cover = np.where(crossed > TEXT_CROSS, 0, cover)
-            k = int(np.argmax(cover))
-            if cover[k] >= BOUNDARY:
-                found.append((float(cover[k]), float(x0), float(tans[k])))
-        return found
+        lo, count = (x0s.start, len(x0s)) if len(x0s) else (0, 0)
+        cover = scanner.cover(strict, e.seams(strict), lo, count)
+        if text is not None:
+            crossed = scanner.cover('text', crossing, lo, count)
+            cover = np.where(crossed > TEXT_CROSS, 0, cover)
+        best = cover.argmax(axis=1)
+        at = np.arange(count)
+        return [(float(cover[i, best[i]]), float(lo + i), float(tans[best[i]])) for i in np.flatnonzero(cover[at, best] >= BOUNDARY)]
 
     def keep(found, kept):
         at = lambda x, t, y: x + (y - yc) * t
@@ -348,26 +421,27 @@ def text_along(text, c):
     clockwise from the top left), those with text on them."""
     tl, tr, br, bl = np.asarray(c, float)
     rows = 40
-    hits = 0
-    for k in range(rows):
-        f = (k + 0.5) / rows
-        a, b = tl + (bl - tl) * f, tr + (br - tr) * f
-        xs, ys = np.linspace(a[0], b[0], 12)[2:-2], np.linspace(a[1], b[1], 12)[2:-2]
-        xi = np.clip(np.round(xs).astype(int), 0, text.shape[1] - 1)
-        yi = np.clip(np.round(ys).astype(int), 0, text.shape[0] - 1)
-        hits += bool((text[yi, xi] > TEXT_ON).any())
-    return hits / rows
+    f = ((np.arange(rows) + 0.5) / rows)[:, None]
+    a, b = tl + (bl - tl) * f, tr + (br - tr) * f
+    # the 8 inner samples of np.linspace(a, b, 12) along each row
+    step, inner = (b - a) / 11, np.arange(2, 10)[None]
+    xs, ys = a[:, :1] + inner * step[:, :1], a[:, 1:] + inner * step[:, 1:]
+    xi = np.clip(np.round(xs).astype(int), 0, text.shape[1] - 1)
+    yi = np.clip(np.round(ys).astype(int), 0, text.shape[0] - 1)
+    return int((text[yi, xi] > TEXT_ON).any(axis=1).sum()) / rows
 
 
 def extent(e, la, lb, top, bottom):
     """(first row, row after the last) the book between two lines fills: where its strip has the edges a book's face
     carries and the wall or board above and below it lacks."""
     h = bottom - top
+    y = np.arange(top, bottom)
+    a, b = np.maximum(np.floor(la.x(y)).astype(int), 0), np.minimum(np.ceil(lb.x(y)).astype(int) + 1, e.w)
     r = np.zeros(h)
-    for k, y in enumerate(range(top, bottom)):
-        a, b = max(int(np.floor(la.x(y))), 0), min(int(np.ceil(lb.x(y))) + 1, e.w)
-        if b > a:
-            r[k] = e.grad[y, a:b].mean()
+    for width in np.unique(b - a):
+        if width > 0:
+            at = np.flatnonzero(b - a == width)
+            r[at] = e.grad[y[at, None], a[at, None] + np.arange(width)].mean(axis=1)
     r = ndi.uniform_filter1d(r, max(3, h // 30))
     if not (r > 0).any():
         return None
@@ -379,6 +453,11 @@ def extent(e, la, lb, top, bottom):
         return None
     ys = np.flatnonzero(lab == 1 + int(np.argmax(np.bincount(lab.ravel())[1:])))
     return top + int(ys[0]), top + int(ys[-1]) + 1
+
+
+def row_norm(v):
+    """The Euclidean length of each vector along the last axis, as np.linalg.norm gives it."""
+    return np.sqrt(np.add.reduce(v * v, axis=-1))
 
 
 def end_edge(e, la, lb, y, out, win, limit, tilt, colour):
@@ -401,16 +480,18 @@ def end_edge(e, la, lb, y, out, win, limit, tilt, colour):
     px = e.rgb[yi, xi[None, None, :]]
     prof = px.mean(axis=2)
     # how much of each line is the book's own colour
-    own = (np.linalg.norm(px - colour, axis=-1) <= OWN * e.spread).mean(axis=2)
+    own = (row_norm(px - colour) <= OWN * e.spread).mean(axis=2)
     k = max(2, win // 2)
     n = len(shifts)
     step = np.zeros((n, len(tilts)))
-    c = np.cumsum(np.pad(prof, ((1, 0), (0, 0), (0, 0))), axis=0)
-    o = np.cumsum(np.pad(own, ((1, 0), (0, 0))), axis=0)
-    for i in range(k, n - k):
-        inside, beyond = (c[i] - c[i - k]) / k, (c[i + 1 + k] - c[i + 1]) / k
-        # past its end hardly any of the strip is the book's: past a row of its lettering, most still is
-        step[i] = np.where((o[i + 1 + k] - o[i + 1]) / k <= OWN_BEYOND, np.linalg.norm(inside - beyond, axis=-1), 0)
+    # running sums down the lines, from a first line of nothing
+    c, o = np.zeros((n + 1, *prof.shape[1:]), prof.dtype), np.zeros((n + 1, own.shape[1]), own.dtype)
+    np.cumsum(prof, axis=0, out=c[1:])
+    np.cumsum(own, axis=0, out=o[1:])
+    i = np.arange(k, n - k)
+    inside, beyond = (c[i] - c[i - k]) / k, (c[i + 1 + k] - c[i + 1]) / k
+    # past its end hardly any of the strip is the book's: past a row of its lettering, most still is
+    step[i] = np.where((o[i + 1 + k] - o[i + 1]) / k <= OWN_BEYOND, row_norm(inside - beyond), 0)
     best = step.max(axis=1)
     if best.max() <= 0:
         return (y, y), 0.0
@@ -418,8 +499,9 @@ def end_edge(e, la, lb, y, out, win, limit, tilt, colour):
     # above is softer than the shadow's own edge against that board, beyond it. A foot stands on its board, with no
     # such edge beyond it, and a logo or label near it changes the strip as sharply: the first near the strongest
     least = END_STEP * e.spread if out < 0 else STEP_NEAR * best.max()
-    peaks = [i for i in range(n) if best[i] >= least and best[i] >= best[max(0, i - 1)] and best[i] >= best[min(n - 1, i + 1)]]
-    i = peaks[0] if peaks else int(np.argmax(best))
+    before, after = np.r_[best[:1], best[:-1]], np.r_[best[1:], best[-1:]]
+    peaks = np.flatnonzero((best >= least) & (best >= before) & (best >= after))
+    i = int(peaks[0]) if len(peaks) else int(np.argmax(best))
     j = int(np.argmax(step[i]))
     dy = tilts[j]
     yc = y + out * shifts[i]
@@ -428,9 +510,15 @@ def end_edge(e, la, lb, y, out, win, limit, tilt, colour):
 
 def book_colour(e, la, lb, y0, y1):
     """The colour most of the strip carries between y0 and y1: the book's own, its lettering aside."""
-    px = [e.rgb[y, a:b] for y in range(int(y0), int(y1), 2)
-          for a, b in [(max(0, int(np.ceil(la.x(y))) + 1), min(e.w, int(np.floor(lb.x(y)))))] if b > a]
-    return np.median(np.concatenate(px), axis=0) if px else np.zeros(3)
+    y = np.arange(int(y0), int(y1), 2)
+    a, b = np.maximum(0, np.ceil(la.x(y)).astype(int) + 1), np.minimum(e.w, np.floor(lb.x(y)).astype(int))
+    long = b > a
+    y, a, size = y[long], a[long], (b - a)[long]
+    if not len(y):
+        return np.zeros(3)
+    row = np.repeat(np.arange(len(y)), size)
+    across = np.arange(size.sum()) - np.repeat(np.cumsum(size) - size, size)
+    return np.median(e.rgb[y[row], a[row] + across], axis=0)
 
 
 def spine_shaped(c):
@@ -450,23 +538,33 @@ def spine_shaped(c):
 
 
 def texture(e, la, lb, y0, y1):
-    tot = n = 0
-    for y in range(int(y0), int(y1), 2):
-        a, b = int(np.ceil(la.x(y))) + 2, int(np.floor(lb.x(y))) - 2
-        if b > a:
-            tot += e.all[y, a:b].sum()
-            n += b - a
+    y = np.arange(int(y0), int(y1), 2)
+    a, b = np.ceil(la.x(y)).astype(int) + 2, np.floor(lb.x(y)).astype(int) - 2
+    long = b > a
+    y, a, b = y[long], a[long], b[long]
+    if (a < 0).any() or (b > e.w).any():
+        # a slice from before the photo's left edge counts from its right, one past its right edge is cut short
+        tot = sum(e.all[yy, aa:bb].sum() for yy, aa, bb in zip(y, a, b))
+    else:
+        tot = sum(e.all[y[at, None], a[at, None] + np.arange(width)].sum() for width in np.unique(b - a) for at in [(b - a) == width])
+    n = int((b - a).sum())
     return tot / n if n else 0.0
 
 
 def face_spread(e, la, lb, y0, y1, colour):
     """How far the box's face strays from its own colour, as a share of the shelf's brightness range (median)."""
-    d = []
-    for y in range(int(y0), int(y1), 3):
-        a, b = int(np.ceil(la.x(y))) + 2, int(np.floor(lb.x(y))) - 2
-        if b > a:
-            d.append(np.linalg.norm(e.rgb[y, a:b:2, :3] - colour, axis=-1))
-    return float(np.median(np.concatenate(d)) / e.spread) if d else 9.0
+    y = np.arange(int(y0), int(y1), 3)
+    a, b = np.ceil(la.x(y)).astype(int) + 2, np.floor(lb.x(y)).astype(int) - 2
+    long = b > a
+    y, a, b = y[long], a[long], b[long]
+    if not len(y):
+        return 9.0
+    if (a < 0).any() or (b > e.w).any():
+        d = [row_norm(e.rgb[yy, aa:bb:2, :3] - colour) for yy, aa, bb in zip(y, a, b)]
+    else:
+        d = [row_norm(e.rgb[y[at, None], a[at, None] + 2 * np.arange((width + 1) // 2), :3] - colour).ravel()
+             for width in np.unique(b - a) for at in [(b - a) == width]]
+    return float(np.median(np.concatenate(d)) / e.spread)
 
 
 def spine(e, lines, i, j, top, bottom):
@@ -550,12 +648,12 @@ def series_split(crop):
     return float(np.median(shifts[np.abs(shifts - best) <= SPLIT_AGREE])) if near(best) >= REPEATS else None
 
 
-def shelf_books(g, rgb, text=None, log=False):
+def shelf_books(g, rgb, text=None, log=False, e=None):
     """Every pair of neighbouring side lines on a shelf that checks out as a spine: {(i, j): spine}, the lines, and the
     rows the books stand in (None when there are none). A
     box far wider than the shelf's usual one whose marks repeat further across is two books of one series: a line goes
     between them, and each is checked as any book is."""
-    e = Edges(g, rgb, log)
+    e = Edges(g, rgb, log) if e is None else e
     rows = book_rows(e)
     if not rows:
         return {}, [], None
@@ -599,10 +697,10 @@ def shelf_books(g, rgb, text=None, log=False):
     return found, lines, e
 
 
-def regions(e, top, bottom):
-    """[(left, right) Line] of each region of one colour on the shelf rows top..bottom that is shaped like a spine:
-    long, thin, near upright and filling its rectangle, its sides each moved onto the strongest edge near it."""
-    mid = (top + bottom) / 2
+def region_pieces(e, top, bottom):
+    """[(centre, normal, left, right, width, rows, lean)] of each region of one colour on the shelf rows top..bottom that
+    is shaped like a spine: long, thin, near upright and filling its rectangle, the offsets of its two sides along the
+    normal and the lean of its axis."""
     q = max(1.0, e.w / REGION_WIDE)
     sub = e.rgb[top:bottom, :, :3].astype(np.float32) / 255
     small = resize(sub, (max(8, round(sub.shape[0] / q)), max(8, round(sub.shape[1] / q))), anti_aliasing=True)
@@ -621,29 +719,38 @@ def regions(e, top, bottom):
             a = np.linalg.eigh(np.cov((p - c).T))[1][:, 1]
             a = -a if a[1] < 0 else a
             n = np.array([-a[1], a[0]])
-            a0, a1 = np.percentile((p - c) @ a, [1, 99])
-            b0, b1 = np.percentile((p - c) @ n, [1, 99])
+            (a0, b0), (a1, b1) = np.percentile(np.stack([(p - c) @ a, (p - c) @ n]), [1, 99], axis=1)
             width, length = b1 - b0, a1 - a0
             if (width < MIN_WIDTH * e.w or length < ASPECT * width or a[1] < np.cos(np.deg2rad(REGION_LEAN))
                     or len(ys) * qx * qy / (width * length) < REGION_FILL):
                 continue
             y0, y1 = c[1] + a0 * a[1], c[1] + a1 * a[1]
-            r = np.arange(int(max(top, y0)), int(min(bottom, y1)))
-            t0 = a[0] / a[1]
-            sides = []
-            for b in (b0, b1):
-                px, py = c[0] + n[0] * b, c[1] + n[1] * b
-                best = (-1.0, t0, px + t0 * (mid - py))
-                for turn in np.arange(-REGION_TURN, REGION_TURN + 0.1, 1.0):
-                    t = np.tan(np.arctan(t0) + np.deg2rad(turn))
-                    for dx in np.arange(-REGION_SNAP * width, REGION_SNAP * width + 0.5, 1.0):
-                        xs_ = np.round(px + dx + t * (r - py)).astype(int)
-                        ok = (xs_ >= 0) & (xs_ < e.w)
-                        cover = float(e.seam[r[ok], xs_[ok]].mean()) if ok.any() else 0
-                        if cover > best[0]:
-                            best = (cover, t, px + dx + t * (mid - py))
-                sides.append(Line(best[2], -best[1], mid))
-            out.append(sorted(sides, key=lambda l: l.xm))
+            out.append((c, n, b0, b1, width, np.arange(int(max(top, y0)), int(min(bottom, y1))), a[0] / a[1]))
+    return out
+
+
+def regions(e, top, bottom):
+    """[(left, right) Line] of each region of one colour on the shelf rows top..bottom that is shaped like a spine, its
+    sides each moved onto the strongest edge near it. The regions are cut once for every run that reads the edges."""
+    mid = (top + bottom) / 2
+    if ('regions', top, bottom) not in e.shared:
+        e.shared['regions', top, bottom] = region_pieces(e, top, bottom)
+    out = []
+    for c, n, b0, b1, width, r, t0 in e.shared['regions', top, bottom]:
+        sides = []
+        turns = [float(np.tan(np.arctan(t0) + np.deg2rad(turn))) for turn in np.arange(-REGION_TURN, REGION_TURN + 0.1, 1.0)]
+        dxs = np.arange(-REGION_SNAP * width, REGION_SNAP * width + 0.5, 1.0)
+        for b in (b0, b1):
+            px, py = c[0] + n[0] * b, c[1] + n[1] * b
+            # [turn, shift, row]: the side's seam cover over the rows it is on the photo for, the first best of them
+            xs_ = np.round((px + dxs)[None, :, None] + np.array(turns)[:, None, None] * (r - py)[None, None, :]).astype(int)
+            ok = (xs_ >= 0) & (xs_ < e.w)
+            on = ok & e.seam[r[None, None, :], np.clip(xs_, 0, e.w - 1)]
+            seen = ok.sum(axis=2)
+            cover = np.where(seen > 0, on.sum(axis=2) / np.maximum(seen, 1), 0.0)
+            turn, dx = np.unravel_index(int(np.argmax(cover)), cover.shape)
+            sides.append(Line(px + dxs[dx] + turns[turn] * (mid - py), -turns[turn], mid))
+        out.append(sorted(sides, key=lambda l: l.xm))
     return out
 
 
@@ -861,21 +968,21 @@ def covers(e, keep):
     return kept
 
 
-def barcode_bands(g, small, top, bottom, shelf):
+def barcode_bands(g, small, top, bottom, shelf, memo=None):
     """[barcode] Marks on shelf the bands of rows top..bottom where books stand packed: the rows the books stand in,
     when their edges between books stand apart by at most BARCODE_GAP of the band's height; then the same in the rows
     left above and below, since two shelves can come as one."""
     if bottom - top < BAND_LEAST * g.shape[0]:
         return
-    e = Edges(g[top:bottom], small[top:bottom])
+    e = Edges(g[top:bottom], small[top:bottom]) if memo is None else edges_in(memo, g, small, top, bottom)
     rows = book_rows(e)
     if not rows or rows[1] - rows[0] < BAND_LEAST * g.shape[0]:
         return
     xs = sorted(x for x, _ in side_lines(e, *rows))
     if len(xs) > 2 and np.median(np.diff(xs)) <= BARCODE_GAP * (rows[1] - rows[0]):
         shelf[top + rows[0]:top + rows[1], int(xs[0]):int(np.ceil(xs[-1])) + 1] = True
-    barcode_bands(g, small, top, top + rows[0], shelf)
-    barcode_bands(g, small, top + rows[1], bottom, shelf)
+    barcode_bands(g, small, top, top + rows[0], shelf, memo)
+    barcode_bands(g, small, top + rows[1], bottom, shelf, memo)
 
 
 def area(c):
@@ -905,6 +1012,9 @@ def clip(c, by):
 
 def overlap(a, b):
     """The area two boxes share."""
+    if (max(p[0] for p in a) < min(p[0] for p in b) or max(p[0] for p in b) < min(p[0] for p in a)
+            or max(p[1] for p in a) < min(p[1] for p in b) or max(p[1] for p in b) < min(p[1] for p in a)):
+        return 0.0
     both = clip(a, b)
     return area(both) if len(both) >= 3 else 0.0
 
@@ -958,27 +1068,43 @@ def text_view(rgb):
 def iou(a, b):
     """The share of the two boxes' union that both cover."""
     inter = overlap(a, b)
-    return inter / max(1e-9, area(a) + area(b) - inter)
+    return inter / max(1e-9, area(a) + area(b) - inter) if inter else 0.0
 
 
-def find_once(rgb, text, work, log):
+def edges_in(memo, g, small, top, bottom):
+    """The (non-log) edges of rows top..bottom of the photo at the work size, made once for every run that reads them."""
+    key = (max(0, top), min(g.shape[0], bottom))
+    if key not in memo['edges']:
+        memo['edges'][key] = Edges(g[key[0]:key[1]], small[key[0]:key[1]])
+    return memo['edges'][key]
+
+
+def find_once(rgb, text, work, log, memo=None):
     """One run of the finder at the work size: [{corners, view}] in the photo's pixels. log: seams from the
-    log-stretched grey where the shelf is dark."""
+    log-stretched grey where the shelf is dark. memo: what an earlier run at this work size made, which this one
+    reads instead (the same photo, text and work size)."""
     H, W = rgb.shape[:2]
     s = min(1.0, work / max(H, W))
-    small = np.stack([ndi.zoom(rgb[..., k].astype(np.float32), s, order=1) if s < 1 else rgb[..., k].astype(np.float32) for k in range(3)], -1)
-    g = ndi.gaussian_filter(grey(small), 1.0)
-    if text is not None:
-        text = ndi.zoom(np.asarray(text, np.float32), (g.shape[0] / text.shape[0], g.shape[1] / text.shape[1]), order=1)
+    memo = {} if memo is None else memo
+    if 'view' not in memo:
+        small = np.stack([ndi.zoom(rgb[..., k].astype(np.float32), s, order=1) if s < 1 else rgb[..., k].astype(np.float32) for k in range(3)], -1)
+        g = ndi.gaussian_filter(grey(small), 1.0)
+        if text is not None:
+            text = ndi.zoom(np.asarray(text, np.float32), (g.shape[0] / text.shape[0], g.shape[1] / text.shape[1]), order=1)
+        memo['view'], memo['edges'], memo['shelves'] = (small, g, text), {}, shelves(g)
+    small, g, text = memo['view']
     # each shelf with a margin: a book standing on its board ends past the board's edge
     m = int(MARGIN * g.shape[0])
     per_shelf = [(max(0, top - m), *shelf_books(g[max(0, top - m):bottom + m], small[max(0, top - m):bottom + m],
-                                             None if text is None else text[max(0, top - m):bottom + m], log))
-                 for top, bottom in shelves(g)]
+                                             None if text is None else text[max(0, top - m):bottom + m], log,
+                                             edges_in(memo, g, small, top - m, bottom + m).looked(log)))
+                 for top, bottom in memo['shelves']]
     h, w = g.shape
-    shelf = np.zeros((h, w), bool)
-    for top, bottom in shelves(g):
-        barcode_bands(g, small, max(0, top - m), min(h, bottom + m), shelf)
+    if 'barcode' not in memo:
+        memo['barcode'] = np.zeros((h, w), bool)
+        for top, bottom in memo['shelves']:
+            barcode_bands(g, small, max(0, top - m), min(h, bottom + m), memo['barcode'], memo)
+    shelf = memo['barcode'].copy()
     textures = [b['texture'] for _, found, _, _ in per_shelf for k, b in found.items() if k[0] != 'region']
     spines = []
     if textures:
@@ -995,22 +1121,29 @@ def find_once(rgb, text, work, log):
                 continue
             mine = [dict(corners=[(x, y + top) for x, y in found[k]['corners']], fit=found[k]['fit']) for k in chosen]
             # [spine-colour] a region of one colour boxes a book where nothing else does
+            taken = [(sp['corners'], area(sp['corners'])) for sp in spines + mine]
             for k, b in found.items():
                 c = [(x, y + top) for x, y in b['corners']]
-                if k[0] == 'region' and not any(overlap(c, sp['corners']) > TOUCH * min(area(c), area(sp['corners'])) for sp in spines + mine):
-                    mine.append(dict(corners=c, fit=b['fit']))
+                if k[0] == 'region':
+                    size = area(c)
+                    if not any(overlap(c, other) > TOUCH * min(size, space) for other, space in taken):
+                        mine.append(dict(corners=c, fit=b['fit']))
+                        taken.append((c, size))
             # [gap-search] a gap between neighbours is searched again, and a book with none beside it is dropped
             band = None if text is None else text[top:top + e.h]
             mine = lonely_veto(gap_search(e, apart(mine), top, band, GAP_TEXTURE * least))
             spines += mine
     spines = [b['corners'] for b in apart(spines)]
     # [barcode] covers are looked for outside the shelves: the barcode bands, and the spines boxed
-    yy, xx = np.mgrid[0:h, 0:w]
-    grid = np.stack([xx.ravel(), yy.ravel()], 1)
     for c in spines:
-        shelf |= points_in_poly(grid, np.asarray(c)).reshape(h, w)
+        c = np.asarray(c)
+        x0, x1 = max(0, int(np.floor(c[:, 0].min()))), min(w, int(np.ceil(c[:, 0].max())) + 1)
+        y0, y1 = max(0, int(np.floor(c[:, 1].min()))), min(h, int(np.ceil(c[:, 1].max())) + 1)
+        if x1 > x0 and y1 > y0:
+            yy, xx = np.mgrid[y0:y1, x0:x1]
+            shelf[y0:y1, x0:x1] |= points_in_poly(np.stack([xx.ravel(), yy.ravel()], 1), c).reshape(yy.shape)
     shelf = ndi.binary_dilation(shelf, iterations=max(2, int(0.01 * max(h, w))))
-    found = covers(Edges(g, small, log), ~shelf)
+    found = covers(edges_in(memo, g, small, 0, h), ~shelf)
     scale = lambda c: [[round(min(max(x, 0), w) / s, 1), round(min(max(y, 0), h) / s, 1)] for x, y in c]
     return ([dict(corners=scale(c), view='spine') for c in spines]
             + [dict(corners=scale(clockwise(c)), view='cover') for c in found if not shelf[int(np.clip(np.mean(c, 0)[1], 0, h - 1)), int(np.clip(np.mean(c, 0)[0], 0, w - 1))]])
@@ -1020,9 +1153,11 @@ def find_run(rgb, text=None):
     """One run of the finder on a photo taken as it comes: the boxes of the run at the work size, then those of a run
     with dark shelves log-stretched that touch none of its boxes, then those of a run at WORK_FINE that touch none kept
     so far. text: the text finder's probability (0 to 1) over the photo, at any size, or None to find without it."""
-    kept = find_once(rgb, text, WORK, False)
+    memo = {}
+    kept = find_once(rgb, text, WORK, False, memo)
     base = list(kept)
-    kept += [b for b in find_once(rgb, text, WORK, True) if all(iou(b['corners'], c['corners']) <= ADD_IOU for c in base)]
+    kept += [b for b in find_once(rgb, text, WORK, True, memo) if all(iou(b['corners'], c['corners']) <= ADD_IOU for c in base)]
+    del memo
     for b in find_once(rgb, text, WORK_FINE, False):
         if all(iou(b['corners'], c['corners']) <= ADD_IOU for c in kept):
             kept.append(b)
