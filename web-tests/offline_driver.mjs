@@ -28,6 +28,7 @@ import { ENGINE, LAUNCH } from "./engine.mjs";
 import { pressDrive, pickRecent } from "./drive_open.mjs";
 import { until } from "./page_until.mjs";
 import { greyPng } from "./png_fixture.mjs";
+import { held } from "./held.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -54,6 +55,7 @@ const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/cs
 let down = false, pyDown = false; // pyDown: the network gone for the study's Python modules alone
 // release: a release landed while the page was offline, one of its files slow to arrive
 let release = false;
+const slowFile = held();
 // as Cloudflare serves the site: /<name> is <name>.html, a folder its index.html, a folder's address with no slash
 // redirected to it with one and a file's with one to it without, the headers _headers names added; and an unlisted
 // study's address in the app the app's page too, as the tests' repo server serves it, so the fixture study runs
@@ -77,7 +79,7 @@ const server = http.createServer((q, r) => {
     r.writeHead(200, { "content-type": "application/json" });
     return r.end(JSON.stringify(list));
   }
-  if (release && u === "/app/slow.js") return setTimeout(() => { r.writeHead(200, { "content-type": "text/javascript" }); r.end(""); }, 60000);
+  if (release && u === "/app/slow.js") return void slowFile.hold().then(() => { r.writeHead(200, { "content-type": "text/javascript" }); r.end(""); });
   if (u === "/studies/vascular/study.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end(vascularServed); }
   let f = path.join(site, u);
   if (u.endsWith("/")) f = path.join(f, "index.html");

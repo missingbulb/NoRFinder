@@ -31,7 +31,7 @@ const LATE = 600; // ms each answer takes
 const STAND_IN = `
 const A = await (await fetch("answers/answers.json")).json();
 const bin = async (n) => new Uint8Array(await (await fetch("answers/" + n)).arrayBuffer());
-const late = () => new Promise((ok) => setTimeout(ok, ${LATE}));
+const late = () => new Promise((ok) => setTimeout(ok, ${LATE})); // waits on purpose: it stands in for a slow computer's Python
 let finder, runs = 0;
 postMessage({ type: "ready", info: { finders: A.finders, about: A.about }, secs: 0, heap: 300 * 2 ** 20, files: 80 * 2 ** 20 });
 onmessage = async ({ data: m }) => {

@@ -18,6 +18,7 @@ import { offSite } from "../../../web-tests/off_site.mjs";
 import { ENGINE, LAUNCH } from "../../../web-tests/engine.mjs";
 import { asTagger } from "../../../web-tests/tagger.mjs";
 import { standInDrive, openFromDrive } from "../../../web-tests/drive_open.mjs";
+import { frames } from "../../../web-tests/page_frames.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -358,7 +359,7 @@ page = await open();
 await page.click("#gt-start");
 await page.evaluate(() => nor.decide(st.order[0].i, "approve"));
 await page.pictureFailed;
-await page.evaluate(() => new Promise((ok) => requestAnimationFrame(ok)));
+await frames(page, 1);
 const none = await page.evaluate(() => ({ image: !!document.querySelector("#overlay image.done-reveal"), bg: getComputedStyle(document.querySelector("#overlay .done-bg")).fill }));
 await check(!none.image && none.bg === "rgb(0, 0, 0)", "a picture that cannot load leaves the cut-outs black", none);
 await page.close();

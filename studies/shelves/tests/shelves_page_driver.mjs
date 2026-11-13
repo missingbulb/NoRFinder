@@ -20,6 +20,7 @@ import { offSite } from "../../../web-tests/off_site.mjs";
 import { ENGINE, LAUNCH } from "../../../web-tests/engine.mjs";
 import { asTagger } from "../../../web-tests/tagger.mjs";
 import { prepare, seed } from "./reader_stand_in.mjs";
+import { frames as framesOf } from "../../../web-tests/page_frames.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -220,12 +221,15 @@ try {
   const toScreen = (x, y) => page.evaluate(([x, y]) => { const r = $("#base").getBoundingClientRect(); return [r.left + x * st.zoom, r.top + y * st.zoom]; }, [x, y]);
   const viewOf = () => page.evaluate(() => [st.zoom, $("#scroller").scrollLeft, $("#scroller").scrollTop]);
   // the page's next n frames drawn, by when a smooth scroll begun has moved the view
-  const frames = (n) => page.evaluate((n) => new Promise((done) => { const f = (k) => (k ? requestAnimationFrame(() => f(k - 1)) : done()); f(n); }), n);
+  const frames = (n) => framesOf(page, n);
   // the view still for a frame, a smooth scroll that framed the last book over
-  const settled = () => page.waitForFunction(() => new Promise((done) => {
-    const sc = $("#scroller"), at = [sc.scrollLeft, sc.scrollTop];
-    requestAnimationFrame(() => requestAnimationFrame(() => done(sc.scrollLeft === at[0] && sc.scrollTop === at[1])));
-  }));
+  const settled = async () => {
+    for (let at = null, n = 0; n < 300; n++) {
+      const now = await viewOf();
+      if (at && now[1] === at[1] && now[2] === at[2]) return;
+      at = now; await framesOf(page);
+    }
+  };
   // zoomed in, the cover's left edge alone in view, at the view's right
   await settled();
   for (let i = 0; i < 4; i++) await page.click("#zoom-in");

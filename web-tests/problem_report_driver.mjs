@@ -138,7 +138,7 @@ const reportIcon = (page) => page.evaluate(() => { const b = $("#sb-report"); re
   await page.click("#user-menu summary");
   await page.click("#open-settings");
   await page.click("#settings-cancel");
-  await page.evaluate(() => setTimeout(() => { throw new Error("thrown-for-the-test"); }));
+  await page.evaluate(() => { const c = new MessageChannel(); c.port1.onmessage = () => { throw new Error("thrown-for-the-test"); }; c.port2.postMessage(0); });
   await page.waitForFunction(() => (JSON.parse(localStorage.getItem("nor-actions")) || []).some((e) => /thrown-for-the-test/.test(e.text)));
   await page.click("#sb-report");
   const q = await issue(page);

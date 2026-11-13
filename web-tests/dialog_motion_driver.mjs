@@ -12,6 +12,7 @@ import http from "node:http";
 import path from "node:path";
 import { offSite } from "./off_site.mjs";
 import { ENGINE, LAUNCH } from "./engine.mjs";
+import { frames } from "./page_frames.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -65,8 +66,8 @@ async function open({ motion = true, reducedMotion = "no-preference", clock = fa
 }
 // whether the dialog opened, and the motions made for it: the motion starts in the frame after it opens, so two
 // frames on any it has are made
-const opened = (page, dlg) => page.evaluate(async (dlg) => {
-  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+const opened = async (page, dlg) => { await frames(page); return openedNow(page, dlg); };
+const openedNow = (page, dlg) => page.evaluate((dlg) => {
   const d = document.querySelector(dlg);
   return { open: d.open, ...(window.dialogMotions[d.id] || { made: 0, ended: 0 }) };
 }, dlg);

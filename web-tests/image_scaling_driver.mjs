@@ -14,6 +14,7 @@ import { repoFile } from "./repo_file.mjs";
 import { offSite } from "./off_site.mjs";
 import { ENGINE, LAUNCH } from "./engine.mjs";
 import { localStudy } from "./local_study.mjs";
+import { frames } from "./page_frames.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -57,7 +58,7 @@ await page.mouse.move(1, 1);
 
 // the greys the screen shows over a 40-pixel square in the middle of the view, once drawing has settled
 async function onScreen() {
-  await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
+  await frames(page);
   const r = await page.evaluate(() => { const s = document.querySelector("#scroller").getBoundingClientRect(); return { x: s.x + s.width / 2 - 20, y: s.y + s.height / 2 - 20 }; });
   const png = (await page.screenshot({ clip: { ...r, width: 40, height: 40 } })).toString("base64");
   return page.evaluate(async (png) => {

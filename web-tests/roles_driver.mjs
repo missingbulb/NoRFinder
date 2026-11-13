@@ -133,7 +133,7 @@ await page.context().close();
 // roles Drive last gave this user, and opening the menu renews the token and asks Drive again
 const GSI = `window.google = { ...window.google, accounts: { oauth2: { initTokenClient(o) {
   window.asked = [];
-  return { requestAccessToken(opts = {}) { window.asked.push(opts); setTimeout(() => o.callback({ access_token: "tok-" + Date.now(), expires_in: 3599, scope: o.scope })); } };
+  return { requestAccessToken(opts = {}) { window.asked.push(opts); queueMicrotask(() => o.callback({ access_token: "tok-" + Date.now(), expires_in: 3599, scope: o.scope })); } };
 } } } };`;
 const stubGoogle = (ctx) => ctx.route("https://accounts.google.com/gsi/client", (r) => r.fulfill({ contentType: "text/javascript", body: GSI }));
 const asked = (page) => page.evaluate(() => (window.asked || []).length);

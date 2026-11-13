@@ -6,7 +6,7 @@
 // handlers the page chained on them have run.
 export const watchReads = (ctx, names) => ctx.addInitScript((names) => {
   const named = (u) => names.find((n) => String(u).includes(n));
-  const after = (p) => p.then(() => {}, () => {}).then(() => new Promise((ok) => setTimeout(ok)));
+  const after = (p) => p.then(() => {}, () => {}).then(() => new Promise((ok) => { const c = new MessageChannel(); c.port1.onmessage = () => ok(); c.port2.postMessage(0); }));
   const reads = (window.pageReads = new Map());
   const fetchNow = window.fetch, json = Response.prototype.json;
   window.fetch = function (u, ...rest) {

@@ -35,7 +35,7 @@ const SCRIPT = `window.google = { accounts: { oauth2: { initTokenClient(o) {
   return { requestAccessToken(opts) {
     window.tokenClient.asked.push(opts || {});
     const answer = window.googleAnswer || "token";
-    setTimeout(() => answer === "cancel" ? o.callback({ error: "access_denied" }) : answer === "blocked" ? o.error_callback?.({ type: "popup_failed_to_open" }) : o.callback({ access_token: "tok", expires_in: 3599 }));
+    queueMicrotask(() => answer === "cancel" ? o.callback({ error: "access_denied" }) : answer === "blocked" ? o.error_callback?.({ type: "popup_failed_to_open" }) : o.callback({ access_token: "tok", expires_in: 3599 }));
   } };
 } } } };`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };

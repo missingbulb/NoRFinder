@@ -17,6 +17,7 @@ import { ENGINE, LAUNCH } from "../../../web-tests/engine.mjs";
 import { asTagger } from "../../../web-tests/tagger.mjs";
 import { withItemView } from "./item_view_shown.mjs";
 import { standInDrive, openFromDrive } from "../../../web-tests/drive_open.mjs";
+import { frames } from "../../../web-tests/page_frames.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -77,12 +78,11 @@ await page.waitForFunction(() => !document.querySelector("#find").disabled);
 await page.click("#find");
 await page.waitForFunction(() => st.alone && $("#busy").hidden);
 await page.evaluate(() => { $("#notice").hidden = true; });
-const frames = () => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
 // the observer reports in its own task, after some frame: wait until the drawn cards stop changing
 const settled = async () => {
   let last = -1, same = 0;
   for (let k = 0; k < 60 && same < 3; k++) {
-    await frames();
+    await frames(page);
     const n = await page.evaluate(() => document.querySelectorAll("#list .card canvas").length);
     same = n === last ? same + 1 : 0; last = n;
   }
@@ -168,7 +168,7 @@ const spots = await page.evaluate(() => {
   return { cand, empty };
 });
 if (!spots.cand || !spots.empty) await fail("no candidate and empty spot in view to click", spots);
-const selAfter = async (x, y) => { await page.mouse.click(x, y); await frames(); return page.evaluate(() => st.sel); };
+const selAfter = async (x, y) => { await page.mouse.click(x, y); await frames(page); return page.evaluate(() => st.sel); };
 const clicks = { on: await selAfter(spots.cand.x, spots.cand.y), again: await selAfter(spots.cand.x, spots.cand.y) };
 await selAfter(spots.cand.x, spots.cand.y);
 clicks.empty = await selAfter(spots.empty.x, spots.empty.y);

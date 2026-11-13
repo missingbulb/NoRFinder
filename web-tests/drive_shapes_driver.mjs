@@ -15,6 +15,7 @@ import { offSite } from "./off_site.mjs";
 import { ENGINE, LAUNCH } from "./engine.mjs";
 import { pressDrive, pickRecent } from "./drive_open.mjs";
 import { repoFile } from "./repo_file.mjs";
+import { frames as framesOf } from "./page_frames.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -103,7 +104,6 @@ page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.me
 page.setDefaultTimeout(10000);
 
 // the page's handlers for what was just done have all run: a read it would start has started
-const frames = () => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
 // every row in view, and every row read, has its badge (or holds nothing to tell), and no read is on the way once the
 // page has run its handlers, the rows ahead of the view among them; 10 s at most, the checks after it saying what is
 // missing
@@ -116,7 +116,7 @@ const quiet = async () => {
   for (;;) {
     const asked = reads.length;
     await told();
-    await frames();
+    await framesOf(page);
     // done when nothing is on the way and no read began since the rows read were told
     if (!inflight && reads.length === asked) break;
     if (Date.now() >= end) break;
@@ -166,7 +166,7 @@ try {
     await page.evaluate((x) => localStorage.setItem("nor-drive-thumbs", JSON.stringify(x)), v);
     await open();
     await page.evaluate(() => { $("#remote-list").scrollTop = $("#remote-list").scrollHeight; });
-    await frames();
+    await framesOf(page);
   };
   await thumbsSetting("off");
   check(reads.length === 0, `with Show thumbnails off, nothing is read: ${reads.length} reads`);

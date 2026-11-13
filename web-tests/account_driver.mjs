@@ -37,7 +37,7 @@ let origin, clientId = CLIENT;
 // Google's script: its token client answers each request at once with a new token, recording what it was asked
 const SCRIPT = `window.google = { accounts: { oauth2: { initTokenClient(o) {
   window.tokenClient = { client: o.client_id, scope: o.scope, asked: [] };
-  return { requestAccessToken(opts) { window.tokenClient.asked.push(opts || {}); setTimeout(() => o.callback({ access_token: "tok-" + Date.now(), expires_in: 3599 })); } };
+  return { requestAccessToken(opts) { window.tokenClient.asked.push(opts || {}); queueMicrotask(() => o.callback({ access_token: "tok-" + Date.now(), expires_in: 3599 })); } };
 } } } };`;
 
 // the user's app folder in Drive: at most one file, and every request the page made to Google
@@ -95,7 +95,7 @@ const until = async (fn, ms = 5000) => {
   for (const end = Date.now() + ms; ; ) {
     if (await fn()) return true;
     if (Date.now() >= end) return false;
-    await new Promise((ok) => { const wake = () => { clearTimeout(t); waiting.delete(wake); ok(); }, t = setTimeout(wake, end - Date.now()); waiting.add(wake); });
+    await new Promise((ok) => { const wake = () => { clearTimeout(t); waiting.delete(wake); ok(); }, t = setTimeout(wake, end - Date.now()); waiting.add(wake); }); // bounds a hang: a request that never comes ends the wait
   }
 };
 // a page showing something, within ms
@@ -249,7 +249,7 @@ try {
   await expire();
   const before = seen.length;
   // to light, by a script, once the user activation a test's evaluate itself carries (5 s) is over
-  await b.page.evaluate(() => setTimeout(() => document.querySelector("#theme").click(), 5500));
+  await b.page.evaluate(() => setTimeout(() => document.querySelector("#theme").click(), 5500)); // waits on purpose: the browser's 5 s user activation lapses, which no clock moves
   await shows(b.page, () => document.documentElement.dataset.theme === "light", undefined, 10000);
   check(await local(b.page, "nor-theme") === "light" && await askedNow() === 0 && file()["nor-theme"] === "dark", "a change no user made asks Google for nothing");
   const calls = await googleCalls(b.page);

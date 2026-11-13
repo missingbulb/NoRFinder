@@ -20,6 +20,7 @@ import path from "node:path";
 import { offSite } from "./off_site.mjs";
 import { ENGINE, LAUNCH } from "./engine.mjs";
 import { standInDrive, openFromDrive } from "./drive_open.mjs";
+import { frames, viewDrawn } from "./page_frames.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -84,8 +85,8 @@ page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.me
 page.setDefaultTimeout(10000);
 
 // the 3D view's picture as it is now: mean red, green and blue (0-255), and how many pixels are lit
-const picture = () => page.evaluate(async () => {
-  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+const picture = async () => { await viewDrawn(page); return pictureNow(); };
+const pictureNow = () => page.evaluate(() => {
   const gl = document.querySelector("#v3-gl"), c = document.createElement("canvas");
   c.width = gl.width; c.height = gl.height;
   const g = c.getContext("2d"); g.drawImage(gl, 0, 0);
@@ -302,7 +303,7 @@ try {
     await page.mouse.move(r[0] - s0, r[1] - s0); await page.mouse.down();
     for (const [dx, dy] of [[1, -1], [1, 1], [-1, 1], [-1, -1]]) await page.mouse.move(r[0] + dx * s0, r[1] + dy * s0, { steps: 4 });
     await page.mouse.up();
-    await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
+    await viewDrawn(page);
     const cut = await page.evaluate(([W, H]) => {
       const im = window.shellForTests.page.get("image"), m = im.W * im.H, at = (x, y) => [...Array(im.planes.length / m).keys()].map((k) => im.planes[k * m + y * im.W + x]);
       return { flaws: $("#edit-flaws").textContent, outlined: !!$("#edit-3d polygon"), middle: at(W >> 1, H >> 1), edge: at(2, 2), turned: window.shellForTests.viewer.three.S.rot[2][2] > 0.999 };
@@ -321,7 +322,7 @@ try {
   const loaded = async (name) => {
     await page.setInputFiles("#file", { name, mimeType: "image/tiff", buffer: name.endsWith(".png") ? FLAT : STACK });
     await page.waitForFunction((name) => window.shellForTests.page.get("image")?.name === name && $("#status").textContent === "Image loaded.", name);
-    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await frames(page);
     return page.evaluate(() => ({ in3d: !!$("#v3-stage")?.checkVisibility(), flat: $("#stage").checkVisibility(), open: !$("#image-box").classList.contains("folded") }));
   };
   if (gl3d) {

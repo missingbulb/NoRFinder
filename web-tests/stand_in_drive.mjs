@@ -113,7 +113,7 @@ export async function standIn({ answers, studies, rootDir, uploaded = () => {}, 
     if (u === "/py" && q.method === "POST") {
       const chunks = [];
       calls++;
-      q.on("data", (c) => chunks.push(c)).on("end", async () => { send("application/json", await ask(Buffer.concat(chunks).toString())); setTimeout(() => calls--, 200); });
+      q.on("data", (c) => chunks.push(c)).on("end", async () => { send("application/json", await ask(Buffer.concat(chunks).toString())); setTimeout(() => calls--, 200); }); // waits on purpose: the answer's way back to the page, until the page says when it is idle
       return;
     }
     if (u === "/web/worker.js") return send("text/javascript", EARLY + STAND_IN);

@@ -15,6 +15,7 @@ import path from "node:path";
 import { offSite } from "../../../web-tests/off_site.mjs";
 import { ENGINE, LAUNCH } from "../../../web-tests/engine.mjs";
 import { standInDrive, openFromDrive } from "../../../web-tests/drive_open.mjs";
+import { frames } from "../../../web-tests/page_frames.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -124,7 +125,7 @@ async function measure() {
   // count is the same whatever they last read.
   // the page's frames done first: the item view draws its cards in them as they come near, which a slow machine
   // can still be doing when the work itself has settled
-  await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(ok, 100)))));
+  await frames(page, 3);
   // An attribute is a node of its own once something reads it as one, as Playwright does with every attribute of an
   // element it writes into an action's log, and the page adds attributes as it goes (a class the first time an
   // animation is seen off screen): each one in the document is read here, made a node whoever read it before, and

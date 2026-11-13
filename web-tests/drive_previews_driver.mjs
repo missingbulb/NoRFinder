@@ -18,6 +18,7 @@ import { offSite } from "./off_site.mjs";
 import { keptContext } from "./kept_context.mjs";
 import { pressDrive, pickRecent } from "./drive_open.mjs";
 import { repoFile } from "./repo_file.mjs";
+import { frames as framesOf } from "./page_frames.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -87,7 +88,6 @@ page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.me
 page.setDefaultTimeout(10000);
 
 // the page's handlers for what was just done have all run: a read it would start has started
-const frames = () => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
 // every TIFF row says what it holds, the page says its thumbnails are in (the status bar's "Thumbnails n of m" gone), and no
 // read is on the way once the page has run its handlers; 10 s at most, the
 // checks after it saying what is missing
@@ -97,7 +97,7 @@ const quiet = async () => {
     await page.waitForFunction(() => !/^Thumbnails /.test($("#status").textContent)
       && [...document.querySelectorAll("#remote-list .item")].every((b) => !/\.tiff?$/i.test(b.querySelector(".name").textContent) || b.querySelector(".shape").textContent),
       null, { timeout: Math.max(1, end - Date.now()) }).catch(() => {});
-    await frames();
+    await framesOf(page);
     if (!inflight || Date.now() >= end) break;
     await page.waitForEvent("requestfinished", { timeout: Math.max(1, end - Date.now()) }).catch(() => {});
   }

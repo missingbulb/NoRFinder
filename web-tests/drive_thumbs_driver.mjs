@@ -17,6 +17,7 @@ import { offSite } from "./off_site.mjs";
 import { ENGINE, LAUNCH } from "./engine.mjs";
 import { pressDrive, pickRecent } from "./drive_open.mjs";
 import { repoFile } from "./repo_file.mjs";
+import { frames as framesOf } from "./page_frames.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -86,7 +87,7 @@ let moved, next = new Promise((ok) => { moved = ok; });
 const note = () => { moved(); next = new Promise((ok) => { moved = ok; }); };
 let slowAnswered, slowListed = new Promise((ok) => { slowAnswered = ok; });
 // a bound on waiting for the stand-in, so a page that never asks fails its check rather than hanging
-const atMost = (ms) => new Promise((ok) => setTimeout(ok, ms));
+const atMost = (ms) => new Promise((ok) => setTimeout(ok, ms)); // bounds a hang: a page that never asks fails its check
 await ctx.route(`${origin}/studies/fixture/thumbs/*.jpg`, async (route) => {
   const id = path.basename(new URL(route.request().url()).pathname, ".jpg"), k = IMAGES.findIndex((f) => f.id === id);
   asked.push(k); inflight++; note();
@@ -129,7 +130,7 @@ const quiet = async () => {
     const want = span(await inView()), pics = await shown();
     if (want.every((k) => asked.includes(k) || pics[k]) && !inflight) {
       await page.waitForFunction(() => !/^Thumbnails /.test($("#status").textContent), null, { timeout: Math.max(1, end - Date.now()) }).catch(() => {});
-      await frames();
+      await framesOf(page);
       const now = await shown();
       if (!inflight && span(await inView()).every((k) => asked.includes(k) || now[k])) return;
     }
@@ -138,7 +139,6 @@ const quiet = async () => {
   }
 };
 // the page's handlers for what was just done have all run
-const frames = () => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
 const same = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
 const sorted = (a) => [...new Set(a)].sort((x, y) => x - y);
 const open = async () => {
@@ -175,7 +175,7 @@ try {
   asked.length = 0; hold();
   const height = await page.evaluate(() => $("#remote-list").scrollHeight);
   // a step a frame, as a flung wheel scrolls
-  for (let y = 0; y <= height; y += 250) await page.evaluate((t) => new Promise((ok) => { $("#remote-list").scrollTop = t; requestAnimationFrame(ok); }), y);
+  for (let y = 0; y <= height; y += 250) { await page.evaluate((t) => { $("#remote-list").scrollTop = t; }, y); await framesOf(page, 1); }
   letGo();
   await quiet();
   const last = span(await inView());
@@ -201,7 +201,7 @@ try {
   const cut = await page.evaluate(() => { const n = window.thumbsAsked; document.querySelector("#remote-dlg button[value=close]").click(); return n; }) - from;
   // every request made before closing answered or cut off, and the page done with them
   for (const end = Date.now() + 5000; inflight && Date.now() < end; ) await Promise.race([next, atMost(end - Date.now())]);
-  await frames();
+  await framesOf(page);
   const after = (await page.evaluate(() => window.thumbsAsked)) - from - cut;
   check(cut > 0 && after === 0, `closing the dialog stops the fetches: ${cut} asked before, ${after} after`);
   asked.length = 0;
@@ -220,7 +220,7 @@ try {
   await page.click("#remote-path button[data-k='0']");
   // the slow listing in, after the user moved on, and the page done with it
   await Promise.race([slowListed, atMost(5000)]);
-  await frames();
+  await framesOf(page);
   const rows = await page.evaluate(() => [...document.querySelectorAll("#remote-list .item .name")].map((e) => e.textContent));
   check(rows.length === N + 1 && !rows.includes("stale.tif"), `a listing that arrives after the user moved on is dropped: ${rows.length} rows${rows.includes("stale.tif") ? ", stale.tif among them" : ""}`);
 } catch (e) {

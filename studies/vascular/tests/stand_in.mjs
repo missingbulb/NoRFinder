@@ -36,7 +36,7 @@ onmessage = ({ data: m }) => {
   if (m.type === "study") postMessage({ type: "ready", info });
   else if (m.type === "open") postMessage({ type: "held" });
   else if (m.type === "call" && m.action === "extract")
-    setTimeout(() => postMessage({ type: "result", action: "extract", meta: { ...MODEL, algorithm: ALGORITHMS.find((a) => a.key === m.args.algorithm).name, asked: m.args }, bytes: null }), 50);
+    postMessage({ type: "result", action: "extract", meta: { ...MODEL, algorithm: ALGORITHMS.find((a) => a.key === m.args.algorithm).name, asked: m.args }, bytes: null });
 };`;
 
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };

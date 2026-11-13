@@ -16,6 +16,7 @@ import http from "node:http";
 import path from "node:path";
 import { offSite } from "../../../web-tests/off_site.mjs";
 import { ENGINE, LAUNCH } from "../../../web-tests/engine.mjs";
+import { frames } from "../../../web-tests/page_frames.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -60,7 +61,7 @@ const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } })
 const asked = Object.fromEntries([...files, stranger].map((f) => [f.id, { whole: 0, pieces: 0 }]));
 // resolves once the whole file is asked for, or rejects after ms
 const wholeWaits = {};
-const askedWhole = (id, ms) => asked[id].whole ? Promise.resolve() : new Promise((ok, no) => { wholeWaits[id] = ok; setTimeout(no, ms); });
+const askedWhole = (id, ms) => asked[id].whole ? Promise.resolve() : new Promise((ok, no) => { wholeWaits[id] = ok; setTimeout(no, ms); }); // bounds a hang: a page that never asks fails, not hangs
 const cors = { "access-control-allow-origin": "*" };
 await ctx.route("https://www.googleapis.com/**", (route) => {
   const q = route.request(), u = new URL(q.url());
@@ -148,7 +149,7 @@ fresh.on("request", (q) => { if (/\/ready-thumbs\/.*\.jpg$/.test(q.url())) thumb
 await fresh.click("#load-remote");
 await fresh.waitForSelector("#remote-list .item:last-child .pic img");
 // the dialog starts its thumbnails' fetches in the frame after it lists the rows: two frames on, none was asked for
-await fresh.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
+await frames(fresh);
 const shown = await fresh.$$eval("#remote-list .item .pic img", (is) => is.length);
 // the ones kept in the browser still show: the image Open loaded, and the one saved above
 if (thumbsServed !== before || thumbsAsked || shown !== 2) await done(1, `turned off, ${thumbsAsked} thumbnails were asked for, ${thumbsServed - before} downloaded and ${shown} shown`);

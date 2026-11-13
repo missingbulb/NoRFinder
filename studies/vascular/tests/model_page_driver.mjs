@@ -15,6 +15,7 @@ import { ENGINE, LAUNCH } from "../../../web-tests/engine.mjs";
 import { asTagger } from "../../../web-tests/tagger.mjs";
 import { serve, drawnStack } from "./stand_in.mjs";
 import { standInDrive, openFromDrive } from "../../../web-tests/drive_open.mjs";
+import { frames, viewDrawn } from "../../../web-tests/page_frames.mjs";
 
 const require = createRequire(import.meta.url);
 let pw;
@@ -40,9 +41,8 @@ page.on("pageerror", (e) => { failed = true; console.error("page error: " + e.me
 page.setDefaultTimeout(10000);
 
 // the 3D view's brightness now, its mean over every pixel of red, green and blue
-const brightness = () => page.evaluate(async () => {
-  // the view draws in the frame after it is changed: two frames on, the change is on the canvas
-  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+const brightness = async () => { await viewDrawn(page); return brightnessNow(); };
+const brightnessNow = () => page.evaluate(() => {
   const gl = document.querySelector("#v3-gl"), c = document.createElement("canvas"); c.width = gl.width; c.height = gl.height;
   const g = c.getContext("2d"); g.drawImage(gl, 0, 0);
   const d = g.getImageData(0, 0, c.width, c.height).data; let s = 0;
@@ -51,8 +51,8 @@ const brightness = () => page.evaluate(async () => {
 });
 const facts = () => page.textContent("#model-facts");
 // the model's own canvas now: how many pixels are lit, and how many of those are coloured rather than grey
-const drawn = () => page.evaluate(async () => {
-  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+const drawn = async () => { await frames(page); return drawnNow(); };
+const drawnNow = () => page.evaluate(() => {
   const d = document.querySelector("#mcv").getContext("2d").getImageData(0, 0, document.querySelector("#mcv").width, document.querySelector("#mcv").height).data;
   let lit = 0, coloured = 0;
   for (let i = 0; i < d.length; i += 4) {

@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import { standIn } from "./stand_in_drive.mjs";
+import { frames } from "./page_frames.mjs";
 
 const [answers, studies, rootDir, out, shots] = process.argv.slice(2);
 const PREVIEWS_DIR = "dmpreviewsfolder00001";
@@ -37,7 +38,7 @@ const width = () => page.evaluate(() => Math.round($("#data-col").getBoundingCli
 const slid = (wide) => page.waitForFunction((wide) => (wide ? $("#data-col").getBoundingClientRect().width > 200 : $("#data-col").getBoundingClientRect().width < 60)
   && !document.getAnimations().some((a) => a.playState === "running"), wide, { timeout: 5000 }).catch(() => {});
 // the page's handlers for what was just done have all run: a click it ignores has had every chance to act
-const turned = () => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
+const turned = () => frames(page);
 await check(await page.evaluate(() => $("#data-col").hidden && !document.documentElement.dataset.mode), "a study manager in another role sees no Data Management");
 await role(page, "Study Manager");
 await page.waitForFunction(() => document.querySelectorAll("#data-tree .tree-folder").length === 2);

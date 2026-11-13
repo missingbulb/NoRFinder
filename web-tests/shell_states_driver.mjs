@@ -10,6 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { standIn } from "./stand_in_drive.mjs";
 import { snapshot, differ } from "./page_snapshot.mjs";
+import { frames } from "./page_frames.mjs";
 
 const [answers, studies, rootDir, image, stack, expectFile, renders] = process.argv.slice(2);
 const { FILES, open, role, check, done, calls } = await standIn({ answers, studies, rootDir });
@@ -30,7 +31,7 @@ const settled = async (page) => {
   // is reported as the item not showing
   await page.waitForFunction(() => document.querySelector("#sb-disk .v")?.textContent !== "", null, { timeout: 5000 }).catch(() => {});
   // and the frame after them drawn
-  await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
+  await frames(page);
 };
 // an image open, nothing working on it, and the button of the study's first step ready for it
 const opened = (button) => !!shellForTests.page.get("image") && document.querySelector("#busy").hidden

@@ -11,7 +11,7 @@ const DRIVE_FILE = "https://www.googleapis.com/auth/drive.file";
 // Google's sign-in script: its token client grants what it is asked at once, recording each request
 const GSI = `window.google = { ...window.google, accounts: { oauth2: { initTokenClient(o) {
   window.asked = [];
-  return { requestAccessToken(opts = {}) { window.asked.push(opts); setTimeout(() => o.callback({ access_token: "tok-" + Date.now(), expires_in: 3599, scope: opts.scope || o.scope })); } };
+  return { requestAccessToken(opts = {}) { window.asked.push(opts); queueMicrotask(() => o.callback({ access_token: "tok-" + Date.now(), expires_in: 3599, scope: opts.scope || o.scope })); } };
 } } } };`;
 // Google's picker: shown is the folders it was opened on; it answers as if the user picked them all
 const PICKER = `window.gapi = { load(name, ok) { ok(); } };
