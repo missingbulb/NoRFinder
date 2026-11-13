@@ -1,7 +1,7 @@
 {
   "about": "The Bookshelf Reader's own elements in the shell's states (req/checks/shell-states, req/checks/spec-layout): each graft puts its tree under the shell's element `under`, after its child `after` or first, in the tree of dev/requirements/shell-states.json, whose rules they follow; its roots and paths open this study. `samples` names the module writing the image or z-stack its paths load; `standIn` the module standing in for what its page reaches off the site; `differ` says where a shell element shows otherwise in this study. `counted` is its first step, Find books, done.",
   "grafts": [
-    {"under": "Processing", "tree": [
+    {"under": "Processing", "after": "Algorithms", "tree": [
       {"name": "Finding and reading", "select": "#bs-box", "req": "req/shelves/books/find",
         "children": [
           {"name": "Reader", "select": "#bs-reader", "control": true, "req": "req/shelves/read/readers"},

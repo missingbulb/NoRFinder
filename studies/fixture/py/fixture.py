@@ -44,6 +44,7 @@ class Session:
 
     def call(self, action, args):
         if action == 'count':
-            above = bytes(1 if v > args['threshold'] else 0 for v in self.px)
+            t, at = args['threshold'], args['algorithm'] == 'from'
+            above = bytes(1 if v > t or (at and v == t) else 0 for v in self.px)
             return json.dumps(dict(count=sum(above))), above
         raise ValueError(f'unknown action {action!r}')

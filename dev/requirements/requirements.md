@@ -1012,6 +1012,20 @@ nobody has decided: what the page does there is not a requirement yet.
   BigTIFF, and a part over 4 GB. Test: `web-tests/test_split.py`, `web-tests/test_image_edit.py`.
   </details>
 
+- `req/shell/processing/algorithms` A study offering several algorithms lists them atop its Processing box, the first the default, each with its icon, title and precision and recall.
+  <details>
+
+  Set by the owner on 2026-11-13: what NoR Finder and Vascular Measurements each drew for themselves is the shell's,
+  so every study with more than one algorithm shows it the same way. A study's `study.json` names in `algorithms` the
+  file listing them (`{measured, algorithms: [{key, title, icon, about, precision, recall, note}]}`, generated from
+  the study's own sources), the first its default. The shell draws a list at the top of Processing, each entry its
+  icon, title and `(P .xx · R .xx)` where measured, its tooltip saying what they were measured on; under it a fold,
+  How the *title* algorithm works, the chosen one's `about` as a Markdown outline, ending in bold with its precision
+  and recall and what they were measured on, its `note` beside it. An algorithm with no precision and recall shows
+  neither. The study reads the choice (`shell.algorithm`: `ready`, `key`, `title`, `on(fn)`) and runs it; it draws no
+  list of its own. Test: `web-tests/test_study_contract.py`, `web-tests/test_algorithm_choice_page.py`.
+  </details>
+
 - `req/shell/python/file-bytes` A study's algorithms run on the image file as it is stored, never on what the viewer shows.
   <details>
 

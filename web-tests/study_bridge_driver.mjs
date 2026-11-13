@@ -32,7 +32,7 @@ const png = fs.readFileSync(process.argv[2]);
 const opened = ask({ type: "open", name: "squares.png", bytes: png.buffer.slice(png.byteOffset, png.byteOffset + png.length) });
 if (!opened.some((m) => m.type === "progress" && m.text === study.progress.open)) problems.push("no progress from the study's own text while opening");
 if (!opened.some((m) => m.type === "held") || opened.some((m) => m.type === "opened")) problems.push(`open: ${JSON.stringify(opened.map((m) => m.type))}`);
-const r = ask({ type: "call", action: "count", args: { threshold: 128 }, echo: 7 }).find((m) => m.type === "result");
+const r = ask({ type: "call", action: "count", args: { algorithm: "above", threshold: 128 }, echo: 7 }).find((m) => m.type === "result");
 // two squares above 128: 10 x 10 and 15 x 20
 if (!r || r.action !== "count" || r.echo !== 7 || r.meta.count !== 400 || r.bytes.length !== 80 * 60 || r.bytes.reduce((a, b) => a + b, 0) !== 400)
   problems.push(`count: ${JSON.stringify(r && { action: r.action, echo: r.echo, meta: r.meta })}`);
