@@ -13,12 +13,13 @@ py/shelves.py         the Python entry: opens the photo (HEIC through pillow-hei
 py/books.py           the finder (find), its text finder's view of the photo, and the straightening of four corners
 lab/photos.py         the owner's photos from Drive (data/sources.json), and with --gt the ground truth
 lab/grade.py          the finder and the readers scored against a submitted ground truth
+lab/perf.py           the performance pass: signature, time and peak of `find` over eight inputs (Performance)
 lab/words.py          the names list from one dated dump of Hebrew Wikipedia's titles, into web/words/
 web/shelves.js        the page: Find books, Read titles, the titles in Summary, the ground-truth task and its pictures
 web/reading.js        the three readers, the same module in the page and in the sandbox
 web/words/names.txt   Hebrew Wikipedia titles' words the readings are spelled by after the subtitle list (CC BY-SA 4.0, lab/words.py)
 web/tessdata/         Tesseract's Hebrew and English (4.0.0_best_int, from @tesseract.js-data/*@1.0.0, MIT): served by the site, pinned
-reading/              the sandbox: read.mjs and the pinned engine builds (package.json)
+reading/              the sandbox: read.mjs, find.mjs, perf_pyodide.mjs and the pinned engine builds (package.json)
 tests/                test_books.py and test_grade.py (fast), test_reading.py and test_shelves_page.py (full)
 ```
 
@@ -118,13 +119,45 @@ into `data/raw/gt/<photo's drive id>__<tagger>.json`. Four photos so far: `1g4iF
 as missed) and 1 found box marked no book; `1HyJrL`, tagged 2026-11-10, 19 books right, all found (the book the
 frame cuts at its left edge left untagged); and, new for R8, `1zktX1`, 60 books right (24 added as missed), a
 bookcase of two cabinets side by side, and `16w5nW`, 8 books right (2 added as missed), **held out** since R8:
-scored once per iteration, never tuned on.
+scored once per iteration, never tuned on; new for R9, `16acjV`, 18 books right (3 added as missed), and `1sdDdH`,
+15 books right, all found (the two black Herbert spines of one series). The other five are the tuning photos.
 
-A score is the page's: `node studies/shelves/reading/read.mjs PHOTO find lines OUT.json`, then
-`python3 studies/shelves/lab/grade.py GT.json --found OUT.json`. `grade.py --photo` runs the finder without the
+A score is the page's: `node studies/shelves/reading/find.mjs PHOTO OUT.json`, then
+`python3 studies/shelves/lab/grade.py GT.json --found OUT.json`. Robustness inputs come from
+`python3 studies/shelves/lab/warp.py PHOTO GT.json OUTDIR --rotate ... --tilt ... --vtilt ... [--crop]`: the photo and its
+ground truth through one homography. `grade.py --photo` runs the finder without the
 text map, and the container's own JPEG decoding moves R8 by up to 6 books on `1zktX1` (below).
 
 ## Iterations
+
+### R9 — a shelf searched between its books; dark plain spines; three runs; a turned photo levelled (2026-11-13)
+
+Three new ground truths, `16acjV` (18), `1sdDdH` (15), and the held-out `16w5nW` scored once. The objective is now F2
+(recall first, for marking ground truth). Page pixels, the page's text map:
+
+| | R8 matched / found | R9 matched / found | R9 precision / recall |
+|---|---|---|---|
+| `1HyJrL` | 18/19, 21 | 18/19, 21 | 0.86 / 0.95 |
+| `1g4iFN` | 11/13, 13 | 11/13, 15 | 0.73 / 0.85 |
+| `1zktX1` | 35/60, 55 | 50/60, 92 | 0.54 / 0.83 |
+| `16acjV` | 14/18, 16 | 18/18, 21 | 0.86 / 1.00 |
+| `1sdDdH` | 15/15, 15 | 15/15, 17 | 0.88 / 1.00 |
+| tuning, all | 93/125, 120 (F2 0.75) | 112/125, 166 (F2 0.84) | 0.67 / 0.90 |
+| `16w5nW` (held out) | 5/8 | 6/8, 9 | 0.67 / 0.75 |
+
+No R8 book is lost. **How far to trust it:** 15 of the 19 gains are on `1zktX1`, whose number moves ±3-6 under a ±1
+level of noise; precision fell (46 more boxes, mostly on `1zktX1`'s top shelves and posts).
+
+- **What was wrong (R8):** `1zktX1`'s dark plain spines had clear sides but failed the texture bar or the foot test;
+  gaps between found books were never searched again; a turned photo found nothing (0/60 at 90°, 12/60 at 20°).
+- **What changed:** the gap search and the lonely veto (the owner's idea), the texture waiver, a log-grey run and a
+  1440 px run added where they overlap nothing (rows R9-G, R9-M2, R9-log, R9-fine), and the roll wrapper (R9-roll).
+- **Rotated (warp.py, truth 91 over `1zktX1`, `1g4iFN`, `16acjV`):** R9 68 / 62 / 69 at -10° / 20° / 90°;
+  R8 finds no book at 90° and a fifth of them at 20°.
+- **Time:** the page's Find books on `1zktX1` went from 23 s (R8) to ~100 s; the [performance pass](#performance) brought
+  it to 27 s with every box unchanged.
+- **The run:** Fable ideation over fresh lenses, a child's explanation (R9-FFC), transformed views and the whole trick
+  pool, each built and scored by a Sonnet agent; every direction is a row of [Directions tried](#directions-tried).
 
 ### R8 — the shelf's own spacing tells two edges apart; a region of one colour boxes a book (2026-11-10)
 
@@ -157,27 +190,8 @@ pixels, R7 gives 18-22 and R8 35-38; the container's own decoding gives R8 41. R
   spines; one runs through a board, one is on the drill. A shelf of thin spines alone stays merged: the spacing is
   measured after the first, wider crowding.
 - **The run:** three ideation routes (fresh lenses, explaining to a child, a transformed view) gave directions A-F,
-  each built and scored separately; then a random sweep of the constants.
-
-  | direction | route | container, tuning (R7 49/92) | verdict |
-  |---|---|---|---|
-  | A colour regions as proposals | child | 59/92 (57 added only where no box) | **kept** |
-  | B lean read from the text strokes, a seed per stroke | child | 46-48/92 | rejected: the misses fail at the seam on dark, cluttered books, not at the lean |
-  | C cabinets split at their uprights, the board as the floor | child, view | 53/92, loses 3 R7 books | not kept: what it gains, D gains; thresholds set on `1zktX1` alone |
-  | D crowding at the shelf's own spacing | lenses | 59/92 | **kept** |
-  | E a scored objective in place of `most_books` | lenses | perfect selection over R7's candidates: 49/92 | killed by its test: generation is the wall, not selection |
-  | F lean ridge: a signed colour derivative along each lean, a Viterbi ridge, persistent peaks | view | 69/92, gated | not kept (below) |
-  | A+D+F | fusion | 72/92, loses `1zktX1` #2 | not kept: +2 over A+D for 7 settings fit to one photo, a gate between 0.045 and 0.066, twice the time |
-  | 60 random constant mutations | mutation | best 51/92 (`WORK` 1440, loses one on `1g4iFN`); 16 worse; no-op mutants exactly R7 | no constant change comes near |
-
-  F, the lean ridge, runs only where the shelf's spacing over its height is under 0.055 (without the gate `1HyJrL`
-  falls to 11/19); untuned it gives 65/92 with A+D. It is the route to revisit once more photos of thin packed spines
-  are tagged. Its prototype found both sides of 52 of `1zktX1`'s 59 books.
-- **Untried, from the routes:** a foot line fitted through a cell's boxes, capping the rest (taller-through-board, up
-  to 8 of 16; kill: clamping feet to the median foot offline gains under 3); verifying each side by its 8-band
-  barcode, dropping a line whose flanks match (wider merges; kill: fewer false boxes with no loss); a neighbour's
-  height and lean to fill a plain spine between two found ones (14, 15, 31, 34); a learned verifier over the
-  candidates with leave-one-photo-out (once more photos are tagged).
+  each built and scored separately, then a random sweep of the constants; each is a row of
+  [Directions tried](#directions-tried).
 
 ### R7 — no box over another; a line the books cross is no shelf; readings spelled (2026-11-10)
 
@@ -421,6 +435,112 @@ number below is a score.
   Community Hebrew models for ONNX on Hugging Face (a few months old, unlicensed or with no downloads) were not
   taken.
 
+## Performance
+
+A pass that keeps a change only when every box is bit-identical (the `speeding-up-an-algorithm` skill). The inputs are the
+page's decoded pixels and its text map for six photos, and `1g4iFN` turned 20° and 90° (`lab/warp.py`'s own warp, text
+map included), so the roll and quarter-turn paths are covered. `lab/perf.py` hashes every box, all fields, per input:
+
+```
+python3 studies/shelves/lab/perf.py snapshot
+python3 studies/shelves/lab/perf.py check
+python3 studies/shelves/lab/perf.py profile 1zktX1
+```
+
+`SHELVES_PERF_DIR` names the folder of `rgb_<id>.npy` and `tm_<id>.json` (default `lab/.cache/perf/inputs`, not committed);
+`check` exits 1 when any signature moved and prints time (minimum of 3) and tracemalloc peak for `1zktX1` and `1g4iFN`;
+`sigs` is the signatures alone, on 4 processes. The page's Pyodide, which is what the owner waits on:
+
+```
+REPS=1 node studies/shelves/reading/perf_pyodide.mjs PHOTO TEXTMAP.json
+```
+
+It prints load, open, find and the heap after (the page's text finder runs instead when the map is left out). Pyodide
+is 32-bit WebAssembly: an array whose nominal size passes 2 GB raises (the first prefix-sum window view did) and the
+numpy calls of a pure-Python loop cost two to three times what they do natively. Pyodide's own times wander ±10%
+between runs, and a second find in one session is ~8% shorter than the first: quote the first, over several processes.
+
+Times are `1zktX1`, minimum of 3 on the container, peak in MB (R9 at HEAD: 29.05 s, 131 MB). Kept needs identical
+signatures and 5% off the time or the peak, neither worse by 5%; a Python-loop change the container cannot show is judged
+in Pyodide.
+
+| # | change | s before → after | peak | verdict |
+|---|---|---|---|---|
+| P1 | seams of the grey kept per `Edges` (computed 3 times) | 29.05 → 27.33 | 131 → 132 | kept |
+| P2 | edge-line scan by prefix sums down the rows, one stretch per run of rows a column across (`LineScan`) | 27.33 → 23.11 | = | kept |
+| P3 | `points_in_poly` over each box's bounds, not the whole photo's grid | 23.11 → 22.05 | 132 → 98 | kept (peak) |
+| P4 | `end_edge`: the loop over rows and the peak list vectorised | 22.05 → 21.42 (`1g4iFN` -9%) | = | kept (together -5%) |
+| P5 | `extent`: rows grouped by width, one gather and mean each | 21.42 → 18.43 | = | kept |
+| P6 | `book_colour`, `texture`, `face_spread` as gathers | 18.43 → 18.25 | = | reverted, kept in P11 |
+| P7 | `regions`: both sides' turn × shift snapped at once | 18.25 → 17.64 | = | kept (`1g4iFN` -10%) |
+| P8 | `overlap`: bounds apart return 0 before clipping | 17.64 → 16.10 | = | kept |
+| P9 | scan windows by `sliding_window_view` | 16.10 → 13.75 | = | kept, then broken in Pyodide ("array is too big"): see P12 |
+| P10 | edges, shelves, barcode bands and the work-size view made once for the first two runs; the log run reads the plain run's seams | 13.75 → 13.03 | 98 → 100 | kept |
+| P11 | P6 again | 13.03 → 12.22 | = | kept |
+| P12 | the windows in steps of columns that keep the view under 2 GB, `uint16` sums | 12.22 → 11.70 | = | kept (the fix) |
+| P13 | region test against the boxes' areas made once, not per pair | 11.70 → 10.29 | = | kept |
+| P14 | `text_along` as one gather (container: noise); `iou` returns 0 early | 10.29 → 10.59; Pyodide 21.0 → 18.2 | = | kept (Pyodide) |
+| P15 | regions cut once, the log run reads them; one `percentile` call for both axes | 10.59 → 9.33; Pyodide 18.4 → 16.9 | = | kept |
+| P16 | `keep` of `side_lines` as array tests | Pyodide 18.4 → 19.7 | = | reverted (per-line numpy calls cost more than the loop) |
+| P17 | boxes' bounds kept beside them in `apart`, the region test and `find_run` | Pyodide 16.9 → 16.65 | = | reverted (-1.5%) |
+| P18 | `LineScan` made once per `side_lines`, its sums per mask, `argmax` over all columns, text mask once | 9.33 → 9.33; Pyodide 16.9 → 15.4 | = | kept (Pyodide) |
+| P19 | `end_edge` running sums into arrays that start with a zero line, `np.linalg.norm` as `row_norm` | 9.33 → 8.25; Pyodide 15.4 → 15.2 | 101 | kept |
+
+Final, first find per photo, container (minimum of 2) and the page's Pyodide, R9 → now; every box equal in both:
+
+| photo | boxes | container s | Pyodide find s | Pyodide heap after, MB |
+|---|---|---|---|---|
+| `1HyJrL` | 21 | 28.1 → 11.9 | 58.8 → 18.6 | 322 → 269 |
+| `1g4iFN` | 15 | 24.9 → 10.6 | 47.0 → 16.9 | 322 → 269 |
+| `1zktX1` | 92 | 30.7 → 8.3 | 65.7 → 15.2 | 269 → 224 |
+| `16acjV` | 21 | 23.7 → 9.3 | 45.7 → 15.0 | 322 → 322 |
+| `1sdDdH` | 17 | 40.6 → 20.1 | 67.6 → 27.1 | 322 → 269 |
+| `16w5nW` | 9 | 28.2 → 14.8 | 48.5 → 21.3 | 322 → 322 |
+| `1g4iFN` 20° / 90° | 13 / 16 | 23.4 → 9.8 / 79.5 → 39.5 | - | - |
+
+Peak (tracemalloc): `1zktX1` 131 → 101 MB, `1g4iFN` 170 → 143 MB. `node reading/find.mjs` (Pyodide load ~7 s, the photo's
+decoding ~3 s, the text finder ~1.5 s, then find): `1zktX1` 79.6 → 26.5-27.7 s, `1HyJrL` 66.5 → 31.2 s.
+
+What is left (`1zktX1`, 8.3 s): the WORK_FINE run is half of it (4.1 s of 8.0; on `1sdDdH` 14.4 of 20 s), the plain run 2.3 s, the log
+run 1.5 s. By function: `spine`'s checks of ~1500 candidates (`end_edge` a quarter of the run: ~2200 gathers of
+30k pixels), `Edges` (three Canny's per band, 15%), `region_pieces` (3300 small PCAs, 10%), `gap_search`, `side_lines`,
+`covers`' Hough. A 90° photo costs three finds. Not bit-identical, so not made: dropping the WORK_FINE run (about -50%
+on `1zktX1`, -70% on `1sdDdH`, and R9-fine's +4 books), a work size below 900, or `spine` memoised across the runs
+(exact, 20% of its calls repeat, ~5%: not built).
+
+## Directions tried
+
+Every direction built and scored, kept or not, in brief enough to rebuild, with what would make it worth another
+try. Scores are matched books on the tuning photos at the time (container path for R8's rows; R7 then stood at
+49/92). The untried ones from the same routes follow.
+
+| id | direction (how it works) | result | verdict | revisit if |
+|---|---|---|---|---|
+| R8-A | **Colour regions as proposals**: the shelf at 500 px wide cut into Felzenszwalb regions (scales 50, 150); a region long, thin, within 50° of upright and filling 60% of its PCA rectangle gives two side lines, each moved onto the strongest seam within a quarter of its width and 3°, checked by `spine` | +8 to +10 | **kept** (`books.regions`) | - |
+| R8-B | **Lean from the text strokes**: text-map components' PCA axes (0.7° median error against the book's lean) narrow the side-line scan to the local lean ± 3°, and a line is seeded beside each stroke | -1 to -3 | rejected: the misses fail at the seam test on dark, cluttered spines, not at the lean | a seam test that holds on dark books exists, or text strokes are found on most spines (24 of 60 on `1zktX1`) |
+| R8-C | **Cabinets and floors**: uprights are column runs of board colour with no horizontal edges through the band; each shelf split into cells at them, `shelf_books` per cell, feet clamped at the cell's board | +4, loses 3 | not kept: what it gains, R8-D gains; its thresholds were set on `1zktX1` alone | more photos of multi-cabinet bookcases are tagged, or boxes through boards dominate the false ones |
+| R8-D | **Crowding at the shelf's own spacing**: two edges between books are one when closer than 0.7 of the shelf's 25th-percentile spacing (floor: twice the narrowest book) | +10 | **kept** (`CROWD`) | - |
+| R8-E | **A scored objective in place of `most_books`**: a DP over candidate intervals scored by fit, end steps, text column and colour uniformity | oracle over R7's candidates: +0 (+3 with the inner-line veto soft) | killed before building: selection is not the wall | candidate generation improves enough that the oracle ceiling rises above the score |
+| R8-F | **Lean ridge**: per shelf, a signed colour derivative across a line integrated along leans -42° to 42° gives an (x, lean) map; a Viterbi ridge through it with a penalty per degree; each x scored by the 5th smallest of 8 height bands (persistence), peaks by prominence 0.1; lines added with their own crowding gap, `REACH` 2, only on shelves whose spacing is under 0.055 of their height | +20 alone, +2 over A+D | not kept: 7 settings fit to one photo, a gate with a thin margin, twice the time, loses `1zktX1` #2; untuned +16 with A+D | photos of thin packed spines beyond `1zktX1` are tagged; also a ready generator for searching a gap between found books |
+| R8-sweep | **60 random constant mutations** (1-3 constants ×0.6-1.6 each) | best +2 (`WORK` 1440, loses one on `1g4iFN`), 16 worse | no constant change comes near a structural one | - |
+| R9-G | **Gap search and the lonely veto** (the owner's idea: a shelf is many books side by side): between neighbouring boxes, a gap of 0.6 of the local usual width or more is searched again on the relaxed seams at the neighbours' lean ± 8°, pairs checked by `spine` without its inner-edge test, a DP keeping the tiling covering most of the gap; a box with no box within 2.5 usual widths at rows both stand in is dropped | +5, 2 false boxes fewer | **kept** (`gap_search`, `lonely_veto`) | - |
+| R9-M2 | **Texture waiver**: a box under the texture bar is kept when both its sides lie on seams along 0.7 of their rows and its face strays from its own colour by at most 0.3 of the shelf's range. Measured first: `1zktX1`'s dark plain misses had clear sides; the texture bar (#14), the foot test (#31, #32, #34) or the lines (#15) rejected them, not the seams as R8-B's verdict said | +6 | **kept** (`FIT_STRONG`, `UNIFORM`) | - |
+| R9-log | **Log-stretched grey where the shelf is dark**, as a whole second run whose boxes are added where they overlap none (IoU ≤ 0.3). As the only seam map it gained 13 but lost 4 R8 books; gated by a shelf's median brightness it could not tell `1zktX1`'s two shelves apart (98 against 104) | +4 as an added run | **kept** (`LOG_*`, `ADD_IOU`) | - |
+| R9-fine | **A third run at 1440 px**, its boxes added where they overlap none | +4 | **kept** (`WORK_FINE`) | the page's time matters more than recall (this run is about half R9's time) |
+| R9-frame | **Shelf frame**: a Theil-Sen foot line and a top envelope per shelf, feet and tops clamped to them, boxes over 1.8 usual widths dissolved into gaps; off-frame and through-the-board vetoes | +0; dissolving lost 3; the off-frame veto alone 3 false boxes fewer | not kept: the frame is fit to the same over-tall false boxes it should correct | a frame built only from boxes that passed `spine` |
+| R9-T1 | **Text-anchored spine**: a title's PCA axis as the spine's centreline, half-width to the outermost offset where both flanks step in colour | +0: every box it proposes overlaps one already found (alone it matches 9/19, 6/13, 10/60) | rejected | - |
+| R9-T2 | **A second text-finder pass** per shelf band at 2×, merged by max | +3 on `1zktX1` (+4 with T1), 8 of the 9 lettered misses gain a text line; leaning stretches turned upright cost books | not built: ~9 s more per photo in the page, and measured on `1zktX1` only | the page's time allows it, and the other photos are measured |
+| R9-M1/M4/M3 | Log grey as the only seam map; seams at twice the work size (with a Lab colour tensor); edge pixels grouped by direction into segments, no lean cap | -1 to +2, losing R8 books (M4+Lab 51/92) | rejected | - |
+| R9-shade | **De-shadowing**, measured on 6 synthetic shade kinds × 4 photos: dividing by luminance blurred at 6% (403 against R8's 379 summed), log retinex, local contrast normalisation, log-chroma; then shade-aware ends, seam bars scaled by the local light (409 against 363 with 2 px penumbras), one edge across several books as light | the best did not hold with the page's own text map on a shaded photo (`1zktX1` horizontal band 35 → 28) | not kept | a real photo with a cast shadow is tagged (synthetic multiplicative shade flatters every ratio test) |
+| R9-FFC | **"Floor, fan, comb"**, a new whole algorithm from the child-explanation route: floors as sloped lines where stripes turn calm, rays swung from the floor through ±60° scored by persistent colour steps, text as a veto only, every cell between rays a book | 86/125 against R8's 93; with R9-GMF 111/125 but 76 boxes more; holds at -10° (39/60) where R8 falls to 0 | rejected as a base and as a pass | its posts and boards are dropped cleanly; also boxes `1zktX1` #1, 8, 9, 43, 50 that R9 misses |
+| R9-roll | **Camera roll**: the roll read by Hough over the board lines (error ≤ 0.9°), the photo levelled when it is 5° or more, the boxes mapped back; quarter turns tried when the upright run finds under 6 boxes, a turned reading kept only when it finds more. A 1° dead zone lost 3 books on `16acjV` (rolled ~4°), the union of both runs between 1° and 6° lost 2 | rotated: R9 199 of 273 (R8: none at 90°); upright unchanged | **kept** (`ROLL_LEAST`) | a tagged photo rolled 1-5° whose books lean past `LEAN` |
+| R9-tricks | **The trick pool**: the 32 runnable tricks swept as pre-transforms and verifiers against null mutants (54 mutants, 12 flagged, CLAHE on Lab L the one real seed: 72/92 losing 3); the 264 catalog-only entries triaged (54 kept: 210 dropped as irrelevant, duplicates, needing a learned model, unportable) and all 54 built and scored | above the null and a book not otherwise found: the 1440 pyramid (`1zktX1` #43, now R9-fine), quickshift (#32); every verifier loses books at the random rate | CLAHE as an added run +1, F2 lower: not kept | - |
+
+Untried, from the same routes: a foot line fitted through a shelf's boxes, capping the rest (boxes through the
+board; kill: clamping feet to the median foot offline gains under 3); each side verified by its 8-band barcode, a
+line whose flanks match dropped (boxes over two books; kill: fewer false boxes with no loss); a learned verifier over
+the candidates, leave-one-photo-out (once more photos are tagged).
+
 ## Domain assumptions
 
 - `[shelf-lines]` A shelf is a horizontal edge across at least half the photo. Fails on a photo of one shelf seen at an
@@ -450,12 +570,23 @@ number below is a score.
 - `[spine-colour]` (R8) A book's face is one region of colour, long and thin, its sides on edges (`books.regions`,
   `REGION_*`). Fails on a spine patterned across its width, and on two like-coloured neighbours read as one region,
   which `books.spine`'s check on the edge between them must then reject; calibrated on one photo's gains.
+- `[camera-roll]` (R9) The boards are level in the world, so their Hough angle is the camera's roll; a roll under 5°
+  is left to `LEAN` (`books.ROLL_LEAST`). Fails on a photo with no board in frame, and on a shelf that truly slopes.
+- `[gap-search]` (R9) A shelf is books side by side, so a gap of 0.6 usual widths between two boxes holds a book and a
+  box with no neighbour within 2.5 widths is none (`books.GAP_*`, `LONELY`). Fails on a shelf with a bookend or an
+  ornament between books, and on a lone book left standing.
+- `[texture-waiver]` (R9) A plain spine with sharp sides is a book (`FIT_STRONG`, `UNIFORM`). Fails on a plain board
+  edge or a post between two seams - the source of some of `1zktX1`'s new false boxes.
+- `[pass-overlap]` (R9) The log-grey and 1440 px runs add only boxes overlapping none at IoU 0.3 (`ADD_IOU`); the
+  1440 run is scale-dependent like `WORK`.
 - `[work-size]` The finder works at a long side of 900 px (`books.WORK`), and the text finder reads the photo at
   1280 (`books.TEXT_LONG`): scale-dependent, the first constants to revisit on photos of another scale.
 
 ## Open items
 
-- More ground truth: four tagged photos, one held out; every R8 gain is on one photo (`1zktX1`). Photos of thin
+- More ground truth: six tagged photos, one held out; most R8 and R9 gains are on one photo (`1zktX1`). A real photo
+  with a cast shadow would decide R9's de-shadowing.
+- R9's precision on `1zktX1` (0.54): boxes on its posts and top shelves. Photos of thin
   packed spines would decide the lean ridge (R8's F).
 - `1zktX1`'s dark plain spines, steep leaners and the boxes through its boards (R8). A book split at its lettering beside a dark
   gap (`1HyJrL`'s Henderson): `most_books` prefers more boxes.

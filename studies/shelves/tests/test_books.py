@@ -299,14 +299,16 @@ def test_a_plain_spine_whose_title_the_text_finder_marks_is_boxed():
     assert hit(books.find(a, text))
 
 
-def test_without_its_text_a_plain_spine_is_boxed_only_by_its_colour(monkeypatch):
-    """req/shelves/books/find (2026-11-10): the text line is what keeps the plain spine among the line-found boxes;
-    with no text, only its face's one colour boxes it."""
+def test_a_plain_spine_with_clear_sides_is_boxed_without_its_text_or_its_colour(monkeypatch):
+    """req/shelves/books/find (2026-11-10): a plain spine is a book's face when both its sides are clear edges and its
+    face is one colour, with no text map and no colour region to vouch for it; with that waiver off, only its text
+    keeps it."""
     a, truth, text = titled_shelf()
     pale = np.array(truth[4])
     hit = lambda found: any(np.abs(np.array(b['corners']) - pale).max() <= 10 for b in found)
-    assert hit(books.find(a))
     monkeypatch.setattr(books, 'REGION_SCALES', ())
+    assert hit(books.find(a))
+    monkeypatch.setattr(books, 'FIT_STRONG', 1.01)
     assert not hit(books.find(a))
     assert hit(books.find(a, text))
 

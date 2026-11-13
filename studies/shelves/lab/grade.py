@@ -20,16 +20,11 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', 'py'))
-from books import area, overlap
+from books import iou
 
 
 def truth(gt):
     return [b for b in gt['books'] if b['verdict'] == 'right']
-
-
-def iou(a, b):
-    inter = overlap(a, b)
-    return inter / max(1e-9, area(a) + area(b) - inter)
 
 
 def boxes(gt, found):

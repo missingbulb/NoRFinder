@@ -17,3 +17,13 @@
   the code found missing invocations, rules owned twice and hand-offs the family lacked; applied.
 - **Actor:** @missingbulb (owner), who asked for the review.
 - **Model:** claude-opus-5-5
+
+## 2026-11-10 · reworded · catalog-only tricks built before the sweep; a constant sweep is no mutation
+- **Source:** the owner, in this session: "What do you mean only 32 of the 296 tricks are runnable?
+  For the ones that are not runnable - see where any one of them could be potentially useful, and
+  try it out".
+- **Reason:** the shelves run swept 60 constant mutations as this route and never ran the pool; 264
+  of 296 entries had no function, so a runnable-only sweep skips most of the pool.
+- **Actor:** @missingbulb (owner), asking that the skills carry this run's lessons for the next
+  "make it better".
+- **Model:** claude-opus-5-5

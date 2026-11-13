@@ -213,7 +213,9 @@ timings, the renders, and the objects gained and lost against the previous versi
 - **Beat the noise.** Re-run the baseline in the same session before comparing; judge on totals
   over all samples, never one item or one sample; on a few dozen graded items a gain of one or
   two is noise - find a change that moves five, or get more samples. Mark every number cached,
-  fresh or synthetic.
+  fresh or synthetic. A deterministic version re-runs identically, so a re-run measures no noise:
+  re-score it on its inputs perturbed by one intensity level, a few seeds, and on the pixels the
+  deployed runtime decodes, and read a delta against that spread.
 - **Decide keep or drop by a stated rule, not by eye.** Compare a variant with the current version
   by a paired bootstrap over the keyed items (resample items, score both on each draw) and read
   P(variant better): keep at ≥ 0.8, drop at ≤ 0.2, and in between call it no evidence and keep
