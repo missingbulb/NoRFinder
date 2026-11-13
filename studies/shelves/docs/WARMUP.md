@@ -10,9 +10,13 @@ page must do is `req/shelves` in [its requirements](../requirements.md).
 ```
 study.json            the study's contract with the shell; stage GT
 py/shelves.py         the Python entry: opens the photo (HEIC through pillow-heif), answers view, find and straighten
-py/books.py           the finder (find), its text finder's view of the photo, and the straightening of four corners
+py/finders.py         the finder's versions side by side (VERSIONS, DEFAULT), the page's list of them (req/shelves/books/versions)
+py/books.py           R8, the text-guided finder (find), its text finder's view of the photo, and the straightening of four corners
+py/r5_edges.py        R5, the edge-only finder, kept as it was (2026-11-07); it straightens with books.py
 lab/photos.py         the owner's photos from Drive (data/sources.json), and with --gt the ground truth
 lab/grade.py          the finder and the readers scored against a submitted ground truth
+lab/finder_metrics.py every version scored on every ground truth, on the page's path, into lab/finder_metrics.json
+lab/finder_menu.py    the page's list of finders (web/algorithms.GENERATED.json, written by the site's build)
 lab/words.py          the names list from one dated dump of Hebrew Wikipedia's titles, into web/words/
 web/shelves.js        the page: Find books, Read titles, the titles in Summary, the ground-truth task and its pictures
 web/reading.js        the three readers, the same module in the page and in the sandbox
@@ -24,7 +28,9 @@ tests/                test_books.py and test_grade.py (fast), test_reading.py an
 
 ## The pipeline
 
-1. **Find** (`books.find`, Python, R8, req/shelves/books/find): first the page runs PaddleOCR's text finder
+1. **Find** (`finders.find`, Python, req/shelves/books/find): the version chosen in the shell's list
+   (req/shelves/books/versions), R8 (`books.find`, text-guided) at first, or R5 (`r5_edges.find`, edge-only: no
+   text finder, the perspective check still on). R8: first the page runs PaddleOCR's text finder
    (`reading.textMap`, the `lines` reader's own) over Python's view of the photo (`books.text_view`, long side 1280)
    and hands the finder its map of where text is. Shelves are rows a horizontal edge crosses at least half
    the photo on, each looked at with a margin. Within a shelf, the edges between books are lines found as Osef does
@@ -96,10 +102,17 @@ npm ci --prefix studies/shelves/reading
 node studies/shelves/reading/read.mjs PHOTO find lines out.json
 ```
 
-`find` runs the study's finder as the page does, the text finder first; a ground-truth file in its place reads its own boxes. `read.mjs` runs the study's
+`find` runs the study's default finder as the page does, the text finder first (`find:r5` another version; `none` in
+place of the reader finds and reads nothing); a ground-truth file in its place reads its own boxes. `read.mjs` runs the study's
 Python on the npm build of the page's Pyodide (314.0.7), not the container's Python: the container's Pillow decodes
 a JPEG to slightly different pixels than Pyodide's, and on the R0 smoke test that changed four books' readings.
 With Pyodide on both sides the page and the sandbox gave the same text for every book.
+
+Each version's precision and recall, as the page lists them, come from scoring it on every ground truth on the page's
+path, once per version: `python3 studies/shelves/lab/finder_metrics.py [VERSION]` (after `photos.py --gt`), into
+`lab/finder_metrics.json`. On 2026-11-13, six ground truths, 133 books: R8 0.77 / 0.74 (98 boxed, 127 boxes; tuned on
+three of the photos), R5 0.59 / 0.50 (66, 112; tuned by eye before any ground truth). R7 scored 0.75 / 0.62 and
+differed from R8 on one photo alone, so it is not offered.
 
 ## Ground truth
 
@@ -118,7 +131,8 @@ into `data/raw/gt/<photo's drive id>__<tagger>.json`. Four photos so far: `1g4iF
 as missed) and 1 found box marked no book; `1HyJrL`, tagged 2026-11-10, 19 books right, all found (the book the
 frame cuts at its left edge left untagged); and, new for R8, `1zktX1`, 60 books right (24 added as missed), a
 bookcase of two cabinets side by side, and `16w5nW`, 8 books right (2 added as missed), **held out** since R8:
-scored once per iteration, never tuned on.
+scored once per iteration, never tuned on. Two more since, found on Drive on 2026-11-13 and not yet tuned on:
+`1sdDdH`, 15 books right, and `16acjV`, 18 right.
 
 A score is the page's: `node studies/shelves/reading/read.mjs PHOTO find lines OUT.json`, then
 `python3 studies/shelves/lab/grade.py GT.json --found OUT.json`. `grade.py --photo` runs the finder without the

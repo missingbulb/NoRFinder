@@ -3,6 +3,7 @@
 // answers with a list of books.
 // Exits 1 on a wrong answer, 2 when it cannot run (no pyodide, or Pyodide's packages cannot be downloaded).
 //   node studies/shelves/tests/find_bridge_driver.mjs PHOTO
+import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import fs from "node:fs";
@@ -41,9 +42,12 @@ const ask = (m) => { out = []; try { answer(m); } catch (e) { problems.push(`${m
 const bytes = fs.readFileSync(photo), name = path.basename(photo);
 if (!ask({ type: "open", name, bytes: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.length) }).some((m) => m.type === "held")) problems.push(`${name} is not held`);
 else {
-  const r = ask({ type: "call", action: "find", args: {} }).find((m) => m.type === "result");
-  if (!Array.isArray(r?.meta?.books)) problems.push(`find: ${JSON.stringify(r?.meta)}`);
-  else console.log(`${name}: ${r.meta.books.length} books`);
+  // every version the page offers, each found without the text finder's map, as with the text finder out of reach
+  for (const algorithm of JSON.parse(execFileSync("python3", [study.generated[study.algorithms]], { cwd: studyDir, encoding: "utf8" })).algorithms.map((a) => a.key)) {
+    const r = ask({ type: "call", action: "find", args: { algorithm } }).find((m) => m.type === "result");
+    if (!Array.isArray(r?.meta?.books)) problems.push(`find ${algorithm}: ${JSON.stringify(r?.meta)}`);
+    else console.log(`${name}, ${algorithm}: ${r.meta.books.length} books`);
+  }
 }
 for (const p of problems) console.error(p);
 process.exit(problems.length ? 1 : 0);

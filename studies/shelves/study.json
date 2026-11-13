@@ -39,6 +39,10 @@
     ],
     "wheels": []
   },
+  "generated": {
+    "web/algorithms.GENERATED.json": "lab/finder_menu.py"
+  },
+  "algorithms": "web/algorithms.GENERATED.json",
   "web": {
     "module": "web/shelves.js",
     "panels": "web/shelves.html",
