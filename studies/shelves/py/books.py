@@ -1,7 +1,7 @@
 """Finding the books on a shelf photo, and straightening each one for reading.
 
 A book is four corners in image pixels, clockwise from the one at the top left of the image, and a view: "spine"
-(the narrow face) or "cover" (the book facing the camera). The finder (R2) works on the photo's own edges. Within each
+(the narrow face) or "cover" (the book facing the camera). The finder (R9) works on the photo's own edges. Within each
 shelf, a spine's sides are long straight edges, found at whatever angle they lean; between two of them, the book's own
 top and foot are where its texture gives way to the plain wall or board, each snapped to the straight edge it ends on,
 at whatever angle that runs. A box is kept only once it checks out as a readable spine (`spine`), and of the boxes kept,
@@ -15,6 +15,20 @@ from skimage.transform import resize
 
 # scale-dependent: the long side the finder works at, in pixels; boxes are scaled back to the photo's own
 WORK = 900
+# [fine-pass] the long side of the second, finer run, whose boxes are added where they touch no box found so far
+WORK_FINE = 1440
+# [log-pass] the third run's grey is log-stretched where the shelf is dark: the window it is dark over, its grey below
+# which it counts as dark, and the knee of the stretch
+LOG_WIN, LOG_DARK, LOG_KNEE = 31, 90, 32
+# [pass-overlap] a box a later run finds is added when its IoU with every box already kept is at most this
+ADD_IOU = 0.3
+# [texture-waiver] a box whose sides lie this much on the seams and whose face strays from its own colour by at most
+# this share of the shelf's brightness range needs no texture
+FIT_STRONG, UNIFORM = 0.7, 0.3
+# [gap-search] a gap between neighbours this many usual spine widths is searched again; a book lonely beyond this many
+# is dropped; the relaxed cover a side needs; how far a side may turn from its neighbours' lean, in degrees; the
+# texture bar's share inside a gap; the candidate width in usual widths
+GAP_MIN, LONELY, GAP_BOUND, GAP_TURN, GAP_TEXTURE, GAP_WIDTH = 0.6, 2.5, 0.5, 8, 0.5, (0.5, 1.7)
 # [spine-lean] how far from upright a spine's edges may lean, in degrees, and the step the lean is searched in
 LEAN, LEAN_STEP = 30, 0.5
 # [spine-sides] how far apart, in degrees, a book's two sides may lean
@@ -112,6 +126,17 @@ TEXT_LONG = 1280
 # and how far beyond it, as a share of the shelf's height, a plain end of the book is followed to the edge it ends on
 REACH_OUT = 0.3
 
+# [camera-roll] a photo's roll is read off the long near-horizontal edges (the boards) of a thumbnail this many pixels
+# on its long side (scale-dependent), within this many degrees of level, a line being one this share of the thumbnail's
+# width long, its angle the mode of the lines' angles refined over those within this many degrees of it; black padding
+# at the frame is a piece of at least this share of the thumbnail
+ROLL_WORK, ROLL_SPAN, ROLL_LINE, ROLL_NEAR, PAD_LEAST = 900, 30, 0.3, 1.5, 0.002
+# [camera-roll] a roll of at least this many degrees is turned out of the photo before it is read: under it the photo
+# is read as it comes (the owner's shelves lean up to 4 degrees on two photos, and reading those level lost books)
+ROLL_LEAST = 5.0
+# [camera-roll] a photo with fewer books than this is tried on its side
+SHELF_ENOUGH = 6
+
 
 def grey(rgb):
     return rgb[..., :3].astype(np.float32) @ np.array([0.299, 0.587, 0.114], np.float32)
@@ -154,7 +179,7 @@ def long_pieces(m, frac):
 class Edges:
     """A shelf's edges: every edge, the long ones running up it, how strongly its brightness changes, and its colour."""
 
-    def __init__(self, g, rgb):
+    def __init__(self, g, rgb, log=False):
         from skimage.feature import canny
         # in colour: two books of one brightness and different colours still part where they touch. skimage's
         # thresholds are for brightness 0 to 1: at 0 to 255 a wall's grain clears them
@@ -172,8 +197,17 @@ class Edges:
         self.h, self.w = g.shape
         self.rgb = rgb
         self.gray = grey(rgb)
-        self.seam = seams(self.gray, True)
+        self.log = log
+        self.sg = 255.0 * np.log1p(np.clip(self.gray, 0, None) / LOG_KNEE) / np.log1p(255 / LOG_KNEE) if log else self.gray
+        self.seam = self.seams(True)
         self.spread = float(np.subtract(*np.percentile(g, [95, 5]))) or 1.0
+
+    def seams(self, strict):
+        """The seams of the grey, from the log-stretched grey where the shelf is dark when this is the log run."""
+        if self.log:
+            dark = ndi.uniform_filter(self.gray, LOG_WIN) < LOG_DARK
+            return np.where(dark, seams(self.sg, strict), seams(self.gray, strict))
+        return seams(self.gray, strict)
 
 
 def book_rows(e):
@@ -225,7 +259,7 @@ def side_lines(e, top, bottom, text=None):
     gap = MIN_WIDTH * 2 * e.w
 
     def scan(x0s, strict):
-        on = seams(e.gray, strict)
+        on = e.seams(strict)
         found = []
         for x0 in x0s:
             xs = np.round(x0 + (ys[None] - yc) * tans[:, None]).astype(int)
@@ -425,9 +459,19 @@ def texture(e, la, lb, y0, y1):
     return tot / n if n else 0.0
 
 
+def face_spread(e, la, lb, y0, y1, colour):
+    """How far the box's face strays from its own colour, as a share of the shelf's brightness range (median)."""
+    d = []
+    for y in range(int(y0), int(y1), 3):
+        a, b = int(np.ceil(la.x(y))) + 2, int(np.floor(lb.x(y))) - 2
+        if b > a:
+            d.append(np.linalg.norm(e.rgb[y, a:b:2, :3] - colour, axis=-1))
+    return float(np.median(np.concatenate(d)) / e.spread) if d else 9.0
+
+
 def spine(e, lines, i, j, top, bottom):
-    """The book between side lines i and j as {corners, texture, fit, steps}, or None when it does not check out as a
-    readable spine."""
+    """The book between side lines i and j as {corners, texture, fit, steps, strong, uni}, or None when it does not check
+    out as a readable spine."""
     la, lb = lines[i], lines[j]
     h = bottom - top
     if abs(np.degrees(np.arctan(la.t) - np.arctan(lb.t))) > SIDES:
@@ -446,6 +490,7 @@ def spine(e, lines, i, j, top, bottom):
     colour = book_colour(e, la, lb, *whole)
     (tl, tr), top_step = end_edge(e, la, lb, whole[0], -1, win, limit, tilt, colour)
     (bl, br), foot_step = end_edge(e, la, lb, whole[1] - 1, 1, win, limit, tilt, colour)
+    strong = min(on_line(e.seam, la, *whole), on_line(e.seam, lb, *whole)) >= FIT_STRONG
     bl, br = bl + 1, br + 1
     corners = [(float(la.x(tl)), tl), (float(lb.x(tr)), tr), (float(lb.x(br)), br), (float(la.x(bl)), bl)]
     if min(top_step, foot_step) < END_STEP or min(bl - tl, br - tr) < ASPECT * width:
@@ -459,7 +504,8 @@ def spine(e, lines, i, j, top, bottom):
     if any(on_line(e.seam, lines[k], y0, y1) >= max(SIDE_COVER, INSIDE * sides_on) for k in range(i + 1, j)
            if lines[k].xm - la.xm > INSET * width and lb.xm - lines[k].xm > INSET * width):
         return None
-    return dict(corners=corners, texture=texture(e, la, lb, *whole), fit=sides_on, steps=min(top_step, foot_step))
+    return dict(corners=corners, texture=texture(e, la, lb, *whole), fit=sides_on, steps=min(top_step, foot_step),
+                strong=strong, uni=face_spread(e, la, lb, *whole, colour))
 
 
 def bright_marks(crop):
@@ -504,12 +550,12 @@ def series_split(crop):
     return float(np.median(shifts[np.abs(shifts - best) <= SPLIT_AGREE])) if near(best) >= REPEATS else None
 
 
-def shelf_books(g, rgb, text=None):
+def shelf_books(g, rgb, text=None, log=False):
     """Every pair of neighbouring side lines on a shelf that checks out as a spine: {(i, j): spine}, the lines, and the
     rows the books stand in (None when there are none). A
     box far wider than the shelf's usual one whose marks repeat further across is two books of one series: a line goes
     between them, and each is checked as any book is."""
-    e = Edges(g, rgb)
+    e = Edges(g, rgb, log)
     rows = book_rows(e)
     if not rows:
         return {}, [], None
@@ -549,7 +595,8 @@ def shelf_books(g, rgb, text=None):
                 if text is not None:
                     b['text'] = text_along(text, b['corners'])
                 found['region', n] = b
-    return found, lines, rows
+    e.rows = rows
+    return found, lines, e
 
 
 def regions(e, top, bottom):
@@ -598,6 +645,125 @@ def regions(e, top, bottom):
                 sides.append(Line(best[2], -best[1], mid))
             out.append(sorted(sides, key=lambda l: l.xm))
     return out
+
+
+def box_sides(c, mid):
+    """(left Line, right Line) of a box's corners TL, TR, BR, BL, both with x at row mid."""
+    (tlx, tly), (trx, try_), (brx, bry), (blx, bly) = c
+
+    def line(x0, y0, x1, y1):
+        d = (x1 - x0) / (y1 - y0)
+        return Line(x0 + d * (mid - y0), -d, mid)
+    return line(tlx, tly, blx, bly), line(trx, try_, brx, bry)
+
+
+def lonely_veto(boxes):
+    """Drop a box with no other box beside it on its shelf: nearest sides within LONELY of the shelf's usual width, at
+    rows both stand in."""
+    if len(boxes) < 3:
+        return boxes
+    ys = [p[1] for b in boxes for p in b['corners']]
+    mid = (min(ys) + max(ys)) / 2
+    sides = [box_sides(b['corners'], mid) for b in boxes]
+    wid = [r.xm - l.xm for l, r in sides]
+    u = float(np.median(wid))
+    keep = []
+    for i, b in enumerate(boxes):
+        yi = (min(p[1] for p in b['corners']), max(p[1] for p in b['corners']))
+        ok = False
+        for j, c in enumerate(boxes):
+            if j == i:
+                continue
+            yj = (min(p[1] for p in c['corners']), max(p[1] for p in c['corners']))
+            if min(yi[1], yj[1]) - max(yi[0], yj[0]) < 0.5 * min(yi[1] - yi[0], yj[1] - yj[0]):
+                continue
+            d = max(sides[j][0].xm - sides[i][1].xm, sides[i][0].xm - sides[j][1].xm)
+            if d <= LONELY * u:
+                ok = True
+                break
+        if ok:
+            keep.append(b)
+    return keep
+
+
+def gap_search(e, boxes, top, text, least):
+    """Between neighbouring boxes of a shelf, a gap wider than GAP_MIN of the usual spine is searched again with
+    relaxed evidence: sides on the relaxed seams leaning like the neighbours, boxes checked by spine(), those tiling the
+    gap kept."""
+    if len(boxes) < 2:
+        return boxes
+    t_, b_ = e.rows
+    mid = (t_ + b_) / 2
+    local = [[(x, y - top) for x, y in b['corners']] for b in boxes]
+    order = sorted(range(len(boxes)), key=lambda k: np.mean([p[0] for p in local[k]]))
+    sides = {k: box_sides(local[k], mid) for k in order}
+    wid = {k: sides[k][1].xm - sides[k][0].xm for k in order}
+    relaxed = e.seams(False)
+
+    def search(la, rb, ya0, ya1, u, lean):
+        ys = np.arange(int(ya0), int(ya1))
+        xs0 = np.arange(int(la.xm + 0.25 * u), int(rb.xm - 0.25 * u) + 1)
+        if len(ys) < 8 or len(xs0) == 0:
+            return []
+        t0 = np.full(len(xs0), lean)
+        turn = np.deg2rad(np.arange(-GAP_TURN, GAP_TURN + 0.1, 0.5))
+        tl = np.tan(np.arctan(t0)[None, :] + turn[:, None])
+        xx = np.round(xs0[None, :, None] - tl[:, :, None] * (ys[None, None, :] - mid)).astype(int)
+        ok = (xx >= 0) & (xx < e.w)
+        cover = np.where(ok, relaxed[ys[None, None, :], np.clip(xx, 0, e.w - 1)], False).mean(axis=2)
+        if text is not None:
+            tx = np.where(ok, text[ys[None, None, :], np.clip(xx, 0, e.w - 1)] > TEXT_ON, False).mean(axis=2)
+            cover = np.where(tx > TEXT_CROSS, 0, cover)
+        kbest = cover.argmax(axis=0)
+        score = cover[kbest, np.arange(len(xs0))]
+        cands = []
+        for i in np.argsort(-score):
+            if score[i] < GAP_BOUND:
+                break
+            if all(abs(xs0[i] - xs0[j]) >= 0.3 * u for j in cands):
+                cands.append(i)
+        lines = [la] + [Line(float(xs0[i]), float(tl[kbest[i], i]), mid) for i in sorted(cands, key=lambda i: xs0[i])] + [rb]
+        m = len(lines)
+        found = {}
+        for i in range(m):
+            for j in range(i + 1, m):
+                w = lines[j].xm - lines[i].xm
+                if GAP_WIDTH[0] * u <= w <= GAP_WIDTH[1] * u:
+                    b = spine(e, [lines[i], lines[j]], 0, 1, t_, b_)
+                    if b and (b['texture'] >= least or (text is not None and text_along(text, b['corners']) >= TEXT_ALONG)):
+                        found[i, j] = b
+        best = [(0.0, None)] * m
+        for j in range(m):
+            best[j] = (best[j - 1][0], ('skip', j - 1)) if j else (0.0, None)
+            for i in range(j):
+                if (i, j) in found:
+                    w = lines[j].xm - lines[i].xm
+                    val = min(w / u, 1.3) + 0.5 * found[i, j]['fit']
+                    if best[i][0] + val > best[j][0]:
+                        best[j] = (best[i][0] + val, ('box', i))
+        res, j = [], m - 1
+        while j >= 0 and best[j][1]:
+            kind, i = best[j][1]
+            if kind == 'box':
+                res.append(found[i, j])
+            j = i
+        return res
+
+    def lean_near(n):
+        tn = [(sides[k][0].t + sides[k][1].t) / 2 for k in order[max(0, n - 3):n + 5]]
+        return float(np.tan(np.median(np.arctan(tn))))
+
+    out = []
+    for n, (ka, kb) in enumerate(zip(order, order[1:])):
+        la, rb = sides[ka][1], sides[kb][0]
+        u = float(np.median([wid[k] for k in order[max(0, n - 2):n + 4]]))
+        if rb.xm - la.xm < GAP_MIN * u:
+            continue
+        ya0 = np.mean([local[ka][0][1], local[ka][1][1], local[kb][0][1], local[kb][1][1]])
+        ya1 = np.mean([local[ka][2][1], local[ka][3][1], local[kb][2][1], local[kb][3][1]])
+        for b in search(la, rb, ya0, ya1, u, lean_near(n)):
+            out.append(dict(corners=[(x, y + top) for x, y in b['corners']], fit=b['fit'], new=True))
+    return list(boxes) + out
 
 
 def most_books(found, n):
@@ -789,12 +955,17 @@ def text_view(rgb):
     return np.asarray(Image.fromarray(np.ascontiguousarray(rgb[..., :3])).resize(size, Image.BILINEAR))
 
 
-def find(rgb, text=None):
-    """The books in an RGB photo, [{corners, view}]: the spines shelf by shelf from the top, left to right, then the
-    covers lying outside the shelves. text: the text finder's probability (0 to 1) over the photo, at any size, or
-    None to find without it."""
+def iou(a, b):
+    """The share of the two boxes' union that both cover."""
+    inter = overlap(a, b)
+    return inter / max(1e-9, area(a) + area(b) - inter)
+
+
+def find_once(rgb, text, work, log):
+    """One run of the finder at the work size: [{corners, view}] in the photo's pixels. log: seams from the
+    log-stretched grey where the shelf is dark."""
     H, W = rgb.shape[:2]
-    s = min(1.0, WORK / max(H, W))
+    s = min(1.0, work / max(H, W))
     small = np.stack([ndi.zoom(rgb[..., k].astype(np.float32), s, order=1) if s < 1 else rgb[..., k].astype(np.float32) for k in range(3)], -1)
     g = ndi.gaussian_filter(grey(small), 1.0)
     if text is not None:
@@ -802,32 +973,36 @@ def find(rgb, text=None):
     # each shelf with a margin: a book standing on its board ends past the board's edge
     m = int(MARGIN * g.shape[0])
     per_shelf = [(max(0, top - m), *shelf_books(g[max(0, top - m):bottom + m], small[max(0, top - m):bottom + m],
-                                             None if text is None else text[max(0, top - m):bottom + m]))
+                                             None if text is None else text[max(0, top - m):bottom + m], log))
                  for top, bottom in shelves(g)]
     h, w = g.shape
     shelf = np.zeros((h, w), bool)
     for top, bottom in shelves(g):
         barcode_bands(g, small, max(0, top - m), min(h, bottom + m), shelf)
-    per_shelf = [(top, found, lines) for top, found, lines, _ in per_shelf]
-    textures = [b['texture'] for _, found, _ in per_shelf for k, b in found.items() if k[0] != 'region']
+    textures = [b['texture'] for _, found, _, _ in per_shelf for k, b in found.items() if k[0] != 'region']
     spines = []
     if textures:
         least = TEXTURE * float(np.median(textures))
-        # a wall, a board or a gap carries next to no texture, and no text
-        per_shelf = [(top, {k: b for k, b in found.items() if b['texture'] >= least or b.get('text', 0) >= TEXT_ALONG}, lines)
-                     for top, found, lines in per_shelf]
-        for top, found, lines in per_shelf:
+        # a wall, a board or a gap carries next to no texture, and no text, unless its sides are all seams and its face
+        # one colour
+        per_shelf = [(top, {k: b for k, b in found.items() if b['texture'] >= least or b.get('text', 0) >= TEXT_ALONG
+                      or (b['strong'] and b['uni'] <= UNIFORM)}, lines, e)
+                     for top, found, lines, e in per_shelf]
+        for top, found, lines, e in per_shelf:
             chosen = most_books(found, len(lines))
             # [barcode] books on a shelf stand packed, several together: a lone strip or two is a gap between other things
             if len(chosen) < SHELF_BOOKS:
                 continue
-            for k in chosen:
-                spines.append(dict(corners=[(x, y + top) for x, y in found[k]['corners']], fit=found[k]['fit']))
+            mine = [dict(corners=[(x, y + top) for x, y in found[k]['corners']], fit=found[k]['fit']) for k in chosen]
             # [spine-colour] a region of one colour boxes a book where nothing else does
             for k, b in found.items():
                 c = [(x, y + top) for x, y in b['corners']]
-                if k[0] == 'region' and not any(overlap(c, sp['corners']) > TOUCH * min(area(c), area(sp['corners'])) for sp in spines):
-                    spines.append(dict(corners=c, fit=b['fit']))
+                if k[0] == 'region' and not any(overlap(c, sp['corners']) > TOUCH * min(area(c), area(sp['corners'])) for sp in spines + mine):
+                    mine.append(dict(corners=c, fit=b['fit']))
+            # [gap-search] a gap between neighbours is searched again, and a book with none beside it is dropped
+            band = None if text is None else text[top:top + e.h]
+            mine = lonely_veto(gap_search(e, apart(mine), top, band, GAP_TEXTURE * least))
+            spines += mine
     spines = [b['corners'] for b in apart(spines)]
     # [barcode] covers are looked for outside the shelves: the barcode bands, and the spines boxed
     yy, xx = np.mgrid[0:h, 0:w]
@@ -835,10 +1010,150 @@ def find(rgb, text=None):
     for c in spines:
         shelf |= points_in_poly(grid, np.asarray(c)).reshape(h, w)
     shelf = ndi.binary_dilation(shelf, iterations=max(2, int(0.01 * max(h, w))))
-    found = covers(Edges(g, small), ~shelf)
+    found = covers(Edges(g, small, log), ~shelf)
     scale = lambda c: [[round(min(max(x, 0), w) / s, 1), round(min(max(y, 0), h) / s, 1)] for x, y in c]
     return ([dict(corners=scale(c), view='spine') for c in spines]
             + [dict(corners=scale(clockwise(c)), view='cover') for c in found if not shelf[int(np.clip(np.mean(c, 0)[1], 0, h - 1)), int(np.clip(np.mean(c, 0)[0], 0, w - 1))]])
+
+
+def find_run(rgb, text=None):
+    """One run of the finder on a photo taken as it comes: the boxes of the run at the work size, then those of a run
+    with dark shelves log-stretched that touch none of its boxes, then those of a run at WORK_FINE that touch none kept
+    so far. text: the text finder's probability (0 to 1) over the photo, at any size, or None to find without it."""
+    kept = find_once(rgb, text, WORK, False)
+    base = list(kept)
+    kept += [b for b in find_once(rgb, text, WORK, True) if all(iou(b['corners'], c['corners']) <= ADD_IOU for c in base)]
+    for b in find_once(rgb, text, WORK_FINE, False):
+        if all(iou(b['corners'], c['corners']) <= ADD_IOU for c in kept):
+            kept.append(b)
+    return kept
+
+
+def roll_angle(rgb):
+    """[camera-roll] The photo's roll, in degrees clockwise (the angle its shelves' boards lie at, minus level), or None
+    when no long near-horizontal line stands. Read off the boards, the long edges lying within ROLL_SPAN of level on a
+    ROLL_WORK thumbnail (Canny, then a Hough transform; black padding at the frame and the frame's own rim left out): the
+    mode of their angles, each weighing its length cubed, refined by the lines within ROLL_NEAR of it. Spines are not
+    read: books lean."""
+    from PIL import Image
+    from skimage.feature import canny
+    from skimage.transform import hough_line, hough_line_peaks
+    H, W = rgb.shape[:2]
+    s = min(1.0, ROLL_WORK / max(H, W))
+    im = Image.fromarray(np.ascontiguousarray(rgb[..., :3]))
+    t = np.asarray(im.resize((round(W * s), round(H * s)), Image.BOX) if s < 1 else im)
+    valid = ~ndi.binary_dilation(padding(t), iterations=5)
+    valid[:3] = valid[-3:] = False
+    valid[:, :3] = valid[:, -3:] = False
+    e = canny(ndi.gaussian_filter(grey(t.astype(np.float32)), 1.0), sigma=1.5) & valid
+    thetas = np.radians(np.arange(-ROLL_SPAN, ROLL_SPAN + 0.5, 0.5)) + np.pi / 2
+    h, a, d = hough_line(e, theta=thetas)
+    acc, ang, _ = hough_line_peaks(h, a, d, min_distance=8, min_angle=3, threshold=ROLL_LINE * e.shape[1], num_peaks=80)
+    if len(acc) == 0:
+        return None
+    w = (acc / e.shape[1]) ** 3
+    deg = np.degrees(ang) - 90
+    bins = np.arange(-ROLL_SPAN, ROLL_SPAN + 1.0, 1.0)
+    mode = bins[int(np.argmax([w[np.abs(deg - b) <= 1.0].sum() for b in bins]))]
+    near = np.abs(deg - mode) <= ROLL_NEAR
+    return float((deg[near] * w[near]).sum() / w[near].sum())
+
+
+def padding(t):
+    """True where black padding touching the frame lies in a thumbnail: constant black joined to the edge, in a piece of
+    at least PAD_LEAST of the thumbnail."""
+    black = t[..., :3].max(-1) <= 2
+    lab, n = ndi.label(black)
+    edge = np.unique(np.r_[lab[0], lab[-1], lab[:, 0], lab[:, -1]])
+    edge = edge[edge > 0]
+    if len(edge) == 0:
+        return np.zeros(black.shape, bool)
+    return np.isin(lab, edge[ndi.sum(black, lab, edge) >= PAD_LEAST * black.size])
+
+
+def level(rgb, text, deg):
+    """[camera-roll] The photo, and its text map at the photo's size, turned by deg degrees clockwise about its centre on a
+    canvas that holds it whole, the corners the turn uncovers filled with the photo's median colour (and no text), then
+    cropped to the content (black padding of the photo's own left out). Returns the turned photo, its text, and the 3×3
+    matrix taking the photo's pixels (x, y) to the turned photo's."""
+    H, W = rgb.shape[:2]
+    c, s = np.cos(np.radians(deg)), np.sin(np.radians(deg))
+    turn = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+    centre = lambda w, h: np.array([[1, 0, w / 2], [0, 1, h / 2], [0, 0, 1]])
+    corners = np.array([[0, 0], [W, 0], [W, H], [0, H]]) - [W / 2, H / 2]
+    lo, hi = (corners @ turn[:2, :2].T).min(0), (corners @ turn[:2, :2].T).max(0)
+    ow, oh = int(np.ceil(hi[0] - lo[0])), int(np.ceil(hi[1] - lo[1]))
+    M = centre(ow, oh) @ turn @ np.linalg.inv(centre(W, H))
+    inv = np.linalg.inv(M)
+    pull = dict(matrix=inv[[1, 0]][:, [1, 0]], offset=inv[[1, 0], 2], output_shape=(oh, ow), order=1)
+    from PIL import Image
+    t = np.asarray(Image.fromarray(np.ascontiguousarray(rgb[..., :3])).resize((max(1, W // 8), max(1, H // 8)), Image.BOX))
+    pad = padding(t)
+    content = np.ones((H, W), np.float32)
+    if pad.any():
+        content = 1 - np.kron(pad, np.ones((8, 8), np.float32))[:H, :W].astype(np.float32)
+        content = np.pad(content, ((0, H - content.shape[0]), (0, W - content.shape[1])), constant_values=1)
+    valid = ndi.affine_transform(content, cval=0, **pull) > 0.99
+    fill = np.median(rgb[::8, ::8, :3][content[::8, ::8] > 0.5], 0) if (content[::8, ::8] > 0.5).any() else np.zeros(3)
+    out = np.stack([np.where(valid, ndi.affine_transform(rgb[..., k].astype(np.float32), cval=float(fill[k]), **pull), fill[k])
+                    for k in range(3)], -1)
+    tx = None
+    if text is not None:
+        tz = ndi.zoom(np.asarray(text, np.float32), (H / text.shape[0], W / text.shape[1]), order=1)[:H, :W]
+        tx = np.where(valid, ndi.affine_transform(tz, cval=0.0, **pull), 0).astype(np.float32)
+    ys, xs = np.where(valid)
+    y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+    crop = np.array([[1, 0, -x0], [0, 1, -y0], [0, 0, 1]])
+    return (np.clip(np.rint(out[y0:y1, x0:x1]), 0, 255).astype(np.uint8), None if tx is None else tx[y0:y1, x0:x1], crop @ M)
+
+
+def quarter(rgb, text, k):
+    """The photo, and its text map, turned k quarter turns counter-clockwise on screen, with the 3×3 matrix taking the
+    photo's pixels to the turned photo's."""
+    M = np.eye(3)
+    H, W = rgb.shape[:2]
+    for _ in range(k % 4):
+        M = np.array([[0, 1, 0], [-1, 0, W], [0, 0, 1]]) @ M
+        H, W = W, H
+    return np.rot90(rgb, k).copy(), None if text is None else np.rot90(text, k).copy(), M
+
+
+def map_back(boxes, M):
+    """The boxes' corners, in the turned photo's pixels, in the photo's, clockwise from the top left."""
+    inv = np.linalg.inv(M)
+    out = []
+    for b in boxes:
+        p = np.c_[np.asarray(b['corners'], float), np.ones(4)] @ inv.T
+        out.append(dict(b, corners=[[round(float(x), 1), round(float(y), 1)] for x, y in clockwise(p[:, :2])]))
+    return out
+
+
+def find_rolled(rgb, text, k):
+    """[camera-roll] The books of the photo turned k quarter turns, found level, in the turned photo's pixels, with the
+    map to them from the photo's: a roll of at least ROLL_LEAST is turned out first."""
+    r, t, Mq = quarter(rgb, text, k)
+    phi = roll_angle(r)
+    if phi is None or abs(phi) < ROLL_LEAST:
+        return find_run(r, t), Mq
+    r2, t2, Ml = level(r, t, -phi)
+    return map_back(find_run(r2, t2), Ml), Mq
+
+
+def find(rgb, text=None):
+    """The books in an RGB photo, [{corners, view}]: the spines shelf by shelf from the top, left to right, then the
+    covers lying outside the shelves. text: the text finder's probability (0 to 1) over the photo, at any size, or
+    None to find without it. [camera-roll] The photo is found turned level by its roll, and as it lies on its side
+    only when it shows fewer than SHELF_ENOUGH books: then the two sideways quarter turns are tried, and a turn counts
+    only when it shows at least SHELF_BOOKS books and more than twice as many as the photo as it lies."""
+    boxes, M = find_rolled(rgb, text, 0)
+    lying = len(boxes)
+    if lying < SHELF_ENOUGH:
+        best = lying
+        for k in (1, 3):
+            turned, Mt = find_rolled(rgb, text, k)
+            if len(turned) > best and len(turned) >= SHELF_BOOKS and len(turned) > 2 * lying:
+                best, boxes, M = len(turned), turned, Mt
+    return boxes if np.allclose(M, np.eye(3)) else map_back(boxes, M)
 
 
 def homography(src, dst):
