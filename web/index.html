@@ -136,6 +136,13 @@
 
     <section class="box foldable study-box" id="processing-box" hidden>
       <div class="sec-head"><h2>Processing</h2></div>
+      <div id="algorithm-pick" hidden>
+        <select id="algorithm" disabled aria-label="Algorithm"></select>
+        <details id="algorithm-about" class="fold">
+          <summary>How the algorithm works</summary>
+          <div id="algorithm-note" class="hint"></div>
+        </details>
+      </div>
       <slot-here data-slot-for="processing"></slot-here>
     </section>
     <section class="box foldable study-box" id="tasks-box" hidden>

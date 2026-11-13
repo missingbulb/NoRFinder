@@ -310,6 +310,14 @@
                 {"when": {"role": ["data"]}, "is": "hidden", "req": "req/shell/data/mode"},
                 {"when": {"image": ["none"]}, "is": "folded", "req": "req/shell/left-bar/folding"},
                 {"when": {"counted": [true]}, "is": "folded", "req": "req/shell/left-bar/folding"}
+              ],
+              "children": [
+                {"name": "Algorithms", "select": "#algorithm-pick", "req": "req/shell/processing/algorithms",
+                  "children": [
+                    {"name": "Algorithm", "select": "#algorithm", "control": true, "req": "req/shell/processing/algorithms"},
+                    {"name": "About the algorithm", "select": "#algorithm-about", "req": "req/shell/processing/algorithms"}
+                  ]
+                }
               ]
             },
             {"name": "Ground Truth Tasks", "select": "#tasks-box", "box": true, "req": "req/shell/left-bar/shells",

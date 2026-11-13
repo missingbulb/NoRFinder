@@ -1,11 +1,9 @@
 {
   "about": "The NoR Finder's own elements in the shell's states (req/checks/shell-states, req/checks/spec-layout): each graft puts its tree under the shell's element `under`, after its child `after` or first, in the tree of dev/requirements/shell-states.json, whose rules they follow; its roots and paths open this study. `samples` names the module writing the image or z-stack its paths load; `differ` says where a shell element shows otherwise in this study. `counted` is its first step, Run algorithm, done.",
   "grafts": [
-    {"under": "Processing", "tree": [
+    {"under": "Processing", "after": "Algorithms", "tree": [
       {"name": "The finder", "select": "#finder-box", "req": "req/nor/find/finders",
         "children": [
-          {"name": "Algorithm", "select": "#finder", "control": true, "req": "req/nor/find/finders"},
-          {"name": "About the algorithm", "select": "#about-box", "req": "req/nor/find/finders"},
           {"name": "Settings", "select": "#settings-box", "req": "req/nor/find/settings"},
           {"name": "Filters", "select": "#filters-fold", "req": "req/nor/filters/live",
             "rule": [

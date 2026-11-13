@@ -112,7 +112,7 @@ async function open() {
 }
 async function findWith(f) {
   const done = next("refilter");   // finding ends with the first filter pass on the new candidates
-  await page.evaluate((f) => { $("#finder").value = f; $("#finder").dispatchEvent(new Event("change")); $("#find").click(); }, f);
+  await page.evaluate((f) => { $("#algorithm").value = f; $("#algorithm").dispatchEvent(new Event("change")); $("#find").click(); }, f);
   await done; await settled();
 }
 async function find() { for (const f of FINDERS) await findWith(f); }
@@ -167,7 +167,7 @@ await page.waitForFunction(() => st.ready || $("#status").classList.contains("er
 clearInterval(ticker);
 if (!(await page.evaluate(() => st.ready))) throw new Error(await page.evaluate(() => $("#status").textContent));
 console.log(`python ready in ${((Date.now() - t0) / 1000).toFixed(0)} s`);
-if (!FINDERS.length) FINDERS = await page.evaluate(() => [...$("#finder").options].map((o) => o.value));
+if (!FINDERS.length) FINDERS = await page.evaluate(() => [...$("#algorithm").options].map((o) => o.value));
 assert.ok(FINDERS.length >= 1, "the page offers no finder");
 
 // each action on its own, so a leak is pinned to the action that makes it

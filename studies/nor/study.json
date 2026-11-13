@@ -35,6 +35,10 @@
       "tifffile==2026.3.3"
     ]
   },
+  "generated": {
+    "web/algorithms.GENERATED.json": "detection/algorithm_menu.py"
+  },
+  "algorithms": "web/algorithms.GENERATED.json",
   "web": {
     "module": "web/nor.js",
     "panels": "web/nor.html",

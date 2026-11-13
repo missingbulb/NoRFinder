@@ -8,6 +8,7 @@ import pillow_heif
 from PIL import Image, ImageOps
 
 import books
+import finders
 
 # a phone's HEIC is in tiles, which libheif otherwise decodes on threads; the page's Python cannot start one, and
 # trying ends that Python for good
@@ -44,7 +45,8 @@ class Session:
             # probability as base64 bytes, 255 for 1
             t = args.get('text')
             text = None if t is None else np.frombuffer(base64.b64decode(t['data']), np.uint8).reshape(t['height'], t['width']) / 255
-            return json.dumps(dict(books=books.find(self.rgb, text))), b''
+            # algorithm: the finder's version (finders.VERSIONS)
+            return json.dumps(dict(books=finders.find(args['algorithm'], self.rgb, text))), b''
         if action == 'straighten':
             # each book's crop, RGBA, one after the other in the order asked
             crops = [books.straighten(self.rgb, c) for c in args['corners']]

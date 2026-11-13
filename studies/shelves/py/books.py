@@ -13,6 +13,27 @@ from skimage.measure import points_in_poly
 from skimage.segmentation import felzenszwalb
 from skimage.transform import resize
 
+TITLE, ICON = 'text-guided', '🔤'
+READS_TEXT = True
+# how far its score on the ground truth can be trusted: the photos it was tuned on are among those it is scored on
+TUNED = 'tuned on 3 of these photos'
+STEPS = """\
+- Find where the photo's text is, with PaddleOCR's text finder
+- Find the shelves: rows a horizontal edge crosses at least half the photo on
+  - drop a shelf the lines between books run on across: it is lettering or light, not a board
+- Within each shelf, find the lines between books
+  - straight edges leaning up to 30° from upright, strongest first, none crossing another
+  - two lines closer at both ends than 0.7 of the shelf's own spacing are one
+  - a line crossing text is lettering, not an edge
+  - a strip holding two columns of text side by side is searched again for the edge between them
+- Between two neighbouring lines, find the book's top and foot: where its texture stops, then where its colour changes
+- Keep a box only if it checks out as a readable spine with a book's texture or a line of text along it
+  - a wide box whose marks repeat across it is two books of one series
+- On each shelf keep the most boxes that share no ground; a shelf of fewer than three is no shelf
+- Where no box stands, a long, thin, upright region of one colour boxes a book
+- No box over another: two halves of one book become one box
+- Outside the shelves, box the covers lying face up: four straight edges meeting at their corners"""
+
 # scale-dependent: the long side the finder works at, in pixels; boxes are scaled back to the photo's own
 WORK = 900
 # [spine-lean] how far from upright a spine's edges may lean, in degrees, and the step the lean is searched in

@@ -151,11 +151,14 @@ export function mount(shell) {
     return ocrNow().textMap(await run);
   }
   $("#bs-find").onclick = async () => {
-    shell.busy(true, "Finding the text…");
-    let text = null;
-    try { text = await textOf(); textless = null; } catch (e) { textless = String(e.message || e); console.warn("Find books without the text finder:", e); }
+    const list = await shell.algorithm.ready, algorithm = shell.algorithm.key, reads = list.find((a) => a.key === algorithm)?.reads_text;
+    let text = null; textless = null;
+    if (reads) {
+      shell.busy(true, "Finding the text…");
+      try { text = await textOf(); } catch (e) { textless = String(e.message || e); console.warn("Find books without the text finder:", e); }
+    }
     const done = shell.until("result:find");
-    shell.busy(true, "Finding the books…"); shell.call("find", text ? { text } : {});
+    shell.busy(true, "Finding the books…"); shell.call("find", text ? { algorithm, text } : { algorithm });
     await done;
     await readAll();
   };
@@ -449,7 +452,7 @@ export function mount(shell) {
       if (action === "find") {
         books = meta.books.map((b) => ({ ...b, source: "found", verdict: null }));
         cur = null; noneMissed = false; shell.busy(false);
-        shell.step("find", true, `${books.length} books found` + (textless ? `, without the text finder (${textless})` : ""));
+        shell.step("find", true, `${shell.algorithm.title}: ${books.length} books found` + (textless ? `, without the text finder (${textless})` : ""));
         shell.boxDone($("#bs-box"), `${books.length} books`);
         $("#bs-read").disabled = !books.length;
         draw();

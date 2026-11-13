@@ -54,7 +54,7 @@ def answers(png, tmp_path_factory):
     opened = json.dumps(dict(W=meta['W'], H=meta['H'], um=None, um_y=None, info=meta['info']))
     images = planes.tobytes()
     s = fixture.Session(png)
-    count, mask = s.call('count', {'threshold': 100})
+    count, mask = s.call('count', {'algorithm': 'above', 'threshold': 100})
     out = d / 'answers.json'
     sys.path.insert(0, os.path.join(HERE, '..', 'studies', 'nor', 'detection'))
     import interactive

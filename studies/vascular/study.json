@@ -39,6 +39,7 @@
   "generated": {
     "web/algorithms.GENERATED.json": "analysis/extraction/menu.py"
   },
+  "algorithms": "web/algorithms.GENERATED.json",
   "web": {
     "module": "web/vascular.js",
     "panels": "web/vascular.html",

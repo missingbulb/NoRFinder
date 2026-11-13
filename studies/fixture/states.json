@@ -1,7 +1,7 @@
 {
   "about": "The fixture study's own elements in the shell's states (req/checks/shell-states, req/checks/spec-layout): each graft puts its tree under the shell's element `under`, after its child `after` or first, in the tree of dev/requirements/shell-states.json, whose rules they follow.",
   "grafts": [
-    {"under": "Processing", "tree": [
+    {"under": "Processing", "after": "Algorithms", "tree": [
       {"name": "Study: its processing", "select": "#fx-box", "req": "req/shell/study/knows-none",
         "children": [
           {"name": "Threshold", "select": "#fx-threshold", "control": true, "req": "req/shell/study/knows-none"},

@@ -39,7 +39,7 @@ py.runPython(`import sys, json, importlib; sys.path.insert(0, '/py'); study = im
 
 const problems = [];
 JSON.parse(py.runPython("study.ready()"));
-const offered = JSON.parse(execFileSync("python3", [study.generated["web/algorithms.GENERATED.json"]], { cwd: studyDir, encoding: "utf8" }));
+const offered = JSON.parse(execFileSync("python3", [study.generated[study.algorithms]], { cwd: studyDir, encoding: "utf8" })).algorithms;
 const keys = offered.map((a) => a.key);
 let out = [];
 const answer = bridge(py, (m) => out.push(m), study.progress);

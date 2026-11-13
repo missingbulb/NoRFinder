@@ -1,9 +1,12 @@
 """req/shell/study/knows-none, req/shell/study/folder-and-address: the shell knows no study, and a study is a folder whose study.json names everything the
 shell needs. The shell running a study is test_study_runs.py."""
+import contextlib
 import glob
+import io
 import json
 import os
 import re
+import runpy
 from html.parser import HTMLParser
 
 import pytest
@@ -101,6 +104,33 @@ def test_a_study_names_its_stage_and_steps(path):
     keys = [p['key'] for p in m['phases']]
     assert len(set(keys)) == len(keys) and not {'load', 'submit'} & set(keys), 'a step\'s key is its own, and not one of the shell\'s'
     assert all(p.get('name') for p in m['phases'])
+
+
+@pytest.mark.parametrize('path', STUDIES, ids=lambda p: os.path.basename(os.path.dirname(p)))
+def test_a_study_offering_algorithms_lists_them_for_the_shell(path):
+    """req/shell/processing/algorithms: a study offering several algorithms names the file listing them, made by its own
+    script, each with its key, title, icon, how it works and, where measured, its precision and recall; and it draws no
+    list of them of its own."""
+    m, base = manifest(path), os.path.dirname(path)
+    if 'panels' in m['web']:
+        html = open(os.path.join(base, m['web']['panels']), encoding='utf8').read()
+        assert not re.search(r'<template data-slot="processing">\s*(<div[^>]*>\s*)?<select', html), f"{m['id']} draws its own list of algorithms"
+    if 'algorithms' not in m:
+        return
+    rel = m['algorithms']
+    assert rel in m.get('generated', {}), f"{m['id']}: its algorithms' list is generated from its sources (study.json's generated)"
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        runpy.run_path(os.path.join(base, m['generated'][rel]), run_name='__main__')
+    doc = json.loads(out.getvalue())
+    assert set(doc) <= {'measured', 'algorithms'} and len(doc['algorithms']) >= 2, f"{m['id']}: {set(doc)}, {len(doc.get('algorithms', []))} algorithms"
+    keys = [a['key'] for a in doc['algorithms']]
+    assert len(set(keys)) == len(keys), keys
+    for a in doc['algorithms']:
+        assert all(isinstance(a.get(k), str) and a[k] for k in ('key', 'title', 'icon', 'about')), a
+        assert ('precision' in a) == ('recall' in a), a
+        if 'precision' in a:
+            assert 0 <= a['precision'] <= 1 and 0 <= a['recall'] <= 1 and doc.get('measured'), a
 
 
 class Panels(HTMLParser):

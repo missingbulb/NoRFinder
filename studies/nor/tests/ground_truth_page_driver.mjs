@@ -94,7 +94,7 @@ async function open(drive) {
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);
   await page.goto(origin + "/web/index.html?study=nor");
-  await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false);
+  await page.waitForFunction(() => document.querySelector("#algorithm")?.disabled === false);
   if (drive) {
     await page.click("#load-remote");
     await page.dblclick(`#remote-list .item[data-id="${DRIVE_ID}"]`);
@@ -374,7 +374,7 @@ async function mask(page) {
   await check(await gtColour(page) === "done", "with every task done the button is green");
   const all_ = await crumbs(page);
   await check(all_ === "Load image › Run algorithm › Review all items › Submit GT | ", `with every task done and the file exported, every step is done: ${all_}`);
-  await page.selectOption("#finder", { index: 1 });
+  await page.selectOption("#algorithm", { index: 1 });
   const changed = await crumbs(page);
   await check(changed === "Load image › Run algorithm* | #find,#sb-find", `another finder makes Run algorithm the step to do again: ${changed}`);
   await ctx.close();

@@ -47,8 +47,10 @@ onmessage = ({ data: m }) => {
     postMessage({ type: "result", action: "view", meta: { width: 64, height: 32 }, bytes }, [bytes.buffer]);
   }
   // a text map of any other size than the view's is no map of it: no books then
+  // the edge-only finder takes no text map and finds the first two books; a text map handed it, none
   else if (m.type === "call" && m.action === "find") postMessage({ type: "result", action: "find", bytes: null,
-    meta: { books: !m.args.text || (m.args.text.width === 64 && m.args.text.height === 32 && atob(m.args.text.data).length === 64 * 32) ? BOOKS : [] } });
+    meta: { books: m.args.algorithm === "r5" ? (m.args.text ? [] : BOOKS.slice(0, 2))
+      : !m.args.text || (m.args.text.width === 64 && m.args.text.height === 32 && atob(m.args.text.data).length === 64 * 32) ? BOOKS : [] } });
   else if (m.type === "call" && m.action === "straighten") {
     const sizes = m.args.corners.map(size), bytes = new Uint8Array(sizes.reduce((a, [w, h]) => a + w * h * 4, 0)).fill(200);
     postMessage({ type: "result", action: "straighten", meta: { sizes }, bytes }, [bytes.buffer]);
@@ -132,6 +134,18 @@ try {
   check(m.name === "shelf_books.json" && m.doc.books.length === 3 && m1.id === 1 && m1.text === "Title 240x35" && m1.confidence === 0.9 && m1.reader === "tesseract"
     && m3.view === "cover" && m2.corners.length === 4 && m.doc.W === W,
   "Download for the matcher saves each book's id, view, text, confidence, reader and corners", m);
+
+  // req/shelves/books/versions: the finders offered, the text-guided one first, the edge-only one finding without the
+  // text finder
+  const listed = await page.$$eval("#algorithm option", (o) => o.map((x) => [x.value, x.textContent]));
+  check(listed.map(([k]) => k).join() === "r8,r5" && listed.every(([, t]) => /\(P\u00a0\.\d+\u00a0·\u00a0R\u00a0\.\d+\)$/.test(t)),
+    "two finders are offered, the text-guided one first, each with its precision and recall", listed);
+  await page.click("#processing-box .sec-head h2");
+  await page.selectOption("#algorithm", "r5");
+  await page.click("#bs-find");
+  await page.waitForFunction(() => $("#status").textContent.startsWith("Titles read") && $("#bs-list").children.length === 2);
+  check((await books(page)).length === 2 && await page.evaluate(() => window.textRuns) === 1 && /^edge-only: 2 books found\n/.test(await found()),
+    "the edge-only finder runs without the text finder, and its step names it", [await page.evaluate(() => window.textRuns), await found()]);
   await page.context().close();
 
   // the text finder out of reach: the books are found without it, and Find says so

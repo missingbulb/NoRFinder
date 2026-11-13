@@ -49,10 +49,10 @@ page.on("pageerror", (e) => problems.push("page error: " + e.message));
 page.setDefaultTimeout(10000);
 try {
   await page.goto(origin + "/web/index.html?study=nor");
-  await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false);
+  await page.waitForFunction(() => document.querySelector("#algorithm")?.disabled === false);
   // the list's numbers arrive with the study's measured quality
-  await page.waitForFunction(() => /\(P\s/.test(document.querySelector("#finder").options[0].textContent));
-  const folds = await page.evaluate(() => ({ settings: document.querySelector("#settings-box").open, about: document.querySelector("#about-box").open }));
+  await page.waitForFunction(() => /\(P\s/.test(document.querySelector("#algorithm").options[0].textContent));
+  const folds = await page.evaluate(() => ({ settings: document.querySelector("#settings-box").open, about: document.querySelector("#algorithm-about").open }));
   console.log("folds", JSON.stringify(folds));
   if (folds.settings) problems.push("Settings starts open");
   if (folds.about) problems.push("the algorithm's note starts open");
@@ -77,7 +77,7 @@ try {
   if (!filters.kept) problems.push("a Viewer sees the filters, or does not see Settings");
   if (filters.boxes.some((b) => b.endsWith("Postprocessing"))) problems.push("the left bar still has a Postprocessing box");
 
-  const options = await page.evaluate(() => [...document.querySelector("#finder").options].map((o) => [o.value, o.textContent]));
+  const options = await page.evaluate(() => [...document.querySelector("#algorithm").options].map((o) => [o.value, o.textContent]));
   console.log("options", JSON.stringify(options));
   if (options.length !== Object.keys(READY.finders).length) problems.push(`the list shows ${options.length} of ${Object.keys(READY.finders).length} finders`);
   let nested = 0;
@@ -85,12 +85,12 @@ try {
     const icon = READY.about[k].icon;
     if (!icon || !text.startsWith(icon + " " + READY.finders[k])) problems.push(`${k} in the list does not start with its icon: ${text}`);
     // the box is folded until an image opens, so the choice is made as the list would make it
-    await page.evaluate((k) => { const s = document.querySelector("#finder"); s.value = k; s.dispatchEvent(new Event("change")); }, k);
-    await page.waitForFunction((n) => document.querySelector("#about-box summary").textContent.includes(n) && document.querySelector("#finder-note strong"), READY.finders[k]).catch(() => {});
+    await page.evaluate((k) => { const s = document.querySelector("#algorithm"); s.value = k; s.dispatchEvent(new Event("change")); }, k);
+    await page.waitForFunction((n) => document.querySelector("#algorithm-about summary").textContent.includes(n) && document.querySelector("#algorithm-note strong"), READY.finders[k]).catch(() => {});
     const note = await page.evaluate(() => {
-      const n = document.querySelector("#finder-note"), sel = document.querySelector("#finder");
+      const n = document.querySelector("#algorithm-note"), sel = document.querySelector("#algorithm");
       return {
-        title: document.querySelector("#about-box summary").textContent, nested: !!n.querySelector("li > ul > li, li > ol > li"),
+        title: document.querySelector("#algorithm-about summary").textContent, nested: !!n.querySelector("li > ul > li, li > ol > li"),
         text: n.textContent, strong: n.querySelector("strong")?.textContent, line: n.querySelector("strong")?.parentElement.textContent, raw: /(^|\n)\s*- /.test(n.innerText), option: sel.selectedOptions[0].textContent,
       };
     });
@@ -103,7 +103,7 @@ try {
     const [, lp, lr] = note.option.match(/\(P\s(\.\d+)\s·\sR\s(\.\d+)\)/) || [];
     if (+lp !== +def.precision.toFixed(2) || +lr !== +def.recall.toFixed(2)) problems.push(`${k}: the list's ${lp}, ${lr} are not its default filters' ${def.precision}, ${def.recall}`);
     const name = READY.finders[k][0].toUpperCase() + READY.finders[k].slice(1);
-    const bold = `${name} algorithm plus default filters show precision of ${def.precision.toFixed(2)} and recall of ${def.recall.toFixed(2)} based on ${n} image${n > 1 ? "s" : ""}`;
+    const bold = `${name} algorithm shows precision of ${def.precision.toFixed(2)} and recall of ${def.recall.toFixed(2)} with its default filters, on ${n} image${n > 1 ? "s" : ""}`;
     const plain = `(without filters: precision of ${own.precision.toFixed(2)} and recall of ${own.recall.toFixed(2)})`;
     if (note.strong !== bold) problems.push(`${k}: the bold line reads "${note.strong}", not "${bold}"`);
     if (!note.line || note.line.replace(/\s+/g, " ") !== `${bold} ${plain}`) problems.push(`${k}: the numbers' line reads "${note.line}", not "${bold} ${plain}"`);

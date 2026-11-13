@@ -81,7 +81,7 @@ try {
   const seen = await page.evaluate(() => ({
     title: document.title, h1: document.querySelector("#title").textContent, threshold: document.querySelector("#fx-threshold").value,
     channels: [...document.querySelectorAll("#channels label")].map((l) => l.textContent), accept: document.querySelector("#file").accept,
-    other: !!document.querySelector("#finder"), path: location.pathname, icon: document.querySelector("#favicon").href,
+    other: !!document.querySelector("#finder-box"), path: location.pathname, icon: document.querySelector("#favicon").href,
   }));
   console.log(JSON.stringify(seen));
   if (seen.title !== "Fixture" || seen.h1 !== "Fixture") problems.push("the page does not carry the study's title");
@@ -214,7 +214,7 @@ try {
   // into NoR Finder by a click, then back: NoR's panels and listeners leave with it
   await page.click("#study-menu summary");
   await page.click("#study-list a >> text=NoR Finder");
-  await page.waitForSelector("#finder", { state: "attached" });
+  await page.waitForSelector("#finder-box", { state: "attached" });
   await page.waitForFunction(() => document.querySelector("#status").textContent !== "Reading the image…" && document.querySelector("#busy").hidden);
   const inNor = await shown();
   console.log(JSON.stringify(inNor), "listeners", await listeners());
@@ -223,14 +223,14 @@ try {
   if (!inNor.icon.endsWith("/studies/nor/web/icon.svg")) problems.push("switching to NoR Finder did not swap in its icon: " + inNor.icon);
   await headIcon("/studies/nor/web/icon.svg");
   await page.goBack();
-  await page.waitForFunction(() => document.title === "Image Viewer" && !document.querySelector("#finder"));
+  await page.waitForFunction(() => document.title === "Image Viewer" && !document.querySelector("#finder-box"));
   const back = await shown(), after = await listeners();
   console.log(JSON.stringify(back), "listeners", after);
   if (!back.stayed || back.path !== "/web/") problems.push("Back did not return to the Image Viewer in place: " + JSON.stringify(back));
   if (after !== alone) problems.push(`NoR Finder left listeners behind: ${after} on the shell, ${alone} before it came`);
   if (back.css.length) problems.push("NoR Finder left its stylesheet behind: " + back.css);
   await page.goForward();
-  await page.waitForSelector("#finder", { state: "attached" });
+  await page.waitForSelector("#finder-box", { state: "attached" });
   if (!(await shown()).stayed) problems.push("Forward reloaded the page");
 
   // a study's own path opens it fresh

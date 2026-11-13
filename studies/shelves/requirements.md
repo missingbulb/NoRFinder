@@ -53,6 +53,19 @@ read for a title matcher; matching the titles is not part of it.
   `studies/shelves/tests/test_books.py`, `web-tests/test_image_open.py`.
   </details>
 
+- `req/shelves/books/versions` Find books runs the finder chosen: text-guided (R8), the default, or edge-only (R5).
+  <details>
+
+  Set by the owner on 2026-11-13: the finder's versions are offered side by side, as NoR's and Vascular's are, in
+  the shell's list (`req/shell/processing/algorithms`), today's first under a name of its own and beside it an
+  earlier one that behaves differently enough to be worth choosing. Text-guided is R8, the finder as it stands
+  (`py/books.py`); edge-only is R5 as it was (`py/r5_edges.py`), which finds the books from the photo's edges alone,
+  so Find books runs no text finder for it. Each shows its precision and recall over every ground truth, scored on
+  the page's own path once per version (`lab/finder_metrics.py`, into `lab/finder_metrics.json`) and how far they
+  can be trusted. Test: `studies/shelves/tests/test_finders.py`, `studies/shelves/tests/test_shelves_page.py`,
+  `studies/shelves/tests/test_find_bridge.py`.
+  </details>
+
 - `req/shelves/matcher/export` Download for the matcher writes each book's text, view, corners and how sure the reading is.
   <details>
 

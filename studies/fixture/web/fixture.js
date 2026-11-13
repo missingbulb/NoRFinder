@@ -1,11 +1,11 @@
-// The fixture study's page: a threshold, a Count button, the count, and the counted pixels drawn over
+// The fixture study's page: the shell's two algorithms, a threshold, a Count button, the count, and the counted pixels drawn over
 // the image; the count is its ground truth, and checking it is right its one task.
 export function mount(shell) {
   const $ = shell.$;
   let counted = null;
   $("#fx-count").onclick = () => {
     shell.busy(true, "Counting…");
-    shell.call("count", { threshold: +$("#fx-threshold").value });
+    shell.call("count", { algorithm: shell.algorithm.key, threshold: +$("#fx-threshold").value });
   };
   const submit = () => {
     const name = shell.state.fileName.replace(/\.[^.]*$/, "");
@@ -39,7 +39,7 @@ export function mount(shell) {
     result(action, meta, bytes) {
       shell.busy(false);
       counted = { threshold: +$("#fx-threshold").value, count: meta.count };
-      $("#fx-result").textContent = $("#fx-sum").textContent = $("#fx-item").textContent = `${meta.count} pixels above the threshold`;
+      $("#fx-result").textContent = $("#fx-sum").textContent = $("#fx-item").textContent = `${meta.count} pixels ${shell.algorithm.title} the threshold`;
       $("#fx-done").checked = false; task(); shell.views.count(1);
       shell.step("count", true, `${meta.count} pixels above ${counted.threshold}`);
       shell.boxDone($("#fx-box"), `Counted at ${counted.threshold}`);

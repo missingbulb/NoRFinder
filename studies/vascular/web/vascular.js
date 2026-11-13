@@ -16,31 +16,10 @@ export function mount(shell) {
   items.init(V, () => shell.views.show("image"), shell.views.count);
   if (truth) tasks.init(V, shell.tasks, steps, submit);
 
-  // ---------- Processing: the algorithm, how it works and how well, Execute ----------
-  // each algorithm's precision and recall against the provisional labels, as the lab's grader measured them
-  const quality = fetch(new URL("algorithm_metrics.json", import.meta.url)).then((r) => (r.ok ? r.json() : null)).catch(() => null)
-    .then((q) => (shell.signal.aborted ? new Promise(() => {}) : q));
-  // the lab's versions on offer, as the build lists them, so the list never waits for the study's Python
-  const offered = fetch(new URL("algorithms.GENERATED.json", import.meta.url)).then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-    .then((list) => (shell.signal.aborted ? new Promise(() => {}) : list), (e) => { shell.status(`The algorithms could not be listed: ${e.message || e}`, true); return []; });
-  const two = (x) => x.toFixed(2).replace(/^0/, "");
-  const pr = (r) => `P\u00a0${two(r.precision)}\u00a0·\u00a0R\u00a0${two(r.recall)}`; // one unbroken pair
-  const chosen = () => algorithms.find((a) => a.key === $("#vm-algo").value);
-  function about() {
-    const a = chosen(); if (!a) return;
-    $("#vm-about summary").textContent = `How the ${a.title} algorithm works`;
-    const note = $("#vm-about-note");
-    note.replaceChildren(shell.outline(a.about));
-    quality.then((q) => {
-      const own = q && q.versions[a.key];
-      if (!own || chosen() !== a) return;
-      const p = document.createElement("p"), b = document.createElement("strong");
-      b.textContent = `${a.title[0].toUpperCase() + a.title.slice(1)} algorithm shows precision of ${own.precision.toFixed(2)} and recall of ${own.recall.toFixed(2)} on ${q.curves} curves a model judged`;
-      p.append(b, ` (${q.judge})`); note.append(p);
-    });
-  }
+  // ---------- Processing: Execute, with the algorithm chosen above it (the shell's) ----------
+  const chosen = () => algorithms.find((a) => a.key === shell.algorithm.key);
   const canRun = () => { $("#vm-run").disabled = !algorithms.length || !shell.page.get("image") || !!running; };
-  $("#vm-algo").onchange = () => { about(); steps(); };
+  shell.algorithm.on(() => steps());
   $("#vm-run").onclick = () => {
     const a = chosen(), im = shell.page.get("image"); if (!a || !im) return;
     running = a.key; canRun();
@@ -51,7 +30,7 @@ export function mount(shell) {
   // ---------- the status bar's steps, and the Processing box's title ----------
   function steps() {
     const m = MV.current(), a = algorithms.find((x) => x.key === ran);
-    shell.step("find", !!m && (!ran || ran === $("#vm-algo").value), m ? (a ? `${a.title}: ${m.segments.length} segments` : `${m.segments.length} segments`) : "");
+    shell.step("find", !!m && (!ran || ran === shell.algorithm.key), m ? (a ? `${a.title}: ${m.segments.length} segments` : `${m.segments.length} segments`) : "");
     shell.boxDone($("#model-set"), m ? (a ? `${a.title} executed` : "Model loaded") : null);
     const open = truth && tasks.open(), left = (open || []).filter((t) => !t.ok).map((t) => t.text + ".");
     shell.step("review", !!m && (!truth || (!!open && !left.length)), left.join(" ") || "Every task is done.");
@@ -71,17 +50,7 @@ export function mount(shell) {
   // edit: an edit of the model from a page test, fn(model) the next model
   window.vascular = { tasks: tasks.inspect, model: MV.inspect, edit: (fn) => MV.edit(fn(MV.current())) };
 
-  offered.then((list) => {
-    algorithms = list;
-    const sel = $("#vm-algo");
-    sel.replaceChildren(...algorithms.map((a) => new Option(`${a.icon} ${a.title}`.trim(), a.key)));
-    sel.disabled = !algorithms.length;
-    quality.then((q) => {
-      if (q) sel.title = "Precision (P) and recall (R) of each algorithm against a model's verdicts, not the owner's";
-      for (const o of sel.options) if (q && q.versions[o.value]) o.textContent += ` (${pr(q.versions[o.value])})`;
-    });
-    about(); canRun();
-  });
+  shell.algorithm.ready.then((list) => { algorithms = list; canRun(); });
 
   return {
     order,
