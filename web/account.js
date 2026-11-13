@@ -19,6 +19,8 @@ const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
 const FILE_NAME = "rauntruth-settings.json";
 // a token this close to running out is renewed rather than used
 const MARGIN_MS = 60 * 1000;
+// a token this close to running out is renewed by a click that reads Drive, while still used (req/shell/drive/renewal)
+const EARLY_MS = 10 * 60 * 1000;
 const SAVE_AFTER_MS = 400;
 // who is signed in on this device: {user: {name, email, picture}, token, until (ms), scopes (what the token may do,
 // as Google listed it), fileId, changed, learned}, changed the keys whose settings this device changed since Drive last
@@ -33,6 +35,9 @@ export function account({ keys, menu, clientId = ((window.NOR_CONFIG && window.N
   const $ = (s) => menu.querySelector(s);
   // waiting: {ok, fail} of a sign-in the popup is waiting on (req/shell/account/welcome)
   let me = read(), client = null, script = null, saving = null, waiting = null;
+  // renewal: the token Google's window is being asked for, {promise, done(token or null)}
+  let renewal = null;
+  const settle = (token) => { const r = renewal; renewal = null; r?.done(token); };
   const answered = (how, why) => { const w = waiting; waiting = null; if (w) w[how](why); };
 
   function read() { try { return JSON.parse(localStorage.getItem(SIGNED_IN)) || null; } catch { return null; } }
@@ -112,28 +117,33 @@ export function account({ keys, menu, clientId = ((window.NOR_CONFIG && window.N
       client = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId, scope: SCOPES,
         callback: async (t) => {
-          if (t.error) { console.warn("Google gave no token:", t.error); return answered("fail", t.error); }
+          if (t.error) { console.warn("Google gave no token:", t.error); settle(null); return answered("fail", t.error); }
           const first = !me || !me.user;
           me = { ...(me || {}), token: t.access_token, until: Date.now() + t.expires_in * 1000, scopes: t.scope || SCOPES };
           if (first) {
             try {
               const u = await (await google(USER_INFO)).json();
               me.user = { name: u.name || u.email, email: u.email, picture: u.picture || null };
-            } catch (e) { me = null; keep(); console.warn("Google gave no account details:", e.message); return answered("fail", e.message); }
+            } catch (e) { me = null; keep(); console.warn("Google gave no account details:", e.message); settle(null); return answered("fail", e.message); }
           }
-          keep(); show(); syncing(); answered("ok");
+          keep(); show(); syncing(); settle(me.token); answered("ok");
         },
         // Google's window did not open, or was closed before it answered
-        error_callback: (e) => { console.warn("Google's sign-in window:", e.type); answered("fail", e.type); },
+        error_callback: (e) => { console.warn("Google's sign-in window:", e.type); settle(null); answered("fail", e.type); },
       });
     })
     .catch((e) => { script = null; console.warn("Google sign-in did not load:", e); }));
   const reads = () => (me?.scopes || "").split(" ").includes(DRIVE_READ);
   // a token can be asked for only in the user's own click or key press: Google's window opens, and closes by itself
   // while Google still remembers their consent; the new token syncs at once. A token from before the page read
-  // Drive is renewed too, Google then asking for that
+  // Drive is renewed too, Google then asking for that, and so is one in its last minutes. Google is asked once until
+  // it answers
+  const fresh = () => !!(me && me.token && Date.now() < me.until - EARLY_MS) && reads();
   const renew = () => {
-    if (!me || (live() && reads()) || !client || !navigator.userActivation?.isActive) return false;
+    if (renewal) return true;
+    if (!me || fresh() || !client || !navigator.userActivation?.isActive) return false;
+    let done;
+    renewal = { promise: new Promise((ok) => { done = ok; }), done };
     client.requestAccessToken({ prompt: "", login_hint: me.user.email });
     return true;
   };
@@ -207,6 +217,14 @@ export function account({ keys, menu, clientId = ((window.NOR_CONFIG && window.N
     email: () => (me && me.user && me.user.email) || null,
     // the token while it lasts, else null; renewing it needs the user's click (renew)
     token: () => (live() ? me.token : null),
+    // for a Drive read: in the user's click, a token run out or soon to is renewed (req/shell/drive/renewal); the
+    // token once Google has answered when the one held has run out, else the one held; null with none
+    async forRead() {
+      if (me && !fresh() && !client && navigator.userActivation?.isActive) await ready().catch(() => {});
+      renew();
+      if (!live() && renewal) await renewal.promise;
+      return live() ? me.token : null;
+    },
     // Google refused the token: forgotten, to be renewed on the next click
     refused() { if (me) { me.token = null; keep(); } },
     renew,

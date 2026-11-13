@@ -21,6 +21,7 @@ const FOLDER = "application/vnd.google-apps.folder";
 // the private property every file the page creates carries, which only this site's own reads see
 const MINE = { rauntruth: "made" };
 const THROTTLING = "Google is throttling this site's downloads";
+const RUN_OUT = "Your Google sign-in has run out: click again to renew it";
 
 // The bodies of Drive's uploads, written out as bytes, not a FormData or a Blob: Playwright's WebKit hands a page test
 // a FormData or Blob body with its parts empty, where bytes arrive whole.
@@ -44,14 +45,14 @@ export const remote = (() => {
   const API = "https://www.googleapis.com/drive/v3/files";
   // the bytes Drive's answers have brought, for the status bar's network: Google does not let a page read their size
   let received = 0;
-  // the sign-in (account.js), once the page hands it over: {signedIn(), token(), refused()}
+  // the sign-in (account.js), once the page hands it over: {signedIn(), forRead(), refused()}
   let signIn = null;
   const signedIn = () => !!signIn?.signedIn();
   const get = async (url, init = {}) => {
     const u = new URL(url), mine = signedIn();
     if (mine) {
-      const token = signIn.token();
-      if (!token) throw new Error("Your Google sign-in has run out: press a Google Drive button again to renew it");
+      const token = await signIn.forRead();
+      if (!token) throw new Error(RUN_OUT);
       init = { ...init, headers: { ...init.headers, authorization: "Bearer " + token } };
     } else u.searchParams.set("key", key);
     u.searchParams.set("supportsAllDrives", "true");
@@ -192,16 +193,15 @@ export const remote = (() => {
   // The writer for a study's own folders, for a signed-in user: account the sign-in (account.js)
   function writer(account) {
     let script = null;
-    // a live token, or an Error asking for another click once Google has renewed it
-    const token = () => {
-      const t = account.token();
+    // a live token, renewed in the user's click where it has run out, else an Error asking for another click
+    const token = async () => {
+      const t = await account.forRead();
       if (t) return t;
-      account.renew();
-      throw new Error("Your Google sign-in ran out; it is being renewed. Please try again in a moment.");
+      throw new Error(RUN_OUT);
     };
     // Google's answer, or an Error with Google's own words for a refusal
     async function google(url, init = {}) {
-      const r = await fetch(url, { ...init, headers: { ...init.headers, authorization: "Bearer " + token() } });
+      const r = await fetch(url, { ...init, headers: { ...init.headers, authorization: "Bearer " + await token() } });
       if (r.ok) return r;
       let why = "";
       try { why = (await r.json()).error?.message || ""; } catch { /* no words */ }
@@ -228,13 +228,13 @@ export const remote = (() => {
         await (script ||= new Promise((ok, fail) => document.head.append(Object.assign(document.createElement("script"), { src: PICKER_SCRIPT, async: true, onload: ok, onerror: fail })))
           .then(() => new Promise((ok) => window.gapi.load("picker", ok)))
           .catch((e) => { script = null; throw e; }));
-        const p = window.google.picker;
+        const p = window.google.picker, t = await token();
         return new Promise((ok) => {
           const view = new p.DocsView().setFileIds(folders.map((f) => f.id).join(",")).setIncludeFolders(true)
             .setSelectFolderEnabled(true).setMimeTypes(FOLDER).setMode(p.DocsViewMode.LIST);
           new p.PickerBuilder().addView(view).enableFeature(p.Feature.MULTISELECT_ENABLED)
             .setTitle("Choose the study's folders this site may work in")
-            .setOAuthToken(token()).setDeveloperKey(key).setAppId((GOOGLE.clientId || "").split("-")[0])
+            .setOAuthToken(t).setDeveloperKey(key).setAppId((GOOGLE.clientId || "").split("-")[0])
             .setCallback((d) => { if (d.action === p.Action.PICKED || d.action === p.Action.CANCEL) ok(true); })
             .build().setVisible(true);
         });

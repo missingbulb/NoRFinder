@@ -80,7 +80,7 @@ nobody has decided: what the page does there is not a requirement yet.
   Auto-save images, and everything kept for images. Google's token lasts about an hour and is kept on
   this device for that hour. A new one can be asked for only in the user's own click or key press, so
   once it has run out the page asks only in one that needs Google: a change to a setting that follows
-  the user, or opening Drive's button or the image selector. Google's window then opens and closes by itself while
+  the user, opening Drive's button or the image selector, or any click that reads Drive (`req/shell/drive/renewal`). Google's window then opens and closes by itself while
   Google still remembers the consent; any other click opens nothing. Whenever
   the page has a token it syncs: the file's settings replace this device's, the theme at once, except
   each one this device changed since it last synced, which is kept and saved over the file's; with no
@@ -315,7 +315,7 @@ nobody has decided: what the page does there is not a requirement yet.
   see opens whether or not it is shared publicly, a shared drive's included, and one it cannot see is refused as
   Google refuses it. Signed out, the same reads carry the site's API key alone, and reach only what is shared as
   "Anyone with the link". A signed-in user whose token has run out is not read for with the key: the next click on
-  a Drive control renews the token, and a read with none says to click again. Sign-in asks Google for read access
+  a Drive control renews the token (`req/shell/drive/renewal`), and a read with none says to click again. Sign-in asks Google for read access
   to the user's Drive (`drive.readonly`) along with the rest (`req/shell/account/sign-in`); a token from before
   that, lacking it, is renewed on the next click on a Drive control. `drive.readonly` is a restricted scope: until
   Google verifies the site, Google shows an "unverified app" screen on signing in and lets in at most 100 new users
@@ -410,6 +410,19 @@ nobody has decided: what the page does there is not a requirement yet.
   read as without the file (`req/shell/drive/dialog`, `req/shell/drive/stacks`). The download waits, like every other, while Drive
   throttles the site (`req/shell/drive/throttle`). Manage storage counts each folder's file with its study's thumbnails. Test:
   `web-tests/test_drive_previews_page.py`.
+  </details>
+
+- `req/shell/drive/renewal` Any click that reads Google Drive renews a run-out sign-in and carries on with the new token; a click in the token's last ten minutes renews it early.
+  <details>
+
+  Set by the owner on 2026-11-10. Google gives a new token only within the user's own click or key press
+  (`req/shell/account/sign-in`). So, signed in, a Drive read the user's click starts, from any control (a Drive button,
+  a folder or image in Data Management, Update previews, an offline download, a ground-truth save), renews a token
+  that has run out, silently for the same user, waits for Google's answer and goes on with the new token: one click
+  does what it was for, never "press again". In the token's last ten minutes such a click renews it too, the read
+  going on at once with the token it still has. Google is asked once however many reads the click starts. A read
+  with no click behind it opens nothing and, with the token run out, fails saying to click again; so does one whose
+  click Google's window answered with no token. Test: `web-tests/test_drive_renewal_page.py`.
   </details>
 
 - `req/shell/drive/stacks` The Drive dialog tells a 3D stack from a flat image, and shows a stack in 3D once opened.
