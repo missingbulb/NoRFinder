@@ -17,13 +17,27 @@
     "id": "fixed-wait-in-test",
     "on_fail": "block",
     "failureMessage": "a test that sleeps a fixed time guesses how long the page takes: too short on a slow runner, so it flakes, and wasted on every fast one",
-    "fix": "wait for what the next check reads (waitForFunction, waitForSelector, until()), or move the page's clock with ctx.clock; where only real time will do, end the line `// waits on purpose: <reason>`",
+    "fix": "wait for what the next check reads (waitForFunction, waitForSelector, until()), have a stand-in hold its answer until the test releases it (held() from web-tests/held.mjs), or move the page's clock with ctx.clock; where only real time will do, end the line `// waits on purpose: <reason>`, and a deadline that only bounds a hang `// bounds a hang: <reason>`",
     "scanFiles": "/^(web-tests|studies\\/[^/]+\\/tests)\\/.*\\.(m?js|py)$/",
     "matchLines": [
       {
-        "match": "/\\.waitForTimeout\\(|\\bawait\\s+pause\\(|\\bawait\\s+new\\s+Promise\\(\\(?\\s*\\w+\\s*\\)?\\s*=>\\s*setTimeout\\(|\\btime\\.sleep\\(/",
-        "what": "sleeps a fixed time instead of waiting for what it needs: {match}",
-        "unlessLineMatches": "/^\\s*(\\/\\/|\\*|\\/\\*|#)|(\\/\\/|#)\\s*waits on purpose:/"
+        "match": "/\\.waitForTimeout\\(|\\bawait\\s+pause\\(|\\bsetTimeout\\(|\\btime\\.sleep\\(/",
+        "what": "waits a fixed time instead of for what it needs: {match}",
+        "unlessLineMatches": "/^\\s*(\\/\\/|\\*|\\/\\*|#)|(\\/\\/|#)\\s*(waits on purpose|bounds a hang):/"
+      }
+    ]
+  },
+  {
+    "id": "frame-wait-in-one-file",
+    "on_fail": "block",
+    "failureMessage": "a frame wait copied into each driver drifts: one waits one frame, the next two, and nobody can say which a page needs",
+    "fix": "import frames(page, n) from web-tests/page_frames.mjs",
+    "scanFiles": "/^(web-tests|studies\\/[^/]+\\/tests)\\/(?!page_frames\\.mjs$).*\\.m?js$/",
+    "matchLines": [
+      {
+        "match": "/requestAnimationFrame\\(\\s*(\\(\\)|\\w+)\\s*=>\\s*(\\{\\s*)?\\w*\\(?\\s*requestAnimationFrame\\(|requestAnimationFrame\\(\\s*(ok|r|done|resolve)\\s*\\)/",
+        "what": "waits for frames outside web-tests/page_frames.mjs: {match}",
+        "unlessLineMatches": "/^\\s*(\\/\\/|\\*|\\/\\*)/"
       }
     ]
   },
@@ -38,6 +52,20 @@
         "match": "/google|(?<!\\/)drive(?!\\/|\\s+(it|them)\\b)/i",
         "what": "names Google or Drive outside web/drive.js and web/account.js: {match}",
         "unlessLineMatches": "/Google Chrome|^\\s*(export )?const [A-Z_]+ = \"(nor-)?(drive|google)[\\w:/-]*\";$/"
+      }
+    ]
+  },
+  {
+    "id": "timers-in-one-file",
+    "on_fail": "block",
+    "failureMessage": "a timer set anywhere in page code is a cadence nobody can list, a visual effect guessing how long it takes, or a poll running on in a hidden tab",
+    "fix": "a visual effect is a CSS transition or animation, acted on at transitionend or animationend; background work goes through every(), settle(), within() or after() in web/pacing.js; where only a raw timer will do, end the line `// timed here: <reason>`",
+    "scanFiles": "/^(web|studies\\/[^/]+\\/web)\\/(?!pacing\\.js$)(?!vendor\\/)[^]*\\.(m?js|html)$/",
+    "matchLines": [
+      {
+        "match": "/\\bset(Timeout|Interval)\\(|\\bAbortSignal\\.timeout\\(/",
+        "what": "sets a timer outside web/pacing.js: {match}",
+        "unlessLineMatches": "/^\\s*(\\/\\/|\\*|\\/\\*)|\\/\\/\\s*timed here:/"
       }
     ]
   }
