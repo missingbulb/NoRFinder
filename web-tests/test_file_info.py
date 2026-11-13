@@ -56,11 +56,11 @@ def test_a_png_shows_only_its_size(tmp_path):
 
 def exif(make='Acme', model='Acme Phone 9'):
     """A phone's EXIF: its camera, when it was taken, its exposure, a location, and a maker note (a binary blob)."""
-    from PIL import Image
+    from PIL import Image, TiffImagePlugin
     e = Image.Exif()
     e[0x010f], e[0x0110], e[0x0112] = make, model, 6
     sub = e.get_ifd(0x8769)
-    sub[0x9003], sub[0x9011], sub[0x829a], sub[0x8827] = '2026:11:05 21:03:05', '+02:00', 0.125, 500
+    sub[0x9003], sub[0x9011], sub[0x829a], sub[0x8827] = '2026:11:05 21:03:05', '+02:00', TiffImagePlugin.IFDRational(1, 8), 500
     sub[0x927c] = bytes(range(256)) * 4
     gps = e.get_ifd(0x8825)
     gps[1], gps[2] = 'N', (32.0, 4.0, 30.0)
