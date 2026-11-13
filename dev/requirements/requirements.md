@@ -321,19 +321,6 @@ nobody has decided: what the page does there is not a requirement yet.
   (missingbulb/RaunTruth#803). Test: `web-tests/test_drive_credentials_page.py`.
   </details>
 
-- `req/shell/drive/renewal` Any click that reads Google Drive renews a run-out sign-in and carries on with the new token; a click in the token's last ten minutes renews it early.
-  <details>
-
-  Set by the owner on 2026-11-10. Google gives a new token only within the user's own click or key press
-  (`req/shell/account/sign-in`). So, signed in, a Drive read the user's click starts, from any control (a Drive button,
-  a folder or image in Data Management, Update previews, an offline download, a ground-truth save), renews a token
-  that has run out, silently for the same user, waits for Google's answer and goes on with the new token: one click
-  does what it was for, never "press again". In the token's last ten minutes such a click renews it too, the read
-  going on at once with the token it still has. Google is asked once however many reads the click starts. A read
-  with no click behind it opens nothing and, with the token run out, fails saying to click again; so does one whose
-  click Google's window answered with no token. Test: `web-tests/test_drive_renewal_page.py`.
-  </details>
-
 - `req/shell/drive/dialog` Google Drive: a study browses its own folders, the Image Viewer takes a pasted link; open on Open, double click or Enter.
   <details>
 
@@ -421,6 +408,19 @@ nobody has decided: what the page does there is not a requirement yet.
   read as without the file (`req/shell/drive/dialog`, `req/shell/drive/stacks`). The download waits, like every other, while Drive
   throttles the site (`req/shell/drive/throttle`). Manage storage counts each folder's file with its study's thumbnails. Test:
   `web-tests/test_drive_previews_page.py`.
+  </details>
+
+- `req/shell/drive/renewal` Any click that reads Google Drive renews a run-out sign-in and carries on with the new token; a click in the token's last ten minutes renews it early.
+  <details>
+
+  Set by the owner on 2026-11-10. Google gives a new token only within the user's own click or key press
+  (`req/shell/account/sign-in`). So, signed in, a Drive read the user's click starts, from any control (a Drive button,
+  a folder or image in Data Management, Update previews, an offline download, a ground-truth save), renews a token
+  that has run out, silently for the same user, waits for Google's answer and goes on with the new token: one click
+  does what it was for, never "press again". In the token's last ten minutes such a click renews it too, the read
+  going on at once with the token it still has. Google is asked once however many reads the click starts. A read
+  with no click behind it opens nothing and, with the token run out, fails saying to click again; so does one whose
+  click Google's window answered with no token. Test: `web-tests/test_drive_renewal_page.py`.
   </details>
 
 - `req/shell/drive/stacks` The Drive dialog tells a 3D stack from a flat image, and shows a stack in 3D once opened.
