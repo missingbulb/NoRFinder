@@ -38,16 +38,21 @@ function ifds(buf) {
   const out = [], seen = new Set();
   for (let at = v.getUint32(4, little); at && !seen.has(at) && at + 2 <= v.byteLength; at = v.getUint32(at + 2 + 12 * v.getUint16(at, little), little)) {
     seen.add(at);
-    const tags = {};
-    for (let i = 0, n = v.getUint16(at, little); i < n; i++) {
-      const e = at + 2 + 12 * i, tag = v.getUint16(e, little), type = v.getUint16(e + 2, little), count = v.getUint32(e + 4, little);
-      if (!SIZE[type]) continue;
-      const where = count * SIZE[type] <= 4 ? e + 8 : v.getUint32(e + 8, little);
-      if (where + count * SIZE[type] <= v.byteLength) tags[tag] = value(v, type, count, where, little);
-    }
-    out.push(tags);
+    out.push(ifdAt(v, at, little));
   }
   return { v, little, pages: out };
+}
+// the classic-TIFF IFD at byte at of v, its offsets counted from v's start: {tag: value}, and types[tag] the tag's type
+export function ifdAt(v, at, little) {
+  const tags = {}, types = {};
+  if (at + 2 > v.byteLength) return tags;
+  for (let i = 0, n = v.getUint16(at, little); i < n && at + 14 + 12 * i <= v.byteLength; i++) {
+    const e = at + 2 + 12 * i, tag = v.getUint16(e, little), type = v.getUint16(e + 2, little), count = v.getUint32(e + 4, little);
+    if (!SIZE[type]) continue;
+    const where = count * SIZE[type] <= 4 ? e + 8 : v.getUint32(e + 8, little);
+    if (where + count * SIZE[type] <= v.byteLength) { tags[tag] = value(v, type, count, where, little); types[tag] = type; }
+  }
+  return Object.defineProperty(tags, "types", { value: types });
 }
 
 // LZW as TIFF writes it: codes most significant bit first, the code width growing one code early

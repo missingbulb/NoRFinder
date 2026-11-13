@@ -258,6 +258,11 @@ await check((await pixel(15, 15)).join() === "255,200,255", "each channel in its
 await shot("channels", "#image-box");
 const said = await page.evaluate(() => document.querySelector("#file-info").textContent);
 await check(!/microscope/i.test(said), "the details say nothing of what the file does not carry (req/shell/image/file-info)", said);
+const more = await page.evaluate(() => { const d = document.querySelector("#file-more");
+  return { shown: !d.hidden, open: d.open, n: +document.querySelector("#file-more-n").textContent, rows: d.querySelectorAll("dt").length,
+    names: [...d.querySelectorAll("dt")].map((t) => t.textContent) }; });
+await check(more.shown && !more.open && more.n === more.rows && more.names.includes("ImageJ channels"),
+  "below them More details lists every other field the file carries, folded, with its count (req/shell/image/file-info)", more);
 
 // ---- Unload: the page as it was before any image ----
 await page.click("#unload");

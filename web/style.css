@@ -182,9 +182,12 @@ body.resizing #layout { transition: none; }
 #file-box[open] > #file-name::before { transform: rotate(90deg); }
 #file-box.empty > #file-name { cursor: default; pointer-events: none; }
 #file-box.empty > #file-name::before { display: none; }
-#file-info { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 6px 0 0 13px; font-size: 12px; }
-#file-info dt { color: var(--dim); }
-#file-info dd { margin: 0; overflow-wrap: anywhere; }
+#file-info, #file-more-list { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 6px 0 0 13px; font-size: 12px; }
+#file-info dt, #file-more-list dt { color: var(--dim); }
+#file-info dd, #file-more-list dd { margin: 0; overflow-wrap: anywhere; }
+#file-more { margin: 6px 0 0 13px; font-size: 12px; }
+#file-more > summary { color: var(--dim); cursor: pointer; }
+#file-more-list { margin-left: 13px; }
 /* a row per channel, on one line: its checkbox, its name, its description behind a (?), the file's own name
    for it, one slider holding its black and white points over a ramp from black to white, and its colour
    picker, the one part in the channel's colour */
