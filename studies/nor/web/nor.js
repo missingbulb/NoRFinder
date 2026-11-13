@@ -171,7 +171,7 @@ export function mount(shell) {
   const fmt = (v, d = 2) => (v == null || !isFinite(v) ? "–" : Number(v).toFixed(d));
 
   function detect() {
-    const finder = $("#finder").value, overrides = detectOverrides(finder);
+    const finder = shell.algorithm.key, overrides = detectOverrides(finder);
     st.running = runKey(); st.runOverrides = overrides; $("#find").disabled = true;
     busy(true, "Finding candidates…");
     shell.call("detect", { finder, overrides });
@@ -492,20 +492,8 @@ export function mount(shell) {
 
   // the finder's settings: its main ones on show, every one under Advanced; both edit the same values
   function buildDetect() {
-    const finder = $("#finder").value, about = st.about[finder];
+    const finder = shell.algorithm.key, about = st.about[finder];
     const defs = about.detection_params, vals = (st.detectValues[finder] ||= { ...defs });
-    $("#about-box summary").textContent = `How the ${st.names[finder]} algorithm works`;
-    const note = $("#finder-note");
-    note.replaceChildren(shell.outline(about.about + (about.exact_refilter ? "" : "\n\nIt picks between alternatives using the filters, so after a filter change, find again for its exact result.")));
-    quality.then((q) => {
-      const own = q && q.finders[finder];
-      if (!own || $("#finder").value !== finder) return;
-      const said = (r) => `precision of ${r.precision.toFixed(2)} and recall of ${r.recall.toFixed(2)}`, n = q.images.length;
-      const name = st.names[finder][0].toUpperCase() + st.names[finder].slice(1);
-      const p = document.createElement("p"), b = document.createElement("strong");
-      b.textContent = `${name} algorithm plus default filters show ${said(own.filtered.balanced)} based on ${n} image${n > 1 ? "s" : ""}`;
-      p.append(b, ` (without filters: ${said(own.finder)})`); note.append(p);
-    });
     const row = (k) => dial(k, defs[k], vals[k], (v) => {
       vals[k] = v;
       document.querySelectorAll(`#main-params .param[data-name="${k}"], #detect-params .param[data-name="${k}"]`).forEach((o) => { if (!o.contains(document.activeElement)) o.set(v); });
@@ -521,9 +509,9 @@ export function mount(shell) {
     for (const [k, v] of Object.entries(st.detectValues[finder] || {})) if (JSON.stringify(v) !== JSON.stringify(defs[k])) o[k] = v;
     return o;
   }
-  const runKey = () => JSON.stringify([$("#finder").value, detectOverrides($("#finder").value)]);
+  const runKey = () => JSON.stringify([shell.algorithm.key, detectOverrides(shell.algorithm.key)]);
   function updateFind() {
-    const finder = $("#finder").value; if (!st.about[finder]) return;
+    const finder = shell.algorithm.key; if (!st.about?.[finder]) return;
     const o = detectOverrides(finder);
     $("#reset-detect").disabled = !Object.keys(o).length;
     $("#find").disabled = !st.img || !!st.running;
@@ -534,7 +522,7 @@ export function mount(shell) {
   // says the ground truth is complete, so the crumb never moves on while the button says it cannot
   function steps() {
     const ran = !!st.meta && runKey() === st.lastRun, finalists = (st.passes || []).filter((c) => !c.added);
-    const name = st.names?.[$("#finder").value];
+    const name = shell.algorithm.title;
     shell.step("find", ran, ran ? `${name}: ${st.order.length} candidates, ${finalists.length} finalists` : st.lastRun ? "The finder or its settings changed since the last run." : "");
     shell.boxDone($("#finder-box"), ran ? `${name} executed` : null);
     const gt = gtState(), left = gt.items.filter((t) => t.grade && !t.ok).map((t) => t.text + ".");
@@ -1275,9 +1263,9 @@ export function mount(shell) {
   $("#overlay").addEventListener("mousemove", tip, here);
   $("#overlay").addEventListener("mouseleave", () => ($("#tip").hidden = true), here);
 
-  $("#finder").onchange = () => { buildDetect(); if (!st.meta) useFilters($("#finder").value); };
+  shell.algorithm.on((k) => { if (!st.about) return; buildDetect(); if (!st.meta) useFilters(k); });
   $("#find").onclick = detect;
-  $("#reset-detect").onclick = () => { const f = $("#finder").value; st.detectValues[f] = { ...st.about[f].detection_params }; buildDetect(); };
+  $("#reset-detect").onclick = () => { const f = shell.algorithm.key; st.detectValues[f] = { ...st.about[f].detection_params }; buildDetect(); };
 
   // ---------- the Show and Options menus, remembered in this browser ----------
   function applyShow() {
@@ -1350,20 +1338,13 @@ export function mount(shell) {
   // the buttons whose action can take a while on a slow computer
   for (const id of ["#find", "#tab-pass", "#tab-fail", "#dl-cands", "#dl-summary"]) slow($(id));
 
-  // the finders and each one's controls, as detection/finder_list.py lists them, so they never wait for Python
-  fetch(new URL("finders.GENERATED.json", import.meta.url)).then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-    .then((info) => {
-      if (shell.signal.aborted) return;
-      const sel = $("#finder");
-      st.names = info.finders;
-      sel.replaceChildren(...Object.entries(info.finders).map(([k, v]) => new Option(`${info.about[k].icon} ${v}`.trim(), k)));
-      quality.then((q) => {
-        if (q) sel.title = "Precision (P) and recall (R) of each finder with its default filters";
-        for (const o of sel.options) if (q && q.finders[o.value]) o.textContent += ` (${pr(q.finders[o.value].filtered.balanced)})`;
-      });
-      sel.disabled = false;
+  // each finder's controls, as detection/finder_list.py lists them, so they never wait for Python; the finder itself
+  // is chosen above them, in the shell's list
+  Promise.all([fetch(new URL("finders.GENERATED.json", import.meta.url)).then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }), shell.algorithm.ready])
+    .then(([info]) => {
+      if (shell.signal.aborted || !shell.algorithm.key) return;
       st.about = info.about; st.help = Object.values(info.about)[0].help;
-      buildDetect(); useFilters(sel.value);
+      buildDetect(); useFilters(shell.algorithm.key);
     }, (e) => shell.status(`The finders could not be listed: ${e.message || e}`, true));
   // the file's channels in the study's order, Nav, Caspr, DAPI (data/README.md): Caspr the one the file displays
   // green, DAPI the other with the larger blobs, Nav the rest; none for a file not shaped so

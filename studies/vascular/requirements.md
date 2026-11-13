@@ -83,10 +83,10 @@ owner's decisions on the stacks and the vessel model, are
   verdicts, not the owner's); How the <name> algorithm works gives its steps as a nested list
   (written as a Markdown outline), then "<Name> algorithm shows precision of X and recall of Y on
   N curves a model judged", in bold, the numbers the list shows, and that the judge is not the
-  owner. The numbers ship with the page part (`studies/vascular/web/algorithm_metrics.json`, made
-  by `lab.py grade --json`). The list leaves out a version another one beats beyond noise on those
+  owner. The list and the note are the shell's (`req/shell/processing/algorithms`, owner, 2026-11-13). The numbers
+  come from `studies/vascular/web/algorithm_metrics.json`, made by `lab.py grade --json`, and ship in the list. The list leaves out a version another one beats beyond noise on those
   labels (`lab.RETIRED`, each with its reason); the lab still runs it. The list ships with the page part too,
-  written by the site's build from the versions' own names, icons and steps
+  written by the site's build from the versions' own names, icons and steps and their numbers
   (`web/algorithms.GENERATED.json`, by `analysis/extraction/menu.py`), so the study's Python is ready, and a
   stack opens, without loading the versions or scipy; they load at the first Execute (owner, 2026-11-07). Test:
   `studies/vascular/tests/test_vascular_processing_box.py`, `studies/vascular/tests/test_extract_bridge.py` (the real Python in Pyodide) and

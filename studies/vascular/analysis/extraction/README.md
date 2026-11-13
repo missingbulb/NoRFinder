@@ -40,9 +40,9 @@ NODE_PATH=DIR/node_modules node analysis/extraction/perf_pyodide.mjs STUDY STACK
   The file's `TITLE` and `ICON` are its name and icon in the page's list, `STEPS` (a Markdown
   outline) its How the algorithm works; its docstring stays the developer's account. The site's build
   lists them from the source without importing it (`menu.py`), so they, `VERSIONS`, `DEFAULT` and
-  `RETIRED` stay plain literals. The list shows
+  `RETIRED` stay plain literals. The list (drawn by the shell, `req/shell/processing/algorithms`) shows
   each version's precision and recall from `web/algorithm_metrics.json`, which `grade --json`
-  writes; a test fails when a version's source has changed since. `RETIRED` (in `lab.py`) names
+  writes and `menu.py` folds into the list; a test fails when a version's source has changed since. `RETIRED` (in `lab.py`) names
   the versions the page no longer offers and why: v1, since 2026-11-04.
 - **One preparation per run.** Each version builds on the one before, so `lab.run_volume` opens a
   `vessel_model.shared` block: the flattened signal and depth, the masks and the ridge map are

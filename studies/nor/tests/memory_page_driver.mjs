@@ -92,7 +92,7 @@ async function open() {
 async function find() {
   for (const f of ["tl", "rf"]) {
     const done = next("refilter");
-    await page.evaluate((f) => { $("#finder").value = f; $("#finder").dispatchEvent(new Event("change")); $("#find").click(); }, f);
+    await page.evaluate((f) => { $("#algorithm").value = f; $("#algorithm").dispatchEvent(new Event("change")); $("#find").click(); }, f);
     await done; await settled();
   }
 }

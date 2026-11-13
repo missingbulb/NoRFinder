@@ -65,10 +65,10 @@ try {
   // the numbers the page shows are the shipped metrics file's, which the lab's grader writes
   const quality = JSON.parse(fs.readFileSync(path.join(repo, "studies", "vascular", "web", "algorithm_metrics.json"), "utf8"));
   const two = (x) => x.toFixed(2).replace(/^0/, "");
-  await page.waitForFunction(() => /\bR\u00a0/.test($("#vm-algo").options[0]?.textContent || ""));
-  const algos = await page.evaluate(() => ({ titles: [...$("#vm-algo").options].map((o) => o.textContent), value: $("#vm-algo").value,
-    about: $("#vm-about summary").textContent, note: $("#vm-about-note").textContent, run: $("#vm-run").disabled, last: $("#model-set .row").lastElementChild.id,
-    nested: !!$("#vm-about-note").querySelector("ul > li > ul > li"), bold: $("#vm-about-note").lastElementChild?.querySelector("strong")?.textContent || "" }));
+  await page.waitForFunction(() => /\bR\u00a0/.test($("#algorithm").options[0]?.textContent || ""));
+  const algos = await page.evaluate(() => ({ titles: [...$("#algorithm").options].map((o) => o.textContent), value: $("#algorithm").value,
+    about: $("#algorithm-about summary").textContent, note: $("#algorithm-note").textContent, run: $("#vm-run").disabled, last: $("#model-set .row").lastElementChild.id,
+    nested: !!$("#algorithm-note").querySelector("ul > li > ul > li"), bold: $("#algorithm-note").lastElementChild?.querySelector("strong")?.textContent || "" }));
   const listed = ALGORITHMS.map((a) => { const q = quality.versions[a.key]; return `${a.icon} ${a.title} (P\u00a0${two(q.precision)}\u00a0·\u00a0R\u00a0${two(q.recall)})`; });
   check(algos.titles.join() === listed.join() && algos.value === ALGORITHMS[0].key, `Processing lists each algorithm with its icon, name, precision and recall, the default first: ${algos.titles}`);
   check(algos.about === `How the ${ALGORITHMS[0].title} algorithm works` && algos.note.includes("touches no junction") && algos.nested,
@@ -87,7 +87,7 @@ try {
   check(!before.model && !before.tasks && before.modes.join() === "image", `a stack opens with no model until Execute: ${JSON.stringify(before)}`);
   check(!before.switch && !before.items, "while the study makes ground truth there is no item view and no switch to one");
 
-  await page.selectOption("#vm-algo", "v4");
+  await page.selectOption("#algorithm", "v4");
   await page.click("#vm-run");
   await page.waitForFunction(() => !$("#model-on").hidden);
   const ran = await doc();

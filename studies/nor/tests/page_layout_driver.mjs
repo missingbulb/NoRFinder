@@ -80,7 +80,7 @@ for (const width of [1000, 1600]) {
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);
   await page.goto(origin + "/web/index.html?study=nor");
-  await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false);
+  await page.waitForFunction(() => document.querySelector("#algorithm")?.disabled === false);
   await openFromDrive(page, image);
   await page.waitForFunction(() => !document.querySelector("#find").disabled);
   await page.click("#find");
@@ -149,7 +149,7 @@ for (const width of [1000, 1600]) {
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);
   await page.goto(origin + "/web/index.html?study=nor");
-  await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false);
+  await page.waitForFunction(() => document.querySelector("#algorithm")?.disabled === false);
   await openFromDrive(page, image);
   await page.waitForFunction(() => !document.querySelector("#find").disabled);
   await page.click("#find");

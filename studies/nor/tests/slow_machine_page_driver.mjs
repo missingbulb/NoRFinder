@@ -89,7 +89,7 @@ async function open(gb) {
   page.on("pageerror", async (e) => { console.error("page error: " + e.message); await done(1); });
   page.setDefaultTimeout(10000);
   await page.goto(origin + "/web/index.html?study=nor");
-  await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false);
+  await page.waitForFunction(() => document.querySelector("#algorithm")?.disabled === false);
   return { ctx, page };
 }
 const held = (page, id) => page.evaluate((id) => { const b = $(id); return b.disabled && b.classList.contains("working"); }, id);
@@ -160,7 +160,7 @@ const unfold = async (page, box) => { await page.evaluate((b) => { const e = $(b
   await shot(page, "memory_popup");
   await shot(page, "memory_popup_box", "#memory-dlg");
   await page.check("#memory-off"); await page.click("#memory-dlg button.primary");
-  await page.reload(); await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false);
+  await page.reload(); await page.waitForFunction(() => document.querySelector("#algorithm")?.disabled === false);
   await check(!(await page.evaluate(() => $("#memory-dlg").open)), "after Don't show this again, it does not come back");
   // running out of memory shows it anyway, without the opt-out
   await openFromDrive(page, image); await free(page, "#image-pick");

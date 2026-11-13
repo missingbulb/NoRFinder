@@ -54,5 +54,5 @@ await page.addInitScript(() => {
   });
 });
 await page.goto(origin + "/web/index.html?study=nor");
-await page.waitForFunction(() => document.querySelector("#finder")?.disabled === false, null, { timeout: 600000 });
+await page.waitForFunction(() => document.querySelector("#algorithm")?.disabled === false, null, { timeout: 600000 });
 await browser.close(); server.close();

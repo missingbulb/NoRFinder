@@ -1,6 +1,7 @@
-"""The lab's versions the page offers, as JSON on stdout, which the site's build ships beside the page part
-(study.json's generated): the lab's default first, then the newest first, the retired left out, each its key, its name
-in the model it draws, its title, its icon, and its steps as a Markdown outline. Read from the modules' source, never
+"""The lab's versions the page offers (study.json's algorithms), as JSON on stdout, which the site's build ships beside
+the page part (study.json's generated): the lab's default first, then the newest first, the retired left out, each its
+key, its name in the model it draws, its title, its icon, its steps as a Markdown outline, and its precision and recall
+as web/algorithm_metrics.json recorded them. Read from the modules' source, never
 imported, so the build needs no numpy or scipy and the page lists the versions without loading them.
 
   python3 analysis/extraction/menu.py
@@ -38,8 +39,17 @@ def algorithms():
     return out
 
 
+def menu():
+    q = json.load(open(os.path.join(HERE, '..', '..', 'web', 'algorithm_metrics.json')))
+    out = []
+    for a in algorithms():
+        got = q['versions'].get(a['key'])
+        out.append({**a, **({'precision': got['precision'], 'recall': got['recall'], 'note': q['judge']} if got else {})})
+    return {'measured': f"on {q['curves']} curves a model judged", 'algorithms': out}
+
+
 def main():
-    print(json.dumps(algorithms(), ensure_ascii=False, indent=1))
+    print(json.dumps(menu(), ensure_ascii=False, indent=1))
 
 
 if __name__ == '__main__':

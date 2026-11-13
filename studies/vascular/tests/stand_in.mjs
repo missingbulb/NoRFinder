@@ -1,11 +1,13 @@
 // The vascular page's test surface: a local server for the site, with a stand-in for the study's Python worker
-// that offers two algorithms (their names, icons and steps as the build lists them), a drawn stack to open as many
+// that offers two algorithms (their names, icons and steps as the build lists them, their precision and recall the
+// lab's), a drawn stack to open as many
 // slices deep as the given model (drawnStack), and answers
 // Execute with that model, the arguments it was asked with in its "asked" field. The study is served in the
 // stage asked for.
 import { writeTiff } from "../../../web/split.js";
 import { EARLY } from "../../../web-tests/early_messages.mjs";
 import { repoFile } from "../../../web-tests/repo_file.mjs";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
@@ -39,13 +41,19 @@ onmessage = ({ data: m }) => {
     setTimeout(() => postMessage({ type: "result", action: "extract", meta: { ...MODEL, algorithm: ALGORITHMS.find((a) => a.key === m.args.algorithm).name, asked: m.args }, bytes: null }), 50);
 };`;
 
+// the build's list, the two algorithms in it as the stand-in has them
+function offered(repo) {
+  const built = JSON.parse(execFileSync("python3", ["analysis/extraction/menu.py"], { cwd: path.join(repo, "studies", "vascular"), encoding: "utf8" }));
+  return { ...built, algorithms: ALGORITHMS.map((a) => ({ ...built.algorithms.find((b) => b.key === a.key), ...a })) };
+}
+
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
 // the server, on a free port: {origin, close()}
 export async function serve(repo, studies, model, stage) {
   const server = http.createServer((q, r) => {
     const u = decodeURIComponent(new URL(q.url, "http://x").pathname);
     if (u === "/web/worker.js") { r.writeHead(200, { "content-type": "text/javascript" }); return r.end(EARLY + standIn(model)); }
-    if (u === "/studies/vascular/web/algorithms.GENERATED.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end(JSON.stringify(ALGORITHMS)); }
+    if (u === "/studies/vascular/web/algorithms.GENERATED.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end(JSON.stringify(offered(repo))); }
     if (u === "/web/vendor/wheels.json") { r.writeHead(200, { "content-type": "application/json" }); return r.end("[]"); }
     if (u === "/studies/vascular/study.json") {
       r.writeHead(200, { "content-type": "application/json" });
