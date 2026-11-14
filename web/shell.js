@@ -749,7 +749,7 @@ function handle(m) {
 function imageOpened(m) {
   st.um = m.meta.um; st.umY = m.meta.um_y;
   page.set({ opening: null, image: { name: st.fileName, source: st.source, W: m.meta.W, H: m.meta.H, um: st.um, umY: st.umY,
-    info: m.meta.info, planes: m.images, channels: m.meta.channels || null, Z: m.meta.Z || 1, spacing: m.meta.spacing ?? null } });
+    info: m.meta.info, more: m.meta.more || [], planes: m.images, channels: m.meta.channels || null, Z: m.meta.Z || 1, spacing: m.meta.spacing ?? null } });
   busy(false); statusBar();
   showImage();
   boxDone($("#image-box"), loadedSummary());
@@ -767,9 +767,14 @@ function imageOpened(m) {
 
 // ---------- loading ----------
 // what the file says about the image ([label, text] rows); null clears it
-function fileInfo(rows) {
-  const box = $("#file-info"), item = (tag, text, cls) => Object.assign(document.createElement(tag), { textContent: text, className: cls || "" });
-  box.replaceChildren(...(rows || []).flatMap(([k, v]) => [item("dt", k), item("dd", v)]));
+// the details (req/shell/image/file-info): the fields pinned, then every other field the file carries, folded
+function fileInfo(rows, more = []) {
+  const item = (tag, text) => Object.assign(document.createElement(tag), { textContent: text });
+  const list = (r) => r.flatMap(([k, v]) => [item("dt", k), item("dd", v)]);
+  $("#file-info").replaceChildren(...list(rows || []));
+  $("#file-more-list").replaceChildren(...list(rows ? more : []));
+  $("#file-more-n").textContent = rows ? String(more.length) : "";
+  $("#file-more").hidden = !rows || !more.length; $("#file-more").open = false;
   $("#file-box").classList.toggle("empty", !rows);
   if (!rows) $("#file-box").open = false;
 }
@@ -799,7 +804,7 @@ function placeLoad() {
 function imageBox() {
   const opening = page.get("opening"), im = page.get("image"), name = opening?.name || im?.name, remoteOn = fromRemote();
   $("#file-name").textContent = remoteOn && name ? "Details" : name || ""; $("#file-box").hidden = !name;
-  fileInfo(opening ? null : im?.info || null);
+  fileInfo(opening ? null : im?.info || null, im?.more || []);
   $("#load").classList.toggle("done", !!im); $("#unload").hidden = !im;
   const listed = remoteOn && recentAll().length > 0;
   $("#image-pick .pick-name").textContent = name || (listed ? "Choose an image" : "No image opened here yet");
@@ -832,7 +837,7 @@ async function openBytes(name, bytes, source) {
   }
   if (st.kept !== kept) return; // another image came meanwhile, or none is open
   const images = im.images;
-  const meta = { W: im.W, H: im.H, Z: im.Z, um: im.um, um_y: im.umY, spacing: im.spacing, info: im.info, channels: im.channels };
+  const meta = { W: im.W, H: im.H, Z: im.Z, um: im.um, um_y: im.umY, spacing: im.spacing, info: im.info, more: im.more, channels: im.channels };
   imageOpened({ type: "opened", meta, images }); settle({ type: "opened", meta }); statusBar();
 }
 async function sha256(bytes) {

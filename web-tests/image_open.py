@@ -1,6 +1,6 @@
 """The page's own image reader (web/image_open.js) for a test, under Node through image_open_driver.mjs: an image
 file opened as the page opens it, as (meta, flattened planes [C, H, W], slices [C, Z, H, W] or None). A file the
-browser would decode (a PNG, a JPEG) is decoded by Pillow and handed over as its pixels; order, a study's module
+browser or libheif would decode (a PNG, a JPEG, a HEIC) is decoded by Pillow and handed over as its pixels; order, a study's module
 naming its channels' order, puts them in it as the page does."""
 import json
 import os
@@ -10,6 +10,10 @@ import subprocess
 import numpy as np
 import pytest
 from PIL import Image
+
+import pillow_heif
+
+pillow_heif.register_heif_opener()
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 NODE = shutil.which('node')

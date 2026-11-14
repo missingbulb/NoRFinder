@@ -666,7 +666,15 @@ nobody has decided: what the page does there is not a requirement yet.
 
   Folded at first: the field in µm and px, the pixel size, the bit depth, the ImageJ series, the
   microscope and date when the file names them (the lab's ImageJ exports never do), and the software that saved
-  it (`web-tests/test_file_info.py`). What the file does not carry goes unsaid: set by the owner on 2026-11-10, no
+  it (`web-tests/test_file_info.py`). Changed by the owner on 2026-11-13: each format pins the fields worth
+  seeing, a HEIC or JPEG photo its field, bit depth, camera (make and model) and when it was taken (with
+  its UTC offset), a PNG its field and bit depth, a TIFF the lines above; a study's `view.details` may name,
+  per format (`tiff`, `heic`, `jpeg`, `png`), the fields it pins instead, by the labels the details show.
+  Every other field the file carries is listed below them in More details, folded at first: a TIFF's tags
+  and ImageJ header, a photo's EXIF (GPS included), JFIF and XMP fields, a HEIC's container (its images,
+  thumbnails, auxiliary images and colour profile), a PNG's chunks. Binary blobs (a maker note, an embedded
+  profile's bytes, a thumbnail, a list of more than 16 values) are left out. The bit depth is the file's
+  own, even where the page shows the image in 8 bits. What the file does not carry goes unsaid: set by the owner on 2026-11-10, no
   line says the microscope or acquisition is missing, and with no image open the box names none and shows no
   details line, the empty viewer saying it already (`web-tests/test_image_box_page.py`).
   </details>

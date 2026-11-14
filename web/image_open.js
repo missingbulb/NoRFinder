@@ -8,6 +8,7 @@
 // one after another, then volume, every slice of every channel, channel by channel, 8-bit, for a stack (Z > 1);
 // planes and volume (null for a flat image) are views into it}.
 import { readTiff, fromPlanes } from "./split.js";
+import { fileFields } from "./file_fields.js";
 
 const LOWER = 0.005, UPPER = 0.998;
 // a robust standard deviation in median absolute deviations, for normal noise, and how many of them a
@@ -32,15 +33,33 @@ const isTiff = (b) => b.length >= 4 && ((b[0] === 0x49 && b[1] === 0x49 && b[2] 
 // the image in bytes (an ArrayBuffer or Uint8Array) as the viewers show it; view: the study's study.json view
 export async function openImage(bytes, view = {}) {
   const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
-  if (isTiff(b)) return openTiff(b, view);
-  if (isHeif(b)) return openHeif(b, view);
+  if (isTiff(b)) return withDetails(b, await openTiff(b, view), view);
+  if (isHeif(b)) return withDetails(b, await openHeif(b, view), view);
   const { W, H, rgba } = await browserPixels(b);
-  return fromPixels(W, H, rgba, view, greyFile(b));
+  return withDetails(b, fromPixels(W, H, rgba, view, greyFile(b)), view);
+}
+
+// the fields each format pins in the details, by their labels; a study's view.details names its own per format
+const PINS = {
+  tiff: ["Field", "Pixel", "Depth", "Series", "Microscope", "Date", "Slices", "Channels", "Saved by"],
+  heic: ["Field", "Depth", "Camera", "Taken"], jpeg: ["Field", "Depth", "Camera", "Taken"], png: ["Field", "Depth"], image: ["Field", "Depth"],
+};
+// the opened image with its details split (req/shell/image/file-info): info, the fields pinned, in the pins' order;
+// more, every other field the file carries, in the file's order
+export function withDetails(b, im, view = {}) {
+  const { format, fields, facts } = fileFields(b);
+  const rows = im.info.map(([k, val]) => [k, k === "Depth" && format !== "tiff" && facts.bits ? val.replace(/^\d+-bit/, `${facts.bits}-bit`) : val]);
+  if (format !== "tiff") rows.push(...[["Camera", facts.camera], ["Taken", facts.taken]].filter(([, val]) => val));
+  const all = [], seen = new Set();
+  for (const [k, val] of [...rows, ...fields]) if (!seen.has(k)) { seen.add(k); all.push([k, val]); }
+  const pins = view.details?.[format] || PINS[format];
+  const info = pins.map((k) => all.find(([l]) => l === k)).filter(Boolean);
+  return { ...im, info, more: all.filter(([k]) => !pins.includes(k)) };
 }
 
 async function openHeif(b, view) {
   const { W, H, rgba } = await heifPixels(b);
-  return fromPixels(W, H, rgba, view, false);
+  return fromPixels(W, H, rgba, view, greyFile(b));
 }
 // a HEIC's primary image, turned as the file says it was held, as RGBA
 async function heifPixels(b) {
@@ -112,8 +131,10 @@ function background(h) {
 // a format's own black-point method: a fluorescence TIFF's background is most of its pixels, a photo's is not
 const FORMAT_BLACK = { tiff: "triangle", photo: "quantile" };
 
-// whether a PNG or a JPEG says it is grey (true) or in colour (false); null for a file that does not say
+// whether a PNG or a JPEG says it is grey (true) or in colour (false), a HEIC always shown in colour; null for a file
+// that does not say
 export function greyFile(b) {
+  if (isHeif(b)) return false;
   if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 && b.length > 25) return b[25] === 0 || b[25] === 4;
   if (b[0] === 0xff && b[1] === 0xd8) {
     for (let at = 2; at + 9 < b.length && b[at] === 0xff;) {
