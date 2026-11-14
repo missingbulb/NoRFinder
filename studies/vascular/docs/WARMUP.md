@@ -47,7 +47,7 @@ The page reads the stack itself and shows it in the shell's 3D viewer, flattened
 `req/vascular/stack-view`); `py/vascular.py` is what Python runs, at the first Execute: it reads the stack's CD31 and
 runs the extraction lab's versions on it in the page
 (`req/vascular/model/run`: Processing's Execute; the page's Python imports `analysis/` and
-`analysis/extraction/` as they are, so a new version ships with no list to update; each version's `TITLE`, `ICON` and `STEPS` are its name, icon and How the algorithm works there, `web/algorithm_metrics.json` its precision and recall, and `lab.RETIRED` keeps a version off the list). The site ships no
+`analysis/extraction/` as they are; the study's list, `web/algorithms.json`, gives each version's name, icon and How the algorithm works there, as its `TITLE`, `ICON` and `STEPS` state them, `web/algorithm_metrics.json` its precision and recall, and `lab.RETIRED` keeps a version off the list). The site ships no
 drawn models. The left bar is the shell's (`req/shell/left-bar/shells`): `web/vascular.html` fills its
 Processing, Summary and Ground Truth Tasks boxes, and the toolbar's left with how the model shows
 (`req/shell/image/toolbar`). `web/vascular.js` mounts Processing, the vessel model over or beside the stack

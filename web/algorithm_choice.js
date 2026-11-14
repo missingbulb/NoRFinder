@@ -1,6 +1,7 @@
 // The study's algorithms at the top of its Processing box (req/shell/processing/algorithms): the list its study.json
-// names, the first the one chosen at first, each with its icon, its title and, where measured, its precision (P) and
-// recall (R); under it how the chosen one works and how well it did. The study reads the choice and hears it change.
+// names, joined with the numbers it names, the first the one chosen at first, each with its icon, its title and, where
+// measured, its precision (P) and recall (R); under it how the chosen one works and how well it did. The study reads
+// the choice and hears it change.
 const two = (x) => x.toFixed(2).replace(/^0/, "");
 const pr = (a) => `P ${two(a.precision)} · R ${two(a.recall)}`; // one unbroken pair
 const measured = (a) => typeof a.precision === "number" && typeof a.recall === "number";
@@ -23,16 +24,20 @@ export function algorithmChoice({ $, outline, status }) {
   }
   sel.addEventListener("change", () => { about(); for (const fn of [...heard]) fn(sel.value); });
   return {
-    // the study coming in: its list fetched, the page never waiting on it
+    // the study coming in: its list and their numbers fetched, the page never waiting on them; an algorithm the
+    // numbers leave out shows none
     mount(manifest, base, signal) {
-      box.hidden = !manifest.algorithms;
-      if (!manifest.algorithms) { ready = Promise.resolve([]); return; }
-      ready = fetch(base + manifest.algorithms).then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-        .then((d) => {
+      const named = manifest.algorithms;
+      box.hidden = !named;
+      if (!named) { ready = Promise.resolve([]); return; }
+      const json = (rel) => fetch(base + rel).then((r) => { if (!r.ok) throw new Error(`${rel}: HTTP ${r.status}`); return r.json(); });
+      ready = Promise.all([json(named.list), named.metrics ? json(named.metrics) : {}])
+        .then(([own, q]) => {
           if (signal.aborted) return new Promise(() => {});
-          doc = d; list = d.algorithms;
+          doc = { measured: q.measured };
+          list = own.map((a) => { const m = q.versions?.[a.key]; return m ? { ...a, precision: m.precision, recall: m.recall, note: m.note } : a; });
           sel.replaceChildren(...list.map((a) => new Option(`${a.icon || ""} ${a.title}${measured(a) ? ` (${pr(a)})` : ""}`.trim(), a.key)));
-          sel.title = list.some(measured) ? `Precision (P) and recall (R) of each algorithm${d.measured ? " " + d.measured : ""}` : "";
+          sel.title = list.some(measured) ? `Precision (P) and recall (R) of each algorithm${doc.measured ? " " + doc.measured : ""}` : "";
           sel.disabled = !list.length; about();
           return list;
         }, (e) => { if (!signal.aborted) status(`The algorithms could not be listed: ${e.message || e}`, true); return signal.aborted ? new Promise(() => {}) : []; });

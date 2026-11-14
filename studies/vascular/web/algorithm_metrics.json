@@ -21,7 +21,8 @@
     2,
     9
    ],
-   "source": "e747238769"
+   "source": "e747238769",
+   "note": "provisional: a model judged them, not the owner, in 5 tiles of 4 stacks"
   },
   "v2": {
    "precision": 0.858,
@@ -39,7 +40,8 @@
     2,
     9
    ],
-   "source": "449bcba391"
+   "source": "449bcba391",
+   "note": "provisional: a model judged them, not the owner, in 5 tiles of 4 stacks"
   },
   "v3": {
    "precision": 0.858,
@@ -57,7 +59,8 @@
     2,
     9
    ],
-   "source": "0a45f9a663"
+   "source": "0a45f9a663",
+   "note": "provisional: a model judged them, not the owner, in 5 tiles of 4 stacks"
   },
   "v4": {
    "precision": 0.879,
@@ -75,7 +78,8 @@
     2,
     9
    ],
-   "source": "d222ec154e"
+   "source": "d222ec154e",
+   "note": "provisional: a model judged them, not the owner, in 5 tiles of 4 stacks"
   },
   "v5": {
    "precision": 0.887,
@@ -93,7 +97,9 @@
     2,
     9
    ],
-   "source": "cca7423059"
+   "source": "cca7423059",
+   "note": "provisional: a model judged them, not the owner, in 5 tiles of 4 stacks"
   }
- }
+ },
+ "measured": "on 185 curves a model judged"
 }

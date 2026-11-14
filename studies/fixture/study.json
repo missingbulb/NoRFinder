@@ -20,10 +20,10 @@
     "packages": [],
     "wheels": []
   },
-  "generated": {
-    "web/algorithms.GENERATED.json": "py/menu.py"
+  "algorithms": {
+    "list": "web/algorithms.json",
+    "metrics": "web/algorithm_metrics.json"
   },
-  "algorithms": "web/algorithms.GENERATED.json",
   "web": {
     "module": "web/fixture.js",
     "panels": "web/fixture.html",

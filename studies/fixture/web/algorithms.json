@@ -1,0 +1,4 @@
+[
+ {"key": "above", "title": "above", "icon": "◼", "about": "- Count every pixel brighter than the threshold\n  - none equal to it"},
+ {"key": "from", "title": "at or above", "icon": "◻", "about": "- Count every pixel at least as bright as the threshold"}
+]

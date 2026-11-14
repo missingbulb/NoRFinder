@@ -7,7 +7,7 @@
 //   node web-tests/algorithm_choice_driver.mjs ANSWERS IMAGE.png STUDIES
 import { EARLY } from "./early_messages.mjs";
 import { createRequire } from "node:module";
-import { execFileSync, execSync } from "node:child_process";
+import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
 import http from "node:http";
@@ -63,8 +63,8 @@ page.setDefaultTimeout(10000);
 await page.goto(origin + "/web/fixture");
 await page.waitForFunction(() => document.querySelector("#status").textContent.startsWith("Ready"));
 
-const listed = JSON.parse(execFileSync("python3", ["py/menu.py"], { cwd: path.join(repo, "studies", "fixture"), encoding: "utf8" }));
-const [first, second] = listed.algorithms;
+const own = (rel) => JSON.parse(fs.readFileSync(path.join(repo, "studies", "fixture", rel), "utf8"));
+const [first, second] = own("web/algorithms.json"), listed = own("web/algorithm_metrics.json");
 await page.waitForFunction(() => !document.querySelector("#algorithm").disabled);
 const seen = () => page.evaluate(() => {
   const sel = document.querySelector("#algorithm"), note = document.querySelector("#algorithm-note"), box = document.querySelector("#processing-box");
@@ -81,7 +81,7 @@ await check(s.value === first.key, "the first in the study's list is chosen at f
 await check(s.tip === `Precision (P) and recall (R) of each algorithm ${listed.measured}`, "the list's tooltip says what they were measured on", s.tip);
 await check(s.about === `How the ${first.title} algorithm works` && s.items.join("|") === "Count every pixel brighter than the threshold|none equal to it",
   "How the algorithm works gives the chosen one's steps as a nested list", s);
-await check(s.bold === `Above algorithm shows precision of 0.90 and recall of 0.80 ${listed.measured}` && s.last.endsWith(`(${first.note})`),
+await check(s.bold === `Above algorithm shows precision of 0.90 and recall of 0.80 ${listed.measured}` && s.last.endsWith(`(${listed.versions[first.key].note})`),
   "... ending in bold with its precision and recall, its note beside it", s);
 
 await page.setInputFiles("#file", image);

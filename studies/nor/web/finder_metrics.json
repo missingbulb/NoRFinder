@@ -373,9 +373,37 @@
    "real": 72
   }
  ],
+ "measured": "with its default filters, on 1 image",
  "presets": {
   "balanced": 0.0,
   "precise": 0.4,
   "recalling": -0.4
+ },
+ "versions": {
+  "blobs": {
+   "note": "without filters: precision of 0.63 and recall of 0.89",
+   "precision": 0.8,
+   "recall": 0.5
+  },
+  "fill": {
+   "note": "without filters: precision of 0.76 and recall of 0.85",
+   "precision": 0.8958,
+   "recall": 0.5972
+  },
+  "rf": {
+   "note": "without filters: precision of 0.78 and recall of 0.86",
+   "precision": 0.8421,
+   "recall": 0.6667
+  },
+  "tl": {
+   "note": "without filters: precision of 0.75 and recall of 0.85",
+   "precision": 0.902,
+   "recall": 0.6389
+  },
+  "walk": {
+   "note": "without filters: precision of 0.66 and recall of 0.88",
+   "precision": 0.8605,
+   "recall": 0.5139
+  }
  }
 }

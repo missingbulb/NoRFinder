@@ -1,6 +1,5 @@
 """req/vascular/model/run: the study's Python is ready, and a stack opens, without loading the extraction versions or
-scipy, and the list the page offers them by is written with the standard library alone (menu.py), each checked in a
-Python of its own."""
+scipy, each checked in a Python of its own."""
 import json
 import os
 import subprocess
@@ -23,9 +22,4 @@ def loaded_after(code):
 def test_python_is_ready_without_the_versions_or_scipy():
     got = loaded_after('import vascular; vascular.ready()')
     assert not {'scipy', 'skimage', 'lab'} & got
-
-
-def test_the_list_is_written_with_the_standard_library_alone():
-    got = loaded_after('import menu; menu.main()')
-    assert not {'numpy', 'scipy', 'skimage', 'lab'} & got
 

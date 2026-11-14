@@ -10,13 +10,13 @@ page must do is `req/shelves` in [its requirements](../requirements.md).
 ```
 study.json            the study's contract with the shell; stage GT
 py/shelves.py         the Python entry: opens the photo (HEIC through pillow-heif), answers view, find and straighten
-py/finders.py         the finder's versions side by side (VERSIONS, DEFAULT), the page's list of them (req/shelves/books/versions)
+py/finders.py         the finder's versions side by side (VERSIONS), each one's find
 py/books.py           R8, the text-guided finder (find), its text finder's view of the photo, and the straightening of four corners
 py/r5_edges.py        R5, the edge-only finder, kept as it was (2026-11-07); it straightens with books.py
 lab/photos.py         the owner's photos from Drive (data/sources.json), and with --gt the ground truth
 lab/grade.py          the finder and the readers scored against a submitted ground truth
-lab/finder_metrics.py every version scored on every ground truth, on the page's path, into lab/finder_metrics.json
-lab/finder_menu.py    the page's list of finders (web/algorithms.GENERATED.json, written by the site's build)
+lab/finder_metrics.py every version scored on every ground truth, on the page's path, into web/finder_metrics.json
+web/algorithms.json   the page's list of finders, the first its default: each one's title, icon, steps and reads_text
 lab/words.py          the names list from one dated dump of Hebrew Wikipedia's titles, into web/words/
 web/shelves.js        the page: Find books, Read titles, the titles in Summary, the ground-truth task and its pictures
 web/reading.js        the three readers, the same module in the page and in the sandbox
@@ -110,7 +110,7 @@ With Pyodide on both sides the page and the sandbox gave the same text for every
 
 Each version's precision and recall, as the page lists them, come from scoring it on every ground truth on the page's
 path, once per version: `python3 studies/shelves/lab/finder_metrics.py [VERSION]` (after `photos.py --gt`), into
-`lab/finder_metrics.json`. On 2026-11-13, six ground truths, 133 books: R8 0.77 / 0.74 (98 boxed, 127 boxes; tuned on
+`web/finder_metrics.json`. On 2026-11-13, six ground truths, 133 books: R8 0.77 / 0.74 (98 boxed, 127 boxes; tuned on
 three of the photos), R5 0.59 / 0.50 (66, 112; tuned by eye before any ground truth). R7 scored 0.75 / 0.62 and
 differed from R8 on one photo alone, so it is not offered.
 

@@ -1,49 +1,9 @@
-"""What the page says about each finder and each setting: its steps and its icon per finder (ABOUT, ICON), one
-line per parameter (HELP), and each reason a candidate is rejected for (REASONS). tests/test_interactive.py fails
-when a finder or a parameter the page shows has no entry here, so a new setting arrives with its explanation.
+"""What the page says about each setting: one line per parameter (HELP), and each reason a candidate is rejected
+for (REASONS). Each finder's name, icon and steps are the page's list (web/algorithms.json). tests/test_interactive.py
+fails when a parameter the page shows has no entry here, so a new setting arrives with its explanation.
 
 "unit" is the image's own scale: the median half-length of a green blob, so sizes follow the image
 rather than its pixel count."""
-
-# Each finder's steps as a Markdown outline: "- " items, two spaces of indent per level, a blank line between
-# paragraphs. The page draws it as a nested list.
-ABOUT = {
-    'tl': """\
-- Slide a green-red-green stencil over the whole image
-  - at every angle
-  - at a few spacings
-- Mark the spots where all three windows show their own colour
-- Keep only spots with both greens already in place: these are the candidates
-- For each candidate, colour in the red and the two greens under the stencil""",
-    'rf': """\
-- Find every red spot, from the red alone
-- For each red spot
-  - grow it outwards while it stays compact
-  - every green blob touching it is a possible paranode
-  - any two greens on opposite sides make a candidate, so one red can give several
-- Keep the best candidate that passes the filters
-- No pixel belongs to two NoRs""",
-    'fill': """\
-- For each bright red dot
-  - turn to face along the fibre (the way with green on both sides)
-  - walk out each way until landing on the brightest green
-  - colour in the red and both greens from their peaks
-    - stop where each drops below a fraction of its own peak""",
-    'walk': """\
-- For each red peak
-  - pick the direction with green on both sides
-  - walk along that line in a narrow strip
-    - through the red first
-    - then onto the green on each side""",
-    'blobs': """\
-- For each red blob
-  - pair it with the green blobs that touch it
-
-The simplest finder: fast, but it misses greens that do not quite touch the red.""",
-}
-
-# The icon the page's finder list shows before each finder's name.
-ICON = {'tl': '🚦', 'rf': '🔴', 'fill': '🪣', 'walk': '🚶', 'blobs': '🫧'}
 
 HELP = {
     # telling colours apart (every finder)

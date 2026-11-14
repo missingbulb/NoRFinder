@@ -1,32 +1,25 @@
-"""req/shelves/books/versions: the finders the page offers, the default first, each with how it works and its
-precision and recall as recorded for it."""
+"""req/shelves/books/versions: the page's list of finders (web/algorithms.json) offers exactly the versions the study's
+Python runs, and each one's numbers (web/finder_metrics.json) were recorded for it on the ground truth now on hand."""
 import json
 import os
 import sys
 
 STUDY = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 sys.path.insert(0, os.path.join(STUDY, 'py'))
-sys.path.insert(0, os.path.join(STUDY, 'lab'))
 import finders
-import finder_menu
 
 
-def listed():
-    return finder_menu.menu()
+def own(rel):
+    return json.load(open(os.path.join(STUDY, 'web', rel)))
 
 
-def test_every_version_is_offered_the_default_first():
-    keys = [a['key'] for a in listed()['algorithms']]
-    assert keys[0] == finders.DEFAULT and sorted(keys) == sorted(finders.VERSIONS), keys
+def test_the_page_lists_exactly_the_versions_python_runs():
+    assert sorted(a['key'] for a in own('algorithms.json')) == sorted(finders.VERSIONS)
 
 
-def test_each_version_shows_its_steps_and_the_numbers_recorded_for_it():
-    q = json.load(open(os.path.join(STUDY, 'lab', 'finder_metrics.json')))
-    for a in listed()['algorithms']:
-        lines = [l for l in a['about'].split('\n') if l.strip()]
-        assert lines and all(l.lstrip().startswith('- ') for l in lines), a['about']
+def test_each_listed_version_has_its_numbers_and_how_far_to_trust_them():
+    q = own('finder_metrics.json')
+    for a in own('algorithms.json'):
         got = q['versions'][a['key']]
         # rescored with: python3 studies/shelves/lab/finder_metrics.py
-        assert (a['precision'], a['recall']) == (got['precision'], got['recall']) and got['truth'] == q['books'], a
-        assert 'tuned' in a['note'], a['note']
-
+        assert got['truth'] == q['books'] and 'tuned' in got['note'], (a['key'], got)

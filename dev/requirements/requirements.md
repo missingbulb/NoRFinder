@@ -1016,10 +1016,12 @@ nobody has decided: what the page does there is not a requirement yet.
   <details>
 
   Set by the owner on 2026-11-13: what NoR Finder and Vascular Measurements each drew for themselves is the shell's,
-  so every study with more than one algorithm shows it the same way. A study's `study.json` names in `algorithms` the
-  file listing them (`{measured, algorithms: [{key, title, icon, about, precision, recall, note}]}`, generated from
-  the study's own sources), the first its default. The shell draws a list at the top of Processing, each entry its
-  icon, title and `(P .xx · R .xx)` where measured, its tooltip saying what they were measured on; under it a fold,
+  so every study with more than one algorithm shows it the same way. Changed by the owner on 2026-11-14: the algorithms
+  are data the study contributes, and the shell does the deciding. A study's `study.json` names in `algorithms` its
+  `list`, a JSON file of `[{key, title, icon, about}]`, the first its default, and its `metrics`, a JSON file of
+  `{measured, versions: {key: {precision, recall, note}}}` that its lab writes; no study code builds either for the
+  shell, and an entry may carry fields of the study's own. The shell joins the two and draws a list at the top of
+  Processing, each entry its icon, title and `(P .xx · R .xx)` where measured, its tooltip saying what they were measured on; under it a fold,
   How the *title* algorithm works, the chosen one's `about` as a Markdown outline, ending in bold with its precision
   and recall and what they were measured on, its `note` beside it. An algorithm with no precision and recall shows
   neither. The study reads the choice (`shell.algorithm`: `ready`, `key`, `title`, `on(fn)`) and runs it; it draws no
@@ -1207,8 +1209,8 @@ nobody has decided: what the page does there is not a requirement yet.
   The published site is the shell's page and, from each study, only what its standard layout says
   the page loads: `study.json`, the study's page part under `web/` (never its Python), and the
   modules directly in the folders its Python is imported from (`python.paths`), which is all the
-  page's importer can reach, and the files its `generated` names under `web/`, each the output of one of
-  its scripts the build runs. A study's docs, data, tests and lab notes stay in the repo, and nothing
+  page's importer can reach; the build runs none of a study's code (owner, 2026-11-14: a study contributes data).
+  A study's docs, data, tests and lab notes stay in the repo, and nothing
   in a study says how, where or whether it is published. The build (`dev/tools/build/build.py`)
   assembles the set under `dev/build/site/`, the tree the release uploads. Test:
   `web-tests/test_published_site.py`.

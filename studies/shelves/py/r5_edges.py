@@ -1,22 +1,6 @@
 """The Bookshelf Reader's R5 finder, kept as it was (2026-11-07) beside the current one (books.py): the books found
 from the photo's own edges alone, with no text finder, and a box whose ends turn otherwise than the camera saw the
 shelves dropped. Its straightening is books.py's; this module only finds."""
-
-TITLE, ICON = 'edge-only', '📏'
-READS_TEXT = False
-TUNED = 'tuned by eye, before any ground truth'
-STEPS = """\
-- Find the shelves: rows a horizontal edge crosses at least half the photo on
-- Within each shelf, find the lines between books
-  - straight edges leaning up to 30° from upright, strongest first, none crossing another
-  - a wide gap searched again with a lower bar
-- Between two neighbouring lines, find the book's top and foot: where its texture gives way to the wall or the board
-- Keep a box only if it checks out as a readable spine with a book's texture
-  - a wide box whose marks repeat across it is two books of one series
-- Learn from the surest boxes how the camera saw the shelves, and drop a box whose ends turn otherwise
-- On each shelf keep the most boxes that share no ground; a shelf of fewer than three is no shelf
-- Outside the shelves, box the covers lying face up: four straight edges meeting at their corners"""
-
 import numpy as np
 from scipy import ndimage as ndi
 from skimage.measure import points_in_poly
@@ -636,9 +620,9 @@ def clockwise(c):
     return np.roll(c, -int(np.argmin(c.sum(axis=1))), axis=0)
 
 
-def find(rgb):
+def find(rgb, text=None):
     """The books in an RGB photo, [{corners, view}]: the spines shelf by shelf from the top, left to right, then the
-    covers lying outside the shelves."""
+    covers lying outside the shelves. text is never read: R5 finds without the text finder."""
     H, W = rgb.shape[:2]
     s = min(1.0, WORK / max(H, W))
     small = np.stack([ndi.zoom(rgb[..., k].astype(np.float32), s, order=1) if s < 1 else rgb[..., k].astype(np.float32) for k in range(3)], -1)

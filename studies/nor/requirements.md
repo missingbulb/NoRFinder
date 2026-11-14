@@ -162,8 +162,8 @@ Set by the owner on 2026-09-28: the shell running the NoR study with no backend.
   when one is missing). Changed by the owner on 2026-11-03: the note ends with "<Finder> algorithm shows
   precision of X and recall of Y with its default filters, on N images", in bold, the numbers the finder
   list shows, then "(without filters: …)", the finder's own, not bold (the list and the note are the shell's
-  since 2026-11-13, `req/shell/processing/algorithms`, from `web/algorithms.GENERATED.json`, which
-  `detection/algorithm_menu.py` writes from `web/finders.GENERATED.json` and `web/finder_metrics.json`);
+  since 2026-11-13, `req/shell/processing/algorithms`, from the study's data: `web/algorithms.json`, each finder's
+  name, icon and steps, and `web/finder_metrics.json`, its numbers);
   each finder in the list carries its own icon, the study's choice; the settings start folded.
   Test: `studies/nor/tests/test_processing_box.py`.
   </details>

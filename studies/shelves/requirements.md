@@ -60,9 +60,10 @@ read for a title matcher; matching the titles is not part of it.
   the shell's list (`req/shell/processing/algorithms`), today's first under a name of its own and beside it an
   earlier one that behaves differently enough to be worth choosing. Text-guided is R8, the finder as it stands
   (`py/books.py`); edge-only is R5 as it was (`py/r5_edges.py`), which finds the books from the photo's edges alone,
-  so Find books runs no text finder for it. Each shows its precision and recall over every ground truth, scored on
-  the page's own path once per version (`lab/finder_metrics.py`, into `lab/finder_metrics.json`) and how far they
-  can be trusted. Test: `studies/shelves/tests/test_finders.py`, `studies/shelves/tests/test_shelves_page.py`,
+  so Find books runs no text finder for it. The list is the study's data (`web/algorithms.json`, its order the
+  page's, its `reads_text` telling Find books whether to run the text finder), and so are their numbers: each one's
+  precision and recall over every ground truth, scored on the page's own path once per version
+  (`lab/finder_metrics.py`, into `web/finder_metrics.json`), and how far they can be trusted. Test: `studies/shelves/tests/test_finders.py`, `studies/shelves/tests/test_shelves_page.py`,
   `studies/shelves/tests/test_find_bridge.py`.
   </details>
 

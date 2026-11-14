@@ -47,11 +47,16 @@ def test_each_finder_names_its_main_settings():
         assert fn.MAIN and list(fn.MAIN) == d['main_params'], (f, fn.MAIN, d['main_params'])
 
 
-def test_every_finder_and_setting_is_explained():
-    # the page shows a finder's ABOUT under the picker and a ? with HELP beside every setting
+def test_the_page_lists_exactly_the_finders_python_runs():
+    # the page's list (web/algorithms.json) and the finders interactive.py can run are two artifacts that could drift
+    listed = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'web', 'algorithms.json')))
+    assert sorted(a['key'] for a in listed) == sorted(interactive.FINDERS)
+
+
+def test_every_setting_is_explained():
+    # the page shows a ? with HELP beside every setting
     for f in interactive.FINDERS:
         d = interactive.describe(f)
-        assert d['about'], f
         shown = set(d['detection_params']) | {n for fl in d['filters'] for n in fl['params']}
         missing = shown - set(d['help'])
         assert not missing, (f, sorted(missing))

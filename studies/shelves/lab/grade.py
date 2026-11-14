@@ -95,15 +95,16 @@ def main(argv=None):
     how.add_argument('--photo')
     how.add_argument('--found')
     how.add_argument('--read')
-    ap.add_argument('--version', help="the finder's version --photo runs (py/finders.py), its default if none")
+    ap.add_argument('--version', help="the finder's version --photo runs (web/algorithms.json), its first if none")
     a = ap.parse_args(argv)
     gt = json.load(open(a.gt))
     if a.read:
         out = readings(gt, json.load(open(a.read)))
     else:
         if a.photo:
-            import finders, shelves
-            found = json.loads(shelves.Session(a.photo).call('find', {'algorithm': a.version or finders.DEFAULT})[0])['books']
+            import shelves
+            first = json.load(open(os.path.join(HERE, '..', 'web', 'algorithms.json')))[0]['key']
+            found = json.loads(shelves.Session(a.photo).call('find', {'algorithm': a.version or first})[0])['books']
         else:
             found = json.load(open(a.found))['books']
         out = boxes(gt, found)

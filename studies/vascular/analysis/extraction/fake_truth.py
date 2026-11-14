@@ -192,10 +192,17 @@ def grade_versions(versions, out=None):
             rows[v] = {'precision': round(prec, 3), 'recall': round(rec, 3), 'f1': round(f1, 3), 'vessels_found': [tp, P],
                        'non_vessels_kept': [fp, N], 'missed_found': [mf, M], 'source': lab.source_hash(v)}
         if out and L['set'] == SET:
-            json.dump({'labels': SET, 'curves': P + N, 'tiles': len(L['tiles']), 'stacks': len(names),
-                       'judge': f"provisional: a model judged them, not the owner, in {len(L['tiles'])} tiles of {len(names)} stacks",
-                       'versions': rows}, open(out, 'w'), indent=1, ensure_ascii=False)
+            json.dump(shown({'labels': SET, 'curves': P + N, 'tiles': len(L['tiles']), 'stacks': len(names),
+                             'judge': f"provisional: a model judged them, not the owner, in {len(L['tiles'])} tiles of {len(names)} stacks",
+                             'versions': rows}), open(out, 'w'), indent=1, ensure_ascii=False)
             print('wrote', out)
+
+
+def shown(doc):
+    """The grade with what the shell's list of algorithms shows (req/shell/processing/algorithms): what the numbers
+    were measured on, and beside each version's, who judged them."""
+    return {**doc, 'measured': f"on {doc['curves']} curves a model judged",
+            'versions': {k: {**v, 'note': doc['judge']} for k, v in doc['versions'].items()}}
 
 
 def main():

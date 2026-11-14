@@ -2,10 +2,12 @@
  "dataset_sha256": "93cd0ec67d43e97c4b320ecf2817575481b405bd75999b77838b0b17458b024b",
  "photos": 6,
  "books": 133,
+ "measured": "on 133 books in 6 photos the owner tagged",
  "versions": {
   "r8": {
    "precision": 0.772,
    "recall": 0.737,
+   "note": "98 of them boxed, in 127 boxes; tuned on 3 of these photos",
    "matched": 98,
    "truth": 133,
    "found": 127,
@@ -45,6 +47,7 @@
   "r5": {
    "precision": 0.589,
    "recall": 0.496,
+   "note": "66 of them boxed, in 112 boxes; tuned by eye, before any ground truth",
    "matched": 66,
    "truth": 133,
    "found": 112,

@@ -5,7 +5,7 @@ import json
 import numpy as np
 
 def ready():
-    """Nothing for the page: the versions it offers ship beside it (analysis/extraction/menu.py), and the lab, with
+    """Nothing for the page: the versions it offers are the study's list (web/algorithms.json), and the lab, with
     scipy, loads at the first extraction."""
     return '{}'
 

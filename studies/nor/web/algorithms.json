@@ -1,0 +1,32 @@
+[
+ {
+  "key": "tl",
+  "title": "traffic light",
+  "icon": "🚦",
+  "about": "- Slide a green-red-green stencil over the whole image\n  - at every angle\n  - at a few spacings\n- Mark the spots where all three windows show their own colour\n- Keep only spots with both greens already in place: these are the candidates\n- For each candidate, colour in the red and the two greens under the stencil"
+ },
+ {
+  "key": "rf",
+  "title": "red-first",
+  "icon": "🔴",
+  "about": "- Find every red spot, from the red alone\n- For each red spot\n  - grow it outwards while it stays compact\n  - every green blob touching it is a possible paranode\n  - any two greens on opposite sides make a candidate, so one red can give several\n- Keep the best candidate that passes the filters\n- No pixel belongs to two NoRs\n\nIt picks between alternatives using the filters, so after a filter change, find again for its exact result."
+ },
+ {
+  "key": "fill",
+  "title": "fill",
+  "icon": "🪣",
+  "about": "- For each bright red dot\n  - turn to face along the fibre (the way with green on both sides)\n  - walk out each way until landing on the brightest green\n  - colour in the red and both greens from their peaks\n    - stop where each drops below a fraction of its own peak"
+ },
+ {
+  "key": "walk",
+  "title": "walk",
+  "icon": "🚶",
+  "about": "- For each red peak\n  - pick the direction with green on both sides\n  - walk along that line in a narrow strip\n    - through the red first\n    - then onto the green on each side"
+ },
+ {
+  "key": "blobs",
+  "title": "blobs",
+  "icon": "🫧",
+  "about": "- For each red blob\n  - pair it with the green blobs that touch it\n\nThe simplest finder: fast, but it misses greens that do not quite touch the red."
+ }
+]

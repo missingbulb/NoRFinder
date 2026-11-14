@@ -1,0 +1,26 @@
+[
+ {
+  "key": "v5",
+  "title": "island-free",
+  "icon": "🏝️",
+  "about": "- Run the dead-end check algorithm\n- Drop every vessel shorter than 45 µm, one typical capillary segment\n  - that touches no junction at either end"
+ },
+ {
+  "key": "v4",
+  "title": "dead-end check",
+  "icon": "🔍",
+  "about": "- Run the bridges algorithm\n- For each vessel with an open end, shorter than ten widths\n  - drop it when its ridge is under half the field's typical vessel's\n  - and it beats its own quarter-turned copy by under 35% of the typical vessel's lead"
+ },
+ {
+  "key": "v3",
+  "title": "bridges",
+  "icon": "🌉",
+  "about": "- Run the repair algorithm\n- From each open end away from the frame, follow the cheapest path along the ridges of the signal\n  - up to twelve widths ahead, within 60° of the way the vessel ran\n  - to land on another vessel or another open end\n- Keep the path as a vessel\n  - when its dimmest stretch keeps 40% of the two vessels' contrast\n  - it arrives at about the same depth\n  - and it closes no short loop"
+ },
+ {
+  "key": "v2",
+  "title": "repair",
+  "icon": "🩹",
+  "about": "- Run the skeleton algorithm, first filling every hole in the mark narrower than a vessel (a dim lumen)\n- Move each curve point onto the brightest line across its vessel\n- Drop a low-confidence vessel that is a speck, not a line\n  - its signal must beat the same curve turned a quarter turn\n  - and it may wander no more than a capillary does\n- Break each short loop at its weakest vessel, unless that one is as strong as a typical vessel\n- Bridge each gap: an open end facing another end or a vessel's side a few widths ahead, at the same depth\n  - only when the gap between them carries signal\n- Split a four-way junction whose arms pair into two straight lines at different depths: two vessels crossing"
+ }
+]

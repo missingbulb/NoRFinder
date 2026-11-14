@@ -26,6 +26,8 @@ const [ready] = process.argv.slice(2);
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const READY = JSON.parse(fs.readFileSync(ready, "utf8"));
 const QUALITY = JSON.parse(fs.readFileSync(path.join(repo, "studies", "nor", "web", "finder_metrics.json"), "utf8"));
+// the study's list of finders, as data: each one's name and icon
+const LISTED = Object.fromEntries(JSON.parse(fs.readFileSync(path.join(repo, "studies", "nor", "web", "algorithms.json"), "utf8")).map((a) => [a.key, a]));
 
 const STAND_IN = `postMessage({ type: "ready", info: ${JSON.stringify(READY)}, secs: 0 });`;
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png" };
@@ -52,6 +54,8 @@ try {
   await page.waitForFunction(() => document.querySelector("#algorithm")?.disabled === false);
   // the list's numbers arrive with the study's measured quality
   await page.waitForFunction(() => /\(P\s/.test(document.querySelector("#algorithm").options[0].textContent));
+  // the finder's controls arrive with its own list of them, apart from the shell's list of finders
+  await page.waitForFunction(() => document.querySelector("#filters").children.length > 0);
   const folds = await page.evaluate(() => ({ settings: document.querySelector("#settings-box").open, about: document.querySelector("#algorithm-about").open }));
   console.log("folds", JSON.stringify(folds));
   if (folds.settings) problems.push("Settings starts open");
@@ -79,14 +83,14 @@ try {
 
   const options = await page.evaluate(() => [...document.querySelector("#algorithm").options].map((o) => [o.value, o.textContent]));
   console.log("options", JSON.stringify(options));
-  if (options.length !== Object.keys(READY.finders).length) problems.push(`the list shows ${options.length} of ${Object.keys(READY.finders).length} finders`);
+  if (options.length !== Object.keys(LISTED).length) problems.push(`the list shows ${options.length} of ${Object.keys(LISTED).length} finders`);
   let nested = 0;
   for (const [k, text] of options) {
-    const icon = READY.about[k].icon;
-    if (!icon || !text.startsWith(icon + " " + READY.finders[k])) problems.push(`${k} in the list does not start with its icon: ${text}`);
+    const icon = LISTED[k].icon;
+    if (!icon || !text.startsWith(icon + " " + LISTED[k].title)) problems.push(`${k} in the list does not start with its icon: ${text}`);
     // the box is folded until an image opens, so the choice is made as the list would make it
     await page.evaluate((k) => { const s = document.querySelector("#algorithm"); s.value = k; s.dispatchEvent(new Event("change")); }, k);
-    await page.waitForFunction((n) => document.querySelector("#algorithm-about summary").textContent.includes(n) && document.querySelector("#algorithm-note strong"), READY.finders[k]).catch(() => {});
+    await page.waitForFunction((n) => document.querySelector("#algorithm-about summary").textContent.includes(n) && document.querySelector("#algorithm-note strong"), LISTED[k].title).catch(() => {});
     const note = await page.evaluate(() => {
       const n = document.querySelector("#algorithm-note"), sel = document.querySelector("#algorithm");
       return {
@@ -96,13 +100,13 @@ try {
     });
     console.log(k, JSON.stringify(note));
     if (note.nested) nested++;
-    if (note.title !== `How the ${READY.finders[k]} algorithm works`) problems.push(`${k}: the note's title does not name the algorithm: ${note.title}`);
+    if (note.title !== `How the ${LISTED[k].title} algorithm works`) problems.push(`${k}: the note's title does not name the algorithm: ${note.title}`);
     if (note.raw) problems.push(`${k}: the note shows its list's markup instead of a list`);
     // the bold line gives the finder with its default filters, as the list does; the finder alone follows, not bold
     const def = QUALITY.finders[k].filtered.balanced, own = QUALITY.finders[k].finder, n = QUALITY.images.length;
     const [, lp, lr] = note.option.match(/\(P\s(\.\d+)\s·\sR\s(\.\d+)\)/) || [];
     if (+lp !== +def.precision.toFixed(2) || +lr !== +def.recall.toFixed(2)) problems.push(`${k}: the list's ${lp}, ${lr} are not its default filters' ${def.precision}, ${def.recall}`);
-    const name = READY.finders[k][0].toUpperCase() + READY.finders[k].slice(1);
+    const name = LISTED[k].title[0].toUpperCase() + LISTED[k].title.slice(1);
     const bold = `${name} algorithm shows precision of ${def.precision.toFixed(2)} and recall of ${def.recall.toFixed(2)} with its default filters, on ${n} image${n > 1 ? "s" : ""}`;
     const plain = `(without filters: precision of ${own.precision.toFixed(2)} and recall of ${own.recall.toFixed(2)})`;
     if (note.strong !== bold) problems.push(`${k}: the bold line reads "${note.strong}", not "${bold}"`);

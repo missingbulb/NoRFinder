@@ -22,8 +22,8 @@ import numpy as np
 import nor3, naive_nor as nn_, nor_lab, finder_help
 from nor3 import CHECKS, ORDER, REASONS, REASON_TEXT, judge, resolve_overlaps
 
-# the finders the page offers, first = default
-FINDERS = {'tl': 'traffic light', 'rf': 'red-first', 'fill': 'fill', 'walk': 'walk', 'blobs': 'blobs'}
+# the finders the page can run, as its list (web/algorithms.json) offers them
+FINDERS = ('tl', 'rf', 'fill', 'walk', 'blobs')
 EXACT_REFILTER = {'tl', 'tl_post', 'fill', 'walk', 'blobs'}
 # finders that take the blue mask themselves and apply it only after finding; every other finder
 # sees no mask, so nuclei are left to the 'in nucleus' filter
@@ -84,12 +84,12 @@ def describe(finder):
     dp = detection_params(P)
     return dict(filters=filters(P), detection_params=dp, main_params=[k for k in getattr(fn, 'MAIN', ()) if k in dp],
                 exact_refilter=finder in EXACT_REFILTER, reasons=reasons(),
-                about=finder_help.ABOUT.get(finder, ''), icon=finder_help.ICON.get(finder, ''), help=finder_help.HELP)
+                help=finder_help.HELP)
 
 
 def ready():
-    """What the page needs before any image: the finders it offers, first = default, and each one's controls."""
-    return json.dumps(dict(finders=FINDERS, about={f: describe(f) for f in FINDERS}))
+    """What the page needs before any image: the finders it can run and each one's controls."""
+    return json.dumps(dict(finders=list(FINDERS), about={f: describe(f) for f in FINDERS}))
 
 
 def reason(k):

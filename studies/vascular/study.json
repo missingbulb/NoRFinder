@@ -36,10 +36,10 @@
       "tifffile==2026.3.3"
     ]
   },
-  "generated": {
-    "web/algorithms.GENERATED.json": "analysis/extraction/menu.py"
+  "algorithms": {
+    "list": "web/algorithms.json",
+    "metrics": "web/algorithm_metrics.json"
   },
-  "algorithms": "web/algorithms.GENERATED.json",
   "web": {
     "module": "web/vascular.js",
     "panels": "web/vascular.html",

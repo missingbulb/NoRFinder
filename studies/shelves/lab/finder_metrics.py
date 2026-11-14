@@ -1,6 +1,6 @@
 """Each version of the finder scored on every ground truth, on the page's own path (reading/read.mjs: the page's
-Pyodide, and its text finder for a version that reads text), into lab/finder_metrics.json, which the page's list of
-finders carries (lab/finder_menu.py). Run once per version, in the change that makes it (the nor-finder pack's
+Pyodide, and its text finder for a version that reads text), into web/finder_metrics.json, the numbers the shell's
+list of finders shows (req/shell/processing/algorithms). Run once per version, in the change that makes it (the nor-finder pack's
 quality-per-version); the photos and ground truth come first from `python3 studies/shelves/lab/photos.py --gt`.
 
     python3 studies/shelves/lab/finder_metrics.py            # every version
@@ -20,7 +20,9 @@ import finders
 from grade import boxes
 from photos import RAW, photos
 
-OUT = os.path.join(HERE, 'finder_metrics.json')
+OUT = os.path.join(HERE, '..', 'web', 'finder_metrics.json')
+# how far each version's score can be trusted: the photos it was tuned on are among those it is scored on
+TUNED = {'r8': 'tuned on 3 of these photos', 'r5': 'tuned by eye, before any ground truth'}
 READ = os.path.join(HERE, '..', 'reading', 'read.mjs')
 
 
@@ -48,7 +50,7 @@ def score(version, pairs):
             for k in tot:
                 tot[k] += r[k]
     return dict(precision=round(tot['matched'] / max(1, tot['found']), 3), recall=round(tot['matched'] / max(1, tot['truth']), 3),
-                **tot, photos=per)
+                note=f"{tot['matched']} of them boxed, in {tot['found']} boxes; {TUNED[version]}", **tot, photos=per)
 
 
 def main(argv=None):
@@ -62,7 +64,8 @@ def main(argv=None):
     for v in want:
         versions[v] = score(v, pairs)
         print(v, versions[v]['precision'], versions[v]['recall'], file=sys.stderr)
-    doc = dict(dataset_sha256=sha, photos=len(pairs), books=sum(versions[want[0]]['photos'][k]['truth'] for k in versions[want[0]]['photos']),
+    books = sum(versions[want[0]]['photos'][k]['truth'] for k in versions[want[0]]['photos'])
+    doc = dict(dataset_sha256=sha, photos=len(pairs), books=books, measured=f"on {books} books in {len(pairs)} photos the owner tagged",
                versions={k: versions[k] for k in finders.VERSIONS if k in versions})
     with open(OUT, 'w') as f:
         json.dump(doc, f, indent=1, ensure_ascii=False)

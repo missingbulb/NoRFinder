@@ -95,11 +95,22 @@ def measure(corpus=None):
                 for k, v in tally(s.cands, im['labels']).items():
                     sums[f][p][k] += v
     images = corpus_summary(corpus)
-    return dict(format=FORMAT, baseline_sha256=baseline_sha(), images=images, dataset_sha256=ground_truth.dataset_sha(images),
-                presets={p: s for p, s in PRESETS.items()},
-                finders={f: dict(finder=rates(own[f]),
-                                 filtered={p: dict(rates(t), values=preset_values(f, p)) for p, t in per.items()})
-                         for f, per in sums.items()})
+    doc = dict(format=FORMAT, baseline_sha256=baseline_sha(), images=images, dataset_sha256=ground_truth.dataset_sha(images),
+               presets={p: s for p, s in PRESETS.items()},
+               finders={f: dict(finder=rates(own[f]),
+                                filtered={p: dict(rates(t), values=preset_values(f, p)) for p, t in per.items()})
+                        for f, per in sums.items()})
+    return dict(doc, **shown(doc))
+
+
+def shown(doc):
+    """The numbers the shell's list of finders shows (req/shell/processing/algorithms): each finder's with its default
+    filters, its own without them beside, and what they were measured on."""
+    said = lambda r: f"precision of {r['precision']:.2f} and recall of {r['recall']:.2f}"
+    n = len(doc['images'])
+    return dict(measured=f"with its default filters, on {n} image{'s' if n > 1 else ''}",
+                versions={f: dict(precision=d['filtered']['balanced']['precision'], recall=d['filtered']['balanced']['recall'],
+                                  note=f"without filters: {said(d['finder'])}") for f, d in doc['finders'].items()})
 
 
 def write(path=OUT):

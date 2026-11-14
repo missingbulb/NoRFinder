@@ -1,12 +1,9 @@
 """req/shell/study/knows-none, req/shell/study/folder-and-address: the shell knows no study, and a study is a folder whose study.json names everything the
 shell needs. The shell running a study is test_study_runs.py."""
-import contextlib
 import glob
-import io
 import json
 import os
 import re
-import runpy
 from html.parser import HTMLParser
 
 import pytest
@@ -36,6 +33,7 @@ def test_a_study_names_files_that_exist(path):
     for key in ('id', 'title', 'visibility', 'viewer', 'python', 'web', 'files', 'channels'):
         assert key in m, f'{key} missing'
     assert 'listed' not in m, 'a study says who sees it in visibility (req/shell/study/visibility)'
+    assert 'generated' not in m, 'the build runs none of a study\'s code: it contributes data (req/shell/site/published-files)'
     v = m['visibility']
     assert v in ('listed', 'unlisted') or (isinstance(v, dict) and set(v) == {'accounts'} and v['accounts']
             and all(re.fullmatch(r'[^@\s]+@[^@\s]+\.[^@\s]+', e) for e in v['accounts'])), \
@@ -108,29 +106,30 @@ def test_a_study_names_its_stage_and_steps(path):
 
 @pytest.mark.parametrize('path', STUDIES, ids=lambda p: os.path.basename(os.path.dirname(p)))
 def test_a_study_offering_algorithms_lists_them_for_the_shell(path):
-    """req/shell/processing/algorithms: a study offering several algorithms names the file listing them, made by its own
-    script, each with its key, title, icon, how it works and, where measured, its precision and recall; and it draws no
-    list of them of its own."""
+    """req/shell/processing/algorithms: a study offering several algorithms names, as data, the file listing them, each
+    with its key, title, icon and how it works, and its numbers in a file of their own, what they were measured on and
+    each one's precision and recall; and it draws no list of them of its own."""
     m, base = manifest(path), os.path.dirname(path)
     if 'panels' in m['web']:
         html = open(os.path.join(base, m['web']['panels']), encoding='utf8').read()
         assert not re.search(r'<template data-slot="processing">\s*(<div[^>]*>\s*)?<select', html), f"{m['id']} draws its own list of algorithms"
     if 'algorithms' not in m:
         return
-    rel = m['algorithms']
-    assert rel in m.get('generated', {}), f"{m['id']}: its algorithms' list is generated from its sources (study.json's generated)"
-    out = io.StringIO()
-    with contextlib.redirect_stdout(out):
-        runpy.run_path(os.path.join(base, m['generated'][rel]), run_name='__main__')
-    doc = json.loads(out.getvalue())
-    assert set(doc) <= {'measured', 'algorithms'} and len(doc['algorithms']) >= 2, f"{m['id']}: {set(doc)}, {len(doc.get('algorithms', []))} algorithms"
-    keys = [a['key'] for a in doc['algorithms']]
+    named = m['algorithms']
+    assert set(named) <= {'list', 'metrics'} and 'list' in named, f"{m['id']}: algorithms names its list, and its numbers if any: {named}"
+    own = json.load(open(os.path.join(base, named['list'])))
+    assert len(own) >= 2, f"{m['id']} lists {len(own)} algorithms"
+    keys = [a['key'] for a in own]
     assert len(set(keys)) == len(keys), keys
-    for a in doc['algorithms']:
+    for a in own:
         assert all(isinstance(a.get(k), str) and a[k] for k in ('key', 'title', 'icon', 'about')), a
-        assert ('precision' in a) == ('recall' in a), a
-        if 'precision' in a:
-            assert 0 <= a['precision'] <= 1 and 0 <= a['recall'] <= 1 and doc.get('measured'), a
+        assert not {'precision', 'recall', 'note'} & set(a), f"{a['key']}: its numbers are in the metrics file"
+    if 'metrics' in named:
+        q = json.load(open(os.path.join(base, named['metrics'])))
+        assert isinstance(q.get('measured'), str) and q['measured'], f"{m['id']}: its numbers say what they were measured on"
+        assert set(q['versions']) & set(keys), f"{m['id']}: its numbers are for none of the algorithms it lists"
+        for k, v in q['versions'].items():
+            assert 0 <= v['precision'] <= 1 and 0 <= v['recall'] <= 1, (k, v)
 
 
 class Panels(HTMLParser):
