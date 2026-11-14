@@ -22,6 +22,13 @@ not belong here — propose it to the Claudinite canon instead, where every repo
   be regenerated from it. Before replying that work is done, check that nothing the next session
   would need exists only in the project. (working-claude-project)
 
+## What a study gives the shell
+
+- **Giving the shell something that varies by study** (its algorithms, channels, steps, their
+  numbers) - contribute it as data the shell reads, named in `study.json`, and leave every decision
+  about it to the shell; never write study code that builds or draws what the shell could own once.
+  (study-contributes-data)
+
 ## Production and its tests
 
 - **A test needing the page to behave otherwise than it does on the live site** — change the
